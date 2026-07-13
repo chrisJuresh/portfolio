@@ -6,18 +6,26 @@ column as on mobile, centered on the page. The whole page fades in gently on
 load; the photographs are a horizontal carousel that fades into the paper until
 you hover it.
 
+## Layout
+
+This repo is one Vercel project serving two things on `chrisj.uk`:
+
+- `index.html` (repo root) — a tiny **portal** at `chrisj.uk/` (the word
+  "portfolio", centered, linking to the site). Add more links here over time.
+- `portfolio/` — the portfolio site itself, served at `chrisj.uk/portfolio`.
+  It sets `<base href="/portfolio/">` so its assets resolve under that path.
+
 ## Editing the content
 
-**You only ever need to edit `content.js`.** It's plain text — your name, bio,
-work history, education, contact links and the list of photos, each with a short
-note explaining it. No HTML, no build step. Save the file and refresh.
+**You only ever need to edit `portfolio/content.js`.** It's plain text — your
+name, bio, work history, education, contact links and the list of photos, each
+with a short note explaining it. No HTML, no build step. Save and refresh.
 
-## Files
+## Files (inside `portfolio/`)
 
 - `content.js` — **the file you edit.** All the words and the photo list.
 - `index.html` — a tiny shell; loads the styles and scripts.
-- `app.js` — renders the page from `content.js` and runs the carousel. You
-  shouldn't need to touch this.
+- `app.js` — renders the page from `content.js` and runs the carousel.
 - `styles.css` — all styling. Colours, the column width (`--col`), the carousel
   image height (`--slide-h`) and fonts are CSS variables at the top.
 - `img/` — web-optimised photos (EXIF rotation baked in, ~800px wide, ~110 KB
