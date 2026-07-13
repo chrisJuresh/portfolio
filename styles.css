@@ -96,7 +96,7 @@ a { color: inherit; }
   display: flex;
   gap: var(--gap);
   padding-left: var(--edge);             /* first photo starts where the text starts */
-  padding-right: var(--edge);            /* symmetric: last photo reaches the window */
+  padding-right: calc(50vw - var(--slide-w) / 2);  /* so the last photo can reach centre */
   overflow-x: auto;
   overflow-y: hidden;
   -webkit-overflow-scrolling: touch;

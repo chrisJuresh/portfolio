@@ -13,3 +13,7 @@ node_modules/
 # in img/. Kept local to keep the repo lean and Vercel deploys fast. Regenerate
 # img/ from these with the Pillow step in README.md.
 photos/
+
+# secrets — never commit
+.env
+.env.*

@@ -85,29 +85,77 @@
     window.addEventListener("load", updateEdges);   // re-measure once images give the track its width
     updateEdges();
 
-    // ---- momentum ("roulette wheel") scrolling ------------------------------
-    // Each flick adds to a velocity that decays with friction every frame, so
-    // the faster you scroll the faster and further it spins, then it coasts out.
+    // ---- momentum ("roulette wheel") scrolling + snap-to-centre --------------
+    // Each flick adds to a velocity that decays with friction every frame; when
+    // motion settles, the photo nearest the screen centre eases into the centre
+    // (the first photo stays left-aligned with the text — it can't reach centre).
     var reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    var vel = 0, raf = null;
+    var vel = 0, raf = null, mode = null;             // mode: "coast" | "tween"
     var FRICTION = 0.95, MIN_V = 0.35, MAX_V = 180;
     function maxScroll() { return track.scrollWidth - track.clientWidth; }
+    function stopAnim() { if (raf) cancelAnimationFrame(raf); raf = null; mode = null; }
+    function halt() { vel = 0; stopAnim(); }
+
     function coast() {
       track.scrollLeft += vel;
       var m = maxScroll();
       if (track.scrollLeft <= 0) { track.scrollLeft = 0; vel = 0; }
       else if (track.scrollLeft >= m) { track.scrollLeft = m; vel = 0; }
       vel *= FRICTION;
-      if (Math.abs(vel) < MIN_V) { vel = 0; raf = null; return; }
+      if (Math.abs(vel) < MIN_V) { stopAnim(); scheduleSnap(); return; }
       raf = requestAnimationFrame(coast);
     }
     function kick(dv) {
-      if (reduce) { track.scrollLeft += dv; return; }   // no momentum under reduced-motion
+      if (reduce) { track.scrollLeft += dv; scheduleSnap(); return; }
+      if (mode === "tween") stopAnim();               // a fresh flick cancels a snap in progress
       vel += dv;
       if (vel > MAX_V) vel = MAX_V; else if (vel < -MAX_V) vel = -MAX_V;
-      if (!raf) raf = requestAnimationFrame(coast);
+      if (!raf) { mode = "coast"; raf = requestAnimationFrame(coast); }
     }
-    function halt() { vel = 0; if (raf) { cancelAnimationFrame(raf); raf = null; } }
+
+    // ease scrollLeft to a target (used by snap); cancellable via stopAnim/halt
+    function tweenTo(target) {
+      stopAnim();
+      if (reduce) { track.scrollLeft = target; return; }
+      var start = track.scrollLeft, dist = target - start, t0 = null, DUR = 320;
+      mode = "tween";
+      function frame(ts) {
+        if (t0 === null) t0 = ts;
+        var p = Math.min(1, (ts - t0) / DUR);
+        track.scrollLeft = start + dist * (1 - Math.pow(1 - p, 3));   // ease-out cubic
+        if (p < 1) raf = requestAnimationFrame(frame); else stopAnim();
+      }
+      raf = requestAnimationFrame(frame);
+    }
+    // centre the photo closest to the middle of the screen (clamped: first → left,
+    // last → its resting spot)
+    function snap() {
+      if (down) return;
+      var slides = track.querySelectorAll(".slide");
+      if (!slides.length) return;
+      var mid = window.innerWidth / 2, cur = track.scrollLeft, max = maxScroll();
+      // snap points (in scrollLeft): first photo left-aligned (0), every other centred.
+      // Pick the one nearest the current position so photo 1 doesn't steal the start.
+      var best = 0, bestD = Math.abs(cur);
+      for (var i = 1; i < slides.length; i++) {
+        var r = slides[i].getBoundingClientRect();
+        var s = cur + (r.left + r.width / 2 - mid);   // scrollLeft that centres photo i
+        s = Math.max(0, Math.min(max, s));
+        var d = Math.abs(s - cur);
+        if (d < bestD) { bestD = d; best = s; }
+      }
+      if (Math.abs(best - cur) < 2) return;   // already at the nearest snap point
+      tweenTo(best);
+    }
+    var snapT = null;
+    function scheduleSnap() {                          // snap once motion has settled
+      if (snapT) clearTimeout(snapT);
+      snapT = setTimeout(function () {
+        if (down || raf) { scheduleSnap(); return; }   // still dragging or animating → wait
+        snap();
+      }, 140);
+    }
+    track.addEventListener("scroll", scheduleSnap, { passive: true });
 
     // wheel spins the strip; repeated fast flicks build up speed
     track.addEventListener("wheel", function (e) {
@@ -119,11 +167,10 @@
       kick(d * unit * (reduce ? 1 : 0.28));
     }, { passive: false });
 
-    // drag to scroll (mouse / pen), with a fling on release; touch + scrollbar stay native
+    // drag to scroll (mouse / pen), with a fling on release; touch stays native
     var down = false, lastX = 0, flingV = 0;
     track.addEventListener("pointerdown", function (e) {
       if (e.pointerType === "touch") return;
-      if (e.offsetY > track.clientHeight) return;       // on the scrollbar → leave it to the browser
       halt();
       down = true; lastX = e.clientX; flingV = 0;
       track.classList.add("dragging");
@@ -139,11 +186,12 @@
       if (!down) return;
       down = false; track.classList.remove("dragging");
       if (!reduce && Math.abs(flingV) > 2) kick(flingV * 1.3);
+      else scheduleSnap();                              // no fling → settle to centre
     }
     track.addEventListener("pointerup", endDrag);
     track.addEventListener("pointercancel", endDrag);
 
-    // keyboard: arrow keys step by roughly one screenful
+    // keyboard: arrow keys move roughly one photo, then it settles to centre
     track.addEventListener("keydown", function (e) {
       if (e.key !== "ArrowRight" && e.key !== "ArrowLeft") return;
       halt();
