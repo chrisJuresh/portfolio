@@ -1,0 +1,233 @@
+/* ============================================================================
+   Christian Juresh — portfolio
+   A single narrow column, centered at every width, so desktop reads like a
+   phone screen floated in the middle of the page. Minimal editorial type after
+   jenslind.com: Times New Roman for name/labels/lists, Georgia for prose.
+   The whole page fades in on load; the photo strip is a horizontal carousel
+   that bleeds off the right edge, faded into the paper until you hover it.
+   ========================================================================== */
+
+:root {
+  --ink:        #1a1917;
+  --ink-soft:   #46433d;
+  --muted:      #6f6a5d;                 /* years, meta (AA 5.2:1)      */
+  --bg:         #fcfbf8;                  /* warm paper white            */
+  --bg-0:       rgba(252, 251, 248, 0);  /* same, transparent — for fades */
+  --rule-soft:  #efece4;
+  --link-line:  #b3aa9b;
+
+  --serif-label: "Times New Roman", Times, serif;
+  --serif-body:  Georgia, "Iowan Old Style", "Palatino Linotype", "Times New Roman", serif;
+
+  --col: 27rem;                          /* the phone-width column       */
+  --slide-h: clamp(15rem, 40vh, 24rem);  /* carousel image height        */
+  --slide-w: calc(var(--slide-h) * 3 / 4);
+  --gap: 0.5rem;                          /* gap between photos           */
+  --edge: max(1.35rem, calc(50vw - var(--col) / 2));  /* where the text column starts */
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+html, body { overflow-x: hidden; }        /* the carousel bleeds right; never scroll the page sideways */
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--serif-body);
+  font-size: 15px;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+img { display: block; max-width: 100%; height: auto; }
+a { color: inherit; }
+
+/* ---- centered column + page fade-in -------------------------------------- */
+.page {
+  min-height: 100vh;
+  padding: clamp(3rem, 9vh, 6.5rem) 1.35rem clamp(4rem, 12vh, 6rem);
+}
+.col {
+  width: 100%;
+  max-width: var(--col);
+  margin: 0 auto;
+}
+/* fade the whole page in on load. A CSS animation (not a JS-toggled class) so
+   it can't get stuck invisible if a rAF never fires; if animations are off or
+   unsupported the page simply shows at full opacity. */
+.js .page { animation: page-in 0.9s cubic-bezier(0.22, 1, 0.36, 1) both; }
+@keyframes page-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: none; }
+}
+
+/* ---- masthead ------------------------------------------------------------ */
+.masthead { margin-bottom: 2.5rem; }
+.name {
+  font-family: var(--serif-label);
+  font-size: 0.82rem;
+  font-weight: 400;
+  letter-spacing: 0.06em;
+  margin: 0;
+  text-transform: lowercase;
+}
+.tagline {
+  font-family: var(--serif-label);
+  font-size: 0.72rem;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+  margin: 0.5rem 0 0;
+}
+
+/* ---- intro / bio --------------------------------------------------------- */
+.intro { margin-bottom: 2.75rem; }
+.intro .lead { font-size: 0.95rem; font-style: italic; line-height: 1.5; margin: 0; }
+.intro p + p { margin: 0.9rem 0 0; font-size: 0.9rem; color: var(--ink-soft); text-indent: 1.1rem; }
+
+/* ---- photo carousel ------------------------------------------------------ */
+.carousel {
+  position: relative;
+  margin: 0 0 3rem;
+  margin-left: calc(50% - 50vw);         /* full-bleed: edge to edge, so photos */
+  margin-right: calc(50% - 50vw);        /* can travel off both sides of the page */
+  margin-bottom: 0.9rem;
+}
+.track {
+  display: flex;
+  gap: var(--gap);
+  padding-left: var(--edge);             /* first photo starts where the text starts */
+  padding-right: var(--edge);            /* symmetric: last photo reaches the window */
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  cursor: grab;
+  scrollbar-width: none;                 /* hide the native bar; we draw our own below */
+}
+.track::-webkit-scrollbar { display: none; }
+.track.dragging { cursor: grabbing; }
+.track:focus-visible { outline: 1px solid var(--muted); outline-offset: 3px; }
+
+/* custom, minimal scrollbar — confined to the text-column width, centered */
+.cbar {
+  position: relative;
+  height: 2px;
+  margin: 0 0 2rem;
+  background: var(--rule-soft);
+  border-radius: 2px;
+  cursor: pointer;
+  touch-action: none;
+}
+.cbar-thumb {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  min-width: 1.5rem;
+  background: var(--muted);
+  border-radius: 2px;
+}
+
+.slide {
+  flex: 0 0 auto;
+  margin: 0;
+  height: var(--slide-h);
+  aspect-ratio: 3 / 4;
+  background: var(--rule-soft);
+}
+.slide img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+/* the fades into the paper — lifted while hovering / focused within.
+   The right fade is anchored to image widths (not the viewport), so it always
+   goes solid by the end of the 2nd photo — photos 3+ stay hidden at any width. */
+.veil {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  pointer-events: none;
+  transition: opacity 1s ease;           /* photos ease BACK into the paper slowly */
+}
+/* crisp across the text-column width; fade begins at each text edge and
+   completes within half an image. Symmetric about the page centre. */
+.veil-right {
+  left: calc(100vw - var(--edge));       /* start fading where the text ends */
+  right: 0;
+  opacity: 1;
+  background: linear-gradient(to right, var(--bg-0) 0, var(--bg) calc(var(--slide-w) / 2));
+}
+.veil-left {
+  left: 0;
+  width: var(--edge);                    /* mirror: crisp again by where the text starts */
+  opacity: 0;
+  background: linear-gradient(to left, var(--bg-0) 0, var(--bg) calc(var(--slide-w) / 2));
+}
+.carousel:not(.at-start) .veil-left { opacity: 1; }   /* fade the left once scrolled */
+/* reveal on hover (releases the moment the pointer leaves) or keyboard focus */
+.carousel:hover .veil,
+.carousel:has(.track:focus-visible) .veil {
+  opacity: 0;
+  transition-duration: 0.4s;             /* ...but reveal quickly */
+}
+
+/* ---- listings: work / education / contact -------------------------------- */
+.listing { margin-top: 1.5rem; }
+.listing > h2 {
+  font-family: var(--serif-label);
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  margin: 0 0 0.25rem;
+}
+.item { margin-bottom: 0.6rem; }
+.item:last-child { margin-bottom: 0; }
+.item .line {
+  display: flex;
+  align-items: baseline;
+  gap: 1rem;
+  margin: 0;
+  font-family: var(--serif-label);
+  font-size: 0.9rem;
+}
+.item .when { margin-left: auto; font-style: italic; color: var(--muted); white-space: nowrap; }
+.item .sub {
+  font-family: var(--serif-label);
+  font-size: 0.86rem;
+  font-style: italic;
+  color: var(--muted);
+  margin: 0.1rem 0 0;
+}
+
+/* ---- contact ------------------------------------------------------------- */
+.contact { list-style: none; margin: 0; padding: 0; font-family: var(--serif-label); }
+.contact li { font-size: 0.9rem; margin-top: 0.22rem; }
+.contact li.primary { margin-bottom: 0.55rem; }
+.contact a {
+  text-decoration: none;
+  border-bottom: 1px solid var(--link-line);
+  color: var(--ink);
+  overflow-wrap: anywhere;
+  transition: border-color 0.15s ease;
+}
+.contact a:hover, .contact a:focus-visible { border-color: var(--ink); }
+
+/* ---- respect reduced-motion preferences ---------------------------------- */
+@media (prefers-reduced-motion: reduce) {
+  .js .page { animation: none; }
+  .veil { transition: none; }
+  .track { scroll-behavior: auto; }
+}
+
+/* ---- print: clean text CV, no photos ------------------------------------- */
+@media print {
+  :root { --bg: #fff; }
+  body { font-size: 11pt; }
+  .page { padding: 0; opacity: 1 !important; transform: none !important; }
+  .col { max-width: 34rem; }
+  .carousel { display: none !important; }
+  .contact a { border: 0 !important; color: #000; }
+}

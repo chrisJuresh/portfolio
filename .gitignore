@@ -1,0 +1,15 @@
+# local tooling / editor
+.claude/
+.vscode/
+.DS_Store
+Thumbs.db
+*.log
+
+# node / vercel local artifacts (not used, kept out just in case)
+node_modules/
+.vercel/
+
+# full-resolution photo originals (~250MB) — the site uses the optimised copies
+# in img/. Kept local to keep the repo lean and Vercel deploys fast. Regenerate
+# img/ from these with the Pillow step in README.md.
+photos/
