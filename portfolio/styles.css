@@ -1,8 +1,8 @@
 /* ============================================================================
    Christian Juresh — portfolio
    A single narrow column, centered at every width, so desktop reads like a
-   phone screen floated in the middle of the page. Minimal editorial type after
-   jenslind.com: Times New Roman for name/labels/lists, Georgia for prose.
+   phone screen floated in the middle of the page. Minimal editorial type:
+   Times New Roman for name/labels/lists, Georgia for prose.
    The whole page fades in on load; the photo strip is a horizontal carousel
    that bleeds off the right edge, faded into the paper until you hover it.
    ========================================================================== */

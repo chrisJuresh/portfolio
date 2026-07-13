@@ -1,7 +1,6 @@
 # Portfolio — Christian Juresh
 
-A minimal, single-column personal site — a monochrome reworking of
-[jenslind.com](https://jenslind.com). On desktop it shows the same narrow
+A minimal, single-column personal site. On desktop it shows the same narrow
 column as on mobile, centered on the page. The whole page fades in gently on
 load; the photographs are a horizontal carousel that fades into the paper until
 you hover it.
