@@ -22,6 +22,7 @@
   --col: 27rem;                          /* the phone-width column       */
   --slide-h: clamp(15rem, 40vh, 24rem);  /* carousel image height        */
   --slide-w: calc(var(--slide-h) * 3 / 4);
+  --fade-w: calc(var(--slide-w) / 2);     /* width of each edge dissolve  */
   --gap: 0.5rem;                          /* gap between photos           */
   --edge: max(1.35rem, calc(50vw - var(--col) / 2));  /* where the text column starts */
 }
@@ -142,29 +143,47 @@ a { color: inherit; }
   -webkit-user-drag: none;
 }
 
-/* the fades into the paper — lifted while hovering / focused within.
-   The right fade is anchored to image widths (not the viewport), so it always
-   goes solid by the end of the 2nd photo — photos 3+ stay hidden at any width. */
+/* The fades into the paper — lifted while hovering / focused within. Their
+   smoothstep-like colour stops remove the visible linear ramp, while a minimum
+   width keeps the dissolve intact even when the viewport gutter is very small. */
 .veil {
   position: absolute;
   top: 0;
   bottom: 0;
   pointer-events: none;
-  transition: opacity 1s ease;           /* photos ease BACK into the paper slowly */
+  transition: opacity 1s cubic-bezier(0.22, 1, 0.36, 1);
 }
-/* crisp across the text-column width; fade begins at each text edge and
-   completes within half an image. Symmetric about the page centre. */
+/* The dissolve completes within half an image and then remains paper-white.
+   Nine stops approximate a smoothstep curve, easing cleanly at both ends. */
 .veil-right {
-  left: calc(100vw - var(--edge));       /* start fading where the text ends */
   right: 0;
+  width: max(var(--edge), var(--fade-w));
   opacity: 1;
-  background: linear-gradient(to right, var(--bg-0) 0, var(--bg) calc(var(--slide-w) / 2));
+  background: linear-gradient(to right,
+    var(--bg-0) 0,
+    rgba(252, 251, 248, 0.043) calc(var(--fade-w) / 8),
+    rgba(252, 251, 248, 0.156) calc(var(--fade-w) / 4),
+    rgba(252, 251, 248, 0.316) calc(var(--fade-w) / 2 - var(--fade-w) / 8),
+    rgba(252, 251, 248, 0.5) calc(var(--fade-w) / 2),
+    rgba(252, 251, 248, 0.684) calc(var(--fade-w) / 2 + var(--fade-w) / 8),
+    rgba(252, 251, 248, 0.844) calc(var(--fade-w) - var(--fade-w) / 4),
+    rgba(252, 251, 248, 0.957) calc(var(--fade-w) - var(--fade-w) / 8),
+    var(--bg) var(--fade-w));
 }
 .veil-left {
   left: 0;
-  width: var(--edge);                    /* mirror: crisp again by where the text starts */
+  width: max(var(--edge), var(--fade-w));
   opacity: 0;
-  background: linear-gradient(to left, var(--bg-0) 0, var(--bg) calc(var(--slide-w) / 2));
+  background: linear-gradient(to left,
+    var(--bg-0) 0,
+    rgba(252, 251, 248, 0.043) calc(var(--fade-w) / 8),
+    rgba(252, 251, 248, 0.156) calc(var(--fade-w) / 4),
+    rgba(252, 251, 248, 0.316) calc(var(--fade-w) / 2 - var(--fade-w) / 8),
+    rgba(252, 251, 248, 0.5) calc(var(--fade-w) / 2),
+    rgba(252, 251, 248, 0.684) calc(var(--fade-w) / 2 + var(--fade-w) / 8),
+    rgba(252, 251, 248, 0.844) calc(var(--fade-w) - var(--fade-w) / 4),
+    rgba(252, 251, 248, 0.957) calc(var(--fade-w) - var(--fade-w) / 8),
+    var(--bg) var(--fade-w));
 }
 .carousel:not(.at-start) .veil-left { opacity: 1; }   /* fade the left once scrolled */
 /* reveal on hover (releases the moment the pointer leaves) or keyboard focus */
