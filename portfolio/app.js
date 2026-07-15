@@ -54,7 +54,7 @@
     return '<section class="listing"><h2>' + esc(title) + "</h2>" + body + "</section>";
   }
 
-  var work = (C.work && C.work.length) ? section("Work experience", C.work.map(workItem).join("")) : "";
+  var work = (C.work && C.work.length) ? section("Work Experience", C.work.map(workItem).join("")) : "";
   var edu = (C.education && C.education.length) ? section("Education", C.education.map(eduItem).join("")) : "";
   var contact = (C.contact && C.contact.length)
     ? section("Contact", '<ul class="contact">' + C.contact.map(function (c, i) {
