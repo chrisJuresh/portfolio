@@ -186,6 +186,11 @@ a { color: inherit; }
     var(--bg) var(--fade-w));
 }
 .carousel:not(.at-start) .veil-left { opacity: 1; }   /* fade the left once scrolled */
+/* Until a centred slide plus two-thirds of each neighbour fits, both fades stay off. */
+.carousel:not(.has-fade-room) .veil {
+  opacity: 0;
+  transition-duration: 0.6s;
+}
 /* reveal on hover (releases the moment the pointer leaves) or keyboard focus */
 .carousel:hover .veil,
 .carousel:has(.track:focus-visible) .veil {

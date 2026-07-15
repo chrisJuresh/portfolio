@@ -28,7 +28,7 @@
   }).join("");
 
   var carousel = (C.photos && C.photos.length)
-    ? '<section class="carousel at-start" aria-roledescription="carousel">' +
+    ? '<section class="carousel at-start has-fade-room" aria-roledescription="carousel">' +
         '<div class="track" tabindex="0" role="region" aria-label="Photographs">' + slides + "</div>" +
         '<div class="veil veil-left" aria-hidden="true"></div>' +
         '<div class="veil veil-right" aria-hidden="true"></div>' +
@@ -77,8 +77,14 @@
     // reflect scroll position so the edge fades appear/disappear correctly
     function updateEdges() {
       var max = track.scrollWidth - track.clientWidth;
+      var firstSlide = track.querySelector(".slide");
+      var gap = parseFloat(window.getComputedStyle(track).columnGap) || 0;
+      // Two-thirds of each neighbour + one centred slide, including both gaps,
+      // is seven-thirds of a slide width in total.
+      var twoThirdsNeighbours = firstSlide ? firstSlide.getBoundingClientRect().width * 7 / 3 + gap * 2 : Infinity;
       cEl.classList.toggle("at-start", track.scrollLeft <= 2);
       cEl.classList.toggle("at-end", track.scrollLeft >= max - 2);
+      cEl.classList.toggle("has-fade-room", track.clientWidth > twoThirdsNeighbours + 0.5);
     }
     track.addEventListener("scroll", updateEdges, { passive: true });
     window.addEventListener("resize", updateEdges);
