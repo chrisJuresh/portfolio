@@ -2,7 +2,7 @@
    Christian Juresh — portfolio
    A single narrow column, centered at every width, so desktop reads like a
    phone screen floated in the middle of the page. Minimal editorial type:
-   Times New Roman for name/labels/lists, Georgia for prose.
+   Computer Modern for all text.
    The whole page fades in on load; the photo strip is a horizontal carousel
    that bleeds off the right edge, faded into the paper until you hover it.
    ========================================================================== */
@@ -16,8 +16,8 @@
   --rule-soft:  #efece4;
   --link-line:  #b3aa9b;
 
-  --serif-label: "Times New Roman", Times, serif;
-  --serif-body:  Georgia, "Iowan Old Style", "Palatino Linotype", "Times New Roman", serif;
+  --serif-label: "Computer Modern", "CMU Serif", "Latin Modern Roman", serif;
+  --serif-body:  "Computer Modern", "CMU Serif", "Latin Modern Roman", serif;
 
   --col: 27rem;                          /* the phone-width column       */
   --slide-h: clamp(15rem, 40vh, 24rem);  /* carousel image height        */
@@ -81,7 +81,7 @@ a { color: inherit; }
 
 /* ---- intro / bio --------------------------------------------------------- */
 .intro { margin-bottom: 2.75rem; }
-.intro .lead { font-size: 0.95rem; font-style: italic; line-height: 1.5; margin: 0; }
+.intro .lead { font-family: Georgia, "Iowan Old Style", "Palatino Linotype", serif; font-size: 0.95rem; font-style: italic; line-height: 1.5; margin: 0; }
 .intro p + p { margin: 0.9rem 0 0; font-size: 0.9rem; color: var(--ink-soft); text-indent: 1.1rem; }
 
 /* ---- photo carousel ------------------------------------------------------ */
@@ -177,7 +177,7 @@ a { color: inherit; }
 /* ---- listings: work / education / contact -------------------------------- */
 .listing { margin-top: 1.5rem; }
 .listing > h2 {
-  font-family: var(--serif-label);
+  font-family: Georgia, "Iowan Old Style", "Palatino Linotype", serif;
   font-size: 0.85rem;
   font-weight: 700;
   letter-spacing: 0.01em;
@@ -190,12 +190,12 @@ a { color: inherit; }
   align-items: baseline;
   gap: 1rem;
   margin: 0;
-  font-family: var(--serif-label);
+  font-family: Georgia, "Iowan Old Style", "Palatino Linotype", serif;
   font-size: 0.9rem;
 }
-.item .when { margin-left: auto; font-style: italic; color: var(--muted); white-space: nowrap; }
+.item .when { margin-left: auto; font-family: var(--serif-label); font-style: normal; color: var(--ink); white-space: nowrap; }
 .item .sub {
-  font-family: var(--serif-label);
+  font-family: Georgia, "Iowan Old Style", "Palatino Linotype", serif;
   font-size: 0.86rem;
   font-style: italic;
   color: var(--muted);
@@ -203,7 +203,7 @@ a { color: inherit; }
 }
 
 /* ---- contact ------------------------------------------------------------- */
-.contact { list-style: none; margin: 0; padding: 0; font-family: var(--serif-label); }
+.contact { list-style: none; margin: 0; padding: 0; font-family: Georgia, "Iowan Old Style", "Palatino Linotype", serif; }
 .contact li { font-size: 0.9rem; margin-top: 0.22rem; }
 .contact li.primary { margin-bottom: 0.55rem; }
 .contact a {
