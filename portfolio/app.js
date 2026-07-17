@@ -56,12 +56,17 @@
 
   var work = (C.work && C.work.length) ? section("Work Experience", C.work.map(workItem).join("")) : "";
   var edu = (C.education && C.education.length) ? section("Education", C.education.map(eduItem).join("")) : "";
+  var toggle = '<footer class="site-footer"><button class="theme-toggle" type="button" role="switch" ' +
+    'aria-checked="false" aria-label="Dark mode">' +
+    '<span class="theme-toggle__label" aria-hidden="true">dark</span>' +
+    '<span class="theme-toggle__track" aria-hidden="true"><span class="theme-toggle__thumb"></span></span>' +
+    '</button></footer>';
   var contact = (C.contact && C.contact.length)
-    ? section("Contact", '<ul class="contact">' + C.contact.map(function (c, i) {
+    ? section("Contact", '<div class="contact-corner"><ul class="contact">' + C.contact.map(function (c, i) {
         return "<li" + (i === 0 ? ' class="primary"' : "") + '><a href="' + esc(c.href) + '">' +
                esc(c.text) + "</a></li>";
-      }).join("") + "</ul>")
-    : "";
+      }).join("") + "</ul>" + toggle + "</div>")
+    : toggle;
 
   page.innerHTML =
     '<main class="col">' +
@@ -69,6 +74,50 @@
         (C.subtitle ? '<p class="tagline">' + esc(C.subtitle) + "</p>" : "") + "</header>" +
       intro + carousel + cbar + work + edu + contact +
     "</main>";
+
+  // ---- warm light / dark theme --------------------------------------------
+  var root = document.documentElement;
+  var themeToggle = page.querySelector(".theme-toggle");
+  var themeMeta = document.getElementById("theme-color");
+
+  function setTheme(theme, remember) {
+    var dark = theme === "dark";
+    root.setAttribute("data-theme", dark ? "dark" : "light");
+    if (themeToggle) {
+      themeToggle.setAttribute("aria-checked", dark ? "true" : "false");
+      themeToggle.setAttribute("aria-label", dark ? "Light mode" : "Dark mode");
+      themeToggle.querySelector(".theme-toggle__label").textContent = dark ? "light" : "dark";
+    }
+    if (themeMeta) themeMeta.setAttribute("content", dark ? "#161616" : "#fcfbf8");
+    if (remember) {
+      try { localStorage.setItem("portfolio-theme", dark ? "dark" : "light"); } catch (_) {}
+    }
+  }
+
+  setTheme(root.getAttribute("data-theme") === "dark" ? "dark" : "light", false);
+  if (themeToggle) {
+    themeToggle.addEventListener("click", function () {
+      setTheme(root.getAttribute("data-theme") === "dark" ? "light" : "dark", true);
+    });
+  }
+
+  // Follow changes to the operating-system theme until the visitor makes an
+  // explicit choice with the toggle. Light remains the fallback where the
+  // media query or local storage is unavailable.
+  var systemTheme = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)");
+  function hasSavedTheme() {
+    try {
+      var saved = localStorage.getItem("portfolio-theme");
+      return saved === "dark" || saved === "light";
+    } catch (_) { return false; }
+  }
+  function syncSystemTheme(e) {
+    if (!hasSavedTheme()) setTheme(e.matches ? "dark" : "light", false);
+  }
+  if (systemTheme) {
+    if (systemTheme.addEventListener) systemTheme.addEventListener("change", syncSystemTheme);
+    else if (systemTheme.addListener) systemTheme.addListener(syncSystemTheme);
+  }
 
   // ---- carousel behaviour --------------------------------------------------
   var cEl = page.querySelector(".carousel");

@@ -7,7 +7,7 @@
   <title>Christian Juresh</title>
   <meta name="description" content="Christian Juresh — software engineer in London.">
   <meta name="author" content="Christian Juresh">
-  <meta name="theme-color" content="#fcfbf8">
+  <meta name="theme-color" content="#fcfbf8" id="theme-color">
   <meta property="og:title" content="Christian Juresh">
   <meta property="og:description" content="Software engineer in London.">
   <meta property="og:type" content="profile">
@@ -18,13 +18,23 @@
   <meta name="twitter:image" content="https://chrisj.uk/portfolio/img/1100328.jpg">
   <link rel="canonical" href="https://chrisj.uk/portfolio">
   <link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2032%2032'%3E%3Ctext%20x='16'%20y='23'%20font-family='Times%20New%20Roman,serif'%20font-size='19'%20text-anchor='middle'%20fill='%231a1917'%3Ecj%3C/text%3E%3C/svg%3E">
-  <link rel="stylesheet" href="styles.css">
-  <script>document.documentElement.className += " js";</script>
+  <script>
+    (function () {
+      var theme = "light";
+      var savedTheme = null;
+      try { savedTheme = localStorage.getItem("portfolio-theme"); } catch (_) {}
+      if (savedTheme === "dark" || savedTheme === "light") theme = savedTheme;
+      else if (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) theme = "dark";
+      document.documentElement.setAttribute("data-theme", theme);
+      document.documentElement.className += " js";
+    })();
+  </script>
+  <link rel="stylesheet" href="styles.css?v=7">
 </head>
 <body>
   <div class="page" id="page"></div>
   <noscript><p style="text-align:center;font-family:'Computer Modern','CMU Serif','Latin Modern Roman',serif;padding:2rem">This site needs JavaScript enabled.</p></noscript>
   <script src="content.js?v=2"></script>
-  <script src="app.js?v=4"></script>
+  <script src="app.js?v=9"></script>
 </body>
 </html>
