@@ -1,0 +1,67 @@
+/* ============================================================================
+   Latin Modern Roman — the OpenType successor to Knuth's Computer Modern,
+   maintained by GUST (the Polish TeX Users Group).
+
+   Self-hosted because the old font stack named "Computer Modern" / "CMU Serif"
+   / "Latin Modern Roman" without shipping any of them, so every visitor fell
+   through to generic `serif` — Times New Roman on Windows and macOS, Noto Serif
+   on Android, usually DejaVu on Linux. Nobody ever saw the intended face.
+
+   Source:  CTAN, package `lm` (fonts/opentype/public/lm), version 2.004
+   Licence: GUST Font License — see GUST-FONT-LICENSE.txt in this folder.
+            The copyright and licence notice is also embedded in each file's
+            name table, so the notice travels with the font.
+   Build:   subset to Latin-1 + Latin Extended-A + General Punctuation + f-ligs
+            (358 glyphs), kerning and ligatures kept, converted to woff2.
+            ~21 KB per face.
+
+   Optical sizes: LM ships a separate design per size. They share x-height and
+   cap-height and differ in stroke weight — the smaller the optical size, the
+   sturdier the stem (8pt: 225/1000em, 10pt: 222, 12pt: 215). So on screen the
+   8pt and 9pt cuts hold up better at small sizes; they are not "smaller".
+   ========================================================================== */
+
+@font-face {
+  font-family: "Latin Modern Roman";
+  src: url("/fonts/lmroman10-regular.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Latin Modern Roman";
+  src: url("/fonts/lmroman10-italic.woff2") format("woff2");
+  font-weight: 400;
+  font-style: italic;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Latin Modern Roman";
+  src: url("/fonts/lmroman10-bold.woff2") format("woff2");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* ---- optical-size cuts, for small text ---------------------------------- */
+@font-face {
+  font-family: "LM Roman 9";
+  src: url("/fonts/lmroman9-regular.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "LM Roman 8";
+  src: url("/fonts/lmroman8-regular.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "LM Roman 12";
+  src: url("/fonts/lmroman12-regular.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
