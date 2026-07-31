@@ -14,10 +14,16 @@
       background: #fff;
       font-family: "Computer Modern", "CMU Serif", "Latin Modern Roman", serif;
     }
-    a { color: #000; text-decoration: none; letter-spacing: 0.03em; }
+    .links { display: flex; gap: 1.4rem; }
+    a { color: #000; text-decoration: none; letter-spacing: 0.03em; border-bottom: 1px solid transparent; }
+    a:hover, a:focus-visible { border-color: #000; }
+    a:focus-visible { outline: 1px solid #000; outline-offset: 4px; }
   </style>
 </head>
 <body>
-  <a href="/portfolio">portfolio</a>
+  <nav class="links" aria-label="Site sections">
+    <a href="/portfolio">portfolio</a>
+    <a href="/projects">projects</a>
+  </nav>
 </body>
 </html>

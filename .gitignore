@@ -1,5 +1,6 @@
 # local tooling / editor
 .claude/
+.openai/
 .vscode/
 .DS_Store
 Thumbs.db
@@ -8,6 +9,7 @@ Thumbs.db
 # node / vercel local artifacts (not used, kept out just in case)
 node_modules/
 .vercel/
+dist/
 
 # full-resolution photo originals (~250MB) — the site uses the optimised copies
 # in img/. Kept local to keep the repo lean and Vercel deploys fast. Regenerate

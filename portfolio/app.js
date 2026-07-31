@@ -71,7 +71,10 @@
   page.innerHTML =
     '<main class="col">' +
       '<header class="masthead"><h1 class="name">' + esc(C.name) + "</h1>" +
-        (C.subtitle ? '<p class="tagline">' + esc(C.subtitle) + "</p>" : "") + "</header>" +
+        '<div class="masthead-meta">' +
+          (C.subtitle ? '<p class="tagline">' + esc(C.subtitle) + "</p>" : "<span></span>") +
+          '<a class="projects-link" href="/projects">Projects</a>' +
+        "</div></header>" +
       intro + carousel + cbar + work + edu + contact +
     "</main>";
 

@@ -13,6 +13,8 @@ This repo is one Vercel project serving two things on `chrisj.uk`:
   "portfolio", centered, linking to the site). Add more links here over time.
 - `portfolio/` — the portfolio site itself, served at `chrisj.uk/portfolio`.
   It sets `<base href="/portfolio/">` so its assets resolve under that path.
+- `projects/` — the recruiter-facing project wall at `chrisj.uk/projects`: one
+  tinted card per project, each with its stack, a line drawing and its links.
 
 ## Editing the content
 
@@ -34,12 +36,18 @@ with a short note explaining it. No HTML, no build step. Save and refresh.
 
 ## Run locally
 
+Double-click **`run.bat`** (Windows). It serves the repo root on the first free
+port from 8000 and opens the page in your browser; close the window or press
+Ctrl+C to stop. Any other platform, or by hand:
+
 ```
 python -m http.server 8000
 ```
 
-Then open <http://localhost:8000>. (Opening `index.html` directly also works —
-`content.js`/`app.js` load as normal `<script>` files, so no server is needed.)
+Then open <http://localhost:8000>. Serve from the **repo root**, not from inside
+`portfolio/` or `projects/` — both pages set an absolute `<base href>`, so their
+assets only resolve when `/portfolio` and `/projects` sit under the server root.
+For the same reason, opening the HTML files straight off disk won't work.
 
 ## The carousel
 
@@ -63,3 +71,20 @@ Then open <http://localhost:8000>. (Opening `index.html` directly also works —
   your own words. The CV phone number is intentionally omitted from this public page.
 
 _Please proofread the content before publishing._
+
+## Projects page
+
+A grid of tinted cards, one per project. The page is fully static — `projects/app.js`
+only manages the light/dark theme shared with the portfolio page.
+
+To add a project, copy an existing `<li class="card">` in `projects/index.html`
+and give it a new tint class. Tints live at the top of `projects/styles.css` as
+one light and one dark value per project (`.card--eater { --tint: … }`); text
+colour comes from `--card-ink`, so a card only ever needs its background.
+
+The first three cards use `card--feature` (tall, wide artwork); the rest use
+`card--compact` (small artwork beside the text), and `card--wide` spans two
+columns. The line drawings are `<g>` symbols in the sprite `<svg>` at the top of
+the document, drawn in `currentColor` and pulled in with `<use href="#art-…">`.
+Replacing one with a screenshot is just swapping that `.card__art` for an `<img>`
+with real alt text.
