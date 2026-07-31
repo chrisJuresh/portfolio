@@ -78,6 +78,58 @@ values makes the cards *more* cramped, not less. Compensating needs roughly
 **+11.6%** on every size to match Georgia's apparent size, plus extra leading
 for CM's tall ascenders and deep descenders.
 
+## Why it renders softer than the Times fallback
+
+Latin Modern looks blurrier than Times New Roman at 13–15px on a standard-density
+display. That is intrinsic to the typeface, not a build mistake. Measured by
+rasterising the same sentence at 1x and classifying every inked pixel by coverage
+(>75% = a pixel that defines the letterform, <=50% = anti-aliasing smear):
+
+| Specimen | solid px | smear px | solid/smear |
+|---|---|---|---|
+| Times New Roman 13.6px | 40.9% | 38.4% | **1.07** |
+| Latin Modern 10 @ 13.6px | 28.5% | 50.7% | 0.56 |
+| Latin Modern 9 @ 15.2px | 29.5% | 48.0% | 0.61 |
+
+Latin Modern also renders about 17% lighter overall (mean ink coverage 0.51 vs
+Times' 0.61), so it reads fainter as well as softer.
+
+The cause is stroke contrast. Computer Modern is a high-contrast face cut for
+high-resolution print: its hairlines and serifs are far thinner than Times'. At
+13.6px those hairlines fall well below one physical pixel, so they rasterise as
+partial-coverage grey instead of a solid pixel. Times is a low-contrast face with
+aggressive TrueType hinting that snaps stems to whole pixels, so more of it lands
+solid.
+
+**Display density fixes most of it.** The same measurement at 2x:
+
+| Specimen | 1x | 2x | change |
+|---|---|---|---|
+| Times New Roman 13.6px | 1.07 | 1.60 | +50% |
+| Latin Modern 10 @ 13.6px | 0.56 | 1.25 | **+123%** |
+| Latin Modern 9 @ 15.2px | 0.61 | 1.48 | +141% |
+
+Computer Modern gains roughly 2.5x more from a high-DPI screen than Times does,
+because hairlines are exactly what was failing at 1x. On any Retina display, a
+modern phone, or a 4K monitor the gap nearly closes. On a 1080p Windows monitor
+it does not.
+
+### Things that do *not* help
+
+`--no-hinting` in the build below strips the CFF `BlueValues` and `StdVW` from the
+Private dict, which are what a rasteriser would use to snap x-height and stems to
+the pixel grid. Rebuilding with hinting retained costs +5.4 KB per face and
+measures **no better** — 0.50 against 0.56, marginally worse and within noise.
+Chromium's DirectWrite path for downloadable CFF fonts does almost no grid
+fitting, so the hints go unused. Verified visually at 3x nearest-neighbour
+magnification and numerically; `--no-hinting` stays.
+
+### Things that do help
+
+- Larger sizes, modestly: 0.56 to 0.61 going from 13.6px to 15.2px on the 9pt cut.
+- The 8pt/9pt optical cuts, whose stems are thicker (225 vs 215 units).
+- Not using CM for the smallest text at all — what the `hybrid` variant does.
+
 ## Regenerating
 
 Requires `fonttools` and `brotli` (`pip install fonttools brotli`).
