@@ -94,12 +94,27 @@ rasterising the same sentence at 1x and classifying every inked pixel by coverag
 Latin Modern also renders about 17% lighter overall (mean ink coverage 0.51 vs
 Times' 0.61), so it reads fainter as well as softer.
 
-The cause is stroke contrast. Computer Modern is a high-contrast face cut for
-high-resolution print: its hairlines and serifs are far thinner than Times'. At
-13.6px those hairlines fall well below one physical pixel, so they rasterise as
-partial-coverage grey instead of a solid pixel. Times is a low-contrast face with
-aggressive TrueType hinting that snaps stems to whole pixels, so more of it lands
-solid.
+### The cause: ink density, not hairlines and not hinting
+
+Two intuitive explanations are both **wrong**, and were measured to be wrong.
+
+*Not stroke contrast.* Latin Modern's thinnest horizontal stroke — the arms of E,
+the apex of W — is 41.2/1000 em. Times New Roman's is **40.0**, marginally
+thinner, at a higher stem-to-hairline ratio (2.4x vs 2.2x). CM's hairlines are not
+the thin ones.
+
+*Not hinting.* Stripping Times' TrueType instructions entirely leaves it just as
+sharp (ratio 1.11 hinted, 1.23 stripped), so Chromium is not executing TrueType
+hinting in this path at all. Hinting cannot explain the difference in either
+direction.
+
+What is left is the proportions of the design. At the same `font-size`, against
+Times, Latin Modern has a 4% shorter x-height (0.431 vs 0.447 em), 7% thinner
+stems (89 vs 95/1000 em) and 4% wider advances. Compounded, it lays down about
+**27% less ink over a slightly larger area** — mean coverage 0.49 against 0.62.
+Fewer pixels cross the threshold into solid, so proportionally more of the glyph
+is partial-coverage grey. That is what reads as blur, and no build setting or CSS
+property changes it, because it is the typeface.
 
 **Display density fixes most of it.** The same measurement at 2x:
 
@@ -109,25 +124,29 @@ solid.
 | Latin Modern 10 @ 13.6px | 0.56 | 1.25 | **+123%** |
 | Latin Modern 9 @ 15.2px | 0.61 | 1.48 | +141% |
 
-Computer Modern gains roughly 2.5x more from a high-DPI screen than Times does,
-because hairlines are exactly what was failing at 1x. On any Retina display, a
-modern phone, or a 4K monitor the gap nearly closes. On a 1080p Windows monitor
-it does not.
+More device pixels per em means the sub-pixel-thin parts of the glyph finally
+cover whole pixels. On any Retina display, modern phone or 4K monitor the gap
+nearly closes. On a 1080p monitor it does not.
 
-### Things that do *not* help
+### Five things that do *not* help — all measured, none retried
 
-`--no-hinting` in the build below strips the CFF `BlueValues` and `StdVW` from the
-Private dict, which are what a rasteriser would use to snap x-height and stems to
-the pixel grid. Rebuilding with hinting retained costs +5.4 KB per face and
-measures **no better** — 0.50 against 0.56, marginally worse and within noise.
-Chromium's DirectWrite path for downloadable CFF fonts does almost no grid
-fitting, so the hints go unused. Verified visually at 3x nearest-neighbour
-magnification and numerically; `--no-hinting` stays.
+| Attempt | Result |
+|---|---|
+| Keep the CFF hinting `--no-hinting` strips (`BlueValues`, `StdVW`) | No better: 0.50 vs 0.56. +5.4 KB/face for nothing. |
+| Convert to TrueType outlines and autohint with `ttfautohint` | **Worse: 0.23 vs 0.52.** Autohinting rounded the thin strokes down. |
+| Install the font locally instead of serving it | No difference. Times measures 1.13 both as a system font and as the identical file served as a webfont. |
+| `-webkit-font-smoothing: antialiased` / `subpixel-antialiased` / unset | No difference at all — it is a macOS-only property. Subpixel AA is already active (96% of pixels carry a colour cast). |
+| Assume it is stroke contrast and pick a lower-contrast CM cut | There is no such thing; the hairlines already match Times'. |
 
 ### Things that do help
 
-- Larger sizes, modestly: 0.56 to 0.61 going from 13.6px to 15.2px on the 9pt cut.
+- **A high-DPI display**, by far the largest factor (+123%).
+- Larger sizes, modestly: 0.56 to 0.61 from 13.6px to 15.2px on the 9pt cut.
 - The 8pt/9pt optical cuts, whose stems are thicker (225 vs 215 units).
+- **Darker ink.** Since CM deposits ~27% less ink, drawing it at reduced opacity
+  compounds the problem. `projects/styles.css` sets card descriptions in
+  `--card-soft`, which is 78% opacity; at full `--card-ink` they would hold up
+  noticeably better. Untested as of writing, but it is the cheapest lever left.
 - Not using CM for the smallest text at all — what the `hybrid` variant does.
 
 ## Regenerating
