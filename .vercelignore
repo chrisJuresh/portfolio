@@ -1,0 +1,6 @@
+# Dev-only typography lab: variant stylesheet, Playwright tooling and ~10 MB of
+# reference renders. Useful in git, pointless in a deployment.
+design/
+
+# The fonts/ folder is NOT excluded — if a Computer Modern variant is adopted,
+# /fonts/*.woff2 has to be served.

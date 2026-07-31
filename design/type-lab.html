@@ -1,0 +1,230 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Type lab</title>
+  <style>
+    :root { color-scheme: light dark; --ui: #1a1917; --ui-bg: #fcfbf8; --ui-line: #d6d0c4; --ui-mut: #6f6a5d; }
+    @media (prefers-color-scheme: dark) {
+      :root { --ui: #eaeaea; --ui-bg: #161616; --ui-line: #3a3a3a; --ui-mut: #9a9a9a; }
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; background: var(--ui-bg); color: var(--ui);
+      font: 13px/1.5 "Segoe UI", system-ui, sans-serif;
+    }
+    .bar {
+      position: sticky; top: 0; z-index: 5;
+      display: flex; flex-wrap: wrap; align-items: center; gap: 0.35rem;
+      padding: 0.6rem 0.9rem; background: var(--ui-bg);
+      border-bottom: 1px solid var(--ui-line);
+    }
+    .bar strong { font-size: 11px; letter-spacing: 0.09em; text-transform: uppercase; color: var(--ui-mut); margin-right: 0.15rem; }
+    button {
+      padding: 0.26rem 0.6rem; border: 1px solid var(--ui-line); border-radius: 5px;
+      background: transparent; color: var(--ui); font: inherit; cursor: pointer;
+    }
+    button[aria-pressed="true"] { background: var(--ui); color: var(--ui-bg); border-color: var(--ui); }
+    .grow { flex: 1 1 auto; }
+    .row { flex: 0 0 100%; display: flex; flex-wrap: wrap; align-items: center; gap: 0.35rem; }
+    .note { color: var(--ui-mut); }
+    kbd { padding: 0 0.25rem; border: 1px solid var(--ui-line); border-radius: 3px; font-family: ui-monospace, monospace; }
+    #readout { font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size: 11px; color: var(--ui-mut); }
+    .stage { padding: 0.9rem; overflow-x: auto; }
+    iframe { display: block; border: 1px solid var(--ui-line); background: #fff; }
+    .desc { padding: 0 0.9rem; color: var(--ui-mut); max-width: 62rem; }
+  </style>
+</head>
+<body>
+  <div class="bar">
+    <strong>page</strong><span id="pages"></span>
+    <span class="grow"></span>
+    <strong>width</strong><span id="widths"></span>
+    <button id="theme" type="button">theme</button>
+
+    <div class="row"><strong>variant</strong><span id="variants"></span>
+      <span class="note">flip with <kbd>&larr;</kbd><kbd>&rarr;</kbd></span></div>
+    <div class="row"><span id="readout"></span></div>
+  </div>
+
+  <p class="desc" id="desc"></p>
+  <div class="stage"><iframe id="frame" title="preview"></iframe></div>
+
+  <script>
+  /* ---------------------------------------------------------------------------
+     Previews the REAL pages in an iframe and injects design/variants.css into
+     them. Nothing is cloned or reimplemented, so the lab cannot drift from the
+     site, and it works for the portfolio page even though that page builds its
+     whole DOM from content.js at runtime.
+     ------------------------------------------------------------------------ */
+  var VARIANTS = [
+    ["asis",        "what visitors get today — the CM stack falls through to generic serif"],
+    ["cm",          "real Computer Modern, no other change (ship fonts.css and stop)"],
+    ["cmfix",       "real CM, +11.6% and the 8pt/9pt optical cuts for small text"],
+    ["cm-all",      "real CM everywhere, including the slots that hard-code Georgia"],
+    ["hybrid",      "CM for titles, names and labels; Georgia for prose"],
+    ["georgia-all", "Georgia everywhere, Computer Modern abandoned"],
+    ["sitka",       "Sitka Text / Charter — screen-cut serif, but Windows-only"]
+  ];
+  var PAGES  = [["/projects/", "projects"], ["/portfolio/", "portfolio"], ["/", "portal"]];
+  var WIDTHS = [[1280, "desktop"], [820, "tablet"], [390, "mobile"]];
+
+  /* Which selectors are worth reporting on differs per page. */
+  var PROBES = {
+    "/projects/":  [".card__title", ".card__desc", ".card__tags li"],
+    "/portfolio/": [".name", ".intro p + p", ".item .line", ".item .when"],
+    "/":           ["a", "body"]
+  };
+
+  var q = new URLSearchParams(location.search);
+  var state = {
+    page:    q.get("page")  || "/projects/",
+    variant: q.get("v")     || "asis",
+    theme:   q.get("theme") === "dark" ? "dark" : "light",
+    width:   parseInt(q.get("w"), 10) || 1280
+  };
+
+  var frame = document.getElementById("frame");
+
+  function chips(host, items, isOn, onPick) {
+    host.textContent = "";
+    items.forEach(function (it) {
+      var b = document.createElement("button");
+      b.type = "button";
+      b.textContent = it.label;
+      b.setAttribute("aria-pressed", String(isOn(it)));
+      b.addEventListener("click", function () { onPick(it); });
+      host.appendChild(b);
+    });
+  }
+
+  function paintBar() {
+    chips(document.getElementById("pages"),
+      PAGES.map(function (p) { return { label: p[1], value: p[0] }; }),
+      function (i) { return i.value === state.page; },
+      function (i) { state.page = i.value; load(); });
+
+    chips(document.getElementById("variants"),
+      VARIANTS.map(function (v) { return { label: v[0], value: v[0] }; }),
+      function (i) { return i.value === state.variant; },
+      function (i) { state.variant = i.value; apply(); });
+
+    chips(document.getElementById("widths"),
+      WIDTHS.map(function (w) { return { label: w[1], value: w[0] }; }),
+      function (i) { return i.value === state.width; },
+      function (i) { state.width = i.value; sizeFrame(); syncUrl(); });
+
+    var v = VARIANTS.find(function (x) { return x[0] === state.variant; });
+    document.getElementById("desc").textContent = v ? state.variant + " — " + v[1] : "";
+  }
+
+  function sizeFrame() {
+    frame.style.width = state.width + "px";
+    /* Tall enough to show the whole page without an inner scrollbar stealing
+       width, which would change line breaks and defeat the comparison. */
+    frame.style.height = Math.max(900, Math.round(state.width * 1.5)) + "px";
+  }
+
+  function syncUrl() {
+    var p = new URLSearchParams({ page: state.page, v: state.variant, theme: state.theme, w: state.width });
+    history.replaceState(null, "", "?" + p.toString());
+  }
+
+  function load() {
+    /* Same origin, so the parent can prime the theme the page reads on boot. */
+    try { localStorage.setItem("portfolio-theme", state.theme); } catch (_) {}
+    frame.src = state.page + "?labcachebust=" + state.variant + state.theme;
+    sizeFrame();
+    paintBar();
+    syncUrl();
+  }
+
+  /* Resolves once the sheet is actually applied — measuring before that reports
+     the pre-injection font and makes the readout lie. */
+  function addLink(doc, href) {
+    var existing = [].filter.call(doc.querySelectorAll("link"), function (l) {
+      return l.getAttribute("href") === href;
+    })[0];
+    if (existing) return Promise.resolve();
+    return new Promise(function (done) {
+      var l = doc.createElement("link");
+      l.rel = "stylesheet";
+      l.href = href;
+      l.addEventListener("load", done);
+      l.addEventListener("error", done);
+      doc.head.appendChild(l);
+    });
+  }
+
+  function apply() {
+    var doc = frame.contentDocument;
+    if (!doc || !doc.documentElement) return;
+    Promise.all([addLink(doc, "/fonts/fonts.css"), addLink(doc, "/design/variants.css")])
+      .then(function () {
+        doc.documentElement.setAttribute("data-variant", state.variant);
+        doc.documentElement.setAttribute("data-theme", state.theme);
+        return doc.fonts ? doc.fonts.ready : null;
+      })
+      .then(function () { readout(); });
+    doc.documentElement.setAttribute("data-variant", state.variant);
+    doc.documentElement.setAttribute("data-theme", state.theme);
+    paintBar();
+    syncUrl();
+  }
+
+  /* Report the face the browser ACTUALLY used. A declared family that is
+     neither installed nor @font-face'd resolves silently to generic serif —
+     the bug this whole lab exists to expose — so measure, never trust the CSS. */
+  function readout() {
+    var doc = frame.contentDocument;
+    var win = frame.contentWindow;
+    if (!doc || !win) return;
+    var el = document.getElementById("readout");
+
+    var probe = doc.createElement("canvas").getContext("2d");
+    var w = function (fam) { probe.font = "40px " + fam; return probe.measureText("Handgloves 123").width; };
+    var known = {
+      "generic serif":       w("serif"),
+      Georgia:               w("Georgia"),
+      "Latin Modern Roman":  w('"Latin Modern Roman"'),
+      "LM Roman 9":          w('"LM Roman 9"'),
+      "LM Roman 8":          w('"LM Roman 8"'),
+      "Sitka Text":          w('"Sitka Text"')
+    };
+
+    var parts = (PROBES[state.page] || []).map(function (sel) {
+      var node = doc.querySelector(sel);
+      if (!node) return sel + ": —";
+      var cs = win.getComputedStyle(node);
+      var width = w(cs.fontFamily), hit = "?";
+      for (var k in known) if (Math.abs(width - known[k]) < 0.01) { hit = k; break; }
+      var size = Math.round(parseFloat(cs.fontSize) * 10) / 10;
+      var lh = Math.round(parseFloat(cs.lineHeight) / parseFloat(cs.fontSize) * 100) / 100;
+      return sel + " → " + hit + " " + size + "px/" + lh;
+    });
+    el.textContent = parts.join("   |   ");
+
+    if (doc.fonts && doc.fonts.status !== "loaded") doc.fonts.ready.then(readout);
+  }
+
+  frame.addEventListener("load", apply);
+
+  document.getElementById("theme").addEventListener("click", function () {
+    state.theme = state.theme === "dark" ? "light" : "dark";
+    load();                                  /* reload: the page reads it on boot */
+  });
+
+  addEventListener("keydown", function (e) {
+    if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
+    if (document.activeElement && document.activeElement.tagName === "BUTTON") document.activeElement.blur();
+    var i = VARIANTS.findIndex(function (v) { return v[0] === state.variant; });
+    i = (i + (e.key === "ArrowRight" ? 1 : -1) + VARIANTS.length) % VARIANTS.length;
+    state.variant = VARIANTS[i][0];
+    apply();
+  });
+
+  load();
+  </script>
+</body>
+</html>

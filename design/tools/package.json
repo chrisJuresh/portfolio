@@ -1,0 +1,14 @@
+{
+  "name": "portfolio-design-tools",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Dev-only screenshot tooling for the type variants. Not part of the deployed site — the site itself stays dependency-free and build-step-free.",
+  "type": "module",
+  "scripts": {
+    "render": "node render.mjs",
+    "render:all": "node render.mjs --viewports desktop,mobile"
+  },
+  "devDependencies": {
+    "playwright": "^1.49.0"
+  }
+}

@@ -15,6 +15,9 @@ This repo is one Vercel project serving two things on `chrisj.uk`:
   It sets `<base href="/portfolio/">` so its assets resolve under that path.
 - `projects/` — the recruiter-facing project wall at `chrisj.uk/projects`: one
   tinted card per project, each with its stack, a line drawing and its links.
+- `fonts/` — self-hosted Latin Modern Roman (Computer Modern). Not linked by any
+  page yet; see **Fonts** below.
+- `design/` — dev-only typography lab. Excluded from deploys by `.vercelignore`.
 
 ## Editing the content
 
@@ -71,6 +74,34 @@ For the same reason, opening the HTML files straight off disk won't work.
   your own words. The CV phone number is intentionally omitted from this public page.
 
 _Please proofread the content before publishing._
+
+## Fonts
+
+Both stylesheets have always asked for `"Computer Modern", "CMU Serif", "Latin
+Modern Roman", serif` without shipping any of them, so every visitor fell through
+to generic `serif` — Times New Roman on Windows and macOS, Noto Serif on Android,
+usually DejaVu on Linux. The intended typeface had never rendered for anyone.
+
+`fonts/` now holds Latin Modern Roman (the maintained OpenType successor to
+Computer Modern) as subset woff2, about 21 KB per face, with the GUST licence and
+full provenance in `fonts/README.md`.
+
+**Nothing links it yet, so the live site is unchanged.** Adding
+`<link rel="stylesheet" href="/fonts/fonts.css">` is on its own enough to activate
+it, because the existing stacks already name `"Latin Modern Roman"` third — but
+every size on both pages was tuned against the Times fallback, and Latin Modern's
+x-height is *smaller* (0.431em vs 0.447em), so sizes need compensating at the same
+time. See `design/README.md`.
+
+## Design lab
+
+`design/type-lab.html` previews the real pages with any typography variant
+applied, and `design/tools/render.mjs` renders the whole matrix to
+`design/shots/` with Playwright. Variants are defined once in
+`design/variants.css`. Full instructions in `design/README.md`.
+
+The lab is the only part of this repo with a dependency (`playwright`, dev-only,
+in `design/tools/`). The site itself remains dependency-free with no build step.
 
 ## Projects page
 

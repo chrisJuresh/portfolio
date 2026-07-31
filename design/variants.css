@@ -1,0 +1,210 @@
+/* ============================================================================
+   Typography variants — the single source of truth.
+
+   Both consumers load THIS file, so a variant is defined exactly once:
+     • design/type-lab.html      — interactive flipping in the browser
+     • design/tools/render.mjs   — Playwright, writes design/shots/*.png
+
+   How it works
+   ------------
+   Activate a variant by setting an attribute on the root element of the page
+   being previewed:  document.documentElement.dataset.variant = "cmfix"
+
+   Both real stylesheets funnel their intended typeface through CSS variables:
+     projects/styles.css   --serif
+     portfolio/styles.css  --serif-label, --serif-body
+   so most variants are three variable reassignments and nothing more. Only the
+   size-compensating variants need per-element rules, and only where the page
+   hard-codes Georgia (which no variable covers).
+
+   Requires /fonts/fonts.css to be loaded for any variant using Latin Modern.
+   ========================================================================== */
+
+:root {
+  --lab-fallback: serif;                  /* what visitors actually get today */
+  --lab-lm:   "Latin Modern Roman", serif;
+  --lab-lm9:  "LM Roman 9", "Latin Modern Roman", serif;   /* sturdier stems  */
+  --lab-lm8:  "LM Roman 8", "Latin Modern Roman", serif;   /* sturdier still  */
+  --lab-geo:  Georgia, "Iowan Old Style", "Palatino Linotype", serif;
+  --lab-sitka: "Sitka Text", Charter, "Iowan Old Style", Georgia, serif;
+}
+
+/* ============================================================================
+   1 · asis — today's live reality.
+   The "Computer Modern" stack resolves to generic serif (Times New Roman on
+   Windows and macOS, Noto Serif on Android, usually DejaVu on Linux). The
+   places that name Georgia explicitly are left alone, because those already
+   work. This is the baseline every other variant should be compared against.
+   ========================================================================== */
+:root[data-variant="asis"] {
+  --serif:       var(--lab-fallback);
+  --serif-label: var(--lab-fallback);
+  --serif-body:  var(--lab-fallback);
+}
+
+/* ============================================================================
+   2 · cm — real Computer Modern, nothing else changed.
+   What you get by shipping fonts.css and editing no other line: the existing
+   stacks already name "Latin Modern Roman" third, so it simply activates.
+   Measured x-height is 0.431em against the Times fallback's 0.447em, so expect
+   this to read tighter than the live site, not looser.
+   ========================================================================== */
+:root[data-variant="cm"] {
+  --serif:       var(--lab-lm);
+  --serif-label: var(--lab-lm);
+  --serif-body:  var(--lab-lm);
+}
+
+/* ============================================================================
+   3 · cmfix — real Computer Modern, sized for its own metrics.
+   +11.6% to match Georgia's apparent size, extra leading for LM's tall
+   ascenders and deep descenders, and the small text moved onto the 8pt/9pt
+   optical cuts, whose stems are sturdier on screen. Layout dimensions are left
+   alone — only type sizes move — so the grid and column widths stay put.
+   ========================================================================== */
+:root[data-variant="cmfix"] {
+  --serif:       var(--lab-lm);
+  --serif-label: var(--lab-lm);
+  --serif-body:  var(--lab-lm);
+}
+/* projects */
+:root[data-variant="cmfix"] .card__title            { font-size: 1.4rem; line-height: 1.24; }
+:root[data-variant="cmfix"] .card--compact .card__title { font-size: 1.16rem; }
+:root[data-variant="cmfix"] .card__tags             { margin-top: 0.62rem; }
+:root[data-variant="cmfix"] .card__tags li          { font-family: var(--lab-lm8); font-size: 0.75rem; letter-spacing: 0.015em; }
+:root[data-variant="cmfix"] .card__desc             { font-family: var(--lab-lm9); font-size: 0.95rem; line-height: 1.64; margin-top: 0.85rem; }
+:root[data-variant="cmfix"] .card--compact .card__desc { margin-top: 0.6rem; }
+:root[data-variant="cmfix"] .card__links            { font-family: var(--lab-lm9); font-size: 0.87rem; margin-top: 0.95rem; }
+:root[data-variant="cmfix"] .card--compact .card__links { margin-top: 0.7rem; }
+:root[data-variant="cmfix"] .intro                  { font-size: 1.02rem; line-height: 1.62; }
+/* portfolio */
+:root[data-variant="cmfix"] body                    { font-size: 16.7px; line-height: 1.62; }
+:root[data-variant="cmfix"] .name                   { font-size: 0.915rem; }
+:root[data-variant="cmfix"] .tagline,
+:root[data-variant="cmfix"] .projects-link          { font-family: var(--lab-lm8); font-size: 0.8rem; }
+:root[data-variant="cmfix"] .intro p + p            { font-size: 1rem; line-height: 1.62; }
+:root[data-variant="cmfix"] .item .when             { font-size: 1rem; }
+:root[data-variant="cmfix"] .theme-toggle           { font-size: 1rem; }
+
+/* ============================================================================
+   4 · cm-all — real Computer Modern for *everything*, compensated.
+   portfolio/styles.css opens with "Computer Modern for all text", but the file
+   hard-codes Georgia for the lead, section headings, roles, subtitles and
+   contact list. This variant is what that comment actually describes: one
+   typeface across the whole site, no Georgia anywhere.
+   ========================================================================== */
+:root[data-variant="cm-all"] {
+  --serif:       var(--lab-lm);
+  --serif-label: var(--lab-lm);
+  --serif-body:  var(--lab-lm);
+}
+/* projects — no Georgia on that page, so this matches cmfix */
+:root[data-variant="cm-all"] .card__title            { font-size: 1.4rem; line-height: 1.24; }
+:root[data-variant="cm-all"] .card--compact .card__title { font-size: 1.16rem; }
+:root[data-variant="cm-all"] .card__tags             { margin-top: 0.62rem; }
+:root[data-variant="cm-all"] .card__tags li          { font-family: var(--lab-lm8); font-size: 0.75rem; letter-spacing: 0.015em; }
+:root[data-variant="cm-all"] .card__desc             { font-family: var(--lab-lm9); font-size: 0.95rem; line-height: 1.64; margin-top: 0.85rem; }
+:root[data-variant="cm-all"] .card--compact .card__desc { margin-top: 0.6rem; }
+:root[data-variant="cm-all"] .card__links            { font-family: var(--lab-lm9); font-size: 0.87rem; margin-top: 0.95rem; }
+:root[data-variant="cm-all"] .card--compact .card__links { margin-top: 0.7rem; }
+:root[data-variant="cm-all"] .intro                  { font-size: 1.02rem; line-height: 1.62; }
+/* portfolio — including the slots that hard-code Georgia */
+:root[data-variant="cm-all"] body                    { font-size: 16.7px; line-height: 1.62; }
+:root[data-variant="cm-all"] .name                   { font-size: 0.915rem; }
+:root[data-variant="cm-all"] .tagline,
+:root[data-variant="cm-all"] .projects-link          { font-family: var(--lab-lm8); font-size: 0.8rem; }
+:root[data-variant="cm-all"] .intro .lead            { font-family: var(--lab-lm); font-size: 1.06rem; line-height: 1.55; }
+:root[data-variant="cm-all"] .intro p + p            { font-size: 1rem; line-height: 1.62; }
+:root[data-variant="cm-all"] .listing > h2           { font-family: var(--lab-lm); font-size: 0.95rem; }
+:root[data-variant="cm-all"] .item .line             { font-family: var(--lab-lm); font-size: 1rem; }
+:root[data-variant="cm-all"] .item .when             { font-size: 1rem; }
+:root[data-variant="cm-all"] .item .sub              { font-family: var(--lab-lm); font-size: 0.96rem; }
+:root[data-variant="cm-all"] .contact                { font-family: var(--lab-lm); }
+:root[data-variant="cm-all"] .contact li             { font-size: 1rem; }
+:root[data-variant="cm-all"] .theme-toggle           { font-size: 1rem; }
+
+/* ============================================================================
+   5 · hybrid — Computer Modern where it is strongest, Georgia where the
+   reading happens. CM keeps the titles, names and labels (large, sparse, high
+   contrast); prose moves to a screen serif with a 0.481em x-height. On the
+   portfolio page this is close to what the CSS already does — the difference
+   is that the CM half finally renders as CM.
+   ========================================================================== */
+:root[data-variant="hybrid"] {
+  --serif:       var(--lab-lm);
+  --serif-label: var(--lab-lm);
+  --serif-body:  var(--lab-geo);
+}
+/* projects */
+:root[data-variant="hybrid"] .card__title            { font-size: 1.4rem; line-height: 1.24; }
+:root[data-variant="hybrid"] .card--compact .card__title { font-size: 1.16rem; }
+:root[data-variant="hybrid"] .card__tags             { margin-top: 0.62rem; }
+:root[data-variant="hybrid"] .card__tags li          { font-family: var(--lab-lm8); font-size: 0.75rem; letter-spacing: 0.015em; }
+:root[data-variant="hybrid"] .card__desc,
+:root[data-variant="hybrid"] .card__links            { font-family: var(--lab-geo); }
+:root[data-variant="hybrid"] .card__desc             { font-size: 0.875rem; line-height: 1.6; margin-top: 0.85rem; }
+:root[data-variant="hybrid"] .card--compact .card__desc { margin-top: 0.6rem; }
+:root[data-variant="hybrid"] .card__links            { font-size: 0.79rem; margin-top: 0.92rem; }
+:root[data-variant="hybrid"] .card--compact .card__links { margin-top: 0.7rem; }
+:root[data-variant="hybrid"] .intro                  { font-family: var(--lab-geo); font-size: 0.93rem; }
+/* portfolio */
+:root[data-variant="hybrid"] .name                   { font-size: 0.9rem; }
+:root[data-variant="hybrid"] .tagline,
+:root[data-variant="hybrid"] .projects-link          { font-family: var(--lab-lm8); font-size: 0.79rem; }
+:root[data-variant="hybrid"] .intro p + p            { font-family: var(--lab-geo); line-height: 1.6; }
+:root[data-variant="hybrid"] .item .when             { font-size: 0.96rem; }
+
+/* ============================================================================
+   6 · georgia-all — one screen serif everywhere, Computer Modern abandoned.
+   The honest option if CM is never going to ship: drop the names that do not
+   resolve and declare what the site is actually set in.
+   ========================================================================== */
+:root[data-variant="georgia-all"] {
+  --serif:       var(--lab-geo);
+  --serif-label: var(--lab-geo);
+  --serif-body:  var(--lab-geo);
+}
+/* projects — Georgia runs wider and taller, so titles come down slightly */
+:root[data-variant="georgia-all"] .card__title            { font-size: 1.2rem; line-height: 1.28; letter-spacing: -0.004em; }
+:root[data-variant="georgia-all"] .card--compact .card__title { font-size: 1.01rem; }
+:root[data-variant="georgia-all"] .card__tags             { margin-top: 0.6rem; }
+:root[data-variant="georgia-all"] .card__tags li          { font-size: 0.645rem; letter-spacing: 0.015em; }
+:root[data-variant="georgia-all"] .card__desc             { font-size: 0.855rem; line-height: 1.58; margin-top: 0.82rem; }
+:root[data-variant="georgia-all"] .card--compact .card__desc { margin-top: 0.58rem; }
+:root[data-variant="georgia-all"] .card__links            { font-size: 0.78rem; margin-top: 0.9rem; }
+:root[data-variant="georgia-all"] .card--compact .card__links { margin-top: 0.68rem; }
+/* portfolio */
+:root[data-variant="georgia-all"] .name                   { font-size: 0.78rem; }
+:root[data-variant="georgia-all"] .tagline,
+:root[data-variant="georgia-all"] .projects-link          { font-size: 0.7rem; }
+
+/* ============================================================================
+   7 · sitka — Sitka Text, cut by Matthew Carter specifically for small sizes
+   on screen. The most legible option here, and the least portable: Sitka is
+   Windows-only, so macOS and iOS fall to Charter or Iowan Old Style, Android
+   to Georgia. Visitors would not all see the same face.
+   ========================================================================== */
+:root[data-variant="sitka"] {
+  --serif:       var(--lab-sitka);
+  --serif-label: var(--lab-sitka);
+  --serif-body:  var(--lab-sitka);
+}
+/* projects */
+:root[data-variant="sitka"] .card__title            { font-size: 1.2rem; line-height: 1.28; }
+:root[data-variant="sitka"] .card--compact .card__title { font-size: 1.01rem; }
+:root[data-variant="sitka"] .card__tags             { margin-top: 0.6rem; }
+:root[data-variant="sitka"] .card__tags li          { font-size: 0.645rem; letter-spacing: 0.015em; }
+:root[data-variant="sitka"] .card__desc             { font-size: 0.85rem; line-height: 1.56; margin-top: 0.82rem; }
+:root[data-variant="sitka"] .card--compact .card__desc { margin-top: 0.58rem; }
+:root[data-variant="sitka"] .card__links            { font-size: 0.775rem; margin-top: 0.9rem; }
+:root[data-variant="sitka"] .card--compact .card__links { margin-top: 0.68rem; }
+/* portfolio — Sitka replaces the hard-coded Georgia too, so it is a true
+   single-face test rather than a mix */
+:root[data-variant="sitka"] .intro .lead,
+:root[data-variant="sitka"] .listing > h2,
+:root[data-variant="sitka"] .item .line,
+:root[data-variant="sitka"] .item .sub,
+:root[data-variant="sitka"] .contact                { font-family: var(--lab-sitka); }
+:root[data-variant="sitka"] .name                   { font-size: 0.78rem; }
+:root[data-variant="sitka"] .tagline,
+:root[data-variant="sitka"] .projects-link          { font-size: 0.7rem; }
