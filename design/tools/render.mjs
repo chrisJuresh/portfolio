@@ -25,7 +25,7 @@ const ROOT = resolve(HERE, "..", "..");           // repo root
 const SHOTS = resolve(HERE, "..", "shots");
 
 /* ---- the matrix ---------------------------------------------------------- */
-const ALL_VARIANTS = ["asis", "cm", "cmfix", "cm-all", "hybrid", "georgia-all", "sitka"];
+const ALL_VARIANTS = ["asis", "cm", "cm-swap", "cmfix", "cm-all", "hybrid", "georgia-all", "sitka"];
 const PAGES = {
   projects:  "/projects/",
   portfolio: "/portfolio/",

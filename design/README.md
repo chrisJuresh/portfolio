@@ -58,6 +58,7 @@ actually describes.
 |---|---|
 | `asis` | Today's live reality: the CM stack forced to generic serif. **The baseline.** |
 | `cm` | Real Computer Modern, no other change. What shipping `fonts.css` alone gives you. |
+| `cm-swap` | **Every** slot in real CM — including portfolio's hard-coded Georgia — but not one size, leading or margin altered. A pure typeface swap. Identical to `cm` on `/projects`. |
 | `cmfix` | Real CM, +11.6% with the 8pt/9pt optical cuts for small text. |
 | `cm-all` | Real CM everywhere, including the slots that hard-code Georgia. |
 | `hybrid` | CM for titles, names and labels; Georgia for prose. |
@@ -110,8 +111,8 @@ node render.mjs --scale 1.5              # ~44% smaller files
 node render.mjs --format jpeg --quality 85
 ```
 
-Defaults: all 7 variants x projects+portfolio x light+dark x desktop = 28 shots
-at `deviceScaleFactor: 2`, about 9.7 MB.
+Defaults: all 8 variants x projects+portfolio x light+dark x desktop = 32 shots
+at `deviceScaleFactor: 2`, about 11 MB.
 
 `--format auto` (the default) picks the codec per page, which is worth doing:
 the projects page is flat colour and line art where PNG wins (399 KB vs 477 KB),

@@ -56,7 +56,29 @@
 }
 
 /* ============================================================================
-   3 · cmfix — real Computer Modern, sized for its own metrics.
+   3 · cm-swap — every slot in real Computer Modern, and nothing else touched.
+   Differs from `cm` only in reach: `cm` converts the slots that go through the
+   CSS variables, leaving portfolio's hard-coded Georgia alone, whereas this
+   takes the Georgia slots too. Differs from `cm-all` only in restraint: not one
+   font-size, line-height or margin is changed anywhere. A pure typeface swap,
+   so you can see what the face alone does before any tuning is argued about.
+
+   On /projects this is identical to `cm` — that page has no Georgia to convert.
+   ========================================================================== */
+:root[data-variant="cm-swap"] {
+  --serif:       var(--lab-lm);
+  --serif-label: var(--lab-lm);
+  --serif-body:  var(--lab-lm);
+}
+/* portfolio — the five slots that hard-code Georgia, family only */
+:root[data-variant="cm-swap"] .intro .lead,
+:root[data-variant="cm-swap"] .listing > h2,
+:root[data-variant="cm-swap"] .item .line,
+:root[data-variant="cm-swap"] .item .sub,
+:root[data-variant="cm-swap"] .contact { font-family: var(--lab-lm); }
+
+/* ============================================================================
+   4 · cmfix — real Computer Modern, sized for its own metrics.
    +11.6% to match Georgia's apparent size, extra leading for LM's tall
    ascenders and deep descenders, and the small text moved onto the 8pt/9pt
    optical cuts, whose stems are sturdier on screen. Layout dimensions are left
@@ -87,7 +109,7 @@
 :root[data-variant="cmfix"] .theme-toggle           { font-size: 1rem; }
 
 /* ============================================================================
-   4 · cm-all — real Computer Modern for *everything*, compensated.
+   5 · cm-all — real Computer Modern for *everything*, compensated.
    portfolio/styles.css opens with "Computer Modern for all text", but the file
    hard-codes Georgia for the lead, section headings, roles, subtitles and
    contact list. This variant is what that comment actually describes: one
@@ -124,7 +146,7 @@
 :root[data-variant="cm-all"] .theme-toggle           { font-size: 1rem; }
 
 /* ============================================================================
-   5 · hybrid — Computer Modern where it is strongest, Georgia where the
+   6 · hybrid — Computer Modern where it is strongest, Georgia where the
    reading happens. CM keeps the titles, names and labels (large, sparse, high
    contrast); prose moves to a screen serif with a 0.481em x-height. On the
    portfolio page this is close to what the CSS already does — the difference
@@ -155,7 +177,7 @@
 :root[data-variant="hybrid"] .item .when             { font-size: 0.96rem; }
 
 /* ============================================================================
-   6 · georgia-all — one screen serif everywhere, Computer Modern abandoned.
+   7 · georgia-all — one screen serif everywhere, Computer Modern abandoned.
    The honest option if CM is never going to ship: drop the names that do not
    resolve and declare what the site is actually set in.
    ========================================================================== */
@@ -179,7 +201,7 @@
 :root[data-variant="georgia-all"] .projects-link          { font-size: 0.7rem; }
 
 /* ============================================================================
-   7 · sitka — Sitka Text, cut by Matthew Carter specifically for small sizes
+   8 · sitka — Sitka Text, cut by Matthew Carter specifically for small sizes
    on screen. The most legible option here, and the least portable: Sitka is
    Windows-only, so macOS and iOS fall to Charter or Iowan Old Style, Android
    to Georgia. Visitors would not all see the same face.
