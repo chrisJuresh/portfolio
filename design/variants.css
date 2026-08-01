@@ -18,23 +18,29 @@
    hard-codes Georgia (which no variable covers).
 
    Requires /fonts/fonts.css to be loaded for any variant using Latin Modern.
+
+   Outcome: `sitka` won and is what the site now ships, so it is the variant to
+   compare against rather than `asis`. The live sizes match it, and the live
+   stylesheets no longer hard-code Georgia anywhere.
    ========================================================================== */
 
 :root {
-  --lab-fallback: serif;                  /* what visitors actually get today */
+  --lab-fallback: serif;                  /* what visitors got before Sitka   */
   --lab-lm:   "Latin Modern Roman", serif;
   --lab-lm9:  "LM Roman 9", "Latin Modern Roman", serif;   /* sturdier stems  */
   --lab-lm8:  "LM Roman 8", "Latin Modern Roman", serif;   /* sturdier still  */
   --lab-geo:  Georgia, "Iowan Old Style", "Palatino Linotype", serif;
   --lab-sitka: "Sitka Text", Charter, "Iowan Old Style", Georgia, serif;
+  --lab-num:  Georgia, "Iowan Old Style", "Palatino Linotype", serif; /* years  */
 }
 
 /* ============================================================================
-   1 · asis — today's live reality.
-   The "Computer Modern" stack resolves to generic serif (Times New Roman on
-   Windows and macOS, Noto Serif on Android, usually DejaVu on Linux). The
-   places that name Georgia explicitly are left alone, because those already
-   work. This is the baseline every other variant should be compared against.
+   1 · asis — the pre-Sitka baseline.
+   The "Computer Modern" stack the site used to declare, resolving to generic
+   serif (Times New Roman on Windows and macOS, Noto Serif on Android, usually
+   DejaVu on Linux). The places that named Georgia explicitly are left alone.
+   This is what every other variant was judged against; it is history now, not
+   the live site.
    ========================================================================== */
 :root[data-variant="asis"] {
   --serif:       var(--lab-fallback);
@@ -205,6 +211,14 @@
    on screen. The most legible option here, and the least portable: Sitka is
    Windows-only, so macOS and iOS fall to Charter or Iowan Old Style, Android
    to Georgia. Visitors would not all see the same face.
+
+   ** This is the variant that shipped. ** It mirrors the live stylesheets,
+   including both slots that stayed off Sitka — the year column and the italic
+   lead, both Georgia. The years because Sitka's lining figures stand to 84% of
+   the cap height beside them and read as loud as the organisation names, where
+   Georgia's old-style defaults reach 78%; the lead because it was kept after
+   being seen in Sitka. Both are pinned explicitly below, so flipping to this
+   variant shows what ships even if the live CSS later moves.
    ========================================================================== */
 :root[data-variant="sitka"] {
   --serif:       var(--lab-sitka);
@@ -220,13 +234,15 @@
 :root[data-variant="sitka"] .card--compact .card__desc { margin-top: 0.58rem; }
 :root[data-variant="sitka"] .card__links            { font-size: 0.775rem; margin-top: 0.9rem; }
 :root[data-variant="sitka"] .card--compact .card__links { margin-top: 0.68rem; }
-/* portfolio — Sitka replaces the hard-coded Georgia too, so it is a true
-   single-face test rather than a mix */
-:root[data-variant="sitka"] .intro .lead,
+/* portfolio — Sitka replaces the Georgia the page used to hard-code, except in
+   the lead, which the live CSS keeps in Georgia */
 :root[data-variant="sitka"] .listing > h2,
 :root[data-variant="sitka"] .item .line,
 :root[data-variant="sitka"] .item .sub,
 :root[data-variant="sitka"] .contact                { font-family: var(--lab-sitka); }
+:root[data-variant="sitka"] .item .when             { font-family: var(--lab-num);
+                                                      font-variant-numeric: oldstyle-nums; }
+:root[data-variant="sitka"] .intro .lead            { font-family: var(--lab-geo); }
 :root[data-variant="sitka"] .name                   { font-size: 0.78rem; }
 :root[data-variant="sitka"] .tagline,
 :root[data-variant="sitka"] .projects-link          { font-size: 0.7rem; }

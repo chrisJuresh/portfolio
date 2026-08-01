@@ -3,15 +3,26 @@
 Dev-only. Nothing here is served by the site; `.vercelignore` keeps the whole
 folder out of deployments. The site itself stays dependency-free and build-free.
 
+**Outcome: `sitka` won and now ships**, with two exceptions the lab shows too — the
+year column, kept in Georgia because its old-style figures reach 78% of the cap
+height beside them where Sitka's lining figures stand to 84%, and the italic lead
+paragraph, which kept Georgia after being seen both ways. So
+`sitka` is the variant to compare against; `asis` is history, not the live site.
+Computer Modern lost on ink density, measured in
+[`../fonts/README.md`](../fonts/README.md), not on taste.
+
 ```
 design/
   variants.css       every variant, defined ONCE — the source of truth
   type-lab.html      interactive: flip variants on the real pages in a browser
+  type-tuner.html    interactive: free-form size/spacing/font sliders + CSS export
   shots/             committed renders + index.html contact sheet
   tools/
     render.mjs       Playwright: serves the repo, walks the matrix, writes shots/
     package.json     dev dependency (playwright) — not the site's
 ```
+
+The **lab** compares finished candidates; the **tuner** is for arriving at one.
 
 ## Why it exists
 
@@ -45,25 +56,30 @@ page is meant to be Computer Modern. Nothing on that page is Georgia.
 | `.theme-toggle` | the "dark" / "light" label |
 | `.intro p + p` | bio paragraphs after the lead — none in the current content |
 
-Everything else on that page **deliberately hard-codes Georgia**: the italic
-lead, the section headings, the role lines, the italic subtitles and the contact
-list. So on the portfolio page Computer Modern was only ever carrying five small
-pieces of furniture, and the file's own opening comment — "Computer Modern for
-all text" — has never matched the CSS. The `cm-all` variant is what that comment
-actually describes.
+Everything else on that page used to **hard-code Georgia**: the italic lead, the
+section headings, the role lines, the italic subtitles and the contact list. So on
+the portfolio page Computer Modern was only ever carrying five small pieces of
+furniture, and the file's own opening comment — "Computer Modern for all text" —
+never matched the CSS. The `cm-all` variant is what that comment described.
+
+Most of those Georgia declarations are gone now: promoting `sitka` sent the section
+headings, role lines and contact list through `--serif-body`. Two slots stay off
+Sitka on purpose — the year column (`--serif-num`) and the italic lead
+(`--serif-lead`), both Georgia after being seen both ways. They share a stack but
+stay separate slots, since each was tuned on its own.
 
 ## Variants
 
 | Name | What it does |
 |---|---|
-| `asis` | Today's live reality: the CM stack forced to generic serif. **The baseline.** |
+| `asis` | The pre-Sitka site: the CM stack forced to generic serif. **The baseline everything was judged against.** |
 | `cm` | Real Computer Modern, no other change. What shipping `fonts.css` alone gives you. |
 | `cm-swap` | **Every** slot in real CM — including portfolio's hard-coded Georgia — but not one size, leading or margin altered. A pure typeface swap. Identical to `cm` on `/projects`. |
 | `cmfix` | Real CM, +11.6% with the 8pt/9pt optical cuts for small text. |
 | `cm-all` | Real CM everywhere, including the slots that hard-code Georgia. |
 | `hybrid` | CM for titles, names and labels; Georgia for prose. |
 | `georgia-all` | Georgia everywhere; Computer Modern abandoned. |
-| `sitka` | Sitka Text / Charter. Most legible, least portable (Windows-only). |
+| `sitka` | Sitka Text / Charter, with years and lead in Georgia. Most legible, least portable (Windows-only). **What ships.** |
 
 Why `cmfix` compensates: Latin Modern's measured x-height is **0.431em**, *below*
 the Times fallback's 0.447em and well below Georgia's 0.481em. Switching to real
@@ -89,7 +105,109 @@ from `content.js` at runtime, and it can never drift from the live pages.
 - the readout **measures** which face actually resolved rather than trusting the
   declared `font-family`, since a family that doesn't resolve fails silently
 
+## Type tuner
+
+For tuning `/portfolio` by eye rather than choosing between prepared variants.
+Serve the repo root (`run.bat`) and open:
+
+```
+http://localhost:8000/design/type-tuner.html
+```
+
+Sliders for every size, leading, tracking and gap on the page, plus a stack
+picker for each of the four font slots (`--serif-body`, `--serif-label`,
+`--serif-num`, `--serif-lead`). Changes land in the **real** page in the iframe
+as you drag — same trick as the lab, so nothing is cloned and it can't drift.
+
+Hovering or focusing a control outlines what it governs in the page, and grabbing
+one scrolls that element into view if it's off-screen. The `highlight` button
+turns it off. For the four font slots the outline follows the text that *reads*
+the custom property — the year column for `--serif-num`, and so on — rather than
+uselessly circling `:root`.
+
+**Frame size is a real viewport, width and height**, and defaults to your own
+window's shape. This matters more than it looks: the page sizes the photo strip
+with `clamp(15rem, 40vh, 24rem)` and its padding with `clamp(3rem, 9vh, 6.5rem)`,
+so height is not decoration. A 1280×720 laptop shows a 287px strip; anything tall
+shows it pinned at its 384px maximum. Presets carry real device heights, both
+dimensions are typeable, and `whole page` stretches the frame to the full column
+— good for judging spacing across sections, at the cost of that `vh` fidelity,
+which is why it isn't the default.
+
+The output is the point:
+
+```css
+.name {
+  font-size: 0.9rem;                         /* was 0.78rem */
+  letter-spacing: 0.09em;                    /* was 0.06em */
+}
+```
+
+Only what you changed, using the selectors and units `portfolio/styles.css`
+already uses, with the previous value alongside. **Copy** it into a message to
+Claude and it can be applied without anyone re-deriving what moved. Each export
+also carries a `tuner-state` comment, so pasting an old export back into the box
+and hitting **import** restores that state.
+
+### Undo and profiles
+
+`↶` / `↷` in the top bar, or <kbd>Ctrl</kbd>+<kbd>Z</kbd> and
+<kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>Z</kbd> / <kbd>Ctrl</kbd>+<kbd>Y</kbd>. A
+slider **drag is one step, not one per pixel** — it applies live and only records
+on release — and a burst of changes to the same control within 700ms folds
+together, so typing `0.85` into a box undoes as one move. Resetting and importing
+are both undoable. The timeline covers your changes only, not the frame size,
+theme or the profiles themselves, which are settings rather than edits.
+
+Five profile slots sit above the controls, for parking settings and flipping
+between them:
+
+- **click** an occupied slot to load it, or press its **number key** <kbd>1</kbd>–<kbd>5</kbd>
+  — the fastest way to A/B two typographic settings, which is the whole point
+- **click an empty slot** to store the current state there
+- **⤓** overwrites that slot with the current state (it asks first if occupied)
+- **double-click** renames, **alt-click** clears
+- the active slot is filled in; once you edit away from it, it goes amber with a
+  dot, so "what I'm looking at" and "what the slot holds" never blur together
+- loading a profile is itself undoable
+- profiles persist across reloads; the undo timeline is per session
+- when the export matches the loaded profile exactly, its name appears in the
+  header comment
+
+Notes on how it behaves:
+
+- The injected sheet is appended **last with no `!important`**, so the preview
+  obeys the same cascade the exported CSS will meet in the real file. A change
+  that doesn't take in the tuner wouldn't take in `styles.css` either.
+- Defaults are **declared** in the `ROWS` table in the file, not measured, because
+  computed style only reports pixels and could never tell you the source said
+  `0.78rem`. To stop that table from silently rotting, every default is checked
+  against the live page on load and any mismatch is reported in a banner —
+  **if that banner fires, update `ROWS`**, otherwise the `was` comments lie.
+- Rows `styles.css` doesn't declare at all (the year column's size, which just
+  inherits `0.9rem` from `.item .line`) start at the inherited value and only
+  enter the export once moved, marked `was not set`.
+- Selectors absent from the current `content.js` — `.intro p + p`, since the bio
+  is a single paragraph — are shown greyed and italic rather than silently doing
+  nothing.
+- Two slots are written as shorthands in the source (`.theme-toggle`'s `font:`,
+  several `margin:`). The export notes that above the rule so it's applied to the
+  right declaration.
+- State persists in `localStorage` — changes, profiles, frame size and the
+  highlight setting — so a reload doesn't lose a session's work.
+- The frame width is **not** padded to hide the iframe's scrollbar. A frame set to
+  1280 behaves like a 1280 browser window, where `100vw` counts the scrollbar and
+  the content box doesn't; widening it to hide the bar would make the preview lie
+  about the one thing it's for.
+
 ## Regenerating the shots
+
+**The committed shots predate the promotion, deliberately.** They are the
+comparison as it was actually judged: each variant over the old base stylesheets,
+where sizes were tuned for the generic-serif fallback. The base sizes are now
+Sitka's, so re-rendering would stack every *other* variant on top of Sitka-tuned
+sizes and quietly overwrite the evidence for the decision. Regenerate when you are
+running a new comparison, not to refresh these.
 
 ```bash
 cd design/tools
@@ -129,9 +247,13 @@ than on every tweak.
 
 `variants.css` is a lab artifact, not a patch. To adopt one:
 
-1. Link `/fonts/fonts.css` from the pages that need it. Note this alone activates
-   Latin Modern, because the existing stacks already name it third.
+1. Point `--serif` (projects) and `--serif-label` / `--serif-body` (portfolio) at
+   the variant's stack. For a Latin Modern variant, also link `/fonts/fonts.css`
+   from the pages that need it and add the long-cache header for `/fonts/`
+   suggested in [`../fonts/README.md`](../fonts/README.md).
 2. Copy that variant's per-element rules into `projects/styles.css` and
    `portfolio/styles.css`, dropping the `:root[data-variant="…"]` prefixes.
-3. Add the long-cache header for `/fonts/` suggested in `../fonts/README.md`.
+3. Bump the `?v=` on both `styles.css` links so cached copies don't survive.
 4. Re-run the renderer to confirm the live pages now match the chosen shot.
+
+That is the path `sitka` took, which is why the live sizes are its sizes.

@@ -1,0 +1,1053 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Type tuner — /portfolio</title>
+  <style>
+    :root { color-scheme: light dark; --ui: #1a1917; --ui-bg: #fcfbf8; --ui-panel: #f5f2ea; --ui-line: #d6d0c4; --ui-mut: #6f6a5d; --ui-hit: #8a5a2b; }
+    @media (prefers-color-scheme: dark) {
+      :root { --ui: #eaeaea; --ui-bg: #161616; --ui-panel: #1e1e1e; --ui-line: #3a3a3a; --ui-mut: #9a9a9a; --ui-hit: #d8a76a; }
+    }
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+    body {
+      margin: 0; display: flex; flex-direction: column;
+      background: var(--ui-bg); color: var(--ui);
+      font: 13px/1.45 "Segoe UI", system-ui, sans-serif;
+    }
+
+    /* ---- top bar ---------------------------------------------------------- */
+    .top {
+      flex: 0 0 auto; display: flex; flex-wrap: wrap; align-items: center; gap: 0.35rem;
+      padding: 0.5rem 0.8rem; border-bottom: 1px solid var(--ui-line);
+    }
+    .top strong { font-size: 11px; letter-spacing: 0.09em; text-transform: uppercase; color: var(--ui-mut); }
+    .grow { flex: 1 1 auto; }
+    button, select, input[type="text"], input[type="number"], textarea {
+      font: inherit; color: var(--ui); background: transparent;
+      border: 1px solid var(--ui-line); border-radius: 5px;
+    }
+    /* Fields carry a solid background, buttons don't. A native select popup is
+       drawn by the browser from the control's own palette, and `transparent`
+       leaves every option that isn't highlighted grey on grey — so both ends are
+       stated explicitly, on the control AND on the options, in both themes. */
+    select, input[type="text"], input[type="number"], textarea {
+      background: var(--ui-bg);
+      color-scheme: light dark;
+    }
+    select option {
+      background: var(--ui-bg);
+      color: var(--ui);
+    }
+    button { padding: 0.24rem 0.55rem; cursor: pointer; }
+    button:hover { border-color: var(--ui-mut); }
+    button[aria-pressed="true"] { background: var(--ui); color: var(--ui-bg); border-color: var(--ui); }
+    .badge { padding: 0.1rem 0.4rem; border-radius: 99px; background: var(--ui-hit); color: var(--ui-bg); font-size: 11px; }
+    .badge[data-n="0"] { background: transparent; color: var(--ui-mut); }
+    .dim { width: 3.9rem; padding: 0.18rem 0.25rem; text-align: right; }
+    .times { color: var(--ui-mut); }
+
+    /* ---- layout ----------------------------------------------------------- */
+    .wrap { flex: 1 1 auto; display: flex; min-height: 0; }
+    .side { flex: 0 0 22rem; display: flex; flex-direction: column; min-height: 0; border-right: 1px solid var(--ui-line); background: var(--ui-panel); }
+    .controls { flex: 1 1 auto; overflow: auto; padding-bottom: 0.6rem; }
+
+    /* ---- profile slots ---------------------------------------------------- */
+    .pwrap { flex: 0 0 auto; padding: 0.5rem 0.7rem 0.55rem; border-bottom: 1px solid var(--ui-line); }
+    .phead { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.35rem; margin-bottom: 0.35rem; }
+    .phead strong { font-size: 11px; letter-spacing: 0.09em; text-transform: uppercase; color: var(--ui-mut); }
+    .phead .hint { font-size: 10px; }
+    .phead b { font-weight: 600; color: var(--ui); }
+    .profiles { display: grid; grid-template-columns: repeat(5, 1fr); gap: 0.25rem; }
+    .slot { display: flex; min-width: 0; }
+    .slot button { padding: 0.22rem 0.1rem; font-size: 11px; }
+    .slot .load { flex: 1 1 auto; min-width: 0; border-radius: 5px 0 0 5px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+    .slot .put  { flex: 0 0 auto; border-left: 0; border-radius: 0 5px 5px 0; padding: 0.22rem 0.28rem; color: var(--ui-mut); }
+    .slot .put:hover { color: var(--ui-hit); }
+    .slot.empty .load { color: var(--ui-mut); font-style: italic; }
+    .slot.on .load { background: var(--ui); color: var(--ui-bg); border-color: var(--ui); }
+    /* loaded, then edited since — no longer what the slot holds */
+    .slot.on.dirty .load { background: transparent; color: var(--ui-hit); border-color: var(--ui-hit); }
+    .slot.on.dirty .load::after { content: " •"; }
+    .stage { flex: 1 1 auto; overflow: auto; padding: 0.8rem; }
+    iframe { display: block; border: 1px solid var(--ui-line); background: #fff; }
+
+    /* ---- groups + rows ---------------------------------------------------- */
+    .ghead {
+      width: 100%; display: flex; align-items: center; gap: 0.4rem;
+      padding: 0.45rem 0.7rem; border: 0; border-top: 1px solid var(--ui-line);
+      border-radius: 0; background: transparent; text-align: left;
+      font-size: 11px; letter-spacing: 0.09em; text-transform: uppercase; color: var(--ui-mut);
+    }
+    .ghead::before { content: "\25be"; font-size: 10px; }
+    .g.shut .ghead::before { content: "\25b8"; }
+    .g.shut .gbody { display: none; }
+    .gbody { padding: 0.15rem 0.7rem 0.5rem; }
+
+    .row { display: grid; grid-template-columns: 7.6rem 1fr 3.5rem 1rem; align-items: center; gap: 0.3rem; min-height: 1.55rem; }
+    .row > label { font-size: 11.5px; color: var(--ui-mut); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .row.on > label { color: var(--ui-hit); }
+    .row.gone > label { opacity: 0.45; font-style: italic; }
+    input[type="range"] { width: 100%; min-width: 0; accent-color: var(--ui-hit); }
+    input[type="number"], input[type="text"] { width: 100%; padding: 0.08rem 0.2rem; font-size: 11.5px; }
+    .undo { border: 0; padding: 0; width: 1rem; color: var(--ui-mut); visibility: hidden; line-height: 1; }
+    .row.on .undo { visibility: visible; }
+    .undo:hover { color: var(--ui-hit); }
+
+    .frow { margin: 0.25rem 0; }
+    .frow > label { display: block; font-size: 11.5px; color: var(--ui-mut); }
+    .frow.on > label { color: var(--ui-hit); }
+    .frow select, .frow input[type="text"] { width: 100%; padding: 0.14rem 0.2rem; font-size: 11.5px; margin-top: 0.1rem; }
+    .sel { display: flex; gap: 0.25rem; align-items: center; }
+    .sel select { flex: 1 1 auto; }
+
+    .selnote, .hint { font-size: 10.5px; color: var(--ui-mut); }
+    .selnote { font-family: ui-monospace, Consolas, monospace; }
+    .warn { margin: 0; padding: 0.45rem 0.7rem; border-bottom: 1px solid var(--ui-line); background: rgba(216, 167, 106, 0.16); font-size: 11.5px; }
+    .warn:empty { display: none; }
+    .warn code { font-family: ui-monospace, Consolas, monospace; }
+
+    /* ---- export drawer ---------------------------------------------------- */
+    .export { flex: 0 0 auto; border-top: 1px solid var(--ui-line); }
+    .export > summary { padding: 0.4rem 0.7rem; cursor: pointer; font-size: 11px; letter-spacing: 0.09em; text-transform: uppercase; color: var(--ui-mut); }
+    .ebody { padding: 0 0.7rem 0.6rem; }
+    textarea { width: 100%; height: 11rem; padding: 0.4rem; resize: vertical; font: 11px/1.4 ui-monospace, Consolas, monospace; white-space: pre; }
+    .ebtns { display: flex; gap: 0.3rem; align-items: center; margin-top: 0.35rem; }
+  </style>
+</head>
+<body>
+  <div class="top">
+    <strong>tuning</strong> <span>/portfolio</span>
+    <span class="badge" id="count" data-n="0">0</span>
+    <button id="undo" type="button" title="undo — Ctrl+Z">↶</button>
+    <button id="redo" type="button" title="redo — Ctrl+Shift+Z or Ctrl+Y">↷</button>
+    <span class="grow"></span>
+    <strong>size</strong><span id="sizes"></span>
+    <input type="number" id="fw" class="dim" min="320" max="3840" step="10" title="frame width">
+    <span class="times">×</span>
+    <input type="number" id="fh" class="dim" min="400" max="3000" step="10" title="frame height">
+    <button id="whole" type="button" title="stretch the frame to the full page. Handy for spacing, but vh-based sizes — the photo strip, the page padding — will then answer to this tall frame instead of a real screen.">whole page</button>
+    <button id="hilite" type="button" title="outline what a control governs while you hover or focus it">highlight</button>
+    <button id="theme" type="button">theme</button>
+    <button id="reload" type="button" title="reload the page inside the frame">reload</button>
+  </div>
+
+  <p class="warn" id="drift"></p>
+
+  <div class="wrap">
+    <aside class="side">
+      <div class="pwrap">
+        <div class="phead">
+          <strong>profiles</strong>
+          <span class="hint">click loads · <b>1</b>–<b>5</b> switches · ⤓ saves · dbl-click renames · alt-click clears</span>
+        </div>
+        <div class="profiles" id="profiles"></div>
+      </div>
+
+      <div class="controls" id="controls"></div>
+
+      <details class="export" open>
+        <summary>export — paste this to Claude</summary>
+        <div class="ebody">
+          <textarea id="out" spellcheck="false"></textarea>
+          <div class="ebtns">
+            <button id="copy" type="button">copy</button>
+            <button id="import" type="button" title="paste an earlier export above, then click this">import</button>
+            <button id="resetall" type="button">reset all</button>
+            <span class="hint" id="status"></span>
+          </div>
+        </div>
+      </details>
+    </aside>
+
+    <main class="stage"><iframe id="frame" title="portfolio preview"></iframe></main>
+  </div>
+
+<script>
+/* =============================================================================
+   Type tuner — live typographic controls over the REAL /portfolio page.
+
+   Same idea as type-lab.html (iframe the real page, inject CSS, never clone the
+   markup — the page builds its whole DOM from content.js at runtime), but for
+   free-form tuning rather than flipping between pre-authored variants.
+
+   The point of the tool is the export: every change comes back out as CSS using
+   the same selectors and units as portfolio/styles.css, with the previous value
+   in a trailing comment, so it can be pasted into a message and applied to the
+   real file without anyone re-deriving what moved.
+
+   DEFAULTS ARE DECLARED, NOT MEASURED, and that is deliberate. Computed style
+   only ever reports pixels, so it cannot tell you whether the source said
+   0.78rem, 12.48px or 0.052em — and the export is only useful if it speaks the
+   file's own units. The cost is that this table can fall out of step with
+   styles.css; ROWS below is therefore verified against the live computed values
+   on every load, and any drift is reported in the banner rather than silently
+   producing a wrong "was" comment. If the banner fires, fix the table.
+   ========================================================================== */
+
+/* ---- the type stacks on offer ------------------------------------------- */
+/* Everything the repo can actually resolve today: system faces plus the
+   self-hosted Latin Modern cuts from /fonts/fonts.css, which the tuner injects
+   into the frame so those options aren't quietly falling through to serif. */
+var STACKS = [
+  ["Sitka Text (ships)", '"Sitka Text", Charter, "Iowan Old Style", Georgia, serif'],
+  ["Georgia",            'Georgia, "Iowan Old Style", "Palatino Linotype", serif'],
+  ["Constantia",         'Constantia, "Hoefler Text", Georgia, serif'],
+  ["Latin Modern 10",    '"Latin Modern Roman", Georgia, serif'],
+  ["Latin Modern 9",     '"LM Roman 9", "Latin Modern Roman", Georgia, serif'],
+  ["Latin Modern 8",     '"LM Roman 8", "Latin Modern Roman", Georgia, serif'],
+  ["Latin Modern 12",    '"LM Roman 12", "Latin Modern Roman", Georgia, serif'],
+  ["Charter",            'Charter, "Bitstream Charter", "Iowan Old Style", serif'],
+  ["Cambria",            'Cambria, Georgia, serif'],
+  ["Palatino",           '"Palatino Linotype", Palatino, "Book Antiqua", serif'],
+  ["Times",              '"Times New Roman", Times, serif'],
+  ["generic serif",      'serif'],
+  ["system sans",        'system-ui, "Segoe UI", Roboto, sans-serif']
+];
+
+var SITKA   = STACKS[0][1];
+var GEORGIA = STACKS[1][1];
+
+/* ---- what styles.css says today ----------------------------------------- */
+/* def: the value as WRITTEN in portfolio/styles.css, in `unit`.
+   def:null means the property isn't declared there at all — the row starts at
+   whatever the page computes and only enters the export once you move it.
+   note: how the property is spelled in the source, where that differs from the
+   single declaration this tool emits (shorthands), so it can be applied by hand. */
+var GROUPS = [
+  { name: "Page", rows: [
+    { sel: "body",  prop: "font-size",   unit: "px",  def: 15,   min: 11, max: 22, step: 0.25, label: "base size",   hi: ".col" },
+    { sel: "body",  prop: "line-height", unit: "",    def: 1.55,                    label: "base leading",           hi: ".col" },
+    { sel: ":root", prop: "--col",       unit: "rem", def: 27,   min: 16, max: 44, step: 0.25, label: "column width", hi: ".col" }
+  ] },
+
+  /* hi: a custom property governs whatever reads it, so these point at the text
+     that actually changes rather than at :root, which is the whole page. */
+  { name: "Fonts", font: true, rows: [
+    { sel: ":root", prop: "--serif-body",  def: SITKA, label: "body — roles, headings, contact", hi: ".listing > h2, .item .line, .item .sub, .contact li" },
+    { sel: ":root", prop: "--serif-label", def: SITKA, label: "labels — name, tagline, toggle",   hi: ".name, .tagline, .projects-link, .theme-toggle" },
+    { sel: ":root", prop: "--serif-num",   def: GEORGIA, label: "years — old-style figures", hi: ".item .when" },
+    { sel: ":root", prop: "--serif-lead",  def: GEORGIA, label: "lead — the italic line", hi: ".intro .lead" }
+  ] },
+
+  { name: "Masthead", rows: [
+    { sel: ".name",          prop: "font-size",      unit: "rem", def: 0.78, label: "name size" },
+    { sel: ".name",          prop: "letter-spacing", unit: "em",  def: 0.06, label: "name tracking" },
+    { sel: ".name",          prop: "font-weight",    unit: "",    def: 400, min: 300, max: 700, step: 100, label: "name weight" },
+    { sel: ".tagline",       prop: "font-size",      unit: "rem", def: 0.7,  label: "tagline size" },
+    { sel: ".tagline",       prop: "letter-spacing", unit: "em",  def: 0.04, label: "tagline tracking" },
+    { sel: ".projects-link", prop: "font-size",      unit: "rem", def: 0.7,  label: "link size" },
+    { sel: ".projects-link", prop: "letter-spacing", unit: "em",  def: 0.04, label: "link tracking" },
+    { sel: ".masthead-meta", prop: "margin-top",     unit: "rem", def: 0.5,  label: "gap above meta" },
+    { sel: ".masthead",      prop: "margin-bottom",  unit: "rem", def: 2.5,  label: "space below" }
+  ] },
+
+  { name: "Intro", rows: [
+    { sel: ".intro .lead", prop: "font-size",   unit: "rem", def: 0.95, label: "lead size" },
+    { sel: ".intro .lead", prop: "line-height", unit: "",    def: 1.5,  label: "lead leading" },
+    { sel: ".intro p + p", prop: "font-size",   unit: "rem", def: 0.9,  label: "body size" },
+    { sel: ".intro p + p", prop: "margin-top",  unit: "rem", def: 0.9,  label: "para spacing", note: "written as `margin: 0.9rem 0 0`" },
+    { sel: ".intro p + p", prop: "text-indent", unit: "rem", def: 1.1,  label: "first-line indent" },
+    { sel: ".intro",       prop: "margin-bottom", unit: "rem", def: 2.75, label: "space below" }
+  ] },
+
+  { name: "Photographs", rows: [
+    { sel: ".carousel", prop: "margin-bottom", unit: "rem", def: 0.9, label: "strip → scrollbar", note: "second `margin-bottom`, after the full-bleed shorthand" },
+    { sel: ".cbar",     prop: "margin-bottom", unit: "rem", def: 2,   label: "scrollbar → text", note: "written as `margin: 0 0 2rem`" }
+  ] },
+
+  { name: "Work & education", rows: [
+    { sel: ".listing > h2", prop: "font-size",      unit: "rem", def: 0.85, label: "heading size" },
+    { sel: ".listing > h2", prop: "font-weight",    unit: "",    def: 700, min: 300, max: 700, step: 100, label: "heading weight" },
+    { sel: ".listing > h2", prop: "letter-spacing", unit: "em",  def: 0.01, label: "heading tracking" },
+    { sel: ".listing > h2", prop: "margin-bottom",  unit: "rem", def: 0.25, label: "under heading", note: "written as `margin: 0 0 0.25rem`" },
+    { sel: ".item .line",   prop: "font-size",      unit: "rem", def: 0.9,  label: "org size" },
+    { sel: ".item .line",   prop: "gap",            unit: "rem", def: 1,    label: "org → year gap" },
+    { sel: ".item .when",   prop: "font-size",      unit: "rem", def: null, label: "year size", note: "not declared today — the year inherits 0.9rem from `.item .line`" },
+    { sel: ".item .when",   prop: "letter-spacing", unit: "em",  def: null, label: "year tracking" },
+    { sel: ".item .sub",    prop: "font-size",      unit: "rem", def: 0.86, label: "role size" },
+    { sel: ".item .sub",    prop: "margin-top",     unit: "rem", def: 0.1,  label: "org → role", note: "written as `margin: 0.1rem 0 0`" },
+    { sel: ".item",         prop: "margin-bottom",  unit: "rem", def: 0.6,  label: "between items" },
+    { sel: ".listing",      prop: "margin-top",     unit: "rem", def: 1.5,  label: "between sections" }
+  ] },
+
+  { name: "Contact & toggle", rows: [
+    { sel: ".contact li",         prop: "font-size",     unit: "rem", def: 0.9,  label: "link size" },
+    { sel: ".contact li",         prop: "margin-top",    unit: "rem", def: 0.22, label: "between links" },
+    { sel: ".contact li.primary", prop: "margin-bottom", unit: "rem", def: 0.55, label: "under the email" },
+    { sel: ".contact-corner",     prop: "column-gap",    unit: "rem", def: 1,    label: "links → toggle" },
+    { sel: ".theme-toggle",       prop: "font-size",     unit: "rem", def: 0.9,  label: "toggle size",    note: "lives in the `font: 400 0.9rem/1.55 var(--serif-label)` shorthand" },
+    { sel: ".theme-toggle",       prop: "line-height",   unit: "",    def: 1.55, label: "toggle leading", note: "lives in the same `font:` shorthand" }
+  ] }
+];
+
+/* Sensible slider bounds per property, so the table above stays readable. */
+var BOUNDS = {
+  "font-size":      { rem: [0.4, 2.2, 0.005], px: [10, 26, 0.25] },
+  "line-height":    { "": [1, 2.4, 0.01] },
+  "letter-spacing": { em: [-0.05, 0.24, 0.002] },
+  "font-weight":    { "": [300, 700, 100] }
+};
+var SPACING = [0, 5, 0.05];   /* margins, gaps, indents, --col overrides its own */
+
+var ROWS = [];
+GROUPS.forEach(function (g) {
+  g.rows.forEach(function (r) {
+    r.group = g;
+    r.isFont = !!g.font;
+    r.k = r.sel + "|" + r.prop;
+    if (!r.hi) r.hi = r.sel;
+    if (!r.isFont) {
+      var b = (BOUNDS[r.prop] || {})[r.unit] || SPACING;
+      if (r.min == null)  r.min = b[0];
+      if (r.max == null)  r.max = b[1];
+      if (r.step == null) r.step = b[2];
+    }
+    ROWS.push(r);
+  });
+});
+
+/* ---- state --------------------------------------------------------------- */
+/* The frame is a real viewport, width AND height, because this page sizes things
+   off the height too: the photo strip is clamp(15rem, 40vh, 24rem) and the page
+   padding clamp(3rem, 9vh, 6.5rem). A frame stretched to fit its own content
+   resolves those against the content height, which pins the strip to its 24rem
+   maximum and quietly stops representing anybody's screen. So the default is
+   this window's own size — whatever shape that happens to be. */
+var KEY = "type-tuner-v1";
+var SLOTS = 5;
+var state = { vals: {}, theme: "light", preset: "window", w: 0, h: 0, shut: {}, profiles: [], active: null };
+try {
+  var saved = JSON.parse(localStorage.getItem(KEY) || "null");
+  if (saved && saved.vals) state = {
+    vals:     saved.vals  || {},
+    theme:    saved.theme === "dark" ? "dark" : "light",
+    preset:   saved.preset || "window",
+    w:        saved.w || 0,
+    h:        saved.h || 0,
+    shut:     saved.shut  || {},
+    hi:       saved.hi !== false,
+    profiles: saved.profiles || [],
+    active:   saved.active == null ? null : saved.active
+  };
+} catch (_) {}
+if (state.hi == null) state.hi = true;
+while (state.profiles.length < SLOTS) state.profiles.push(null);
+state.profiles.length = SLOTS;
+
+function save() { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (_) {} }
+
+/* ---- undo / redo --------------------------------------------------------- */
+/* Snapshots of `vals` only — frame size, theme and the profiles themselves are
+   settings, not edits, and pulling them into the timeline would make Ctrl+Z do
+   surprising things. hist[0] is where the session started.
+
+   `coalesce` folds a burst of changes to the SAME control into one step, so
+   typing "0.85" into a box, or holding an arrow key on a slider, undoes as one
+   move rather than one per keystroke. A slider drag never reaches here at all:
+   it applies live and only commits on release. */
+var HIST_MAX = 120;
+var hist = [], hix = 0, lastKey = null, lastAt = 0;
+
+function snap() { return Object.assign({}, state.vals); }
+hist.push(snap());
+
+function commit(coalesce) {
+  var now = Date.now();
+  if (coalesce && coalesce === lastKey && now - lastAt < 700) {
+    hist[hix] = snap();                     /* same control, still mid-gesture */
+  } else {
+    hist.length = hix + 1;                  /* a new branch drops the redo tail */
+    hist.push(snap());
+    if (hist.length > HIST_MAX) hist.shift();
+    hix = hist.length - 1;
+  }
+  lastKey = coalesce || null;
+  lastAt = now;
+  apply(false);
+}
+
+function step(to) {
+  if (to < 0 || to >= hist.length || to === hix) return;
+  hix = to;
+  state.vals = Object.assign({}, hist[hix]);
+  lastKey = null;                           /* never coalesce across a jump */
+  apply(false);
+}
+function undoStep() { step(hix - 1); }
+function redoStep() { step(hix + 1); }
+
+/* ---- profiles ------------------------------------------------------------ */
+/* Five slots to park a setting in and flip between. Order-independent, so a
+   profile saved before a key existed still compares equal to the same values
+   arrived at later. */
+function sig(vals) {
+  return Object.keys(vals).sort().map(function (k) { return k + "=" + vals[k]; }).join("|");
+}
+function pname(i) {
+  var p = state.profiles[i];
+  return (p && p.name) ? p.name : "P" + (i + 1);
+}
+function dirty() {
+  var p = state.active == null ? null : state.profiles[state.active];
+  return !!p && sig(p.vals) !== sig(state.vals);
+}
+
+function loadProfile(i) {
+  var p = state.profiles[i];
+  if (!p) return;
+  state.vals = Object.assign({}, p.vals);
+  state.active = i;
+  commit(null);                             /* loading is undoable */
+  say("loaded " + pname(i));
+}
+
+function saveProfile(i) {
+  if (!changedRows().length && !state.profiles[i]) return say("nothing to save yet");
+  if (state.profiles[i] && !confirm("Replace " + pname(i) + "?")) return;
+  state.profiles[i] = { name: state.profiles[i] ? state.profiles[i].name : "", vals: snap() };
+  state.active = i;
+  save(); paint();
+  say("saved to " + pname(i));
+}
+
+function clearProfile(i) {
+  if (!state.profiles[i]) return;
+  if (!confirm("Clear " + pname(i) + "?")) return;
+  state.profiles[i] = null;
+  if (state.active === i) state.active = null;
+  save(); paint();
+  say("cleared");
+}
+
+function renameProfile(i) {
+  if (!state.profiles[i]) return;
+  var n = prompt("Name for this profile", pname(i));
+  if (n == null) return;
+  state.profiles[i].name = n.trim().slice(0, 18);
+  save(); paint();
+}
+
+function val(r)      { return state.vals[r.k] == null ? null : state.vals[r.k]; }
+function changed(r)  { var v = val(r); return v != null && String(v) !== String(r.def); }
+function changedRows() { return ROWS.filter(changed); }
+
+/* The number a slider should sit at when the row is untouched: the declared
+   default, or — for rows styles.css doesn't declare — whatever the page is
+   actually computing right now, filled in by probe() after the frame loads. */
+function effective(r) {
+  var v = val(r);
+  if (v != null) return v;
+  if (r.def != null) return r.def;
+  return r.live != null ? r.live : 0;
+}
+
+function num(n) { return String(+Number(n).toFixed(3)); }
+function css(r, v) { return r.isFont ? v : num(v) + r.unit; }
+
+/* ---- the frame ----------------------------------------------------------- */
+var frame = document.getElementById("frame");
+
+/* "my window" is measured, not guessed — a monitor in portrait, a half-screen
+   split or any other shape is then the thing being tuned against. The device
+   presets carry real heights for the same reason. */
+var SIZES = [
+  { k: "window",  label: "my window" },
+  { k: "desktop", label: "desktop", w: 1440, h: 900 },
+  { k: "laptop",  label: "laptop",  w: 1280, h: 720 },
+  { k: "tablet",  label: "tablet",  w: 820,  h: 1180 },
+  { k: "mobile",  label: "mobile",  w: 390,  h: 844 }
+];
+
+function winSize() { return { w: Math.max(320, window.innerWidth), h: Math.max(400, window.innerHeight) }; }
+
+/* No scrollbar compensation on purpose: a frame set to W behaves exactly like a
+   browser window of width W, where 100vw counts the scrollbar and the content
+   box doesn't. Padding W out to hide the bar would make the preview lie. */
+function sizeFrame() {
+  if (!state.w || !state.h) { var d = winSize(); state.w = state.w || d.w; state.h = state.h || d.h; }
+  frame.style.width = state.w + "px";
+  frame.style.height = state.h + "px";
+}
+
+function setPreset(k) {
+  var s = SIZES.filter(function (x) { return x.k === k; })[0];
+  if (!s) return;
+  var d = s.k === "window" ? winSize() : { w: s.w, h: s.h };
+  state.preset = k; state.w = d.w; state.h = d.h;
+  sizeFrame(); save(); paint();
+}
+
+/* Stretch to the whole page. Useful for judging spacing between sections that
+   don't share a screen — at the cost of the vh fidelity above, hence the
+   separate button rather than doing it automatically. */
+function wholePage() {
+  var doc = frame.contentDocument, win = frame.contentWindow;
+  if (!doc || !win || !doc.documentElement) return;
+  var col = doc.querySelector(".col"), page = doc.querySelector(".page"), h;
+  if (col && page) {
+    var cs = win.getComputedStyle(page);
+    h = col.getBoundingClientRect().height + parseFloat(cs.paddingTop) + parseFloat(cs.paddingBottom);
+  } else {
+    h = doc.documentElement.scrollHeight;
+  }
+  state.h = Math.max(400, Math.ceil(h));
+  state.preset = "custom";
+  sizeFrame(); save(); paint();
+}
+
+function loadFrame() {
+  /* Same origin, so the theme the page reads on boot can be primed for it. */
+  try { localStorage.setItem("portfolio-theme", state.theme); } catch (_) {}
+  frame.src = "/portfolio/?tuner=" + Date.now();
+  sizeFrame();
+}
+
+function addLink(doc, href) {
+  var have = [].some.call(doc.querySelectorAll("link"), function (l) { return l.getAttribute("href") === href; });
+  if (have) return Promise.resolve();
+  return new Promise(function (done) {
+    var l = doc.createElement("link");
+    l.rel = "stylesheet"; l.href = href;
+    l.addEventListener("load", done);
+    l.addEventListener("error", done);
+    doc.head.appendChild(l);
+  });
+}
+
+/* Injected last in document order and with no !important, so the preview obeys
+   exactly the cascade the exported CSS will meet in styles.css. If a change
+   doesn't take here, it wouldn't take there either — that's the point. */
+function inject() {
+  var doc = frame.contentDocument;
+  if (!doc || !doc.body) return;
+  var tag = doc.getElementById("__tuner");
+  if (!tag) {
+    tag = doc.createElement("style");
+    tag.id = "__tuner";
+  }
+  tag.textContent = buildCSS(false);
+  doc.body.appendChild(tag);            /* re-append: keep it last */
+}
+
+/* ---- hover highlight ----------------------------------------------------- */
+/* Points at what a control governs, in the page, before it's touched. A second
+   style tag so rebuilding the tuner's CSS can't wipe it and vice versa; outline
+   rather than border or background so nothing reflows and the type being judged
+   is never repositioned by the act of pointing at it. */
+var HI_CSS = "{ outline: 2px solid rgba(224, 122, 31, 0.95) !important;" +
+             " outline-offset: 2px; background: rgba(224, 122, 31, 0.12) !important; }";
+
+function highlight(sel) {
+  var doc = frame.contentDocument;
+  if (!doc || !doc.body) return;
+  var tag = doc.getElementById("__tunerhi");
+  if (!tag) { tag = doc.createElement("style"); tag.id = "__tunerhi"; }
+  tag.textContent = (sel && state.hi) ? sel + " " + HI_CSS : "";
+  doc.body.appendChild(tag);
+}
+
+/* Only on a deliberate interaction — focusing or grabbing a control — never on
+   passive hover, which would send the page lurching about as the pointer
+   crosses the panel. */
+function reveal(sel) {
+  var doc = frame.contentDocument, win = frame.contentWindow;
+  if (!doc || !win || !state.hi) return;
+  var el = doc.querySelector(sel);
+  if (!el) return;
+  var r = el.getBoundingClientRect();
+  if (r.bottom > 0 && r.top < win.innerHeight) return;       /* already in view */
+  el.scrollIntoView({ block: "center", inline: "nearest" });
+}
+
+/* ---- drift check + live values for undeclared rows ----------------------- */
+/* Confirms every declared default still matches what the page computes. A row
+   whose element is missing from the current content is flagged rather than
+   silently passing. */
+function probe() {
+  var doc = frame.contentDocument, win = frame.contentWindow;
+  if (!doc || !win) return;
+  var root = doc.documentElement;
+  var rootPx = parseFloat(win.getComputedStyle(root).fontSize) || 16;
+  var drift = [];
+
+  ROWS.forEach(function (r) {
+    if (r.isFont || r.prop === "--col") { r.gone = false; return; }
+    var el = doc.querySelector(r.sel);
+    r.gone = !el;
+    if (!el) return;
+
+    var cs = win.getComputedStyle(el);
+    var px = parseFloat(cs[r.prop === "gap" ? "columnGap" : r.prop.replace(/-(\w)/g, function (_, c) { return c.toUpperCase(); })]);
+    var fs = parseFloat(cs.fontSize);
+    var live;
+    if (r.prop === "font-weight")      live = parseFloat(cs.fontWeight);
+    else if (r.prop === "line-height") live = isNaN(px) ? 0 : px / fs;          /* px back to a ratio */
+    else if (r.unit === "em")          live = isNaN(px) ? 0 : px / fs;
+    else if (r.unit === "rem")         live = isNaN(px) ? 0 : px / rootPx;
+    else                               live = isNaN(px) ? 0 : px;
+    r.live = +live.toFixed(3);
+
+    /* Only meaningful while the row is untouched — once injected, the page is
+       computing the tuner's value, not the stylesheet's. */
+    if (r.def != null && !changed(r)) {
+      var tol = r.unit === "px" ? 0.25 : (r.unit === "" ? 0.02 : 0.02);
+      if (Math.abs(r.live - r.def) > tol) {
+        drift.push(r.sel + " { " + r.prop + " } is " + num(r.live) + r.unit + ", table says " + num(r.def) + r.unit);
+      }
+    }
+  });
+
+  /* --col is a custom property: compare the declaration, not a computed px. */
+  var colRow = ROWS.filter(function (r) { return r.prop === "--col"; })[0];
+  if (colRow && !changed(colRow)) {
+    var col = win.getComputedStyle(root).getPropertyValue("--col").trim();
+    if (col && col !== num(colRow.def) + "rem") drift.push(":root { --col } is " + col + ", table says " + num(colRow.def) + "rem");
+  }
+
+  var banner = document.getElementById("drift");
+  banner.innerHTML = drift.length
+    ? "<strong>styles.css has moved under this tool</strong> — the &ldquo;was&rdquo; comments in the export will be wrong until the ROWS table in this file is updated:<br>" +
+      drift.map(function (d) { return "<code>" + d + "</code>"; }).join("<br>")
+    : "";
+
+  paint();
+}
+
+/* Which face actually won, measured rather than trusted: a family that is
+   neither installed nor @font-face'd resolves to generic serif in silence. */
+function resolved(stack) {
+  var doc = frame.contentDocument;
+  if (!doc) return "";
+  var probeCtx = doc.createElement("canvas").getContext("2d");
+  var w = function (fam) { probeCtx.font = "40px " + fam; return probeCtx.measureText("Handgloves 123").width; };
+  var known = ["Sitka Text", "Constantia", "Latin Modern Roman", "LM Roman 9", "LM Roman 8", "LM Roman 12",
+               "Charter", "Cambria", "Palatino Linotype", "Georgia", "Times New Roman", "serif"];
+  var want = w(stack), hit = "?";
+  for (var i = 0; i < known.length; i++) {
+    var name = known[i] === "serif" ? "serif" : '"' + known[i] + '"';
+    if (Math.abs(w(name) - want) < 0.01) { hit = known[i] === "serif" ? "generic serif" : known[i]; break; }
+  }
+  return hit;
+}
+
+/* ---- CSS out ------------------------------------------------------------- */
+function buildCSS(annotated) {
+  var rows = changedRows();
+  if (!rows.length) return annotated ? "/* nothing changed yet — move a slider */" : "";
+
+  var order = [], bySel = {};
+  rows.forEach(function (r) {
+    if (!bySel[r.sel]) { bySel[r.sel] = []; order.push(r.sel); }
+    bySel[r.sel].push(r);
+  });
+
+  var out = [];
+  if (annotated) {
+    out.push("/* " + Array(74).join("─"));
+    out.push("   type-tuner export — /portfolio — " + rows.length + " change" + (rows.length === 1 ? "" : "s"));
+    out.push("   tuned at " + state.w + "×" + state.h + ", " + state.theme + " theme, " + new Date().toISOString().slice(0, 16).replace("T", " "));
+    if (state.active != null && state.profiles[state.active] && !dirty()) out.push("   profile: " + pname(state.active));
+    out.push("   Selectors and units match portfolio/styles.css.");
+    out.push("   " + Array(74).join("─") + " */");
+    out.push("");
+  }
+
+  order.forEach(function (sel) {
+    if (annotated) {
+      bySel[sel].forEach(function (r) {
+        if (r.note) out.push("/* " + r.prop + ": " + r.note + " */");
+      });
+    }
+    out.push(sel + " {");
+    bySel[sel].forEach(function (r) {
+      var line = "  " + r.prop + ": " + css(r, val(r)) + ";";
+      if (annotated) {
+        var was = r.def == null ? "not set" : css(r, r.def);
+        while (line.length < 43) line += " ";   /* line up the comments, but never run into one */
+        line += " /* was " + was + " */";
+      }
+      out.push(line);
+    });
+    out.push("}");
+  });
+
+  if (annotated) {
+    out.push("");
+    out.push("/* tuner-state v1: " + JSON.stringify(state.vals) + " */");
+  }
+  return out.join("\n");
+}
+
+/* ---- rendering the panel ------------------------------------------------- */
+var controls = document.getElementById("controls");
+
+function chips(host, items, isOn, pick) {
+  host.textContent = "";
+  items.forEach(function (it) {
+    var b = document.createElement("button");
+    b.type = "button";
+    b.textContent = it.label;
+    b.setAttribute("aria-pressed", String(isOn(it)));
+    b.addEventListener("click", function () { pick(it); });
+    host.appendChild(b);
+  });
+}
+
+/* Delegated, so it covers the slider, the number box, the label and the select
+   in one place, and keeps working for rows built later. */
+function wireHighlight() {
+  function rowOf(e) {
+    var n = e.target;
+    while (n && n !== controls) { if (n.__row) return n.__row; n = n.parentNode; }
+    return null;
+  }
+  controls.addEventListener("mouseover", function (e) { var r = rowOf(e); if (r) highlight(r.hi); });
+  controls.addEventListener("mouseout",  function (e) { if (!controls.contains(e.relatedTarget)) highlight(null); });
+  controls.addEventListener("focusin",   function (e) { var r = rowOf(e); if (r) { highlight(r.hi); reveal(r.hi); } });
+  controls.addEventListener("focusout",  function (e) { if (!controls.contains(e.relatedTarget)) highlight(null); });
+  controls.addEventListener("pointerdown", function (e) { var r = rowOf(e); if (r) reveal(r.hi); });
+}
+
+function buildPanel() {
+  GROUPS.forEach(function (g) {
+    var box = document.createElement("section");
+    box.className = "g" + (state.shut[g.name] ? " shut" : "");
+
+    var head = document.createElement("button");
+    head.type = "button";
+    head.className = "ghead";
+    head.appendChild(document.createTextNode(g.name));
+    var badge = document.createElement("span");
+    badge.className = "badge";
+    head.appendChild(badge);
+    g.badge = badge;
+    head.addEventListener("click", function () {
+      box.classList.toggle("shut");
+      state.shut[g.name] = box.classList.contains("shut");
+      save();
+    });
+    box.appendChild(head);
+
+    var body = document.createElement("div");
+    body.className = "gbody";
+    g.rows.forEach(function (r) { body.appendChild(r.isFont ? fontRow(r) : numRow(r)); });
+    box.appendChild(body);
+    controls.appendChild(box);
+  });
+}
+
+function numRow(r) {
+  var row = document.createElement("div");
+  row.className = "row";
+  r.el = row;
+  row.__row = r;
+
+  var lab = document.createElement("label");
+  lab.textContent = r.label;
+  lab.title = r.sel + " { " + r.prop + " }" + (r.note ? "  — " + r.note : "");
+
+  var range = document.createElement("input");
+  range.type = "range";
+  range.min = r.min; range.max = r.max; range.step = r.step;
+
+  var box = document.createElement("input");
+  box.type = "number";
+  box.min = r.min; box.max = r.max; box.step = r.step;
+
+  var undo = document.createElement("button");
+  undo.type = "button";
+  undo.className = "undo";
+  undo.textContent = "↺";
+  undo.title = "back to " + (r.def == null ? "unset" : css(r, r.def));
+
+  r.inputs = [range, box];
+
+  function set(v, live) {
+    v = Math.min(r.max, Math.max(r.min, +v));
+    state.vals[r.k] = +v.toFixed(4);
+    range.value = v; box.value = num(v);
+    if (live) apply(true); else commit(r.k);   /* mid-drag: no history entry */
+  }
+  range.addEventListener("input",  function () { set(range.value, true); });
+  range.addEventListener("change", function () { set(range.value, false); });
+  box.addEventListener("input",    function () { if (box.value !== "") set(box.value, false); });
+  undo.addEventListener("click",   function () { delete state.vals[r.k]; commit(null); });
+
+  row.appendChild(lab); row.appendChild(range); row.appendChild(box); row.appendChild(undo);
+  return row;
+}
+
+function fontRow(r) {
+  var row = document.createElement("div");
+  row.className = "frow";
+  r.el = row;
+  row.__row = r;
+
+  var lab = document.createElement("label");
+  lab.textContent = r.label;
+  lab.title = r.sel + " { " + r.prop + " }";
+
+  var wrap = document.createElement("div");
+  wrap.className = "sel";
+  var sel = document.createElement("select");
+  STACKS.forEach(function (s) {
+    var o = document.createElement("option");
+    o.value = s[1]; o.textContent = s[0];
+    sel.appendChild(o);
+  });
+  var custom = document.createElement("option");
+  custom.value = "__custom"; custom.textContent = "custom…";
+  sel.appendChild(custom);
+  wrap.appendChild(sel);
+
+  var face = document.createElement("span");
+  face.className = "selnote";
+
+  var free = document.createElement("input");
+  free.type = "text";
+  free.placeholder = 'e.g. Charter, Georgia, serif';
+  free.hidden = true;
+
+  var undo = document.createElement("button");
+  undo.type = "button";
+  undo.className = "undo";
+  undo.textContent = "↺";
+  undo.style.visibility = "hidden";
+  wrap.appendChild(undo);
+
+  r.inputs = [sel, free];
+  r.face = face;
+  r.undo = undo;
+
+  sel.addEventListener("change", function () {
+    if (sel.value === "__custom") {
+      free.hidden = false;
+      free.value = free.value || effective(r);
+      free.focus();
+      state.vals[r.k] = free.value;
+    } else {
+      free.hidden = true;
+      state.vals[r.k] = sel.value;
+    }
+    commit(r.k);
+  });
+  free.addEventListener("input", function () { state.vals[r.k] = free.value; commit(r.k); });
+  undo.addEventListener("click", function () { delete state.vals[r.k]; free.hidden = true; commit(null); });
+
+  row.appendChild(lab); row.appendChild(wrap); row.appendChild(free); row.appendChild(face);
+  return row;
+}
+
+/* ---- paint: push state into the widgets --------------------------------- */
+function paint() {
+  ROWS.forEach(function (r) {
+    if (!r.el) return;
+    var on = changed(r);
+    r.el.classList.toggle("on", on);
+    r.el.classList.toggle("gone", !!r.gone);
+
+    if (r.isFont) {
+      var stack = effective(r), known = STACKS.some(function (s) { return s[1] === stack; });
+      r.inputs[0].value = known ? stack : "__custom";
+      r.inputs[1].hidden = known;
+      if (!known) r.inputs[1].value = stack;
+      r.undo.style.visibility = on ? "visible" : "hidden";
+      r.face.textContent = "→ " + resolved(stack);
+    } else {
+      var v = effective(r);
+      if (document.activeElement !== r.inputs[1]) r.inputs[1].value = num(v);
+      r.inputs[0].value = v;
+      if (r.gone) r.el.title = r.sel + " isn't on the page with the current content.js";
+    }
+  });
+
+  GROUPS.forEach(function (g) {
+    var n = g.rows.filter(changed).length;
+    g.badge.textContent = n ? n : "";
+    g.badge.dataset.n = n;
+  });
+
+  var total = changedRows().length;
+  var count = document.getElementById("count");
+  count.textContent = total;
+  count.dataset.n = total;
+
+  var out = document.getElementById("out");
+  if (document.activeElement !== out) out.value = buildCSS(true);
+
+  chips(document.getElementById("sizes"),
+    SIZES.map(function (s) { return { label: s.label, value: s.k }; }),
+    function (i) { return i.value === state.preset; },
+    function (i) { setPreset(i.value); });
+
+  if (document.activeElement !== fw) fw.value = state.w;
+  if (document.activeElement !== fh) fh.value = state.h;
+  document.getElementById("hilite").setAttribute("aria-pressed", String(!!state.hi));
+
+  document.getElementById("undo").disabled = hix <= 0;
+  document.getElementById("redo").disabled = hix >= hist.length - 1;
+  paintProfiles();
+}
+
+function paintProfiles() {
+  var host = document.getElementById("profiles");
+  host.textContent = "";
+  var isDirty = dirty();
+
+  state.profiles.forEach(function (p, i) {
+    var cell = document.createElement("div");
+    cell.className = "slot" + (p ? "" : " empty") + (state.active === i ? " on" : "") + (state.active === i && isDirty ? " dirty" : "");
+
+    var load = document.createElement("button");
+    load.type = "button";
+    load.className = "load";
+    load.textContent = pname(i);
+    load.title = p
+      ? pname(i) + " — " + Object.keys(p.vals).length + " change(s). Click or press " + (i + 1) + " to load." +
+        "\nDouble-click renames, alt-click clears.\n\n" + Object.keys(p.vals).map(function (k) { return k.replace("|", " → ") + ": " + p.vals[k]; }).join("\n")
+      : "Empty. Click to store the current " + changedRows().length + " change(s) here.";
+
+    load.addEventListener("click", function (e) {
+      if (e.altKey) return clearProfile(i);
+      if (p) loadProfile(i); else saveProfile(i);
+    });
+    load.addEventListener("dblclick", function () { renameProfile(i); });
+
+    var put = document.createElement("button");
+    put.type = "button";
+    put.className = "put";
+    put.textContent = "⤓";
+    put.title = "Save the current state into " + pname(i);
+    put.addEventListener("click", function () { saveProfile(i); });
+
+    cell.appendChild(load);
+    cell.appendChild(put);
+    host.appendChild(cell);
+  });
+}
+
+/* live=true during a slider drag: restyle and repaint, but spare the disk a
+   write on every intermediate value. */
+function apply(live) {
+  inject();
+  paint();
+  if (!live) save();
+}
+
+/* ---- wiring -------------------------------------------------------------- */
+frame.addEventListener("load", function () {
+  var doc = frame.contentDocument;
+  if (!doc) return;
+  doc.documentElement.setAttribute("data-theme", state.theme);
+  Promise.all([addLink(doc, "/fonts/fonts.css")])
+    .then(function () { return doc.fonts ? doc.fonts.ready : null; })
+    .then(function () { inject(); probe(); });
+});
+
+document.getElementById("theme").addEventListener("click", function () {
+  state.theme = state.theme === "dark" ? "light" : "dark";
+  save();
+  loadFrame();                              /* the page reads the theme on boot */
+});
+document.getElementById("reload").addEventListener("click", loadFrame);
+document.getElementById("whole").addEventListener("click", wholePage);
+document.getElementById("undo").addEventListener("click", undoStep);
+document.getElementById("redo").addEventListener("click", redoStep);
+
+/* Digits switch profiles for quick A/B; Ctrl+Z / Ctrl+Shift+Z / Ctrl+Y walk the
+   timeline. Both stand down while a text or number field has focus, so typing a
+   size stays typing a size and the browser's own text undo is left alone. */
+addEventListener("keydown", function (e) {
+  var t = document.activeElement, tag = t ? t.tagName : "";
+  var typing = tag === "TEXTAREA" || (tag === "INPUT" && (t.type === "text" || t.type === "number"));
+
+  if (e.ctrlKey || e.metaKey) {
+    var k = e.key.toLowerCase();
+    if (typing && k === "z") return;                 /* let the field undo itself */
+    if (k === "z" && !e.shiftKey) { e.preventDefault(); undoStep(); }
+    else if (k === "y" || (k === "z" && e.shiftKey)) { e.preventDefault(); redoStep(); }
+    return;
+  }
+
+  if (typing || e.altKey) return;
+  var n = parseInt(e.key, 10);
+  if (n >= 1 && n <= SLOTS) {
+    e.preventDefault();
+    if (state.profiles[n - 1]) loadProfile(n - 1); else say("P" + n + " is empty");
+  }
+});
+
+document.getElementById("hilite").addEventListener("click", function () {
+  state.hi = !state.hi;
+  if (!state.hi) highlight(null);
+  save(); paint();
+});
+
+/* Typing a size by hand is its own preset — no chip stays lit for it. */
+var fw = document.getElementById("fw"), fh = document.getElementById("fh");
+function dim(input, key, min) {
+  input.addEventListener("input", function () {
+    var v = parseInt(input.value, 10);
+    if (isNaN(v) || v < min) return;
+    state[key] = v; state.preset = "custom";
+    sizeFrame(); save(); paint();
+  });
+}
+dim(fw, "w", 320);
+dim(fh, "h", 400);
+
+/* Follow the window while "my window" is the chosen size. */
+var reTimer = null;
+addEventListener("resize", function () {
+  if (state.preset !== "window") return;
+  clearTimeout(reTimer);
+  reTimer = setTimeout(function () { setPreset("window"); }, 120);
+});
+
+document.getElementById("copy").addEventListener("click", function () {
+  var out = document.getElementById("out");
+  var done = function () { say("copied — paste it into the chat"); };
+  if (navigator.clipboard) navigator.clipboard.writeText(out.value).then(done, function () { out.select(); document.execCommand("copy"); done(); });
+  else { out.select(); document.execCommand("copy"); done(); }
+});
+
+document.getElementById("import").addEventListener("click", function () {
+  var text = document.getElementById("out").value;
+  var m = text.match(/tuner-state v1:\s*(\{[\s\S]*?\})\s*\*\//);
+  if (!m) return say("no `tuner-state` line found in that text");
+  try {
+    var vals = JSON.parse(m[1]);
+    /* Drop keys this build no longer knows, so a stale export can't wedge it. */
+    var live = {};
+    ROWS.forEach(function (r) { if (vals[r.k] != null) live[r.k] = vals[r.k]; });
+    state.vals = live;
+    commit(null);
+    say("imported " + changedRows().length + " change(s)");
+  } catch (e) { say("that state line didn't parse"); }
+});
+
+document.getElementById("resetall").addEventListener("click", function () {
+  if (!changedRows().length) return;
+  if (!confirm("Discard every change and go back to what styles.css ships?")) return;
+  state.vals = {};
+  commit(null);                             /* undoable — Ctrl+Z brings it back */
+  say("reset");
+});
+
+var sayTimer = null;
+function say(msg) {
+  var el = document.getElementById("status");
+  el.textContent = msg;
+  clearTimeout(sayTimer);
+  sayTimer = setTimeout(function () { el.textContent = ""; }, 2600);
+}
+
+buildPanel();
+wireHighlight();
+paint();
+loadFrame();
+</script>
+</body>
+</html>
