@@ -101,7 +101,10 @@ Both pages set an absolute `<base href>`, so their assets only resolve when
    contact entries.
 2. Edit the project wall in `projects/index.html` directly. Unlike the
    portfolio, the cards are hand-written markup with no content file; each
-   carries its own tint, stack, line drawing and links.
+   carries its own tint, stack, year, line drawing and links. Order matters
+   past the markup: the three feature cards must stay the first three in the
+   wall, and the wide card last, or the breakpoint rules that keep the grid
+   gapless start leaving holes.
 3. If you change a `styles.css`, `app.js` or `content.js`, bump the matching
    `?v=` query string in that page's `index.html` so browsers pick up the new
    version — there is no build step doing cache-busting for you.

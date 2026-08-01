@@ -32,7 +32,7 @@
       document.documentElement.className += " js";
     })();
   </script>
-  <link rel="stylesheet" href="styles.css?v=4">
+  <link rel="stylesheet" href="styles.css?v=5">
 </head>
 <body>
   <!-- Line art shared by the cards; each <use> pulls one symbol, tinted by currentColor. -->
@@ -110,6 +110,14 @@
         <circle cx="14.5" cy="13" r="1.2" opacity=".55"/>
         <path d="M19 23h10M19 28h10M19 33h6" opacity=".55"/>
       </g>
+      <g id="art-archive" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="13" y="4" width="25" height="19" rx="2" opacity=".38"/>
+        <rect x="9" y="9" width="25" height="19" rx="2" opacity=".62"/>
+        <rect x="5" y="14" width="25" height="19" rx="2"/>
+        <path d="M10 21h15M10 26h10" opacity=".5"/>
+        <path d="M38 25v9m0 0-3-3m3 3 3-3" opacity=".75"/>
+        <path d="M33 39h10" opacity=".55"/>
+      </g>
       <g id="icon-globe" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round">
         <circle cx="8" cy="8" r="6.2"/>
         <path d="M1.8 8h12.4M8 1.8c1.7 1.9 2.6 4 2.6 6.2S9.7 12.3 8 14.2C6.3 12.3 5.4 10.2 5.4 8S6.3 3.7 8 1.8Z"/>
@@ -120,6 +128,10 @@
       <g id="icon-lock" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round">
         <rect x="3.2" y="7" width="9.6" height="7" rx="1.6"/>
         <path d="M5.6 7V5a2.4 2.4 0 0 1 4.8 0v2"/>
+      </g>
+      <g id="icon-download" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M8 2.2v7.4m0 0L5.2 6.8M8 9.6l2.8-2.8"/>
+        <path d="M2.6 11.4v1.2a1.2 1.2 0 0 0 1.2 1.2h8.4a1.2 1.2 0 0 0 1.2-1.2v-1.2"/>
       </g>
     </defs>
   </svg>
@@ -136,10 +148,13 @@
 
       <ul class="wall">
         <li class="card card--feature card--eater">
-          <h2 class="card__title">Eater Restaurant Map</h2>
+          <div class="card__head">
+            <h2 class="card__title">Eater Restaurant Map</h2>
+            <p class="card__year">2026</p>
+          </div>
           <ul class="card__tags"><li>SvelteKit</li><li>MapLibre</li><li>PMTiles</li><li>Python</li></ul>
           <div class="card__art card__art--wide"><svg viewBox="0 0 220 88" aria-hidden="true" focusable="false"><use href="#art-map"/></svg></div>
-          <p class="card__desc">2,336 London restaurants from 296 Eater guides, on one map that works offline.</p>
+          <p class="card__desc">2,336 London restaurants, merged out of 296 scattered Eater guides. Installable, and self-hosted down to the vector tiles, so it still works offline on the Tube.</p>
           <p class="card__links">
             <a href="https://eater.chrisj.uk"><svg class="card__icon" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><use href="#icon-globe"/></svg>Live</a>
             <span class="card__sep" aria-hidden="true">|</span>
@@ -148,22 +163,28 @@
         </li>
 
         <li class="card card--feature card--rcr">
-          <h2 class="card__title">Consultant Recruitment</h2>
+          <div class="card__head">
+            <h2 class="card__title">Consultant Recruitment</h2>
+            <p class="card__year">2024</p>
+          </div>
           <ul class="card__tags"><li>Django</li><li>SvelteKit</li><li>TypeScript</li><li>Zod</li></ul>
           <div class="card__art card__art--wide"><svg viewBox="0 0 220 88" aria-hidden="true" focusable="false"><use href="#art-workflow"/></svg></div>
-          <p class="card__desc">A typed, auditable replacement for a statutory NHS hiring workflow. Awarded the EECS Project Prize.</p>
+          <p class="card__desc">The NHS consultant-appointment process I used to run by hand, rebuilt as a typed seven-state workflow. 92.7% — EECS Final Year Project Prize.</p>
           <p class="card__links">
             <a href="https://rcr.chrisj.uk"><svg class="card__icon" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><use href="#icon-globe"/></svg>Demo</a>
             <span class="card__sep" aria-hidden="true">|</span>
-            <a href="https://github.com/chrisJuresh/qmul-coursework/tree/main/final-year-project"><svg class="card__icon" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><use href="#icon-code"/></svg>Code</a>
+            <a href="https://github.com/chrisJuresh/uni-rcr"><svg class="card__icon" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><use href="#icon-code"/></svg>Code</a>
           </p>
         </li>
 
         <li class="card card--feature card--watch">
-          <h2 class="card__title">a3watch</h2>
+          <div class="card__head">
+            <h2 class="card__title">a3watch</h2>
+            <p class="card__year">2026</p>
+          </div>
           <ul class="card__tags"><li>Python</li><li>Linux /proc</li><li>SQLite</li><li>systemd</li></ul>
           <div class="card__art card__art--wide"><svg viewBox="0 0 220 88" aria-hidden="true" focusable="false"><use href="#art-watch"/></svg></div>
-          <p class="card__desc">Home-server monitoring designed never to wake the sleeping disks it observes.</p>
+          <p class="card__desc">Home-server monitoring that never wakes a sleeping disk, names the process behind every spin-up, and meters its own electricity in pennies per year.</p>
           <p class="card__links">
             <a href="https://github.com/chrisJuresh/dashboard"><svg class="card__icon" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><use href="#icon-code"/></svg>Code</a>
             <span class="card__sep" aria-hidden="true">|</span>
@@ -174,23 +195,33 @@
         <li class="card card--compact card--films">
           <div class="card__art"><svg viewBox="0 0 48 48" aria-hidden="true" focusable="false"><use href="#art-film"/></svg></div>
           <div class="card__body">
-            <h2 class="card__title">Film Index</h2>
+            <div class="card__head">
+              <h2 class="card__title">Film Index</h2>
+              <p class="card__year">2026</p>
+            </div>
             <ul class="card__tags"><li>Svelte 5</li><li>Rust/Tauri</li><li>ffmpeg</li></ul>
-            <p class="card__desc">A self-hosted cinema for ~26,500 ranked films, from catalogue ingestion to playback.</p>
+            <p class="card__desc">A self-hosted cinema for the ~26,500 films of the TSPDT canon: catalogue, acquisition, and hardware-transcoded playback, on no runtime npm dependencies.</p>
             <p class="card__links">
               <a href="https://github.com/chrisJuresh/films"><svg class="card__icon" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><use href="#icon-code"/></svg>Code</a>
+              <span class="card__sep" aria-hidden="true">|</span>
+              <a href="https://github.com/chrisJuresh/films/releases"><svg class="card__icon" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><use href="#icon-download"/></svg>Desktop app</a>
             </p>
           </div>
         </li>
 
-        <li class="card card--compact card--paper">
-          <div class="card__art"><svg viewBox="0 0 48 48" aria-hidden="true" focusable="false"><use href="#art-monitors"/></svg></div>
+        <li class="card card--compact card--which">
+          <div class="card__art"><svg viewBox="0 0 48 48" aria-hidden="true" focusable="false"><use href="#art-archive"/></svg></div>
           <div class="card__body">
-            <h2 class="card__title">paperWiz</h2>
-            <ul class="card__tags"><li>C#</li><li>.NET 8</li><li>WPF</li><li>COM</li></ul>
-            <p class="card__desc">Per-monitor wallpapers colour-matched from one image, evolved across three languages.</p>
+            <div class="card__head">
+              <h2 class="card__title">Which? Archive</h2>
+              <p class="card__year">2026</p>
+            </div>
+            <ul class="card__tags"><li>Playwright</li><li>Python</li><li>SvelteKit</li></ul>
+            <p class="card__desc">8,543 pages captured at a 100% rate, link-rewritten into a mirror that stands alone. A private archive of my own subscription; nothing republished.</p>
             <p class="card__links">
-              <a href="https://github.com/chrisJuresh/paperWiz"><svg class="card__icon" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><use href="#icon-code"/></svg>Code</a>
+              <a href="https://github.com/chrisJuresh/which"><svg class="card__icon" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><use href="#icon-code"/></svg>Code</a>
+              <span class="card__sep" aria-hidden="true">|</span>
+              <span class="card__note"><svg class="card__icon" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><use href="#icon-lock"/></svg>Private deploy</span>
             </p>
           </div>
         </li>
@@ -198,23 +229,14 @@
         <li class="card card--compact card--vault">
           <div class="card__art"><svg viewBox="0 0 48 48" aria-hidden="true" focusable="false"><use href="#art-vault"/></svg></div>
           <div class="card__body">
-            <h2 class="card__title">Immutable Media Vault</h2>
-            <ul class="card__tags"><li>Python</li><li>SQLite</li><li>FastAPI</li></ul>
-            <p class="card__desc">A content-addressed archive built around one hard rule: never mutate the source.</p>
+            <div class="card__head">
+              <h2 class="card__title">Immutable Media Vault</h2>
+              <p class="card__year">2026</p>
+            </div>
+            <ul class="card__tags"><li>Python</li><li>BLAKE3</li><li>SQLite</li><li>FastAPI</li></ul>
+            <p class="card__desc">A content-addressed archive built around one hard rule: never mutate the source. It refuses to run if Windows would update an access timestamp.</p>
             <p class="card__links">
               <span class="card__note"><svg class="card__icon" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><use href="#icon-lock"/></svg>Private · current work</span>
-            </p>
-          </div>
-        </li>
-
-        <li class="card card--compact card--stats">
-          <div class="card__art"><svg viewBox="0 0 48 48" aria-hidden="true" focusable="false"><use href="#art-bars"/></svg></div>
-          <div class="card__body">
-            <h2 class="card__title">cs-stats</h2>
-            <ul class="card__tags"><li>JavaScript</li><li>pandas</li><li>Streamlit</li></ul>
-            <p class="card__desc">A browser-to-Streamlit pipeline that settled a friend-group CS2 leaderboard with data.</p>
-            <p class="card__links">
-              <a href="https://github.com/chrisJuresh/cs-stats"><svg class="card__icon" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><use href="#icon-code"/></svg>Code</a>
             </p>
           </div>
         </li>
@@ -222,11 +244,44 @@
         <li class="card card--compact card--course">
           <div class="card__art"><svg viewBox="0 0 48 48" aria-hidden="true" focusable="false"><use href="#art-curve"/></svg></div>
           <div class="card__body">
-            <h2 class="card__title">Computer Science Work</h2>
+            <div class="card__head">
+              <h2 class="card__title">Computer Science Work</h2>
+              <p class="card__year">2024</p>
+            </div>
             <ul class="card__tags"><li>PyTorch</li><li>PySpark</li><li>XQuery</li></ul>
-            <p class="card__desc">Assessed final-year work: 95.03% on CIFAR-10, 22.7M taxi trips on a Spark cluster.</p>
+            <p class="card__desc">Seven assessed projects, history intact: 95.03% on CIFAR-10, 22.7M taxi trips on Spark, an XQuery corpus pipeline. Three graded 100%; the degree, 82.4%.</p>
             <p class="card__links">
               <a href="https://github.com/chrisJuresh/qmul-coursework"><svg class="card__icon" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><use href="#icon-code"/></svg>Code</a>
+            </p>
+          </div>
+        </li>
+
+        <li class="card card--compact card--paper">
+          <div class="card__art"><svg viewBox="0 0 48 48" aria-hidden="true" focusable="false"><use href="#art-monitors"/></svg></div>
+          <div class="card__body">
+            <div class="card__head">
+              <h2 class="card__title">paperWiz</h2>
+              <p class="card__year">2021–2026</p>
+            </div>
+            <ul class="card__tags"><li>C#</li><li>.NET 8</li><li>WPF</li><li>COM</li></ul>
+            <p class="card__desc">Per-monitor wallpapers colour-matched from one image — its own pywal palette engine, a hand-written COM projection, three languages in five years.</p>
+            <p class="card__links">
+              <a href="https://github.com/chrisJuresh/paperWiz"><svg class="card__icon" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><use href="#icon-code"/></svg>Code</a>
+            </p>
+          </div>
+        </li>
+
+        <li class="card card--compact card--stats">
+          <div class="card__art"><svg viewBox="0 0 48 48" aria-hidden="true" focusable="false"><use href="#art-bars"/></svg></div>
+          <div class="card__body">
+            <div class="card__head">
+              <h2 class="card__title">cs-stats</h2>
+              <p class="card__year">2026</p>
+            </div>
+            <ul class="card__tags"><li>JavaScript</li><li>pandas</li><li>Streamlit</li></ul>
+            <p class="card__desc">A browser-to-Streamlit pipeline that settled a friend-group CS2 leaderboard — normalised per round, so playing twice as much doesn't read as playing twice as well.</p>
+            <p class="card__links">
+              <a href="https://github.com/chrisJuresh/cs-stats"><svg class="card__icon" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><use href="#icon-code"/></svg>Code</a>
             </p>
           </div>
         </li>
@@ -234,9 +289,12 @@
         <li class="card card--compact card--infra">
           <div class="card__art"><svg viewBox="0 0 48 48" aria-hidden="true" focusable="false"><use href="#art-tunnel"/></svg></div>
           <div class="card__body">
-            <h2 class="card__title">Homelab Platform</h2>
+            <div class="card__head">
+              <h2 class="card__title">Homelab Platform</h2>
+              <p class="card__year">2026</p>
+            </div>
             <ul class="card__tags"><li>Docker Compose</li><li>Cloudflare Tunnel</li></ul>
-            <p class="card__desc">One outbound tunnel and one label-gated deployment layer behind every private app.</p>
+            <p class="card__desc">One outbound tunnel and one label-gated updater behind every private app. Push to main, live in two minutes, no open inbound ports.</p>
             <p class="card__links">
               <a href="https://github.com/chrisJuresh/infra"><svg class="card__icon" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><use href="#icon-code"/></svg>Code</a>
             </p>
@@ -246,9 +304,12 @@
         <li class="card card--compact card--wide card--site">
           <div class="card__art"><svg viewBox="0 0 48 48" aria-hidden="true" focusable="false"><use href="#art-window"/></svg></div>
           <div class="card__body">
-            <h2 class="card__title">This Site</h2>
+            <div class="card__head">
+              <h2 class="card__title">This Site</h2>
+              <p class="card__year">2026</p>
+            </div>
             <ul class="card__tags"><li>HTML</li><li>CSS</li><li>Vanilla JS</li><li>Vercel</li></ul>
-            <p class="card__desc">Hand-written, dependency-free and designed to print as a CV. Carousel physics, theming and lazy loading, all implemented rather than imported.</p>
+            <p class="card__desc">Hand-written, dependency-free and designed to print as a CV. Carousel physics, theming and lazy loading, all implemented rather than imported — with 53 photographs brought down from 250 MB of originals to 5.7 MB served.</p>
             <p class="card__links">
               <a href="/portfolio"><svg class="card__icon" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><use href="#icon-globe"/></svg>Live</a>
               <span class="card__sep" aria-hidden="true">|</span>
