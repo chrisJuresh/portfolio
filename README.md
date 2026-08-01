@@ -63,7 +63,7 @@ statically from Vercel.
 │   ├── index.html      # the cards themselves, written by hand
 │   ├── app.js          # theme bootstrap only — no rendering
 │   ├── styles.css      # card grid, per-card tints, print styles
-│   └── og.png          # social preview image
+│   └── og.jpg          # social preview image, 1200×630
 ├── fonts/              # self-hosted Latin Modern Roman — deployed, unlinked
 └── design/             # dev-only typography lab — never deployed
 ```
