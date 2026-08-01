@@ -1,0 +1,14 @@
+# The repo is authored on Windows (core.autocrlf=true) but consumed on Linux —
+# Vercel builds it and the profile-README GitHub Action renders it with headless
+# Chromium. Pin text to LF everywhere so neither side sees a whole-file diff just
+# because the other touched it.
+* text=auto eol=lf
+
+# run.bat is double-clicked by cmd.exe, which is happiest with CRLF.
+*.bat text eol=crlf
+
+# Binary: never normalise, never diff as text.
+*.woff2 binary
+*.jpg   binary
+*.jpeg  binary
+*.png   binary

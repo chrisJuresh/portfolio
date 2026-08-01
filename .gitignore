@@ -1,6 +1,8 @@
 # local tooling / editor
 .claude/
 .openai/
+.agents/
+.codex/
 .vscode/
 .DS_Store
 Thumbs.db
