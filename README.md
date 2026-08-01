@@ -1,159 +1,162 @@
-# Portfolio — Christian Juresh
+# chrisj.uk
 
-A minimal, single-column personal site. On desktop it shows the same narrow
-column as on mobile, centered on the page. The whole page fades in gently on
-load; the photographs are a horizontal carousel that fades into the paper until
-you hover it.
+Personal site and photo portfolio — hand-written HTML, CSS and vanilla
+JavaScript. No framework, no build step, no dependencies.
 
-## Layout
+**Live:** [chrisj.uk](https://chrisj.uk)
 
-This repo is one Vercel project serving two things on `chrisj.uk`:
+A single phone-width column presents a short CV — bio, work experience,
+education, contact — threaded through a full-bleed carousel of 53 of my own
+photographs of London. Alongside it, a wall of tinted cards for the projects.
+Both are a handful of hand-written source files and a folder of images, served
+statically from Vercel.
 
-- `index.html` (repo root) — a tiny **portal** at `chrisj.uk/` (the word
-  "portfolio", centered, linking to the site). Add more links here over time.
-- `portfolio/` — the portfolio site itself, served at `chrisj.uk/portfolio`.
-  It sets `<base href="/portfolio/">` so its assets resolve under that path.
-- `projects/` — the recruiter-facing project wall at `chrisj.uk/projects`: one
-  tinted card per project, each with its stack, a line drawing and its links.
-- `fonts/` — self-hosted Latin Modern Roman (Computer Modern). Not linked by any
-  page; kept as the record of a rejected option. See **Fonts** below.
-- `design/` — dev-only typography lab. Excluded from deploys by `.vercelignore`.
+<!-- screenshot: full-page desktop view, light theme, carousel mid-strip -->
 
-## Editing the content
+## Highlights
 
-**You only ever need to edit `portfolio/content.js`.** It's plain text — your
-name, bio, work history, education, contact links and the list of photos, each
-with a short note explaining it. No HTML, no build step. Save and refresh.
+- **Zero dependencies.** Every behaviour — carousel physics, theming, the
+  scrollbar — is hand-rolled in ~300 lines of plain JavaScript. Nothing the site
+  serves needs installing or building. The one `package.json` in the repo belongs
+  to the dev-only typography lab in `design/`, which never ships.
+- **Momentum carousel.** Wheel flicks and drag-releases feed a velocity that
+  decays with friction each animation frame; when motion settles, the photo
+  nearest the centre eases into place with a cancellable ease-out tween. The
+  first photo stays left-aligned with the text column. Mouse and pen drag
+  with a fling on release; touch stays native; arrow keys step one photo at
+  a time.
+- **Edge fades that dissolve into the page.** The strip fades into the paper
+  colour at both edges using nine-stop gradients that approximate a
+  smoothstep curve (no visible linear banding). The fades lift on hover or
+  keyboard focus, and switch off entirely on narrow viewports where they
+  would obscure the photos.
+- **Flash-free dark mode.** An inline script applies the saved or OS theme
+  before first paint. The site follows OS theme changes until you make an
+  explicit choice with the toggle, which is then remembered in
+  `localStorage`. The `theme-color` meta updates so mobile browser chrome
+  matches.
+- **Accessible.** ARIA carousel semantics, a `role="switch"` theme toggle,
+  keyboard-operable photo strip, visible focus outlines, alt text on every
+  photograph, and `prefers-reduced-motion` support in both the CSS and the
+  JS physics (reduced motion gets instant jumps instead of tweens).
+- **Fast.** 53 images total 5.7 MB (web-optimised copies of ~250 MB of
+  originals, which stay out of the repo). Everything past the first two
+  images lazy-loads; Vercel serves images with
+  `stale-while-revalidate` cache headers.
+- **Prints as a CV.** A print stylesheet hides the carousel and toggle and
+  reflows the page as a clean text CV.
 
-## Files (inside `portfolio/`)
-
-- `content.js` — **the file you edit.** All the words and the photo list.
-- `index.html` — a tiny shell; loads the styles and scripts.
-- `app.js` — renders the page from `content.js` and runs the carousel.
-- `styles.css` — all styling. Colours, the column width (`--col`), the carousel
-  image height (`--slide-h`) and fonts are CSS variables at the top.
-- `img/` — web-optimised photos (EXIF rotation baked in, ~800px wide, ~110 KB
-  each), generated from the originals in `photos/`.
-- `photos/` — untouched full-resolution originals (source of truth). Not committed
-  to git (~250MB); kept local. Regenerate `img/` from these with the Pillow step below.
-
-## Run locally
-
-Double-click **`run.bat`** (Windows). It serves the repo root on the first free
-port from 8000 and opens the page in your browser; close the window or press
-Ctrl+C to stop. Any other platform, or by hand:
+## Project structure
 
 ```
-python -m http.server 8000
+.
+├── index.html          # portal at / — links into /portfolio and /projects
+├── vercel.json         # clean URLs + cache headers for /portfolio/img/*
+├── run.bat             # double-click to preview locally (Windows)
+├── portfolio/          # the CV + photo carousel at /portfolio
+│   ├── index.html      # page shell: meta tags, pre-paint theme bootstrap
+│   ├── content.js      # ALL portfolio content — the only file you edit
+│   ├── app.js          # renders content.js and runs the carousel + theme
+│   ├── styles.css      # layout, warm light/dark palettes, fades, print CV
+│   └── img/            # web-optimised photographs
+├── projects/           # the project wall at /projects
+│   ├── index.html      # the cards themselves, written by hand
+│   ├── app.js          # theme bootstrap only — no rendering
+│   ├── styles.css      # card grid, per-card tints, print styles
+│   └── og.png          # social preview image
+├── fonts/              # self-hosted Latin Modern Roman — deployed, unlinked
+└── design/             # dev-only typography lab — never deployed
 ```
 
-Then open <http://localhost:8000>. Serve from the **repo root**, not from inside
-`portfolio/` or `projects/` — both pages set an absolute `<base href>`, so their
-assets only resolve when `/portfolio` and `/projects` sit under the server root.
-For the same reason, opening the HTML files straight off disk won't work.
+`fonts/` and `design/` are both leftovers of settling the typeface, and neither
+affects a visitor. `fonts/` holds Latin Modern Roman as woff2 subsets; no page
+links it, but it stays deployable so `/fonts/*.woff2` is there if that decision is
+ever revisited. `design/` is excluded from deploys entirely — see **Typography**.
 
-## The carousel
+The content lives in `portfolio/content.js` as one plain-object literal
+(name, bio, work, education, contact, and the photo list with alt text).
+`app.js` renders it — HTML-escaping every string on the way — so changing
+the site never means touching markup or logic. The file is commented so a
+non-developer could edit it.
 
-- Scroll it with the scrollbar, the mouse wheel, a trackpad, by dragging, by
-  swiping on touch, or by focusing it and using the arrow keys.
-- By default it fades into the page on the right (and on the left once you've
-  scrolled); hovering (or keyboard-focusing) it reveals every photo.
-- To add/remove/reorder photos, edit the `photos` list in `content.js`. Any file
-  in `img/` can be used. To re-optimise new originals: Pillow
-  `ImageOps.exif_transpose`, resize to 800px wide, quality 82, progressive JPEG.
+## Running locally
 
-## Notes
+There is nothing to install. On Windows, double-click **`run.bat`** — it serves
+the repo root on the first free port from 8000 and opens a browser; close the
+window or press Ctrl+C to stop. Anywhere else:
 
-- Motion (page fade-in, carousel fades) is automatically disabled for visitors
-  who have "reduce motion" turned on.
-- Built as plain HTML/CSS/JS on purpose — for a single page this is lighter and
-  simpler to maintain than a framework like SvelteKit, with no build step.
-- Before deploying: set `og:image` / add `og:url` + `<link rel="canonical">` in
-  `index.html`'s `<head>` to **absolute** URLs on your domain, for link previews.
-- The subtitle (`London, UK`) and bio prose are placeholder copy — replace with
-  your own words. The CV phone number is intentionally omitted from this public page.
+```sh
+python -m http.server
+# then open http://localhost:8000/
+```
 
-_Please proofread the content before publishing._
+Serve the **repo root**, not a page directory, and don't open the HTML off disk.
+Both pages set an absolute `<base href>`, so their assets only resolve when
+`/portfolio` and `/projects` sit under the server root.
 
-## Fonts
+## Editing the site
 
-The site is set in **Sitka** — Matthew Carter's serif, cut for reading on screen
-and bundled with Windows. Every page uses one stack, with two deliberate
-exceptions noted below:
+1. Edit `portfolio/content.js` — add or reorder photos (any file in
+   `portfolio/img/` can be used), change the bio, work, education or
+   contact entries.
+2. Edit the project wall in `projects/index.html` directly. Unlike the
+   portfolio, the cards are hand-written markup with no content file; each
+   carries its own tint, stack, line drawing and links.
+3. If you change a `styles.css`, `app.js` or `content.js`, bump the matching
+   `?v=` query string in that page's `index.html` so browsers pick up the new
+   version — there is no build step doing cache-busting for you.
+
+Full-resolution photo originals are deliberately untracked (see
+`.gitignore`); the repo carries only the optimised web copies in
+`portfolio/img/`, which keeps the repository lean and deploys fast. To
+optimise new originals: Pillow — `ImageOps.exif_transpose`, resize to
+800 px wide, quality 82, progressive JPEG (~110 KB each).
+
+Colours, the column width (`--col`), the carousel image height
+(`--slide-h`) and the fonts are CSS variables at the top of `styles.css`.
+
+## Typography
+
+Both pages are set in **Sitka** — Matthew Carter's serif, cut for reading on
+screen and bundled with Windows:
 
 ```css
 "Sitka Text", Charter, "Iowan Old Style", Georgia, serif
 ```
 
-Two things worth knowing before editing it:
+Two things to know before editing it. `Sitka` on its own resolves nowhere: the
+family is addressed by optical size, and `Sitka Text` is the reading cut. And it
+can't be self-hosted — it's licensed with Windows, not redistributable — so the
+rest of the stack isn't decoration. macOS gets Charter, iOS Iowan Old Style,
+Android Georgia. Similar x-heights, so the layout holds, but not everyone sees the
+same face. That's the accepted cost of using Sitka at all, and the sizes on both
+pages are tuned to its x-height rather than the generic `serif` they used to fall
+back to.
 
-- **`Sitka` on its own resolves nowhere.** The family is addressed by optical
-  size — `Sitka Small`, `Sitka Text`, `Sitka Subheading`, `Sitka Heading`,
-  `Sitka Display`, `Sitka Banner`. `Sitka Text` is the cut meant for reading.
-- **It can't be self-hosted.** Sitka is licensed with Windows, not redistributable,
-  so it isn't a webfont. Visitors off Windows get the next entry in the stack:
-  Charter on macOS, Iowan Old Style on iOS, Georgia on Android. They're all
-  screen serifs of a similar x-height, so the layout holds, but not everyone sees
-  the same face. That's the accepted cost of using Sitka at all.
+Two slots stay off Sitka, both Georgia: the year column (`--serif-num`), because
+Sitka's lining figures stand to 84% of the cap height beside them and read as loud
+as the organisation names, and the italic lead (`--serif-lead`), kept after being
+seen both ways. Its `0.95rem` is a Georgia size, so that slot can't be folded into
+`--serif-body` without resizing.
 
-Sizes on both pages are set for Sitka's x-height, which runs larger than the
-generic `serif` the pages used to fall back to — so the type sits slightly smaller
-and the leading slightly looser than the numbers in git history.
+How that was decided lives in `design/` — a dev-only lab that previews the real
+pages under any typeface variant, plus a tuner for arriving at one, and committed
+Playwright renders of the whole matrix. It holds the repo's only dependency and is
+kept out of deploys by `.vercelignore`. `fonts/README.md` records why Computer
+Modern lost, measured rather than asserted. Neither folder affects a visitor; see
+[`design/README.md`](design/README.md) and [`fonts/README.md`](fonts/README.md).
 
-**The year column is Georgia,** not Sitka (`--serif-num`). Sitka's figures are
-lining — 0.595em a digit, standing to 84% of the cap height beside them — so next
-to an organisation name they read as loud as the name itself. Georgia's defaults
-are old-style: 0.574em and 78% of cap. A modest change, but the right direction,
-and old-style is the property that matters rather than the specific face, so every
-fallback in the stack has it too and the rule asks for it explicitly with
-`font-variant-numeric: oldstyle-nums`.
+## Deployment
 
-Constantia is the stronger form of that argument and was measured — 0.506em a
-digit at 66% of cap, the shortest and narrowest of the three — but Georgia was
-kept, so `--serif-num` and `--serif-lead` currently hold the same stack. They stay
-separate slots because each was tuned on its own. Figures measured in Chromium
-from the rendered advance width of `2024` and `actualBoundingBoxAscent` for `2`
-against `H`.
+The site deploys to Vercel as a plain static site — no framework preset,
+no build command. `vercel.json` enables clean URLs and sets a
+day-long `Cache-Control` (with a week of `stale-while-revalidate`) on the
+image directory. `.vercelignore` keeps `design/` out, so the lab and its
+renders never reach the deployment.
 
-**The italic lead paragraph stays in Georgia** (`--serif-lead`), which is what it
-was before Sitka — kept after seeing it both ways. Its `0.95rem` is a Georgia size,
-so if that slot is ever folded into `--serif-body` it needs resizing too.
+## Status
 
-`fonts/` holds self-hosted Latin Modern Roman (Computer Modern) from an earlier
-round of this decision. **No page links it** — see `fonts/README.md` for why it
-lost and `design/README.md` for the comparison it lost in.
-
-## Design lab
-
-`design/type-lab.html` previews the real pages with any typography variant
-applied, and `design/tools/render.mjs` renders the whole matrix to
-`design/shots/` with Playwright. Variants are defined once in
-`design/variants.css`. Full instructions in `design/README.md`.
-
-`design/type-tuner.html` is the other half: sliders over every size, leading,
-tracking, gap and font slot on `/portfolio`, applied live to the real page, with
-a copyable CSS export of only what changed — selectors, units and previous values
-matching `portfolio/styles.css`. Hovering a control outlines what it governs, and
-the frame is a real viewport defaulting to your own window's shape, because the
-photo strip and page padding are sized in `vh`. Use the tuner to find a setting,
-the lab to judge finished ones.
-
-The lab is the only part of this repo with a dependency (`playwright`, dev-only,
-in `design/tools/`). The site itself remains dependency-free with no build step.
-
-## Projects page
-
-A grid of tinted cards, one per project. The page is fully static — `projects/app.js`
-only manages the light/dark theme shared with the portfolio page.
-
-To add a project, copy an existing `<li class="card">` in `projects/index.html`
-and give it a new tint class. Tints live at the top of `projects/styles.css` as
-one light and one dark value per project (`.card--eater { --tint: … }`); text
-colour comes from `--card-ink`, so a card only ever needs its background.
-
-The first three cards use `card--feature` (tall, wide artwork); the rest use
-`card--compact` (small artwork beside the text), and `card--wide` spans two
-columns. The line drawings are `<g>` symbols in the sprite `<svg>` at the top of
-the document, drawn in `currentColor` and pulled in with `<use href="#art-…">`.
-Replacing one with a screenshot is just swapping that `.card__art` for an `<img>`
-with real alt text.
+A personal site, live and maintained. Small by design: the constraint that
+everything visitors touch is hand-written, and that the only dependency is a
+browser, is the point. The one dev dependency is Playwright in `design/`, for
+screenshots — nothing the site serves.
