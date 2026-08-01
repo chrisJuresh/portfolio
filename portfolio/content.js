@@ -15,7 +15,7 @@ window.CONTENT = {
   // ---- Intro ---------------------------------------------------------------
   // The FIRST line shows in italics. Add or remove paragraphs freely.
   bio: [
-    "I’m a software engineer on an integration platform team, shipping work end to end — backend, platform and frontend.",
+    "I’m a software engineer on an integration team, shipping work end to end — backend, platform and frontend.",
   ],
 
   // ---- Work experience -----------------------------------------------------
