@@ -2,5 +2,6 @@
 # reference renders. Useful in git, pointless in a deployment.
 design/
 
-# The fonts/ folder is NOT excluded — if a Computer Modern variant is adopted,
-# /fonts/*.woff2 has to be served.
+# The fonts/ folder is NOT excluded. Nothing links it today — the site is set in
+# Sitka, which is a system font — but it stays deployable so /fonts/*.woff2 is
+# there the moment a Latin Modern variant is adopted.

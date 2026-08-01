@@ -1,7 +1,13 @@
 # Fonts — Latin Modern Roman
 
-Self-hosted webfonts for the Computer Modern look the site's CSS has always
-asked for but never actually shipped.
+Self-hosted webfonts for the Computer Modern look the site's CSS used to ask for
+but never actually shipped.
+
+> **Not in use.** The site is now set in Sitka (see the root `README.md`), and no
+> page links `fonts.css`. Everything below is kept because it is the record of
+> *why* Computer Modern was rejected — the measurements in "Why it renders softer
+> than the Times fallback" are the reason — and because it is still the fastest
+> way back if that decision is ever revisited.
 
 ## Why these exist
 
@@ -179,7 +185,9 @@ filenames are stable and the contents never change:
 
 ## Note
 
-Linking `fonts.css` is on its own enough to activate the fonts — the existing
-stacks already name `"Latin Modern Roman"` third, so no `font-family` edit is
-needed. That also means linking it changes both pages immediately. Sizes were
-tuned for the Times fallback, so see the size compensation above.
+Linking `fonts.css` no longer activates anything on its own. It used to: the old
+stacks named `"Latin Modern Roman"` third, so the link alone was the whole switch.
+The stacks now name Sitka and its screen-serif fallbacks, so adopting Latin Modern
+again would mean editing `--serif` / `--serif-label` / `--serif-body` as well —
+and re-applying the size compensation above, which the current sizes no longer
+carry (they are set for Sitka's larger x-height, not Times').
