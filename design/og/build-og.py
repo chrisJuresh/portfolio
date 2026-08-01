@@ -69,9 +69,16 @@ WOFF2 = os.path.join(REPO, "fonts", "lmroman10-regular.woff2")
 OUTPUT = os.path.join(REPO, "projects", "og.jpg")
 
 # ---------------------------------------------------------------- config ----
-# The bottom line. Words only — separators are added between them automatically
-# and are lifted from the plate rather than typeset (see DOT_SRC).
-LINE_WORDS = ["backend", "frontend", "systems", "data"]
+# The supporting line under "Projects". Words only — separators are inserted
+# between them automatically and are lifted from the plate, not typeset (DOT_SRC).
+#
+# Currently empty: the card is the name, the rule and "Projects", nothing else.
+# The discipline list it used to carry ("product · platform · systems · data",
+# later "backend · frontend · systems · data") said the same thing as
+# og:description, which renders directly beside the image in a social card, and
+# named the least distinguishing things about the work. Set this to a list of
+# words to bring a line back — everything below still works.
+LINE_WORDS = []
 
 SIZE_PT = 44          # matches the plate's word widths to within 4px
 LINE_LEFT = 110       # left margin shared with the name, rule and "Projects"
@@ -101,6 +108,23 @@ DOT_BASELINE_OFFSET = 16   # dots sat 16px below the line's ink top on the plate
 # on flat cream, exactly what chroma subsampling smears — it costs ~8KB.
 OUT_SIZE = (1200, 630)
 JPEG_QUALITY = 85
+
+# The name, the rule and "Projects", as (x0, x1, y0, y1), plus how far down to
+# move them. Removing the supporting line left the block ending at y566 with
+# 343px of empty paper under it against 169px above — visibly top-heavy.
+#
+# 86 does two things at once. It centres the block (255px above, 257px below),
+# and it drops the cap-top of "Projects" from y345 to y431, onto the horizontal
+# rule that runs through the crosshair at y430-431. The title now sits on the
+# decoration's own axis rather than floating against it.
+#
+# Set BLOCK_SHIFT to 0 to leave the block where the plate has it. If you restore
+# a supporting line via LINE_WORDS, revisit this — the block gets taller and
+# needs less shift, and LINE_TOP is measured in unshifted plate coordinates.
+#
+# x1 is 925 because the decoration reaches as far left as x932 near the top edge.
+BLOCK = (100, 925, 155, 580)
+BLOCK_SHIFT = 86
 
 # Clean strip the paper grain is sampled from, to refill erased areas.
 GRAIN_SRC = (105, 925, 788, 888)   # x0, x1, y0, y1
@@ -171,6 +195,39 @@ def erase(canvas: np.ndarray, grain: np.ndarray, x0: int, x1: int, y0: int, y1: 
     canvas[y0:y1, x0:x1] = np.clip(base + tile, 0, 255)
 
 
+def shift_block(canvas: np.ndarray, grain: np.ndarray, dy: int) -> None:
+    """Move the name/rule/"Projects" block down by dy, wiping where it was.
+
+    The block is moved as pixels rather than re-set as type: only the small
+    supporting line's typeface was ever identified, and "Projects" is display
+    type whose size and tracking were never calibrated. Moving the raster is
+    exact where re-typesetting would be a guess.
+
+    Both source and destination sit on the same flat paper, so the joins carry
+    no tonal step; the edges are feathered anyway to keep the grain continuous.
+    """
+    if dy == 0:
+        return
+    x0, x1, y0, y1 = BLOCK
+    block = canvas[y0:y1, x0:x1].copy()
+    erase(canvas, grain, x0, x1, y0, y1)
+
+    h, w = block.shape[:2]
+    feather = np.ones((h, w), np.float32)
+    for i in range(4):
+        f = i / 4.0
+        feather[i, :] = np.minimum(feather[i, :], f)
+        feather[h - 1 - i, :] = np.minimum(feather[h - 1 - i, :], f)
+        feather[:, i] = np.minimum(feather[:, i], f)
+        feather[:, w - 1 - i] = np.minimum(feather[:, w - 1 - i], f)
+
+    dst = canvas[y0 + dy:y1 + dy, x0:x1]
+    a = feather[..., None]
+    canvas[y0 + dy:y1 + dy, x0:x1] = dst * (1 - a) + block * a
+    print(f"  moved the title block down {dy}px "
+          f"(top margin {y0 + dy + 14}, bottom margin {909 - (566 + dy)})")
+
+
 # ------------------------------------------------------------------ type ----
 def word_mask(word: str, font: ImageFont.FreeTypeFont) -> np.ndarray:
     """Coverage mask for one word: supersampled, box-downsampled, then softened."""
@@ -215,7 +272,16 @@ def compose(canvas: np.ndarray, mask: np.ndarray, colour, x: int, y: int) -> Non
 
 
 def draw_line(canvas: np.ndarray, plate: np.ndarray, font: ImageFont.FreeTypeFont) -> None:
-    """Set LINE_WORDS with lifted separators, left-aligned at LINE_LEFT."""
+    """Set LINE_WORDS with lifted separators, left-aligned at LINE_LEFT.
+
+    An empty LINE_WORDS is the current state and not an error: the card is just
+    the name, the rule and "Projects". The erase still runs, so both retired
+    text bands go back to paper.
+    """
+    if not LINE_WORDS:
+        print("  no supporting line (LINE_WORDS is empty)")
+        return
+
     masks = {w: word_mask(w, font) for w in LINE_WORDS}
     bounds = {w: ink_bounds(masks[w]) for w in LINE_WORDS}
     dot_a, dot_c = dot_matte(plate)
@@ -262,7 +328,7 @@ def verify(canvas: np.ndarray, plate: np.ndarray, font: ImageFont.FreeTypeFont) 
     two rows to agree closely — see CALIBRATION in the module docstring.
     """
     if "systems" not in LINE_WORDS:
-        print("  (no word shared with the plate — weight check skipped)")
+        print("  (no word shared with the plate — type weight check not applicable)")
         return
     bg = 248.0
     ref = luma(plate[720:776, 557:702])
@@ -290,6 +356,14 @@ def main() -> int:
             print(f"error: missing {what}: {path}", file=sys.stderr)
             return 1
 
+    if LINE_WORDS and BLOCK_SHIFT:
+        print(f"error: LINE_WORDS is set and BLOCK_SHIFT is {BLOCK_SHIFT}.\n"
+              f"       LINE_TOP ({LINE_TOP}) is in unshifted plate coordinates, so the\n"
+              f"       line would be placed relative to where the title used to be.\n"
+              f"       Either set BLOCK_SHIFT = 0, or add {BLOCK_SHIFT} to LINE_TOP and\n"
+              f"       re-check the spacing under \"Projects\".", file=sys.stderr)
+        return 1
+
     plate = np.asarray(Image.open(SOURCE).convert("RGB")).astype(np.float32)
     print(f"plate {plate.shape[1]}x{plate.shape[0]} from {os.path.relpath(SOURCE, REPO)}")
 
@@ -298,6 +372,7 @@ def main() -> int:
     for x0, x1, y0, y1 in ERASE_BANDS:
         erase(canvas, grain, x0, x1, y0, y1)
     print(f"  erased {len(ERASE_BANDS)} band(s)")
+    shift_block(canvas, grain, BLOCK_SHIFT)
 
     with tempfile.TemporaryDirectory() as td:
         font = load_render_font(td)
