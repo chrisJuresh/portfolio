@@ -63,15 +63,21 @@ statically from Vercel.
 │   ├── index.html      # the cards themselves, written by hand
 │   ├── app.js          # theme bootstrap only — no rendering
 │   ├── styles.css      # card grid, per-card tints, print styles
-│   └── og.png          # social preview image
+│   └── og.jpg          # social preview, 1200×630 — generated, see design/og/
 ├── fonts/              # self-hosted Latin Modern Roman — deployed, unlinked
-└── design/             # dev-only typography lab — never deployed
+└── design/             # dev-only: typography lab + OG builder — never deployed
 ```
 
 `fonts/` and `design/` are both leftovers of settling the typeface, and neither
 affects a visitor. `fonts/` holds Latin Modern Roman as woff2 subsets; no page
 links it, but it stays deployable so `/fonts/*.woff2` is there if that decision is
 ever revisited. `design/` is excluded from deploys entirely — see **Typography**.
+
+One of those leftovers is load-bearing after all. The `/projects` social card was
+made before the move to Sitka and is set in Latin Modern, so
+`design/og/build-og.py` reads `fonts/lmroman10-regular.woff2` to re-set its type.
+Don't delete `fonts/` on the assumption nothing uses it. The card is generated,
+not hand-edited — `design/og/README.md` covers how to change its wording.
 
 The content lives in `portfolio/content.js` as one plain-object literal
 (name, bio, work, education, contact, and the photo list with alt text).
