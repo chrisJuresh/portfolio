@@ -1,7 +1,7 @@
 /* ============================================================================
    Christian Juresh — projects
    A wall of tinted cards on warm paper. Each project owns one pastel; the type
-   stays the same serif as the CV so the two pages read as one site.
+   stays the same Sitka as the CV so the two pages read as one site.
    ========================================================================== */
 
 :root {
@@ -17,7 +17,10 @@
   --card-line:  rgba(26, 25, 23, 0.32);
   --card-soft:  rgba(26, 25, 23, 0.78);
 
-  --serif: "Computer Modern", "CMU Serif", "Latin Modern Roman", serif;
+  /* Sitka — see the note in portfolio/styles.css. Windows-only and not
+     self-hostable, so the stack names the nearest screen serif elsewhere.
+     "Sitka" alone resolves nowhere; "Sitka Text" is the reading cut. */
+  --serif: "Sitka Text", Charter, "Iowan Old Style", Georgia, serif;
   --shell: 62rem;
   --gap: 0.9rem;
   --ease: cubic-bezier(0.22, 1, 0.36, 1);
@@ -169,20 +172,23 @@ button { color: inherit; font-family: inherit; }
 .card--compact .card__body { min-width: 0; }
 .card--wide { grid-column: span 2; }
 
+/* Sizes below are set for Sitka's x-height, which runs larger than the generic
+   serif this page used to fall back to — so the type comes down slightly while
+   the leading opens up. */
 .card__title {
   margin: 0;
-  font-size: 1.32rem;
+  font-size: 1.2rem;
   font-weight: 400;
-  line-height: 1.2;
+  line-height: 1.28;
   letter-spacing: 0.005em;
 }
-.card--compact .card__title { font-size: 1.08rem; }
+.card--compact .card__title { font-size: 1.01rem; }
 
 .card__tags {
   display: flex;
   flex-wrap: wrap;
   gap: 0.3rem;
-  margin: 0.55rem 0 0;
+  margin: 0.6rem 0 0;
   padding: 0;
   list-style: none;
 }
@@ -190,8 +196,8 @@ button { color: inherit; font-family: inherit; }
   padding: 0.08rem 0.42rem 0.13rem;
   border: 1px solid var(--card-line);
   border-radius: 4px;
-  font-size: 0.67rem;
-  letter-spacing: 0.02em;
+  font-size: 0.645rem;
+  letter-spacing: 0.015em;
   line-height: 1.5;
   color: var(--card-soft);
   white-space: nowrap;
@@ -214,22 +220,22 @@ button { color: inherit; font-family: inherit; }
 .card__art--wide svg { max-height: 6.25rem; }
 
 .card__desc {
-  margin: 0.75rem 0 0;
+  margin: 0.82rem 0 0;
   font-size: 0.85rem;
-  line-height: 1.45;
+  line-height: 1.56;
   color: var(--card-soft);
 }
-.card--compact .card__desc { margin-top: 0.5rem; }
+.card--compact .card__desc { margin-top: 0.58rem; }
 
 .card__links {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 0.45rem;
-  margin: 0.85rem 0 0;
-  font-size: 0.8rem;
+  margin: 0.9rem 0 0;
+  font-size: 0.775rem;
 }
-.card--compact .card__links { margin-top: 0.6rem; }
+.card--compact .card__links { margin-top: 0.68rem; }
 .card__links a,
 .card__note {
   display: inline-flex;
@@ -254,7 +260,8 @@ button { color: inherit; font-family: inherit; }
   bottom: 0;
   z-index: 2;
   display: flex;
-  align-items: flex-end;
+  align-items: flex-end;                 /* fallback: no `last baseline` support */
+  align-items: last baseline;            /* toggle label sits on the last contact line */
   justify-content: space-between;
   gap: 1.5rem;
   margin-top: auto;
@@ -301,7 +308,7 @@ button { color: inherit; font-family: inherit; }
 /* ---- theme toggle (shared shape with the portfolio page) ----------------- */
 .theme-toggle {
   display: inline-flex;
-  align-items: center;
+  align-items: baseline;
   gap: 0.45rem;
   flex: 0 0 auto;
   min-height: 1.5rem;
@@ -315,24 +322,38 @@ button { color: inherit; font-family: inherit; }
   cursor: pointer;
 }
 .theme-toggle:focus-visible { outline: 1px solid currentColor; outline-offset: 3px; }
+/* A box with no text baselines is aligned by its bottom edge, which drops the
+   pill's midline a full half-height below the label's. Lifting it back by half
+   the x-height puts the two midlines on one horizontal — measured from the font
+   itself (`ex`), so it stays true in Sitka and in every fallback face. */
 .theme-toggle__track {
+  --track-w: 1.55rem;
+  --track-h: 0.78rem;
+  --thumb: 0.38rem;
+  --thumb-inset: 0.14rem;
   position: relative;
-  width: 1.55rem;
-  height: 0.78rem;
+  width: var(--track-w);
+  height: var(--track-h);
   border: 1px solid currentColor;
   border-radius: 1rem;
+  transform: translateY(calc(var(--track-h) / 2 - 0.5ex));
 }
+/* Centred on the pill's midline, and travelling exactly the gap left over, so
+   the end margins match in both states. */
 .theme-toggle__thumb {
   position: absolute;
-  top: 0.14rem;
-  left: 0.14rem;
-  width: 0.38rem;
-  height: 0.38rem;
+  top: 50%;
+  left: var(--thumb-inset);
+  width: var(--thumb);
+  height: var(--thumb);
   border-radius: 50%;
   background: currentColor;
+  transform: translateY(-50%);
   transition: transform 0.25s var(--ease);
 }
-:root[data-theme="dark"] .theme-toggle__thumb { transform: translateX(0.75rem); }
+:root[data-theme="dark"] .theme-toggle__thumb {
+  transform: translate(calc(var(--track-w) - 2px - var(--thumb) - var(--thumb-inset) * 2), -50%);
+}
 
 /* ---- narrower viewports -------------------------------------------------- */
 @media (max-width: 61rem) {

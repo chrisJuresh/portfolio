@@ -2,7 +2,8 @@
    Christian Juresh — portfolio
    A single narrow column, centered at every width, so desktop reads like a
    phone screen floated in the middle of the page. Minimal editorial type:
-   Computer Modern for all text.
+   Sitka for all text, bar two deliberate exceptions — the italic lead paragraph
+   and the year column, both Georgia.
    The whole page fades in on load; the photo strip is a horizontal carousel
    that bleeds off the right edge, faded into the paper until you hover it.
    ========================================================================== */
@@ -17,8 +18,28 @@
   --rule-soft:  #efece4;
   --link-line:  #b3aa9b;
 
-  --serif-label: "Computer Modern", "CMU Serif", "Latin Modern Roman", serif;
-  --serif-body:  "Computer Modern", "CMU Serif", "Latin Modern Roman", serif;
+  /* Sitka — Matthew Carter's screen-cut serif, bundled with Windows. It can't be
+     self-hosted (Microsoft licence), so the stack names the nearest screen serif
+     on each other platform: Charter on macOS, Iowan Old Style on iOS, Georgia on
+     Android. Note "Sitka" on its own resolves nowhere: the family is addressed
+     by optical size, and "Sitka Text" is the cut meant for reading. */
+  --serif-label: "Sitka Text", Charter, "Iowan Old Style", Georgia, serif;
+  --serif-body:  "Sitka Text", Charter, "Iowan Old Style", Georgia, serif;
+  /* The year column only. Sitka's figures are lining — 0.595em a digit, standing
+     to 84% of the cap height beside them — so next to an organisation name they
+     read as loud as the name itself. Georgia's defaults are old-style: 0.574em
+     and 78% of cap. A modest change, but the right direction, and old-style is
+     the property that matters rather than the face, so every fallback here has
+     it too and font-variant-numeric asks for it explicitly.
+     Constantia is the stronger form of the same argument and was measured —
+     0.506em at 66% of cap, shortest and narrowest of the three — but Georgia was
+     kept. Hence the same stack as --serif-lead; still a separate slot, because
+     the two were tuned independently. */
+  --serif-num:   Georgia, "Iowan Old Style", "Palatino Linotype", serif;
+  /* The italic lead paragraph only, kept in Georgia by choice after seeing it
+     both ways. Its 0.95rem is Georgia's size, not Sitka's — don't fold this slot
+     into --serif-body without resizing it. */
+  --serif-lead:  Georgia, "Iowan Old Style", "Palatino Linotype", serif;
 
   --col: 27rem;                          /* the phone-width column       */
   --slide-h: clamp(15rem, 40vh, 24rem);  /* carousel image height        */
@@ -81,7 +102,7 @@ a { color: inherit; }
 .masthead { margin-bottom: 2.5rem; }
 .name {
   font-family: var(--serif-label);
-  font-size: 0.82rem;
+  font-size: 0.78rem;
   font-weight: 400;
   letter-spacing: 0.06em;
   margin: 0;
@@ -89,7 +110,7 @@ a { color: inherit; }
 }
 .tagline {
   font-family: var(--serif-label);
-  font-size: 0.72rem;
+  font-size: 0.7rem;
   letter-spacing: 0.04em;
   color: var(--muted);
   margin: 0;
@@ -103,7 +124,7 @@ a { color: inherit; }
 }
 .projects-link {
   font-family: var(--serif-label);
-  font-size: 0.72rem;
+  font-size: 0.7rem;
   letter-spacing: 0.04em;
   color: var(--muted);
   text-decoration: none;
@@ -121,7 +142,7 @@ a { color: inherit; }
 
 /* ---- intro / bio --------------------------------------------------------- */
 .intro { margin-bottom: 2.75rem; }
-.intro .lead { font-family: Georgia, "Iowan Old Style", "Palatino Linotype", serif; font-size: 0.95rem; font-style: italic; line-height: 1.5; margin: 0; }
+.intro .lead { font-family: var(--serif-lead); font-size: 0.95rem; font-style: italic; line-height: 1.5; margin: 0; }
 .intro p + p { margin: 0.9rem 0 0; font-size: 0.9rem; color: var(--ink-soft); text-indent: 1.1rem; }
 
 /* ---- photo carousel ------------------------------------------------------ */
@@ -240,7 +261,7 @@ a { color: inherit; }
 /* ---- listings: work / education / contact -------------------------------- */
 .listing { margin-top: 1.5rem; }
 .listing > h2 {
-  font-family: Georgia, "Iowan Old Style", "Palatino Linotype", serif;
+  font-family: var(--serif-body);
   font-size: 0.85rem;
   font-weight: 700;
   letter-spacing: 0.01em;
@@ -253,12 +274,19 @@ a { color: inherit; }
   align-items: baseline;
   gap: 1rem;
   margin: 0;
-  font-family: Georgia, "Iowan Old Style", "Palatino Linotype", serif;
+  font-family: var(--serif-body);
   font-size: 0.9rem;
 }
-.item .when { margin-left: auto; font-family: var(--serif-label); font-style: normal; color: var(--ink); white-space: nowrap; }
+.item .when {
+  margin-left: auto;
+  font-family: var(--serif-num);
+  font-variant-numeric: oldstyle-nums;
+  font-style: normal;
+  color: var(--ink);
+  white-space: nowrap;
+}
 .item .sub {
-  font-family: Georgia, "Iowan Old Style", "Palatino Linotype", serif;
+  font-family: var(--serif-body);
   font-size: 0.86rem;
   font-style: italic;
   color: var(--muted);
@@ -266,7 +294,7 @@ a { color: inherit; }
 }
 
 /* ---- contact ------------------------------------------------------------- */
-.contact { list-style: none; margin: 0; padding: 0; font-family: Georgia, "Iowan Old Style", "Palatino Linotype", serif; }
+.contact { list-style: none; margin: 0; padding: 0; font-family: var(--serif-body); }
 .contact li { font-size: 0.9rem; margin-top: 0.22rem; }
 .contact li.primary { margin-bottom: 0.55rem; }
 .contact a {
@@ -279,19 +307,20 @@ a { color: inherit; }
 .contact a:hover, .contact a:focus-visible { border-color: var(--ink); }
 
 /* ---- theme toggle: the lower-right corner of the CV text block ----------- */
+/* Baseline alignment, not box alignment: the toggle's label sits on the same
+   line as the last contact link, whatever either one's line height is. This
+   replaces a hand-tuned 3px nudge that only held at one font size. */
 .contact-corner {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
-  align-items: end;
+  align-items: end;                      /* fallback: no `last baseline` support */
+  align-items: last baseline;
   column-gap: 1rem;
 }
-.site-footer {
-  justify-self: end;
-  transform: translateY(3px);
-}
+.site-footer { justify-self: end; }
 .theme-toggle {
   display: inline-flex;
-  align-items: center;
+  align-items: baseline;
   gap: 0.45rem;
   min-height: 1.5rem;
   margin: 0;
@@ -306,24 +335,38 @@ a { color: inherit; }
 }
 .theme-toggle:hover, .theme-toggle:focus-visible { color: var(--ink); }
 .theme-toggle:focus-visible { outline: 1px solid currentColor; outline-offset: 3px; }
+/* A box with no text baselines is aligned by its bottom edge, which drops the
+   pill's midline a full half-height below the label's. Lifting it back by half
+   the x-height puts the two midlines on one horizontal — measured from the font
+   itself (`ex`), so it stays true in Sitka and in every fallback face. */
 .theme-toggle__track {
+  --track-w: 1.55rem;
+  --track-h: 0.78rem;
+  --thumb: 0.38rem;
+  --thumb-inset: 0.14rem;
   position: relative;
-  width: 1.55rem;
-  height: 0.78rem;
+  width: var(--track-w);
+  height: var(--track-h);
   border: 1px solid currentColor;
   border-radius: 1rem;
+  transform: translateY(calc(var(--track-h) / 2 - 0.5ex));
 }
+/* Centred on the pill's midline, and travelling exactly the gap left over, so
+   the end margins match in both states. */
 .theme-toggle__thumb {
   position: absolute;
-  top: 0.14rem;
-  left: 0.14rem;
-  width: 0.38rem;
-  height: 0.38rem;
+  top: 50%;
+  left: var(--thumb-inset);
+  width: var(--thumb);
+  height: var(--thumb);
   border-radius: 50%;
   background: currentColor;
+  transform: translateY(-50%);
   transition: transform 0.25s cubic-bezier(0.22, 1, 0.36, 1);
 }
-:root[data-theme="dark"] .theme-toggle__thumb { transform: translateX(0.75rem); }
+:root[data-theme="dark"] .theme-toggle__thumb {
+  transform: translate(calc(var(--track-w) - 2px - var(--thumb) - var(--thumb-inset) * 2), -50%);
+}
 
 /* ---- respect reduced-motion preferences ---------------------------------- */
 @media (prefers-reduced-motion: reduce) {
