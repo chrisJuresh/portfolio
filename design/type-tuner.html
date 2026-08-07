@@ -257,6 +257,42 @@ var GROUPS = [
     { sel: ".cbar",     prop: "margin-bottom", unit: "rem", def: 2,   label: "scrollbar → text", note: "written as `margin: 0 0 2rem`" }
   ] },
 
+  /* The edge dissolve. Unitless numbers on :root that styles.css assembles into
+     the gradient — so what the tuner writes is what the sheet declares, no stop
+     list to re-derive. `hi` points at the strip rather than at .veil: the
+     highlight paints a background, which on the veil itself would hide the very
+     thing being tuned.
+     It is two settings, not one. These four are the fade AT REST, with the first
+     photograph still sitting at the text edge; the four below are what it has
+     become one photograph along, and the page eases between them as the strip
+     moves. Neither group can be judged from the other's position — at rest the
+     open numbers carry no weight at all, and vice versa — so each declares the
+     `strip` it needs and grabbing a slider takes the frame there. */
+  { name: "Edge fade — at rest", strip: 0, rows: [
+    { sel: ":root", prop: "--fade-x",    unit: "", def: -0.5, min: -1.5, max: 1.5, step: 0.01, label: "start", hi: ".carousel", hiLine: true,
+      tip: "Where the fade begins, in photo-widths from the text edge.\n0 = exactly where the column of text ends.\nNegative pulls it left over the photographs, positive pushes it out into the gutter." },
+    { sel: ":root", prop: "--fade-span", unit: "", def: 0.51, min: 0.02, max: 2,   step: 0.01, label: "distance", hi: ".carousel", hiLine: true,
+      tip: "How far it travels before the paper is solid, in photo-widths.\n1 = a whole photograph." },
+    { sel: ":root", prop: "--fade-max",  unit: "", def: 1,    min: 0,    max: 1,   step: 0.01, label: "intensity", hi: ".carousel", hiLine: true,
+      tip: "How opaque the paper gets at the far end.\nBelow 1 the photographs never quite disappear." },
+    { sel: ":root", prop: "--fade-ease", unit: "", def: 0,    min: -1,   max: 1,   step: 0.01, label: "curve", hi: ".carousel", hiLine: true,
+      tip: "Shape of the ramp, via the gradient's two interpolation hints.\n0 = a straight line.\n1 = eased at both ends (flat, then steep, then flat) — a smoothstep.\nNegative inverts it: steepest at the start, so the fade announces itself the moment it leaves the text edge." }
+  ] },
+
+  /* The far end of that travel: the same four numbers, as the fade should stand
+     with the strip one photograph along and three photographs in view. Reached
+     by the time the second one has come to rest in the centre of the screen. */
+  { name: "Edge fade — three in view", strip: 1, rows: [
+    { sel: ":root", prop: "--fade-x-open",    unit: "", def: 0,    min: -1.5, max: 1.5, step: 0.01, label: "start", hi: ".carousel", hiLine: true,
+      tip: "Where the fade begins once the strip has moved, in photo-widths from the text edge.\n0 = exactly where the column of text ends." },
+    { sel: ":root", prop: "--fade-span-open", unit: "", def: 0.5,  min: 0.02, max: 2,   step: 0.01, label: "distance", hi: ".carousel", hiLine: true,
+      tip: "How far it travels before the paper is solid, in photo-widths.\n1 = a whole photograph." },
+    { sel: ":root", prop: "--fade-max-open",  unit: "", def: 1,    min: 0,    max: 1,   step: 0.01, label: "intensity", hi: ".carousel", hiLine: true,
+      tip: "How opaque the paper gets at the far end.\nBelow 1 the photographs never quite disappear." },
+    { sel: ":root", prop: "--fade-ease-open", unit: "", def: 0,    min: -1,   max: 1,   step: 0.01, label: "curve", hi: ".carousel", hiLine: true,
+      tip: "Shape of the ramp, via the gradient's two interpolation hints.\n0 = a straight line.\n1 = eased at both ends (flat, then steep, then flat) — a smoothstep.\nNegative inverts it: steepest at the start." }
+  ] },
+
   { name: "Work & education", rows: [
     { sel: ".listing > h2", prop: "font-size",      unit: "rem", def: 0.85, label: "heading size" },
     { sel: ".listing > h2", prop: "font-weight",    unit: "",    def: 700, min: 300, max: 700, step: 100, label: "heading weight" },
@@ -296,6 +332,7 @@ GROUPS.forEach(function (g) {
   g.rows.forEach(function (r) {
     r.group = g;
     r.isFont = !!g.font;
+    r.strip = g.strip;                 /* undefined for rows that don't care */
     r.k = r.sel + "|" + r.prop;
     if (!r.hi) r.hi = r.sel;
     if (!r.isFont) {
@@ -536,15 +573,19 @@ function inject() {
    style tag so rebuilding the tuner's CSS can't wipe it and vice versa; outline
    rather than border or background so nothing reflows and the type being judged
    is never repositioned by the act of pointing at it. */
-var HI_CSS = "{ outline: 2px solid rgba(224, 122, 31, 0.95) !important;" +
-             " outline-offset: 2px; background: rgba(224, 122, 31, 0.12) !important; }";
+var HI_RULE = "{ outline: 2px solid rgba(224, 122, 31, 0.95) !important; outline-offset: 2px;";
+var HI_CSS  = HI_RULE + " background: rgba(224, 122, 31, 0.12) !important; }";
+/* Outline only, for rows where the tint would sit on top of what's being judged
+   — the edge fade is a wash of paper colour, and a wash of orange over it tells
+   you nothing. Rows ask for this with `hiLine: true`. */
+var HI_LINE = HI_RULE + " }";
 
-function highlight(sel) {
+function highlight(sel, line) {
   var doc = frame.contentDocument;
   if (!doc || !doc.body) return;
   var tag = doc.getElementById("__tunerhi");
   if (!tag) { tag = doc.createElement("style"); tag.id = "__tunerhi"; }
-  tag.textContent = (sel && state.hi) ? sel + " " + HI_CSS : "";
+  tag.textContent = (sel && state.hi) ? sel + " " + (line ? HI_LINE : HI_CSS) : "";
   doc.body.appendChild(tag);
 }
 
@@ -561,6 +602,38 @@ function reveal(sel) {
   el.scrollIntoView({ block: "center", inline: "nearest" });
 }
 
+/* ---- where the photo strip is standing ----------------------------------- */
+/* The edge fade is two settings — at rest, and one photograph along — and a
+   slider for one of them does nothing at all while the frame is showing the
+   other. So a row can name the `strip` position it needs, and grabbing it takes
+   the frame there: photo 0 means the strip at a standstill, 1 means the second
+   photograph brought to the centre of the screen. Glided rather than jumped, so
+   what you see is the same travel a visitor sees, and the fade can be watched
+   arriving. Held in a variable rather than read back off the strip so a reload
+   — flipping the theme rebuilds the frame — returns to the state being tuned. */
+var wantStrip = 0;
+
+function setStrip(n) {
+  if (n == null) return;
+  wantStrip = n;
+  var doc = frame.contentDocument, win = frame.contentWindow;
+  if (!doc || !win) return;
+  var track = doc.querySelector(".track");
+  if (!track) return;
+
+  /* Photo 1 can't reach the centre — it rests left-aligned with the text, which
+     is scrollLeft 0. For the rest, the expression app.js snaps with. */
+  var to = 0, slide = track.querySelectorAll(".slide")[n];
+  if (n > 0 && slide) {
+    var r = slide.getBoundingClientRect();
+    to = track.scrollLeft + (r.left + r.width / 2 - win.innerWidth / 2);
+    to = Math.max(0, Math.min(track.scrollWidth - track.clientWidth, to));
+  }
+  var still = win.matchMedia && win.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  if (track.scrollTo) track.scrollTo({ left: to, behavior: still ? "auto" : "smooth" });
+  else track.scrollLeft = to;
+}
+
 /* ---- drift check + live values for undeclared rows ----------------------- */
 /* Confirms every declared default still matches what the page computes. A row
    whose element is missing from the current content is flagged rather than
@@ -573,12 +646,25 @@ function probe() {
   var drift = [];
 
   ROWS.forEach(function (r) {
-    if (r.isFont || r.prop === "--col") { r.gone = false; return; }
+    if (r.isFont) { r.gone = false; return; }
     var el = doc.querySelector(r.sel);
     r.gone = !el;
     if (!el) return;
 
     var cs = win.getComputedStyle(el);
+
+    /* A custom property computes to its own declaration rather than to a pixel
+       length, so compare the text — `27rem` against `27rem` — and keep the
+       leading number for the slider to sit at. */
+    if (r.prop.slice(0, 2) === "--") {
+      var raw = cs.getPropertyValue(r.prop).trim();
+      r.live = parseFloat(raw);
+      if (r.def != null && !changed(r) && raw !== css(r, r.def)) {
+        drift.push(r.sel + " { " + r.prop + " } is " + raw + ", table says " + css(r, r.def));
+      }
+      return;
+    }
+
     var px = parseFloat(cs[r.prop === "gap" ? "columnGap" : r.prop.replace(/-(\w)/g, function (_, c) { return c.toUpperCase(); })]);
     var fs = parseFloat(cs.fontSize);
     var live;
@@ -598,13 +684,6 @@ function probe() {
       }
     }
   });
-
-  /* --col is a custom property: compare the declaration, not a computed px. */
-  var colRow = ROWS.filter(function (r) { return r.prop === "--col"; })[0];
-  if (colRow && !changed(colRow)) {
-    var col = win.getComputedStyle(root).getPropertyValue("--col").trim();
-    if (col && col !== num(colRow.def) + "rem") drift.push(":root { --col } is " + col + ", table says " + num(colRow.def) + "rem");
-  }
 
   var banner = document.getElementById("drift");
   banner.innerHTML = drift.length
@@ -703,11 +782,11 @@ function wireHighlight() {
     while (n && n !== controls) { if (n.__row) return n.__row; n = n.parentNode; }
     return null;
   }
-  controls.addEventListener("mouseover", function (e) { var r = rowOf(e); if (r) highlight(r.hi); });
+  controls.addEventListener("mouseover", function (e) { var r = rowOf(e); if (r) highlight(r.hi, r.hiLine); });
   controls.addEventListener("mouseout",  function (e) { if (!controls.contains(e.relatedTarget)) highlight(null); });
-  controls.addEventListener("focusin",   function (e) { var r = rowOf(e); if (r) { highlight(r.hi); reveal(r.hi); } });
+  controls.addEventListener("focusin",   function (e) { var r = rowOf(e); if (r) { highlight(r.hi, r.hiLine); reveal(r.hi); setStrip(r.strip); } });
   controls.addEventListener("focusout",  function (e) { if (!controls.contains(e.relatedTarget)) highlight(null); });
-  controls.addEventListener("pointerdown", function (e) { var r = rowOf(e); if (r) reveal(r.hi); });
+  controls.addEventListener("pointerdown", function (e) { var r = rowOf(e); if (r) { reveal(r.hi); setStrip(r.strip); } });
 }
 
 function buildPanel() {
@@ -746,7 +825,7 @@ function numRow(r) {
 
   var lab = document.createElement("label");
   lab.textContent = r.label;
-  lab.title = r.sel + " { " + r.prop + " }" + (r.note ? "  — " + r.note : "");
+  lab.title = r.sel + " { " + r.prop + " }" + (r.note ? "  — " + r.note : "") + (r.tip ? "\n\n" + r.tip : "");
 
   var range = document.createElement("input");
   range.type = "range";
@@ -943,7 +1022,7 @@ frame.addEventListener("load", function () {
   doc.documentElement.setAttribute("data-theme", state.theme);
   Promise.all([addLink(doc, "/fonts/fonts.css")])
     .then(function () { return doc.fonts ? doc.fonts.ready : null; })
-    .then(function () { inject(); probe(); });
+    .then(function () { inject(); probe(); setStrip(wantStrip); });
 });
 
 document.getElementById("theme").addEventListener("click", function () {

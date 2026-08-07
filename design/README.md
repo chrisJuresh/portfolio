@@ -119,6 +119,39 @@ picker for each of the four font slots (`--serif-body`, `--serif-label`,
 `--serif-num`, `--serif-lead`). Changes land in the **real** page in the iframe
 as you drag — same trick as the lab, so nothing is cloned and it can't drift.
 
+### Edge fade
+
+Two groups, four sliders each, all of them `:root` numbers that `styles.css`
+assembles into the carousel's dissolve — so the export is the declaration, with
+no gradient stop list to re-derive by hand:
+
+| slider | property | what it moves |
+| --- | --- | --- |
+| start | `--fade-x` | where the fade begins, in photo-widths from the text edge. `0` is exactly where the column of text ends; negative pulls it left over the photographs, positive pushes it into the gutter |
+| distance | `--fade-span` | how far it travels before the paper is solid, in photo-widths |
+| intensity | `--fade-max` | how opaque the paper gets at the far end — below `1` the photographs never quite disappear |
+| curve | `--fade-ease` | `0` is a straight ramp, `1` eases both ends (a smoothstep), negative inverts it so the fade bites immediately |
+
+**Edge fade — at rest** is that table: the fade with the first photograph still
+sitting at the text edge, which is how the page loads. **Edge fade — three in
+view** is the same four numbers a photograph later, suffixed `-open`
+(`--fade-x-open`, `--fade-span-open`, `--fade-max-open`, `--fade-ease-open`) —
+where the dissolve has slid out to the text edge, keeping its width and its
+straight ramp, so it no longer covers the leading photograph. `app.js`
+reports how far between the two ends the strip has got as `--fade-open`, `0` to
+`1`, and `styles.css` mixes them, so the fade eases from one setting to the other
+as the strip moves rather than switching.
+
+Neither group can be judged from the other's position — at rest the `-open`
+numbers carry no weight at all, and at the far end the plain ones don't — so each
+group names the strip position it needs and **grabbing a slider takes the frame
+there**, gliding rather than jumping, so the travel you tune is the travel a
+visitor sees. Reloading the frame (flipping the theme does) returns to whichever
+state you were last working in.
+
+All eight rows highlight with an outline and no tint: the fade *is* a wash of
+paper colour, so a wash of orange over it would tell you nothing.
+
 Hovering or focusing a control outlines what it governs in the page, and grabbing
 one scrolls that element into view if it's off-screen. The `highlight` button
 turns it off. For the four font slots the outline follows the text that *reads*

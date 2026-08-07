@@ -44,9 +44,77 @@
   --col: 27rem;                          /* the phone-width column       */
   --slide-h: clamp(15rem, 40vh, 24rem);  /* carousel image height        */
   --slide-w: calc(var(--slide-h) * 3 / 4);
-  --fade-w: calc(var(--slide-w) / 2);     /* width of each edge dissolve  */
   --gap: 0.5rem;                          /* gap between photos           */
   --edge: max(1.35rem, calc(50vw - var(--col) / 2));  /* where the text column starts */
+
+  /* ---- the edge dissolve, in four numbers ---------------------------------
+     Everything about the fade is here; design/type-tuner.html puts a slider on
+     each of these four, so the look is arrived at by eye and pasted back. They
+     describe the strip AT REST — first photograph still sitting where the text
+     starts — which is the state the page loads in and the one the tuner shows.
+       --fade-x     where the dissolve BEGINS, in photo-widths measured from the
+                    text edge. 0 starts it exactly where the column of text
+                    ends; negative pulls it left, in over the photographs;
+                    positive pushes it out into the gutter.
+       --fade-span  how far it travels before the paper is solid, in
+                    photo-widths. 0.5 is half a photograph.
+       --fade-max   how opaque the paper gets at the far end. Below 1 the
+                    photographs never quite disappear.
+       --fade-ease  the shape of the ramp. 0 is a straight line; 1 eases in and
+                    out (flat at both ends, steepest in the middle); negative
+                    inverts that — steep at the start, so the dissolve announces
+                    itself the moment it leaves the text edge. */
+  --fade-x:    -0.5;
+  --fade-span:  0.51;
+  --fade-max:   1;
+  --fade-ease:  0;
+
+  /* ---- ...and the same four, one photograph along --------------------------
+     At rest the dissolve begins half a photograph in over the pictures, so the
+     first one stands alone against the column. That is more cover than the strip
+     wants once it is moving and three pictures are in play, so as it pulls away
+     the ramp slides out to the text edge — the same half-photograph width, the
+     same straight line, just no longer eating into the leading photograph.
+     Each of the four numbers above has its counterpart here, and the tuner has
+     a second group of sliders for them — it takes the strip one photograph along
+     while you drag, since that is the only place they can be seen.
+     app.js reports the position between the two ends as --fade-open: 0 at rest,
+     1 once the second photograph has travelled to the centre of the screen, on a
+     smoothstep so the fade neither twitches at the first pixel of a drag nor
+     arrives with a jolt. It is a function of where the strip IS, not of when it
+     moved, so it runs backwards just as smoothly on the way home — and before
+     any script runs the strip cannot have moved, which makes 0 the right start. */
+  --fade-x-open:    0;
+  --fade-span-open: 0.5;
+  --fade-max-open:  1;
+  --fade-ease-open: 0;
+  --fade-open:      0;
+
+  /* The live numbers, the two ends mixed by --fade-open. Only these are read
+     below, so neither the gradient nor the veil widths need to know that there
+     are two ends to travel between. */
+  --fade-x-now:    calc(var(--fade-x)    + (var(--fade-x-open)    - var(--fade-x))    * var(--fade-open));
+  --fade-span-now: calc(var(--fade-span) + (var(--fade-span-open) - var(--fade-span)) * var(--fade-open));
+  --fade-max-now:  calc(var(--fade-max)  + (var(--fade-max-open)  - var(--fade-max))  * var(--fade-open));
+  --fade-ease-now: calc(var(--fade-ease) + (var(--fade-ease-open) - var(--fade-ease)) * var(--fade-open));
+  --fade-w: calc(var(--slide-w) * var(--fade-span-now));   /* the dissolve, in px */
+
+  /* The ramp itself, written once and mirrored by the two veils below.
+     Three colour stops and two interpolation HINTS — the bare lengths at 2nd
+     and 4th position. A hint doesn't add a stop, it bends the curve between the
+     two it sits among: the browser then interpolates on a power law rather than
+     a straight line, so there is no piecewise-linear kink anywhere to catch the
+     eye. Two mirrored bends make one continuous S.
+     A hint at a quarter of the width is the linear case; 0.3536 (= 0.25 + Δ,
+     where Δ is 0.5^0.5/2 - 0.25) is the power-of-two ease that matches a
+     smoothstep. The ease slides between them, and past linear the other way. */
+  --fade-bend: 0.1036;                    /* Δ above: linear → smoothstep      */
+  --fade-stops:
+    var(--bg-0) 0,
+    calc(var(--fade-w) * (0.25 + var(--fade-bend) * var(--fade-ease-now))),
+    rgba(var(--bg-rgb), calc(0.5 * var(--fade-max-now))) calc(var(--fade-w) * 0.5),
+    calc(var(--fade-w) * (0.75 - var(--fade-bend) * var(--fade-ease-now))),
+    rgba(var(--bg-rgb), var(--fade-max-now)) var(--fade-w);
 }
 
 :root[data-theme="dark"] {
@@ -203,9 +271,8 @@ a { color: inherit; }
   -webkit-user-drag: none;
 }
 
-/* The fades into the paper — lifted while hovering / focused within. Their
-   smoothstep-like colour stops remove the visible linear ramp, while a minimum
-   width keeps the dissolve intact even when the viewport gutter is very small. */
+/* The fades into the paper — lifted while hovering / focused within. Shape,
+   reach and strength all come from the four --fade-* numbers at the top. */
 .veil {
   position: absolute;
   top: 0;
@@ -213,37 +280,24 @@ a { color: inherit; }
   pointer-events: none;
   transition: opacity 1s cubic-bezier(0.22, 1, 0.36, 1);
 }
-/* The dissolve completes within half an image and then remains paper-white.
-   Nine stops approximate a smoothstep curve, easing cleanly at both ends. */
+/* Both veils are the same width: back from their own edge to where the text
+   column ends, shifted by --fade-x-now. The outer max() is a floor — if the
+   start is pushed further out than the gutter is wide there would be no room
+   left for the ramp, and it would meet the viewport as a hard line instead. */
+.veil-right,
+.veil-left {
+  width: max(var(--fade-w),
+             calc(max(var(--edge), var(--fade-w)) - var(--slide-w) * var(--fade-x-now)));
+}
 .veil-right {
   right: 0;
-  width: max(var(--edge), var(--fade-w));
   opacity: 1;
-  background: linear-gradient(to right,
-    var(--bg-0) 0,
-    rgba(var(--bg-rgb), 0.043) calc(var(--fade-w) / 8),
-    rgba(var(--bg-rgb), 0.156) calc(var(--fade-w) / 4),
-    rgba(var(--bg-rgb), 0.316) calc(var(--fade-w) / 2 - var(--fade-w) / 8),
-    rgba(var(--bg-rgb), 0.5) calc(var(--fade-w) / 2),
-    rgba(var(--bg-rgb), 0.684) calc(var(--fade-w) / 2 + var(--fade-w) / 8),
-    rgba(var(--bg-rgb), 0.844) calc(var(--fade-w) - var(--fade-w) / 4),
-    rgba(var(--bg-rgb), 0.957) calc(var(--fade-w) - var(--fade-w) / 8),
-    var(--bg) var(--fade-w));
+  background: linear-gradient(to right, var(--fade-stops));
 }
 .veil-left {
   left: 0;
-  width: max(var(--edge), var(--fade-w));
   opacity: 0;
-  background: linear-gradient(to left,
-    var(--bg-0) 0,
-    rgba(var(--bg-rgb), 0.043) calc(var(--fade-w) / 8),
-    rgba(var(--bg-rgb), 0.156) calc(var(--fade-w) / 4),
-    rgba(var(--bg-rgb), 0.316) calc(var(--fade-w) / 2 - var(--fade-w) / 8),
-    rgba(var(--bg-rgb), 0.5) calc(var(--fade-w) / 2),
-    rgba(var(--bg-rgb), 0.684) calc(var(--fade-w) / 2 + var(--fade-w) / 8),
-    rgba(var(--bg-rgb), 0.844) calc(var(--fade-w) - var(--fade-w) / 4),
-    rgba(var(--bg-rgb), 0.957) calc(var(--fade-w) - var(--fade-w) / 8),
-    var(--bg) var(--fade-w));
+  background: linear-gradient(to left, var(--fade-stops));
 }
 .carousel:not(.at-start) .veil-left { opacity: 1; }   /* fade the left once scrolled */
 /* Until a centred slide plus two-thirds of each neighbour fits, both fades stay off. */
