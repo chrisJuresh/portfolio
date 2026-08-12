@@ -2,11 +2,71 @@
    Christian Juresh — portfolio
    A single narrow column, centered at every width, so desktop reads like a
    phone screen floated in the middle of the page. Minimal editorial type:
-   Sitka for all text, bar two deliberate exceptions — the italic lead paragraph
-   and the year column, both Georgia.
+   Vollkorn for reading text, Spectral for the small lettered labels, Source
+   Serif 4 for the year column, and Georgia for the italic lead paragraph. All
+   but the Georgia lead are self-hosted from /fonts — see the @font-face block
+   below and fonts/README.md for how they were built.
    The whole page fades in on load; the photo strip is a horizontal carousel
    that bleeds off the right edge, faded into the paper until you hover it.
    ========================================================================== */
+
+/* ---- self-hosted faces ---------------------------------------------------- */
+/* Three families, five faces, ~112 KB of woff2 in total. They are declared here
+   rather than in a linked stylesheet on purpose: every word on the page is set
+   in one of them, so a separate <link> would put a second blocking request in
+   front of the first paint. /fonts holds the files; fonts/README.md holds the
+   subset recipe, the licences and the measurements.
+
+   Only the faces the page actually asks for are shipped — Vollkorn at 400 (body,
+   role lines, contact), 700 (.listing > h2) and 400 italic (.item .sub);
+   Spectral at 400 (name, tagline, projects link, theme toggle); Source Serif 4
+   at 400 (the year column). Adding a weight to the CSS means adding a face here,
+   or the browser will synthesise it — a smeared fake bold or a slanted roman.
+
+   font-display: swap, as fonts.css already does. The page's own 0.9s fade-in
+   covers most of the swap; the alternative (`optional`) would mean first-time
+   visitors simply never see the typeface. */
+@font-face {
+  font-family: "Vollkorn";
+  src: url("/fonts/vollkorn-regular.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Vollkorn";
+  src: url("/fonts/vollkorn-bold.woff2") format("woff2");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Vollkorn";
+  src: url("/fonts/vollkorn-italic.woff2") format("woff2");
+  font-weight: 400;
+  font-style: italic;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Spectral";
+  src: url("/fonts/spectral-regular.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+/* Source Serif 4 ships as a variable font with an opsz axis; this is a static
+   instance pinned at opsz 14.4 — the px size the year column actually renders
+   at (0.9rem x 16) — which is the value a browser's own font-optical-sizing
+   would have picked. Keeping the axis live instead would have cost 28 KB for one
+   short column, so it is pinned. If .item .line's font-size changes, re-instance
+   it: the recipe is in fonts/README.md. */
+@font-face {
+  font-family: "Source Serif 4";
+  src: url("/fonts/sourceserif4-regular.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
 
 :root {
   --ink:        #1a1917;
@@ -18,27 +78,47 @@
   --rule-soft:  #efece4;
   --link-line:  #b3aa9b;
 
-  /* Sitka — Matthew Carter's screen-cut serif, bundled with Windows. It can't be
-     self-hosted (Microsoft licence), so the stack names the nearest screen serif
-     on each other platform: Charter on macOS, Iowan Old Style on iOS, Georgia on
-     Android. Note "Sitka" on its own resolves nowhere: the family is addressed
-     by optical size, and "Sitka Text" is the cut meant for reading. */
-  --serif-label: "Sitka Text", Charter, "Iowan Old Style", Georgia, serif;
-  --serif-body:  "Sitka Text", Charter, "Iowan Old Style", Georgia, serif;
-  /* The year column only. Sitka's figures are lining — 0.595em a digit, standing
-     to 84% of the cap height beside them — so next to an organisation name they
-     read as loud as the name itself. Georgia's defaults are old-style: 0.574em
-     and 78% of cap. A modest change, but the right direction, and old-style is
-     the property that matters rather than the face, so every fallback here has
-     it too and font-variant-numeric asks for it explicitly.
-     Constantia is the stronger form of the same argument and was measured —
-     0.506em at 66% of cap, shortest and narrowest of the three — but Georgia was
-     kept. Hence the same stack as --serif-lead; still a separate slot, because
-     the two were tuned independently. */
-  --serif-num:   Georgia, "Iowan Old Style", "Palatino Linotype", serif;
+  /* Spectral (Production Type) for the small lettered labels, Vollkorn (Friedrich
+     Althausen) for everything meant to be read. Both self-hosted above.
+     The tail of each stack is the Sitka chain these slots used to name outright —
+     Sitka Text on Windows, Charter on macOS, Iowan Old Style on iOS, Georgia on
+     Android. It is unreachable in the normal case and deliberately kept anyway:
+     with every word on the page now depending on a webfont, a failed or blocked
+     font request should land on a screen serif rather than on Times New Roman.
+     (Sitka can never be self-hosted — Microsoft licence — which is why it was the
+     stack rather than a file in the first place. Note "Sitka" alone resolves
+     nowhere: the family is addressed by optical size, and "Sitka Text" is the cut
+     meant for reading.)
+     Both faces are slightly smaller on the body than Sitka at the same
+     font-size — x-height 0.450 em for Spectral and 0.458 for Vollkorn against
+     Sitka's 0.478, so about 6% and 4% down. Small enough that the sizes here were
+     left as they are; the faces were chosen at these sizes. */
+  --serif-label: Spectral, "Sitka Text", Charter, "Iowan Old Style", Georgia, serif;
+  --serif-body:  Vollkorn, "Sitka Text", Charter, "Iowan Old Style", Georgia, serif;
+  /* The year column only, and it exists for one property: old-style figures, so
+     that a date does not read as loud as the organisation name beside it. Sitka's
+     figures are lining — 0.595em a digit, standing to 84% of the cap height
+     beside them; Georgia's defaults are old-style at 0.574em and 78% of cap,
+     which is why Georgia held this slot. (Constantia is the stronger form of the
+     same argument — 0.506em at 66% of cap — but Georgia was kept.)
+     Source Serif 4 replaces it and does NOT default to old-style: its plain
+     figures stand to 100.3% of cap, taller than Georgia's lining ones. The
+     old-style forms are there, behind the `onum` feature, which is exactly what
+     the font-variant-numeric below asks for — with it, a digit is 0.544em and
+     85.0% of cap. So the slot still does its job, though a shade less quietly
+     than Georgia's 80.1% (both measured here as glyph height over sCapHeight,
+     hence 80.1 where the older note says 78).
+     That makes `onum` load-bearing: the subset in fonts/README.md keeps it
+     explicitly, and a rebuild that drops it would silently return this column to
+     lining figures with nothing in the CSS to show why. Georgia stays on the tail
+     for the same reason it was chosen — every fallback in this stack has
+     old-style defaults, so the property survives even if the file does not. */
+  --serif-num:   "Source Serif 4", Georgia, "Iowan Old Style", "Palatino Linotype", serif;
   /* The italic lead paragraph only, kept in Georgia by choice after seeing it
-     both ways. Its 0.95rem is Georgia's size, not Sitka's — don't fold this slot
-     into --serif-body without resizing it. */
+     both ways, and left in Georgia when the other three slots changed hands.
+     Its 0.95rem is Georgia's size — don't fold this slot into --serif-body
+     without resizing it, all the more so now that --serif-body is Vollkorn,
+     whose italic is a true italic rather than Georgia's. */
   --serif-lead:  Georgia, "Iowan Old Style", "Palatino Linotype", serif;
 
   /* Ogg — Sharp Type's high-contrast calligraphic serif, used at one size and

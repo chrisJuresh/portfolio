@@ -1,15 +1,166 @@
-# Fonts — Latin Modern Roman
+# Fonts
+
+Two things live here: the three families `/portfolio` is actually set in, and the
+Latin Modern Roman files that record a decision made and reversed.
+
+- [In use — Vollkorn, Spectral, Source Serif 4](#in-use--vollkorn-spectral-source-serif-4)
+- [Not in use — Latin Modern Roman](#not-in-use--latin-modern-roman)
+
+## In use — Vollkorn, Spectral, Source Serif 4
+
+`/portfolio` is set in these. They replaced the Sitka stack, which named system
+faces and shipped no files; the `@font-face` blocks are at the top of
+`portfolio/styles.css` rather than in a stylesheet of their own, because every
+word on the page needs one of these faces and a second `<link>` would block the
+first paint.
+
+`/projects` is untouched and still runs its own stack.
+
+| File | Size | Slot | Used for |
+|---|---|---|---|
+| `vollkorn-regular.woff2` | 24 KB | `--serif-body` | body, role lines, contact |
+| `vollkorn-bold.woff2` | 25 KB | `--serif-body` | `.listing > h2` |
+| `vollkorn-italic.woff2` | 25 KB | `--serif-body` | `.item .sub` |
+| `spectral-regular.woff2` | 15 KB | `--serif-label` | name, tagline, projects link, theme toggle |
+| `sourceserif4-regular.woff2` | 21 KB | `--serif-num` | the year column |
+
+~112 KB in total, on a page that previously shipped no webfonts at all. Only the
+faces the CSS asks for are here; adding a weight to the CSS without adding a face
+gets a synthesised one — smeared fake bold, or a slanted roman for an italic.
+
+**Sources.** All three from the `google/fonts` repository, `main` branch, which is
+upstream for Vollkorn and Spectral and a mirror of Adobe's releases for Source
+Serif 4:
+
+- `ofl/vollkorn/Vollkorn[wght].ttf` and `Vollkorn-Italic[wght].ttf` — variable, wght 400–900
+- `ofl/spectral/Spectral-Regular.ttf` — static
+- `ofl/sourceserif4/SourceSerif4[opsz,wght].ttf` — variable, wght 200–900, opsz 8–60
+
+**Licence.** All three are SIL Open Font License 1.1 — `OFL-Vollkorn.txt`,
+`OFL-Spectral.txt`, `OFL-SourceSerif4.txt`, copied from the same directories. As
+with Latin Modern, the copyright and licence records travel inside each `.woff2`
+name table (IDs 0 and 13 are retained by the subset), so the notice cannot be
+separated from the file.
+
+### Building them
+
+Same recipe as Latin Modern below — Latin-1 + Latin Extended-A + General
+Punctuation + arrows + f-ligatures, `--no-hinting`, woff2 — with two changes.
+
+**`onum` is added to the kept features, and it is load-bearing.** The year column
+sets `font-variant-numeric: oldstyle-nums`, and that is the entire reason
+`--serif-num` is a separate slot. Source Serif 4's default figures are *lining*,
+standing to 100.3% of the cap height beside them; its old-style forms exist only
+behind the `onum` feature, at 85.0% of cap. Subset without `onum` and the column
+silently goes back to loud lining figures, with nothing in the CSS to explain it.
+`lnum` is kept alongside it so the lining forms stay reachable.
+
+**The two variable fonts are instanced, not shipped variable.** Static faces came
+out smaller here: 110 KB across five static files against 134 KB for the
+fewest-files variable arrangement, because a wght axis spanning 400–900 costs more
+than the two cuts actually used.
+
+```bash
+python - <<'PY'
+from fontTools.ttLib import TTFont
+from fontTools.varLib import instancer
+# Vollkorn: the two weights the CSS asks for, from the variable source
+for wght, out in ((400, "_vk400.ttf"), (700, "_vk700.ttf")):
+    instancer.instantiateVariableFont(
+        TTFont("Vollkorn[wght].ttf"), {"wght": wght},
+        inplace=False, updateFontNames=True).save(out)
+instancer.instantiateVariableFont(
+    TTFont("Vollkorn-Italic[wght].ttf"), {"wght": 400},
+    inplace=False, updateFontNames=True).save("_vki400.ttf")
+# Source Serif 4: wght 400, opsz pinned — see the note below on 14.4.
+# updateFontNames=False because STAT has no named value for opsz 14.4.
+instancer.instantiateVariableFont(
+    TTFont("SourceSerif4[opsz,wght].ttf"), {"wght": 400, "opsz": 14.4},
+    inplace=False, updateFontNames=False).save("_ss4.ttf")
+PY
+
+python -m fontTools.subset _vk400.ttf \
+  --unicodes="U+0000-00FF,U+0100-017F,U+0131,U+0152-0153,U+02C6,U+02DA,U+02DC,U+2000-206F,U+2074,U+20AC,U+2122,U+2190-2193,U+2212,U+FB00-FB04" \
+  --layout-features='kern,liga,clig,frac,dnom,numr,onum,lnum' \
+  --flavor=woff2 --no-hinting \
+  --name-IDs='0,1,2,3,4,5,6,13,14' \
+  --output-file=vollkorn-regular.woff2
+```
+
+The subset is deliberately the same wide one Latin Modern got, rather than the
+handful of glyphs the current text needs. `portfolio/content.js` is written to be
+hand-edited — its own header says so — and the year strings are prose
+(`"2024–Present"`), not digits. A subset cut to today's characters would fail on
+the next content edit, and fail as a missing glyph rather than as an error.
+
+### The opsz pin on Source Serif 4
+
+Source Serif 4 carries an optical-size axis. Browsers set it automatically from
+the used font size in px, so keeping it live would be the typographically correct
+thing — but it costs 28 KB (50 KB against 21 KB) for one short column of dates, so
+it is pinned instead.
+
+It is pinned at **14.4**, which is the px size the year column actually renders
+at: `.item .when` inherits `.item .line`'s `0.9rem`, and 0.9 x 16 = 14.4. That is
+the value a browser's own `font-optical-sizing: auto` would have chosen, so the
+pin is invisible in the normal case.
+
+This couples the binary to a number in the CSS. **If `.item .line`'s `font-size`
+changes, re-instance the face** at the new px size, or the column quietly renders
+at an optical size cut for the old one.
+
+### Metrics, measured from the files
+
+x-height and cap-height as fractions of the em, from `OS/2`:
+
+| Face | x-height | cap-height | x/cap |
+|---|---|---|---|
+| Sitka Text *(outgoing)* | 0.478 | 0.637 | 0.750 |
+| Georgia *(fallback ref)* | 0.481 | 0.693 | 0.695 |
+| Vollkorn | 0.458 | 0.676 | 0.678 |
+| Spectral | 0.450 | 0.660 | 0.682 |
+| Source Serif 4 | 0.475 | 0.670 | 0.709 |
+
+Both reading faces are slightly *smaller* than Sitka at the same `font-size` —
+Vollkorn by 4%, Spectral by 6%. That is a fraction of the 11.6% Latin Modern would
+have needed (below), so the sizes in `portfolio/styles.css` were left alone.
+
+### One thing to re-measure on merge
+
+The vertical metrics of these faces are much larger than Sitka's, and there is a
+constant elsewhere in this repo derived from Sitka's:
+
+| Face | (typoAscender − typoDescender) / em | half-leading at `line-height: 1.55` |
+|---|---|---|
+| Sitka Text | 1.000 | 0.275 |
+| Georgia | 0.973 | 0.288 |
+| Vollkorn | 1.393 | 0.079 |
+| Source Serif 4 | 1.371 | 0.090 |
+| **Spectral** | **1.522** | **0.014** |
+
+Spectral's ascender and descender nearly fill its line box, so at `1.55` it has
+almost no half-leading left — 0.014 against Sitka's 0.275.
+
+This does not matter on this branch: `development` has no constant of that kind.
+It matters the moment this meets the cut-title work, which carries
+`--name-half-leading: calc(0.294 * 0.78rem)` — 0.294 being Sitka Text's
+half-leading, and `.name` being set in `--serif-label`, now Spectral. With
+Spectral loaded that constant is wrong by about 3.5px (3.67px assumed against
+0.17px actual), and it feeds `--cue-gap`, which positions the cut title. Whoever
+merges the two should re-derive it from Spectral, or decide the title's gap is a
+design number rather than a measured one and say so in the comment.
+
+## Not in use — Latin Modern Roman
 
 Self-hosted webfonts for the Computer Modern look the site's CSS used to ask for
 but never actually shipped.
 
-> **Not in use.** The site is now set in Sitka (see the root `README.md`), and no
-> page links `fonts.css`. Everything below is kept because it is the record of
-> *why* Computer Modern was rejected — the measurements in "Why it renders softer
-> than the Times fallback" are the reason — and because it is still the fastest
-> way back if that decision is ever revisited.
+> **Not in use.** No page links `fonts.css`. Everything below is kept because it
+> is the record of *why* Computer Modern was rejected — the measurements in "Why
+> it renders softer than the Times fallback" are the reason — and because it is
+> still the fastest way back if that decision is ever revisited.
 
-## Why these exist
+### Why these exist
 
 Every stylesheet declared:
 
@@ -22,7 +173,7 @@ through to generic `serif` — Times New Roman on Windows and macOS, Noto Serif 
 Android, usually DejaVu Serif on Linux. The intended typeface had never rendered
 for anyone, and the fallback wasn't even consistent between visitors.
 
-## What this is
+### What this is
 
 **Latin Modern Roman** is the maintained OpenType successor to Knuth's original
 Computer Modern, produced by GUST (the Polish TeX Users Group). It is the
@@ -35,7 +186,7 @@ directly usable as web fonts.
   redistributable. The copyright and licence notice is also embedded in each
   `.woff2` name table, so the notice travels with the file.
 
-## Files
+### Files
 
 | File | Size | Used for |
 |---|---|---|
@@ -49,7 +200,7 @@ directly usable as web fonts.
 The three `lmroman10-*` faces are the minimum for the site (~67 KB total). The
 other three are optical-size cuts, kept for the type lab.
 
-## Optical sizes matter here
+### Optical sizes matter here
 
 Latin Modern ships a separate design per size. Measured from the outlines, they
 share x-height and cap-height and differ in **stroke weight**:
@@ -65,7 +216,7 @@ So the 8pt and 9pt cuts are *sturdier*, not smaller — which is what you want f
 small text on screen. Using `lmroman12` for 13px body text is how CM ends up
 looking spindly.
 
-## The metric that drives everything
+### The metric that drives everything
 
 Measured x-height, from the `x` glyph outlines:
 
@@ -84,7 +235,7 @@ values makes the cards *more* cramped, not less. Compensating needs roughly
 **+11.6%** on every size to match Georgia's apparent size, plus extra leading
 for CM's tall ascenders and deep descenders.
 
-## Why it renders softer than the Times fallback
+### Why it renders softer than the Times fallback
 
 Latin Modern looks blurrier than Times New Roman at 13–15px on a standard-density
 display. That is intrinsic to the typeface, not a build mistake. Measured by
@@ -100,7 +251,7 @@ rasterising the same sentence at 1x and classifying every inked pixel by coverag
 Latin Modern also renders about 17% lighter overall (mean ink coverage 0.51 vs
 Times' 0.61), so it reads fainter as well as softer.
 
-### The cause: ink density, not hairlines and not hinting
+#### The cause: ink density, not hairlines and not hinting
 
 Two intuitive explanations are both **wrong**, and were measured to be wrong.
 
@@ -134,7 +285,7 @@ More device pixels per em means the sub-pixel-thin parts of the glyph finally
 cover whole pixels. On any Retina display, modern phone or 4K monitor the gap
 nearly closes. On a 1080p monitor it does not.
 
-### Five things that do *not* help — all measured, none retried
+#### Five things that do *not* help — all measured, none retried
 
 | Attempt | Result |
 |---|---|
@@ -144,7 +295,7 @@ nearly closes. On a 1080p monitor it does not.
 | `-webkit-font-smoothing: antialiased` / `subpixel-antialiased` / unset | No difference at all — it is a macOS-only property. Subpixel AA is already active (96% of pixels carry a colour cast). |
 | Assume it is stroke contrast and pick a lower-contrast CM cut | There is no such thing; the hairlines already match Times'. |
 
-### Things that do help
+#### Things that do help
 
 - **A high-DPI display**, by far the largest factor (+123%).
 - Larger sizes, modestly: 0.56 to 0.61 from 13.6px to 15.2px on the 9pt cut.
@@ -155,7 +306,7 @@ nearly closes. On a 1080p monitor it does not.
   noticeably better. Untested as of writing, but it is the cheapest lever left.
 - Not using CM for the smallest text at all — what the `hybrid` variant does.
 
-## Regenerating
+### Regenerating
 
 Requires `fonttools` and `brotli` (`pip install fonttools brotli`).
 
@@ -173,21 +324,19 @@ The subset is Latin-1 + Latin Extended-A + General Punctuation + arrows +
 f-ligatures (358 glyphs), with kerning and ligatures kept. `--name-IDs` retains
 ID 0 and 13, the copyright and licence records, which the GUST licence requires.
 
-## Deploying
+### Deploying
 
-If these go live, consider a long cache header in `vercel.json`, since the
-filenames are stable and the contents never change:
+Already handled, and it now covers this whole folder rather than just Latin
+Modern: `vercel.json` sets a year-long `immutable` cache on `/fonts/(.*)`, which
+is safe because the filenames are stable and the contents never change. Anything
+rebuilt here therefore needs a new filename, not a new file under the old name.
 
-```json
-{ "source": "/fonts/(.*)", "headers": [
-  { "key": "Cache-Control", "value": "public, max-age=31536000, immutable" } ] }
-```
-
-## Note
+### Note
 
 Linking `fonts.css` no longer activates anything on its own. It used to: the old
 stacks named `"Latin Modern Roman"` third, so the link alone was the whole switch.
-The stacks now name Sitka and its screen-serif fallbacks, so adopting Latin Modern
-again would mean editing `--serif` / `--serif-label` / `--serif-body` as well —
-and re-applying the size compensation above, which the current sizes no longer
-carry (they are set for Sitka's larger x-height, not Times').
+Adopting Latin Modern now would mean editing `--serif` (projects) and
+`--serif-label` / `--serif-body` (portfolio) as well — the latter two now lead with
+Spectral and Vollkorn — and re-applying the size compensation above, which the
+current sizes still do not carry (they were set for Sitka's larger x-height, and
+Vollkorn's is only 4% below it, not the 11.6% Latin Modern needs).
