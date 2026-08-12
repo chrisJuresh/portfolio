@@ -133,7 +133,7 @@
    Two halves that are tuned together and shipped apart, which is the whole
    reason this tool exists as one window:
 
-   * THE GRADE and THE MATTE are baked into portfolio/img/plate.webp by
+   * THE GRADE and THE MATTE are baked into portfolio/img/plate-*.webp by
      design/plate/build-plate.py. Nothing here can change the file. What this
      page does is run that script's pipeline again, in a canvas, over the same
      input the script starts from — design/plate/plate-source.webp, which the
@@ -233,15 +233,17 @@ var PLACE = [
     tip: "How far it runs across the page. Height follows the file's own aspect.\nAt 50 its right-hand edge falls inside the column of text, which is the point — it is what the type is printed on, not something beside it." },
   { k: "--plate-x", label: "out from left", unit: "px", min: -400, max: 400, step: 1, dp: 0,
     tip: "Positive moves it right, off the page's left edge." },
-  { k: "--plate-y", label: "up from bottom", unit: "px", min: -400, max: 400, step: 1, dp: 0,
-    tip: "Positive lifts it off the bottom of the first screen." }
+  { k: "--plate-y", label: "up from bottom", unit: "px", min: -1600, max: 1200, step: 1, dp: 0,
+    tip: "Positive lifts it off the bottom of the first screen.\nNegative hangs it PAST the fold and down into the second screen — the box grows with it, so nothing is cut off at the fold any more.\nGo far enough down and the page gets longer, because the plate is still part of the document." },
+  { k: "--plate-crop", label: "crop the foot", unit: "", min: 0, max: 0.9, step: 0.005, dp: 3,
+    tip: "Cuts the BOTTOM off the picture — the rooftops and the glass in front of the dome.\nA share of the plate's width, so it takes the same slice of the photograph at every window size.\nIt shortens the picture where it stands; it does not move it. Use 'up from bottom' for that." }
 ];
 
 var MATTE_GROUP = { name: "Sky matte", rows: MATTE, py: true,
   note: "No sky is wanted, only the building — the page's own paper is the sky. Watch this one in the matte view." };
 var GROUPS = [
   { name: "Grade", rows: GRADE, py: true,
-    note: "Baked into plate.webp. Re-run build-plate.py to ship a change." },
+    note: "Baked into every plate-*.webp. Re-run build-plate.py to ship a change." },
   MATTE_GROUP,
   { name: "Placement", rows: PLACE, css: true,
     note: "portfolio/styles.css, live in the frame." }
@@ -724,7 +726,7 @@ function probe() {
 
 /* Injected last and with no !important, so the preview meets the same cascade
    the exported CSS will meet in styles.css. The image is this tool's, though —
-   plate.webp on disk is whatever the last run of the script produced, and the
+   the plate on disk is whatever the last run of the script produced, and the
    whole point is to see the grade that has not been baked yet. */
 function inject() {
   var doc = frame.contentDocument;

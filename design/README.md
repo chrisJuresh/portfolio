@@ -30,7 +30,7 @@ design/
   type-tuner.html    interactive: free-form size/spacing/font sliders + CSS export
   shots/             committed renders + index.html contact sheet
   plate/
-    build-plate.py   develops the raw into portfolio/img/plate.webp — the grade
+    build-plate.py   develops a source into portfolio/img/plate-*.webp — the grade
     plate-tuner.html interactive: the same pipeline on sliders + Python/CSS export
     plate-source.webp  the ungraded frame the tuner grades; written by the script
     plate-source.json  the constants it was last built with — the tuner's "was"
@@ -335,7 +335,7 @@ http://localhost:8000/design/plate/plate-tuner.html
 The plate is two things shipped through two different pipes, and this window is
 where they are judged together:
 
-- **The grade and the sky matte** are baked into `portfolio/img/plate.webp` by
+- **The grade and the sky matte** are baked into `portfolio/img/plate-*.webp` by
   `build-plate.py` — exposure, saturation, contrast, the highlight shoulder, the
   two colours black and white land on, grain, and (when the script is the one
   cutting) the numbers that decide what counts as sky. Nothing in a browser can
@@ -343,8 +343,12 @@ where they are judged together:
   `plate-source.webp` (which the script writes for the purpose) and prints a block
   of Python to paste back.
   **A change here does not reach the site until `build-plate.py` runs again.**
-- **The placement** — `--plate-opacity`, `--plate-w`, `--plate-x`, `--plate-y` —
-  is CSS, and is live in the iframe as you drag. That half exports as CSS.
+- **The placement** — `--plate-opacity`, `--plate-w`, `--plate-x`, `--plate-y`,
+  `--plate-crop` — is CSS, and is live in the iframe as you drag. That half
+  exports as CSS. `--plate-y` may go negative, which hangs the plate past the
+  fold into the second screen rather than clipping it there; `--plate-crop`
+  then cuts the foot off the picture, as a share of `--plate-w` so the same
+  slice goes at every window size.
 
 Notes, mostly the same shape as the type tuner's:
 

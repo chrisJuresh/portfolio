@@ -91,7 +91,22 @@
   --plate-opacity: 0.12;
   --plate-w: 50vw;   /* how wide it runs — height follows the file's own aspect */
   --plate-x: 0px;    /* out from the left edge of the page, positive → right     */
-  --plate-y: 0px;    /* up from the bottom of the first screen, positive → up    */
+  --plate-y: 0px;    /* up from the bottom of the first screen, positive → up;
+                        negative hangs it past the fold, into the second screen  */
+  --plate-crop: 0;   /* how much of the picture's BOTTOM to cut off, as a share
+                        of --plate-w. Unitless so it is the same crop at every
+                        window size: the plate's height is a fixed multiple of
+                        its width, so a share of one is a share of the other.
+                        0.1 takes off a tenth of the width — about 7.5% of the
+                        height on this frame. It is a crop and not a nudge,
+                        which is why it is the one placement value that is not
+                        a length: --plate-x and --plate-y move the picture and
+                        this one shortens it.                                    */
+  /* The file itself. Left unset on purpose — index.html picks the rung that
+     suits the display and sets this, so a browser is never told to fetch the
+     2800px plate to draw it 400px wide. Unset means no plate, which is also the
+     fallback when it does not arrive in time. */
+  --plate-src: none;
 
   /* Spectral (Production Type) for the small lettered labels, Vollkorn (Friedrich
      Althausen) for everything meant to be read. Both self-hosted above.
@@ -477,7 +492,20 @@ a { color: inherit; }
    and bottom are the page's own corner, so only two edges exist to see, and at
    this opacity they read as the edge of a tipped-in plate rather than as a crop.
 
-   The box is the FIRST screen — top of the document, 100vh tall — and the plate
+   The box's bottom edge IS the plate's bottom edge, and --plate-y is the whole
+   of the difference between it and the fold: the box is `100vh - --plate-y`, so
+   a positive value lifts the picture and shortens the box with it, and a negative
+   one hangs the picture past the fold and lengthens the box to follow. That is
+   why the box is sized rather than the background offset — the two used to be
+   independent, and the picture was then clipped at the fold whatever you did to
+   the offset, which made "down" a direction the plate could not go.
+
+   --plate-crop then trims the bottom, and it does it with the same edge: the
+   background is pushed DOWN past the box's bottom by the crop, so what falls
+   outside is what is cut. One edge, doing both jobs, which is why cropping the
+   foreground does not also move the picture up the page.
+
+   The box is otherwise the FIRST screen — top of the document — and the plate
    sits on its bottom edge. So it is there on the page you open, in the corner
    under the column, and it leaves as you scroll: it is part of the opening
    composition rather than a watermark. Neither of the two alternatives is this.
@@ -508,20 +536,25 @@ body::after {
   top: 0;
   left: 0;
   right: 0;
-  height: 100vh;
+  height: calc(100vh - var(--plate-y));
   z-index: -1;
   pointer-events: none;
-  background-image: url("img/plate.webp");
+  background-image: var(--plate-src);
   background-repeat: no-repeat;
   /* The four-value form: two named edges, each with its own offset. So --plate-x
-     and --plate-y are distances out from the corner the plate is standing in and
-     nothing else — a percentage position, which is what `left bottom` is short
-     for, would instead have moved it by a share of the difference between the box
-     and the image, and would have changed meaning every time --plate-w did.
-     Lengths rather than a share of the width on purpose: the plate is pinned to a
-     corner, so a nudge is a nudge at every window size. Both default to 0, which
-     is `left bottom` exactly. */
-  background-position: left var(--plate-x) bottom var(--plate-y);
+     is a distance out from the corner the plate is standing in and nothing else —
+     a percentage position, which is what `left bottom` is short for, would instead
+     have moved it by a share of the difference between the box and the image, and
+     would have changed meaning every time --plate-w did. A length rather than a
+     share of the width on purpose: the plate is pinned to a corner, so a nudge is
+     a nudge at every window size.
+
+     The vertical offset is the crop and only the crop — the height above has
+     already put the box's bottom edge where --plate-y asks for it. Negative, so
+     the foot of the picture is pushed below that edge and clipped by it. */
+  background-position:
+    left var(--plate-x)
+    bottom calc(-1 * var(--plate-crop) * var(--plate-w));
   /* Half the page, at every width. Height follows the file's own aspect, so the
      aspect ratio lives in the file and not in this sheet.
      50vw and not a share of the gutter: the plate is meant to run in behind the
@@ -565,6 +598,64 @@ body::after {
 @keyframes page-in {
   from { opacity: 0; transform: translateY(8px); }
   to   { opacity: 1; transform: none; }
+}
+
+/* ...and hold that fade while the corner plate is still coming, so the page
+   opens as one composition rather than as type with a picture arriving behind it.
+   index.html removes .plate-wait as soon as the plate resolves — loaded, failed
+   or out of time — and the fade above takes over from wherever this got to.
+
+   The same reasoning as page-in, one step further: this is an ANIMATION and not
+   a held opacity, so the worst case is not a blank site. If the script never
+   runs, throws, or is looking at a network that answers nothing, the keyframes
+   below still finish and the page is up. The 2.4s is deliberately longer than
+   index.html's own 1.5s cap — it is the backstop for that cap failing, not the
+   cap itself, and in normal use it is cancelled long before it is reached.
+   (It also keeps the profile-README screenshot honest: Playwright fast-forwards
+   finite animations to their end state, which a JS-toggled class would not.) */
+.js.plate-wait .page {
+  animation: page-held-in 2.4s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+@keyframes page-held-in {
+  /* 62.5% of 2.4s is 1.5s: hold, then the same 0.9s fade as above. */
+  0%, 62.5% { opacity: 0; transform: translateY(8px); }
+  100%      { opacity: 1; transform: none; }
+}
+
+/* ---- the loading line -----------------------------------------------------
+   A hairline the width of a word, with a lighter segment travelling along it.
+   No spinner: nothing else on this page is a widget, and a rotating disc would
+   be the only thing here that came from somewhere else.
+
+   It is genuinely a loading state and not a device. There is no minimum time on
+   screen and nothing artificial keeping it there — it exists only while
+   .plate-wait does, and it does not begin to fade in for 0.35s, which is longer
+   than a cached plate takes to resolve. So the common case never paints it, and
+   seeing it means the picture really is still on its way. */
+.loading { display: none; }
+.js.plate-wait .loading {
+  display: block;
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  width: 3.5rem;
+  height: 1px;
+  margin: 0 0 0 -1.75rem;
+  overflow: hidden;
+  background: var(--rule-soft);
+  animation: loading-in 0.45s 0.35s both;
+}
+.js.plate-wait .loading::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: var(--muted);
+  animation: loading-sweep 1.35s ease-in-out infinite;
+}
+@keyframes loading-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes loading-sweep {
+  from { transform: translateX(-100%); }
+  to   { transform: translateX(100%); }
 }
 
 /* ---- masthead ------------------------------------------------------------ */
@@ -1036,9 +1127,29 @@ body::after {
 /* ---- respect reduced-motion preferences ---------------------------------- */
 @media (prefers-reduced-motion: reduce) {
   .js .page { animation: none; }
+  /* The hold survives — waiting for the plate is not movement, and dropping it
+     here would trade one animation for the picture appearing underneath the type
+     a moment after you started reading, which is the more startling of the two.
+     What goes is the 8px rise, and with it the only thing that actually travels.
+     It has to be restated rather than left to the rule above: `.js.plate-wait
+     .page` is the more specific selector and would otherwise keep its transform. */
+  .js.plate-wait .page { animation: page-held-in-still 2.4s linear both; }
+  /* Likewise the loading line: it still says "not yet", by breathing rather than
+     by running a segment from one end to the other. */
+  .js.plate-wait .loading::after {
+    animation: loading-pulse 1.8s ease-in-out infinite;
+  }
   .carousel { transition: none; }        /* the edge dissolve, --fade-l / --fade-r */
   .track { scroll-behavior: auto; }
   body, .theme-toggle__thumb { transition: none; }
+}
+@keyframes page-held-in-still {
+  0%, 62.5% { opacity: 0; }
+  100%      { opacity: 1; }
+}
+@keyframes loading-pulse {
+  0%, 100% { opacity: 0.2; }
+  50%      { opacity: 1; }
 }
 
 /* ---- print: clean text CV, no photos ------------------------------------- */
@@ -1057,5 +1168,6 @@ body::after {
   /* Paper has its own stock. A 12%-opacity photograph is also the one thing on
      this page that would cost a print visibly more than it is worth. */
   body::after { display: none !important; }
+  .loading { display: none !important; }     /* nor does a wait, once it is paper */
   .contact a { border: 0 !important; color: #000; }
 }

@@ -3,7 +3,12 @@
   "source": "plate-source.webp",
   "width": 900,
   "height": 1199,
-  "outWidth": 1100,
+  "outWidths": [
+    800,
+    1300,
+    2000,
+    2800
+  ],
   "grade": {
     "EXPOSURE_PCT": 99.0,
     "EXPOSURE_TARGET": 0.34,
