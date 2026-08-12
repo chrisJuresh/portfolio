@@ -28,6 +28,12 @@ photos/
 # sit wherever it was unpacked rather than under photos/.
 *.rw2
 
+# ...and the same for a cut-out plate source, which is a 20MB RGBA PNG and gets
+# dropped in the same place. Root only, by path rather than by extension: the
+# repo's other PNGs are design/og/og-source.png and the committed shots, and a
+# blanket *.png would take those with it.
+/*.png
+
 # secrets — never commit
 .env
 .env.*

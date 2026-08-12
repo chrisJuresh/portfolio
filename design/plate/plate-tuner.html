@@ -237,11 +237,12 @@ var PLACE = [
     tip: "Positive lifts it off the bottom of the first screen." }
 ];
 
+var MATTE_GROUP = { name: "Sky matte", rows: MATTE, py: true,
+  note: "No sky is wanted, only the building — the page's own paper is the sky. Watch this one in the matte view." };
 var GROUPS = [
   { name: "Grade", rows: GRADE, py: true,
     note: "Baked into plate.webp. Re-run build-plate.py to ship a change." },
-  { name: "Sky matte", rows: MATTE, py: true,
-    note: "No sky is wanted, only the building — the page's own paper is the sky. Watch this one in the matte view." },
+  MATTE_GROUP,
   { name: "Placement", rows: PLACE, css: true,
     note: "portfolio/styles.css, live in the frame." }
 ];
@@ -339,6 +340,11 @@ function rgbOf(h) {
    and the photograph does not. */
 var META = null, N = 0, W = 0, H = 0;
 var lin = null, luma = null, noise = null, lumaMax = 1;
+/* Set when the source arrives already cut — plate-source.webp carries an alpha
+   channel and plate-source.json's `matte` is null. Then the matte is an input,
+   not a decision: srcAlpha IS the answer, the panel below hides itself, and the
+   only stage left to tune is the grade. */
+var srcAlpha = null, hasOwnMatte = false;
 
 function srgbToLinear(u) {
   var c = u / 255;
@@ -369,6 +375,7 @@ function decode(img) {
 
   lin = new Float32Array(N * 3);
   luma = new Float32Array(N);
+  srcAlpha = hasOwnMatte ? new Float32Array(N) : null;
   lumaMax = 0;
   for (var p = 0, q = 0; p < N; p++, q += 3) {
     var r = lut[d[p * 4]], gg = lut[d[p * 4 + 1]], b = lut[d[p * 4 + 2]];
@@ -376,6 +383,7 @@ function decode(img) {
     var y = 0.2126 * r + 0.7152 * gg + 0.0722 * b;
     luma[p] = y;
     if (y > lumaMax) lumaMax = y;
+    if (srcAlpha) srcAlpha[p] = d[p * 4 + 3];
   }
 
   var rnd = mulberry32(20250825);
@@ -403,6 +411,26 @@ function buildMatte() {
   var sig = matteSignature();
   if (sig === matteSig) return;
   matteSig = sig;
+
+  /* Nothing to decide when the source was cut before it got here. `sky` is still
+     wanted — it is what "the building" means to the exposure histogram — but the
+     alpha is copied rather than derived, and the bleed runs over everything short
+     of fully opaque, which is what build-plate.py does. On a hand-cut matte that
+     band can be a fifth of the frame rather than the pixel or two a computed one
+     leaves, and every one of those pixels is still wearing the sky. */
+  if (hasOwnMatte) {
+    sky = new Uint8Array(N);
+    alpha = new Float32Array(N);
+    var hole = new Uint8Array(N);
+    for (var m = 0; m < N; m++) {
+      alpha[m] = srcAlpha[m];
+      sky[m] = srcAlpha[m] < 128 ? 1 : 0;
+      hole[m] = srcAlpha[m] < 255 ? 1 : 0;
+    }
+    buildBleed(hole);
+    buildHistogram();
+    return;
+  }
 
   var lmin = +val(MATTE[0]), llow = +val(MATTE[1]), soft = +val(MATTE[2]);
 
@@ -438,7 +466,7 @@ function buildMatte() {
 
   fillHoles();
   buildAlpha(soft);
-  buildBleed();
+  buildBleed(sky);
   buildHistogram();
 }
 
@@ -498,17 +526,17 @@ function boxBlur(a, r) {
    near the edge is told which building pixel to wear instead. Rings out from the
    boundary, carrying the ORIGINAL source index along, so every pixel copies real
    building rather than a copy of a copy. */
-function buildBleed() {
+function buildBleed(hole) {
   bleedFrom = new Int32Array(N).fill(-1);
   var front = [], next, i, p, x, y;
   for (i = 0; i < N; i++) {
-    if (!sky[i]) continue;
+    if (!hole[i]) continue;
     x = i % W; y = (i - x) / W;
     var src = -1;
-    if (x > 0 && !sky[i - 1]) src = i - 1;
-    else if (x < W - 1 && !sky[i + 1]) src = i + 1;
-    else if (y > 0 && !sky[i - W]) src = i - W;
-    else if (y < H - 1 && !sky[i + W]) src = i + W;
+    if (x > 0 && !hole[i - 1]) src = i - 1;
+    else if (x < W - 1 && !hole[i + 1]) src = i + 1;
+    else if (y > 0 && !hole[i - W]) src = i - W;
+    else if (y < H - 1 && !hole[i + W]) src = i + W;
     if (src >= 0) { bleedFrom[i] = src; front.push(i); }
   }
   for (var step = 1; step < BLEED; step++) {
@@ -516,10 +544,10 @@ function buildBleed() {
     for (var f = 0; f < front.length; f++) {
       p = front[f]; x = p % W; y = (p - x) / W;
       var from = bleedFrom[p];
-      if (x > 0     && sky[p - 1] && bleedFrom[p - 1] < 0) { bleedFrom[p - 1] = from; next.push(p - 1); }
-      if (x < W - 1 && sky[p + 1] && bleedFrom[p + 1] < 0) { bleedFrom[p + 1] = from; next.push(p + 1); }
-      if (y > 0     && sky[p - W] && bleedFrom[p - W] < 0) { bleedFrom[p - W] = from; next.push(p - W); }
-      if (y < H - 1 && sky[p + W] && bleedFrom[p + W] < 0) { bleedFrom[p + W] = from; next.push(p + W); }
+      if (x > 0     && hole[p - 1] && bleedFrom[p - 1] < 0) { bleedFrom[p - 1] = from; next.push(p - 1); }
+      if (x < W - 1 && hole[p + 1] && bleedFrom[p + 1] < 0) { bleedFrom[p + 1] = from; next.push(p + 1); }
+      if (y > 0     && hole[p - W] && bleedFrom[p - W] < 0) { bleedFrom[p - W] = from; next.push(p - W); }
+      if (y < H - 1 && hole[p + W] && bleedFrom[p + W] < 0) { bleedFrom[p + W] = from; next.push(p + W); }
     }
     front = next;
   }
@@ -806,6 +834,9 @@ var controls = document.getElementById("controls");
 function buildPanel() {
   controls.innerHTML = "";
   GROUPS.forEach(function (g) {
+    /* Rows are still built for a hidden group — only the box is left out of the
+       page. They stay addressable, so val() and the saved state keep working
+       without knowing which panels happen to be on screen. */
     var box = document.createElement("div");
     box.className = "g" + (state.shut[g.name] ? " shut" : "");
     var head = document.createElement("button");
@@ -824,7 +855,7 @@ function buildPanel() {
     }
     g.rows.forEach(function (r) { body.appendChild(rowEl(r)); });
     box.appendChild(body);
-    controls.appendChild(box);
+    if (!g.hidden) controls.appendChild(box);
   });
 }
 
@@ -1008,7 +1039,12 @@ function boot() {
   }).then(function (meta) {
     META = meta;
     Object.keys(meta.grade).forEach(function (k) { base[k] = meta.grade[k]; });
-    Object.keys(meta.matte).forEach(function (k) { base[k] = meta.matte[k]; });
+    /* null when the source arrived cut. The rows then have no base to be `was`,
+       which is also why they cannot show as moved and cannot reach the export. */
+    hasOwnMatte = !meta.matte;
+    if (hasOwnMatte) MATTE_GROUP.hidden = true;
+    else Object.keys(meta.matte).forEach(function (k) { base[k] = meta.matte[k]; });
+    buildPanel();   /* again, now that it is known whether the matte panel exists */
     return new Promise(function (done, fail) {
       var img = new Image();
       img.onload = function () { done(img); };

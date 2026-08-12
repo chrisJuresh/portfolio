@@ -2,7 +2,7 @@
   "_": "Written by build-plate.py. The constants plate-tuner.html opens on — so that what it calls 'was' is what the plate on the page really is.",
   "source": "plate-source.webp",
   "width": 900,
-  "height": 1197,
+  "height": 1199,
   "outWidth": 1100,
   "grade": {
     "EXPOSURE_PCT": 99.0,
@@ -14,9 +14,5 @@
     "HIGHLIGHT": "#fffaea",
     "GRAIN_SIGMA": 0.0075
   },
-  "matte": {
-    "SKY_LUMA_MIN": 0.13,
-    "SKY_LUMA_LOW": 0.075,
-    "SKY_EDGE_BLUR": 1.2
-  }
+  "matte": null
 }

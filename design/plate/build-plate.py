@@ -2,10 +2,19 @@
 """Rebuild portfolio/img/plate.webp — the graded facade plate in the page's
 bottom-left corner.
 
-    python design/plate/build-plate.py <source.rw2>
+    python design/plate/build-plate.py <source.rw2 | source.png>
 
-Reads a Panasonic RW2 and writes portfolio/img/plate.webp. Deterministic: same
+Writes portfolio/img/plate.webp from either of two sources. Deterministic: same
 input, byte-identical output (the grain is a seeded PRNG, not os entropy).
+
+* A Panasonic RW2, developed here and cut here — sky_matte() finds the sky.
+* An RGBA PNG whose sky has already been cut, by hand or by whatever tool. Its
+  alpha is the matte, taken as given; only the grade below is applied.
+
+The grade is the same either way, and so is the mirror. What ships now is the
+second kind; the first is kept because it is the only path that can produce a
+matte from a frame that has none, and because the reasoning in sky_matte() is
+worth more than the twenty lines it occupies.
 
 It also writes the two files design/plate/plate-tuner.html needs to preview a
 grade without this script — plate-source.webp and plate-source.json. See
@@ -224,16 +233,21 @@ def srgb_encode(lin: np.ndarray) -> np.ndarray:
     return np.clip(t, 0.0, 1.0)
 
 
-def develop(path: Path) -> np.ndarray:
-    """RW2 -> linear-light float32 RGB, 0..1, orientation applied and mirrored.
+def srgb_decode(t: np.ndarray) -> np.ndarray:
+    """sRGB 0..1 -> linear light. The exact inverse of srgb_encode.
 
-    The mirror is here, at the head of the pipeline, and not at the end where an
-    image flip would also have worked. Everything after this — the matte's own
-    "which corner is dark", the exposure percentile, the neutral source the tuner
-    grades, the coordinates in the comments — then describes one frame, the one
-    that ships. Flipping the finished plate instead would leave every measurement
-    in this file mirror-image to the picture it is about.
+    Only the cut-out front end needs this. A raw arrives as sensor data and is
+    developed straight to linear; a PNG arrives display-referred and has to be
+    taken back, or the grade's multiplies — exposure and desaturation, both of
+    which assume linear light — land on gamma-encoded numbers and go muddy.
     """
+    t = np.clip(t, 0.0, 1.0)
+    lin = np.where(t <= 0.04045, t / 12.92, ((t + 0.055) / 1.055) ** 2.4)
+    return lin.astype(np.float32)
+
+
+def develop(path: Path) -> np.ndarray:
+    """RW2 -> linear-light float32 RGB, 0..1, orientation applied."""
     with rawpy.imread(str(path)) as raw:
         rgb = raw.postprocess(
             use_camera_wb=True,
@@ -241,7 +255,51 @@ def develop(path: Path) -> np.ndarray:
             gamma=(1, 1),          # linear out; step 4 encodes
             output_bps=16,
         )
-    return rgb.astype(np.float32)[:, ::-1, :] / 65535.0
+    return rgb.astype(np.float32) / 65535.0
+
+
+def read_cut(path: Path) -> tuple[np.ndarray, np.ndarray]:
+    """A pre-cut RGBA image -> linear-light RGB, and its own alpha as the matte.
+
+    The second front end. When the sky has already been knocked out by hand there
+    is nothing for sky_matte() to decide, and second-guessing a matte someone cut
+    on purpose is the one thing this script should not do — so the file's alpha
+    is taken as given, soft edges and all, and only the grade below is applied.
+
+    The RGB *under* a straight-alpha cut-out is still the original sky, which is
+    why bleed() matters more here than it ever did for the raw: the feathered
+    band is a couple of pixels wide on a computed matte and can be a fifth of the
+    frame on a hand-cut one.
+    """
+    img = Image.open(path)
+    if img.mode != "RGBA":
+        raise SystemExit(
+            f"{path.name} is {img.mode}, not RGBA — a cut-out source has to carry "
+            f"its matte in an alpha channel. Pass the raw instead to have one cut."
+        )
+    a = np.asarray(img).astype(np.float32) / 255.0
+    return srgb_decode(a[..., :3]), a[..., 3]
+
+
+def load(path: Path) -> tuple[np.ndarray, np.ndarray, bool]:
+    """Source -> (linear-light RGB, alpha 0..1, whether the matte was computed).
+
+    Two front ends, one grade behind them, and the mirror belongs to neither —
+    it is here, applied to both, at the head of the pipeline rather than at the
+    end where flipping the finished image would also have worked. Everything
+    after this — the matte's own "which corner is dark", the exposure percentile,
+    the neutral source the tuner grades, the coordinates in the comments — then
+    describes one frame, the one that ships. Flipping the plate at the end would
+    leave every measurement in this file mirror-image to the picture it is about.
+    """
+    if path.suffix.lower() == ".rw2":
+        lin = develop(path)
+        alpha = (~sky_matte(lin)).astype(np.float32)
+        computed = True
+    else:
+        lin, alpha = read_cut(path)
+        computed = False
+    return lin[:, ::-1, :], alpha[:, ::-1], computed
 
 
 def sky_matte(lin: np.ndarray) -> np.ndarray:
@@ -283,31 +341,27 @@ def sky_matte(lin: np.ndarray) -> np.ndarray:
     return ndimage.binary_fill_holes(sky)
 
 
-def bleed(rgb: np.ndarray, hole: np.ndarray, iterations: int) -> np.ndarray:
-    """Grow the kept pixels outward into `hole`, so the matte has no halo.
+def bleed(rgb: np.ndarray, hole: np.ndarray) -> np.ndarray:
+    """Paint the nearest kept pixel over every pixel of `hole`, so there is no halo.
 
     The sky's own graded colour must not survive anywhere near the roofline. It is
     a mid tone, the page behind it is white or black, and the partly-transparent
-    pixels that downsampling creates along the roofline would mix the two into a
-    fringe that reads as a bad cut-out. So the sky is painted over with the
-    nearest building pixel first, and the mix at the edge is then building-to-page,
-    which is what a clean matte is. Only the pixels the resampling kernel can
-    reach need it, which is why this is a fixed handful of iterations rather than
-    a full nearest-neighbour fill of a fifth of the frame.
+    pixels along the roofline would mix the two into a fringe that reads as a bad
+    cut-out. So the sky is painted over with the nearest kept pixel first, and the
+    mix at the edge is then subject-to-page, which is what a clean matte is.
+
+    Exactly the nearest kept pixel, by Euclidean distance, and not — as this did
+    until the photograph changed — a few rounds of grey dilation. Dilation takes
+    the MAXIMUM of each neighbourhood, so it only carries the subject into the
+    hole while the subject is the brighter of the two. That held for a sunlit
+    facade against a deep blue sky and is false for a building against a bright
+    one: the dilation then re-copied the sky over itself and did nothing, and the
+    fringe it exists to prevent was baked into the plate. The distance transform
+    has no such polarity, costs one pass instead of a loop, and is what the
+    tuner's own bleed already did — which is how the two came to disagree.
     """
-    out = rgb.copy()
-    todo = hole.copy()
-    for _ in range(iterations):
-        if not todo.any():
-            break
-        grown = np.stack(
-            [ndimage.grey_dilation(out[..., c], size=(3, 3)) for c in range(3)],
-            axis=2,
-        )
-        edge = todo & ndimage.binary_dilation(~todo)
-        out[edge] = grown[edge]
-        todo &= ~edge
-    return out
+    idx = ndimage.distance_transform_edt(hole, return_distances=False, return_indices=True)
+    return rgb[tuple(idx)]
 
 
 def grade(lin: np.ndarray, keep: np.ndarray) -> np.ndarray:
@@ -349,7 +403,7 @@ def grade(lin: np.ndarray, keep: np.ndarray) -> np.ndarray:
     return np.clip(out, 0.0, 1.0)
 
 
-def write_neutral(lin: np.ndarray) -> None:
+def write_neutral(lin: np.ndarray, alpha_f: np.ndarray, computed: bool) -> None:
     """Step 1 on its own, plus the constants, for design/plate/plate-tuner.html.
 
     Encoded rather than left linear, and scaled by nothing. Eight bits of linear
@@ -359,10 +413,20 @@ def write_neutral(lin: np.ndarray) -> None:
     the develop already lands inside 0..1 with room over the sunlit stone — the
     exposure stage is a multiply the tuner can do for itself — so there is no
     scale factor to record and none to get wrong.
+
+    A cut-out source also sends its alpha along, and `matte` in the JSON goes
+    null. The two say the same thing to the tuner: the matte is an input here, not
+    a decision, so there is nothing on that panel to drag and it hides itself. The
+    sky's own pixels stay in the RGB either way — ungraded and unbled, because the
+    tuner does its own bleeding and needs something to bleed over.
     """
-    img = Image.fromarray(np.round(srgb_encode(lin) * 255.0).astype(np.uint8), mode="RGB")
+    srgb = np.round(srgb_encode(lin) * 255.0).astype(np.uint8)
+    img = Image.fromarray(srgb, mode="RGB")
     height = round(img.height * NEUTRAL_WIDTH / img.width)
     img = img.resize((NEUTRAL_WIDTH, height), Image.LANCZOS)
+    if not computed:
+        a = Image.fromarray(np.round(alpha_f * 255.0).astype(np.uint8), mode="L")
+        img.putalpha(a.resize((NEUTRAL_WIDTH, height), Image.LANCZOS))
     img.save(NEUTRAL_PATH, "WEBP", quality=NEUTRAL_QUALITY, method=6)
 
     META_PATH.write_text(json.dumps({
@@ -386,7 +450,7 @@ def write_neutral(lin: np.ndarray) -> None:
             "SKY_LUMA_MIN": SKY_LUMA_MIN,
             "SKY_LUMA_LOW": SKY_LUMA_LOW,
             "SKY_EDGE_BLUR": SKY_EDGE_BLUR,
-        },
+        } if computed else None,
     }, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
 
 
@@ -400,17 +464,17 @@ def main() -> int:
         print(f"no such file: {src}", file=sys.stderr)
         return 1
 
-    lin = develop(src)
-    sky = sky_matte(lin)
+    lin, alpha_f, computed = load(src)
+    keep = alpha_f > 0.5
 
-    graded = grade(lin, ~sky)
-    # The resampling kernel reaches about 3 source pixels per output pixel at this
-    # ratio; 12 is that with room to spare, and the cost is bounded either way
-    # because the fill stops as soon as the sky is covered.
-    graded = bleed(graded, sky, iterations=12)
+    graded = grade(lin, keep)
+    # Everything short of fully opaque, not just the clear sky: a feathered pixel
+    # carries the sky's colour in proportion to how transparent it is, and that is
+    # exactly the mix that becomes a fringe.
+    graded = bleed(graded, alpha_f < 1.0)
 
     img = Image.fromarray(np.round(graded * 255.0).astype(np.uint8), mode="RGB")
-    alpha = Image.fromarray((~sky).astype(np.uint8) * 255, mode="L")
+    alpha = Image.fromarray(np.round(alpha_f * 255.0).astype(np.uint8), mode="L")
 
     # Downsample after grading, not before: the grain is sized in output pixels,
     # and a curve applied at full resolution then resampled is smoother than the
@@ -418,7 +482,10 @@ def main() -> int:
     height = round(img.height * OUT_WIDTH / img.width)
     img = img.resize((OUT_WIDTH, height), Image.LANCZOS)
     alpha = alpha.resize((OUT_WIDTH, height), Image.LANCZOS)
-    if SKY_EDGE_BLUR:
+    # Only a matte this script cut needs feathering — it comes out of sky_matte()
+    # hard-edged, one bit per pixel. A supplied one arrives anti-aliased already,
+    # and blurring it again would walk the roofline twice.
+    if computed and SKY_EDGE_BLUR:
         alpha = alpha.filter(ImageFilter.GaussianBlur(SKY_EDGE_BLUR))
     img.putalpha(alpha)
 
@@ -426,9 +493,10 @@ def main() -> int:
     img.save(OUT_PATH, "WEBP", quality=WEBP_QUALITY, method=6)
     print(f"{OUT_PATH.relative_to(REPO)}  {img.width}x{img.height}  "
           f"{OUT_PATH.stat().st_size / 1024:.0f} KB  "
-          f"sky {sky.mean() * 100:.1f}% of frame")
+          f"sky {(1.0 - keep.mean()) * 100:.1f}% of frame  "
+          f"({'cut here' if computed else 'matte supplied'})")
 
-    write_neutral(lin)
+    write_neutral(lin, alpha_f, computed)
     print(f"{NEUTRAL_PATH.relative_to(REPO)}  {NEUTRAL_PATH.stat().st_size / 1024:.0f} KB"
           f"  + {META_PATH.name}   (design/plate/plate-tuner.html reads these)")
     return 0
