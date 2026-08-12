@@ -71,9 +71,11 @@
   // The cut title: one display word in the bottom corner, sliced off by the end
   // of the page. Full text in the markup, so it is read out and indexed whole
   // even though only the top of it is drawn. It sits OUTSIDE <main class="col">,
-  // as a sibling — .page is a flex column and the title has to be its child to
-  // be held against the bottom edge. All the geometry is CSS: see --cue-* in
-  // styles.css.
+  // as a sibling of it — .page is a flex column and the title has to be .page's
+  // own child to be held against the bottom edge. On a screen that composes to
+  // one page it is pinned to the fold instead and the word carries on onto a
+  // second screen, where the whole of it stands as that screen's title. All the
+  // geometry is CSS either way: see --cue-* and the doorway block in styles.css.
   var cut = '<div class="cut-title"><a href="/projects"><span>Projects</span></a></div>';
 
   page.innerHTML =
@@ -306,11 +308,36 @@
     }
     var STEP_GAP = 120;                                 // notches this close read as a spin
     var stepTarget = null, lastNotch = -1e9;
+
+    // A wheel gesture belongs to whatever it began on, and keeps it until the
+    // wheel stops. Begun on the strip: the strip holds it even after running out
+    // of travel, so the scroll that reaches the end cannot also turn the page —
+    // stop and scroll again to leave the roll. Begun on the page: the page holds
+    // it, so a page turn is never hijacked half way by the strip arriving under
+    // a pointer that was nowhere near it when the scroll started. Which is why
+    // this is on the document in the capture phase: it has to settle the owner
+    // before the strip's own handler below runs, for events the strip never sees.
+    var GESTURE_GAP = 200;                              // pause that ends a gesture
+    var lastWheel = -1e9, owner = null;                 // "strip" | "page" | null
+    function wheelDelta(e) {
+      return Math.abs(e.deltaY) >= Math.abs(e.deltaX) ? e.deltaY : e.deltaX;
+    }
+    function atEnd(d) {
+      return (d < 0 && track.scrollLeft <= 0) || (d > 0 && track.scrollLeft >= maxScroll());
+    }
+    document.addEventListener("wheel", function (e) {
+      if (e.timeStamp - lastWheel > GESTURE_GAP) owner = null;   // a pause starts a fresh gesture
+      lastWheel = e.timeStamp;
+      if (owner) return;
+      var d = wheelDelta(e);
+      owner = (track.contains(e.target) && !atEnd(d)) ? "strip" : "page";
+    }, { capture: true, passive: true });
+
     track.addEventListener("wheel", function (e) {
-      var d = Math.abs(e.deltaY) >= Math.abs(e.deltaX) ? e.deltaY : e.deltaX;
-      var m = maxScroll();
-      if ((d < 0 && track.scrollLeft <= 0) || (d > 0 && track.scrollLeft >= m)) return; // at an end → let the page scroll
+      if (owner !== "strip") return;                    // the page is using this gesture
       e.preventDefault();
+      var d = wheelDelta(e);
+      if (atEnd(d)) return;                             // out of travel, but still the strip's
       // normalise line / page deltas to pixels, then size the kick so one notch
       // lands one photo along: a coast covers vel / (1 - FRICTION) before it dies.
       var px = e.deltaMode === 1 ? d * 16 : e.deltaMode === 2 ? d * track.clientWidth : d;
@@ -332,6 +359,59 @@
       var pending = Math.abs(vel) / (1 - FRICTION) / pitch;
       var gain = Math.min(1 + SPIN_GAIN * pending, MAX_GAIN);
       kick(reduce ? travel : travel * gain * (1 - FRICTION));
+    }, { passive: false });
+
+    // ---- the page turn -------------------------------------------------------
+    // In the doorway regime the document is two snap ports and nothing between,
+    // so the browser turns the page with a snap fling of its own — and that fling
+    // owns the scroller for as long as it flies. Wheel events that land while it
+    // is in the air are filtered out, so the turn back cannot be taken until it
+    // has landed: you stop, wait, and scroll again. Hence turning the page here
+    // instead. One wheel event picks the port its direction is heading for and
+    // eases the window onto it, and a wheel the other way retargets the ease on
+    // the spot, mid-flight — there is nothing to wait out.
+    //
+    // Snapping comes off for the length of the ease and goes back on at the end.
+    // It has to: a mandatory snap pulls every intermediate frame straight back
+    // onto the port the ease started from, which is why the same turn written as
+    // scrollTo({ behavior: "smooth" }) does not move the page at all. Off, the
+    // ease runs; back on, CSS holds the two resting places as it always did, and
+    // owns the turn again for the keyboard and for touch, which never came here.
+    // This lives inside the carousel's block because it shares its reading of who
+    // owns the gesture — the roll is the one thing that takes the wheel first.
+    var doorway = document.querySelector(".doorway");
+    var TURN = 420;                                     // ms for a page turn
+    var turnRaf = null, turnTarget = null;
+    function inDoorway() {                              // the two-port regime, per CSS
+      return doorway && window.getComputedStyle(doorway).display !== "none";
+    }
+    function pageMax() { return document.documentElement.scrollHeight - window.innerHeight; }
+    function turnPage(target) {
+      var root = document.documentElement;
+      if (turnRaf) cancelAnimationFrame(turnRaf);
+      turnTarget = target;
+      function land() { turnRaf = null; turnTarget = null; root.style.scrollSnapType = ""; }
+      if (reduce) { window.scrollTo(0, target); land(); return; }
+      var start = window.scrollY, dist = target - start, t0 = null;
+      root.style.scrollSnapType = "none";
+      turnRaf = requestAnimationFrame(function frame(ts) {
+        if (t0 === null) t0 = ts;
+        var p = Math.min(1, (ts - t0) / TURN);
+        window.scrollTo(0, start + dist * (1 - Math.pow(1 - p, 3)));   // ease-out cubic
+        if (p < 1) turnRaf = requestAnimationFrame(frame); else land();
+      });
+    }
+    document.addEventListener("wheel", function (e) {
+      if (owner === "strip") return;                    // the roll has this gesture
+      if (!inDoorway()) return;
+      var d = e.deltaY;                                 // the turn is vertical only:
+      if (!d) return;                                   // a sideways swipe is the roll's
+      var target = d > 0 ? pageMax() : 0;
+      // nothing to turn: the page is already standing on that port and no turn is
+      // in the air, so leave the event alone
+      if (turnRaf === null && Math.abs(window.scrollY - target) < 1) return;
+      e.preventDefault();
+      if (turnRaf === null || turnTarget !== target) turnPage(target);
     }, { passive: false });
 
     // drag to scroll (mouse / pen), with a fling on release; touch stays native

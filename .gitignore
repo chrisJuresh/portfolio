@@ -22,6 +22,12 @@ __pycache__/
 # img/ from these with the Pillow step in README.md.
 photos/
 
+# camera raws, wherever they are dropped. Same reasoning as photos/ — a single
+# RW2 off the GX80 is ~19MB — but by extension, because the one the corner plate
+# is built from is handed to design/plate/build-plate.py by path and so tends to
+# sit wherever it was unpacked rather than under photos/.
+*.rw2
+
 # secrets — never commit
 .env
 .env.*
