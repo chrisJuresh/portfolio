@@ -337,10 +337,11 @@ where they are judged together:
 
 - **The grade and the sky matte** are baked into `portfolio/img/plate.webp` by
   `build-plate.py` — exposure, saturation, contrast, the highlight shoulder, the
-  two colours black and white land on, grain, and the four numbers that decide
-  what counts as sky. Nothing in a browser can change that file, so the tuner
-  runs the script's pipeline again in a canvas over `plate-source.webp` (which
-  the script writes for the purpose) and prints a block of Python to paste back.
+  two colours black and white land on, grain, and (when the script is the one
+  cutting) the numbers that decide what counts as sky. Nothing in a browser can
+  change that file, so the tuner runs the script's pipeline again in a canvas over
+  `plate-source.webp` (which the script writes for the purpose) and prints a block
+  of Python to paste back.
   **A change here does not reach the site until `build-plate.py` runs again.**
 - **The placement** — `--plate-opacity`, `--plate-w`, `--plate-x`, `--plate-y` —
   is CSS, and is live in the iframe as you drag. That half exports as CSS.
@@ -364,19 +365,39 @@ Notes, mostly the same shape as the type tuner's:
 ### The sky, and why it is a matte and not a crop
 
 No sky is wanted, only the building — the page's own paper is the sky. Cropping
-cannot do it: there is a wedge of sky in the notch directly above the door, so
-the tallest sky-free rectangle containing the door throws away the pediment, the
-columns and both rooflines. So the frame is kept whole and the sky is knocked out
-to transparent.
+cannot do it: the dome is the tallest thing in the frame and the sky closes over
+it on both sides, so the tallest sky-free rectangle starts below the balustrade
+and throws away the lantern, the cross and the whole curve of the dome. So the
+frame is kept whole and the sky is knocked out to transparent.
 
-Finding it is a threshold on blueness **and** brightness together, kept honest by
-connectivity — full reasoning in `build-plate.py`. The one part worth knowing at
-this end is the hysteresis: the brightness test only has to be passed to *start* a
-patch of sky (`SKY_LUMA_MIN`), and a patch already begun spreads through anything
-equally blue down to `SKY_LUMA_LOW`. That is what carries the matte into the
-corners of the frame, which are over a stop down on the middle and used to be
-left behind as a ragged wedge of grey in the top-left — sky, painted as though it
-were building.
+**The matte can arrive either way.** `build-plate.py` takes an RW2 and cuts one,
+or an RGBA PNG that has already been cut and uses its alpha as given. What ships
+now is the second — so the matte panel in the tuner hides itself, since there is
+nothing left on it to decide, and `plate-source.json` records `"matte": null` to
+say so. The rest of this section is about the first, which is still there and is
+the only path that can produce a matte from a frame that has none.
+
+Finding it is a threshold on **brightness**, kept honest by connectivity — full
+reasoning in `build-plate.py`. Blueness used to be half the test and is now no
+part of it: the sky here is a hazy backlit white, and the dome's stone, lit by
+that same sky, is the bluer of the two. Ask for blue and you knock out the
+building.
+
+The part worth knowing at this end is the hysteresis: the brightness test only
+has to be passed to *start* a patch of sky (`SKY_LUMA_MIN`), and a patch already
+begun spreads down to `SKY_LUMA_LOW`. That is what carries the matte into the
+corner of the frame, which is over a stop down on the middle and was otherwise
+left behind as a ragged wedge of grey in the top-right — sky, painted as though
+it were building. Connectivity to the top edge is what stops the same permissive
+threshold punching through the tower's sunlit lead roof, which is brighter than
+the dim end of the sky.
+
+Either way the sky is then **bled over** before the frame is downsampled: every
+pixel short of fully opaque is painted with the nearest kept one, so what mixes
+at the roofline is subject-to-page and not subject-to-sky. It matters far more
+for a supplied matte than a computed one — a hand-cut edge can be a quarter of
+the frame of soft alpha, every pixel of it still wearing the sky, against the
+pixel or two a computed matte leaves.
 
 ## Regenerating the shots
 

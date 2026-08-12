@@ -2,10 +2,19 @@
 """Rebuild portfolio/img/plate.webp — the graded facade plate in the page's
 bottom-left corner.
 
-    python design/plate/build-plate.py <source.rw2>
+    python design/plate/build-plate.py <source.rw2 | source.png>
 
-Reads a Panasonic RW2 and writes portfolio/img/plate.webp. Deterministic: same
+Writes portfolio/img/plate.webp from either of two sources. Deterministic: same
 input, byte-identical output (the grain is a seeded PRNG, not os entropy).
+
+* A Panasonic RW2, developed here and cut here — sky_matte() finds the sky.
+* An RGBA PNG whose sky has already been cut, by hand or by whatever tool. Its
+  alpha is the matte, taken as given; only the grade below is applied.
+
+The grade is the same either way, and so is the mirror. What ships now is the
+second kind; the first is kept because it is the only path that can produce a
+matte from a frame that has none, and because the reasoning in sky_matte() is
+worth more than the twenty lines it occupies.
 
 It also writes the two files design/plate/plate-tuner.html needs to preview a
 grade without this script — plate-source.webp and plate-source.json. See
@@ -29,22 +38,29 @@ only places and dials it. Three reasons, in order of how much they cost:
   clipping them, and grain. Approximating it with the filter primitives that do
   exist would be both slower and worse.
 
+The frame is mirrored, left for right — see develop(). The plate stands in the
+page's BOTTOM-LEFT corner, and as shot the tower is on the right and the dome
+falls away to the left, so the picture's weight sat at the open end and its empty
+sky in the corner it is anchored to. Flipped, the tower carries the corner and the
+dome leans back into the page. Nothing downstream knows: the flip is the second
+line of the develop, so the matte, the grade and the tuner all see one frame.
+
 There is no vignette and no soft rectangular edge. An earlier cut dissolved the
 top and right edges into the page and it read as a lit corner with a building
-fading out of it rather than as a photograph — the door, the columns and the
-balustrade are spread right across the frame, so any ramp wide enough to hide an
+fading out of it rather than as a photograph — the dome, the drum and the
+colonnade are spread right across the frame, so any ramp wide enough to hide an
 edge is also on top of the subject. What makes the plate recede is
 `--plate-opacity` in the stylesheet, which is also what lets one file serve both
 `--bg: #fff` and `--bg: #000`.
 
 The one thing alpha is used for is the sky, and it is a matte rather than a crop.
 No sky is wanted, only the building. Cropping it out was tried first and cannot
-work: there is a wedge of sky in the notch directly above the door, at 52% across,
-so the tallest sky-free rectangle containing the door starts a third of the way
-down the frame — it throws away the pediment, the engaged columns and both
-rooflines, which is most of the reason to use this photograph. So the frame is
-kept whole and the sky is knocked out to transparent, and the page's own paper
-becomes the sky. See sky_matte().
+work: the dome is the tallest thing in the frame and the sky closes over it on
+both sides, so the tallest sky-free rectangle starts below the balustrade — it
+throws away the lantern, the cross and the whole curve of the dome, which is the
+entire reason to use this photograph. So the frame is kept whole and the sky is
+knocked out to transparent, and the page's own paper becomes the sky. See
+sky_matte().
 
 THE GRADE
 ---------
@@ -56,13 +72,16 @@ Order matters; this is the pipeline, and every stage is a constant below.
 2. Exposure by percentile, not by eye. EXPOSURE_PCT of the luma histogram is
    driven to EXPOSURE_TARGET, so a different frame off the same camera lands in
    the same place instead of needing the number re-tuned. Measured over the
-   building only, with the sky masked off: the sky is a fifth of the frame and
-   sits in its own narrow band of the histogram, so leaving it in drags the
-   percentile away from the stone the exposure is actually for.
+   building only, with the sky masked off. That matters more on this frame than
+   on any it could have been: the sky is nearly HALF of it, and being backlit it
+   is also the brightest half, so it owns everything above the 55th percentile.
+   Left in, EXPOSURE_PCT would be measuring haze, and the building would go
+   wherever that happened to put it.
 3. Desaturate to SAT_KEEP of the original chroma. The tint in step 6 is applied
    *to* what survives here, so this is the knob that decides whether the result
-   reads as a tinted photograph or as a duotone. At 0.26 the sky keeps enough
-   blue to be sky and the stone stops competing with the tint.
+   reads as a tinted photograph or as a duotone. At 0.24 the lead of the roofs
+   and the brick of the tower still part company, and neither competes with the
+   tint. The sky is not a consideration: it is matted out before this is seen.
 4. Encode to sRGB gamma. Everything after this is a tone curve, and tone curves
    want perceptual space — the same S-curve applied in linear crushes shadows.
 5. Contrast S-curve at CONTRAST strength, then the highlight shoulder
@@ -87,7 +106,7 @@ Order matters; this is the pipeline, and every stage is a constant below.
 
 WHY THESE ENDPOINTS
 -------------------
-SHADOW #33322e and HIGHLIGHT #fffdf7 are the site's own palette pushed one step
+SHADOW #302e2a and HIGHLIGHT #fffaea are the site's own palette pushed one step
 apart. The paper is #fcfbf8 and the ink #1a1917 (styles.css `:root`), so the
 plate's white sits a hair *above* the paper and its black well short of the ink:
 the photograph stays quieter than the type at both ends, which is the only way a
@@ -135,43 +154,48 @@ HIGHLIGHT_PUSH = 1.34      # >1 lifts highlights; 1.0 is off
 SHADOW = (0x30, 0x2e, 0x2a)    # where black lands — warm dark grey
 HIGHLIGHT = (0xff, 0xfa, 0xea)  # where white lands — warm cream
 GRAIN_SIGMA = 0.0075       # in output units, 0..1
-GRAIN_SEED = 20250825      # the frame's own date; any constant would do
+GRAIN_SEED = 20250615      # the frame's own date; any constant would do
 
 # ---- the sky matte --------------------------------------------------------
-# The sky is separable because it is the only thing in the frame that is both
-# blue-dominant and bright. Both halves of that test are load-bearing:
+# Brightness alone separates this frame, and it has to: the sky is a hazy backlit
+# white, not a blue one. An earlier version of this script tested blueness AND
+# brightness together, because the frame it was written for was a facade against
+# a deep blue sky. That test is not merely unnecessary here, it is INVERTED —
+# measured on the normalised channels of the linear develop, the sky's blueness
+# runs +0.01 (the cloud) to +0.07, and the dome's own stone, lit by that same
+# white sky, reads +0.11 to +0.15. The bluest thing in the picture is the
+# building. Ask for blue and you knock out the dome and keep the sky.
 #
-# * Blueness alone knocks holes in the building. The stone's shadows are lit by
-#   skylight and nothing else, so they are blue-dominant too — just 5-30x darker.
-#   Sky luma here is ~0.036 linear; the shadowed stone, the doorway and the road
-#   all sit under 0.017, which is what SKY_LUMA_MIN cuts between.
-# * Brightness alone knocks out the sunlit stone, which is 10x brighter again.
+# What is true instead is that nothing built comes anywhere near the sky's
+# brightness. In linear luma the sky and its cloud sit at 0.10-0.18; the stone of
+# the dome, the brick of the tower and the rooftops along the bottom sit at
+# 0.008-0.031. The gap between them is empty: over the whole frame, moving a flat
+# threshold from 0.050 to 0.095 changes what it selects by 2.5% of the pixels,
+# and nearly all of that is the sky's own falloff. There is no cut to get wrong.
 #
-# Measured on this frame, in the linear develop, on the normalised channels:
-# sky blueness runs 0.41-0.48 and the next-bluest thing in the picture is 0.25.
+# Except in one corner, and it is the same failure the blue version had. The sky
+# is not one brightness — it falls off toward the corners, partly the lens and
+# partly the sky's own gradient away from the sun — and in the top-right corner
+# (top-LEFT as shot; the frame is mirrored) it lands at 0.083-0.101. A flat
+# SKY_LUMA_MIN left a ragged wedge of sky behind there, painted as though it were
+# building, which is the one place on the page where the plate reads as a bad
+# cut-out rather than as stock.
 #
-# But the sky is not one brightness. It falls off towards the corners — partly the
-# lens, partly the sky's own gradient away from the sun — and in the top-left
-# corner of this frame it lands at 0.014-0.021 luma while staying every bit as
-# blue (0.32-0.56). A flat SKY_LUMA_MIN therefore left a ragged wedge of sky
-# behind in that corner, painted as though it were building, which is the one
-# place on the page where the plate reads as a bad cut-out rather than as stock.
+# Lowering SKY_LUMA_MIN to reach it is not the fix, and here the reason is sharp:
+# the sunlit lead ribs of the tower's dome peak at 0.149, ABOVE the dim end of the
+# sky. No flat threshold can hold both. What separates them is that the dark
+# corner is CONTIGUOUS with sky that passes the bright test and the lead ribs are
+# not — so the bright test is applied to the seed only, and the region is then
+# allowed to grow down to SKY_LUMA_LOW. Hysteresis, as in a Canny edge, and for
+# the same reason: the confident pixels vouch for the marginal ones they touch,
+# and marginal pixels standing on their own are left alone.
 #
-# Lowering SKY_LUMA_MIN to reach it is not the fix: 0.014 is inside the shadowed
-# stone's own range, so the threshold that catches the corner also opens the
-# facade. What separates them is that the dark corner is CONTIGUOUS with sky that
-# passes the bright test and the shadowed stone is not — so the brightness test
-# is applied to the seed only, and the region is then allowed to grow through
-# anything equally blue down to SKY_LUMA_LOW. Hysteresis, as in a Canny edge, and
-# for the same reason: the confident pixels vouch for the marginal ones they
-# touch, and marginal pixels standing on their own are left alone.
-#
-# The result is insensitive to where SKY_LUMA_LOW is put — the matte is identical
-# anywhere from 0.012 down to 0.005, because the growth runs out at the roofline
-# rather than at the threshold. 0.010 is the middle of that plateau.
-SKY_BLUE_MIN = 0.25       # (b - r) / (r + g + b)
-SKY_LUMA_MIN = 0.022      # linear luma a pixel needs to seed the sky
-SKY_LUMA_LOW = 0.010      # ...and to stay in it, once something brighter vouches
+# The result is insensitive to where SKY_LUMA_LOW is put — the corner is fully
+# covered anywhere from 0.085 down, and the matte grows by 0.2% of the frame over
+# the whole span from there to 0.065, none of it on the building. 0.075 is the
+# middle of that plateau.
+SKY_LUMA_MIN = 0.130      # linear luma a pixel needs to seed the sky
+SKY_LUMA_LOW = 0.075      # ...and to stay in it, once something brighter vouches
 SKY_EDGE_BLUR = 1.2       # px at output scale, to keep the roofline from aliasing
 
 # ---- the plate ------------------------------------------------------------
@@ -209,8 +233,21 @@ def srgb_encode(lin: np.ndarray) -> np.ndarray:
     return np.clip(t, 0.0, 1.0)
 
 
+def srgb_decode(t: np.ndarray) -> np.ndarray:
+    """sRGB 0..1 -> linear light. The exact inverse of srgb_encode.
+
+    Only the cut-out front end needs this. A raw arrives as sensor data and is
+    developed straight to linear; a PNG arrives display-referred and has to be
+    taken back, or the grade's multiplies — exposure and desaturation, both of
+    which assume linear light — land on gamma-encoded numbers and go muddy.
+    """
+    t = np.clip(t, 0.0, 1.0)
+    lin = np.where(t <= 0.04045, t / 12.92, ((t + 0.055) / 1.055) ** 2.4)
+    return lin.astype(np.float32)
+
+
 def develop(path: Path) -> np.ndarray:
-    """RW2 -> linear-light float32 RGB, 0..1, orientation already applied."""
+    """RW2 -> linear-light float32 RGB, 0..1, orientation applied."""
     with rawpy.imread(str(path)) as raw:
         rgb = raw.postprocess(
             use_camera_wb=True,
@@ -221,35 +258,81 @@ def develop(path: Path) -> np.ndarray:
     return rgb.astype(np.float32) / 65535.0
 
 
+def read_cut(path: Path) -> tuple[np.ndarray, np.ndarray]:
+    """A pre-cut RGBA image -> linear-light RGB, and its own alpha as the matte.
+
+    The second front end. When the sky has already been knocked out by hand there
+    is nothing for sky_matte() to decide, and second-guessing a matte someone cut
+    on purpose is the one thing this script should not do — so the file's alpha
+    is taken as given, soft edges and all, and only the grade below is applied.
+
+    The RGB *under* a straight-alpha cut-out is still the original sky, which is
+    why bleed() matters more here than it ever did for the raw: the feathered
+    band is a couple of pixels wide on a computed matte and can be a fifth of the
+    frame on a hand-cut one.
+    """
+    img = Image.open(path)
+    if img.mode != "RGBA":
+        raise SystemExit(
+            f"{path.name} is {img.mode}, not RGBA — a cut-out source has to carry "
+            f"its matte in an alpha channel. Pass the raw instead to have one cut."
+        )
+    a = np.asarray(img).astype(np.float32) / 255.0
+    return srgb_decode(a[..., :3]), a[..., 3]
+
+
+def load(path: Path) -> tuple[np.ndarray, np.ndarray, bool]:
+    """Source -> (linear-light RGB, alpha 0..1, whether the matte was computed).
+
+    Two front ends, one grade behind them, and the mirror belongs to neither —
+    it is here, applied to both, at the head of the pipeline rather than at the
+    end where flipping the finished image would also have worked. Everything
+    after this — the matte's own "which corner is dark", the exposure percentile,
+    the neutral source the tuner grades, the coordinates in the comments — then
+    describes one frame, the one that ships. Flipping the plate at the end would
+    leave every measurement in this file mirror-image to the picture it is about.
+    """
+    if path.suffix.lower() == ".rw2":
+        lin = develop(path)
+        alpha = (~sky_matte(lin)).astype(np.float32)
+        computed = True
+    else:
+        lin, alpha = read_cut(path)
+        computed = False
+    return lin[:, ::-1, :], alpha[:, ::-1], computed
+
+
 def sky_matte(lin: np.ndarray) -> np.ndarray:
     """Linear-light RGB in, boolean sky mask out (True where the sky is).
 
     Four steps, and everything after the first is what makes it a matte rather
     than a threshold:
 
-    * Threshold on blueness and brightness together — see the constants.
-    * Grow that seed through anything as blue but only SKY_LUMA_LOW bright, which
-      is what carries the matte into the darkened corners. Written as a labelling
-      of the permissive predicate rather than as a fill from the seed, because
-      what a component needs to prove is a property of the whole component: that
-      it contains a confident pixel, and separately that it reaches the sky.
-    * Keep only what touches the top edge. The threshold alone also picks out the
-      neighbouring building's glazing, which is reflecting this same sky and is
-      every bit as blue and as bright as it; punched through, it would leave the
-      facade full of holes. Actual sky reaches the top of the frame and reflections
-      do not, so connectivity separates them and nothing else does.
-    * Fill anything the sky fully encloses. That is the mast and the crane jib on
-      the skyline, which are neither sky nor building: left in, they survive the
-      knockout as dark specks floating in the page's white with nothing under
-      them. The building is not filled by this, because a region touching the
-      array border is not enclosed and the building runs off three edges.
+    * Threshold on brightness — see the constants for why that is the whole test
+      on this frame, and why blueness would be worse than useless on it.
+    * Grow that seed through anything down to SKY_LUMA_LOW, which is what carries
+      the matte into the darkened corner. Written as a labelling of the permissive
+      predicate rather than as a fill from the seed, because what a component
+      needs to prove is a property of the whole component: that it contains a
+      confident pixel, and separately that it reaches the sky.
+    * Keep only what touches the top edge. This is what saves the sunlit lead of
+      the tower's dome, which is brighter than the dim end of the sky and would
+      otherwise be punched straight through, leaving the roof in stripes. Actual
+      sky reaches the top of the frame and a lit roof does not, so connectivity
+      separates them and nothing else does. It is also what keeps the daylight in
+      the tower's arched opening, which is genuinely sky but reads as the shaded
+      inside of the tower and is wanted there.
+    * Fill anything the sky fully encloses — small dark specks on the skyline that
+      are neither sky nor building: left in, they survive the knockout floating in
+      the page's white with nothing under them. The building is not filled by
+      this, because a region touching the array border is not enclosed and the
+      building runs off the bottom and both sides. Nor is the weathervane or the
+      cross on the lantern: both are attached to what holds them up.
     """
-    norm = lin / (lin.sum(axis=2, keepdims=True) + 1e-9)
-    blue = (norm[..., 2] - norm[..., 0]) > SKY_BLUE_MIN
     luma = lin @ LUMA
-    seed = blue & (luma > SKY_LUMA_MIN)
+    seed = luma > SKY_LUMA_MIN
 
-    labels, _ = ndimage.label(blue & (luma > SKY_LUMA_LOW))
+    labels, _ = ndimage.label(luma > SKY_LUMA_LOW)
     vouched = np.unique(labels[seed])
     touching_top = np.unique(labels[0])
     keep = np.intersect1d(vouched[vouched > 0], touching_top[touching_top > 0])
@@ -258,31 +341,27 @@ def sky_matte(lin: np.ndarray) -> np.ndarray:
     return ndimage.binary_fill_holes(sky)
 
 
-def bleed(rgb: np.ndarray, hole: np.ndarray, iterations: int) -> np.ndarray:
-    """Grow the kept pixels outward into `hole`, so the matte has no halo.
+def bleed(rgb: np.ndarray, hole: np.ndarray) -> np.ndarray:
+    """Paint the nearest kept pixel over every pixel of `hole`, so there is no halo.
 
     The sky's own graded colour must not survive anywhere near the roofline. It is
     a mid tone, the page behind it is white or black, and the partly-transparent
-    pixels that downsampling creates along the roofline would mix the two into a
-    fringe that reads as a bad cut-out. So the sky is painted over with the
-    nearest building pixel first, and the mix at the edge is then building-to-page,
-    which is what a clean matte is. Only the pixels the resampling kernel can
-    reach need it, which is why this is a fixed handful of iterations rather than
-    a full nearest-neighbour fill of a fifth of the frame.
+    pixels along the roofline would mix the two into a fringe that reads as a bad
+    cut-out. So the sky is painted over with the nearest kept pixel first, and the
+    mix at the edge is then subject-to-page, which is what a clean matte is.
+
+    Exactly the nearest kept pixel, by Euclidean distance, and not — as this did
+    until the photograph changed — a few rounds of grey dilation. Dilation takes
+    the MAXIMUM of each neighbourhood, so it only carries the subject into the
+    hole while the subject is the brighter of the two. That held for a sunlit
+    facade against a deep blue sky and is false for a building against a bright
+    one: the dilation then re-copied the sky over itself and did nothing, and the
+    fringe it exists to prevent was baked into the plate. The distance transform
+    has no such polarity, costs one pass instead of a loop, and is what the
+    tuner's own bleed already did — which is how the two came to disagree.
     """
-    out = rgb.copy()
-    todo = hole.copy()
-    for _ in range(iterations):
-        if not todo.any():
-            break
-        grown = np.stack(
-            [ndimage.grey_dilation(out[..., c], size=(3, 3)) for c in range(3)],
-            axis=2,
-        )
-        edge = todo & ndimage.binary_dilation(~todo)
-        out[edge] = grown[edge]
-        todo &= ~edge
-    return out
+    idx = ndimage.distance_transform_edt(hole, return_distances=False, return_indices=True)
+    return rgb[tuple(idx)]
 
 
 def grade(lin: np.ndarray, keep: np.ndarray) -> np.ndarray:
@@ -324,7 +403,7 @@ def grade(lin: np.ndarray, keep: np.ndarray) -> np.ndarray:
     return np.clip(out, 0.0, 1.0)
 
 
-def write_neutral(lin: np.ndarray) -> None:
+def write_neutral(lin: np.ndarray, alpha_f: np.ndarray, computed: bool) -> None:
     """Step 1 on its own, plus the constants, for design/plate/plate-tuner.html.
 
     Encoded rather than left linear, and scaled by nothing. Eight bits of linear
@@ -334,10 +413,20 @@ def write_neutral(lin: np.ndarray) -> None:
     the develop already lands inside 0..1 with room over the sunlit stone — the
     exposure stage is a multiply the tuner can do for itself — so there is no
     scale factor to record and none to get wrong.
+
+    A cut-out source also sends its alpha along, and `matte` in the JSON goes
+    null. The two say the same thing to the tuner: the matte is an input here, not
+    a decision, so there is nothing on that panel to drag and it hides itself. The
+    sky's own pixels stay in the RGB either way — ungraded and unbled, because the
+    tuner does its own bleeding and needs something to bleed over.
     """
-    img = Image.fromarray(np.round(srgb_encode(lin) * 255.0).astype(np.uint8), mode="RGB")
+    srgb = np.round(srgb_encode(lin) * 255.0).astype(np.uint8)
+    img = Image.fromarray(srgb, mode="RGB")
     height = round(img.height * NEUTRAL_WIDTH / img.width)
     img = img.resize((NEUTRAL_WIDTH, height), Image.LANCZOS)
+    if not computed:
+        a = Image.fromarray(np.round(alpha_f * 255.0).astype(np.uint8), mode="L")
+        img.putalpha(a.resize((NEUTRAL_WIDTH, height), Image.LANCZOS))
     img.save(NEUTRAL_PATH, "WEBP", quality=NEUTRAL_QUALITY, method=6)
 
     META_PATH.write_text(json.dumps({
@@ -358,11 +447,10 @@ def write_neutral(lin: np.ndarray) -> None:
             "GRAIN_SIGMA": GRAIN_SIGMA,
         },
         "matte": {
-            "SKY_BLUE_MIN": SKY_BLUE_MIN,
             "SKY_LUMA_MIN": SKY_LUMA_MIN,
             "SKY_LUMA_LOW": SKY_LUMA_LOW,
             "SKY_EDGE_BLUR": SKY_EDGE_BLUR,
-        },
+        } if computed else None,
     }, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
 
 
@@ -376,17 +464,17 @@ def main() -> int:
         print(f"no such file: {src}", file=sys.stderr)
         return 1
 
-    lin = develop(src)
-    sky = sky_matte(lin)
+    lin, alpha_f, computed = load(src)
+    keep = alpha_f > 0.5
 
-    graded = grade(lin, ~sky)
-    # The resampling kernel reaches about 3 source pixels per output pixel at this
-    # ratio; 12 is that with room to spare, and the cost is bounded either way
-    # because the fill stops as soon as the sky is covered.
-    graded = bleed(graded, sky, iterations=12)
+    graded = grade(lin, keep)
+    # Everything short of fully opaque, not just the clear sky: a feathered pixel
+    # carries the sky's colour in proportion to how transparent it is, and that is
+    # exactly the mix that becomes a fringe.
+    graded = bleed(graded, alpha_f < 1.0)
 
     img = Image.fromarray(np.round(graded * 255.0).astype(np.uint8), mode="RGB")
-    alpha = Image.fromarray((~sky).astype(np.uint8) * 255, mode="L")
+    alpha = Image.fromarray(np.round(alpha_f * 255.0).astype(np.uint8), mode="L")
 
     # Downsample after grading, not before: the grain is sized in output pixels,
     # and a curve applied at full resolution then resampled is smoother than the
@@ -394,7 +482,10 @@ def main() -> int:
     height = round(img.height * OUT_WIDTH / img.width)
     img = img.resize((OUT_WIDTH, height), Image.LANCZOS)
     alpha = alpha.resize((OUT_WIDTH, height), Image.LANCZOS)
-    if SKY_EDGE_BLUR:
+    # Only a matte this script cut needs feathering — it comes out of sky_matte()
+    # hard-edged, one bit per pixel. A supplied one arrives anti-aliased already,
+    # and blurring it again would walk the roofline twice.
+    if computed and SKY_EDGE_BLUR:
         alpha = alpha.filter(ImageFilter.GaussianBlur(SKY_EDGE_BLUR))
     img.putalpha(alpha)
 
@@ -402,9 +493,10 @@ def main() -> int:
     img.save(OUT_PATH, "WEBP", quality=WEBP_QUALITY, method=6)
     print(f"{OUT_PATH.relative_to(REPO)}  {img.width}x{img.height}  "
           f"{OUT_PATH.stat().st_size / 1024:.0f} KB  "
-          f"sky {sky.mean() * 100:.1f}% of frame")
+          f"sky {(1.0 - keep.mean()) * 100:.1f}% of frame  "
+          f"({'cut here' if computed else 'matte supplied'})")
 
-    write_neutral(lin)
+    write_neutral(lin, alpha_f, computed)
     print(f"{NEUTRAL_PATH.relative_to(REPO)}  {NEUTRAL_PATH.stat().st_size / 1024:.0f} KB"
           f"  + {META_PATH.name}   (design/plate/plate-tuner.html reads these)")
     return 0

@@ -457,8 +457,9 @@ img { display: block; max-width: 100%; height: auto; }
 a { color: inherit; }
 
 /* ---- the corner plate -----------------------------------------------------
-   A photograph of a Portland-stone doorway on Lloyd's Avenue, standing in the
-   bottom-left corner of the document at --plate-opacity. Faint enough to read as
+   A photograph of the dome of St Paul's over the rooftops, mirrored left for
+   right so the near tower carries the corner it stands in, at --plate-opacity in
+   the bottom-left corner of the document. Faint enough to read as
    paper stock rather than as an image: it is what the column is printed ON, not
    something on the page, and the moment you notice it as a photograph it is too
    strong. Turn it off by setting --plate-opacity to 0.
@@ -472,7 +473,7 @@ a { color: inherit; }
    a momentum carousel to animate.
 
    It has no soft edge, by choice — a dissolve wide enough to hide the top and
-   right edges also sat on the door and the columns, which are the subject. Left
+   right edges also sat on the dome and the drum, which are the subject. Left
    and bottom are the page's own corner, so only two edges exist to see, and at
    this opacity they read as the edge of a tipped-in plate rather than as a crop.
 
