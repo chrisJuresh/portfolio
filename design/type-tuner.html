@@ -219,9 +219,12 @@
    ========================================================================== */
 
 /* ---- the type stacks on offer ------------------------------------------- */
-/* Two kinds of entry.
+/* Two lists, not one: STACKS for the text and DISPLAY for the cut title, which
+   ask different questions and share nothing but the machinery. See DISPLAY.
 
-   The two marked "(ships)" are the stacks portfolio/styles.css declares today,
+   Two kinds of entry in each.
+
+   The ones marked "(ships)" are the stacks portfolio/styles.css declares today,
    character for character — they are the defaults every font row starts at, so
    they have to stay exact or the export's "was" comment lies.
 
@@ -235,16 +238,17 @@
    way into the export, so no amount of pasting can land it in styles.css; only
    the copy injected into the preview frame carries it.
 
-   Two sources make a candidate resolvable. The self-hosted Latin Modern cuts
-   come from /fonts/fonts.css; the eleven Google faces below come from GFONT,
-   fetched into the preview frame only. Both are injected by the frame's load
-   handler. Everything left — Georgia Pro, Constantia, Cambria, Sitka Text,
-   Charter, Palatino — is a system face, there or not there, and Comic Sans is
-   still how you find out which.
+   Three sources make a candidate resolvable. The self-hosted Latin Modern cuts
+   come from /fonts/fonts.css; the eleven reading faces come from GFONT and the
+   twenty-six display faces from DFONT, both fetched into the preview frame only.
+   All three are injected by the frame's load handler. Everything left — Georgia
+   Pro, Constantia, Cambria, Sitka's six cuts, Didot, Bodoni MT, the Office
+   faces — is a system face, there or not there, and Comic Sans is still how you
+   find out which.
 
-   A face out of GFONT renders here and would not render on the deployed site:
-   nothing in portfolio/ hosts it. Picking one is a decision to go and host it,
-   and the export says as much at the top when a font row names one. */
+   A face out of GFONT or DFONT renders here and would not render on the deployed
+   site: nothing in portfolio/ hosts it. Picking one is a decision to go and host
+   it, and the export says as much at the top when a font row names one. */
 var COMIC = '"Comic Sans MS", cursive';
 
 /* Sorted by family, 400/700 upright and italic each — the weights and the one
@@ -266,11 +270,63 @@ var GFONT = "https://fonts.googleapis.com/css2" +
   "&family=Vollkorn:ital,wght@0,400;0,700;1,400;1,700" +
   "&display=swap";
 
-/* What GFONT covers, as the browser will name it. Used twice: to pull each face
-   down before the resolved-face probe measures it, and to flag an export that
-   depends on one. */
+/* The cut title's own request, separate from GFONT for two reasons.
+
+   It asks for less. The word is one weight, upright, at one size, so most of
+   these families are named bare — which returns that family's default cut and
+   nothing else. Where the family is variable on `wght` the range is asked for
+   instead, because the weight row in that group slides through it and a variable
+   range is one file rather than six.
+
+   And it asks with more care. The API answers an axis it does not recognise with
+   a 200 and the family quietly missing from the sheet, which arrives here looking
+   exactly like a face nobody has installed — so a family whose axes aren't known
+   for certain is named bare rather than guessed at. Every entry below was checked
+   against the live response; if one of them starts reading as Comic Sans on a
+   machine that plainly has the others, suspect the axis spec before the machine. */
+var DFONT = "https://fonts.googleapis.com/css2" +
+  "?family=Abril+Fatface" +
+  "&family=Antic+Didone" +
+  "&family=Anton" +
+  "&family=Bodoni+Moda:opsz,wght@6..96,400..900" +
+  "&family=Cinzel:wght@400..900" +
+  "&family=Cinzel+Decorative:wght@400;700;900" +
+  "&family=Cormorant:wght@300..700" +
+  "&family=Cormorant+Garamond:wght@300..700" +
+  "&family=DM+Serif+Display" +
+  "&family=EB+Garamond:wght@400..800" +
+  "&family=Forum" +
+  "&family=Fraunces:opsz,wght,SOFT,WONK@9..144,100..900,0..100,0..1" +
+  "&family=Gilda+Display" +
+  "&family=Instrument+Serif" +
+  "&family=Italiana" +
+  "&family=Libre+Bodoni:wght@400..700" +
+  "&family=Marcellus" +
+  "&family=Marcellus+SC" +
+  "&family=Old+Standard+TT:wght@400;700" +
+  "&family=Playfair+Display:wght@400..900" +
+  "&family=Playfair+Display+SC" +
+  "&family=Prata" +
+  "&family=Rufina:wght@400;700" +
+  "&family=Space+Grotesk:wght@300..700" +
+  "&family=Yeseva+One" +
+  "&family=Young+Serif" +
+  "&display=swap";
+
+/* What those two requests cover, as the browser will name it. Used twice: to pull
+   each face down before the resolved-face probe measures it, and to flag an
+   export that depends on one. */
 var HOSTED = ["Bitter", "Castoro", "Domine", "Faustina", "Literata", "Merriweather",
               "Newsreader", "PT Serif", "Source Serif 4", "Spectral", "Vollkorn"];
+
+var DHOSTED = ["Abril Fatface", "Antic Didone", "Anton", "Bodoni Moda", "Cinzel",
+               "Cinzel Decorative", "Cormorant", "Cormorant Garamond", "DM Serif Display",
+               "EB Garamond", "Forum", "Fraunces", "Gilda Display", "Instrument Serif",
+               "Italiana", "Libre Bodoni", "Marcellus", "Marcellus SC", "Old Standard TT",
+               "Playfair Display", "Playfair Display SC", "Prata", "Rufina", "Space Grotesk",
+               "Yeseva One", "Young Serif"];
+
+var GOOGLE = HOSTED.concat(DHOSTED);
 
 var STACKS = [
   ["Sitka Text (ships)", '"Sitka Text", Charter, "Iowan Old Style", Georgia, serif'],
@@ -307,6 +363,112 @@ var STACKS = [
 
 var SITKA   = STACKS[0][1];
 var GEORGIA = STACKS[1][1];
+
+/* ---- the display list, for the cut title only ---------------------------- */
+/* A separate survey, because the cut title is a separate problem. The stacks
+   above are for reading at 15px down a 27rem column; this one is for a single
+   word set the full width of that column and sliced off at 62% of its cap
+   height, where the only things that matter are the shapes of eight capitals and
+   how they behave when two thirds of each one is gone. A face can be excellent at
+   one job and useless at the other, so the two lists share nothing but the Comic
+   Sans tell and the `custom…` escape.
+
+   Same rule as above: one face per entry, no safety net, and a stack that falls
+   through to Comic Sans is a face this machine hasn't got. Bands rather than one
+   long alphabet, because the choice being made here is which REGISTER the word
+   belongs to; the faces inside a band are variations on one answer.
+
+   The first entry is what styles.css declares today, character for character —
+   the sheet wraps it across two lines, this is the same value on one. */
+var OGG = '"Ogg Roman", "Ogg", Didot, "Bodoni MT", "Big Caslon", "Sitka Banner", Constantia, Georgia, serif';
+
+var DISPLAY = [
+  ["Ogg → Sitka Banner (ships)", OGG],
+
+  /* Didones and high-contrast display: the register Ogg belongs to. Hairline
+     serifs and a vertical axis, which is exactly what a cut rewards — the stems
+     survive and the thin parts vanish into the cut rather than muddying it. */
+  ["Bodoni Moda",          '"Bodoni Moda", ' + COMIC],
+  ["Libre Bodoni",         '"Libre Bodoni", ' + COMIC],
+  ["Bodoni MT",            '"Bodoni MT", ' + COMIC],
+  ["Bodoni MT Black",      '"Bodoni MT Black", ' + COMIC],
+  ["Bodoni MT Condensed",  '"Bodoni MT Condensed", ' + COMIC],
+  ["Modern No. 20",        '"Modern No. 20", ' + COMIC],
+  ["Didot",                'Didot, ' + COMIC],
+  ["Antic Didone",         '"Antic Didone", ' + COMIC],
+  ["Playfair Display",     '"Playfair Display", ' + COMIC],
+  ["Playfair Display SC",  '"Playfair Display SC", ' + COMIC],
+  ["Prata",                'Prata, ' + COMIC],
+  ["Rufina",               'Rufina, ' + COMIC],
+  ["DM Serif Display",     '"DM Serif Display", ' + COMIC],
+  ["Instrument Serif",     '"Instrument Serif", ' + COMIC],
+
+  /* Inscriptional and titling faces — drawn as capitals first, with the lower
+     case an afterthought. The one band designed for precisely this job. */
+  ["Cinzel",               'Cinzel, ' + COMIC],
+  ["Cinzel Decorative",    '"Cinzel Decorative", ' + COMIC],
+  ["Trajan Pro",           '"Trajan Pro", ' + COMIC],
+  ["Marcellus",            'Marcellus, ' + COMIC],
+  ["Marcellus SC",         '"Marcellus SC", ' + COMIC],
+  ["Italiana",             'Italiana, ' + COMIC],
+  ["Forum",                'Forum, ' + COMIC],
+  ["Engravers MT",         '"Engravers MT", ' + COMIC],
+  ["Perpetua Titling MT",  '"Perpetua Titling MT", ' + COMIC],
+  ["Copperplate Gothic",   '"Copperplate Gothic Light", ' + COMIC],
+
+  /* Old-style and transitional, set large. Quieter than a Didone and warmer;
+     the axis is inclined and the serifs keep their weight through the cut. */
+  ["EB Garamond",          '"EB Garamond", ' + COMIC],
+  ["Cormorant",            'Cormorant, ' + COMIC],
+  ["Cormorant Garamond",   '"Cormorant Garamond", ' + COMIC],
+  ["Garamond",             'Garamond, ' + COMIC],
+  ["Goudy Old Style",      '"Goudy Old Style", ' + COMIC],
+  ["Centaur",              'Centaur, ' + COMIC],
+  ["Perpetua",             'Perpetua, ' + COMIC],
+  ["Baskerville",          'Baskerville, ' + COMIC],
+  ["Baskerville Old Face", '"Baskerville Old Face", ' + COMIC],
+  ["Big Caslon",           '"Big Caslon", ' + COMIC],
+  ["Hoefler Text",         '"Hoefler Text", ' + COMIC],
+  ["Cochin",               'Cochin, ' + COMIC],
+  ["Old Standard TT",      '"Old Standard TT", ' + COMIC],
+  ["Gilda Display",        '"Gilda Display", ' + COMIC],
+  ["Young Serif",          '"Young Serif", ' + COMIC],
+  ["Latin Modern 12",      '"LM Roman 12", ' + COMIC],
+
+  /* Heavier than the page, deliberately: the word as a block of ink rather than
+     a line of letters. Worth seeing once to know where the ceiling is. */
+  ["Abril Fatface",        '"Abril Fatface", ' + COMIC],
+  ["Yeseva One",           '"Yeseva One", ' + COMIC],
+  ["Elephant",             'Elephant, ' + COMIC],
+  ["Fraunces",             'Fraunces, ' + COMIC],
+
+  /* Sans, for the one question no serif band can answer: whether the word at the
+     foot of the page should be a serif at all. Anton is the poster face — one
+     weight, condensed, nothing but ink, and a cut through it is pure stem. Space
+     Grotesk is the quiet version of the same idea, and the only face in the list
+     whose capitals were drawn for a screen rather than a press. */
+  ["Anton",                'Anton, ' + COMIC],
+  ["Space Grotesk",        '"Space Grotesk", ' + COMIC],
+
+  /* Sitka's own optical cuts. Banner is the one the shipped stack lands on for
+     every Windows reader, so this is the band that says what most people
+     actually see — and the four alternatives to it that cost nothing to host. */
+  ["Sitka Banner",         '"Sitka Banner", ' + COMIC],
+  ["Sitka Display",        '"Sitka Display", ' + COMIC],
+  ["Sitka Heading",        '"Sitka Heading", ' + COMIC],
+  ["Sitka Subheading",     '"Sitka Subheading", ' + COMIC],
+
+  /* Already on the page somewhere, so nothing new to host. The last question
+     any display choice has to answer: is it better than using what's here? */
+  ["Constantia",           'Constantia, ' + COMIC],
+  ["Cambria",              'Cambria, ' + COMIC],
+  ["Georgia Pro",          '"Georgia Pro", ' + COMIC],
+  ["Georgia",              'Georgia, ' + COMIC],
+  ["Palatino",             '"Palatino Linotype", Palatino, "Book Antiqua", ' + COMIC],
+  ["Times",                '"Times New Roman", Times, ' + COMIC],
+  ["body face — Sitka",    SITKA],
+  ["generic serif",        'serif']
+];
 
 /* ---- what styles.css says today ----------------------------------------- */
 /* def: the value as WRITTEN in portfolio/styles.css, in `unit`.
@@ -421,6 +583,150 @@ var GROUPS = [
     { sel: ".contact-corner",     prop: "column-gap",    unit: "rem", def: 1,    label: "links → toggle" },
     { sel: ".theme-toggle",       prop: "font-size",     unit: "rem", def: 0.9,  label: "toggle size",    note: "lives in the `font: 400 0.9rem/1.55 var(--serif-label)` shorthand" },
     { sel: ".theme-toggle",       prop: "line-height",   unit: "",    def: 1.55, label: "toggle leading", note: "lives in the same `font:` shorthand" }
+  ] },
+
+  /* ---- PROJECTS, the cut title -------------------------------------------
+     One word in the bottom corner, set to the full width of the column and
+     sliced off by the end of the page. It is the only display type on the site,
+     the only place a second face is even arguable, and the only element whose
+     whole job is the shape of eight capitals — so it gets the entire font model
+     rather than a size and a tracking value. Every font property that can change
+     those eight shapes is here, each one previewable by hovering it.
+
+     Top to bottom: which face, how big, how much of it survives the cut, then
+     everything the face itself can be asked to do.
+
+     The first four live on :root as --cue-* rather than on the element, because
+     styles.css assembles them into geometry the element cannot express on its own
+     — see the --cue-* block there before moving one. The rest are declarations on
+     `.cut-title > a` exactly as the sheet writes them.
+
+     Deliberately absent: --cue-cap-drop, which styles.css says is not a knob but
+     a measured Firefox fallback; --cue-gap, which is spacing rather than type; and
+     font-variant-position, font-variant-emoji, font-palette and
+     font-language-override, none of which can change an uppercase Latin word in a
+     monochrome face. -webkit-font-smoothing is out for a different reason: the
+     sheet already sets `antialiased` once on body for the whole page, and it is
+     non-standard and does nothing outside macOS — a per-title override of it is not
+     a typographic decision anyone should be making here.
+
+     Every row highlights as an outline with no tint, like the edge fade: the
+     visible slice is 62% of one capital, and a wash of orange behind it hides the
+     thing being judged. */
+  { name: "PROJECTS — the cut title", rows: [
+    { sel: ":root", prop: "--serif-display", kind: "font", stacks: DISPLAY, def: OGG,
+      label: "display face", hi: ".cut-title > a", hiLine: true,
+      tip: "Its own list, not the body one: fifty-odd faces judged on eight capitals with two thirds of each one cut away, which is a different question from what reads well at 15px.\nOgg is a retail licence with nothing to self-host, so the shipped stack is a chain of near-misses ending at Sitka Banner — which is what every Windows reader actually sees." },
+
+    { sel: ":root", prop: "--cue-size", unit: "cqw", def: 25.32, min: 6, max: 60, step: 0.01,
+      label: "word size", hi: ".cut-title > a", hiLine: true,
+      tip: "The word's size as a fraction of the column's own width, in cqw against .cut-title — one proportion at every window size instead of a size that suits one of them.\n25.32 sets PROJECTS to exactly the full measure in the Sitka Banner fallback. It is the one number in this group that is face-specific, because fitting a word to a measure depends on that face's advance widths: expect to retune it after every change of face above." },
+
+    { sel: ":root", prop: "--cue-show", unit: "", def: 0.62, min: 0.2, max: 1.4, step: 0.01,
+      label: "shown of the cap", hi: ".cut-title > a", hiLine: true,
+      tip: "How much of the word survives the cut, as a fraction of its CAP HEIGHT — read as `1cap` from whichever face resolved, so the same fraction of letter shows in any face at any size.\n0.62 is set by the two letters that die first, not by taste: R stops reading as P once its bowl has closed (~0.55 in a Didone), and J is a bare stem until its hook starts (~0.6). Above ~0.75 it stops reading as cut and starts reading as a word with an odd baseline." },
+
+    { sel: ":root", prop: "--cue-track", unit: "em", def: -0.012, min: -0.08, max: 0.2, step: 0.001,
+      label: "tracking", hi: ".cut-title > a", hiLine: true,
+      tip: "Display caps this large want the tracking drawn in; the same word at 15px would want it opened out." },
+
+    { sel: ".cut-title > a", prop: "font-weight", unit: "", def: 400, min: 100, max: 900, step: 25,
+      label: "weight", hi: ".cut-title > a", hiLine: true,
+      tip: "Only the weights a face actually ships are real. The variable cuts in the list — Playfair Display, Bodoni Moda, Cinzel, Cormorant, EB Garamond, Fraunces — interpolate the whole range; everything else snaps to its nearest cut or gets a synthesised bold, which font-synthesis below can refuse." },
+
+    { sel: ".cut-title > a", prop: "font-stretch", unit: "%", def: 100, min: 50, max: 200, step: 1,
+      label: "width", hi: ".cut-title > a", hiLine: true,
+      note: "not declared today — 100% is the initial value",
+      tip: "Does nothing unless the face carries a `wdth` axis. None of these do, which is why Bodoni MT Condensed is in the list as the honest way to get a narrower word." },
+
+    { sel: ".cut-title > a", prop: "line-height", unit: "", def: 1, min: 0.5, max: 2, step: 0.01,
+      label: "leading", hi: ".cut-title > a", hiLine: true,
+      tip: "Inert wherever `text-box: trim-both cap alphabetic` is supported, because the trim replaces the line box with the cap slab. It still bites in Firefox, which has no text-box-trim and leans on --cue-cap-drop instead." },
+
+    { sel: ".cut-title > a", prop: "word-spacing", unit: "em", def: null, min: -0.2, max: 0.6, step: 0.005,
+      label: "word spacing", hi: ".cut-title > a", hiLine: true,
+      tip: "PROJECTS is one word, so this changes nothing today. It is here because the group is the complete set, and it would start to matter the moment the cut title becomes two words." },
+
+    { sel: ".cut-title > a", prop: "font-style", kind: "pick", def: "normal",
+      opts: ["normal", "italic", "oblique 6deg", "oblique 10deg", "oblique 14deg", "oblique -8deg"],
+      label: "style", hi: ".cut-title > a", hiLine: true, hint: "oblique 12deg",
+      note: "not declared today — `normal` is the initial value",
+      tip: "`italic` asks for the drawn italic and falls back to a slant the browser fakes; the `oblique <angle>` forms ask for the slant on purpose. At this size a faked italic is visible as one." },
+
+    { sel: ".cut-title > a", prop: "font-variant-caps", kind: "pick", def: "normal",
+      opts: ["normal", "small-caps", "all-small-caps", "petite-caps", "all-petite-caps", "unicase", "titling-caps"],
+      label: "caps", hi: ".cut-title > a", hiLine: true, hint: "titling-caps",
+      note: "not declared today — `normal` is the initial value",
+      tip: "titling-caps is the one that matters here: it asks the face for the caps it keeps for display sizes, which are drawn lighter and set tighter than its text caps. Only a few faces carry them; the rest ignore it.\nThe small-caps values need real lower case to work on, and the markup already says `Projects` — so they act on `rojects` under the uppercase transform below." },
+
+    { sel: ".cut-title > a", prop: "font-variant-ligatures", kind: "pick",
+      def: "common-ligatures discretionary-ligatures",
+      opts: ["common-ligatures discretionary-ligatures", "normal", "none", "common-ligatures",
+             "no-common-ligatures", "discretionary-ligatures",
+             "common-ligatures discretionary-ligatures historical-ligatures", "contextual", "no-contextual"],
+      label: "ligatures", hi: ".cut-title > a", hiLine: true, hint: "discretionary-ligatures",
+      tip: "The shipped value asks for both, because a display face keeps its best joins behind `dlig`. PROJECTS has no fi or fl in it, so what this actually reaches for is any O-J or T-S pair the face has drawn specially." },
+
+    { sel: ".cut-title > a", prop: "font-variant-numeric", kind: "pick", def: "normal",
+      opts: ["normal", "lining-nums", "oldstyle-nums", "tabular-nums", "proportional-nums",
+             "slashed-zero", "oldstyle-nums proportional-nums"],
+      label: "figures", hi: ".cut-title > a", hiLine: true, hint: "oldstyle-nums",
+      note: "not declared today — `normal` is the initial value",
+      tip: "The word has no figures in it, so this does nothing until the cut title does. Here for completeness — the group is the whole font model, not the parts that happen to bite." },
+
+    { sel: ".cut-title > a", prop: "font-variant-alternates", kind: "pick", def: "normal",
+      opts: ["normal", "historical-forms"],
+      label: "alternates", hi: ".cut-title > a", hiLine: true, hint: "historical-forms",
+      note: "not declared today — `normal` is the initial value",
+      tip: "historical-forms is the only value that works without an @font-feature-values block to name the face's own sets. For those, use font-feature-settings below." },
+
+    { sel: ".cut-title > a", prop: "font-feature-settings", kind: "pick", def: "normal",
+      opts: ["normal", '"titl" 1', '"swsh" 1', '"salt" 1', '"ss01" 1', '"ss02" 1', '"dlig" 1',
+             '"hlig" 1', '"cpsp" 1', '"calt" 0', '"kern" 0', '"titl" 1, "cpsp" 1'],
+      label: "OpenType features", hi: ".cut-title > a", hiLine: true, hint: '"ss01" 1, "swsh" 1',
+      note: "not declared today — `normal` is the initial value",
+      tip: "The low-level door to whatever the face happens to carry: `titl` titling caps, `swsh` swashes, `ss01`+ stylistic sets, `cpsp` capital spacing, `calt 0` to switch contextual alternates off.\nNothing here is portable — a set that transforms one face is dead in the next, and there is no way to ask what a face has except to try. Prefer the font-variant-* rows where one exists; this overrides them." },
+
+    { sel: ".cut-title > a", prop: "font-variation-settings", kind: "pick", def: "normal",
+      opts: ["normal", '"opsz" 6', '"opsz" 14', '"opsz" 72', '"opsz" 144', '"wght" 550',
+             '"SOFT" 100', '"WONK" 1', '"SOFT" 100, "WONK" 1', '"opsz" 144, "WONK" 1'],
+      label: "variable axes", hi: ".cut-title > a", hiLine: true, hint: '"opsz" 72, "wght" 550',
+      note: "not declared today — `normal` is the initial value",
+      tip: "Axes only exist on variable faces. `opsz` on Bodoni Moda (6..96) and Fraunces (9..144); `wght` on those plus Playfair Display, Cinzel, Cormorant and EB Garamond; `SOFT` and `WONK` on Fraunces alone — WONK 1 swaps in its single-storey wonky forms.\nSetting wght here hides it from the browser's own weight matching, so use the weight row unless you are chasing a value between two cuts." },
+
+    { sel: ".cut-title > a", prop: "font-optical-sizing", kind: "pick", def: "auto",
+      opts: ["auto", "none"],
+      label: "optical sizing", hi: ".cut-title > a", hiLine: true, hint: "auto",
+      tip: "Declared `auto`, which lets a variable face's `opsz` axis answer to the 6.8rem this word is set at — hairlines thin out and spacing tightens, which is what a display size wants. `none` pins it to the axis default, and is how you see what the auto is doing." },
+
+    { sel: ".cut-title > a", prop: "font-kerning", kind: "pick", def: "normal",
+      opts: ["normal", "auto", "none"],
+      label: "kerning", hi: ".cut-title > a", hiLine: true, hint: "normal",
+      tip: "Declared `normal` — asked for rather than left to `auto`, because at this size the difference between kerned and unkerned is a visible gap in RO and JE. `none` shows you the pairs the face is fixing." },
+
+    { sel: ".cut-title > a", prop: "font-synthesis", kind: "pick", def: "weight style small-caps",
+      opts: ["weight style small-caps", "none", "weight", "style", "small-caps", "weight style"],
+      label: "allow faking", hi: ".cut-title > a", hiLine: true, hint: "none",
+      note: "not declared today — `weight style small-caps` is the initial value",
+      tip: "Whether the browser may fake what the face doesn't ship. `none` is the setting to survey under: a face with no bold and no italic then refuses outright instead of handing back a smeared one, which is exactly what you want to know before choosing it." },
+
+    { sel: ".cut-title > a", prop: "font-size-adjust", kind: "pick", def: "none",
+      opts: ["none", "0.5", "0.52", "0.55", "0.58", "cap-height 0.58", "cap-height 0.61", "cap-height 0.65"],
+      label: "size adjust", hi: ".cut-title > a", hiLine: true, hint: "cap-height 0.61",
+      note: "not declared today — `none` is the initial value",
+      tip: "Pins a chosen metric to a ratio of the font size, so swapping faces stops changing the visual size.\n`cap-height 0.61` is the interesting one here: the cut is measured in `cap`, so pinning cap height makes the visible slice the same height in every face in the list — which turns a survey of fifty faces into a fair comparison." },
+
+    { sel: ".cut-title > a", prop: "text-transform", kind: "pick", def: "uppercase",
+      opts: ["uppercase", "none", "capitalize", "lowercase"],
+      label: "case", hi: ".cut-title > a", hiLine: true, hint: "uppercase",
+      note: "the markup says `Projects`; the caps are this declaration",
+      tip: "`none` is worth a look with any old-style face in the list: the cut through a lower-case word crosses x-height rather than cap height, and the ascenders become the only thing left." },
+
+    { sel: ".cut-title > a", prop: "text-rendering", kind: "pick", def: "optimizeLegibility",
+      opts: ["optimizeLegibility", "auto", "geometricPrecision", "optimizeSpeed"],
+      label: "rendering", hi: ".cut-title > a", hiLine: true, hint: "geometricPrecision",
+      note: "not declared on the title — inherited from `body`, which sets optimizeLegibility for the whole page",
+      tip: "geometricPrecision turns off the hinting-driven rounding of advance widths, which at this size is the difference between the tracking you asked for and the tracking you got." }
   ] }
 ];
 
@@ -433,19 +739,34 @@ var BOUNDS = {
 };
 var SPACING = [0, 5, 0.05];   /* margins, gaps, indents, --col overrides its own */
 
+/* Three kinds of row, and the kind picks the widget: a slider and a number box for
+   anything measured, a hover-preview list for anything chosen out of a set, and
+   nothing else. The list covers font stacks and keyword properties alike — they
+   are the same interaction, and a keyword like `titling-caps` is exactly as hard
+   to judge from its name as a face is, so it wants the same "hover it and look"
+   treatment. `kind` defaults to "num", or to "font" inside a group that declared
+   itself one, so the tables above only spell it out where it isn't obvious.
+   Rows that offer a list get `list`: entries as [label, value], where a bare
+   string in the table means both. */
 var ROWS = [];
 GROUPS.forEach(function (g) {
   g.rows.forEach(function (r) {
     r.group = g;
-    r.isFont = !!g.font;
+    r.kind = r.kind || (g.font ? "font" : "num");
+    r.isFont = r.kind === "font";
     r.strip = g.strip;                 /* undefined for rows that don't care */
     r.k = r.sel + "|" + r.prop;
     if (!r.hi) r.hi = r.sel;
-    if (!r.isFont) {
+    if (r.kind === "num") {
       var b = (BOUNDS[r.prop] || {})[r.unit] || SPACING;
       if (r.min == null)  r.min = b[0];
       if (r.max == null)  r.max = b[1];
       if (r.step == null) r.step = b[2];
+    } else {
+      r.list = (r.isFont ? (r.stacks || STACKS) : r.opts).map(function (o) {
+        return typeof o === "string" ? [o, o] : o;
+      });
+      if (!r.hint) r.hint = r.isFont ? "Charter, Georgia, serif" : "any value this property takes";
     }
     ROWS.push(r);
   });
@@ -587,7 +908,14 @@ function effective(r) {
 }
 
 function num(n) { return String(+Number(n).toFixed(3)); }
-function css(r, v) { return r.isFont ? v : num(v) + r.unit; }
+function css(r, v) { return r.kind === "num" ? num(v) + r.unit : v; }
+
+/* CSS keywords carry no meaning in their whitespace, and the shorthands here are
+   multi-word — so a computed value is compared to the table with runs of space
+   collapsed. It cannot hide a real change: a value differing only in whitespace
+   is the same value. */
+function norm(s) { return String(s == null ? "" : s).trim().replace(/\s+/g, " "); }
+function camel(p) { return p.replace(/-(\w)/g, function (_, c) { return c.toUpperCase(); }); }
 
 /* ---- the frame ----------------------------------------------------------- */
 var frame = document.getElementById("frame");
@@ -805,6 +1133,29 @@ function probe() {
 
     var cs = win.getComputedStyle(el);
 
+    /* Keyword rows check the same way the numbers do, and for the same reason: a
+       `def` that claims the sheet says `uppercase` has to be wrong out loud rather
+       than quietly emit `was uppercase` under a sheet that no longer does. Two
+       carve-outs. A property the browser doesn't serialise at all computes to the
+       empty string, which is no evidence either way — the shorthands are where
+       this bites, font-synthesis especially. And a row can set `probe: false`
+       where the browser is known to normalise the value into something other than
+       what the sheet declares, which would fire the banner every load. */
+    if (r.kind === "pick") {
+      var got = norm(r.prop.slice(0, 2) === "--" ? cs.getPropertyValue(r.prop) : cs[camel(r.prop)]);
+      r.live = got;
+      /* Folded to lower case for the comparison only, never for the export: CSS
+         keywords are case-insensitive and Chrome serialises them lowercased, so a
+         sheet that says optimizeLegibility computes to optimizelegibility and the
+         two are the same value written twice. The message and the export keep the
+         table's own spelling, because that is what belongs in the sheet. */
+      if (r.def != null && r.probe !== false && !changed(r) && got &&
+          norm(r.def).toLowerCase() !== got.toLowerCase()) {
+        drift.push(r.sel + " { " + r.prop + " } is " + got + ", table says " + norm(r.def));
+      }
+      return;
+    }
+
     /* A custom property computes to its own declaration rather than to a pixel
        length, so compare the text — `27rem` against `27rem` — and keep the
        leading number for the slider to sit at. */
@@ -817,7 +1168,7 @@ function probe() {
       return;
     }
 
-    var px = parseFloat(cs[r.prop === "gap" ? "columnGap" : r.prop.replace(/-(\w)/g, function (_, c) { return c.toUpperCase(); })]);
+    var px = parseFloat(cs[r.prop === "gap" ? "columnGap" : camel(r.prop)]);
     var fs = parseFloat(cs.fontSize);
     var live;
     if (r.prop === "font-weight")      live = parseFloat(cs.fontWeight);
@@ -857,16 +1208,39 @@ function probe() {
    for every candidate stack that is Comic Sans — so this is where the tell gets
    read back as a name. Most specific first: Georgia Pro would otherwise be
    reported as Georgia, and the shipped Sitka stack as Charter. */
+/* Every family either list can ask for, in the order the measurement tries them.
+   Ordering is the whole subtlety: the first match wins, so a name has to come
+   before anything it is a prefix of — "Georgia Pro" before Georgia, "Bodoni MT
+   Condensed" before "Bodoni MT", "Cormorant Garamond" before Cormorant — or the
+   specific face gets reported under the general name. The display families go
+   first for the same reason, since they are the ones being surveyed. */
+var FACES = [
+  /* display: the cut title's list */
+  "Ogg Roman", "Ogg", "Bodoni Moda", "Libre Bodoni", "Bodoni MT Condensed", "Bodoni MT Black",
+  "Bodoni MT", "Modern No. 20", "Didot", "Antic Didone", "Playfair Display SC", "Playfair Display",
+  "Prata", "Rufina", "DM Serif Display", "Instrument Serif", "Cinzel Decorative", "Cinzel",
+  "Trajan Pro", "Marcellus SC", "Marcellus", "Italiana", "Forum", "Engravers MT",
+  "Perpetua Titling MT", "Perpetua", "Copperplate Gothic Light", "EB Garamond",
+  "Cormorant Garamond", "Cormorant", "Garamond", "Goudy Old Style", "Centaur",
+  "Baskerville Old Face", "Baskerville", "Big Caslon", "Hoefler Text", "Cochin",
+  "Old Standard TT", "Gilda Display", "Young Serif", "Abril Fatface", "Yeseva One",
+  "Elephant", "Fraunces", "Anton", "Space Grotesk",
+  "Sitka Banner", "Sitka Display", "Sitka Subheading", "Sitka Heading",
+
+  /* body: the reading list */
+  "Sitka Text", "Source Serif 4", "Source Serif Pro", "Literata", "Georgia Pro", "Newsreader",
+  "PT Serif", "Castoro", "Merriweather", "Constantia", "Faustina", "Domine", "Spectral",
+  "Vollkorn", "Bitter", "Latin Modern Roman", "LM Roman 9", "LM Roman 8", "LM Roman 12",
+  "Charter", "Bitstream Charter", "XCharter", "Cambria", "Palatino Linotype", "Book Antiqua",
+  "Georgia", "Times New Roman", "Comic Sans MS", "serif"
+];
+
 function resolved(stack) {
   var doc = frame.contentDocument;
   if (!doc) return "";
   var probeCtx = doc.createElement("canvas").getContext("2d");
   var w = function (fam) { probeCtx.font = "40px " + fam; return probeCtx.measureText("Handgloves 123").width; };
-  var known = ["Sitka Text", "Source Serif 4", "Source Serif Pro", "Literata", "Georgia Pro", "Newsreader",
-               "PT Serif", "Castoro", "Merriweather", "Constantia", "Faustina", "Domine", "Spectral",
-               "Vollkorn", "Bitter", "Latin Modern Roman", "LM Roman 9", "LM Roman 8", "LM Roman 12",
-               "Charter", "Bitstream Charter", "XCharter", "Cambria", "Palatino Linotype", "Georgia",
-               "Times New Roman", "Comic Sans MS", "serif"];
+  var known = FACES;
   var want = w(stack), hit = "?";
   for (var i = 0; i < known.length; i++) {
     var name = known[i] === "serif" ? "serif" : '"' + known[i] + '"';
@@ -915,7 +1289,7 @@ function buildCSS(annotated) {
   /* Which hosted faces this export leans on. The preview fetches them from
      Google; portfolio/ ships nothing for them, so pasting one in without hosting
      it first lands on `serif` for every visitor while still looking right here. */
-  var borrowed = annotated ? HOSTED.filter(function (fam) {
+  var borrowed = annotated ? GOOGLE.filter(function (fam) {
     return rows.some(function (r) { return r.isFont && String(val(r)).indexOf(fam) !== -1; });
   }) : [];
 
@@ -1019,7 +1393,7 @@ function buildPanel() {
 
     var body = document.createElement("div");
     body.className = "gbody";
-    g.rows.forEach(function (r) { body.appendChild(r.isFont ? fontRow(r) : numRow(r)); });
+    g.rows.forEach(function (r) { body.appendChild(r.kind === "num" ? numRow(r) : pickRow(r)); });
     box.appendChild(body);
     controls.appendChild(box);
   });
@@ -1066,18 +1440,23 @@ function numRow(r) {
   return row;
 }
 
-/* ---- the font list ------------------------------------------------------- */
+/* ---- the hover list ------------------------------------------------------ */
 /* A listbox rather than a <select>, for one reason: a native popup is drawn by
    the OS and never reports which option the pointer is over, so trying a face
-   means committing to it and coming back — twenty-six faces, fifty-two clicks.
-   Here the entry under the pointer is the one in the page, and only a click keeps
-   it, so the way to survey the list is to run down it.
+   means committing to it and coming back — twenty-six faces in the reading list
+   and fifty-nine in the display one, so a hundred and seventy clicks to see them
+   all. Here the entry under the pointer is the one in the page, and only a click
+   keeps it, so the way to survey the list is to run down it.
+   Keyword rows get the same widget and need it just as badly: nobody reads the
+   difference between `titling-caps` and `all-small-caps`, or between four values
+   of text-rendering, off a name — you look at it. Same rule either way, whether
+   the list holds a font stack or `oblique 10deg`.
    `pick.value` is a property, get and set, so paint() can go on driving every
    widget in the panel through `.value` without knowing which are selects. */
 var openPick = null;                      /* one list open at a time */
 var pickSeq = 0;
 
-function fontPick(r, free) {
+function hoverPick(r, free) {
   var id = "fp" + (++pickSeq);
 
   var pick = document.createElement("div");
@@ -1098,7 +1477,7 @@ function fontPick(r, free) {
   menu.setAttribute("role", "listbox");
   menu.hidden = true;
 
-  var opts = STACKS.concat([["custom…", "__custom"]]).map(function (s, i) {
+  var opts = r.list.concat([["custom…", "__custom"]]).map(function (s, i) {
     var o = document.createElement("div");
     o.className = "opt";
     o.id = id + "-" + i;                  /* so aria-activedescendant can name it */
@@ -1129,7 +1508,7 @@ function fontPick(r, free) {
 
   /* Where the pointer — or an arrow key — has got to. Straight into the page, and
      named on the trigger, so the frame and the panel never disagree about what is
-     being looked at. `custom…` has no stack behind it, so it previews nothing. */
+     being looked at. `custom…` has no value behind it, so it previews nothing. */
   function peek(o) {
     opts.forEach(function (x) { x.classList.toggle("at", x === o); });
     if (o) menu.setAttribute("aria-activedescendant", o.id);
@@ -1159,7 +1538,7 @@ function fontPick(r, free) {
   pick.__shut = shut;
 
   /* `custom…` is a state of the row, not a value, and it has to be recorded as
-     one: it seeds the box with whatever is in force, which is usually a stack
+     one: it seeds the box with whatever is in force, which is usually a value
      that IS in the list, and paint() would otherwise read that back as "not
      custom after all" and shut the box again the moment it opened. */
   function choose(v) {
@@ -1236,7 +1615,11 @@ function fontPick(r, free) {
   return pick;
 }
 
-function fontRow(r) {
+/* One row for everything chosen out of a list, font stack or keyword alike. The
+   resolved-face note is the only font-only part, and rightly so: which face won is
+   a real question with a measurable answer, whereas a keyword either applied or the
+   property does not exist — and either way the page in the frame is the report. */
+function pickRow(r) {
   var row = document.createElement("div");
   row.className = "frow";
   r.el = row;
@@ -1244,23 +1627,21 @@ function fontRow(r) {
 
   var lab = document.createElement("label");
   lab.textContent = r.label;
-  lab.title = r.sel + " { " + r.prop + " }";
-
-  var face = document.createElement("span");
-  face.className = "selnote";
+  lab.title = r.sel + " { " + r.prop + " }" + (r.note ? "  — " + r.note : "") + (r.tip ? "\n\n" + r.tip : "");
 
   var free = document.createElement("input");
   free.type = "text";
-  free.placeholder = 'e.g. Charter, Georgia, serif';
+  free.placeholder = "e.g. " + r.hint;
   free.hidden = true;
 
   var undo = document.createElement("button");
   undo.type = "button";
   undo.className = "undo";
   undo.textContent = "↺";
+  undo.title = "back to " + (r.def == null ? "unset" : r.def);
   undo.style.visibility = "hidden";
 
-  var pick = fontPick(r, free);
+  var pick = hoverPick(r, free);
 
   var wrap = document.createElement("div");
   wrap.className = "sel";
@@ -1268,7 +1649,6 @@ function fontRow(r) {
   wrap.appendChild(undo);
 
   r.inputs = [pick, free];
-  r.face = face;
   r.undo = undo;
 
   free.addEventListener("input", function () { state.vals[r.k] = free.value; commit(r.k); });
@@ -1279,7 +1659,14 @@ function fontRow(r) {
     commit(null);
   });
 
-  row.appendChild(lab); row.appendChild(wrap); row.appendChild(free); row.appendChild(face);
+  row.appendChild(lab); row.appendChild(wrap); row.appendChild(free);
+
+  if (r.isFont) {
+    var face = document.createElement("span");
+    face.className = "selnote";
+    r.face = face;
+    row.appendChild(face);
+  }
   return row;
 }
 
@@ -1291,16 +1678,17 @@ function paint() {
     r.el.classList.toggle("on", on);
     r.el.classList.toggle("gone", !!r.gone);
 
-    if (r.isFont) {
-      /* A row the list can name shows that name; anything else — a hand-typed
-         stack, or `custom…` picked deliberately — shows the box instead. */
-      var stack = effective(r);
-      var known = !r.wantFree && STACKS.some(function (s) { return s[1] === stack; });
-      r.inputs[0].value = known ? stack : "__custom";
+    if (r.list) {
+      /* A value the list can name shows that name; anything else — a hand-typed
+         stack, an OpenType feature nobody put in the presets, or `custom…` picked
+         deliberately — shows the box instead. */
+      var v0 = String(effective(r));
+      var known = !r.wantFree && r.list.some(function (s) { return s[1] === v0; });
+      r.inputs[0].value = known ? v0 : "__custom";
       r.inputs[1].hidden = known;
-      if (!known && document.activeElement !== r.inputs[1]) r.inputs[1].value = stack;
+      if (!known && document.activeElement !== r.inputs[1]) r.inputs[1].value = v0;
       r.undo.style.visibility = on ? "visible" : "hidden";
-      faceNote(r);
+      if (r.face) faceNote(r);
     } else {
       var v = effective(r);
       if (document.activeElement !== r.inputs[1]) r.inputs[1].value = num(v);
@@ -1387,8 +1775,8 @@ frame.addEventListener("load", function () {
   var doc = frame.contentDocument;
   if (!doc) return;
   doc.documentElement.setAttribute("data-theme", state.theme);
-  Promise.all([addLink(doc, "/fonts/fonts.css"), addLink(doc, GFONT)])
-    .then(function () { return doc.fonts ? Promise.all(HOSTED.map(loadFace)) : null; })
+  Promise.all([addLink(doc, "/fonts/fonts.css"), addLink(doc, GFONT), addLink(doc, DFONT)])
+    .then(function () { return doc.fonts ? Promise.all(GOOGLE.map(loadFace)) : null; })
     .then(function () { return doc.fonts ? doc.fonts.ready : null; })
     .then(function () { inject(); probe(); setStrip(wantStrip); });
 });
