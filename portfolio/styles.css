@@ -13,10 +13,25 @@
   --ink-soft:   #46433d;
   --muted:      #6f6a5d;                 /* years, meta (AA 5.2:1)      */
   --bg:         #fff;                    /* pure white                  */
+  /* Both unread by this sheet since the edge dissolve became a mask rather than
+     painted paper — see .carousel. Kept because they are part of the palette the
+     profile-README capture in chrisJuresh/chrisJuresh overrides by name, and a
+     variable that is set but never read costs nothing while a missing one is a
+     silent change in someone else's repo. */
   --bg-rgb:     255, 255, 255;
-  --bg-0:       rgba(255, 255, 255, 0);  /* same, transparent — for fades */
+  --bg-0:       rgba(255, 255, 255, 0);  /* same, fully transparent */
   --rule-soft:  #efece4;
   --link-line:  #b3aa9b;
+  /* The corner plate — see the block after the base rules. Where it stands and
+     how far it carries; the grade is baked into the file and is tuned with the
+     rest of the plate in design/plate/plate-tuner.html, which prints both this
+     block and the Python one it belongs with.
+     Opacity first because it is the only one of the four that is a judgement
+     rather than a measurement, and it is the one that gets argued about. */
+  --plate-opacity: 0.12;
+  --plate-w: 50vw;   /* how wide it runs — height follows the file's own aspect */
+  --plate-x: 0px;    /* out from the left edge of the page, positive → right     */
+  --plate-y: 0px;    /* up from the bottom of the first screen, positive → up    */
 
   /* Sitka — Matthew Carter's screen-cut serif, bundled with Windows. It can't be
      self-hosted (Microsoft licence), so the stack names the nearest screen serif
@@ -91,8 +106,17 @@
      that is white the eye counts as margin, so the foot has to match the sum.
      0.294 is Sitka Text's half-leading as a fraction of its own size —
      (1.55 - (ascent + descent)/em) / 2, measured from the face — and 0.78rem is
-     the name's size. Every fallback serif sits within a pixel of it. */
-  --rhyme: clamp(3rem, 9vh, 6.5rem);
+     the name's size. Every fallback serif sits within a pixel of it.
+     --corner is that measure BEFORE a tall screen spends its leftover on it (see
+     the max() in the one-screen block below). The two are the same number on
+     every ordinary display and part company only above ~1250px of height, where
+     --rhyme keeps growing and --corner stops. Anything that wants "the page's
+     margin" as a fixed inset — the doorway title's corner — has to read --corner,
+     because a margin that tracks 100vh is a vertical idea and reads as an error
+     the moment it is used horizontally: at 2160px tall --rhyme is 605px, which
+     would put a left-hand title in the middle of the screen. */
+  --corner: clamp(3rem, 9vh, 6.5rem);
+  --rhyme: var(--corner);
   --name-half-leading: calc(0.294 * 0.78rem);
 
   /* ---- the cut title -------------------------------------------------------
@@ -139,12 +163,29 @@
   --contact-tail: 0.4075rem;
   --cue-gap: calc(var(--rhyme) + var(--name-half-leading) - var(--contact-tail));
 
-  /* The visible slice of the cut title, as a length. The real clip is measured
-     in `1cap` on the element itself and stays exact; this is only the same
-     number written in rem so the height budget below can spend it. It is
-     --cue-show x --cue-size x the face's cap ratio: 0.62 x 6.836rem x 0.6123.
-     Re-measure alongside --cv-static if the display face changes. */
-  --cue-clip: 2.596rem;
+  /* The cap slab of the cut word, as a length: --cue-size x the face's cap
+     ratio, 6.836rem x 0.6123. The `cap` unit says the same thing exactly and is
+     what the element itself is measured in, but a unit that resolves against one
+     element's own font cannot be spent by the height budget below or by a box
+     that is not set in that font — so the same measure is also written here in
+     rem. MEASURED from the face; re-measure alongside --cv-static if the display
+     face changes.
+     --cue-clip is then the visible slice: the part of the word that survives the
+     cut. Both regimes hold the word's cap top exactly --cue-clip above the fold;
+     they differ only in what does the cutting (see the doorway block below). */
+  --cue-cap:  4.187rem;
+  --cue-clip: calc(var(--cue-show) * var(--cue-cap));
+
+  /* ---- where the word lands once it is a title -----------------------------
+     Scrolled home, the cut word stands in the top-left corner of the second
+     screen as a plain title. Both insets come off --corner, so the corner is one
+     measure square and the title's cap top lands on the same line the name's ink
+     starts on one screen above — the page's one margin, reused rather than
+     re-chosen. --title-top carries the half-leading because --corner is measured
+     to the name's INK, and a display word trimmed to its cap slab has no leading
+     of its own to stand the difference. */
+  --title-top:  calc(var(--corner) + var(--name-half-leading));
+  --title-left: var(--corner);
 
   /* Everything in the document that is NOT the photo strip and NOT one of the
      two vh-driven gaps: the masthead, the lead, the scrollbar rule, the three
@@ -213,22 +254,28 @@
   --fade-ease-now: calc(var(--fade-ease) + (var(--fade-ease-open) - var(--fade-ease)) * var(--fade-open));
   --fade-w: calc(var(--slide-w) * var(--fade-span-now));   /* the dissolve, in px */
 
-  /* The ramp itself, written once and mirrored by the two veils below.
-     Three colour stops and two interpolation HINTS — the bare lengths at 2nd
-     and 4th position. A hint doesn't add a stop, it bends the curve between the
-     two it sits among: the browser then interpolates on a power law rather than
-     a straight line, so there is no piecewise-linear kink anywhere to catch the
-     eye. Two mirrored bends make one continuous S.
+  /* The ramp's shape, as two interpolation HINTS. A hint is a bare length between
+     two colour stops: it doesn't add a stop, it bends the curve between the two it
+     sits among, so the browser interpolates on a power law rather than a straight
+     line and there is no piecewise-linear kink anywhere to catch the eye. Two
+     mirrored bends make one continuous S.
      A hint at a quarter of the width is the linear case; 0.3536 (= 0.25 + Δ,
      where Δ is 0.5^0.5/2 - 0.25) is the power-of-two ease that matches a
-     smoothstep. The ease slides between them, and past linear the other way. */
+     smoothstep. The ease slides between them, and past linear the other way.
+     The hints are symmetric about the middle, which is why the same pair serves
+     the ramp read in either direction — see the mask on .carousel below. */
   --fade-bend: 0.1036;                    /* Δ above: linear → smoothstep      */
-  --fade-stops:
-    var(--bg-0) 0,
-    calc(var(--fade-w) * (0.25 + var(--fade-bend) * var(--fade-ease-now))),
-    rgba(var(--bg-rgb), calc(0.5 * var(--fade-max-now))) calc(var(--fade-w) * 0.5),
-    calc(var(--fade-w) * (0.75 - var(--fade-bend) * var(--fade-ease-now))),
-    rgba(var(--bg-rgb), var(--fade-max-now)) var(--fade-w);
+  --fade-hint-a: calc(var(--fade-w) * (0.25 + var(--fade-bend) * var(--fade-ease-now)));
+  --fade-hint-b: calc(var(--fade-w) * (0.75 - var(--fade-bend) * var(--fade-ease-now)));
+
+  /* How far in from each edge the dissolve finishes — the old veil boxes' width,
+     and now where each end of the mask reaches full opacity. Back from the edge
+     to where the text column ends, shifted by --fade-x-now. The outer max() is a
+     floor: if the start is pushed further out than the gutter is wide there would
+     be no room left for the ramp, and it would meet the viewport as a hard line
+     instead. */
+  --fade-reach: max(var(--fade-w),
+                    calc(max(var(--edge), var(--fade-w)) - var(--slide-w) * var(--fade-x-now)));
 }
 
 :root[data-theme="dark"] {
@@ -241,6 +288,10 @@
   --bg-0:       rgba(0, 0, 0, 0);
   --rule-soft:  #3a3a3a;
   --link-line:  #3a3a3a;
+  /* Slightly stronger on black. The plate's own blacks were lifted to a dark
+     grey, so on #fff it has the paper to fall away into and on #000 it has
+     nothing — at 0.12 the shadow half of it simply disappears into the page. */
+  --plate-opacity: 0.17;
 }
 
 /* ---- composing to one screen ---------------------------------------------
@@ -273,7 +324,11 @@
    desktop conceit — a narrow window is a scrolling column, which is what phones
    and tablets get anyway. It also keeps the strip at 384px for the two widths
    the profile-README capture in chrisJuresh/chrisJuresh probes at, 1000px and
-   592px, whose hardcoded 592 divisor is derived from the photo width. */
+   592px, whose hardcoded 592 divisor is derived from the photo width.
+
+   The same gate appears once more at the foot of this sheet, for the doorway —
+   the second screen the cut title opens onto. It has to be down there to win the
+   cascade; the two blocks are one idea and the gates must be kept in step. */
 @media (min-width: 1100px) and (min-height: 983px) {
   :root {
     --slide-h: clamp(15rem,
@@ -296,7 +351,7 @@
        height in the only regime this term is ever the winner in, and referring
        to --slide-h here would be a cycle, since the strip is sized FROM
        --rhyme. */
-    --rhyme: max(clamp(3rem, 9vh, 6.5rem),
+    --rhyme: max(var(--corner),
                  calc((100vh - var(--cv-static) - 24rem - var(--cue-clip)
                        + var(--contact-tail) - var(--name-half-leading)) / 2));
   }
@@ -307,6 +362,7 @@ html { -webkit-text-size-adjust: 100%; }
 html, body { overflow-x: hidden; }        /* the carousel bleeds right; never scroll the page sideways */
 body {
   margin: 0;
+  position: relative;        /* the containing block for the corner plate below */
   background: var(--bg);
   color: var(--ink);
   font-family: var(--serif-body);
@@ -319,6 +375,82 @@ body {
 }
 img { display: block; max-width: 100%; height: auto; }
 a { color: inherit; }
+
+/* ---- the corner plate -----------------------------------------------------
+   A photograph of a Portland-stone doorway on Lloyd's Avenue, standing in the
+   bottom-left corner of the document at --plate-opacity. Faint enough to read as
+   paper stock rather than as an image: it is what the column is printed ON, not
+   something on the page, and the moment you notice it as a photograph it is too
+   strong. Turn it off by setting --plate-opacity to 0.
+
+   The grade is baked into the file, not applied here — no sky, blacks lifted to a
+   warm dark grey, whites pushed just past the paper, tinted and grained.
+   design/plate/build-plate.py is the whole recipe and says why each stage is
+   where it is. Two consequences for this end: light and dark differ only in
+   --plate-opacity, since the grade holds up over both; and there is no filter
+   here, so the plate costs one paint and no compositing layer on a page that has
+   a momentum carousel to animate.
+
+   It has no soft edge, by choice — a dissolve wide enough to hide the top and
+   right edges also sat on the door and the columns, which are the subject. Left
+   and bottom are the page's own corner, so only two edges exist to see, and at
+   this opacity they read as the edge of a tipped-in plate rather than as a crop.
+
+   The box is the FIRST screen — top of the document, 100vh tall — and the plate
+   sits on its bottom edge. So it is there on the page you open, in the corner
+   under the column, and it leaves as you scroll: it is part of the opening
+   composition rather than a watermark. Neither of the two alternatives is this.
+   `fixed` would pin it to the window and it would follow you down the whole
+   document; `inset: 0` would hand it the document's bottom corner, which on
+   desktop is the foot of the second screen and is not somewhere you arrive by
+   opening the page.
+
+   100vh, not 100dvh: it has to agree with the fold that the cut title is measured
+   against — `.cut-title` is placed at `calc(100vh - var(--cue-clip))` — and a
+   plate whose bottom edge slid with a collapsing mobile toolbar while the cut
+   stayed put would break the one alignment on the page that is exact.
+
+   background-position does the vertical anchoring rather than a height on the
+   box, so the file's own aspect ratio is nowhere in this sheet and cannot drift
+   out of step with it when the plate is re-cropped.
+
+   ::after, not ::before: the desktop block at the foot of this sheet spends
+   body::before on the top scroll-snap port. Absolutely positioned, so it is out
+   of flow and cannot disturb that port, the snap geometry, or .col's margins.
+
+   z-index -1 puts it under the type. body's own background propagates to the
+   canvas — html sets none — so body paints no background of its own here and a
+   negative layer is still above the paper. */
+body::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 100vh;
+  z-index: -1;
+  pointer-events: none;
+  background-image: url("img/plate.webp");
+  background-repeat: no-repeat;
+  /* The four-value form: two named edges, each with its own offset. So --plate-x
+     and --plate-y are distances out from the corner the plate is standing in and
+     nothing else — a percentage position, which is what `left bottom` is short
+     for, would instead have moved it by a share of the difference between the box
+     and the image, and would have changed meaning every time --plate-w did.
+     Lengths rather than a share of the width on purpose: the plate is pinned to a
+     corner, so a nudge is a nudge at every window size. Both default to 0, which
+     is `left bottom` exactly. */
+  background-position: left var(--plate-x) bottom var(--plate-y);
+  /* Half the page, at every width. Height follows the file's own aspect, so the
+     aspect ratio lives in the file and not in this sheet.
+     50vw and not a share of the gutter: the plate is meant to run in behind the
+     measure rather than stand beside it, so its right-hand edge falls in the
+     middle of the column instead of in the margin. Nothing in the column paints a
+     background — the type sits straight on the plate, which is the point — so the
+     only thing that edge crosses is white space between lines. */
+  background-size: var(--plate-w) auto;
+  opacity: var(--plate-opacity);
+}
 
 /* ---- centered column + page fade-in -------------------------------------- */
 /* No padding at the foot: the cut title IS the bottom of the page, and the cut
@@ -459,47 +591,86 @@ a { color: inherit; }
   -webkit-user-drag: none;
 }
 
-/* The fades into the paper — lifted while hovering / focused within. Shape,
-   reach and strength all come from the four --fade-* numbers at the top. */
-.veil {
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  pointer-events: none;
-  transition: opacity 1s cubic-bezier(0.22, 1, 0.36, 1);
+/* Registered so they can be transitioned. An unregistered custom property is a
+   token stream to the cascade and interpolates in no useful way — the 1s ramp
+   below simply would not run. As <number>s they animate like any other number,
+   which is what carries the dissolve on and off. */
+@property --fade-l { syntax: "<number>"; inherits: false; initial-value: 0; }
+@property --fade-r { syntax: "<number>"; inherits: false; initial-value: 0; }
+
+/* ---- the edge dissolve ----------------------------------------------------
+   The strip fades out at both ends, and it does it by being MASKED rather than by
+   having paper painted over it. Shape, reach and strength still come from the
+   four --fade-* numbers at the top; only the mechanism here changed.
+
+   It used to be two absolutely positioned .veil divs carrying a gradient of the
+   page colour, and that is the obvious way to do it right up to the moment
+   anything else is behind the strip. The corner plate is: it stands in the
+   bottom-left gutter, and the left veil bleeds 480px into that same gutter,
+   because the photographs really do scroll out there and really do need covering.
+   Paper painted over the strip is also paper painted over the plate, and no
+   z-order fixes it — the veil has to be above the photographs and the plate has
+   to be below them, so whatever sits between gets covered. A mask takes the
+   strip's own pixels away instead of hiding them, so the photographs dissolve
+   into whatever is actually behind them, plate included. That is what the veils
+   were always drawing; they could only fake it while the background was flat.
+
+   app.js still writes the .veil divs, so they are hidden rather than gone —
+   nothing reads them, and this sheet is the only thing that ever styled them.
+
+   Two mask layers, one per end, intersected. Each is a full-width gradient whose
+   ramp sits in the last --fade-w before --fade-reach, so the flat regions of the
+   two layers overlap harmlessly in the middle and only the ends do any work. The
+   alpha runs 1 - --fade-max-now at the outer edge up to 1 at --fade-reach, which
+   is the old veil's alpha subtracted from opaque — a --fade-max below 1 leaves
+   the strip showing through at the very edge exactly as it did before. `to left`
+   for the second layer measures from the right-hand edge, so one stop list serves
+   both ends; the hints are symmetric, so reading the ramp backwards does not
+   change its shape. */
+.veil { display: none; }
+
+.carousel {
+  --fade-l: 0;
+  --fade-r: 0;
+  transition: --fade-l 1s cubic-bezier(0.22, 1, 0.36, 1),
+              --fade-r 1s cubic-bezier(0.22, 1, 0.36, 1);
+  mask-image:
+    linear-gradient(to right,
+      rgba(0, 0, 0, calc(1 - var(--fade-max-now) * var(--fade-l)))
+        calc(var(--fade-reach) - var(--fade-w)),
+      calc(var(--fade-reach) - var(--fade-w) + var(--fade-hint-a)),
+      rgba(0, 0, 0, calc(1 - 0.5 * var(--fade-max-now) * var(--fade-l)))
+        calc(var(--fade-reach) - var(--fade-w) * 0.5),
+      calc(var(--fade-reach) - var(--fade-w) + var(--fade-hint-b)),
+      #000 var(--fade-reach)),
+    linear-gradient(to left,
+      rgba(0, 0, 0, calc(1 - var(--fade-max-now) * var(--fade-r)))
+        calc(var(--fade-reach) - var(--fade-w)),
+      calc(var(--fade-reach) - var(--fade-w) + var(--fade-hint-a)),
+      rgba(0, 0, 0, calc(1 - 0.5 * var(--fade-max-now) * var(--fade-r)))
+        calc(var(--fade-reach) - var(--fade-w) * 0.5),
+      calc(var(--fade-reach) - var(--fade-w) + var(--fade-hint-b)),
+      #000 var(--fade-reach));
+  mask-composite: intersect;
+  mask-repeat: no-repeat;
 }
-/* Both veils are the same width: back from their own edge to where the text
-   column ends, shifted by --fade-x-now. The outer max() is a floor — if the
-   start is pushed further out than the gutter is wide there would be no room
-   left for the ramp, and it would meet the viewport as a hard line instead. */
-.veil-right,
-.veil-left {
-  width: max(var(--fade-w),
-             calc(max(var(--edge), var(--fade-w)) - var(--slide-w) * var(--fade-x-now)));
-}
-.veil-right {
-  right: 0;
-  opacity: 0;
-  background: linear-gradient(to right, var(--fade-stops));
-}
-.veil-left {
-  left: 0;
-  opacity: 0;
-  background: linear-gradient(to left, var(--fade-stops));
-}
-/* Each veil is off while the strip is standing against its own end and there is
-   nothing behind it to dissolve, and on the moment it pulls away. */
-.carousel:not(.at-start) .veil-left  { opacity: 1; }
-.carousel:not(.at-end)   .veil-right { opacity: 1; }
-/* Until a centred slide plus two-thirds of each neighbour fits, both fades stay off. */
-.carousel:not(.has-fade-room) .veil {
-  opacity: 0;
+/* Each end is off while the strip is standing against it and there is nothing
+   behind it to dissolve, and on the moment it pulls away. Same specificity as
+   each other and as the two rules below, so source order decides — which is the
+   order they were in when they were opacities on the veils. */
+.carousel:not(.at-start) { --fade-l: 1; }
+.carousel:not(.at-end)   { --fade-r: 1; }
+/* Until a centred slide plus two-thirds of each neighbour fits, both ends stay off. */
+.carousel:not(.has-fade-room) {
+  --fade-l: 0;
+  --fade-r: 0;
   transition-duration: 0.6s;
 }
 /* reveal on hover (releases the moment the pointer leaves) or keyboard focus */
-.carousel:hover .veil,
-.carousel:has(.track:focus-visible) .veil {
-  opacity: 0;
+.carousel:hover,
+.carousel:has(.track:focus-visible) {
+  --fade-l: 0;
+  --fade-r: 0;
   transition-duration: 0.4s;             /* ...but reveal quickly */
 }
 
@@ -647,6 +818,13 @@ a { color: inherit; }
   max-width: var(--col);                 /* sized and centred exactly like .col */
   margin: var(--cue-gap) auto 0;
 }
+/* The second screen, and nothing else — it exists to give the document a length
+   to scroll and a second place to rest. It is empty on purpose: what arrives on
+   it is the cut word, which is not its child. Off in every regime but the one
+   that composes to a screen; a column that already scrolls has no page turn to
+   offer, and the profile-README capture probes at 1000px and 592px, where this
+   has to add exactly nothing to the document. */
+.doorway { display: none; }
 .cut-title > a {
   display: block;
   overflow: clip;
@@ -669,7 +847,11 @@ a { color: inherit; }
 /* The word is clickable, and a display face gives nothing to underline — its
    baseline is below the cut. So the site's 1px link rule goes on the cut itself,
    drawn as an inset shadow rather than a border so it costs the clip box no
-   height and the geometry above stays exact. */
+   height and the geometry above stays exact. In the doorway regime the same
+   shadow lands on the baseline instead, because the box is then the cap slab and
+   is not clipped — the one place the word is whole is the one place it can take
+   an ordinary underline, and it is also the place you would click it. Cut, it
+   still takes the focus ring, whose top edge is above the fold. */
 .cut-title > a:hover,
 .cut-title > a:focus-visible { box-shadow: inset 0 -1px 0 currentColor; }
 .cut-title > a:focus-visible { outline: 1px solid currentColor; outline-offset: 3px; }
@@ -689,10 +871,91 @@ a { color: inherit; }
   .cut-title > a > span { margin-top: calc(-1 * var(--cue-cap-drop)); }
 }
 
+/* ---- the doorway ----------------------------------------------------------
+   The cut word is a promise that there is more below the page, and in this
+   regime — the only one where the composition fits a screen exactly, so the same
+   gate as "composing to one screen" above — the page keeps it. One screen of
+   paper follows, and the document holds exactly two resting places: the CV, and
+   the word standing uncut in the top-left corner as the title of the screen it
+   opens onto. Mandatory snap with two snap ports and nothing between them means
+   one notch of the wheel travels the whole length of the document; there is
+   nowhere to come to rest half way, so it is a page turn rather than a scroll.
+
+   The arithmetic is one line. Call the word's cap top Y = 100vh - --cue-clip —
+   that IS the cut, --cue-clip of the letters above the fold and the rest below —
+   and the title's landing T = --title-top. Scrolling to the end lifts everything
+   by exactly the document's overflow, so the overflow has to be Y - T, which is
+   what .doorway is tall. The document is then 100vh + (Y - T), and the word
+   arrives at T on the nose at every window height, with no script and no
+   scroll-driven animation.
+
+   Two consequences worth naming:
+   * The cut becomes REAL. Everywhere else the word is clipped to --cue-clip by
+     its own overflow, because the document ends beneath it and there is no
+     second screen for the rest of the letters to stand on. Here they are all
+     there and the bottom of the window does the cutting, which is what the
+     device was always drawing. So the clip comes off: leave it on and the word
+     would arrive in the corner still guillotined.
+   * The word leaves the measure. It is no longer the last line of the column but
+     the title of its own screen, so it is set to the page's margin instead of
+     the text's — --title-left from the window's edge, the same measure as the
+     white above it, which is what makes the corner read as a corner. It keeps
+     the column's WIDTH, since --cue-size is a proportion of --col and every
+     height in the budget above is derived from it. A change of position only.
+
+   .cut-title is positioned rather than laid out for one reason: .page is exactly
+   one screen and the doorway is the next, so the title can be a flex item of
+   neither — as .page's it would be pushed down by the second screen, and as the
+   doorway's it could not stand above its own top edge. Pinned to the fold it is
+   in neither, which is also the truth of it. It lands in the same place the flow
+   put it: --slide-h is sized so the column plus --cue-gap reaches exactly Y, so
+   the two agree, and the gap under the contact block is what it always was.
+   `top`, not `bottom`, because the offset then holds the cap top at Y whatever
+   the box's own height turns out to be — and that height differs by a whole
+   descender between browsers with text-box-trim and browsers without.
+
+   These rules sit at the end of the sheet, not up in the :root block that shares
+   their gate: every one of them overrides a base rule of the same specificity,
+   and a media query buys no specificity at all. Moved earlier, they lose. */
+@media (min-width: 1100px) and (min-height: 983px) {
+  html { scroll-snap-type: y mandatory; }
+  /* Not `hidden`: an element with hidden overflow is a scroll container even
+     when it never overflows, and a snap area belongs to its nearest scroll
+     container ancestor — so a hidden body would quietly swallow both snap ports,
+     and the viewport, which is what actually scrolls, would get neither. `clip`
+     holds the carousel's right-hand bleed in exactly as well and makes no
+     scroller. html keeps `hidden`: the root's overflow is the viewport's. */
+  body { overflow-x: clip; }
+  .page { position: relative; }
+  /* The top snap port, and deliberately not .page itself. A snap area is the
+     element's TRANSFORMED border box, and .page spends its first 0.9s translated
+     8px down by the page-in animation — which drags the resting place down with
+     it and puts a twitch on the load. So the port is a zero-height box at the
+     document's own top edge: never animated, and never larger than the scrollport
+     — a snap area that IS larger makes every scroll position covering it valid,
+     which would switch the snapping off rather than pin it. body itself is
+     therefore no good either; it is the whole document tall. */
+  body::before { content: ""; display: block; height: 0; scroll-snap-align: start; }
+  .doorway {
+    display: block;
+    height: calc(100vh - var(--cue-clip) - var(--title-top));
+    scroll-snap-align: end;
+  }
+  .cut-title {
+    position: absolute;
+    top: calc(100vh - var(--cue-clip));
+    left: var(--title-left);
+    width: var(--col);
+    max-width: none;
+    margin: 0;
+  }
+  .cut-title > a { overflow: visible; height: auto; }
+}
+
 /* ---- respect reduced-motion preferences ---------------------------------- */
 @media (prefers-reduced-motion: reduce) {
   .js .page { animation: none; }
-  .veil { transition: none; }
+  .carousel { transition: none; }        /* the edge dissolve, --fade-l / --fade-r */
   .track { scroll-behavior: auto; }
   body, .theme-toggle__thumb { transition: none; }
 }
@@ -706,5 +969,12 @@ a { color: inherit; }
   .carousel { display: none !important; }
   .site-footer { display: none !important; }
   .cut-title { display: none !important; }   /* a scroll cue means nothing on paper */
+  /* ...and the screen it opens onto is a blank sheet. The gate on the doorway is
+     min-width/min-height, which in print is measured against the PAGE box — a
+     large enough sheet matches it and prints one. */
+  .doorway { display: none !important; }
+  /* Paper has its own stock. A 12%-opacity photograph is also the one thing on
+     this page that would cost a print visibly more than it is worth. */
+  body::after { display: none !important; }
   .contact a { border: 0 !important; color: #000; }
 }

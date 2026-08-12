@@ -17,12 +17,18 @@ design/
   type-lab.html      interactive: flip variants on the real pages in a browser
   type-tuner.html    interactive: free-form size/spacing/font sliders + CSS export
   shots/             committed renders + index.html contact sheet
+  plate/
+    build-plate.py   develops the raw into portfolio/img/plate.webp — the grade
+    plate-tuner.html interactive: the same pipeline on sliders + Python/CSS export
+    plate-source.webp  the ungraded frame the tuner grades; written by the script
+    plate-source.json  the constants it was last built with — the tuner's "was"
   tools/
     render.mjs       Playwright: serves the repo, walks the matrix, writes shots/
     package.json     dev dependency (playwright) — not the site's
 ```
 
 The **lab** compares finished candidates; the **tuner** is for arriving at one.
+The **plate tuner** does the same job for the photograph in the page's corner.
 
 ## Why it exists
 
@@ -256,6 +262,61 @@ Notes on how it behaves:
   1280 behaves like a 1280 browser window, where `100vw` counts the scrollbar and
   the content box doesn't; widening it to hide the bar would make the preview lie
   about the one thing it's for.
+
+## Plate tuner
+
+For the photograph standing in `/portfolio`'s bottom-left corner. Serve the repo
+root (`run.bat`) and open:
+
+```
+http://localhost:8000/design/plate/plate-tuner.html
+```
+
+The plate is two things shipped through two different pipes, and this window is
+where they are judged together:
+
+- **The grade and the sky matte** are baked into `portfolio/img/plate.webp` by
+  `build-plate.py` — exposure, saturation, contrast, the highlight shoulder, the
+  two colours black and white land on, grain, and the four numbers that decide
+  what counts as sky. Nothing in a browser can change that file, so the tuner
+  runs the script's pipeline again in a canvas over `plate-source.webp` (which
+  the script writes for the purpose) and prints a block of Python to paste back.
+  **A change here does not reach the site until `build-plate.py` runs again.**
+- **The placement** — `--plate-opacity`, `--plate-w`, `--plate-x`, `--plate-y` —
+  is CSS, and is live in the iframe as you drag. That half exports as CSS.
+
+Notes, mostly the same shape as the type tuner's:
+
+- The defaults are read, never written down. The grade's come from
+  `plate-source.json`, which `build-plate.py` writes in the same run as the
+  image; the placement's are probed off the live page. So there is no table here
+  to drift out of step with either file, and no drift banner needed.
+- `--plate-opacity` is declared twice in `styles.css` — the plate needs more of
+  itself on black — so it is held, exported and probed **per theme**, and the
+  export puts each half in the right block.
+- Three views: on the page (the one that decides anything), the plate alone at
+  full strength on the page's own paper (where a lifted black is legible at all),
+  and the matte, which lights the knocked-out sky up in orange.
+- It is a preview, not a proof: eight bits against float32, graded at the
+  source's 900px rather than at full width and downsampled, and a different grain
+  stream. Decide numbers here; check them by running the script.
+
+### The sky, and why it is a matte and not a crop
+
+No sky is wanted, only the building — the page's own paper is the sky. Cropping
+cannot do it: there is a wedge of sky in the notch directly above the door, so
+the tallest sky-free rectangle containing the door throws away the pediment, the
+columns and both rooflines. So the frame is kept whole and the sky is knocked out
+to transparent.
+
+Finding it is a threshold on blueness **and** brightness together, kept honest by
+connectivity — full reasoning in `build-plate.py`. The one part worth knowing at
+this end is the hysteresis: the brightness test only has to be passed to *start* a
+patch of sky (`SKY_LUMA_MIN`), and a patch already begun spreads through anything
+equally blue down to `SKY_LUMA_LOW`. That is what carries the matte into the
+corners of the frame, which are over a stop down on the middle and used to be
+left behind as a ragged wedge of grey in the top-left — sky, painted as though it
+were building.
 
 ## Regenerating the shots
 
