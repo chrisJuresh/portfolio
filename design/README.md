@@ -140,10 +140,12 @@ where the dissolve has slid out to the text edge, keeping its width and its
 straight ramp, so it no longer covers the leading photograph. `app.js`
 reports how far between the two ends the strip has got as `--fade-open`, `0` to
 `1`, and `styles.css` mixes them, so the fade eases from one setting to the other
-as the strip moves rather than switching.
+as the strip moves rather than switching. The at-rest group is doing double duty:
+the strip closes back down to it over the last photograph's run, so the two sets
+of sliders also govern how the strip stands at its right-hand end, mirrored.
 
-Neither group can be judged from the other's position — at rest the `-open`
-numbers carry no weight at all, and at the far end the plain ones don't — so each
+Neither group can be judged from the other's position — standing still the
+`-open` numbers carry no weight at all, and mid-strip the plain ones don't — so each
 group names the strip position it needs and **grabbing a slider takes the frame
 there**, gliding rather than jumping, so the travel you tune is the travel a
 visitor sees. Reloading the frame (flipping the theme does) returns to whichever

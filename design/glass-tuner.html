@@ -1,0 +1,1481 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Glass tuner — the bar over the photographs</title>
+  <style>
+    :root { color-scheme: light dark; --ui: #1a1917; --ui-bg: #fcfbf8; --ui-panel: #f5f2ea; --ui-line: #d6d0c4; --ui-mut: #6f6a5d; --ui-hit: #8a5a2b; }
+    @media (prefers-color-scheme: dark) {
+      :root { --ui: #eaeaea; --ui-bg: #161616; --ui-panel: #1e1e1e; --ui-line: #3a3a3a; --ui-mut: #9a9a9a; --ui-hit: #d8a76a; }
+    }
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+    body {
+      margin: 0; display: flex; flex-direction: column;
+      background: var(--ui-bg); color: var(--ui);
+      font: 13px/1.45 "Segoe UI", system-ui, sans-serif;
+    }
+
+    /* ---- top bar ---------------------------------------------------------- */
+    .top {
+      flex: 0 0 auto; display: flex; flex-wrap: wrap; align-items: center; gap: 0.35rem;
+      padding: 0.5rem 0.8rem; border-bottom: 1px solid var(--ui-line);
+    }
+    .top strong { font-size: 11px; letter-spacing: 0.09em; text-transform: uppercase; color: var(--ui-mut); }
+    .grow { flex: 1 1 auto; }
+    button, select, input[type="text"], input[type="number"], textarea {
+      font: inherit; color: var(--ui); background: transparent;
+      border: 1px solid var(--ui-line); border-radius: 5px;
+    }
+    select, input[type="text"], input[type="number"], textarea { background: var(--ui-bg); color-scheme: light dark; }
+    button { padding: 0.24rem 0.55rem; cursor: pointer; }
+    button:hover { border-color: var(--ui-mut); }
+    button[aria-pressed="true"] { background: var(--ui); color: var(--ui-bg); border-color: var(--ui); }
+    .badge { padding: 0.1rem 0.4rem; border-radius: 99px; background: var(--ui-hit); color: var(--ui-bg); font-size: 11px; }
+    .badge[data-n="0"] { background: transparent; color: var(--ui-mut); }
+    .fps { font: 11px/1 ui-monospace, Consolas, monospace; color: var(--ui-mut); min-width: 5.5rem; }
+
+    /* ---- layout ----------------------------------------------------------- */
+    .wrap { flex: 1 1 auto; display: flex; min-height: 0; }
+    .side { flex: 0 0 23rem; display: flex; flex-direction: column; min-height: 0; border-right: 1px solid var(--ui-line); background: var(--ui-panel); }
+    .controls { flex: 1 1 auto; overflow: auto; padding-bottom: 0.6rem; }
+    .stage { flex: 1 1 auto; min-width: 0; position: relative; overflow: hidden; }
+    canvas { display: block; width: 100%; height: 100%; touch-action: none; cursor: grab; }
+    canvas.dragging { cursor: grabbing; }
+    .note {
+      position: absolute; left: 0.7rem; bottom: 0.6rem; margin: 0; padding: 0.25rem 0.5rem;
+      border-radius: 5px; background: rgba(0, 0, 0, 0.55); color: #fff;
+      font-size: 11px; pointer-events: none;
+    }
+    .warn { margin: 0; padding: 0.45rem 0.7rem; border-bottom: 1px solid var(--ui-line); background: rgba(216, 167, 106, 0.16); font-size: 11.5px; }
+    .warn:empty { display: none; }
+
+    /* ---- groups + rows ---------------------------------------------------- */
+    .ghead {
+      width: 100%; display: flex; align-items: center; gap: 0.4rem;
+      padding: 0.45rem 0.7rem; border: 0; border-top: 1px solid var(--ui-line);
+      border-radius: 0; background: transparent; text-align: left;
+      font-size: 11px; letter-spacing: 0.09em; text-transform: uppercase; color: var(--ui-mut);
+    }
+    .ghead::before { content: "\25be"; font-size: 10px; }
+    .g.shut .ghead::before { content: "\25b8"; }
+    .g.shut .gbody { display: none; }
+    .gbody { padding: 0.15rem 0.7rem 0.5rem; }
+
+    .row { display: grid; grid-template-columns: 7.4rem 1fr 3.6rem 1rem; align-items: center; gap: 0.3rem; min-height: 1.55rem; }
+    .row > label { font-size: 11.5px; color: var(--ui-mut); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .row.on > label { color: var(--ui-hit); }
+    input[type="range"] { width: 100%; min-width: 0; accent-color: var(--ui-hit); }
+    input[type="number"] { width: 100%; padding: 0.08rem 0.2rem; font-size: 11.5px; }
+    input[type="color"] { width: 100%; height: 1.25rem; padding: 0; border: 1px solid var(--ui-line); border-radius: 4px; background: transparent; }
+    .undo { border: 0; padding: 0; width: 1rem; color: var(--ui-mut); visibility: hidden; line-height: 1; background: transparent; }
+    .row.on .undo { visibility: visible; }
+    .undo:hover { color: var(--ui-hit); }
+    .chips { display: flex; flex-wrap: wrap; gap: 0.25rem; grid-column: 2 / span 3; }
+    .chips button { padding: 0.14rem 0.4rem; font-size: 11px; }
+    .toggle { grid-column: 2 / span 2; justify-self: start; padding: 0.14rem 0.5rem; font-size: 11px; }
+
+    /* ---- export drawer ---------------------------------------------------- */
+    .export { flex: 0 0 auto; border-top: 1px solid var(--ui-line); }
+    .export > summary { padding: 0.4rem 0.7rem; cursor: pointer; font-size: 11px; letter-spacing: 0.09em; text-transform: uppercase; color: var(--ui-mut); }
+    .ebody { padding: 0 0.7rem 0.6rem; }
+    textarea { width: 100%; height: 12rem; padding: 0.4rem; resize: vertical; font: 11px/1.4 ui-monospace, Consolas, monospace; white-space: pre; }
+    .ebtns { display: flex; gap: 0.3rem; align-items: center; margin-top: 0.35rem; }
+    .hint { font-size: 10.5px; color: var(--ui-mut); }
+  </style>
+</head>
+<body>
+  <div class="top">
+    <strong>glass tuner</strong> <span>liquid-glass-studio</span>
+    <span class="badge" id="count" data-n="0">0</span>
+    <span class="grow"></span>
+    <span class="fps" id="fps"></span>
+    <button id="reset" type="button" title="every control back to its default">reset all</button>
+  </div>
+
+  <p class="warn" id="warn"></p>
+
+  <div class="wrap">
+    <aside class="side">
+      <div class="controls" id="controls"></div>
+
+      <details class="export" open>
+        <summary>export — paste this to Claude</summary>
+        <div class="ebody">
+          <textarea id="out" spellcheck="false"></textarea>
+          <div class="ebtns">
+            <button id="copy" type="button">copy</button>
+            <button id="import" type="button" title="paste an earlier export above, then click this">import</button>
+            <span class="hint" id="status"></span>
+          </div>
+        </div>
+      </details>
+    </aside>
+
+    <main class="stage">
+      <canvas id="c"></canvas>
+      <p class="note">drag to move the bar · wheel scrolls the photographs</p>
+    </main>
+  </div>
+
+  <script src="../portfolio/content.js"></script>
+<script>
+/* =============================================================================
+   Glass tuner — every liquid-glass-studio setting on a slider, with the bar
+   standing over the real photographs.
+
+   WHY IT EXISTS
+   The effect can't be judged from a parameter list. It is refraction over a
+   *particular* backdrop: the same numbers that look like glass over a building
+   look like a smear over a close-up flower. So the backdrop here is the actual
+   /portfolio carousel — the same files, the same 3:4 crop, the same gap — and
+   the bar sits on top of it where it would sit on the page.
+
+   WHAT WAS PORTED
+   The upstream project (github.com/iyinchao/liquid-glass-studio, MIT) is React +
+   Vite + TypeScript, drives its panel with Leva and carries a second WebGPU
+   backend. This site is build-free and dependency-free, so none of that came
+   across. What did, unchanged, is the part that matters: the four shader passes,
+   copied verbatim from src/shaders/*.glsl with their `#include`s inlined, and
+   the JS that scales each control into its uniform (App.tsx's setUniforms call —
+   several controls are percentages divided by 100 on the way in, and the corner
+   radius is a percentage of the shape's short side, not a length).
+
+   Deliberate departures, all of them outside the glass maths:
+     · The background pass reads a 2D canvas instead of the studio's built-in
+       backdrops, so the photographs can be the backdrop. Its shadow half is
+       untouched.
+     · The rounded rect is placed by drag or by slider rather than following the
+       pointer, so it stays where you left it while you work the panel.
+     · Shape defaults are a bar (420x56, fully rounded, second shape off) rather
+       than the studio's 200x200 square. Every other default is upstream's, and
+       the export names the default beside each value either way.
+
+   THE OUTPUT IS THE POINT
+   The export is the whole settings object as JSON, with the changed ones listed
+   above it in readable form. Paste it into a message and it can be applied
+   without anyone re-deriving what moved; paste an old export back into the box
+   and hit import to return to it.
+   ========================================================================== */
+
+"use strict";
+
+/* ---- shader sources ------------------------------------------------------ */
+/* Verbatim from the upstream repo, with lib/sdf.glsl, lib/math.glsl and
+   lib/color.glsl inlined where the `#include` lines were. Do not "tidy" these:
+   the odd-looking bits (the 1500.0 divisor, the pow(...,5.0), the 0.05 offset
+   scale) are the tuned constants the control ranges were chosen around. */
+
+var VERT = `#version 300 es
+in vec4 a_position;
+out vec2 v_uv;
+void main() {
+  v_uv = (a_position.xy + 1.0) * 0.5;
+  gl_Position = a_position;
+}`;
+
+/* Requires: u_dpr, u_resolution, u_showShape1, u_shapeWidth, u_shapeHeight,
+   u_shapeRadius, u_shapeRoundness, u_mergeRate. */
+var SDF = `
+float sdCircle(vec2 p, float r) { return length(p) - r; }
+
+float superellipseCornerSDF(vec2 p, float r, float n) {
+  p = abs(p);
+  float v = pow(pow(p.x, n) + pow(p.y, n), 1.0 / n);
+  return v - r;
+}
+
+float roundedRectSDF(vec2 p, vec2 center, float width, float height, float cornerRadius, float n) {
+  p -= center;
+  float cr = cornerRadius * u_dpr;
+  vec2 d = abs(p) - vec2(width * u_dpr, height * u_dpr) * 0.5;
+  float dist;
+  if (d.x > -cr && d.y > -cr) {
+    vec2 cornerCenter = sign(p) * (vec2(width * u_dpr, height * u_dpr) * 0.5 - vec2(cr));
+    vec2 cornerP = p - cornerCenter;
+    dist = superellipseCornerSDF(cornerP, cr, n);
+  } else {
+    dist = min(max(d.x, d.y), 0.0) + length(max(d, 0.0));
+  }
+  return dist;
+}
+
+float smin(float a, float b, float k) {
+  float h = clamp(0.5 + 0.5 * (b - a) / k, 0.0, 1.0);
+  return mix(b, a, h) - k * h * (1.0 - h);
+}
+
+float mainSDF(vec2 p1, vec2 p2, vec2 p) {
+  vec2 p1n = p1 + p / u_resolution.y;
+  vec2 p2n = p2 + p / u_resolution.y;
+  float d1 = u_showShape1 == 1 ? sdCircle(p1n, 100.0 * u_dpr / u_resolution.y) : 1.0;
+  float d2 = roundedRectSDF(
+    p2n,
+    vec2(0.0),
+    u_shapeWidth / u_resolution.y,
+    u_shapeHeight / u_resolution.y,
+    u_shapeRadius / u_resolution.y,
+    u_shapeRoundness
+  );
+  return smin(d1, d2, u_mergeRate);
+}`;
+
+/* Background pass: the scene canvas, minus the shape's drop shadow. */
+var FRAG_BG = `#version 300 es
+precision highp float;
+in vec2 v_uv;
+out vec4 fragColor;
+uniform vec2 u_resolution;
+uniform float u_dpr;
+uniform vec2 u_mouseSpring;
+uniform float u_mergeRate;
+uniform float u_shapeWidth;
+uniform float u_shapeHeight;
+uniform float u_shapeRadius;
+uniform float u_shapeRoundness;
+uniform float u_shadowExpand;
+uniform float u_shadowFactor;
+uniform vec2 u_shadowPosition;
+uniform sampler2D u_bgTexture;
+uniform int u_showShape1;
+${SDF}
+void main() {
+  vec2 u_resolution1x = u_resolution.xy / u_dpr;
+  vec3 bgColor = texture(u_bgTexture, v_uv).rgb;
+
+  vec2 p1 =
+    (vec2(0, 0) -
+      u_resolution.xy * 0.5 +
+      vec2(u_shadowPosition.x * u_dpr, u_shadowPosition.y * u_dpr)) /
+    u_resolution.y;
+  vec2 p2 =
+    (vec2(0, 0) - u_mouseSpring + vec2(u_shadowPosition.x * u_dpr, u_shadowPosition.y * u_dpr)) /
+    u_resolution.y;
+  float merged = mainSDF(p1, p2, gl_FragCoord.xy);
+
+  float shadow = exp(-1.0 / u_shadowExpand * abs(merged) * u_resolution1x.y) * 0.6 * u_shadowFactor;
+
+  fragColor = vec4(bgColor - vec3(shadow), 1.0);
+}`;
+
+/* Separable gaussian. Upstream names the passes v/h and then blurs along x in
+   the "v" one; the names are back to front, the result is not. Kept as found so
+   the two files still line up with the originals. */
+function blurFrag(axis) {
+  return `#version 300 es
+precision highp float;
+#define MAX_BLUR_RADIUS (200)
+in vec2 v_uv;
+uniform sampler2D u_prevPassTexture;
+uniform vec2 u_resolution;
+uniform int u_blurRadius;
+uniform float u_blurWeights[MAX_BLUR_RADIUS + 1];
+out vec4 fragColor;
+void main() {
+  vec2 texelSize = 1.0 / u_resolution;
+  vec4 color = texture(u_prevPassTexture, v_uv) * u_blurWeights[0];
+  for (int i = 1; i <= u_blurRadius; ++i) {
+    float w = u_blurWeights[i];
+    vec2 offset = vec2(float(i)) * texelSize;
+    color += texture(u_prevPassTexture, v_uv + ${axis}) * w;
+    color += texture(u_prevPassTexture, v_uv - ${axis}) * w;
+  }
+  fragColor = color;
+}`;
+}
+
+var FRAG_MAIN = `#version 300 es
+precision highp float;
+
+#define PI (3.14159265359)
+
+const float N_R = 1.0 - 0.02;
+const float N_G = 1.0;
+const float N_B = 1.0 + 0.02;
+
+in vec2 v_uv;
+uniform sampler2D u_blurredBg;
+uniform sampler2D u_bg;
+uniform vec2 u_resolution;
+uniform float u_dpr;
+uniform vec2 u_mouseSpring;
+uniform float u_mergeRate;
+uniform float u_shapeWidth;
+uniform float u_shapeHeight;
+uniform float u_shapeRadius;
+uniform float u_shapeRoundness;
+uniform vec4 u_tint;
+uniform float u_refThickness;
+uniform float u_refFactor;
+uniform float u_refDispersion;
+uniform float u_refFresnelRange;
+uniform float u_refFresnelFactor;
+uniform float u_refFresnelHardness;
+uniform float u_glareRange;
+uniform float u_glareConvergence;
+uniform float u_glareOppositeFactor;
+uniform float u_glareFactor;
+uniform float u_glareHardness;
+uniform float u_glareAngle;
+uniform int u_blurEdge;
+uniform int u_showShape1;
+uniform int STEP;
+
+out vec4 fragColor;
+${SDF}
+
+float safeAsin(float x) { return asin(clamp(x, -1.0, 1.0)); }
+
+vec2 getNormal(vec2 p1, vec2 p2, vec2 p) {
+  vec2 h = vec2(max(abs(dFdx(p.x)), 0.0001), max(abs(dFdy(p.y)), 0.0001));
+  vec2 grad =
+    vec2(
+      mainSDF(p1, p2, p + vec2(h.x, 0.0)) - mainSDF(p1, p2, p - vec2(h.x, 0.0)),
+      mainSDF(p1, p2, p + vec2(0.0, h.y)) - mainSDF(p1, p2, p - vec2(0.0, h.y))
+    ) /
+    (2.0 * h);
+  return grad * 1.414213562 * 1000.0;
+}
+
+vec3 hsv2rgb(vec3 c) {
+  vec4 K = vec4(1.0, 2.0 / 3.0, 1.0 / 3.0, 3.0);
+  vec3 p = abs(fract(c.xxx + K.xyz) * 6.0 - K.www);
+  return c.z * mix(K.xxx, clamp(p - K.xxx, 0.0, 1.0), c.y);
+}
+
+const vec3 D65_WHITE = vec3(0.95045592705, 1.0, 1.08905775076);
+vec3 WHITE = D65_WHITE;
+const mat3 RGB_TO_XYZ_M = mat3(
+  0.4124, 0.3576, 0.1805,
+  0.2126, 0.7152, 0.0722,
+  0.0193, 0.1192, 0.9505
+);
+const mat3 XYZ_TO_RGB_M = mat3(
+   3.2406255, -1.537208 , -0.4986286,
+  -0.9689307,  1.8757561,  0.0415175,
+   0.0557101, -0.2040211,  1.0569959
+);
+float UNCOMPAND_SRGB(float a) { return a > 0.04045 ? pow((a + 0.055) / 1.055, 2.4) : a / 12.92; }
+float COMPAND_RGB(float a) { return a <= 0.0031308 ? 12.92 * a : 1.055 * pow(a, 0.41666666666) - 0.055; }
+vec3 RGB_TO_XYZ(vec3 rgb) { return rgb * RGB_TO_XYZ_M; }
+vec3 SRGB_TO_RGB(vec3 s) { return vec3(UNCOMPAND_SRGB(s.x), UNCOMPAND_SRGB(s.y), UNCOMPAND_SRGB(s.z)); }
+vec3 RGB_TO_SRGB(vec3 c) { return vec3(COMPAND_RGB(c.x), COMPAND_RGB(c.y), COMPAND_RGB(c.z)); }
+vec3 SRGB_TO_XYZ(vec3 s) { return RGB_TO_XYZ(SRGB_TO_RGB(s)); }
+float XYZ_TO_LAB_F(float x) { return x > 0.00885645167 ? pow(x, 0.333333333) : 7.78703703704 * x + 0.13793103448; }
+vec3 XYZ_TO_LAB(vec3 xyz) {
+  vec3 s = xyz / WHITE;
+  s = vec3(XYZ_TO_LAB_F(s.x), XYZ_TO_LAB_F(s.y), XYZ_TO_LAB_F(s.z));
+  return vec3(116.0 * s.y - 16.0, 500.0 * (s.x - s.y), 200.0 * (s.y - s.z));
+}
+vec3 LAB_TO_LCH(vec3 Lab) {
+  return vec3(Lab.x, sqrt(dot(Lab.yz, Lab.yz)), atan(Lab.z, Lab.y) * 57.2957795131);
+}
+vec3 SRGB_TO_LCH(vec3 srgb) { return LAB_TO_LCH(XYZ_TO_LAB(SRGB_TO_XYZ(srgb))); }
+vec3 XYZ_TO_RGB(vec3 xyz) { return xyz * XYZ_TO_RGB_M; }
+float LAB_TO_XYZ_F(float x) { return x > 0.206897 ? x * x * x : 0.12841854934 * (x - 0.137931034); }
+vec3 LAB_TO_XYZ(vec3 Lab) {
+  float w = (Lab.x + 16.0) / 116.0;
+  return WHITE * vec3(LAB_TO_XYZ_F(w + Lab.y / 500.0), LAB_TO_XYZ_F(w), LAB_TO_XYZ_F(w - Lab.z / 200.0));
+}
+vec3 LAB_TO_SRGB(vec3 lab) { return RGB_TO_SRGB(XYZ_TO_RGB(LAB_TO_XYZ(lab))); }
+vec3 LCH_TO_LAB(vec3 LCh) {
+  return vec3(LCh.x, LCh.y * cos(LCh.z * 0.01745329251), LCh.y * sin(LCh.z * 0.01745329251));
+}
+vec3 LCH_TO_SRGB(vec3 lch) { return LAB_TO_SRGB(LCH_TO_LAB(lch)); }
+
+float vec2ToAngle(vec2 v) {
+  float angle = atan(v.y, v.x);
+  if (angle < 0.0) angle += 2.0 * PI;
+  return angle;
+}
+
+vec3 vec2ToRgb(vec2 v) {
+  float angle = atan(v.y, v.x);
+  if (angle < 0.0) angle += 2.0 * PI;
+  return hsv2rgb(vec3(angle / (2.0 * PI), 1.0, 1.0));
+}
+
+vec4 getTextureDispersion(
+  sampler2D tex1,
+  sampler2D tex2,
+  float mixRate,
+  vec2 offset,
+  float factor
+) {
+  vec4 pixel = vec4(1.0);
+
+  float bgR = texture(tex1, v_uv + offset * (1.0 - (N_R - 1.0) * factor)).r;
+  float bgG = texture(tex1, v_uv + offset * (1.0 - (N_G - 1.0) * factor)).g;
+  float bgB = texture(tex1, v_uv + offset * (1.0 - (N_B - 1.0) * factor)).b;
+
+  float blurR = texture(tex2, v_uv + offset * (1.0 - (N_R - 1.0) * factor)).r;
+  float blurG = texture(tex2, v_uv + offset * (1.0 - (N_G - 1.0) * factor)).g;
+  float blurB = texture(tex2, v_uv + offset * (1.0 - (N_B - 1.0) * factor)).b;
+
+  pixel.r = mix(bgR, blurR, mixRate);
+  pixel.g = mix(bgG, blurG, mixRate);
+  pixel.b = mix(bgB, blurB, mixRate);
+
+  return pixel;
+}
+
+void main() {
+  vec2 u_resolution1x = u_resolution.xy / u_dpr;
+  vec2 p1 = (vec2(0, 0) - u_resolution.xy * 0.5) / u_resolution.y;
+  vec2 p2 = (vec2(0, 0) - u_mouseSpring) / u_resolution.y;
+  float merged = mainSDF(p1, p2, gl_FragCoord.xy);
+
+  vec4 outColor;
+  if (STEP <= 0) {
+    float px = 2.0 / u_resolution.y;
+    vec3 col = merged > 0.0 ? vec3(1.0) * merged : vec3(1.0) * -merged * 2.0;
+    col *= 3.0;
+    col = mix(
+      col,
+      vec3(1.0),
+      1.0 - smoothstep(0.5 / u_resolution1x.y - px, 0.5 / u_resolution1x.y + px, abs(merged))
+    );
+    outColor = vec4(col, 1.0);
+  } else if (STEP <= 1) {
+    float px = 2.0 / u_resolution.y;
+    vec3 col = merged > 0.0 ? vec3(0.9, 0.6, 0.3) : vec3(0.65, 0.85, 1.0);
+    col *= 1.0 - exp(-0.03 * abs(merged) * u_resolution1x.y);
+    col *= 0.6 + 0.4 * smoothstep(-0.5, 0.5, cos(0.25 * abs(merged) * u_resolution1x.y * 2.0));
+    col = mix(
+      col,
+      vec3(1.0),
+      1.0 - smoothstep(1.5 / u_resolution1x.y - px, 1.5 / u_resolution1x.y + px, abs(merged))
+    );
+    outColor = vec4(col, 1.0);
+  } else if (STEP <= 2) {
+    if (merged < 0.0) {
+      vec2 normal = getNormal(p1, p2, gl_FragCoord.xy);
+      outColor = vec4(vec2ToRgb(normal), length(normal));
+    } else {
+      outColor = vec4(vec3(0.8), 0.0);
+    }
+  } else if (STEP <= 3) {
+    if (merged < 0.0) {
+      float nmerged = -1.0 * (merged * u_resolution1x.y);
+      float x_R_ratio = 1.0 - nmerged / u_refThickness;
+      float thetaI = safeAsin(pow(x_R_ratio, 2.0));
+      float thetaT = safeAsin(1.0 / u_refFactor * sin(thetaI));
+      float edgeFactor = -1.0 * tan(thetaT - thetaI);
+      if (nmerged >= u_refThickness) edgeFactor = 0.0;
+      outColor = nmerged < u_refThickness ? vec4(vec3(edgeFactor), 1.0) : vec4(vec3(0.0), 1.0);
+    } else {
+      outColor = vec4(0.0);
+    }
+  } else if (STEP <= 4) {
+    if (merged < 0.0) {
+      vec2 normal = getNormal(p1, p2, gl_FragCoord.xy);
+      vec3 normalColor = vec2ToRgb(normal);
+      float nmerged = -1.0 * (merged * u_resolution1x.y);
+      float x_R_ratio = 1.0 - nmerged / u_refThickness;
+      float thetaI = safeAsin(pow(x_R_ratio, 2.0));
+      float thetaT = safeAsin(1.0 / u_refFactor * sin(thetaI));
+      float edgeFactor = -1.0 * tan(thetaT - thetaI);
+      if (nmerged >= u_refThickness) edgeFactor = 0.0;
+      outColor = vec4(normalColor * edgeFactor * u_dpr * length(normal), 1.0);
+    } else {
+      outColor = vec4(0.0);
+    }
+  } else if (STEP <= 5) {
+    outColor = merged < 0.0 ? texture(u_blurredBg, v_uv) : texture(u_bg, v_uv);
+  } else if (STEP <= 6) {
+    if (merged < 0.0) {
+      vec2 normal = getNormal(p1, p2, gl_FragCoord.xy);
+      float nmerged = -1.0 * (merged * u_resolution1x.y);
+      float x_R_ratio = 1.0 - nmerged / u_refThickness;
+      float thetaI = safeAsin(pow(x_R_ratio, 2.0));
+      float thetaT = safeAsin(1.0 / u_refFactor * sin(thetaI));
+      float edgeFactor = -1.0 * tan(thetaT - thetaI);
+      if (nmerged >= u_refThickness) edgeFactor = 0.0;
+      if (edgeFactor <= 0.0) {
+        outColor = texture(u_blurredBg, v_uv);
+      } else {
+        outColor = texture(
+          u_blurredBg,
+          v_uv - normal * edgeFactor * 0.05 * u_dpr * vec2(u_resolution.y / u_resolution1x.x, 1.0)
+        );
+      }
+    } else {
+      outColor = texture(u_bg, v_uv);
+    }
+  } else if (STEP <= 7) {
+    if (merged < 0.0) {
+      vec2 normal = getNormal(p1, p2, gl_FragCoord.xy);
+      float nmerged = -1.0 * (merged * u_resolution1x.y);
+      float x_R_ratio = 1.0 - nmerged / u_refThickness;
+      float thetaI = safeAsin(pow(x_R_ratio, 2.0));
+      float thetaT = safeAsin(1.0 / u_refFactor * sin(thetaI));
+      float edgeFactor = -1.0 * tan(thetaT - thetaI);
+      if (nmerged >= u_refThickness) edgeFactor = 0.0;
+
+      float fresnelFactor = clamp(
+        pow(
+          1.0 +
+            merged * u_resolution1x.y / 1500.0 * pow(500.0 / u_refFresnelRange, 2.0) +
+            u_refFresnelHardness,
+          5.0
+        ),
+        0.0,
+        1.0
+      );
+
+      if (edgeFactor <= 0.0) {
+        outColor = texture(u_blurredBg, v_uv);
+      } else {
+        vec4 blurredPixel = texture(
+          u_blurredBg,
+          v_uv - normal * edgeFactor * 0.05 * u_dpr * vec2(u_resolution.y / u_resolution1x.x, 1.0),
+          u_refDispersion
+        );
+        outColor = mix(blurredPixel, vec4(1.0), fresnelFactor * u_refFresnelFactor * 0.7);
+      }
+    } else {
+      outColor = texture(u_bg, v_uv);
+    }
+  } else if (STEP <= 8) {
+    if (merged < 0.0) {
+      float nmerged = -1.0 * (merged * u_resolution1x.y);
+      float x_R_ratio = 1.0 - nmerged / u_refThickness;
+      float thetaI = safeAsin(pow(x_R_ratio, 2.0));
+      float thetaT = safeAsin(1.0 / u_refFactor * sin(thetaI));
+      float edgeFactor = -1.0 * tan(thetaT - thetaI);
+      if (nmerged >= u_refThickness) edgeFactor = 0.0;
+
+      float fresnelFactor = clamp(
+        pow(
+          1.0 +
+            merged * u_resolution1x.y / 1500.0 * pow(500.0 / u_refFresnelRange, 2.0) +
+            u_refFresnelHardness,
+          5.0
+        ),
+        0.0,
+        1.0
+      );
+
+      float glareGeoFactor = clamp(
+        pow(
+          1.0 +
+            merged * u_resolution1x.y / 1500.0 * pow(500.0 / u_glareRange, 2.0) +
+            u_glareHardness,
+          5.0
+        ),
+        0.0,
+        1.0
+      );
+
+      if (edgeFactor <= 0.0) {
+        outColor = texture(u_blurredBg, v_uv);
+      } else {
+        vec2 normal = getNormal(p1, p2, gl_FragCoord.xy);
+
+        float glareAngle = (vec2ToAngle(normalize(normal)) - PI / 4.0 + u_glareAngle) * 2.0;
+        int glareFarside = 0;
+        if (
+          glareAngle > PI * (2.0 - 0.5) && glareAngle < PI * (4.0 - 0.5) ||
+          glareAngle < PI * (0.0 - 0.5)
+        ) {
+          glareFarside = 1;
+        }
+
+        float glareAngleFactor =
+          (0.5 + sin(glareAngle) * 0.5) * 1.0 * (glareFarside == 1 ? 0.8 : 1.2) * u_glareFactor;
+        glareAngleFactor = clamp(pow(glareAngleFactor, 0.3 + u_glareConvergence * 1.5), 0.0, 1.0);
+
+        vec4 blurredPixel = texture(
+          u_blurredBg,
+          v_uv - normal * edgeFactor * 0.05 * u_dpr * vec2(u_resolution.y / u_resolution1x.x, 1.0),
+          u_refDispersion
+        );
+        outColor = blurredPixel;
+
+        vec3 tintLCH = SRGB_TO_LCH(mix(vec3(1.0), vec3(u_tint.r, u_tint.g, u_tint.b), u_tint.a * 0.5));
+        tintLCH.x += 20.0 * fresnelFactor * u_refFresnelFactor;
+        tintLCH.x = clamp(tintLCH.x, 0.0, 100.0);
+
+        outColor = mix(outColor, vec4(1.0), fresnelFactor * u_refFresnelFactor * 0.7);
+        outColor = mix(outColor, vec4(1.0), glareAngleFactor * glareGeoFactor);
+      }
+    } else {
+      outColor = texture(u_bg, v_uv);
+    }
+  } else if (STEP <= 9) {
+    if (merged < 0.005) {
+      float nmerged = -1.0 * (merged * u_resolution1x.y);
+
+      float x_R_ratio = 1.0 - nmerged / u_refThickness;
+      float thetaI = safeAsin(pow(x_R_ratio, 2.0));
+      float thetaT = safeAsin(1.0 / u_refFactor * sin(thetaI));
+      float edgeFactor = -1.0 * tan(thetaT - thetaI);
+      if (nmerged >= u_refThickness) edgeFactor = 0.0;
+
+      if (edgeFactor <= 0.0) {
+        outColor = texture(u_blurredBg, v_uv);
+        outColor = mix(outColor, vec4(u_tint.r, u_tint.g, u_tint.b, 1.0), u_tint.a * 0.8);
+      } else {
+        float edgeH = nmerged / u_refThickness;
+        vec2 normal = getNormal(p1, p2, gl_FragCoord.xy);
+        vec4 blurredPixel = getTextureDispersion(
+          u_bg,
+          u_blurredBg,
+          u_blurEdge > 0 ? 1.0 : edgeH,
+          -normal *
+            edgeFactor *
+            0.05 *
+            u_dpr *
+            vec2(u_resolution.y / (u_resolution1x.x * u_dpr), 1.0),
+          u_refDispersion
+        );
+
+        outColor = mix(blurredPixel, vec4(u_tint.r, u_tint.g, u_tint.b, 1.0), u_tint.a * 0.8);
+
+        float fresnelFactor = clamp(
+          pow(
+            1.0 +
+              merged * u_resolution1x.y / 1500.0 * pow(500.0 / u_refFresnelRange, 2.0) +
+              u_refFresnelHardness,
+            5.0
+          ),
+          0.0,
+          1.0
+        );
+
+        vec3 fresnelTintLCH = SRGB_TO_LCH(
+          mix(vec3(1.0), vec3(u_tint.r, u_tint.g, u_tint.b), u_tint.a * 0.5)
+        );
+        fresnelTintLCH.x += 20.0 * fresnelFactor * u_refFresnelFactor;
+        fresnelTintLCH.x = clamp(fresnelTintLCH.x, 0.0, 100.0);
+
+        outColor = mix(
+          outColor,
+          vec4(LCH_TO_SRGB(fresnelTintLCH), 1.0),
+          fresnelFactor * u_refFresnelFactor * 0.7 * length(normal)
+        );
+
+        float glareGeoFactor = clamp(
+          pow(
+            1.0 +
+              merged * u_resolution1x.y / 1500.0 * pow(500.0 / u_glareRange, 2.0) +
+              u_glareHardness,
+            5.0
+          ),
+          0.0,
+          1.0
+        );
+
+        float glareAngle = (vec2ToAngle(normalize(normal)) - PI / 4.0 + u_glareAngle) * 2.0;
+        int glareFarside = 0;
+        if (
+          glareAngle > PI * (2.0 - 0.5) && glareAngle < PI * (4.0 - 0.5) ||
+          glareAngle < PI * (0.0 - 0.5)
+        ) {
+          glareFarside = 1;
+        }
+        float glareAngleFactor =
+          (0.5 + sin(glareAngle) * 0.5) *
+          (glareFarside == 1 ? 1.2 * u_glareOppositeFactor : 1.2) *
+          u_glareFactor;
+        glareAngleFactor = clamp(pow(glareAngleFactor, 0.1 + u_glareConvergence * 2.0), 0.0, 1.0);
+
+        vec3 glareTintLCH = SRGB_TO_LCH(
+          mix(blurredPixel.rgb, vec3(u_tint.r, u_tint.g, u_tint.b), u_tint.a * 0.5)
+        );
+        glareTintLCH.x += 150.0 * glareAngleFactor * glareGeoFactor;
+        glareTintLCH.y += 30.0 * glareAngleFactor * glareGeoFactor;
+        glareTintLCH.x = clamp(glareTintLCH.x, 0.0, 120.0);
+
+        outColor = mix(
+          outColor,
+          vec4(LCH_TO_SRGB(glareTintLCH), 1.0),
+          glareAngleFactor * glareGeoFactor * length(normal)
+        );
+      }
+    } else {
+      outColor = texture(u_bg, v_uv);
+    }
+
+    outColor = mix(outColor, texture(u_bg, v_uv), smoothstep(-0.001, 0.001, merged));
+  }
+
+  fragColor = outColor;
+}`;
+
+/* ---- the controls -------------------------------------------------------- */
+/* Every entry becomes one row. `def` is what this tool starts at; `studio` is
+   upstream's default where the two differ, so the export can say which it is.
+   `tip` is the title text — written from the shader, not guessed. */
+var GROUPS = [
+  { name: "Scene", note: "the backdrop and where the bar stands — not part of the glass", rows: [
+    { k: "backdrop", type: "chips", def: "strip",
+      options: [["strip", "photo strip"], ["single", "one photo"], ["checker", "checkerboard"], ["paper", "paper"]],
+      tip: "What the glass is standing on.\nThe photo strip is the real /portfolio carousel: same files, same 3:4 crop, same gap.\nThe checkerboard is the fastest way to read the refraction — straight lines show every bend." },
+    { k: "photo", type: "num", min: 0, max: 1, step: 1, def: 0, label: "photograph",
+      tip: "Which photograph. The range follows content.js, so it is whatever the carousel holds today." },
+    { k: "stripPos", type: "num", min: 0, max: 1, step: 0.001, def: 0.06, label: "strip position",
+      tip: "Where the strip has scrolled to, 0 to 1. The wheel over the canvas does the same thing." },
+    { k: "stripHeight", type: "num", min: 20, max: 100, step: 1, def: 62, label: "strip height",
+      tip: "Photograph height as a percentage of the canvas height. The live page uses clamp(15rem, 40vh, 24rem)." },
+    { k: "barX", type: "num", min: -700, max: 700, step: 1, def: 0, label: "bar x",
+      tip: "Bar centre, CSS px right of the canvas centre. Dragging the bar writes here." },
+    { k: "barY", type: "num", min: -500, max: 500, step: 1, def: 0, label: "bar y",
+      tip: "Bar centre, CSS px above the canvas centre." },
+    { k: "theme", type: "chips", def: "light", options: [["light", "light"], ["dark", "dark"]],
+      tip: "The paper colour behind and around the photographs — #fff or #000, as on the real page." },
+    { k: "dpr", type: "num", min: 1, max: 3, step: 0.05, def: 0, label: "pixel ratio",
+      tip: "Device pixel ratio the canvas renders at. It is a shader input, not just a quality knob:\nthe refraction offset is scaled by it, so a 1x and a 2x screen do not look identical.\n0 means follow this display (capped at 2)." }
+  ] },
+
+  { name: "Refraction", rows: [
+    { k: "refThickness", type: "num", min: 1, max: 80, step: 0.01, def: 20, label: "thickness",
+      tip: "How far in from the edge the bending reaches, in CSS px. Past it the glass is flat and\nonly blurs. This is the single most visible control — it is the width of the bevel." },
+    { k: "refFactor", type: "num", min: 1, max: 4, step: 0.01, def: 1.4, label: "refraction",
+      tip: "Index of refraction, applied through Snell's law across that band.\n1 is no bend at all; real glass is about 1.5." },
+    { k: "refDispersion", type: "num", min: 0, max: 50, step: 0.01, def: 7, label: "dispersion",
+      tip: "Chromatic fringing: red and blue are offset by ∓2% of the refraction offset, times this.\nColour separation at the bevel, strongest where the bend is strongest." },
+    { k: "refFresnelRange", type: "num", min: 0, max: 100, step: 0.01, def: 30, label: "fresnel size",
+      tip: "How far the bright rim reaches in from the edge. Larger is a wider rim." },
+    { k: "refFresnelHardness", type: "num", min: 0, max: 100, step: 0.01, def: 20, label: "fresnel hardness",
+      tip: "Pushes the rim toward fully lit before the falloff is taken, so its inner edge\nstops being a gradient and becomes a line." },
+    { k: "refFresnelFactor", type: "num", min: 0, max: 100, step: 0.01, def: 20, label: "fresnel intensity",
+      tip: "How bright the rim is. 0 removes it." }
+  ] },
+
+  { name: "Glare", rows: [
+    { k: "glareRange", type: "num", min: 0, max: 100, step: 0.01, def: 30, label: "glare size",
+      tip: "How far the specular streak reaches in from the edge — same geometry as fresnel size,\nbut for the highlight rather than the rim." },
+    { k: "glareHardness", type: "num", min: 0, max: 100, step: 0.01, def: 20, label: "glare hardness",
+      tip: "Sharpens the inner boundary of the streak, as fresnel hardness does for the rim." },
+    { k: "glareFactor", type: "num", min: 0, max: 120, step: 0.01, def: 90, label: "glare intensity",
+      tip: "Brightness of the streak before convergence is applied. Above 100 it saturates,\nwhich is why the slider goes to 120." },
+    { k: "glareConvergence", type: "num", min: 0, max: 100, step: 0.01, def: 50, label: "convergence",
+      tip: "The exponent on the angular term. Low spreads the highlight around the whole edge;\nhigh pulls it into a short, hard glint." },
+    { k: "glareOppositeFactor", type: "num", min: 0, max: 100, step: 0.01, def: 80, label: "opposite side",
+      tip: "Brightness of the counter-highlight on the far side from the light. 0 lights one side only." },
+    { k: "glareAngle", type: "num", min: -180, max: 180, step: 0.01, def: -45, label: "angle",
+      tip: "Where the light is coming from, in degrees." }
+  ] },
+
+  { name: "Blur & tint", rows: [
+    { k: "blurRadius", type: "num", min: 1, max: 200, step: 1, def: 1, label: "blur radius",
+      tip: "Gaussian radius on the backdrop the glass reads, in device px. This is the frosting.\nCosts two passes of (2r+1) taps per pixel — 200 is genuinely expensive." },
+    { k: "blurEdge", type: "bool", def: true, label: "blur the edge",
+      tip: "On: the bevel reads the blurred backdrop like the rest of the glass.\nOff: it fades from the sharp backdrop at the very edge to blurred further in,\nwhich keeps the refracted detail legible." },
+    { k: "tintColor", type: "color", def: "#ffffff", label: "tint",
+      tip: "Colour mixed into the glass." },
+    { k: "tintAlpha", type: "num", min: 0, max: 1, step: 0.01, def: 0, label: "tint amount",
+      tip: "How much of that colour, at 0.8x. 0 is untinted." }
+  ] },
+
+  { name: "Shadow", rows: [
+    { k: "shadowExpand", type: "num", min: 2, max: 100, step: 0.01, def: 25, label: "expand",
+      tip: "How far the drop shadow spreads from the shape. It is drawn into the backdrop before\nthe blur, so the glass refracts its own shadow — which is why it reads as thickness." },
+    { k: "shadowFactor", type: "num", min: 0, max: 100, step: 0.01, def: 15, label: "intensity",
+      tip: "How dark the shadow is. 0 removes it." },
+    { k: "shadowX", type: "num", min: -20, max: 20, step: 0.1, def: 0, label: "offset x",
+      tip: "Shadow offset, CSS px." },
+    { k: "shadowY", type: "num", min: -20, max: 20, step: 0.1, def: -10, label: "offset y",
+      tip: "Shadow offset, CSS px. Negative drops it downward, as upstream's default does." }
+  ] },
+
+  { name: "Shape", rows: [
+    { k: "shapeWidth", type: "num", min: 20, max: 800, step: 1, def: 420, studio: 200, label: "width",
+      tip: "Bar width in CSS px." },
+    { k: "shapeHeight", type: "num", min: 20, max: 800, step: 1, def: 56, studio: 200, label: "height",
+      tip: "Bar height in CSS px." },
+    { k: "shapeRadius", type: "num", min: 1, max: 100, step: 0.1, def: 100, studio: 80, label: "corner radius",
+      tip: "Corner radius as a percentage of half the short side. 100 is a full pill." },
+    { k: "shapeRoundness", type: "num", min: 2, max: 7, step: 0.01, def: 5, label: "superellipse",
+      tip: "The exponent the corners are drawn with. 2 is a circular arc; higher is the squircle —\nthe corner meets the straight edge with no visible join." },
+    { k: "mergeRate", type: "num", min: 0, max: 0.3, step: 0.01, def: 0.05, label: "merge rate",
+      tip: "How softly the bar blends into the second shape where they meet — a metaball join.\nOnly visible with the second shape on." },
+    { k: "showShape1", type: "bool", def: false, studio: true, label: "second shape",
+      tip: "A fixed 100px circle at the canvas centre. Upstream has it on by default; here it is off,\nsince the subject is a bar. Turn it on to watch the merge." }
+  ] },
+
+  { name: "Animation", shut: true, rows: [
+    { k: "springSizeFactor", type: "num", min: 0, max: 50, step: 0.01, def: 10, label: "morph",
+      tip: "How much the bar stretches in the direction it is being dragged, from the spring's speed.\nOnly visible while dragging." }
+  ] },
+
+  { name: "Debug", shut: true, rows: [
+    { k: "step", type: "num", min: 0, max: 9, step: 1, def: 9, label: "show step",
+      tip: "Which stage of the shader to display. 9 is the finished effect; below that:\n0 the raw SDF · 1 its contours · 2 edge normals · 3 the refraction factor ·\n4 both together · 5 the blur mask · 6 refraction only · 7 plus fresnel · 8 plus glare." }
+  ] }
+];
+
+var ROWS = [];
+GROUPS.forEach(function (g) { g.rows.forEach(function (r) { r.group = g; ROWS.push(r); }); });
+var BY_KEY = {};
+ROWS.forEach(function (r) { BY_KEY[r.k] = r; });
+
+/* ---- state --------------------------------------------------------------- */
+var STORE = "glass-tuner-v1";
+var state = {};
+ROWS.forEach(function (r) { state[r.k] = r.def; });
+
+var PHOTOS = (window.CONTENT && window.CONTENT.photos) || [];
+BY_KEY.photo.max = Math.max(0, PHOTOS.length - 1);
+
+try {
+  var saved = JSON.parse(localStorage.getItem(STORE) || "null");
+  if (saved) Object.keys(saved).forEach(function (k) { if (k in state) state[k] = saved[k]; });
+} catch (_) {}
+
+function save() {
+  try { localStorage.setItem(STORE, JSON.stringify(state)); } catch (_) {}
+}
+
+var warn = document.getElementById("warn");
+if (!PHOTOS.length) {
+  warn.textContent = "content.js did not load, so there are no photographs. Serve the repo root (run.bat) and open this at /design/glass-tuner.html — opening the file directly won't resolve ../portfolio/.";
+}
+
+/* ---- the scene canvas ---------------------------------------------------- */
+/* Everything behind the glass is painted here in 2D and handed to the shader as
+   one texture. Photographs are drawn cover-cropped into 3:4 slots at the same
+   proportions the live page uses, so what the bar sits on is the real thing. */
+var scene = document.createElement("canvas");
+var sctx = scene.getContext("2d");
+var sceneDirty = true;
+var imgCache = {};
+
+function imageFor(i) {
+  if (i < 0 || i >= PHOTOS.length) return null;
+  var file = PHOTOS[i].file;
+  if (imgCache[file] !== undefined) return imgCache[file];
+  var img = new Image();
+  img.src = "../portfolio/img/" + file;
+  img.onload = function () { sceneDirty = true; };
+  img.onerror = function () { imgCache[file] = null; };
+  imgCache[file] = img;
+  return img;
+}
+
+function drawCover(img, x, y, w, h) {
+  if (!img || !img.complete || !img.naturalWidth) return false;
+  var sr = img.naturalWidth / img.naturalHeight;
+  var dr = w / h;
+  var sw, sh, sx, sy;
+  if (sr > dr) { sh = img.naturalHeight; sw = sh * dr; sx = (img.naturalWidth - sw) / 2; sy = 0; }
+  else { sw = img.naturalWidth; sh = sw / dr; sx = 0; sy = (img.naturalHeight - sh) / 2; }
+  sctx.drawImage(img, sx, sy, sw, sh, x, y, w, h);
+  return true;
+}
+
+function paintScene(W, H, dpr) {
+  if (scene.width !== W || scene.height !== H) { scene.width = W; scene.height = H; }
+
+  var dark = state.theme === "dark";
+  var paper = dark ? "#000" : "#fff";
+  var placeholder = dark ? "#3a3a3a" : "#efece4";
+
+  sctx.fillStyle = paper;
+  sctx.fillRect(0, 0, W, H);
+
+  if (state.backdrop === "paper") return;
+
+  if (state.backdrop === "checker") {
+    /* 20 CSS px squares, the same size upstream uses for its own checkerboard.
+       Flat mid-grey either side of the paper so the bend is readable in both themes. */
+    var sq = 20 * dpr;
+    sctx.fillStyle = dark ? "#111" : "#f4f4f4";
+    sctx.fillRect(0, 0, W, H);
+    sctx.fillStyle = dark ? "#2c2c2c" : "#cfcfcf";
+    for (var yy = 0; yy < H / sq; yy++) {
+      for (var xx = 0; xx < W / sq; xx++) {
+        if ((xx + yy) % 2 === 0) sctx.fillRect(xx * sq, yy * sq, sq, sq);
+      }
+    }
+    return;
+  }
+
+  if (state.backdrop === "single") {
+    var one = imageFor(Math.round(state.photo));
+    if (!drawCover(one, 0, 0, W, H)) { sctx.fillStyle = placeholder; sctx.fillRect(0, 0, W, H); }
+    return;
+  }
+
+  /* The strip. Height as a share of the canvas, 3:4 slots, and the live page's
+     gap-to-height ratio (0.5rem against a ~17.5rem slide). */
+  var slideH = H * (state.stripHeight / 100);
+  var slideW = slideH * 3 / 4;
+  var gap = slideH * 0.029;
+  var pitch = slideW + gap;
+  var total = PHOTOS.length * pitch;
+  var top = (H - slideH) / 2;
+  var travel = Math.max(0, total - W);
+  var x0 = -state.stripPos * travel;
+
+  var first = Math.max(0, Math.floor(-x0 / pitch) - 1);
+  var last = Math.min(PHOTOS.length - 1, Math.ceil((-x0 + W) / pitch) + 1);
+
+  for (var i = first; i <= last; i++) {
+    var x = x0 + i * pitch;
+    if (!drawCover(imageFor(i), x, top, slideW, slideH)) {
+      sctx.fillStyle = placeholder;
+      sctx.fillRect(x, top, slideW, slideH);
+    }
+  }
+}
+
+/* ---- WebGL --------------------------------------------------------------- */
+var canvas = document.getElementById("c");
+var gl = canvas.getContext("webgl2", { antialias: false, alpha: false });
+
+if (!gl) {
+  warn.textContent = "This browser has no WebGL2, which the effect is built on. Nothing below will render.";
+  throw new Error("no webgl2");
+}
+
+/* RGBA16F targets keep the blur from banding on a dark backdrop. Renderability
+   is an extension even in WebGL2, so fall back rather than fail. */
+var floatOK = !!(gl.getExtension("EXT_color_buffer_float") || gl.getExtension("EXT_color_buffer_half_float"));
+var IFMT = floatOK ? gl.RGBA16F : gl.RGBA8;
+var ITYPE = floatOK ? gl.HALF_FLOAT : gl.UNSIGNED_BYTE;
+
+function compile(type, src) {
+  var s = gl.createShader(type);
+  gl.shaderSource(s, src);
+  gl.compileShader(s);
+  if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) {
+    throw new Error(gl.getShaderInfoLog(s) + "\n" + src.split("\n").map(function (l, i) { return (i + 1) + " " + l; }).join("\n"));
+  }
+  return s;
+}
+
+function program(frag) {
+  var p = gl.createProgram();
+  gl.attachShader(p, compile(gl.VERTEX_SHADER, VERT));
+  gl.attachShader(p, compile(gl.FRAGMENT_SHADER, frag));
+  gl.bindAttribLocation(p, 0, "a_position");
+  gl.linkProgram(p);
+  if (!gl.getProgramParameter(p, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(p));
+  return { p: p, loc: {} };
+}
+
+var progBg, progV, progH, progMain;
+try {
+  progBg = program(FRAG_BG);
+  progV = program(blurFrag("vec2(offset.x, 0.0)"));
+  progH = program(blurFrag("vec2(0.0, offset.y)"));
+  progMain = program(FRAG_MAIN);
+} catch (e) {
+  warn.textContent = "Shader failed to build: " + e.message;
+  throw e;
+}
+
+function loc(prog, name) {
+  if (!(name in prog.loc)) prog.loc[name] = gl.getUniformLocation(prog.p, name);
+  return prog.loc[name];
+}
+function u1f(prog, n, v) { gl.uniform1f(loc(prog, n), v); }
+function u1i(prog, n, v) { gl.uniform1i(loc(prog, n), v); }
+function u2f(prog, n, a, b) { gl.uniform2f(loc(prog, n), a, b); }
+
+var vao = gl.createVertexArray();
+gl.bindVertexArray(vao);
+var buf = gl.createBuffer();
+gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW);
+gl.enableVertexAttribArray(0);
+gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
+
+function makeTarget() {
+  var tex = gl.createTexture();
+  gl.bindTexture(gl.TEXTURE_2D, tex);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+  var fbo = gl.createFramebuffer();
+  gl.bindFramebuffer(gl.FRAMEBUFFER, fbo);
+  gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, tex, 0);
+  return { tex: tex, fbo: fbo, w: 0, h: 0 };
+}
+
+var tBg = makeTarget();
+var tV = makeTarget();
+var tH = makeTarget();
+
+function sizeTarget(t, w, h) {
+  if (t.w === w && t.h === h) return;
+  gl.bindTexture(gl.TEXTURE_2D, t.tex);
+  gl.texImage2D(gl.TEXTURE_2D, 0, IFMT, w, h, 0, gl.RGBA, ITYPE, null);
+  t.w = w; t.h = h;
+}
+
+var sceneTex = gl.createTexture();
+gl.bindTexture(gl.TEXTURE_2D, sceneTex);
+gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
+
+/* ---- blur kernel --------------------------------------------------------- */
+/* Upstream's computeGaussianKernelByRadius, padded to the array the shader
+   declares so the uniform upload is one call whatever the radius is. */
+var MAXR = 200;
+var weights = new Float32Array(MAXR + 1);
+var weightsFor = -1;
+
+function buildWeights(radius) {
+  if (weightsFor === radius) return;
+  weightsFor = radius;
+  weights.fill(0);
+  var sigma = radius / 3.0;
+  var sum = 0;
+  for (var i = 0; i <= radius; i++) {
+    var w = Math.exp(-0.5 * (i * i) / (sigma * sigma));
+    weights[i] = w;
+    sum += i === 0 ? w : w * 2;
+  }
+  for (var j = 0; j <= radius; j++) weights[j] /= sum;
+}
+
+/* ---- the spring ---------------------------------------------------------- */
+/* react-spring's default config — tension 170, friction 26, mass 1 — integrated
+   here so the drag morph matches upstream's. Fixed substeps rather than one
+   step per frame, so a dropped frame can't blow it up. */
+var spring = { x: 0, y: 0, vx: 0, vy: 0, tx: 0, ty: 0, has: false };
+
+function stepSpring(dtMs) {
+  if (!spring.has) { spring.x = spring.tx; spring.y = spring.ty; spring.has = true; return; }
+  var left = Math.min(dtMs, 100) / 1000;
+  var h = 1 / 240;
+  while (left > 0) {
+    var dt = Math.min(h, left);
+    left -= dt;
+    spring.vx += (170 * (spring.tx - spring.x) - 26 * spring.vx) * dt;
+    spring.vy += (170 * (spring.ty - spring.y) - 26 * spring.vy) * dt;
+    spring.x += spring.vx * dt;
+    spring.y += spring.vy * dt;
+  }
+}
+
+/* ---- pointer ------------------------------------------------------------- */
+var dragging = false;
+var grab = { x: 0, y: 0 };
+
+canvas.addEventListener("pointerdown", function (e) {
+  dragging = true;
+  canvas.classList.add("dragging");
+  canvas.setPointerCapture(e.pointerId);
+  var r = canvas.getBoundingClientRect();
+  grab.x = state.barX - (e.clientX - r.left - r.width / 2);
+  grab.y = state.barY - (r.height / 2 - (e.clientY - r.top));
+});
+
+canvas.addEventListener("pointermove", function (e) {
+  if (!dragging) return;
+  var r = canvas.getBoundingClientRect();
+  set("barX", clampRow(BY_KEY.barX, grab.x + (e.clientX - r.left - r.width / 2)));
+  set("barY", clampRow(BY_KEY.barY, grab.y + (r.height / 2 - (e.clientY - r.top))));
+});
+
+function endDrag(e) {
+  if (!dragging) return;
+  dragging = false;
+  canvas.classList.remove("dragging");
+  try { canvas.releasePointerCapture(e.pointerId); } catch (_) {}
+  save();
+}
+canvas.addEventListener("pointerup", endDrag);
+canvas.addEventListener("pointercancel", endDrag);
+
+canvas.addEventListener("wheel", function (e) {
+  if (state.backdrop !== "strip") return;
+  e.preventDefault();
+  set("stripPos", Math.min(1, Math.max(0, state.stripPos + e.deltaY / 4000)));
+  save();
+}, { passive: false });
+
+/* ---- render loop --------------------------------------------------------- */
+var W = 0, H = 0, DPR = 1;
+var frames = 0, fpsAt = 0;
+var fpsEl = document.getElementById("fps");
+
+function draw(now) {
+  requestAnimationFrame(draw);
+
+  var rect = canvas.getBoundingClientRect();
+  var dpr = state.dpr > 0 ? state.dpr : Math.min(window.devicePixelRatio || 1, 2);
+  var w = Math.max(1, Math.round(rect.width * dpr));
+  var h = Math.max(1, Math.round(rect.height * dpr));
+
+  if (w !== W || h !== H || dpr !== DPR) {
+    W = w; H = h; DPR = dpr;
+    canvas.width = W;
+    canvas.height = H;
+    sizeTarget(tBg, W, H);
+    sizeTarget(tV, W, H);
+    sizeTarget(tH, W, H);
+    sceneDirty = true;
+  }
+
+  if (sceneDirty) {
+    paintScene(W, H, DPR);
+    gl.bindTexture(gl.TEXTURE_2D, sceneTex);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, scene);
+    sceneDirty = false;
+  }
+
+  /* The shader wants the shape centre in device px from the bottom-left, which
+     is where gl_FragCoord lives. */
+  spring.tx = (rect.width / 2 + state.barX) * DPR;
+  spring.ty = (rect.height / 2 + state.barY) * DPR;
+  stepSpring(now - (draw.last || now));
+  draw.last = now;
+
+  /* Upstream grows the shape with the spring's speed in px/ms. */
+  var sw = state.shapeWidth + (Math.abs(spring.vx / 1000) * state.shapeWidth * state.springSizeFactor) / 100;
+  var sh = state.shapeHeight + (Math.abs(spring.vy / 1000) * state.shapeHeight * state.springSizeFactor) / 100;
+  var radius = (Math.min(sw, sh) / 2) * state.shapeRadius / 100;
+
+  function shapeUniforms(prog) {
+    u2f(prog, "u_resolution", W, H);
+    u1f(prog, "u_dpr", DPR);
+    u2f(prog, "u_mouseSpring", spring.x, spring.y);
+    u1f(prog, "u_shapeWidth", sw);
+    u1f(prog, "u_shapeHeight", sh);
+    u1f(prog, "u_shapeRadius", radius);
+    u1f(prog, "u_shapeRoundness", state.shapeRoundness);
+    u1f(prog, "u_mergeRate", state.mergeRate);
+    u1i(prog, "u_showShape1", state.showShape1 ? 1 : 0);
+  }
+
+  gl.bindVertexArray(vao);
+  gl.viewport(0, 0, W, H);
+
+  /* pass 1 — backdrop + shadow */
+  gl.bindFramebuffer(gl.FRAMEBUFFER, tBg.fbo);
+  gl.useProgram(progBg.p);
+  shapeUniforms(progBg);
+  u1f(progBg, "u_shadowExpand", state.shadowExpand);
+  u1f(progBg, "u_shadowFactor", state.shadowFactor / 100);
+  u2f(progBg, "u_shadowPosition", -state.shadowX, -state.shadowY);
+  gl.activeTexture(gl.TEXTURE0);
+  gl.bindTexture(gl.TEXTURE_2D, sceneTex);
+  u1i(progBg, "u_bgTexture", 0);
+  gl.drawArrays(gl.TRIANGLES, 0, 3);
+
+  /* passes 2 and 3 — separable gaussian */
+  var radiusPx = Math.round(state.blurRadius);
+  buildWeights(radiusPx);
+
+  function blurPass(prog, srcTex, dstFbo) {
+    gl.bindFramebuffer(gl.FRAMEBUFFER, dstFbo);
+    gl.useProgram(prog.p);
+    u2f(prog, "u_resolution", W, H);
+    u1i(prog, "u_blurRadius", radiusPx);
+    gl.uniform1fv(loc(prog, "u_blurWeights[0]"), weights);
+    gl.activeTexture(gl.TEXTURE0);
+    gl.bindTexture(gl.TEXTURE_2D, srcTex);
+    u1i(prog, "u_prevPassTexture", 0);
+    gl.drawArrays(gl.TRIANGLES, 0, 3);
+  }
+  blurPass(progV, tBg.tex, tV.fbo);
+  blurPass(progH, tV.tex, tH.fbo);
+
+  /* pass 4 — the glass, to the screen */
+  gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+  gl.useProgram(progMain.p);
+  shapeUniforms(progMain);
+  gl.uniform4f(
+    loc(progMain, "u_tint"),
+    parseInt(state.tintColor.slice(1, 3), 16) / 255,
+    parseInt(state.tintColor.slice(3, 5), 16) / 255,
+    parseInt(state.tintColor.slice(5, 7), 16) / 255,
+    state.tintAlpha
+  );
+  u1f(progMain, "u_refThickness", state.refThickness);
+  u1f(progMain, "u_refFactor", state.refFactor);
+  u1f(progMain, "u_refDispersion", state.refDispersion);
+  u1f(progMain, "u_refFresnelRange", state.refFresnelRange);
+  u1f(progMain, "u_refFresnelHardness", state.refFresnelHardness / 100);
+  u1f(progMain, "u_refFresnelFactor", state.refFresnelFactor / 100);
+  u1f(progMain, "u_glareRange", state.glareRange);
+  u1f(progMain, "u_glareHardness", state.glareHardness / 100);
+  u1f(progMain, "u_glareConvergence", state.glareConvergence / 100);
+  u1f(progMain, "u_glareOppositeFactor", state.glareOppositeFactor / 100);
+  u1f(progMain, "u_glareFactor", state.glareFactor / 100);
+  u1f(progMain, "u_glareAngle", state.glareAngle * Math.PI / 180);
+  u1i(progMain, "u_blurEdge", state.blurEdge ? 1 : 0);
+  u1i(progMain, "STEP", Math.round(state.step));
+  gl.activeTexture(gl.TEXTURE0);
+  gl.bindTexture(gl.TEXTURE_2D, tH.tex);
+  u1i(progMain, "u_blurredBg", 0);
+  gl.activeTexture(gl.TEXTURE1);
+  gl.bindTexture(gl.TEXTURE_2D, tBg.tex);
+  u1i(progMain, "u_bg", 1);
+  gl.drawArrays(gl.TRIANGLES, 0, 3);
+
+  frames++;
+  if (now - fpsAt > 500) {
+    fpsEl.textContent = Math.round(frames * 1000 / (now - fpsAt)) + " fps · " + W + "x" + H;
+    frames = 0;
+    fpsAt = now;
+  }
+}
+requestAnimationFrame(function (t) { fpsAt = t; draw.last = t; draw(t); });
+
+/* ---- the panel ----------------------------------------------------------- */
+var controls = document.getElementById("controls");
+
+function clampRow(r, v) {
+  if (r.type !== "num") return v;
+  return Math.min(r.max, Math.max(r.min, v));
+}
+
+function changed(r) {
+  if (r.type === "num") return Math.abs(state[r.k] - r.def) > 1e-9;
+  return state[r.k] !== r.def;
+}
+
+/* Rows that only feed the 2D canvas don't need a shader frame to be rebuilt;
+   rows that feed the shader don't need the canvas repainted. Marking the
+   difference keeps a blur-radius drag off the photo-decoding path. */
+var SCENE_KEYS = { backdrop: 1, photo: 1, stripPos: 1, stripHeight: 1, theme: 1 };
+
+function set(k, v) {
+  state[k] = v;
+  if (SCENE_KEYS[k]) sceneDirty = true;
+  sync();
+}
+
+function build() {
+  controls.textContent = "";
+  GROUPS.forEach(function (g) {
+    var box = document.createElement("div");
+    box.className = "g" + (g.shut ? " shut" : "");
+
+    var head = document.createElement("button");
+    head.type = "button";
+    head.className = "ghead";
+    head.innerHTML = "<span>" + g.name + "</span>";
+    var badge = document.createElement("span");
+    badge.className = "badge";
+    head.appendChild(badge);
+    head.addEventListener("click", function () { box.classList.toggle("shut"); });
+    box.appendChild(head);
+    g.badgeEl = badge;
+
+    var body = document.createElement("div");
+    body.className = "gbody";
+    if (g.note) {
+      var n = document.createElement("p");
+      n.className = "hint";
+      n.style.margin = "0.1rem 0 0.35rem";
+      n.textContent = g.note;
+      body.appendChild(n);
+    }
+
+    g.rows.forEach(function (r) {
+      var row = document.createElement("div");
+      row.className = "row";
+      if (r.tip) row.title = r.tip;
+
+      var lab = document.createElement("label");
+      lab.textContent = r.label || r.k;
+      row.appendChild(lab);
+
+      if (r.type === "chips") {
+        var chips = document.createElement("div");
+        chips.className = "chips";
+        r.buttons = r.options.map(function (o) {
+          var b = document.createElement("button");
+          b.type = "button";
+          b.textContent = o[1];
+          b.addEventListener("click", function () { set(r.k, o[0]); save(); });
+          chips.appendChild(b);
+          return b;
+        });
+        row.appendChild(chips);
+      } else if (r.type === "bool") {
+        var t = document.createElement("button");
+        t.type = "button";
+        t.className = "toggle";
+        t.textContent = "on";
+        t.addEventListener("click", function () { set(r.k, !state[r.k]); save(); });
+        row.appendChild(t);
+        r.toggle = t;
+      } else if (r.type === "color") {
+        var c = document.createElement("input");
+        c.type = "color";
+        c.addEventListener("input", function () { set(r.k, c.value); });
+        c.addEventListener("change", save);
+        row.appendChild(c);
+        row.appendChild(document.createElement("span"));
+        r.color = c;
+      } else {
+        var range = document.createElement("input");
+        range.type = "range";
+        range.min = r.min; range.max = r.max; range.step = r.step;
+        range.addEventListener("input", function () { set(r.k, parseFloat(range.value)); });
+        range.addEventListener("change", save);
+
+        var num = document.createElement("input");
+        num.type = "number";
+        num.min = r.min; num.max = r.max; num.step = r.step;
+        num.addEventListener("input", function () {
+          var v = parseFloat(num.value);
+          if (!isNaN(v)) set(r.k, clampRow(r, v));
+        });
+        num.addEventListener("change", save);
+
+        row.appendChild(range);
+        row.appendChild(num);
+        r.range = range;
+        r.num = num;
+      }
+
+      var undo = document.createElement("button");
+      undo.type = "button";
+      undo.className = "undo";
+      undo.textContent = "↺";
+      undo.title = "back to the default";
+      undo.addEventListener("click", function () { set(r.k, r.def); save(); });
+      row.appendChild(undo);
+
+      r.el = row;
+      body.appendChild(row);
+    });
+
+    box.appendChild(body);
+    controls.appendChild(box);
+  });
+}
+
+function fmt(v) {
+  if (typeof v !== "number") return String(v);
+  return String(Math.round(v * 1000) / 1000);
+}
+
+function sync() {
+  ROWS.forEach(function (r) {
+    var on = changed(r);
+    r.el.classList.toggle("on", on);
+
+    if (r.type === "chips") {
+      r.buttons.forEach(function (b, i) {
+        b.setAttribute("aria-pressed", String(r.options[i][0] === state[r.k]));
+      });
+    } else if (r.type === "bool") {
+      r.toggle.textContent = state[r.k] ? "on" : "off";
+      r.toggle.setAttribute("aria-pressed", String(!!state[r.k]));
+    } else if (r.type === "color") {
+      if (document.activeElement !== r.color) r.color.value = state[r.k];
+    } else {
+      r.range.min = r.min; r.range.max = r.max;
+      r.num.min = r.min; r.num.max = r.max;
+      r.range.value = state[r.k];
+      if (document.activeElement !== r.num) r.num.value = fmt(state[r.k]);
+    }
+  });
+
+  GROUPS.forEach(function (g) {
+    var n = g.rows.filter(changed).length;
+    g.badgeEl.textContent = n ? n : "";
+    g.badgeEl.dataset.n = n;
+  });
+
+  var total = ROWS.filter(changed).length;
+  var count = document.getElementById("count");
+  count.textContent = total;
+  count.dataset.n = total;
+
+  var out = document.getElementById("out");
+  if (document.activeElement !== out) out.value = buildExport();
+}
+
+/* ---- export -------------------------------------------------------------- */
+/* The readable half is a list of what moved; the machine-readable half is the
+   whole object, so an import restores the view exactly rather than only the
+   changes. Both are in one block on purpose — one copy, one paste. */
+function buildExport() {
+  var lines = [];
+  lines.push("glass-tuner v1 — liquid-glass-studio settings, /portfolio bar");
+
+  var moved = ROWS.filter(changed);
+  if (!moved.length) {
+    lines.push("every control at its default.");
+  } else {
+    lines.push("changed from default (" + moved.length + "):");
+    var wide = 0;
+    moved.forEach(function (r) { wide = Math.max(wide, r.k.length); });
+    moved.forEach(function (r) {
+      var name = r.k;
+      while (name.length < wide) name += " ";
+      var v = fmt(state[r.k]);
+      while (v.length < 8) v += " ";
+      lines.push("  " + name + "  " + v + "  default " + fmt(r.def));
+    });
+  }
+
+  var deviates = ROWS.filter(function (r) { return "studio" in r; });
+  if (deviates.length) {
+    lines.push("");
+    lines.push("defaults above are this tuner's. It starts as a bar, upstream starts as a square:");
+    deviates.forEach(function (r) {
+      lines.push("  " + r.k + " — here " + fmt(r.def) + ", liquid-glass-studio " + fmt(r.studio));
+    });
+  }
+
+  lines.push("");
+  lines.push("glass-state v1: " + JSON.stringify(state));
+  return lines.join("\n");
+}
+
+document.getElementById("copy").addEventListener("click", function () {
+  var out = document.getElementById("out");
+  out.select();
+  navigator.clipboard.writeText(out.value).then(
+    function () { status("copied"); },
+    function () { status("select and copy manually"); }
+  );
+});
+
+document.getElementById("import").addEventListener("click", function () {
+  var text = document.getElementById("out").value;
+  var at = text.indexOf("glass-state v1:");
+  var json = at >= 0 ? text.slice(at + 15) : text.slice(text.indexOf("{"));
+  var obj;
+  try { obj = JSON.parse(json.trim()); } catch (e) { status("not a glass-tuner export"); return; }
+  var n = 0;
+  Object.keys(obj).forEach(function (k) {
+    if (!(k in state)) return;
+    var r = BY_KEY[k];
+    state[k] = r.type === "num" ? clampRow(r, Number(obj[k])) : obj[k];
+    n++;
+  });
+  sceneDirty = true;
+  save();
+  sync();
+  status("imported " + n + " settings");
+});
+
+document.getElementById("reset").addEventListener("click", function () {
+  ROWS.forEach(function (r) { state[r.k] = r.def; });
+  sceneDirty = true;
+  save();
+  sync();
+  status("reset");
+});
+
+var statusTimer = null;
+function status(msg) {
+  var el = document.getElementById("status");
+  el.textContent = msg;
+  clearTimeout(statusTimer);
+  statusTimer = setTimeout(function () { el.textContent = ""; }, 2000);
+}
+
+build();
+sync();
+</script>
+</body>
+</html>

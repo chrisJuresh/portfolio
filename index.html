@@ -4,26 +4,170 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>chrisj.uk</title>
+  <meta name="theme-color" content="#fff" id="theme-color">
   <link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2032%2032'%3E%3Ctext%20x='16'%20y='23'%20font-family='Sitka%20Text,Charter,Iowan%20Old%20Style,Georgia,serif'%20font-size='19'%20text-anchor='middle'%20fill='%23000'%3Ecj%3C/text%3E%3C/svg%3E">
+  <script>
+    /* Settle the theme before first paint, so there is no flash of the wrong
+       one. Same storage key as /portfolio and /projects, so a choice made on
+       any page holds across all three. */
+    (function () {
+      var theme = "light";
+      var savedTheme = null;
+      try { savedTheme = localStorage.getItem("portfolio-theme"); } catch (_) {}
+      if (savedTheme === "dark" || savedTheme === "light") theme = savedTheme;
+      else if (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) theme = "dark";
+      document.documentElement.setAttribute("data-theme", theme);
+    })();
+  </script>
   <style>
+    :root { --bg: #fff; --ink: #000; }
+    :root[data-theme="dark"] { color-scheme: dark; --bg: #000; --ink: #fff; }
     html, body { height: 100%; margin: 0; }
     body {
       display: flex;
       align-items: center;
       justify-content: center;
-      background: #fff;
+      background: var(--bg);
+      color: var(--ink);
       font-family: "Sitka Text", Charter, "Iowan Old Style", Georgia, serif;
+      transition: background-color 0.35s cubic-bezier(0.22, 1, 0.36, 1),
+                  color 0.35s cubic-bezier(0.22, 1, 0.36, 1);
     }
+    /* The two links stay exactly where they were — dead centre of the viewport,
+       which is the whole idea of this page. The shell is therefore only as tall
+       as the links, and the toggle hangs off it absolutely, so adding it costs
+       the nav no vertical ground. */
+    .shell { position: relative; }
     .links { display: flex; gap: 1.4rem; }
-    a { color: #000; text-decoration: none; letter-spacing: 0.03em; border-bottom: 1px solid transparent; }
-    a:hover, a:focus-visible { border-color: #000; }
-    a:focus-visible { outline: 1px solid #000; outline-offset: 4px; }
+    .site-footer {
+      position: absolute;
+      top: calc(100% + 2.25rem);
+      left: 50%;
+      transform: translateX(-50%);
+    }
+    a { color: inherit; text-decoration: none; letter-spacing: 0.03em; border-bottom: 1px solid transparent; }
+    a:hover, a:focus-visible { border-color: currentColor; }
+    a:focus-visible { outline: 1px solid currentColor; outline-offset: 4px; }
+
+    /* ---- theme toggle: the same pill as the other two pages --------------- */
+    .theme-toggle {
+      display: inline-flex;
+      align-items: baseline;
+      gap: 0.45rem;
+      margin: 0;
+      padding: 0.2rem 0;
+      border: 0;
+      background: transparent;
+      color: inherit;
+      font-family: inherit;
+      font-size: 0.9rem;
+      line-height: 1.55;
+      cursor: pointer;
+    }
+    .theme-toggle:focus-visible { outline: 1px solid currentColor; outline-offset: 3px; }
+    /* A box with no text baselines aligns by its bottom edge, which drops the
+       pill's midline half a height below the label's; lifting it by half the
+       x-height (`ex`, read from the font itself) puts the two on one line. */
+    .theme-toggle__track {
+      --track-w: 1.55rem;
+      --track-h: 0.78rem;
+      --thumb: 0.38rem;
+      --thumb-inset: 0.14rem;
+      position: relative;
+      width: var(--track-w);
+      height: var(--track-h);
+      border: 1px solid currentColor;
+      border-radius: 1rem;
+      transform: translateY(calc(var(--track-h) / 2 - 0.5ex));
+    }
+    .theme-toggle__thumb {
+      position: absolute;
+      top: 50%;
+      left: var(--thumb-inset);
+      width: var(--thumb);
+      height: var(--thumb);
+      border-radius: 50%;
+      background: currentColor;
+      transform: translateY(-50%);
+      transition: transform 0.25s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+    :root[data-theme="dark"] .theme-toggle__thumb {
+      transform: translate(calc(var(--track-w) - 2px - var(--thumb) - var(--thumb-inset) * 2), -50%);
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      body, .theme-toggle__thumb { transition: none; }
+    }
   </style>
 </head>
 <body>
-  <nav class="links" aria-label="Site sections">
-    <a href="/portfolio">portfolio</a>
-    <a href="/projects">projects</a>
-  </nav>
+  <div class="shell">
+    <nav class="links" aria-label="Site sections">
+      <a href="/portfolio">portfolio</a>
+      <a href="/projects">projects</a>
+    </nav>
+    <footer class="site-footer">
+      <button class="theme-toggle" type="button" role="switch" aria-checked="false" aria-label="Dark mode">
+        <span class="theme-toggle__label">dark</span>
+        <span class="theme-toggle__track" aria-hidden="true"><span class="theme-toggle__thumb"></span></span>
+      </button>
+    </footer>
+  </div>
+
+  <script>
+    (function () {
+      "use strict";
+
+      var root = document.documentElement;
+      var themeToggle = document.querySelector(".theme-toggle");
+      var themeMeta = document.getElementById("theme-color");
+
+      function setTheme(theme, remember) {
+        var dark = theme === "dark";
+        root.setAttribute("data-theme", dark ? "dark" : "light");
+
+        if (themeToggle) {
+          themeToggle.setAttribute("aria-checked", dark ? "true" : "false");
+          themeToggle.setAttribute("aria-label", dark ? "Light mode" : "Dark mode");
+          themeToggle.querySelector(".theme-toggle__label").textContent = dark ? "light" : "dark";
+        }
+
+        if (themeMeta) themeMeta.setAttribute("content", dark ? "#000" : "#fff");
+
+        if (remember) {
+          try { localStorage.setItem("portfolio-theme", dark ? "dark" : "light"); } catch (_) {}
+        }
+      }
+
+      function hasSavedTheme() {
+        try {
+          var saved = localStorage.getItem("portfolio-theme");
+          return saved === "dark" || saved === "light";
+        } catch (_) {
+          return false;
+        }
+      }
+
+      setTheme(root.getAttribute("data-theme") === "dark" ? "dark" : "light", false);
+
+      if (themeToggle) {
+        themeToggle.addEventListener("click", function () {
+          setTheme(root.getAttribute("data-theme") === "dark" ? "light" : "dark", true);
+        });
+      }
+
+      // Follow the operating system until the visitor makes an explicit choice.
+      var systemTheme = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)");
+
+      function syncSystemTheme(event) {
+        if (!hasSavedTheme()) setTheme(event.matches ? "dark" : "light", false);
+      }
+
+      if (systemTheme) {
+        if (systemTheme.addEventListener) systemTheme.addEventListener("change", syncSystemTheme);
+        else if (systemTheme.addListener) systemTheme.addListener(syncSystemTheme);
+      }
+    })();
+  </script>
 </body>
 </html>

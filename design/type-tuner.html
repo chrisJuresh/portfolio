@@ -104,6 +104,8 @@
 
     .selnote, .hint { font-size: 10.5px; color: var(--ui-mut); }
     .selnote { font-family: ui-monospace, Consolas, monospace; }
+    /* Set in the face it is reporting, so the absence is legible at a glance. */
+    .selnote.absent { font-family: "Comic Sans MS", cursive; color: var(--ui-hit); }
     .warn { margin: 0; padding: 0.45rem 0.7rem; border-bottom: 1px solid var(--ui-line); background: rgba(216, 167, 106, 0.16); font-size: 11.5px; }
     .warn:empty { display: none; }
     .warn code { font-family: ui-monospace, Consolas, monospace; }
@@ -187,21 +189,88 @@
    ========================================================================== */
 
 /* ---- the type stacks on offer ------------------------------------------- */
-/* Everything the repo can actually resolve today: system faces plus the
-   self-hosted Latin Modern cuts from /fonts/fonts.css, which the tuner injects
-   into the frame so those options aren't quietly falling through to serif. */
+/* Two kinds of entry.
+
+   The two marked "(ships)" are the stacks portfolio/styles.css declares today,
+   character for character — they are the defaults every font row starts at, so
+   they have to stay exact or the export's "was" comment lies.
+
+   Everything else is a candidate: one face to look at, with no serif safety net
+   under it. A candidate that this browser cannot render falls to COMIC instead,
+   which is the whole point — a missing face resolving quietly to Georgia looks
+   like a decision rather than an absence, so Comic Sans is the answer "not this
+   one" and the row says so in words beside it.
+
+   That tail is a tuner-only device. buildCSS strips it back to `serif` on the
+   way into the export, so no amount of pasting can land it in styles.css; only
+   the copy injected into the preview frame carries it.
+
+   Two sources make a candidate resolvable. The self-hosted Latin Modern cuts
+   come from /fonts/fonts.css; the eleven Google faces below come from GFONT,
+   fetched into the preview frame only. Both are injected by the frame's load
+   handler. Everything left — Georgia Pro, Constantia, Cambria, Sitka Text,
+   Charter, Palatino — is a system face, there or not there, and Comic Sans is
+   still how you find out which.
+
+   A face out of GFONT renders here and would not render on the deployed site:
+   nothing in portfolio/ hosts it. Picking one is a decision to go and host it,
+   and the export says as much at the top when a font row names one. */
+var COMIC = '"Comic Sans MS", cursive';
+
+/* Sorted by family, 400/700 upright and italic each — the weights and the one
+   italic (.intro .lead) the page actually asks for. Faustina has no `opsz` axis
+   and Domine no italic; getting either wrong makes the API drop that family from
+   the response with a 200 and no other complaint, which reads exactly like the
+   face not being installed. */
+var GFONT = "https://fonts.googleapis.com/css2" +
+  "?family=Bitter:ital,wght@0,400;0,700;1,400;1,700" +
+  "&family=Castoro:ital@0;1" +
+  "&family=Domine:wght@400;700" +
+  "&family=Faustina:ital,wght@0,400;0,700;1,400;1,700" +
+  "&family=Literata:ital,opsz,wght@0,7..72,400;0,7..72,700;1,7..72,400;1,7..72,700" +
+  "&family=Merriweather:ital,wght@0,400;0,700;1,400;1,700" +
+  "&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,700;1,6..72,400;1,6..72,700" +
+  "&family=PT+Serif:ital,wght@0,400;0,700;1,400;1,700" +
+  "&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,700;1,8..60,400;1,8..60,700" +
+  "&family=Spectral:ital,wght@0,400;0,700;1,400;1,700" +
+  "&family=Vollkorn:ital,wght@0,400;0,700;1,400;1,700" +
+  "&display=swap";
+
+/* What GFONT covers, as the browser will name it. Used twice: to pull each face
+   down before the resolved-face probe measures it, and to flag an export that
+   depends on one. */
+var HOSTED = ["Bitter", "Castoro", "Domine", "Faustina", "Literata", "Merriweather",
+              "Newsreader", "PT Serif", "Source Serif 4", "Spectral", "Vollkorn"];
+
 var STACKS = [
   ["Sitka Text (ships)", '"Sitka Text", Charter, "Iowan Old Style", Georgia, serif'],
-  ["Georgia",            'Georgia, "Iowan Old Style", "Palatino Linotype", serif'],
-  ["Constantia",         'Constantia, "Hoefler Text", Georgia, serif'],
-  ["Latin Modern 10",    '"Latin Modern Roman", Georgia, serif'],
-  ["Latin Modern 9",     '"LM Roman 9", "Latin Modern Roman", Georgia, serif'],
-  ["Latin Modern 8",     '"LM Roman 8", "Latin Modern Roman", Georgia, serif'],
-  ["Latin Modern 12",    '"LM Roman 12", "Latin Modern Roman", Georgia, serif'],
-  ["Charter",            'Charter, "Bitstream Charter", "Iowan Old Style", serif'],
-  ["Cambria",            'Cambria, Georgia, serif'],
-  ["Palatino",           '"Palatino Linotype", Palatino, "Book Antiqua", serif'],
-  ["Times",              '"Times New Roman", Times, serif'],
+  ["Georgia (ships)",    'Georgia, "Iowan Old Style", "Palatino Linotype", serif'],
+
+  /* the survey, in the order it was asked for */
+  ["Source Serif 4",     '"Source Serif 4", "Source Serif Pro", ' + COMIC],
+  ["Literata",           'Literata, ' + COMIC],
+  ["Georgia Pro",        '"Georgia Pro", ' + COMIC],
+  ["Newsreader",         'Newsreader, ' + COMIC],
+  ["Charter",            'Charter, "Bitstream Charter", XCharter, ' + COMIC],
+  ["PT Serif",           '"PT Serif", ' + COMIC],
+  ["Castoro",            'Castoro, ' + COMIC],
+  ["Merriweather",       'Merriweather, ' + COMIC],
+  ["Constantia",         'Constantia, ' + COMIC],
+  ["Faustina",           'Faustina, ' + COMIC],
+  ["Domine",             'Domine, ' + COMIC],
+  ["Spectral",           'Spectral, ' + COMIC],
+  ["Vollkorn",           'Vollkorn, ' + COMIC],
+  ["Bitter",             'Bitter, ' + COMIC],
+  ["Cambria",            'Cambria, ' + COMIC],
+  ["Sitka Text",         '"Sitka Text", ' + COMIC],
+
+  ["Latin Modern 10",    '"Latin Modern Roman", ' + COMIC],
+  ["Latin Modern 9",     '"LM Roman 9", ' + COMIC],
+  ["Latin Modern 8",     '"LM Roman 8", ' + COMIC],
+  ["Latin Modern 12",    '"LM Roman 12", ' + COMIC],
+  ["Palatino",           '"Palatino Linotype", Palatino, "Book Antiqua", ' + COMIC],
+  ["Times",              '"Times New Roman", Times, ' + COMIC],
+
   ["generic serif",      'serif'],
   ["system sans",        'system-ui, "Segoe UI", Roboto, sans-serif']
 ];
@@ -214,7 +283,14 @@ var GEORGIA = STACKS[1][1];
    def:null means the property isn't declared there at all — the row starts at
    whatever the page computes and only enters the export once you move it.
    note: how the property is spelled in the source, where that differs from the
-   single declaration this tool emits (shorthands), so it can be applied by hand. */
+   single declaration this tool emits (shorthands), so it can be applied by hand.
+
+   Every vertical gap below is now a rung of the φ ladder — --space-4xs through
+   --space-l on :root — rather than a hand-set literal, so its `def` is the rung's
+   value and its `note` names the rung. Worth knowing before pasting an export
+   back: the tuner emits a literal, so applying a spacing row as-is takes that gap
+   OFF the ladder. Either round the new value to the nearest rung and keep the
+   var, or move the rung itself and accept that everything else on it moves too. */
 var GROUPS = [
   { name: "Page", rows: [
     { sel: "body",  prop: "font-size",   unit: "px",  def: 15,   min: 11, max: 22, step: 0.25, label: "base size",   hi: ".col" },
@@ -239,22 +315,22 @@ var GROUPS = [
     { sel: ".tagline",       prop: "letter-spacing", unit: "em",  def: 0.04, label: "tagline tracking" },
     { sel: ".projects-link", prop: "font-size",      unit: "rem", def: 0.7,  label: "link size" },
     { sel: ".projects-link", prop: "letter-spacing", unit: "em",  def: 0.04, label: "link tracking" },
-    { sel: ".masthead-meta", prop: "margin-top",     unit: "rem", def: 0.5,  label: "gap above meta" },
-    { sel: ".masthead",      prop: "margin-bottom",  unit: "rem", def: 2.5,  label: "space below" }
+    { sel: ".masthead-meta", prop: "margin-top",     unit: "rem", def: 0.382, label: "gap above meta", note: "written as `var(--space-2xs)`" },
+    { sel: ".masthead",      prop: "margin-bottom",  unit: "rem", def: 1.618, label: "space below",    note: "written as `var(--space-m)`" }
   ] },
 
   { name: "Intro", rows: [
     { sel: ".intro .lead", prop: "font-size",   unit: "rem", def: 0.95, label: "lead size" },
     { sel: ".intro .lead", prop: "line-height", unit: "",    def: 1.5,  label: "lead leading" },
     { sel: ".intro p + p", prop: "font-size",   unit: "rem", def: 0.9,  label: "body size" },
-    { sel: ".intro p + p", prop: "margin-top",  unit: "rem", def: 0.9,  label: "para spacing", note: "written as `margin: 0.9rem 0 0`" },
+    { sel: ".intro p + p", prop: "margin-top",  unit: "rem", def: 1,    label: "para spacing", note: "written as `margin: var(--space-s) 0 0`" },
     { sel: ".intro p + p", prop: "text-indent", unit: "rem", def: 1.1,  label: "first-line indent" },
-    { sel: ".intro",       prop: "margin-bottom", unit: "rem", def: 2.75, label: "space below" }
+    { sel: ".intro",       prop: "margin-bottom", unit: "rem", def: 1.618, label: "space below", note: "written as `var(--space-m)`" }
   ] },
 
   { name: "Photographs", rows: [
-    { sel: ".carousel", prop: "margin-bottom", unit: "rem", def: 0.9, label: "strip → scrollbar", note: "second `margin-bottom`, after the full-bleed shorthand" },
-    { sel: ".cbar",     prop: "margin-bottom", unit: "rem", def: 2,   label: "scrollbar → text", note: "written as `margin: 0 0 2rem`" }
+    { sel: ".carousel", prop: "margin-bottom", unit: "rem", def: 0.618, label: "strip → scrollbar", note: "`var(--space-xs)`, as a second `margin-bottom` after the full-bleed shorthand" },
+    { sel: ".cbar",     prop: "margin-bottom", unit: "rem", def: 1.618, label: "scrollbar → text", note: "written as `margin: 0 0 var(--space-m)`" }
   ] },
 
   /* The edge dissolve. Unitless numbers on :root that styles.css assembles into
@@ -297,21 +373,21 @@ var GROUPS = [
     { sel: ".listing > h2", prop: "font-size",      unit: "rem", def: 0.85, label: "heading size" },
     { sel: ".listing > h2", prop: "font-weight",    unit: "",    def: 700, min: 300, max: 700, step: 100, label: "heading weight" },
     { sel: ".listing > h2", prop: "letter-spacing", unit: "em",  def: 0.01, label: "heading tracking" },
-    { sel: ".listing > h2", prop: "margin-bottom",  unit: "rem", def: 0.25, label: "under heading", note: "written as `margin: 0 0 0.25rem`" },
+    { sel: ".listing > h2", prop: "margin-bottom",  unit: "rem", def: 0.236, label: "under heading", note: "written as `margin: 0 0 var(--space-3xs)`" },
     { sel: ".item .line",   prop: "font-size",      unit: "rem", def: 0.9,  label: "org size" },
     { sel: ".item .line",   prop: "gap",            unit: "rem", def: 1,    label: "org → year gap" },
     { sel: ".item .when",   prop: "font-size",      unit: "rem", def: null, label: "year size", note: "not declared today — the year inherits 0.9rem from `.item .line`" },
     { sel: ".item .when",   prop: "letter-spacing", unit: "em",  def: null, label: "year tracking" },
     { sel: ".item .sub",    prop: "font-size",      unit: "rem", def: 0.86, label: "role size" },
-    { sel: ".item .sub",    prop: "margin-top",     unit: "rem", def: 0.1,  label: "org → role", note: "written as `margin: 0.1rem 0 0`" },
-    { sel: ".item",         prop: "margin-bottom",  unit: "rem", def: 0.6,  label: "between items" },
-    { sel: ".listing",      prop: "margin-top",     unit: "rem", def: 1.5,  label: "between sections" }
+    { sel: ".item .sub",    prop: "margin-top",     unit: "rem", def: 0.146, label: "org → role", note: "written as `margin: var(--space-4xs) 0 0`" },
+    { sel: ".item",         prop: "margin-bottom",  unit: "rem", def: 0.618, label: "between items", note: "written as `var(--space-xs)`" },
+    { sel: ".listing",      prop: "margin-top",     unit: "rem", def: 1,     label: "between sections", note: "written as `var(--space-s)`" }
   ] },
 
   { name: "Contact & toggle", rows: [
     { sel: ".contact li",         prop: "font-size",     unit: "rem", def: 0.9,  label: "link size" },
-    { sel: ".contact li",         prop: "margin-top",    unit: "rem", def: 0.22, label: "between links" },
-    { sel: ".contact li.primary", prop: "margin-bottom", unit: "rem", def: 0.55, label: "under the email" },
+    { sel: ".contact li",         prop: "margin-top",    unit: "rem", def: 0.236, label: "between links",   note: "written as `var(--space-3xs)`" },
+    { sel: ".contact li.primary", prop: "margin-bottom", unit: "rem", def: 0.618, label: "under the email", note: "written as `var(--space-xs)`" },
     { sel: ".contact-corner",     prop: "column-gap",    unit: "rem", def: 1,    label: "links → toggle" },
     { sel: ".theme-toggle",       prop: "font-size",     unit: "rem", def: 0.9,  label: "toggle size",    note: "lives in the `font: 400 0.9rem/1.55 var(--serif-label)` shorthand" },
     { sel: ".theme-toggle",       prop: "line-height",   unit: "",    def: 1.55, label: "toggle leading", note: "lives in the same `font:` shorthand" }
@@ -553,6 +629,18 @@ function addLink(doc, href) {
   });
 }
 
+/* An @font-face the page doesn't use yet is a declaration, not a download — and
+   an undownloaded face measures as its fallback, so `resolved` would report
+   Comic Sans for a family that is one request away from being there. Ask for the
+   upright 400 of each hosted family up front; the italic and the bold follow on
+   first use, under display=swap. Offline, this rejects and the row goes back to
+   telling the truth: nothing here. */
+function loadFace(fam) {
+  var doc = frame.contentDocument;
+  if (!doc || !doc.fonts) return Promise.resolve();
+  return doc.fonts.load('400 40px "' + fam + '"').catch(function () {});
+}
+
 /* Injected last in document order and with no !important, so the preview obeys
    exactly the cascade the exported CSS will meet in styles.css. If a change
    doesn't take here, it wouldn't take there either — that's the point. */
@@ -678,7 +766,13 @@ function probe() {
     /* Only meaningful while the row is untouched — once injected, the page is
        computing the tuner's value, not the stylesheet's. */
     if (r.def != null && !changed(r)) {
-      var tol = r.unit === "px" ? 0.25 : (r.unit === "" ? 0.02 : 0.02);
+      /* Tight on purpose. The only noise here is sub-pixel snapping — browsers
+         round a computed length to 1/64px, so the worst error is 0.008px, which
+         is 0.0005rem — and at 0.02 the ladder's smaller rungs slipped through
+         unreported (0.6 → 0.618, 0.25 → 0.236, 0.22 → 0.236 all passed). px rows
+         stay loose: they're whole-pixel sizes where 0.25 is still well inside a
+         real change. */
+      var tol = r.unit === "px" ? 0.25 : 0.005;
       if (Math.abs(r.live - r.def) > tol) {
         drift.push(r.sel + " { " + r.prop + " } is " + num(r.live) + r.unit + ", table says " + num(r.def) + r.unit);
       }
@@ -694,15 +788,21 @@ function probe() {
   paint();
 }
 
-/* Which face actually won, measured rather than trusted: a family that is
-   neither installed nor @font-face'd resolves to generic serif in silence. */
+/* Which face actually won, measured rather than trusted. A family that is
+   neither installed nor @font-face'd falls to whatever is next in the stack, and
+   for every candidate stack that is Comic Sans — so this is where the tell gets
+   read back as a name. Most specific first: Georgia Pro would otherwise be
+   reported as Georgia, and the shipped Sitka stack as Charter. */
 function resolved(stack) {
   var doc = frame.contentDocument;
   if (!doc) return "";
   var probeCtx = doc.createElement("canvas").getContext("2d");
   var w = function (fam) { probeCtx.font = "40px " + fam; return probeCtx.measureText("Handgloves 123").width; };
-  var known = ["Sitka Text", "Constantia", "Latin Modern Roman", "LM Roman 9", "LM Roman 8", "LM Roman 12",
-               "Charter", "Cambria", "Palatino Linotype", "Georgia", "Times New Roman", "serif"];
+  var known = ["Sitka Text", "Source Serif 4", "Source Serif Pro", "Literata", "Georgia Pro", "Newsreader",
+               "PT Serif", "Castoro", "Merriweather", "Constantia", "Faustina", "Domine", "Spectral",
+               "Vollkorn", "Bitter", "Latin Modern Roman", "LM Roman 9", "LM Roman 8", "LM Roman 12",
+               "Charter", "Bitstream Charter", "XCharter", "Cambria", "Palatino Linotype", "Georgia",
+               "Times New Roman", "Comic Sans MS", "serif"];
   var want = w(stack), hit = "?";
   for (var i = 0; i < known.length; i++) {
     var name = known[i] === "serif" ? "serif" : '"' + known[i] + '"';
@@ -712,6 +812,15 @@ function resolved(stack) {
 }
 
 /* ---- CSS out ------------------------------------------------------------- */
+/* The Comic Sans tail is a tuner instrument, not a design decision, so it does
+   not leave the tuner: the export puts `serif` back under any candidate stack.
+   Only the preview copy — buildCSS(false), injected into the frame — keeps it.
+   The two differ solely in what happens when a face is absent, and if a face was
+   absent you were looking at Comic Sans and were never going to ship it. */
+function ship(v) {
+  return String(v).split(COMIC).join("serif");
+}
+
 function buildCSS(annotated) {
   var rows = changedRows();
   if (!rows.length) return annotated ? "/* nothing changed yet — move a slider */" : "";
@@ -722,6 +831,17 @@ function buildCSS(annotated) {
     bySel[r.sel].push(r);
   });
 
+  var swapped = annotated && rows.some(function (r) {
+    return r.isFont && String(val(r)).indexOf(COMIC) !== -1;
+  });
+
+  /* Which hosted faces this export leans on. The preview fetches them from
+     Google; portfolio/ ships nothing for them, so pasting one in without hosting
+     it first lands on `serif` for every visitor while still looking right here. */
+  var borrowed = annotated ? HOSTED.filter(function (fam) {
+    return rows.some(function (r) { return r.isFont && String(val(r)).indexOf(fam) !== -1; });
+  }) : [];
+
   var out = [];
   if (annotated) {
     out.push("/* " + Array(74).join("─"));
@@ -729,6 +849,16 @@ function buildCSS(annotated) {
     out.push("   tuned at " + state.w + "×" + state.h + ", " + state.theme + " theme, " + new Date().toISOString().slice(0, 16).replace("T", " "));
     if (state.active != null && state.profiles[state.active] && !dirty()) out.push("   profile: " + pname(state.active));
     out.push("   Selectors and units match portfolio/styles.css.");
+    if (swapped) {
+      out.push("   The tuner's " + COMIC + " fallback — the tell for a face this");
+      out.push("   machine hasn't got — is `serif` below. Check the resolved-face note beside");
+      out.push("   each font row: if it said Comic Sans MS, that stack has nothing to render.");
+    }
+    if (borrowed.length) {
+      out.push("   " + borrowed.join(", ") + " render" + (borrowed.length === 1 ? "s" : "") + " in the tuner because the");
+      out.push("   preview borrows " + (borrowed.length === 1 ? "it" : "them") + " from Google Fonts. portfolio/ hosts nothing for");
+      out.push("   " + (borrowed.length === 1 ? "it" : "them") + " — self-host the face into /fonts first, or this is `serif` in production.");
+    }
     out.push("   " + Array(74).join("─") + " */");
     out.push("");
   }
@@ -741,7 +871,8 @@ function buildCSS(annotated) {
     }
     out.push(sel + " {");
     bySel[sel].forEach(function (r) {
-      var line = "  " + r.prop + ": " + css(r, val(r)) + ";";
+      var v = css(r, val(r));
+      var line = "  " + r.prop + ": " + (annotated && r.isFont ? ship(v) : v) + ";";
       if (annotated) {
         var was = r.def == null ? "not set" : css(r, r.def);
         while (line.length < 43) line += " ";   /* line up the comments, but never run into one */
@@ -933,7 +1064,12 @@ function paint() {
       r.inputs[1].hidden = known;
       if (!known) r.inputs[1].value = stack;
       r.undo.style.visibility = on ? "visible" : "hidden";
-      r.face.textContent = "→ " + resolved(stack);
+      var got = resolved(stack);
+      /* Comic Sans can only be what a candidate stack fell through to — nothing
+         in the list asks for it — so name the absence rather than the face. */
+      var absent = got === "Comic Sans MS" && stack.indexOf(COMIC) !== -1;
+      r.face.textContent = absent ? "→ nothing here — Comic Sans" : "→ " + got;
+      r.face.className = "selnote" + (absent ? " absent" : "");
     } else {
       var v = effective(r);
       if (document.activeElement !== r.inputs[1]) r.inputs[1].value = num(v);
@@ -1020,7 +1156,8 @@ frame.addEventListener("load", function () {
   var doc = frame.contentDocument;
   if (!doc) return;
   doc.documentElement.setAttribute("data-theme", state.theme);
-  Promise.all([addLink(doc, "/fonts/fonts.css")])
+  Promise.all([addLink(doc, "/fonts/fonts.css"), addLink(doc, GFONT)])
+    .then(function () { return doc.fonts ? Promise.all(HOSTED.map(loadFace)) : null; })
     .then(function () { return doc.fonts ? doc.fonts.ready : null; })
     .then(function () { inject(); probe(); setStrip(wantStrip); });
 });

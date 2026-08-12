@@ -12,9 +12,9 @@
   --ink:        #1a1917;
   --ink-soft:   #46433d;
   --muted:      #6f6a5d;                 /* years, meta (AA 5.2:1)      */
-  --bg:         #fcfbf8;                  /* warm paper white            */
-  --bg-rgb:     252, 251, 248;
-  --bg-0:       rgba(252, 251, 248, 0);  /* same, transparent — for fades */
+  --bg:         #fff;                    /* pure white                  */
+  --bg-rgb:     255, 255, 255;
+  --bg-0:       rgba(255, 255, 255, 0);  /* same, transparent — for fades */
   --rule-soft:  #efece4;
   --link-line:  #b3aa9b;
 
@@ -41,17 +41,129 @@
      into --serif-body without resizing it. */
   --serif-lead:  Georgia, "Iowan Old Style", "Palatino Linotype", serif;
 
+  /* Ogg — Sharp Type's high-contrast calligraphic serif, used at one size and
+     one place only: the cut title at the foot of the page. It is a retail
+     licence, so there is nothing to self-host in this repo; naming the family
+     picks up a copy installed on the reader's machine, and the @font-face block
+     below is the two-line switch once the woff2 files exist. See --cue-* for the
+     rest, and note that NOTHING in the cut depends on which of these resolves:
+     the clip is measured in `cap`, read from the face that actually loads.
+     Fallbacks in order of nearness to Ogg: Didot (macOS), Bodoni MT (ships with
+     Office), Big Caslon (macOS), then Sitka Banner — Sitka's display cut, which
+     is the one Windows always has and the one that reads as deliberate here,
+     since the rest of the page is already Sitka. */
+  --serif-display: "Ogg Roman", "Ogg", Didot, "Bodoni MT", "Big Caslon",
+                   "Sitka Banner", Constantia, Georgia, serif;
+
+  /* ---- the vertical ladder ------------------------------------------------
+     Every gap down the column is one rung of φ. The rungs are the powers of the
+     golden ratio around 1rem — 1/φ³, 1/φ², 1/φ, 1, φ, φ² — which is the one
+     scale where each step is BOTH the ratio of its neighbour and the sum of the
+     two below it (0.618 + 1 = 1.618, 1 + 1.618 = 2.618). That additive property
+     is why a φ ladder reads as settled rather than merely proportional: any two
+     gaps stacked make exactly another gap on the ladder, so the column has no
+     interval in it that is not already part of the series.
+     Tightened from the hand-set values it replaces, which spent 202px on the
+     section gaps; these spend 144. The reclaimed height is what lets the whole
+     composition — name to cut title — stand inside one screen. */
+  --space-4xs: 0.146rem;                 /* 1/φ⁴   2.3px  */
+  --space-3xs: 0.236rem;                 /* 1/φ³   3.8px  */
+  --space-2xs: 0.382rem;                 /* 1/φ²   6.1px  */
+  --space-xs:  0.618rem;                 /* 1/φ    9.9px  */
+  --space-s:   1rem;                     /*        16px   */
+  --space-m:   1.618rem;                 /* φ     25.9px  */
+  --space-l:   2.618rem;                 /* φ²    41.9px  */
+
   --col: 27rem;                          /* the phone-width column       */
   --slide-h: clamp(15rem, 40vh, 24rem);  /* carousel image height        */
   --slide-w: calc(var(--slide-h) * 3 / 4);
   --gap: 0.5rem;                          /* gap between photos           */
   --edge: max(1.35rem, calc(50vw - var(--col) / 2));  /* where the text column starts */
 
+  /* ---- the page's one vertical rhyme --------------------------------------
+     The white above the name and the white below the last contact line are the
+     same measure, so the column reads as a block set into the page rather than
+     one that starts high and stops wherever it ran out. Written once and used
+     at both ends, which is the only way the two stay equal at every window
+     size — a second literal would drift the moment the clamp bit.
+     Note both ends are measured to the INK, not to the boxes: at the top the
+     name's line box stands --name-half-leading above its own ascenders, and
+     that is white the eye counts as margin, so the foot has to match the sum.
+     0.294 is Sitka Text's half-leading as a fraction of its own size —
+     (1.55 - (ascent + descent)/em) / 2, measured from the face — and 0.78rem is
+     the name's size. Every fallback serif sits within a pixel of it. */
+  --rhyme: clamp(3rem, 9vh, 6.5rem);
+  --name-half-leading: calc(0.294 * 0.78rem);
+
+  /* ---- the cut title -------------------------------------------------------
+     A display word dropped into the bottom corner and cut off by the end of the
+     page: the "there is more below this" device, which here also happens to be
+     the way through to /projects. Three numbers describe it.
+       --cue-show   how much of the word survives the cut, as a fraction of the
+                    CAP HEIGHT — not of the em box, and not a pixel height. It
+                    is `1cap`, read from whichever face actually resolved, so
+                    the same fraction of letter is shown in Ogg, in Didot and in
+                    the Sitka fallback, at every size, with no per-face tuning.
+                    That is the whole reason the setup is built this way.
+                    0.62 is set by the two letters that die first, not by taste:
+                    R stops reading as P only once its bowl has closed (~0.55 in
+                    a Didone), and J is a bare stem until its hook starts (~0.6).
+                    Above ~0.75 it stops reading as cut and starts reading as a
+                    word with an odd baseline; below ~0.55 PROJECTS goes.
+       --cue-size   the word's size as a fraction of the text column's own
+                    width, in cqw against .cut-title. So it is one proportion at
+                    every window size instead of a size that suits one of them,
+                    and it stays that proportion when the column starts
+                    narrowing on small screens. 25.32 sets the word to exactly
+                    the full measure in the Sitka fallback — this is the one
+                    number that IS face-specific, because fitting a word to a
+                    measure depends on that face's advance widths. Retune it if
+                    Ogg lands (divide by the word's overflow ratio) and leave
+                    everything else alone.
+       --cue-track  tracking. Display caps this large want it drawn in; the same
+                    word at 15px would want it opened out.
+     --cue-cap-drop is not a knob — it is only read by browsers without
+     text-box-trim (Firefox, as of writing). See the @supports block below. */
+  --cue-show:  0.62;
+  --cue-size:  25.32cqw;
+  --cue-track: -0.012em;
+  --cue-cap-drop: 0.075em;
+
+  /* The white between the last contact line and the top of the cut word. The
+     margin runs from the bottom of the contact BLOCK, but the ink it has to sit
+     below is the linkedin underline, and the theme toggle in the same row hangs
+     --contact-tail further down than that; so the tail comes back off. It is a
+     ratio of font sizes and line heights, all in rem, so it is the same number
+     of pixels at every window size — measured, not derived, because the toggle's
+     overhang is set in `ex` and only the face knows its own x-height. */
+  --contact-tail: 0.4075rem;
+  --cue-gap: calc(var(--rhyme) + var(--name-half-leading) - var(--contact-tail));
+
+  /* The visible slice of the cut title, as a length. The real clip is measured
+     in `1cap` on the element itself and stays exact; this is only the same
+     number written in rem so the height budget below can spend it. It is
+     --cue-show x --cue-size x the face's cap ratio: 0.62 x 6.836rem x 0.6123.
+     Re-measure alongside --cv-static if the display face changes. */
+  --cue-clip: 2.596rem;
+
+  /* Everything in the document that is NOT the photo strip and NOT one of the
+     two vh-driven gaps: the masthead, the lead, the scrollbar rule, the three
+     listings, and every rung of the ladder between them. All of it is set in
+     rem, so it is one constant at every window size.
+     MEASURED, not derived — it is the sum of a dozen boxes and there is no
+     honest way to write it as an expression. Re-measure it whenever the column's
+     content or the ladder changes:
+       docH - slideH - padTop - cueGap - clipH, then divide by 16.
+     Being out of date is not a break: the composition simply overflows a little
+     (and scrolls) or falls a little short (and the slack goes above the cut). */
+  --cv-static: 32.932rem;
+
   /* ---- the edge dissolve, in four numbers ---------------------------------
      Everything about the fade is here; design/type-tuner.html puts a slider on
      each of these four, so the look is arrived at by eye and pasted back. They
-     describe the strip AT REST — first photograph still sitting where the text
-     starts — which is the state the page loads in and the one the tuner shows.
+     describe the strip AT REST — a photograph standing at the text edge with one
+     lit veil beside it — which is the state the page loads in, the one the tuner
+     shows, and, mirrored, the state it comes to rest in at the far end.
        --fade-x     where the dissolve BEGINS, in photo-widths measured from the
                     text edge. 0 starts it exactly where the column of text
                     ends; negative pulls it left, in over the photographs;
@@ -78,12 +190,14 @@
      Each of the four numbers above has its counterpart here, and the tuner has
      a second group of sliders for them — it takes the strip one photograph along
      while you drag, since that is the only place they can be seen.
-     app.js reports the position between the two ends as --fade-open: 0 at rest,
-     1 once the second photograph has travelled to the centre of the screen, on a
-     smoothstep so the fade neither twitches at the first pixel of a drag nor
-     arrives with a jolt. It is a function of where the strip IS, not of when it
-     moved, so it runs backwards just as smoothly on the way home — and before
-     any script runs the strip cannot have moved, which makes 0 the right start. */
+     app.js reports the position between the two ends as --fade-open: 0 at either
+     rest, 1 once the second photograph has travelled to the centre of the screen,
+     on a smoothstep so the fade neither twitches at the first pixel of a drag nor
+     arrives with a jolt. It closes again over the last photograph's travel, so
+     the strip arrives at the right-hand end wearing exactly what it wore at the
+     left. It is a function of where the strip IS, not of when it moved, so it
+     runs backwards just as smoothly on the way home — and before any script runs
+     the strip cannot have moved, which makes 0 the right start. */
   --fade-x-open:    0;
   --fade-span-open: 0.5;
   --fade-max-open:  1;
@@ -122,11 +236,70 @@
   --ink:        #eaeaea;
   --ink-soft:   #b8b8b8;
   --muted:      #b8b8b8;
-  --bg:         #161616;
-  --bg-rgb:     22, 22, 22;
-  --bg-0:       rgba(22, 22, 22, 0);
+  --bg:         #000;                    /* pure black                  */
+  --bg-rgb:     0, 0, 0;
+  --bg-0:       rgba(0, 0, 0, 0);
   --rule-soft:  #3a3a3a;
   --link-line:  #3a3a3a;
+}
+
+/* ---- composing to one screen ---------------------------------------------
+   With the ladder tightened, the CV is 64px short of standing inside a 1080px
+   screen. The photo strip gives up that 64px, because it is the one element on
+   the page with no intrinsic height — everything else is type, and type that has
+   been put on a φ ladder should not then be squeezed off it. So the strip
+   becomes the remainder: the screen, less the top margin, less the gap under the
+   contact block, less the visible slice of the cut title, less the CV itself.
+   Below that the whole composition — name through to the cut — is exactly one
+   screen tall at every size in the band, with the two margins still equal.
+
+   The band has a floor and a ceiling, and both are real limits, not taste:
+
+   * min-height 983px is where the arithmetic runs out. The strip's own designed
+     minimum is 15rem, and 983px is the height at which the remainder falls to
+     exactly that. Any shorter and photographs would have to go under the size
+     the design already declared was the smallest they should ever be — at 900px
+     the remainder is 172px, at 768px it is 64px, which is not a photograph of
+     anything. So below 983px the rule switches off entirely and the strip goes
+     back to its own `40vh` sizing, rather than sitting pinned at the floor: at
+     768px the original rule gives 307px and this one would give 240px, so
+     keeping it on would make the photographs SMALLER while still not fitting.
+     Short screens scroll, and the cut sits on the document's bottom edge.
+   * The 24rem ceiling inside the clamp is the strip's existing maximum. Above
+     roughly 1158px of height the remainder exceeds it, the strip stops growing,
+     and the leftover goes above the cut through .col's auto margin instead.
+
+   min-width 1100px is the other half of the gate. Composing to one screen is a
+   desktop conceit — a narrow window is a scrolling column, which is what phones
+   and tablets get anyway. It also keeps the strip at 384px for the two widths
+   the profile-README capture in chrisJuresh/chrisJuresh probes at, 1000px and
+   592px, whose hardcoded 592 divisor is derived from the photo width. */
+@media (min-width: 1100px) and (min-height: 983px) {
+  :root {
+    --slide-h: clamp(15rem,
+                     calc(100vh - var(--rhyme) - var(--cue-gap)
+                          - var(--cue-clip) - var(--cv-static)),
+                     24rem);
+
+    /* Past the ceiling the strip has stopped growing and there is height left
+       over that nothing wants. Handing it to the gap alone would put 390px under
+       the contact block against a 108px margin over the name at 1440, and 1110px
+       at 2160 — the one relationship this page is built on, broken worst exactly
+       where there is most room to see it. So the leftover goes to --rhyme, which
+       spends it at BOTH ends at once: half above the name, half below the last
+       line. The margins stay equal, the cut stays on the bottom edge, and the
+       page just breathes more on a tall screen, which is what a tall screen is
+       for. 245px a side at 1440, 605px at 2160.
+       max() switches between the two regimes with no breakpoint: inside the band
+       the clamp is the larger and wins; past the ceiling the halved leftover
+       overtakes it. 24rem, not --slide-h, is deliberate — it is the strip's
+       height in the only regime this term is ever the winner in, and referring
+       to --slide-h here would be a cycle, since the strip is sized FROM
+       --rhyme. */
+    --rhyme: max(clamp(3rem, 9vh, 6.5rem),
+                 calc((100vh - var(--cv-static) - 24rem - var(--cue-clip)
+                       + var(--contact-tail) - var(--name-half-leading)) / 2));
+  }
 }
 
 *, *::before, *::after { box-sizing: border-box; }
@@ -148,14 +321,29 @@ img { display: block; max-width: 100%; height: auto; }
 a { color: inherit; }
 
 /* ---- centered column + page fade-in -------------------------------------- */
+/* No padding at the foot: the cut title IS the bottom of the page, and the cut
+   has to land on the page's own edge to read as one. The white above it is the
+   title's margin instead — see --cue-gap. */
+/* A flex column, for one reason: on a display tall enough that the CV does not
+   fill it, the leftover has to end up ABOVE the cut title, not below it — a cut
+   floating 200px clear of the bottom edge is not a cut, and a page that cannot
+   scroll has no business telling you to. So .col takes `margin-bottom: auto`
+   and eats the slack, which leaves the cut on the bottom edge at every height.
+   Where the CV does fill the screen — every desktop height up to ~1250px, and
+   every window that scrolls — the slack is zero and the gap is exactly --cue-gap.
+   The flex is on .page and the title is .page's own child, deliberately: putting
+   it on .col would stop the column's internal margins collapsing and quietly
+   respace the whole CV. */
 .page {
+  display: flex;
+  flex-direction: column;
   min-height: 100vh;
-  padding: clamp(3rem, 9vh, 6.5rem) 1.35rem clamp(4rem, 12vh, 6rem);
+  padding: var(--rhyme) 1.35rem 0;
 }
 .col {
   width: 100%;
   max-width: var(--col);
-  margin: 0 auto;
+  margin: 0 auto auto;
 }
 /* fade the whole page in on load. A CSS animation (not a JS-toggled class) so
    it can't get stuck invisible if a rAF never fires; if animations are off or
@@ -167,7 +355,7 @@ a { color: inherit; }
 }
 
 /* ---- masthead ------------------------------------------------------------ */
-.masthead { margin-bottom: 2.5rem; }
+.masthead { margin-bottom: var(--space-m); }
 .name {
   font-family: var(--serif-label);
   font-size: 0.78rem;
@@ -188,7 +376,7 @@ a { color: inherit; }
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: baseline;
   column-gap: 1rem;
-  margin-top: 0.5rem;
+  margin-top: var(--space-2xs);
 }
 .projects-link {
   font-family: var(--serif-label);
@@ -209,9 +397,9 @@ a { color: inherit; }
 }
 
 /* ---- intro / bio --------------------------------------------------------- */
-.intro { margin-bottom: 2.75rem; }
+.intro { margin-bottom: var(--space-m); }
 .intro .lead { font-family: var(--serif-lead); font-size: 0.95rem; font-style: italic; line-height: 1.5; margin: 0; }
-.intro p + p { margin: 0.9rem 0 0; font-size: 0.9rem; color: var(--ink-soft); text-indent: 1.1rem; }
+.intro p + p { margin: var(--space-s) 0 0; font-size: 0.9rem; color: var(--ink-soft); text-indent: 1.1rem; }
 
 /* ---- photo carousel ------------------------------------------------------ */
 .carousel {
@@ -219,13 +407,13 @@ a { color: inherit; }
   margin: 0 0 3rem;
   margin-left: calc(50% - 50vw);         /* full-bleed: edge to edge, so photos */
   margin-right: calc(50% - 50vw);        /* can travel off both sides of the page */
-  margin-bottom: 0.9rem;
+  margin-bottom: var(--space-xs);
 }
 .track {
   display: flex;
   gap: var(--gap);
   padding-left: var(--edge);             /* first photo starts where the text starts */
-  padding-right: calc(50vw - var(--slide-w) / 2);  /* so the last photo can reach centre */
+  padding-right: var(--edge);            /* ...and the last one ends where the text ends */
   overflow-x: auto;
   overflow-y: hidden;
   -webkit-overflow-scrolling: touch;
@@ -240,7 +428,7 @@ a { color: inherit; }
 .cbar {
   position: relative;
   height: 2px;
-  margin: 0 0 2rem;
+  margin: 0 0 var(--space-m);
   background: var(--rule-soft);
   border-radius: 2px;
   cursor: pointer;
@@ -291,7 +479,7 @@ a { color: inherit; }
 }
 .veil-right {
   right: 0;
-  opacity: 1;
+  opacity: 0;
   background: linear-gradient(to right, var(--fade-stops));
 }
 .veil-left {
@@ -299,7 +487,10 @@ a { color: inherit; }
   opacity: 0;
   background: linear-gradient(to left, var(--fade-stops));
 }
-.carousel:not(.at-start) .veil-left { opacity: 1; }   /* fade the left once scrolled */
+/* Each veil is off while the strip is standing against its own end and there is
+   nothing behind it to dissolve, and on the moment it pulls away. */
+.carousel:not(.at-start) .veil-left  { opacity: 1; }
+.carousel:not(.at-end)   .veil-right { opacity: 1; }
 /* Until a centred slide plus two-thirds of each neighbour fits, both fades stay off. */
 .carousel:not(.has-fade-room) .veil {
   opacity: 0;
@@ -313,15 +504,15 @@ a { color: inherit; }
 }
 
 /* ---- listings: work / education / contact -------------------------------- */
-.listing { margin-top: 1.5rem; }
+.listing { margin-top: var(--space-s); }
 .listing > h2 {
   font-family: var(--serif-body);
   font-size: 0.85rem;
   font-weight: 700;
   letter-spacing: 0.01em;
-  margin: 0 0 0.25rem;
+  margin: 0 0 var(--space-3xs);
 }
-.item { margin-bottom: 0.6rem; }
+.item { margin-bottom: var(--space-xs); }
 .item:last-child { margin-bottom: 0; }
 .item .line {
   display: flex;
@@ -344,13 +535,13 @@ a { color: inherit; }
   font-size: 0.86rem;
   font-style: italic;
   color: var(--muted);
-  margin: 0.1rem 0 0;
+  margin: var(--space-4xs) 0 0;
 }
 
 /* ---- contact ------------------------------------------------------------- */
 .contact { list-style: none; margin: 0; padding: 0; font-family: var(--serif-body); }
-.contact li { font-size: 0.9rem; margin-top: 0.22rem; }
-.contact li.primary { margin-bottom: 0.55rem; }
+.contact li { font-size: 0.9rem; margin-top: var(--space-3xs); }
+.contact li.primary { margin-bottom: var(--space-xs); }
 .contact a {
   text-decoration: none;
   border-bottom: 1px solid var(--link-line);
@@ -422,6 +613,82 @@ a { color: inherit; }
   transform: translate(calc(var(--track-w) - 2px - var(--thumb) - var(--thumb-inset) * 2), -50%);
 }
 
+/* ---- the cut title ------------------------------------------------------- */
+/* Ogg is a retail licence and cannot be committed here. To self-host it, drop
+   the subset woff2 into /fonts/ and uncomment this; the family is already first
+   in --serif-display, so nothing else changes.
+
+@font-face {
+  font-family: "Ogg Roman";
+  src: url("/fonts/ogg-roman.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+  size-adjust: 100%;
+}
+*/
+
+/* Three nested boxes, each doing exactly one job:
+     .cut-title   the container the word's size is a proportion OF. It is a
+                  plain block in the column, so its inline size is the measure,
+                  and `cqw` inside it therefore means "per cent of the column".
+                  It has to be a separate element: container query units resolve
+                  against an ANCESTOR container, so an element cannot set its own
+                  font-size from its own width.
+     > a          the cut. A fixed height in `cap` plus `overflow: clip` — clip
+                  rather than hidden, so it never becomes a scroll container and
+                  can never be scrolled into view by a stray focus.
+     > > span     the word, with its box trimmed to the cap slab so that the cut
+                  is a known fraction of the letters rather than a known fraction
+                  of the em box, which would move with every change of face. */
+.cut-title {
+  container-type: inline-size;
+  width: 100%;
+  max-width: var(--col);                 /* sized and centred exactly like .col */
+  margin: var(--cue-gap) auto 0;
+}
+.cut-title > a {
+  display: block;
+  overflow: clip;
+  height: calc(var(--cue-show) * 1cap);
+  color: var(--ink);
+  font-family: var(--serif-display);
+  font-size: var(--cue-size);
+  font-weight: 400;
+  line-height: 1;
+  letter-spacing: var(--cue-track);
+  text-decoration: none;
+  text-transform: uppercase;
+  /* Display size, so ask for the kerning and the tight-fitting figures/caps
+     forms the face keeps for it, and turn off the optical-size axis guessing. */
+  font-kerning: normal;
+  font-variant-ligatures: common-ligatures discretionary-ligatures;
+  font-optical-sizing: auto;
+  transition: box-shadow 0.15s ease;
+}
+/* The word is clickable, and a display face gives nothing to underline — its
+   baseline is below the cut. So the site's 1px link rule goes on the cut itself,
+   drawn as an inset shadow rather than a border so it costs the clip box no
+   height and the geometry above stays exact. */
+.cut-title > a:hover,
+.cut-title > a:focus-visible { box-shadow: inset 0 -1px 0 currentColor; }
+.cut-title > a:focus-visible { outline: 1px solid currentColor; outline-offset: 3px; }
+.cut-title > a > span {
+  display: block;
+  /* The box becomes exactly cap-height to baseline, so the `cap` height above
+     clips the letters at --cue-show of their own height in any face. */
+  text-box: trim-both cap alphabetic;
+}
+/* Without text-box-trim the span's box is the em box, and `line-height: 1`
+   centres the font's content area on it — so the cap top sits --cue-cap-drop
+   below the box top, and the clip would eat that much extra off the letters.
+   Pull it back. The number is (1 - ascent - descent) / 2 + ascent - capHeight,
+   all per em, for the face that resolves; 0.075em is Sitka Banner's, and the
+   Didones listed before it are within a hair of it. */
+@supports not (text-box-trim: trim-both) {
+  .cut-title > a > span { margin-top: calc(-1 * var(--cue-cap-drop)); }
+}
+
 /* ---- respect reduced-motion preferences ---------------------------------- */
 @media (prefers-reduced-motion: reduce) {
   .js .page { animation: none; }
@@ -434,9 +701,10 @@ a { color: inherit; }
 @media print {
   :root { --bg: #fff; }
   body { font-size: 11pt; }
-  .page { padding: 0; opacity: 1 !important; transform: none !important; }
+  .page { display: block; padding: 0; opacity: 1 !important; transform: none !important; }
   .col { max-width: 34rem; }
   .carousel { display: none !important; }
   .site-footer { display: none !important; }
+  .cut-title { display: none !important; }   /* a scroll cue means nothing on paper */
   .contact a { border: 0 !important; color: #000; }
 }

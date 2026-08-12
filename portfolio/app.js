@@ -68,6 +68,14 @@
       }).join("") + "</ul>" + toggle + "</div>")
     : toggle;
 
+  // The cut title: one display word in the bottom corner, sliced off by the end
+  // of the page. Full text in the markup, so it is read out and indexed whole
+  // even though only the top of it is drawn. It sits OUTSIDE <main class="col">,
+  // as a sibling — .page is a flex column and the title has to be its child to
+  // be held against the bottom edge. All the geometry is CSS: see --cue-* in
+  // styles.css.
+  var cut = '<div class="cut-title"><a href="/projects"><span>Projects</span></a></div>';
+
   page.innerHTML =
     '<main class="col">' +
       '<header class="masthead"><h1 class="name">' + esc(C.name) + "</h1>" +
@@ -76,9 +84,9 @@
           '<a class="projects-link" href="/projects">Projects</a>' +
         "</div></header>" +
       intro + carousel + cbar + work + edu + contact +
-    "</main>";
+    "</main>" + cut;
 
-  // ---- warm light / dark theme --------------------------------------------
+  // ---- light / dark theme --------------------------------------------------
   var root = document.documentElement;
   var themeToggle = page.querySelector(".theme-toggle");
   var themeMeta = document.getElementById("theme-color");
@@ -91,7 +99,7 @@
       themeToggle.setAttribute("aria-label", dark ? "Light mode" : "Dark mode");
       themeToggle.querySelector(".theme-toggle__label").textContent = dark ? "light" : "dark";
     }
-    if (themeMeta) themeMeta.setAttribute("content", dark ? "#161616" : "#fcfbf8");
+    if (themeMeta) themeMeta.setAttribute("content", dark ? "#000" : "#fff");
     if (remember) {
       try { localStorage.setItem("portfolio-theme", dark ? "dark" : "light"); } catch (_) {}
     }
@@ -148,28 +156,40 @@
     // stands alone; one photograph along it has drawn back to the text edge.
     // styles.css holds both ends and mixes them, so all that is reported here is
     // how far between the two the strip has got.
-    var openDist = 0, lastOpen = -1;
+    var openDist = 0, closeDist = 0, travel = 0, lastOpen = -1;
     // The whole travel is spent on the strip's first move: from a standstill to
     // the resting place of photo 2, dead centre — the state the open numbers were
     // drawn for, first photo out to the left and the third one going. That is
     // also where the snap below lands from a single flick, so the two agree.
+    // The last move spends it again in reverse: the strip closes back down over
+    // the run from the second-to-last photo's centre to the end, so the final
+    // photograph stands against the right-hand text edge under the same fade the
+    // first one stands under, and the two ends of the strip are one composition.
     // Asked of the DOM rather than rebuilt out of the padding: the strip's
     // full-bleed margin and its padding are both a 50vw that overshoots by the
     // width of a classic scrollbar, and they cancel, so only the rects know where
-    // the photos really are. This is snap()'s own expression, for i = 1.
+    // the photos really are. This is snap()'s own expression, for i = 1 and n - 2.
     function measureFade() {
       var slides = track.querySelectorAll(".slide");
-      var reach = 0;
+      var mid = window.innerWidth / 2;
+      var reach = 0, backReach = 0;
+      travel = track.scrollWidth - track.clientWidth;
       if (slides.length > 1) {
         var r = slides[1].getBoundingClientRect();
-        reach = track.scrollLeft + (r.left + r.width / 2 - window.innerWidth / 2);
+        reach = track.scrollLeft + (r.left + r.width / 2 - mid);
+        var rn = slides[slides.length - 2].getBoundingClientRect();
+        backReach = travel - (track.scrollLeft + (rn.left + rn.width / 2 - mid));
       }
       // never past what the strip can actually scroll, so the fade always reaches
-      // the open end; the 1px floor keeps the division below safe.
-      openDist = Math.max(1, Math.min(track.scrollWidth - track.clientWidth, reach));
+      // the open end; the 1px floor keeps the divisions below safe.
+      openDist  = Math.max(1, Math.min(travel, reach));
+      closeDist = Math.max(1, Math.min(travel, backReach));
     }
     function drawFade() {
-      var p = Math.max(0, Math.min(1, track.scrollLeft / openDist));
+      // whichever end is nearer holds the fade shut — on a strip too short for
+      // the two runs to clear each other, neither end lets go entirely
+      var p = Math.min(track.scrollLeft / openDist, (travel - track.scrollLeft) / closeDist);
+      p = Math.max(0, Math.min(1, p));
       p = p * p * (3 - 2 * p);                       // smoothstep: flat at both ends
       p = Math.round(p * 200) / 200;                 // ...and no repaint for a change no one can see
       if (p === lastOpen) return;
@@ -185,7 +205,8 @@
     // ---- momentum ("roulette wheel") scrolling + snap-to-centre --------------
     // Each flick adds to a velocity that decays with friction every frame; when
     // motion settles, the photo nearest the screen centre eases into the centre
-    // (the first photo stays left-aligned with the text — it can't reach centre).
+    // (the first and last photos stay aligned with their end of the text column —
+    // the strip runs out of travel before either of them reaches the middle).
     var reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     var vel = 0, raf = null, mode = null;             // mode: "coast" | "tween"
     var FRICTION = 0.95, MIN_V = 0.35, MAX_V = 360;   // MAX_V ≈ a spin across ~30 photos
@@ -225,7 +246,9 @@
       raf = requestAnimationFrame(frame);
     }
     // resting places, in scrollLeft: the first photo sits left-aligned with the
-    // text (0), every other photo centres; all clamped to the scrollable range
+    // text (0), every other photo centres; all clamped to the scrollable range,
+    // which is what leaves the last photo right-aligned with the text — its
+    // centre lies past the end of the travel, so the clamp stands it on the edge
     function snapPoints() {
       var slides = track.querySelectorAll(".slide");
       var mid = window.innerWidth / 2, cur = track.scrollLeft, max = maxScroll();
@@ -236,8 +259,8 @@
       }
       return pts;
     }
-    // centre the photo closest to the middle of the screen (clamped: first → left,
-    // last → its resting spot)
+    // centre the photo closest to the middle of the screen (clamped: first → left
+    // edge of the text, last → right edge of it)
     function snap() {
       if (down) return;
       var pts = snapPoints(), cur = track.scrollLeft;
