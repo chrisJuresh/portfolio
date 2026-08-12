@@ -136,6 +136,10 @@
     .selnote { font-family: ui-monospace, Consolas, monospace; }
     /* Set in the face it is reporting, so the absence is legible at a glance. */
     .selnote.absent { font-family: "Comic Sans MS", cursive; color: var(--ui-hit); }
+    /* A word wider than its column loses its tail to the clip and looks like the
+       cut working, so the note has to carry the accent the panel uses for
+       "something here has moved". */
+    .selnote.over { color: var(--ui-hit); }
     .warn { margin: 0; padding: 0.45rem 0.7rem; border-bottom: 1px solid var(--ui-line); background: rgba(216, 167, 106, 0.16); font-size: 11.5px; }
     .warn:empty { display: none; }
     .warn code { font-family: ui-monospace, Consolas, monospace; }
@@ -412,6 +416,20 @@ var OGG = '"Ogg Roman", "Ogg", Didot, "Bodoni MT", "Big Caslon", "Sitka Banner",
 
 var DISPLAY = [
   ["Ogg → Sitka Banner (ships)", OGG],
+
+  /* The two retail faces, asked for on their own rather than at the head of a
+     fallback chain — which is the only way to find out whether this machine has
+     one. The shipped entry above cannot answer that question: it resolves to
+     Sitka Banner either way and looks deliberate doing it, so Ogg being absent
+     and Ogg being present are indistinguishable from the page. Alone, with the
+     Comic Sans tell under it, the row says which.
+     Neither can be committed to this repo — Ogg is Sharp Type, Editorial New is
+     Pangram Pangram, both licensed per-use. Choosing one means buying a webfont
+     licence and self-hosting the woff2 into /fonts; styles.css already carries the
+     commented @font-face block for Ogg, waiting for the file. Until then these
+     render for whoever has the desktop font installed and for nobody else. */
+  ["Ogg (Sharp Type)",     '"Ogg Roman", "Ogg", ' + COMIC],
+  ["Editorial New (PP)",   '"PP Editorial New", "Editorial New", ' + COMIC],
 
   /* Didones and high-contrast display: the register Ogg belongs to. Hairline
      serifs and a vertical axis, which is exactly what a cut rewards — the stems
@@ -776,7 +794,7 @@ var SPACING = [0, 5, 0.05];   /* margins, gaps, indents, --col overrides its own
    itself one, so the tables above only spell it out where it isn't obvious.
    Rows that offer a list get `list`: entries as [label, value], where a bare
    string in the table means both. */
-var ROWS = [];
+var ROWS = [], BYKEY = {};
 GROUPS.forEach(function (g) {
   g.rows.forEach(function (r) {
     r.group = g;
@@ -796,6 +814,7 @@ GROUPS.forEach(function (g) {
       });
       if (!r.hint) r.hint = r.isFont ? "Charter, Georgia, serif" : "any value this property takes";
     }
+    BYKEY[r.k] = r;
     ROWS.push(r);
   });
 });
@@ -1271,7 +1290,8 @@ function probe() {
    first for the same reason, since they are the ones being surveyed. */
 var FACES = [
   /* display: the cut title's list */
-  "Ogg Roman", "Ogg", "Bodoni Moda", "Libre Bodoni", "Bodoni MT Condensed", "Bodoni MT Black",
+  "Ogg Roman", "Ogg", "PP Editorial New", "Editorial New",
+  "Bodoni Moda", "Libre Bodoni", "Bodoni MT Condensed", "Bodoni MT Black",
   "Bodoni MT", "Modern No. 20", "Didot", "Antic Didone", "Playfair Display SC", "Playfair Display",
   "Prata", "Rufina", "DM Serif Display", "Instrument Serif", "Cinzel Decorative", "Cinzel",
   "Trajan Pro", "Marcellus SC", "Marcellus", "Italiana", "Forum", "Engravers MT",
@@ -1295,7 +1315,24 @@ function resolved(stack) {
   if (!doc) return "";
   var probeCtx = doc.createElement("canvas").getContext("2d");
   var w = function (fam) { probeCtx.font = "40px " + fam; return probeCtx.measureText("Handgloves 123").width; };
-  var known = FACES;
+
+  /* A family this machine hasn't got measures as the canvas default — Times on
+     Windows — so an uninstalled NAME is a width like any other, and the first one
+     in FACES will claim every stack that legitimately resolved to that default.
+     Ogg is the case that exposed it: retail, absent here, first in the list, and
+     every Times result came back reported as "Ogg Roman". So the absent names are
+     dropped before matching, measured against a family nobody can have.
+     Two names are exempt, because the test cannot see them: `serif` is a generic
+     and always resolvable, and Times New Roman is what the canvas default IS on
+     Windows — so both measure exactly like a family nobody has. Exempting them
+     costs nothing. A stack that measures as the default either asked for Times and
+     got it, or asked for a generic serif and got Times; naming Times is right
+     either way, and it is what this tool said before Ogg joined the list. */
+  var gone = w('"__no_such_family__"');
+  var known = FACES.filter(function (name) {
+    return name === "serif" || name === "Times New Roman" ||
+           Math.abs(w('"' + name + '"') - gone) > 0.01;
+  });
   var want = w(stack), hit = "?";
   for (var i = 0; i < known.length; i++) {
     var name = known[i] === "serif" ? "serif" : '"' + known[i] + '"';
@@ -1313,8 +1350,60 @@ function faceNote(r) {
   /* Comic Sans can only be what a candidate stack fell through to — nothing in
      the list asks for it — so name the absence rather than the face. */
   var absent = got === "Comic Sans MS" && stack.indexOf(COMIC) !== -1;
-  r.face.textContent = absent ? "→ nothing here — Comic Sans" : "→ " + got;
-  r.face.className = "selnote" + (absent ? " absent" : "");
+  var note = absent ? "→ nothing here — Comic Sans" : "→ " + got;
+  var cls = "selnote" + (absent ? " absent" : "");
+
+  /* The display row carries a second fact, and it is the one that bites: whether
+     the word still fits the measure. See fit(). */
+  if (r.prop === "--serif-display" && !absent) {
+    var f = fit();
+    if (f) {
+      note += f.fits ? " · fits the measure" : " · " + f.over + " past the measure, fits at " + f.size + "cqw";
+      if (!f.fits) cls += " over";
+    }
+  }
+  r.face.textContent = note;
+  r.face.className = cls;
+}
+
+/* Does PROJECTS still fit the column, and at what size would it?
+
+   This is the failure the tool could not see. --cue-size is the ONE face-specific
+   number in the cut title — 25.32cqw fits the word to the full measure in Sitka
+   Banner and in nothing else — and `.cut-title > a` clips on both axes, so a wider
+   face does not overflow visibly, it loses its tail. Silently: a cut title is
+   MEANT to be cut, so a T sliced down its stem by the right-hand edge reads as the
+   device working. Of the faces in DISPLAY that resolve on this machine, thirty-four
+   of thirty-nine overflow, most of them by a fifth of the word.
+
+   Measured on the real span rather than a canvas, so tracking, the uppercase
+   transform, the weight and any feature that moves an advance width are all in it.
+   `size` is what --cue-size would have to be for the ink to land exactly on the
+   measure — the retune the styles.css comment asks for, done for you.
+
+   Half a pixel of tolerance: an exact fit is the intent, and browsers round a
+   computed length to 1/64px, so a word that lands dead on the measure must not
+   report itself as overflowing. */
+function fit() {
+  var doc = frame.contentDocument;
+  if (!doc) return null;
+  var box = doc.querySelector(".cut-title"), sp = doc.querySelector(".cut-title > a > span");
+  var row = BYKEY[":root|--cue-size"];
+  if (!box || !sp || !row) return null;
+
+  var col = box.getBoundingClientRect().width;
+  if (!col) return null;
+  var rng = doc.createRange();
+  rng.selectNodeContents(sp);
+  var ink = rng.getBoundingClientRect().width;
+  if (!ink) return null;
+
+  var now = +effective(row);
+  return {
+    fits: ink <= col + 0.5,
+    over: Math.round((ink / col - 1) * 1000) / 10 + "%",
+    size: +(now * col / ink).toFixed(2)
+  };
 }
 
 /* ---- CSS out ------------------------------------------------------------- */
@@ -1501,9 +1590,9 @@ function numRow(r) {
 /* A listbox rather than a <select>, for one reason: a native popup is drawn by
    the OS and never reports which option the pointer is over, so trying a face
    means committing to it and coming back — twenty-six faces in the reading list
-   and fifty-nine in the display one, so a hundred and seventy clicks to see them
-   all. Here the entry under the pointer is the one in the page, and only a click
-   keeps it, so the way to survey the list is to run down it.
+   and sixty-one in the display one, so a hundred and seventy-four clicks to see
+   them all. Here the entry under the pointer is the one in the page, and only a
+   click keeps it, so the way to survey the list is to run down it.
    Keyword rows get the same widget and need it just as badly: nobody reads the
    difference between `titling-caps` and `all-small-caps`, or between four values
    of text-rendering, off a name — you look at it. Same rule either way, whether
