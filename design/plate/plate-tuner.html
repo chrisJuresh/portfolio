@@ -194,7 +194,19 @@ var GRADE = [
   { k: "HIGHLIGHT",       label: "whites land on", colour: true,
     tip: "Where white ends up. A hair above the paper (#fcfbf8) and the sunlit stone stays the brightest thing in the corner without glowing." },
   { k: "GRAIN_SIGMA",     label: "grain",         min: 0,   max: 0.03, step: 0.0005, dp: 4,
-    tip: "Monochrome, weighted to the mids: none in the lifted blacks, where it would read as sensor noise, and none in the highlights, where it would read as JPEG." }
+    tip: "Monochrome, weighted to the mids: none in the lifted blacks, where it would read as sensor noise, and none in the highlights, where it would read as JPEG." },
+  /* Not one of build-plate.py's constants, and never will be: it is the two rows
+     above moved together, and what it exports is those two colours. It is here
+     because "all of it darker" is the one thing neither the pickers nor
+     --plate-opacity can say. The pickers cannot because it takes both of them at
+     once and by eye, in tandem, in hex. Opacity cannot because the whites land a
+     hair ABOVE the paper — at 0.6 the sunlit stone composites to 254,250,240
+     against paper of 252,251,248 — so turning it up deepens the shadows and
+     warms the highlights and never brings the top of the picture down at all.
+     Last in the group rather than beside the endpoints it drives, because the
+     rows above it are the pipeline in order and this is not a stage. */
+  { k: "LEVEL",           label: "overall level", min: 0.3, max: 1.1, step: 0.005, dp: 3, tool: true,
+    tip: "Both endpoints at once, as a fraction of what the file says. The one knob for \"all of it darker\".\nOpacity cannot do this — the whites land just above the paper, so no amount of it brings the sunlit stone down.\n1 is the file's own two colours. It exports as those colours, not as itself." }
 ];
 
 var MATTE = [
@@ -232,6 +244,10 @@ var GROUPS = [
 ];
 var ROWS = [];
 GROUPS.forEach(function (g) { g.rows.forEach(function (r) { r.group = g; ROWS.push(r); }); });
+/* The one row this tool reaches for by name, because it drives two others — see
+   applyLevel. Looked up rather than written twice, so the table above stays the
+   only place a row is declared. */
+var LEVEL_ROW = ROWS.filter(function (r) { return r.k === "LEVEL"; })[0];
 
 /* ---- state --------------------------------------------------------------- */
 var KEY = "plate-tuner-v1";
@@ -263,6 +279,10 @@ function save() { try { localStorage.setItem(KEY, JSON.stringify(state)); } catc
    does show that theme, so an edit to styles.css still lands. */
 var base = {};
 Object.keys(state.place).forEach(function (k) { base[k] = state.place[k]; });
+/* The third place, and the only one that is written down here: a tool-only row
+   has no line in any file to read a default off, so 1 — "the endpoints exactly as
+   the file has them" — is its own base. */
+base.LEVEL = 1;
 
 /* The key a row's value is filed under. Per-theme rows carry the theme in the
    key, so flipping the toggle genuinely swaps which number you are dragging. */
@@ -284,6 +304,9 @@ function movedAnywhere(r) {
 function changeCount() {
   var n = 0;
   ROWS.forEach(function (r) {
+    /* The badge counts lines to paste, and a tool-only row is not one of them —
+       it is counted by the two endpoint rows it has already moved. */
+    if (r.tool) return;
     if (!r.dark) { if (changed(r)) n++; return; }
     if (changedIn(r, "light")) n++;
     if (changedIn(r, "dark")) n++;
@@ -713,7 +736,7 @@ function paintView() {
 
 /* ---- the two blocks to paste --------------------------------------------- */
 function pyBlock() {
-  var moved = ROWS.filter(function (r) { return r.group.py && changed(r); });
+  var moved = ROWS.filter(function (r) { return r.group.py && !r.tool && changed(r); });
   if (!moved.length) return "# nothing in the grade or the matte has moved";
   var out = [];
   out.push("# " + Array(72).join("─"));
@@ -725,7 +748,7 @@ function pyBlock() {
   GROUPS.forEach(function (g) {
     if (!g.py) return;
     g.rows.forEach(function (r) {
-      if (!changed(r)) return;
+      if (r.tool || !changed(r)) return;
       var v = r.colour ? pyTuple(val(r)) : tidy(num(val(r), r.dp), true);
       var was = r.colour ? pyTuple(baseOf(r)) : tidy(num(baseOf(r), r.dp), true);
       var line = r.k + " = " + v;
@@ -852,9 +875,30 @@ function rowEl(r) {
 function set(r, v) {
   var kk = keyOf(r);
   if (v == null) delete state.vals[kk]; else state.vals[kk] = v;
+  if (r === LEVEL_ROW) applyLevel();
   save();
   paintChrome();
   if (r.group.css) inject(); else schedule();
+}
+
+/* What "overall level" actually does: write the two endpoint rows. So it needs no
+   stage of its own in drawPlate, nothing in plate-source.json, and nothing in
+   build-plate.py — the block to paste is the two colour lines it has moved, which
+   is what the tool would have printed if you had picked them by hand.
+   Absolute, and anchored on the file's own two colours rather than on wherever the
+   pickers currently sit: dragging back to 1 therefore lands exactly on the file
+   again, and a hundred drags do not walk away from it eight bits at a time the way
+   a multiply-what-is-there would. The cost is that it OVERWRITES a hand-picked
+   endpoint, which is the honest bargain for one knob driving two — and the
+   swatches move under the slider as it goes, so it is never a silent one. */
+function applyLevel() {
+  var f = +val(LEVEL_ROW);
+  ["SHADOW", "HIGHLIGHT"].forEach(function (k) {
+    state.vals[k] = "#" + rgbOf(base[k]).map(function (c) {
+      c = Math.round(c * f);
+      return ("0" + (c < 0 ? 0 : c > 255 ? 255 : c).toString(16)).slice(-2);
+    }).join("");
+  });
 }
 
 /* Coalesced to one draw per frame: a range input fires on every pixel of the
