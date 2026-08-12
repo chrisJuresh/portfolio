@@ -3,13 +3,25 @@
 Dev-only. Nothing here is served by the site; `.vercelignore` keeps the whole
 folder out of deployments. The site itself stays dependency-free and build-free.
 
-**Outcome: `sitka` won and now ships**, with two exceptions the lab shows too — the
-year column, kept in Georgia because its old-style figures reach 78% of the cap
-height beside them where Sitka's lining figures stand to 84%, and the italic lead
-paragraph, which kept Georgia after being seen both ways. So
+**Outcome: `sitka` won**, with two exceptions the lab shows too — the year column,
+kept in Georgia because its old-style figures reach 78% of the cap height beside
+them where Sitka's lining figures stand to 84%, and the italic lead paragraph,
+which kept Georgia after being seen both ways. Computer Modern lost on ink
+density, measured in [`../fonts/README.md`](../fonts/README.md), not on taste. So
 `sitka` is the variant to compare against; `asis` is history, not the live site.
-Computer Modern lost on ink density, measured in
-[`../fonts/README.md`](../fonts/README.md), not on taste.
+
+**`/portfolio` has since moved past it**, using the tuner rather than the lab.
+Its reading text is **Vollkorn**, its small lettered labels are **Spectral**, its
+year column is **Source Serif 4**, and all three are self-hosted from
+[`/fonts`](../fonts/README.md) rather than named and hoped for. The italic lead is
+still Georgia. The Sitka chain survives as the tail every one of those stacks
+falls back to, so a blocked font request lands on a screen serif instead of on
+Times. `/projects` is still Sitka. Sizes did not move: Vollkorn's x-height is 4%
+under Sitka's and Spectral's 6%, and the faces were chosen at these sizes.
+
+Nothing here re-runs that decision — the variants and the shots are the
+Sitka-era comparison, kept as it was judged. What follows says where each of them
+now stands relative to a base that has moved.
 
 ```
 design/
@@ -51,7 +63,9 @@ think" — which is why shipping the fonts changes the portfolio page so little.
 **`projects/styles.css`** — `--serif` is set on `body`, so **every** word on the
 page is meant to be Computer Modern. Nothing on that page is Georgia.
 
-**`portfolio/styles.css`** — only these, via `--serif-label` / `--serif-body`:
+**`portfolio/styles.css`** — only these, via `--serif-label` / `--serif-body`
+(the year column has had `--serif-num` of its own since, and is Source Serif 4
+today rather than the Georgia it was when this table was written):
 
 | Element | What it is |
 |---|---|
@@ -68,11 +82,30 @@ the portfolio page Computer Modern was only ever carrying five small pieces of
 furniture, and the file's own opening comment — "Computer Modern for all text" —
 never matched the CSS. The `cm-all` variant is what that comment described.
 
-Most of those Georgia declarations are gone now: promoting `sitka` sent the section
-headings, role lines and contact list through `--serif-body`. Two slots stay off
-Sitka on purpose — the year column (`--serif-num`) and the italic lead
-(`--serif-lead`), both Georgia after being seen both ways. They share a stack but
-stay separate slots, since each was tuned on its own.
+Those Georgia declarations are gone now: promoting `sitka` sent the section
+headings, role lines and contact list through `--serif-body`, and gave the two
+slots that stayed off Sitka variables of their own — the year column
+(`--serif-num`) and the italic lead (`--serif-lead`), both Georgia after being
+seen both ways. They shared a stack but stayed separate slots, since each was
+tuned on its own, and that has since paid for itself: `--serif-num` is Source
+Serif 4 now and `--serif-lead` is still Georgia.
+
+So the portfolio page's four slots today are:
+
+| Variable | Face | What reads it |
+|---|---|---|
+| `--serif-body` | Vollkorn, self-hosted | section headings, role lines, italic subtitles, contact list, bio paragraphs |
+| `--serif-label` | Spectral, self-hosted | `.name`, `.tagline`, `.projects-link`, `.theme-toggle` |
+| `--serif-num` | Source Serif 4, self-hosted, `onum` on | `.item .when` — the year column |
+| `--serif-lead` | Georgia | `.intro .lead` — the italic lead paragraph |
+
+`--serif-num` exists for one property: old-style figures, so a date does not read
+as loud as the organisation name beside it. Source Serif 4 does **not** default to
+them — plain, its figures stand to 100.3% of cap, worse than the problem the slot
+was created for — so `onum` is load-bearing and the subset in
+[`../fonts/README.md`](../fonts/README.md) keeps it explicitly. Georgia stays on
+the tail of that stack for the same reason it was chosen: its defaults are
+old-style too.
 
 ## Variants
 
@@ -85,7 +118,18 @@ stay separate slots, since each was tuned on its own.
 | `cm-all` | Real CM everywhere, including the slots that hard-code Georgia. |
 | `hybrid` | CM for titles, names and labels; Georgia for prose. |
 | `georgia-all` | Georgia everywhere; Computer Modern abandoned. |
-| `sitka` | Sitka Text / Charter, with years and lead in Georgia. Most legible, least portable (Windows-only). **What ships.** |
+| `sitka` | Sitka Text / Charter, with years and lead in Georgia. Most legible, least portable (Windows-only). **Won the comparison; still what `/projects` ships.** |
+
+Every variant pins all four font variables, including `--serif-num` and
+`--serif-lead`. That is not decoration: those two did not exist when most of these
+were written, and the values they used to fall through to — Georgia, and Georgia —
+were what each variant assumed. On `/portfolio` they no longer are, so without the
+pin `asis` would show a self-hosted Source Serif 4 year column inside a page whose
+entire claim is that it is Times.
+
+`sitka` is the one to hold against `/portfolio` today, but as a **comparison**
+rather than a mirror: it shows the face the page used to be set in, at the sizes
+the page still uses.
 
 Why `cmfix` compensates: Latin Modern's measured x-height is **0.431em**, *below*
 the Times fallback's 0.447em and well below Georgia's 0.481em. Switching to real
@@ -122,13 +166,16 @@ http://localhost:8000/design/type-tuner.html
 
 Sliders for every size, leading, tracking and gap on the page, plus a stack
 picker for each of the four font slots (`--serif-body`, `--serif-label`,
-`--serif-num`, `--serif-lead`). Changes land in the **real** page in the iframe
+`--serif-num`, `--serif-lead`) and one more for the cut title's `--serif-display`,
+which has a list of its own. Changes land in the **real** page in the iframe
 as you drag — same trick as the lab, so nothing is cloned and it can't drift.
+This is the tool the current stack was chosen with; the four rows start on the
+stacks `portfolio/styles.css` declares today, marked `(ships)` in each list.
 
 ### The font lists
 
 **Whichever face the pointer is on is the face in the page**, so the way to
-survey all twenty-six stacks is to run the pointer down the list and watch —
+survey all twenty-eight stacks is to run the pointer down the list and watch —
 no clicking in and back out to see each one. The arrow keys do the same from the
 keyboard. Only a click (or <kbd>Enter</kbd>) keeps a face; leaving the list or
 pressing <kbd>Esc</kbd> hands the page back to whatever is actually chosen.
@@ -246,7 +293,20 @@ Notes on how it behaves:
   computed style only reports pixels and could never tell you the source said
   `0.78rem`. To stop that table from silently rotting, every default is checked
   against the live page on load and any mismatch is reported in a banner —
-  **if that banner fires, update `ROWS`**, otherwise the `was` comments lie.
+  **if that banner fires, update `ROWS`**, otherwise the `was` comments lie. The
+  four font rows are checked too, comparing family names and their order rather
+  than the exact spelling; they used to be exempt, which is how their defaults
+  went on claiming Sitka after the page had moved to Vollkorn and Spectral.
+- The preview gets its faces from three places, and the difference matters when
+  you paste an export back. Vollkorn, Spectral, Source Serif 4 and the Latin
+  Modern cuts come out of `/fonts`, so they render here **and** in production —
+  the three serifs arrive with the portfolio page's own stylesheet, which is why
+  the tuner does not fetch them from Google even though Google has them. Every
+  other webfont in the lists is borrowed from Google Fonts for the preview only,
+  and the export header says which ones an export leans on: naming one is a
+  decision to go and self-host it, or it is `serif` for every visitor. Everything
+  left is a system face, and a stack that falls through to **Comic Sans** is one
+  this machine hasn't got.
 - Rows `styles.css` doesn't declare at all (the year column's size, which just
   inherits `0.9rem` from `.item .line`) start at the inherited value and only
   enter the export once moved, marked `was not set`.
@@ -327,6 +387,11 @@ Sitka's, so re-rendering would stack every *other* variant on top of Sitka-tuned
 sizes and quietly overwrite the evidence for the decision. Regenerate when you are
 running a new comparison, not to refresh these.
 
+The base has since moved again — `/portfolio` is Vollkorn and Spectral now — which
+only makes re-rendering less appropriate, not more. These shots answer "which face
+should the site be set in", a question that was settled; the current stack was
+arrived at in the tuner, which does not produce shots.
+
 ```bash
 cd design/tools
 npm install          # playwright; browsers land in the shared user cache
@@ -365,13 +430,24 @@ than on every tweak.
 
 `variants.css` is a lab artifact, not a patch. To adopt one:
 
-1. Point `--serif` (projects) and `--serif-label` / `--serif-body` (portfolio) at
-   the variant's stack. For a Latin Modern variant, also link `/fonts/fonts.css`
-   from the pages that need it and add the long-cache header for `/fonts/`
-   suggested in [`../fonts/README.md`](../fonts/README.md).
-2. Copy that variant's per-element rules into `projects/styles.css` and
+1. Point `--serif` (projects) and `--serif-label` / `--serif-body` /
+   `--serif-num` / `--serif-lead` (portfolio) at the variant's stacks.
+2. **If the face is not a system face, host it first.** A variant renders in the
+   lab off `/fonts/fonts.css` or off a Google request the tuner makes; neither is
+   true of the deployed site, so promoting one without hosting it sets the whole
+   page in Times while still looking right in the lab. Subset it into `/fonts`
+   following the recipe in [`../fonts/README.md`](../fonts/README.md), declare
+   only the cuts the CSS actually asks for, and add the long-cache header for
+   `/fonts/` — `vercel.json` already carries it.
+3. Copy that variant's per-element rules into `projects/styles.css` and
    `portfolio/styles.css`, dropping the `:root[data-variant="…"]` prefixes.
-3. Bump the `?v=` on both `styles.css` links so cached copies don't survive.
-4. Re-run the renderer to confirm the live pages now match the chosen shot.
+4. Bump the `?v=` on both `styles.css` links so cached copies don't survive.
+5. Update the `(ships)` entries and the four font-row defaults in
+   `type-tuner.html` — the tuner's drift banner will tell you if you forget.
+6. Re-run the renderer to confirm the live pages now match the chosen shot.
 
-That is the path `sitka` took, which is why the live sizes are its sizes.
+That is the path `sitka` took, which is why the live sizes are its sizes. Step 2
+is the one that was learned the hard way: the tuner exported Vollkorn, Spectral
+and Source Serif 4 for `/portfolio`, all three of them faces it was borrowing
+from Google, and applying that export alone would have set every word on the page
+in generic serif.
