@@ -22,14 +22,28 @@ statically from Vercel.
 - **Momentum carousel.** Wheel flicks and drag-releases feed a velocity that
   decays with friction each animation frame; when motion settles, the photo
   nearest the centre eases into place with a cancellable ease-out tween. The
-  first photo stays left-aligned with the text column. Mouse and pen drag
-  with a fling on release; touch stays native; arrow keys step one photo at
-  a time.
+  first and last photos stay aligned with their end of the text column rather
+  than reaching the middle, so the strip is bounded the same way at both ends.
+  Mouse and pen drag with a fling on release; touch stays native; arrow keys
+  step one photo at a time.
 - **Edge fades that dissolve into the page.** The strip fades into the paper
-  colour at both edges using nine-stop gradients that approximate a
-  smoothstep curve (no visible linear banding). The fades lift on hover or
-  keyboard focus, and switch off entirely on narrow viewports where they
-  would obscure the photos.
+  colour at both edges. Three colour stops and two interpolation hints, so
+  the browser bends the ramp on a power law instead of walking a chain of
+  straight segments — there is no piecewise-linear kink anywhere to band.
+  Where it starts, how far it reaches, how far it goes and how hard it eases
+  are four numbers on `:root` — twice over, because the fade is two settings
+  the page eases between. At rest the paper reaches half a photograph in past
+  the text edge so the first picture stands alone; pull the strip along and the
+  dissolve draws back to the text edge and tightens, arriving by the time the
+  second photograph reaches the centre of the screen. The last photograph gets
+  the same standing: over its own run in, the fade closes back down, so the
+  strip comes to rest against the right-hand edge wearing what it wore against
+  the left. It is scroll position, not a timed animation, so it runs backwards
+  just as smoothly on the way home.
+  Both sets have sliders in `design/type-tuner.html`, which takes the strip to
+  whichever state you're tuning.
+  The fades lift on hover or keyboard focus, and switch off entirely on
+  narrow viewports where they would obscure the photos.
 - **Flash-free dark mode.** An inline script applies the saved or OS theme
   before first paint. The site follows OS theme changes until you make an
   explicit choice with the toggle, which is then remembered in

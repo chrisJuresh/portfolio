@@ -68,6 +68,14 @@
       }).join("") + "</ul>" + toggle + "</div>")
     : toggle;
 
+  // The cut title: one display word in the bottom corner, sliced off by the end
+  // of the page. Full text in the markup, so it is read out and indexed whole
+  // even though only the top of it is drawn. It sits OUTSIDE <main class="col">,
+  // as a sibling — .page is a flex column and the title has to be its child to
+  // be held against the bottom edge. All the geometry is CSS: see --cue-* in
+  // styles.css.
+  var cut = '<div class="cut-title"><a href="/projects"><span>Projects</span></a></div>';
+
   page.innerHTML =
     '<main class="col">' +
       '<header class="masthead"><h1 class="name">' + esc(C.name) + "</h1>" +
@@ -76,9 +84,9 @@
           '<a class="projects-link" href="/projects">Projects</a>' +
         "</div></header>" +
       intro + carousel + cbar + work + edu + contact +
-    "</main>";
+    "</main>" + cut;
 
-  // ---- warm light / dark theme --------------------------------------------
+  // ---- light / dark theme --------------------------------------------------
   var root = document.documentElement;
   var themeToggle = page.querySelector(".theme-toggle");
   var themeMeta = document.getElementById("theme-color");
@@ -91,7 +99,7 @@
       themeToggle.setAttribute("aria-label", dark ? "Light mode" : "Dark mode");
       themeToggle.querySelector(".theme-toggle__label").textContent = dark ? "light" : "dark";
     }
-    if (themeMeta) themeMeta.setAttribute("content", dark ? "#161616" : "#fcfbf8");
+    if (themeMeta) themeMeta.setAttribute("content", dark ? "#000" : "#fff");
     if (remember) {
       try { localStorage.setItem("portfolio-theme", dark ? "dark" : "light"); } catch (_) {}
     }
@@ -143,13 +151,65 @@
     window.addEventListener("load", updateEdges);   // re-measure once images give the track its width
     updateEdges();
 
+    // ---- the edge fade opens as the strip pulls away --------------------------
+    // At rest the dissolve reaches in over the second photograph so the first one
+    // stands alone; one photograph along it has drawn back to the text edge.
+    // styles.css holds both ends and mixes them, so all that is reported here is
+    // how far between the two the strip has got.
+    var openDist = 0, closeDist = 0, travel = 0, lastOpen = -1;
+    // The whole travel is spent on the strip's first move: from a standstill to
+    // the resting place of photo 2, dead centre — the state the open numbers were
+    // drawn for, first photo out to the left and the third one going. That is
+    // also where the snap below lands from a single flick, so the two agree.
+    // The last move spends it again in reverse: the strip closes back down over
+    // the run from the second-to-last photo's centre to the end, so the final
+    // photograph stands against the right-hand text edge under the same fade the
+    // first one stands under, and the two ends of the strip are one composition.
+    // Asked of the DOM rather than rebuilt out of the padding: the strip's
+    // full-bleed margin and its padding are both a 50vw that overshoots by the
+    // width of a classic scrollbar, and they cancel, so only the rects know where
+    // the photos really are. This is snap()'s own expression, for i = 1 and n - 2.
+    function measureFade() {
+      var slides = track.querySelectorAll(".slide");
+      var mid = window.innerWidth / 2;
+      var reach = 0, backReach = 0;
+      travel = track.scrollWidth - track.clientWidth;
+      if (slides.length > 1) {
+        var r = slides[1].getBoundingClientRect();
+        reach = track.scrollLeft + (r.left + r.width / 2 - mid);
+        var rn = slides[slides.length - 2].getBoundingClientRect();
+        backReach = travel - (track.scrollLeft + (rn.left + rn.width / 2 - mid));
+      }
+      // never past what the strip can actually scroll, so the fade always reaches
+      // the open end; the 1px floor keeps the divisions below safe.
+      openDist  = Math.max(1, Math.min(travel, reach));
+      closeDist = Math.max(1, Math.min(travel, backReach));
+    }
+    function drawFade() {
+      // whichever end is nearer holds the fade shut — on a strip too short for
+      // the two runs to clear each other, neither end lets go entirely
+      var p = Math.min(track.scrollLeft / openDist, (travel - track.scrollLeft) / closeDist);
+      p = Math.max(0, Math.min(1, p));
+      p = p * p * (3 - 2 * p);                       // smoothstep: flat at both ends
+      p = Math.round(p * 200) / 200;                 // ...and no repaint for a change no one can see
+      if (p === lastOpen) return;
+      lastOpen = p;
+      root.style.setProperty("--fade-open", p);
+    }
+    function measureAndDrawFade() { measureFade(); drawFade(); }
+    track.addEventListener("scroll", drawFade, { passive: true });
+    window.addEventListener("resize", measureAndDrawFade);
+    window.addEventListener("load", measureAndDrawFade);
+    measureAndDrawFade();
+
     // ---- momentum ("roulette wheel") scrolling + snap-to-centre --------------
     // Each flick adds to a velocity that decays with friction every frame; when
     // motion settles, the photo nearest the screen centre eases into the centre
-    // (the first photo stays left-aligned with the text — it can't reach centre).
+    // (the first and last photos stay aligned with their end of the text column —
+    // the strip runs out of travel before either of them reaches the middle).
     var reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     var vel = 0, raf = null, mode = null;             // mode: "coast" | "tween"
-    var FRICTION = 0.95, MIN_V = 0.35, MAX_V = 180;
+    var FRICTION = 0.95, MIN_V = 0.35, MAX_V = 360;   // MAX_V ≈ a spin across ~30 photos
     function maxScroll() { return track.scrollWidth - track.clientWidth; }
     function stopAnim() { if (raf) cancelAnimationFrame(raf); raf = null; mode = null; }
     function halt() { vel = 0; stopAnim(); }
@@ -185,25 +245,44 @@
       }
       raf = requestAnimationFrame(frame);
     }
-    // centre the photo closest to the middle of the screen (clamped: first → left,
-    // last → its resting spot)
-    function snap() {
-      if (down) return;
+    // resting places, in scrollLeft: the first photo sits left-aligned with the
+    // text (0), every other photo centres; all clamped to the scrollable range,
+    // which is what leaves the last photo right-aligned with the text — its
+    // centre lies past the end of the travel, so the clamp stands it on the edge
+    function snapPoints() {
       var slides = track.querySelectorAll(".slide");
-      if (!slides.length) return;
       var mid = window.innerWidth / 2, cur = track.scrollLeft, max = maxScroll();
-      // snap points (in scrollLeft): first photo left-aligned (0), every other centred.
-      // Pick the one nearest the current position so photo 1 doesn't steal the start.
-      var best = 0, bestD = Math.abs(cur);
+      var pts = [0];
       for (var i = 1; i < slides.length; i++) {
         var r = slides[i].getBoundingClientRect();
-        var s = cur + (r.left + r.width / 2 - mid);   // scrollLeft that centres photo i
-        s = Math.max(0, Math.min(max, s));
-        var d = Math.abs(s - cur);
-        if (d < bestD) { bestD = d; best = s; }
+        pts.push(Math.max(0, Math.min(max, cur + (r.left + r.width / 2 - mid))));
       }
-      if (Math.abs(best - cur) < 2) return;   // already at the nearest snap point
+      return pts;
+    }
+    // centre the photo closest to the middle of the screen (clamped: first → left
+    // edge of the text, last → right edge of it)
+    function snap() {
+      if (down) return;
+      var pts = snapPoints(), cur = track.scrollLeft;
+      if (pts.length < 2) return;
+      var best = pts[0], bestD = Math.abs(pts[0] - cur);
+      for (var i = 1; i < pts.length; i++) {
+        var d = Math.abs(pts[i] - cur);
+        if (d < bestD) { bestD = d; best = pts[i]; }
+      }
+      if (bestD < 2) return;                  // already at the nearest snap point
       tweenTo(best);
+    }
+    // the nearest resting place past `from` in direction `dir` — i.e. one photo
+    // along, landed on exactly rather than approached and then corrected
+    function nextPoint(from, dir) {
+      var pts = snapPoints(), best = null;
+      for (var i = 0; i < pts.length; i++) {
+        var p = pts[i];
+        if (dir > 0 ? p <= from + 2 : p >= from - 2) continue;
+        if (best === null || Math.abs(p - from) < Math.abs(best - from)) best = p;
+      }
+      return best;
     }
     var snapT = null;
     function scheduleSnap() {                          // snap once motion has settled
@@ -215,18 +294,49 @@
     }
     track.addEventListener("scroll", scheduleSnap, { passive: true });
 
-    // wheel spins the strip; repeated fast flicks build up speed
+    // wheel spins the strip: one lone notch steps one photo, but notches that
+    // land while it is still coasting compound, so a fast spin runs away
+    var DETENT = 100;                                   // px of wheel delta in one notch
+    var SPIN_GAIN = 0.8, MAX_GAIN = 6;                  // how hard stacked notches compound
+    function slidePitch() {                             // photo width + the gap after it
+      var s = track.querySelector(".slide");
+      if (!s) return track.clientWidth * 0.8;
+      var gap = parseFloat(window.getComputedStyle(track).columnGap) || 0;
+      return s.getBoundingClientRect().width + gap;
+    }
+    var STEP_GAP = 120;                                 // notches this close read as a spin
+    var stepTarget = null, lastNotch = -1e9;
     track.addEventListener("wheel", function (e) {
       var d = Math.abs(e.deltaY) >= Math.abs(e.deltaX) ? e.deltaY : e.deltaX;
       var m = maxScroll();
       if ((d < 0 && track.scrollLeft <= 0) || (d > 0 && track.scrollLeft >= m)) return; // at an end → let the page scroll
       e.preventDefault();
-      var unit = e.deltaMode === 1 ? 16 : 1;            // line deltas vs pixel deltas
-      kick(d * unit * (reduce ? 1 : 0.28));
+      // normalise line / page deltas to pixels, then size the kick so one notch
+      // lands one photo along: a coast covers vel / (1 - FRICTION) before it dies.
+      var px = e.deltaMode === 1 ? d * 16 : e.deltaMode === 2 ? d * track.clientWidth : d;
+      var now = e.timeStamp, spinning = mode === "coast" || now - lastNotch < STEP_GAP;
+      lastNotch = now;
+      // A lone notch is a step, not a throw: ease straight onto the next resting
+      // place so it arrives exactly, with no snap to tidy up after it. Chained
+      // notches retarget from the one in flight; only a real spin uses momentum.
+      if (!spinning && Math.abs(px) >= DETENT * 0.4) {
+        var from = mode === "tween" && stepTarget !== null ? stepTarget : track.scrollLeft;
+        var p = nextPoint(from, px);
+        if (p !== null) { vel = 0; stepTarget = p; tweenTo(p); return; }
+      }
+      stepTarget = null;
+      var pitch = slidePitch();
+      var travel = (px / DETENT) * pitch;
+      // photos still queued in the current coast — zero when the strip is at rest,
+      // so a single step stays a single step
+      var pending = Math.abs(vel) / (1 - FRICTION) / pitch;
+      var gain = Math.min(1 + SPIN_GAIN * pending, MAX_GAIN);
+      kick(reduce ? travel : travel * gain * (1 - FRICTION));
     }, { passive: false });
 
     // drag to scroll (mouse / pen), with a fling on release; touch stays native
-    var down = false, lastX = 0, flingV = 0;
+    var down = false, lastX = 0, flingV = 0, lastMoveT = 0;
+    var FLING = 3.2;                                    // how far a flick carries past the drag
     track.addEventListener("pointerdown", function (e) {
       if (e.pointerType === "touch") return;
       halt();
@@ -239,22 +349,26 @@
       var dx = e.clientX - lastX; lastX = e.clientX;
       track.scrollLeft -= dx;
       flingV = -dx;                                     // remember last motion for the fling
+      lastMoveT = e.timeStamp;
     });
-    function endDrag() {
+    function endDrag(e) {
       if (!down) return;
       down = false; track.classList.remove("dragging");
-      if (!reduce && Math.abs(flingV) > 2) kick(flingV * 1.3);
+      // fling only if the pointer was still moving as it lifted — releasing after
+      // a pause should leave the strip where it is
+      var moving = e && e.timeStamp - lastMoveT < 80 && Math.abs(flingV) > 2;
+      if (!reduce && moving) kick(flingV * FLING);
       else scheduleSnap();                              // no fling → settle to centre
     }
     track.addEventListener("pointerup", endDrag);
     track.addEventListener("pointercancel", endDrag);
 
-    // keyboard: arrow keys move roughly one photo, then it settles to centre
+    // keyboard: arrow keys step one photo, onto its resting place
     track.addEventListener("keydown", function (e) {
       if (e.key !== "ArrowRight" && e.key !== "ArrowLeft") return;
       halt();
-      var step = track.clientWidth * 0.8 * (e.key === "ArrowLeft" ? -1 : 1);
-      track.scrollBy({ left: step, behavior: reduce ? "auto" : "smooth" });
+      var p = nextPoint(track.scrollLeft, e.key === "ArrowLeft" ? -1 : 1);
+      if (p !== null) tweenTo(p);
       e.preventDefault();
     });
 

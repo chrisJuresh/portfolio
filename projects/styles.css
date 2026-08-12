@@ -1,15 +1,16 @@
 /* ============================================================================
    Christian Juresh — projects
-   A wall of tinted cards on warm paper. Each project owns one pastel; the type
-   stays the same Sitka as the CV so the two pages read as one site.
+   A wall of tinted cards on plain paper — pure white, or pure black when dark.
+   Each project owns one pastel; the type stays the same Sitka as the CV so the
+   two pages read as one site.
    ========================================================================== */
 
 :root {
   --ink:        #1a1917;
   --ink-soft:   #46433d;
   --muted:      #6f6a5d;
-  --bg:         #fcfbf8;                  /* warm paper white            */
-  --bg-rgb:     252, 251, 248;
+  --bg:         #fff;                     /* pure white                  */
+  --bg-rgb:     255, 255, 255;
   --link-line:  #b3aa9b;
 
   /* drawn on top of a card tint, so both are relative to the card's ink */
@@ -37,8 +38,8 @@
   --ink:        #eaeaea;
   --ink-soft:   #b8b8b8;
   --muted:      #b8b8b8;
-  --bg:         #161616;
-  --bg-rgb:     22, 22, 22;
+  --bg:         #000;                     /* pure black                  */
+  --bg-rgb:     0, 0, 0;
   --link-line:  #3a3a3a;
 
   --card-ink:   #e7e6e2;

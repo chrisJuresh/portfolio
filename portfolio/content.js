@@ -23,7 +23,6 @@ window.CONTENT = {
   work: [
     { org: "Third Bridge Group Limited",     role: "Associate Software Engineer",     years: "2024–Present" },
     { org: "Royal College of Radiologists",  role: "Professional Services Administrator", years: "2022–2024" },
-    { org: "Queen Mary University of London", role: "Computer Science Demonstrator",   years: "2022–2024" },
   ],
 
   // ---- Education -----------------------------------------------------------

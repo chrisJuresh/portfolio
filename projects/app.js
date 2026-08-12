@@ -15,7 +15,7 @@
       themeToggle.querySelector(".theme-toggle__label").textContent = dark ? "light" : "dark";
     }
 
-    if (themeMeta) themeMeta.setAttribute("content", dark ? "#161616" : "#fcfbf8");
+    if (themeMeta) themeMeta.setAttribute("content", dark ? "#000" : "#fff");
 
     if (remember) {
       try { localStorage.setItem("portfolio-theme", dark ? "dark" : "light"); } catch (_) {}
