@@ -209,13 +209,16 @@ var GRADE = [
     tip: "Both endpoints at once, as a fraction of what the file says. The one knob for \"all of it darker\".\nOpacity cannot do this — the whites land just above the paper, so no amount of it brings the sunlit stone down.\n1 is the file's own two colours. It exports as those colours, not as itself." }
 ];
 
+/* Brightness is the whole test on this frame — there is no blueness slider, and
+   there was one here until the photograph changed. The sky is a hazy backlit
+   white and the dome's stone, lit by it, is the BLUER of the two; a blueness
+   floor would knock out the building and keep the sky. build-plate.py's
+   constants block has the measurements. */
 var MATTE = [
-  { k: "SKY_BLUE_MIN",  label: "blueness",   min: 0.02, max: 0.6,  step: 0.005, dp: 3,
-    tip: "How blue a pixel must be to be sky at all — (b − r) over the sum, in linear light.\nDrop it far and the stone's skylit shadows join the sky, because they are lit by it." },
-  { k: "SKY_LUMA_MIN",  label: "bright seed", min: 0.002, max: 0.08, step: 0.001, dp: 3,
-    tip: "How bright a blue pixel must be to START a patch of sky.\nThis is the confident test." },
-  { k: "SKY_LUMA_LOW",  label: "dim spread", min: 0.001, max: 0.05, step: 0.0005, dp: 4,
-    tip: "How bright it must be to STAY in one it already touches.\nThe corners of the frame are a stop and a half down on the middle — this is what carries the matte into them without opening the facade, which is nowhere near the sky." },
+  { k: "SKY_LUMA_MIN",  label: "bright seed", min: 0.02, max: 0.30, step: 0.002, dp: 3,
+    tip: "How bright a pixel must be to START a patch of sky.\nThis is the confident test. The sky sits at 0.10–0.18 and nothing built gets past 0.15." },
+  { k: "SKY_LUMA_LOW",  label: "dim spread", min: 0.01, max: 0.20, step: 0.0025, dp: 3,
+    tip: "How bright it must be to STAY in one it already touches.\nThe top corner of the sky falls to 0.083 — this is what carries the matte into it without opening the tower's sunlit lead, which is brighter still but touches nothing that seeds." },
   { k: "SKY_EDGE_BLUR", label: "edge softness", min: 0, max: 4,  step: 0.1, dp: 1,
     tip: "Blur on the alpha, in output pixels, so the roofline does not stair-step.\nApproximated here by three box passes; the script uses a real Gaussian." }
 ];
@@ -331,11 +334,11 @@ function rgbOf(h) {
 }
 
 /* ---- the source ---------------------------------------------------------- */
-/* Decoded once into the three arrays every stage reads: linear RGB, linear luma,
-   and blueness. Held as floats rather than recomputed per draw because the
-   sliders move and the photograph does not. */
+/* Decoded once into the two arrays every stage reads: linear RGB and linear
+   luma. Held as floats rather than recomputed per draw because the sliders move
+   and the photograph does not. */
 var META = null, N = 0, W = 0, H = 0;
-var lin = null, luma = null, blue = null, noise = null, lumaMax = 1;
+var lin = null, luma = null, noise = null, lumaMax = 1;
 
 function srgbToLinear(u) {
   var c = u / 255;
@@ -366,7 +369,6 @@ function decode(img) {
 
   lin = new Float32Array(N * 3);
   luma = new Float32Array(N);
-  blue = new Float32Array(N);
   lumaMax = 0;
   for (var p = 0, q = 0; p < N; p++, q += 3) {
     var r = lut[d[p * 4]], gg = lut[d[p * 4 + 1]], b = lut[d[p * 4 + 2]];
@@ -374,7 +376,6 @@ function decode(img) {
     var y = 0.2126 * r + 0.7152 * gg + 0.0722 * b;
     luma[p] = y;
     if (y > lumaMax) lumaMax = y;
-    blue[p] = (b - r) / (r + gg + b + 1e-9);
   }
 
   var rnd = mulberry32(20250825);
@@ -390,7 +391,7 @@ function decode(img) {
 /* ---- the sky matte ------------------------------------------------------- */
 /* build-plate.py's sky_matte(), plus its bleed() precomputed as a lookup: for
    every sky pixel within BLEED of the building, which building pixel is to be
-   painted over it. Rebuilt only when one of the four matte constants moves —
+   painted over it. Rebuilt only when one of the three matte constants moves —
    it is the expensive half, and the grade is dragged far more often. */
 var sky = null, alpha = null, bleedFrom = null, hist = null, matteSig = "";
 
@@ -403,7 +404,7 @@ function buildMatte() {
   if (sig === matteSig) return;
   matteSig = sig;
 
-  var bmin = +val(MATTE[0]), lmin = +val(MATTE[1]), llow = +val(MATTE[2]), soft = +val(MATTE[3]);
+  var lmin = +val(MATTE[0]), llow = +val(MATTE[1]), soft = +val(MATTE[2]);
 
   /* Label the permissive predicate, then keep only the components that both
      contain a confident pixel and reach the top edge. A flood from the seed
@@ -411,7 +412,7 @@ function buildMatte() {
      edge, the second and not the first. */
   var comp = new Int32Array(N).fill(-1);
   var grow = new Uint8Array(N);
-  for (var i = 0; i < N; i++) grow[i] = (blue[i] > bmin && luma[i] > llow) ? 1 : 0;
+  for (var i = 0; i < N; i++) grow[i] = (luma[i] > llow) ? 1 : 0;
 
   var stack = new Int32Array(N), keep = [];
   var nc = 0;
@@ -442,9 +443,10 @@ function buildMatte() {
 }
 
 /* binary_fill_holes: anything the sky encloses is sky. Reached by flooding the
-   NON-sky from the border — what the flood cannot reach is enclosed. The mast
-   and the crane jib on the skyline are the point; the building is not swallowed
-   because it runs off three edges of the frame and so is on the border. */
+   NON-sky from the border — what the flood cannot reach is enclosed. Small dark
+   specks on the skyline are the point; the building is not swallowed because it
+   runs off the bottom and both sides of the frame and so is on the border, and
+   neither are the weathervane and the cross, which are attached to it. */
 function fillHoles() {
   var seen = new Uint8Array(N), stack = new Int32Array(N), sp = 0;
   function push(p) { if (!sky[p] && !seen[p]) { seen[p] = 1; stack[sp++] = p; } }

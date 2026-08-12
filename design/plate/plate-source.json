@@ -15,9 +15,8 @@
     "GRAIN_SIGMA": 0.0075
   },
   "matte": {
-    "SKY_BLUE_MIN": 0.25,
-    "SKY_LUMA_MIN": 0.022,
-    "SKY_LUMA_LOW": 0.01,
+    "SKY_LUMA_MIN": 0.13,
+    "SKY_LUMA_LOW": 0.075,
     "SKY_EDGE_BLUR": 1.2
   }
 }

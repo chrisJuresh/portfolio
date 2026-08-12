@@ -364,19 +364,25 @@ Notes, mostly the same shape as the type tuner's:
 ### The sky, and why it is a matte and not a crop
 
 No sky is wanted, only the building — the page's own paper is the sky. Cropping
-cannot do it: there is a wedge of sky in the notch directly above the door, so
-the tallest sky-free rectangle containing the door throws away the pediment, the
-columns and both rooflines. So the frame is kept whole and the sky is knocked out
-to transparent.
+cannot do it: the dome is the tallest thing in the frame and the sky closes over
+it on both sides, so the tallest sky-free rectangle starts below the balustrade
+and throws away the lantern, the cross and the whole curve of the dome. So the
+frame is kept whole and the sky is knocked out to transparent.
 
-Finding it is a threshold on blueness **and** brightness together, kept honest by
-connectivity — full reasoning in `build-plate.py`. The one part worth knowing at
-this end is the hysteresis: the brightness test only has to be passed to *start* a
-patch of sky (`SKY_LUMA_MIN`), and a patch already begun spreads through anything
-equally blue down to `SKY_LUMA_LOW`. That is what carries the matte into the
-corners of the frame, which are over a stop down on the middle and used to be
-left behind as a ragged wedge of grey in the top-left — sky, painted as though it
-were building.
+Finding it is a threshold on **brightness**, kept honest by connectivity — full
+reasoning in `build-plate.py`. Blueness used to be half the test and is now no
+part of it: the sky here is a hazy backlit white, and the dome's stone, lit by
+that same sky, is the bluer of the two. Ask for blue and you knock out the
+building.
+
+The part worth knowing at this end is the hysteresis: the brightness test only
+has to be passed to *start* a patch of sky (`SKY_LUMA_MIN`), and a patch already
+begun spreads down to `SKY_LUMA_LOW`. That is what carries the matte into the
+corner of the frame, which is over a stop down on the middle and was otherwise
+left behind as a ragged wedge of grey in the top-right — sky, painted as though
+it were building. Connectivity to the top edge is what stops the same permissive
+threshold punching through the tower's sunlit lead roof, which is brighter than
+the dim end of the sky.
 
 ## Regenerating the shots
 
