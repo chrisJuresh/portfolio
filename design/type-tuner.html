@@ -24,21 +24,14 @@
     }
     .top strong { font-size: 11px; letter-spacing: 0.09em; text-transform: uppercase; color: var(--ui-mut); }
     .grow { flex: 1 1 auto; }
-    button, select, input[type="text"], input[type="number"], textarea {
+    button, input[type="text"], input[type="number"], textarea {
       font: inherit; color: var(--ui); background: transparent;
       border: 1px solid var(--ui-line); border-radius: 5px;
     }
-    /* Fields carry a solid background, buttons don't. A native select popup is
-       drawn by the browser from the control's own palette, and `transparent`
-       leaves every option that isn't highlighted grey on grey — so both ends are
-       stated explicitly, on the control AND on the options, in both themes. */
-    select, input[type="text"], input[type="number"], textarea {
+    /* Fields carry a solid background, buttons don't. */
+    input[type="text"], input[type="number"], textarea {
       background: var(--ui-bg);
       color-scheme: light dark;
-    }
-    select option {
-      background: var(--ui-bg);
-      color: var(--ui);
     }
     button { padding: 0.24rem 0.55rem; cursor: pointer; }
     button:hover { border-color: var(--ui-mut); }
@@ -98,9 +91,46 @@
     .frow { margin: 0.25rem 0; }
     .frow > label { display: block; font-size: 11.5px; color: var(--ui-mut); }
     .frow.on > label { color: var(--ui-hit); }
-    .frow select, .frow input[type="text"] { width: 100%; padding: 0.14rem 0.2rem; font-size: 11.5px; margin-top: 0.1rem; }
-    .sel { display: flex; gap: 0.25rem; align-items: center; }
-    .sel select { flex: 1 1 auto; }
+    .frow input[type="text"] { width: 100%; padding: 0.14rem 0.2rem; font-size: 11.5px; margin-top: 0.1rem; }
+    /* Top-aligned, not centred: the list opens inside .pick and grows the row, and
+       a centred ↺ would ride down the page with it. */
+    .sel { display: flex; gap: 0.25rem; align-items: flex-start; }
+    .sel .pick { flex: 1 1 auto; min-width: 0; }
+    .sel .undo { margin-top: 0.3rem; }
+
+    /* ---- font picker ------------------------------------------------------- */
+    /* Not a <select>: its popup is drawn by the OS, which never reports which
+       option the pointer is over, so trying a face would mean choosing it first.
+       Here every entry previews the moment the pointer reaches it, and only a
+       click is a change — the fastest way to sweep two dozen faces is to run the
+       pointer down the list and watch the page.
+
+       The list sits in the panel's own flow rather than floating over it:
+       `.controls` scrolls, so an absolutely positioned popup would be clipped by
+       it, and a fixed one would sit outside `controls`, where the delegated
+       highlight and reveal handlers can't see it. */
+    .pick { position: relative; }
+    .pick .trigger {
+      width: 100%; margin-top: 0.1rem; padding: 0.14rem 0.2rem;
+      display: flex; align-items: center; gap: 0.3rem;
+      font-size: 11.5px; text-align: left; background: var(--ui-bg);
+    }
+    .pick .trigger::after { content: "\25be"; margin-left: auto; font-size: 9px; color: var(--ui-mut); }
+    .pick.open .trigger::after { content: "\25b4"; }
+    .pick .now { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    /* A hover is not a choice, and the page can't say which it is showing — so the
+       trigger says it, in the accent the panel already uses for "this has moved". */
+    .pick.peek .now { color: var(--ui-hit); font-style: italic; }
+
+    .menu {
+      margin: 0.15rem 0 0.1rem; max-height: 14rem; overflow: auto;
+      border: 1px solid var(--ui-line); border-radius: 5px; background: var(--ui-bg);
+    }
+    .menu[hidden] { display: none; }
+    .opt { padding: 0.15rem 0.35rem; font-size: 11.5px; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .opt.at { background: var(--ui-hit); color: var(--ui-bg); }
+    .opt.cur::after { content: " \2713"; color: var(--ui-mut); }
+    .opt.at.cur::after { color: var(--ui-bg); }
 
     .selnote, .hint { font-size: 10.5px; color: var(--ui-mut); }
     .selnote { font-family: ui-monospace, Consolas, monospace; }
@@ -652,8 +682,42 @@ function inject() {
     tag = doc.createElement("style");
     tag.id = "__tuner";
   }
-  tag.textContent = buildCSS(false);
+  tag.textContent = buildCSS(false) + previewCSS();
   doc.body.appendChild(tag);            /* re-append: keep it last */
+}
+
+/* ---- trying a face without choosing it ----------------------------------- */
+/* The pointer resting on an entry in a font list puts that stack in the page and
+   does nothing else: `state.vals` is untouched, so the export, the change count,
+   the profile dot and the undo timeline all go on describing what has actually
+   been chosen. Sweeping two dozen faces therefore costs nothing and leaves no
+   trace — which is the whole point of hovering rather than clicking.
+   The declaration is appended after buildCSS's own, inside the same injected
+   sheet: same specificity, later wins, so previewing a row that has already been
+   changed overrides it without either one reaching for !important. */
+var preview = null;                       /* { r: row, v: stack } */
+
+function previewCSS() {
+  if (!preview) return "";
+  return "\n" + preview.r.sel + " { " + preview.r.prop + ": " + preview.v + "; }\n";
+}
+
+/* The stack a row is *showing*, which is the hovered one if there is one — what
+   the resolved-face note beside it has to describe, since that is what the frame
+   is rendering. */
+function previewOf(r) {
+  return preview && preview.r === r ? preview.v : effective(r);
+}
+
+/* v of null clears the preview; r is still wanted then, to put the row's note
+   back to the value it is really carrying. */
+function setPreview(r, v) {
+  var was = preview;
+  if (was ? (was.r === r && was.v === v) : v == null) return;
+  preview = v == null ? null : { r: r, v: v };
+  inject();
+  if (was && was.r !== r) faceNote(was.r);
+  faceNote(r);
 }
 
 /* ---- hover highlight ----------------------------------------------------- */
@@ -809,6 +873,19 @@ function resolved(stack) {
     if (Math.abs(w(name) - want) < 0.01) { hit = known[i] === "serif" ? "generic serif" : known[i]; break; }
   }
   return hit;
+}
+
+/* Reads that measurement back onto a font row. Called from paint() and again on
+   every hover, so the note keeps pace with the frame rather than with the
+   selection — hover a face this machine hasn't got and it says so at once. */
+function faceNote(r) {
+  if (!r || !r.face) return;
+  var stack = String(previewOf(r)), got = resolved(stack);
+  /* Comic Sans can only be what a candidate stack fell through to — nothing in
+     the list asks for it — so name the absence rather than the face. */
+  var absent = got === "Comic Sans MS" && stack.indexOf(COMIC) !== -1;
+  r.face.textContent = absent ? "→ nothing here — Comic Sans" : "→ " + got;
+  r.face.className = "selnote" + (absent ? " absent" : "");
 }
 
 /* ---- CSS out ------------------------------------------------------------- */
@@ -989,6 +1066,176 @@ function numRow(r) {
   return row;
 }
 
+/* ---- the font list ------------------------------------------------------- */
+/* A listbox rather than a <select>, for one reason: a native popup is drawn by
+   the OS and never reports which option the pointer is over, so trying a face
+   means committing to it and coming back — twenty-six faces, fifty-two clicks.
+   Here the entry under the pointer is the one in the page, and only a click keeps
+   it, so the way to survey the list is to run down it.
+   `pick.value` is a property, get and set, so paint() can go on driving every
+   widget in the panel through `.value` without knowing which are selects. */
+var openPick = null;                      /* one list open at a time */
+var pickSeq = 0;
+
+function fontPick(r, free) {
+  var id = "fp" + (++pickSeq);
+
+  var pick = document.createElement("div");
+  pick.className = "pick";
+
+  var trigger = document.createElement("button");
+  trigger.type = "button";
+  trigger.className = "trigger";
+  trigger.setAttribute("aria-haspopup", "listbox");
+  trigger.setAttribute("aria-expanded", "false");
+  trigger.title = "hover an entry to put it in the page — only a click keeps it";
+  var now = document.createElement("span");
+  now.className = "now";
+  trigger.appendChild(now);
+
+  var menu = document.createElement("div");
+  menu.className = "menu";
+  menu.setAttribute("role", "listbox");
+  menu.hidden = true;
+
+  var opts = STACKS.concat([["custom…", "__custom"]]).map(function (s, i) {
+    var o = document.createElement("div");
+    o.className = "opt";
+    o.id = id + "-" + i;                  /* so aria-activedescendant can name it */
+    o.setAttribute("role", "option");
+    o.textContent = s[0];
+    o.__name = s[0];
+    o.__val = s[1];
+    menu.appendChild(o);
+    return o;
+  });
+
+  var cur = null;                         /* what is chosen, not what is hovered */
+
+  function nameOf(v) {
+    var hit = opts.filter(function (o) { return o.__val === v; })[0];
+    return hit ? hit.__name : "custom…";
+  }
+  function at() {
+    return opts.filter(function (o) { return o.classList.contains("at"); })[0] || null;
+  }
+  function optOf(n) {
+    while (n && n !== menu) {
+      if (n.classList && n.classList.contains("opt")) return n;
+      n = n.parentNode;
+    }
+    return null;
+  }
+
+  /* Where the pointer — or an arrow key — has got to. Straight into the page, and
+     named on the trigger, so the frame and the panel never disagree about what is
+     being looked at. `custom…` has no stack behind it, so it previews nothing. */
+  function peek(o) {
+    opts.forEach(function (x) { x.classList.toggle("at", x === o); });
+    if (o) menu.setAttribute("aria-activedescendant", o.id);
+    else menu.removeAttribute("aria-activedescendant");
+    var v = o && o.__val !== "__custom" ? o.__val : null;
+    pick.classList.toggle("peek", v != null && v !== cur);
+    now.textContent = v == null ? nameOf(cur) : o.__name;
+    setPreview(r, v);
+  }
+
+  function show() {
+    if (openPick && openPick !== pick) openPick.__shut();
+    openPick = pick;
+    pick.classList.add("open");
+    menu.hidden = false;
+    trigger.setAttribute("aria-expanded", "true");
+    var on = opts.filter(function (o) { return o.__val === cur; })[0];
+    if (on && on.scrollIntoView) on.scrollIntoView({ block: "nearest" });
+  }
+  function shut() {
+    if (openPick === pick) openPick = null;
+    pick.classList.remove("open");
+    menu.hidden = true;
+    trigger.setAttribute("aria-expanded", "false");
+    peek(null);                           /* the preview goes with the list */
+  }
+  pick.__shut = shut;
+
+  /* `custom…` is a state of the row, not a value, and it has to be recorded as
+     one: it seeds the box with whatever is in force, which is usually a stack
+     that IS in the list, and paint() would otherwise read that back as "not
+     custom after all" and shut the box again the moment it opened. */
+  function choose(v) {
+    shut();
+    r.wantFree = v === "__custom";
+    if (r.wantFree) {
+      free.hidden = false;
+      free.value = free.value || effective(r);
+      free.focus();
+      state.vals[r.k] = free.value;
+    } else {
+      free.hidden = true;
+      state.vals[r.k] = v;
+    }
+    commit(r.k);
+  }
+
+  trigger.addEventListener("click", function () { if (menu.hidden) show(); else shut(); });
+
+  /* Keeps the focus on the trigger through a click on an entry: an .opt is not
+     focusable, so without this the mousedown blurs the trigger and focusout
+     shuts the list out from under the click. */
+  menu.addEventListener("mousedown",    function (e) { e.preventDefault(); });
+  menu.addEventListener("pointerover",  function (e) { var o = optOf(e.target); if (o) peek(o); });
+  menu.addEventListener("pointerleave", function () { peek(null); });
+  menu.addEventListener("click",        function (e) { var o = optOf(e.target); if (o) choose(o.__val); });
+
+  /* The same sweep from the keyboard: the arrows move the preview, Enter keeps
+     it. A closed <select> managed that much; an open one never did. */
+  pick.addEventListener("keydown", function (e) {
+    var k = e.key;
+    if (menu.hidden) {
+      if (k === "ArrowDown" || k === "ArrowUp" || k === "Enter" || k === " ") { e.preventDefault(); show(); }
+      return;
+    }
+    if (k === "Escape") { e.preventDefault(); shut(); trigger.focus(); return; }
+    if (k === "Tab") { shut(); return; }
+    if (k === "Enter" || k === " ") {
+      e.preventDefault();
+      var o = at();
+      if (o) choose(o.__val);
+      return;
+    }
+    if (k !== "ArrowDown" && k !== "ArrowUp") return;
+    e.preventDefault();
+    var here = at();
+    var i = here ? opts.indexOf(here) : opts.map(function (o) { return o.__val; }).indexOf(cur);
+    i = Math.max(0, Math.min(opts.length - 1, (i < 0 ? 0 : i) + (k === "ArrowDown" ? 1 : -1)));
+    peek(opts[i]);
+    if (opts[i].scrollIntoView) opts[i].scrollIntoView({ block: "nearest" });
+  });
+
+  /* Leaving the control at all — including clicking into the frame — puts the
+     list away, so a preview can never outlive the pointer that asked for it. */
+  pick.addEventListener("focusout", function (e) {
+    if (!pick.contains(e.relatedTarget)) shut();
+  });
+
+  Object.defineProperty(pick, "value", {
+    get: function () { return cur; },
+    set: function (v) {
+      cur = v;
+      opts.forEach(function (o) {
+        var on = o.__val === v;
+        o.classList.toggle("cur", on);
+        o.setAttribute("aria-selected", String(on));
+      });
+      if (!at()) now.textContent = nameOf(v);   /* never overwrite a live hover */
+    }
+  });
+
+  pick.appendChild(trigger);
+  pick.appendChild(menu);
+  return pick;
+}
+
 function fontRow(r) {
   var row = document.createElement("div");
   row.className = "frow";
@@ -998,19 +1245,6 @@ function fontRow(r) {
   var lab = document.createElement("label");
   lab.textContent = r.label;
   lab.title = r.sel + " { " + r.prop + " }";
-
-  var wrap = document.createElement("div");
-  wrap.className = "sel";
-  var sel = document.createElement("select");
-  STACKS.forEach(function (s) {
-    var o = document.createElement("option");
-    o.value = s[1]; o.textContent = s[0];
-    sel.appendChild(o);
-  });
-  var custom = document.createElement("option");
-  custom.value = "__custom"; custom.textContent = "custom…";
-  sel.appendChild(custom);
-  wrap.appendChild(sel);
 
   var face = document.createElement("span");
   face.className = "selnote";
@@ -1025,26 +1259,25 @@ function fontRow(r) {
   undo.className = "undo";
   undo.textContent = "↺";
   undo.style.visibility = "hidden";
+
+  var pick = fontPick(r, free);
+
+  var wrap = document.createElement("div");
+  wrap.className = "sel";
+  wrap.appendChild(pick);
   wrap.appendChild(undo);
 
-  r.inputs = [sel, free];
+  r.inputs = [pick, free];
   r.face = face;
   r.undo = undo;
 
-  sel.addEventListener("change", function () {
-    if (sel.value === "__custom") {
-      free.hidden = false;
-      free.value = free.value || effective(r);
-      free.focus();
-      state.vals[r.k] = free.value;
-    } else {
-      free.hidden = true;
-      state.vals[r.k] = sel.value;
-    }
-    commit(r.k);
-  });
   free.addEventListener("input", function () { state.vals[r.k] = free.value; commit(r.k); });
-  undo.addEventListener("click", function () { delete state.vals[r.k]; free.hidden = true; commit(null); });
+  undo.addEventListener("click", function () {
+    delete state.vals[r.k];
+    r.wantFree = false;
+    free.hidden = true;
+    commit(null);
+  });
 
   row.appendChild(lab); row.appendChild(wrap); row.appendChild(free); row.appendChild(face);
   return row;
@@ -1059,17 +1292,15 @@ function paint() {
     r.el.classList.toggle("gone", !!r.gone);
 
     if (r.isFont) {
-      var stack = effective(r), known = STACKS.some(function (s) { return s[1] === stack; });
+      /* A row the list can name shows that name; anything else — a hand-typed
+         stack, or `custom…` picked deliberately — shows the box instead. */
+      var stack = effective(r);
+      var known = !r.wantFree && STACKS.some(function (s) { return s[1] === stack; });
       r.inputs[0].value = known ? stack : "__custom";
       r.inputs[1].hidden = known;
-      if (!known) r.inputs[1].value = stack;
+      if (!known && document.activeElement !== r.inputs[1]) r.inputs[1].value = stack;
       r.undo.style.visibility = on ? "visible" : "hidden";
-      var got = resolved(stack);
-      /* Comic Sans can only be what a candidate stack fell through to — nothing
-         in the list asks for it — so name the absence rather than the face. */
-      var absent = got === "Comic Sans MS" && stack.indexOf(COMIC) !== -1;
-      r.face.textContent = absent ? "→ nothing here — Comic Sans" : "→ " + got;
-      r.face.className = "selnote" + (absent ? " absent" : "");
+      faceNote(r);
     } else {
       var v = effective(r);
       if (document.activeElement !== r.inputs[1]) r.inputs[1].value = num(v);
@@ -1187,7 +1418,9 @@ addEventListener("keydown", function (e) {
     return;
   }
 
-  if (typing || e.altKey) return;
+  /* An open font list owns the arrows, Enter and Escape, and a digit typed at it
+     is a fumble rather than a request to swap profiles underneath it. */
+  if (typing || e.altKey || openPick) return;
   var n = parseInt(e.key, 10);
   if (n >= 1 && n <= SLOTS) {
     e.preventDefault();

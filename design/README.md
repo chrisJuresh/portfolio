@@ -119,6 +119,28 @@ picker for each of the four font slots (`--serif-body`, `--serif-label`,
 `--serif-num`, `--serif-lead`). Changes land in the **real** page in the iframe
 as you drag — same trick as the lab, so nothing is cloned and it can't drift.
 
+### The font lists
+
+**Whichever face the pointer is on is the face in the page**, so the way to
+survey all twenty-six stacks is to run the pointer down the list and watch —
+no clicking in and back out to see each one. The arrow keys do the same from the
+keyboard. Only a click (or <kbd>Enter</kbd>) keeps a face; leaving the list or
+pressing <kbd>Esc</kbd> hands the page back to whatever is actually chosen.
+
+A hover is deliberately *not* a change: `state.vals` is untouched, so the export,
+the change count, the profile dot and the undo timeline all go on describing what
+you have chosen rather than what you are looking at. The trigger says which of
+the two you are seeing — a hovered name shows in the amber the panel already uses
+for "this has moved" — and the resolved-face note beside the row keeps pace with
+the pointer, so a face this machine hasn't got says so (in Comic Sans) as you
+pass over it rather than after you commit to it.
+
+These lists are hand-built rather than `<select>`s for exactly this reason: a
+native dropdown is drawn by the OS and never reports which option the pointer is
+over, so trying a face meant choosing it. They open in the panel's own flow, not
+floating over it, because the control column scrolls and a popup would be clipped
+by it.
+
 ### Edge fade
 
 Two groups, four sliders each, all of them `:root` numbers that `styles.css`
