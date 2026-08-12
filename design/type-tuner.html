@@ -385,6 +385,20 @@ var OGG = '"Ogg Roman", "Ogg", Didot, "Bodoni MT", "Big Caslon", "Sitka Banner",
 var DISPLAY = [
   ["Ogg → Sitka Banner (ships)", OGG],
 
+  /* The two retail faces, asked for on their own rather than at the head of a
+     fallback chain — which is the only way to find out whether this machine has
+     one. The shipped entry above cannot answer that question: it resolves to
+     Sitka Banner either way and looks deliberate doing it, so Ogg being absent
+     and Ogg being present are indistinguishable from the page. Alone, with the
+     Comic Sans tell under it, the row says which.
+     Neither can be committed to this repo — Ogg is Sharp Type, Editorial New is
+     Pangram Pangram, both licensed per-use. Choosing one means buying a webfont
+     licence and self-hosting the woff2 into /fonts; styles.css already carries the
+     commented @font-face block for Ogg, waiting for the file. Until then these
+     render for whoever has the desktop font installed and for nobody else. */
+  ["Ogg (Sharp Type)",     '"Ogg Roman", "Ogg", ' + COMIC],
+  ["Editorial New (PP)",   '"PP Editorial New", "Editorial New", ' + COMIC],
+
   /* Didones and high-contrast display: the register Ogg belongs to. Hairline
      serifs and a vertical axis, which is exactly what a cut rewards — the stems
      survive and the thin parts vanish into the cut rather than muddying it. */
@@ -1216,7 +1230,8 @@ function probe() {
    first for the same reason, since they are the ones being surveyed. */
 var FACES = [
   /* display: the cut title's list */
-  "Ogg Roman", "Ogg", "Bodoni Moda", "Libre Bodoni", "Bodoni MT Condensed", "Bodoni MT Black",
+  "Ogg Roman", "Ogg", "PP Editorial New", "Editorial New",
+  "Bodoni Moda", "Libre Bodoni", "Bodoni MT Condensed", "Bodoni MT Black",
   "Bodoni MT", "Modern No. 20", "Didot", "Antic Didone", "Playfair Display SC", "Playfair Display",
   "Prata", "Rufina", "DM Serif Display", "Instrument Serif", "Cinzel Decorative", "Cinzel",
   "Trajan Pro", "Marcellus SC", "Marcellus", "Italiana", "Forum", "Engravers MT",
@@ -1444,9 +1459,9 @@ function numRow(r) {
 /* A listbox rather than a <select>, for one reason: a native popup is drawn by
    the OS and never reports which option the pointer is over, so trying a face
    means committing to it and coming back — twenty-six faces in the reading list
-   and fifty-nine in the display one, so a hundred and seventy clicks to see them
-   all. Here the entry under the pointer is the one in the page, and only a click
-   keeps it, so the way to survey the list is to run down it.
+   and sixty-one in the display one, so a hundred and seventy-four clicks to see
+   them all. Here the entry under the pointer is the one in the page, and only a
+   click keeps it, so the way to survey the list is to run down it.
    Keyword rows get the same widget and need it just as badly: nobody reads the
    difference between `titling-caps` and `all-small-caps`, or between four values
    of text-rendering, off a name — you look at it. Same rule either way, whether
