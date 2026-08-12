@@ -11,17 +11,36 @@
    being previewed:  document.documentElement.dataset.variant = "cmfix"
 
    Both real stylesheets funnel their intended typeface through CSS variables:
-     projects/styles.css   --serif
-     portfolio/styles.css  --serif-label, --serif-body
-   so most variants are three variable reassignments and nothing more. Only the
+     projects/styles.css   --serif, --serif-num
+     portfolio/styles.css  --serif-label, --serif-body, --serif-num, --serif-lead
+   so most variants are variable reassignments and nothing more. Only the
    size-compensating variants need per-element rules, and only where the page
    hard-codes Georgia (which no variable covers).
 
    Requires /fonts/fonts.css to be loaded for any variant using Latin Modern.
 
-   Outcome: `sitka` won and is what the site now ships, so it is the variant to
-   compare against rather than `asis`. The live sizes match it, and the live
-   stylesheets no longer hard-code Georgia anywhere.
+   WHAT THE BASE IS NOW, because every variant here is a delta against it, and
+   the base has since moved — differently on each of the two pages.
+
+   `sitka` won the comparison these variants were built for and shipped. It is
+   still what /projects is set in. /portfolio has since moved off it: --serif-body
+   is Vollkorn, --serif-label is Spectral and --serif-num is Source Serif 4, all
+   three self-hosted out of /fonts by portfolio/styles.css itself, with the Sitka
+   chain kept only as the tail each stack falls back to. --serif-lead stayed
+   Georgia throughout.
+
+   That has a consequence worth stating outright: EVERY variant below must pin
+   --serif-num and --serif-lead, not just the two slots it used to be enough to
+   reassign. Those two properties did not exist when most of these were written,
+   and the values they defaulted to — Georgia, and Georgia — happened to be what
+   the variants assumed. On the portfolio page they no longer are, so a variant
+   that reassigns only --serif-body and --serif-label leaves a self-hosted
+   Source Serif 4 year column standing inside a page that claims to be Times, or
+   Computer Modern, or Georgia. They are pinned explicitly throughout, to the
+   value that variant meant when it was judged.
+
+   None of this touches the shots: they predate all of it deliberately. See
+   README.md, "Regenerating the shots".
    ========================================================================== */
 
 :root {
@@ -33,6 +52,9 @@
   --lab-sitka: "Sitka Text", Charter, "Iowan Old Style", Georgia, serif;
   --lab-num:  Georgia, "Iowan Old Style", "Palatino Linotype", serif; /* years  */
 }
+/* --lab-num and --lab-geo are the same stack, deliberately kept as two names:
+   the year column is a separate argument from the prose (old-style figures, not
+   taste), and it has already changed hands once without the prose moving. */
 
 /* ============================================================================
    1 · asis — the pre-Sitka baseline.
@@ -41,11 +63,18 @@
    DejaVu on Linux). The places that named Georgia explicitly are left alone.
    This is what every other variant was judged against; it is history now, not
    the live site.
+
+   The years and the lead were hard-coded Georgia back then, so that is what they
+   are pinned to here — without the pin they would come through in the portfolio
+   page's current Source Serif 4, which is a face that did not exist on this site
+   when this baseline was the site.
    ========================================================================== */
 :root[data-variant="asis"] {
   --serif:       var(--lab-fallback);
   --serif-label: var(--lab-fallback);
   --serif-body:  var(--lab-fallback);
+  --serif-num:   var(--lab-geo);
+  --serif-lead:  var(--lab-geo);
 }
 
 /* ============================================================================
@@ -59,6 +88,8 @@
   --serif:       var(--lab-lm);
   --serif-label: var(--lab-lm);
   --serif-body:  var(--lab-lm);
+  --serif-num:   var(--lab-geo);   /* "no other change" — so the Georgia slots  */
+  --serif-lead:  var(--lab-geo);   /* stay Georgia, as they were then           */
 }
 
 /* ============================================================================
@@ -75,6 +106,8 @@
   --serif:       var(--lab-lm);
   --serif-label: var(--lab-lm);
   --serif-body:  var(--lab-lm);
+  --serif-num:   var(--lab-lm);   /* "every slot" means these two as well */
+  --serif-lead:  var(--lab-lm);
 }
 /* portfolio — the five slots that hard-code Georgia, family only */
 :root[data-variant="cm-swap"] .intro .lead,
@@ -94,6 +127,8 @@
   --serif:       var(--lab-lm);
   --serif-label: var(--lab-lm);
   --serif-body:  var(--lab-lm);
+  --serif-num:   var(--lab-geo);   /* cmfix resizes the year column, it does */
+  --serif-lead:  var(--lab-geo);   /* not reface it — nor the lead           */
 }
 /* projects */
 :root[data-variant="cmfix"] .card__title            { font-size: 1.4rem; line-height: 1.24; }
@@ -125,6 +160,8 @@
   --serif:       var(--lab-lm);
   --serif-label: var(--lab-lm);
   --serif-body:  var(--lab-lm);
+  --serif-num:   var(--lab-lm);   /* no Georgia anywhere is the whole point */
+  --serif-lead:  var(--lab-lm);
 }
 /* projects — no Georgia on that page, so this matches cmfix */
 :root[data-variant="cm-all"] .card__title            { font-size: 1.4rem; line-height: 1.24; }
@@ -162,6 +199,8 @@
   --serif:       var(--lab-lm);
   --serif-label: var(--lab-lm);
   --serif-body:  var(--lab-geo);
+  --serif-num:   var(--lab-geo);   /* the years read as prose here, not as a label */
+  --serif-lead:  var(--lab-geo);
 }
 /* projects */
 :root[data-variant="hybrid"] .card__title            { font-size: 1.4rem; line-height: 1.24; }
@@ -191,6 +230,8 @@
   --serif:       var(--lab-geo);
   --serif-label: var(--lab-geo);
   --serif-body:  var(--lab-geo);
+  --serif-num:   var(--lab-geo);
+  --serif-lead:  var(--lab-geo);
 }
 /* projects — Georgia runs wider and taller, so titles come down slightly */
 :root[data-variant="georgia-all"] .card__title            { font-size: 1.2rem; line-height: 1.28; letter-spacing: -0.004em; }
@@ -212,18 +253,28 @@
    Windows-only, so macOS and iOS fall to Charter or Iowan Old Style, Android
    to Georgia. Visitors would not all see the same face.
 
-   ** This is the variant that shipped. ** It mirrors the live stylesheets,
-   including both slots that stayed off Sitka — the year column and the italic
+   ** This is the variant that won, and it still ships on /projects. **
+   On /portfolio it no longer does: that page's reading text is Vollkorn and its
+   labels are Spectral, both self-hosted, with this Sitka chain demoted to the
+   tail each of those stacks falls back to. So on the portfolio page this variant
+   is now a comparison — the face the page used to be set in — rather than a
+   mirror of it. The live sizes are still Sitka's, which is why it remains the
+   more useful thing to flip against than `asis`.
+
+   Two slots stayed off Sitka when it shipped — the year column and the italic
    lead, both Georgia. The years because Sitka's lining figures stand to 84% of
    the cap height beside them and read as loud as the organisation names, where
    Georgia's old-style defaults reach 78%; the lead because it was kept after
-   being seen in Sitka. Both are pinned explicitly below, so flipping to this
-   variant shows what ships even if the live CSS later moves.
+   being seen in Sitka. Both are pinned explicitly, in the variables and again on
+   the elements, so this variant keeps showing what shipped however the live CSS
+   moves under it — and it has moved: the year column is Source Serif 4 now.
    ========================================================================== */
 :root[data-variant="sitka"] {
   --serif:       var(--lab-sitka);
   --serif-label: var(--lab-sitka);
   --serif-body:  var(--lab-sitka);
+  --serif-num:   var(--lab-num);
+  --serif-lead:  var(--lab-geo);
 }
 /* projects */
 :root[data-variant="sitka"] .card__title            { font-size: 1.2rem; line-height: 1.28; }

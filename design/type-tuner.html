@@ -238,13 +238,23 @@
    way into the export, so no amount of pasting can land it in styles.css; only
    the copy injected into the preview frame carries it.
 
-   Three sources make a candidate resolvable. The self-hosted Latin Modern cuts
-   come from /fonts/fonts.css; the eleven reading faces come from GFONT and the
+   Three sources make a candidate resolvable. /fonts holds what this repo serves:
+   Vollkorn, Spectral and Source Serif 4, which portfolio/styles.css declares
+   itself and so brings into the frame unasked, plus the Latin Modern cuts from
+   /fonts/fonts.css. The eight remaining reading faces come from GFONT and the
    twenty-six display faces from DFONT, both fetched into the preview frame only.
-   All three are injected by the frame's load handler. Everything left — Georgia
+   All of it is injected by the frame's load handler. Everything left — Georgia
    Pro, Constantia, Cambria, Sitka's six cuts, Didot, Bodoni MT, the Office
    faces — is a system face, there or not there, and Comic Sans is still how you
    find out which.
+
+   The three self-hosted serifs are deliberately NOT in GFONT. Google would serve
+   the whole families; /fonts serves subsets — Source Serif 4 pinned at opsz 14.4,
+   onum kept on every face, and only the cuts styles.css asks for. Borrowing them
+   would make the preview quietly better than the deployed site, which is the one
+   thing this tool must not do. The flip side is honest too: put Spectral on
+   --serif-body and `.listing > h2` renders a synthesised bold, because a Spectral
+   700 is exactly what /fonts does not ship.
 
    A face out of GFONT or DFONT renders here and would not render on the deployed
    site: nothing in portfolio/ hosts it. Picking one is a decision to go and host
@@ -255,7 +265,11 @@ var COMIC = '"Comic Sans MS", cursive';
    italic (.intro .lead) the page actually asks for. Faustina has no `opsz` axis
    and Domine no italic; getting either wrong makes the API drop that family from
    the response with a 200 and no other complaint, which reads exactly like the
-   face not being installed. */
+   face not being installed.
+
+   Vollkorn, Spectral and Source Serif 4 were in this list and have been taken
+   out: /fonts serves all three now, and the frame is to use those copies. See
+   SELF below. */
 var GFONT = "https://fonts.googleapis.com/css2" +
   "?family=Bitter:ital,wght@0,400;0,700;1,400;1,700" +
   "&family=Castoro:ital@0;1" +
@@ -265,9 +279,6 @@ var GFONT = "https://fonts.googleapis.com/css2" +
   "&family=Merriweather:ital,wght@0,400;0,700;1,400;1,700" +
   "&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,700;1,6..72,400;1,6..72,700" +
   "&family=PT+Serif:ital,wght@0,400;0,700;1,400;1,700" +
-  "&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,700;1,8..60,400;1,8..60,700" +
-  "&family=Spectral:ital,wght@0,400;0,700;1,400;1,700" +
-  "&family=Vollkorn:ital,wght@0,400;0,700;1,400;1,700" +
   "&display=swap";
 
 /* The cut title's own request, separate from GFONT for two reasons.
@@ -317,7 +328,7 @@ var DFONT = "https://fonts.googleapis.com/css2" +
    each face down before the resolved-face probe measures it, and to flag an
    export that depends on one. */
 var HOSTED = ["Bitter", "Castoro", "Domine", "Faustina", "Literata", "Merriweather",
-              "Newsreader", "PT Serif", "Source Serif 4", "Spectral", "Vollkorn"];
+              "Newsreader", "PT Serif"];
 
 var DHOSTED = ["Abril Fatface", "Antic Didone", "Anton", "Bodoni Moda", "Cinzel",
                "Cinzel Decorative", "Cormorant", "Cormorant Garamond", "DM Serif Display",
@@ -328,9 +339,20 @@ var DHOSTED = ["Abril Fatface", "Antic Didone", "Anton", "Bodoni Moda", "Cinzel"
 
 var GOOGLE = HOSTED.concat(DHOSTED);
 
+/* The faces /fonts serves, which the export must NOT flag as borrowed: picking
+   one of these is picking something already hosted. Two sources behind them —
+   the three serifs come with the portfolio page's own stylesheet, the Latin
+   Modern cuts from /fonts/fonts.css — but the frame ends up with all seven and
+   the distinction stops mattering here. They are preloaded for the same reason
+   GOOGLE is: see loadFace. */
+var SELF = ["Vollkorn", "Spectral", "Source Serif 4",
+            "Latin Modern Roman", "LM Roman 8", "LM Roman 9", "LM Roman 12"];
+
 var STACKS = [
-  ["Sitka Text (ships)", '"Sitka Text", Charter, "Iowan Old Style", Georgia, serif'],
-  ["Georgia (ships)",    'Georgia, "Iowan Old Style", "Palatino Linotype", serif'],
+  ["Vollkorn (body, ships)",        'Vollkorn, "Sitka Text", Charter, "Iowan Old Style", Georgia, serif'],
+  ["Spectral (labels, ships)",      'Spectral, "Sitka Text", Charter, "Iowan Old Style", Georgia, serif'],
+  ["Source Serif 4 (years, ships)", '"Source Serif 4", Georgia, "Iowan Old Style", "Palatino Linotype", serif'],
+  ["Georgia (lead, ships)",         'Georgia, "Iowan Old Style", "Palatino Linotype", serif'],
 
   /* the survey, in the order it was asked for */
   ["Source Serif 4",     '"Source Serif 4", "Source Serif Pro", ' + COMIC],
@@ -361,8 +383,14 @@ var STACKS = [
   ["system sans",        'system-ui, "Segoe UI", Roboto, sans-serif']
 ];
 
-var SITKA   = STACKS[0][1];
-var GEORGIA = STACKS[1][1];
+/* The four shipped stacks, by the slot each one holds. Read off STACKS rather
+   than written twice, so the picker entry and the row default cannot drift
+   apart. The Sitka chain survives as the tail of BODY and LABEL — unreachable
+   unless the webfont fails, and kept for exactly that case. */
+var BODY  = STACKS[0][1];
+var LABEL = STACKS[1][1];
+var NUM   = STACKS[2][1];
+var LEAD  = STACKS[3][1];
 
 /* ---- the display list, for the cut title only ---------------------------- */
 /* A separate survey, because the cut title is a separate problem. The stacks
@@ -466,7 +494,7 @@ var DISPLAY = [
   ["Georgia",              'Georgia, ' + COMIC],
   ["Palatino",             '"Palatino Linotype", Palatino, "Book Antiqua", ' + COMIC],
   ["Times",                '"Times New Roman", Times, ' + COMIC],
-  ["body face — Sitka",    SITKA],
+  ["body face — Vollkorn", BODY],
   ["generic serif",        'serif']
 ];
 
@@ -493,10 +521,10 @@ var GROUPS = [
   /* hi: a custom property governs whatever reads it, so these point at the text
      that actually changes rather than at :root, which is the whole page. */
   { name: "Fonts", font: true, rows: [
-    { sel: ":root", prop: "--serif-body",  def: SITKA, label: "body — roles, headings, contact", hi: ".listing > h2, .item .line, .item .sub, .contact li" },
-    { sel: ":root", prop: "--serif-label", def: SITKA, label: "labels — name, tagline, toggle",   hi: ".name, .tagline, .projects-link, .theme-toggle" },
-    { sel: ":root", prop: "--serif-num",   def: GEORGIA, label: "years — old-style figures", hi: ".item .when" },
-    { sel: ":root", prop: "--serif-lead",  def: GEORGIA, label: "lead — the italic line", hi: ".intro .lead" }
+    { sel: ":root", prop: "--serif-body",  def: BODY,  label: "body — roles, headings, contact", hi: ".listing > h2, .item .line, .item .sub, .contact li" },
+    { sel: ":root", prop: "--serif-label", def: LABEL, label: "labels — name, tagline, toggle",   hi: ".name, .tagline, .projects-link, .theme-toggle" },
+    { sel: ":root", prop: "--serif-num",   def: NUM,   label: "years — old-style figures", hi: ".item .when" },
+    { sel: ":root", prop: "--serif-lead",  def: LEAD,  label: "lead — the italic line", hi: ".intro .lead" }
   ] },
 
   { name: "Masthead", rows: [
@@ -915,6 +943,17 @@ function css(r, v) { return r.kind === "num" ? num(v) + r.unit : v; }
    collapsed. It cannot hide a real change: a value differing only in whitespace
    is the same value. */
 function norm(s) { return String(s == null ? "" : s).trim().replace(/\s+/g, " "); }
+
+/* A font stack reduced to the only part of it that identifies the stack: the
+   family names, lower case, in order. Quotes and inter-token spacing are the
+   sheet's business — `"Sitka Text", Charter` and `'Sitka Text',Charter` name the
+   same two faces, and a custom property is not serialised identically across
+   browsers anyway. Comparison only; the export keeps the table's own spelling. */
+function families(v) {
+  return String(v == null ? "" : v).replace(/["']/g, "").split(",")
+    .map(function (s) { return norm(s).toLowerCase(); })
+    .filter(Boolean).join(", ");
+}
 function camel(p) { return p.replace(/-(\w)/g, function (_, c) { return c.toUpperCase(); }); }
 
 /* ---- the frame ----------------------------------------------------------- */
@@ -990,9 +1029,11 @@ function addLink(doc, href) {
 /* An @font-face the page doesn't use yet is a declaration, not a download — and
    an undownloaded face measures as its fallback, so `resolved` would report
    Comic Sans for a family that is one request away from being there. Ask for the
-   upright 400 of each hosted family up front; the italic and the bold follow on
-   first use, under display=swap. Offline, this rejects and the row goes back to
-   telling the truth: nothing here. */
+   upright 400 of every family behind an @font-face up front, whether it came from
+   Google or from /fonts; the italic and the bold follow on first use, under
+   display=swap. The Latin Modern cuts need this as much as the borrowed ones do:
+   fonts.css declares four of them and the portfolio page uses none. Offline, this
+   rejects and the row goes back to telling the truth: nothing here. */
 function loadFace(fam) {
   var doc = frame.contentDocument;
   if (!doc || !doc.fonts) return Promise.resolve();
@@ -1126,7 +1167,19 @@ function probe() {
   var drift = [];
 
   ROWS.forEach(function (r) {
-    if (r.isFont) { r.gone = false; return; }
+    /* Font rows were exempt from this check, and that exemption is how their
+       defaults went on claiming Sitka after the page had moved to Vollkorn and
+       Spectral — silently, because a stale font `def` produces a wrong `was`
+       comment and nothing else. They are custom properties, so they compute to
+       their own declaration and can be read straight back. */
+    if (r.isFont) {
+      r.gone = false;
+      var decl = norm(win.getComputedStyle(root).getPropertyValue(r.prop));
+      if (r.def != null && !changed(r) && decl && families(decl) !== families(r.def)) {
+        drift.push(r.sel + " { " + r.prop + " } is " + decl + ", table says " + norm(r.def));
+      }
+      return;
+    }
     var el = doc.querySelector(r.sel);
     r.gone = !el;
     if (!el) return;
@@ -1207,7 +1260,9 @@ function probe() {
    neither installed nor @font-face'd falls to whatever is next in the stack, and
    for every candidate stack that is Comic Sans — so this is where the tell gets
    read back as a name. Most specific first: Georgia Pro would otherwise be
-   reported as Georgia, and the shipped Sitka stack as Charter. */
+   reported as Georgia. It is also how a shipped stack tells you its webfont did
+   not arrive — the row says Sitka Text, or Charter on a Mac, instead of
+   Vollkorn — which nothing else on screen would show. */
 /* Every family either list can ask for, in the order the measurement tries them.
    Ordering is the whole subtlety: the first match wins, so a name has to come
    before anything it is a prefix of — "Georgia Pro" before Georgia, "Bodoni MT
@@ -1286,9 +1341,11 @@ function buildCSS(annotated) {
     return r.isFont && String(val(r)).indexOf(COMIC) !== -1;
   });
 
-  /* Which hosted faces this export leans on. The preview fetches them from
+  /* Which borrowed faces this export leans on. The preview fetches them from
      Google; portfolio/ ships nothing for them, so pasting one in without hosting
-     it first lands on `serif` for every visitor while still looking right here. */
+     it first lands on `serif` for every visitor while still looking right here.
+     GOOGLE, not every webfont on offer: the SELF families are served out of
+     /fonts already, so naming one of those is naming something that will render. */
   var borrowed = annotated ? GOOGLE.filter(function (fam) {
     return rows.some(function (r) { return r.isFont && String(val(r)).indexOf(fam) !== -1; });
   }) : [];
@@ -1776,7 +1833,7 @@ frame.addEventListener("load", function () {
   if (!doc) return;
   doc.documentElement.setAttribute("data-theme", state.theme);
   Promise.all([addLink(doc, "/fonts/fonts.css"), addLink(doc, GFONT), addLink(doc, DFONT)])
-    .then(function () { return doc.fonts ? Promise.all(GOOGLE.map(loadFace)) : null; })
+    .then(function () { return doc.fonts ? Promise.all(SELF.concat(GOOGLE).map(loadFace)) : null; })
     .then(function () { return doc.fonts ? doc.fonts.ready : null; })
     .then(function () { inject(); probe(); setStrip(wantStrip); });
 });
