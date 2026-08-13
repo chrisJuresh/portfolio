@@ -199,11 +199,31 @@
      --fold, not a fixed length — so on a taller window the two grow together. A
      car that stayed 400px while the plate went to 1400 would drift out of scale
      with it on exactly the displays where both are most visible. */
-  --car-opacity: 0.12;  /* the same judgement as --plate-opacity, and the same
-                           answer, for now. Separate because they are separate
-                           pictures with different amounts of dark in them, and the
-                           day one of them needs a nudge is the day sharing the
-                           variable would have been the bug.                   */
+  --car-opacity: 0.135; /* the same judgement as --plate-opacity and NO LONGER the
+                           same answer — this is the day the comment below was
+                           written for, and the reason the variable was kept
+                           separate.
+                           On white the three pictures were not equally loud: laid
+                           on the page and measured over each one's own subject,
+                           the plate sat dL* 9.89 off the paper, the eye 9.08 and
+                           this 8.80, so the car read as the palest of the three
+                           beside a plate that was right. The cause is the frame
+                           and not the grade — they were baked on identical
+                           endpoints; the gondola and the gantry simply sit higher
+                           in the frame's own range than the dome does, and step 2
+                           pins the top of each frame without saying anything about
+                           the mass under it.
+                           0.135 is solved rather than judged: it is the opacity at
+                           which this picture's mean reaches the plate's 9.89.
+                           Opacity is the knob on THIS paper because the endpoints
+                           cannot be — at 0.12 the furthest any ink gets from white
+                           is dL* 10.68 and all three already sit inside the last
+                           dL* of it, so equalising by HIGHLIGHT would mean crushing
+                           the car to a silhouette. On black the argument inverts
+                           and the endpoints do the work; see WHICH KNOB EACH PAPER
+                           ANSWERS TO in build-plate.py. The dark block near the
+                           foot of this sheet restates all three at 0.17 and so is
+                           unaffected by this line.                            */
   --car-fill: 0.602;    /* the picture's width as a share of --fold, exactly as
                            --plate-fill is a share of the band.
                            It USED to have a floor at 0.751, and the floor used to
@@ -297,10 +317,19 @@
      nothing there to cut and the eye has no dissolve. That is the plate's
      situation, not the car's, in the car's corner geometry, and it does not depend
      on which way round the negative is. */
-  --eye-opacity: 0.12;  /* --plate-opacity's judgement a third time, and the same
-                           answer. Its own variable for the reason --car-opacity is
-                           its own: three pictures with three different amounts of
-                           dark in them.                                        */
+  --eye-opacity: 0.131; /* --plate-opacity's judgement a third time, and a third
+                           answer — solved the way --car-opacity is, and read that
+                           block first: it carries the argument for both.
+                           This one measured dL* 9.08 against the plate's 9.89, so
+                           it was the middle of the three rather than the outlier,
+                           and 0.131 is where its mean reaches the plate's.
+                           Part of that gap is this sheet's doing and not the
+                           frame's: the eye is the one picture whose LIGHT endpoints
+                           are not the other two's — 0x05/0x61 against 0x00/0x5c —
+                           which is a lighter ink on white and so a fainter picture.
+                           Compensated here rather than reverted there, because the
+                           endpoints were tuned on purpose and this line can pay for
+                           them without touching the negative.                 */
   --eye-fill: 0.582;    /* width as a share of --fold, as --car-fill is. There is
                            no floor of the car's kind, because there is no cut edge
                            anywhere the fold does not already handle: what the fold
