@@ -115,9 +115,9 @@
      it at full size rather than at the whole of it shrunk — and that is the
      intended reading, since the corner the two rules pin are both on the left. */
   --fold: 100svh;       /* the datum, and the page's rather than the plate's —
-                           the corner car below is measured off the same line, and
-                           the two pictures growing together is the whole reason
-                           it is one variable and not one each.
+                           the corner car and the corner eye below are measured off
+                           the same line, and the three pictures growing together is
+                           the whole reason it is one variable and not one each.
                            The bottom of the page before any scrolling. svh and
                            not vh, and the difference is a phone: vh is the height
                            with the browser's own chrome retracted, which is not
@@ -200,57 +200,147 @@
      car that stayed 400px while the plate went to 1400 would drift out of scale
      with it on exactly the displays where both are most visible. */
   --car-opacity: 0.12;  /* the same judgement as --plate-opacity, and the same
-                           answer, for now. Separate because they are two
-                           pictures with two different amounts of dark in them,
-                           and the day one of them needs a nudge is the day
-                           sharing the variable would have been the bug.       */
-  --car-fill: 0.78;     /* the picture's width as a share of --fold, exactly as
+                           answer, for now. Separate because they are separate
+                           pictures with different amounts of dark in them, and the
+                           day one of them needs a nudge is the day sharing the
+                           variable would have been the bug.                   */
+  --car-fill: 0.602;    /* the picture's width as a share of --fold, exactly as
                            --plate-fill is a share of the band.
-                           It has a floor, and the floor is the reason for the
-                           value: the file is 1.332 times as tall as it is wide,
-                           so below 0.751 the picture's own foot lands ABOVE the
-                           fold and you get a horizontal line across the pylon in
-                           mid-air. Past it the foot is cut by the fold instead,
-                           which is the page's own edge and reads as one. 0.78
-                           clears that by a little rather than sitting on it, and
-                           makes the car 842px wide on a 1920×1080 frame against
-                           the plate's 932 — the smaller of the two, in the corner
-                           you read second.                                     */
+                           It USED to have a floor at 0.751, and the floor used to
+                           be the reason for the value: the file is 1.332 times as
+                           tall as it is wide, so below that the picture's own foot
+                           lands ABOVE the fold and there is a horizontal line
+                           across the pylon in mid-air where the frame ends. What
+                           takes the floor away is --car-x below, which now carries
+                           that foot off the right-hand edge of the page instead of
+                           relying on the fold to cut it — the two are tuned
+                           together and moving either one alone puts the line back.
+                           0.602 makes the car 650px wide on a 1920×1080 frame
+                           against the plate's 932, so the corner you read second
+                           is now clearly the quieter of the two rather than only
+                           slightly.                                            */
   --car-w: min(calc(var(--car-fill) * var(--fold)), 2400px);
                         /* the same ceiling as --plate-w and for the same reason:
                            2800px is the top rung index.html will fetch, and past
                            this the page would be asking to have a photograph
                            enlarged. Nothing is near it — a 4K desktop 2160px tall
-                           asks for 1685px. And no floor, as the plate has none:
+                           asks for 1300px. And no floor, as the plate has none:
                            a short window gets a small car, which is still the
                            same picture in the same corner.                     */
   --car-fade: 0.22;     /* how much of the picture's own width its INNER edge —
                            the left one, the only edge of it that ends anywhere
                            but a page edge — takes to dissolve into the paper.
-                           The plate needs no such thing and says so at length:
-                           its two inner edges are empty sky, so there is nothing
-                           there to cut. This frame's are not. The gantry runs
+                           Neither of the other two needs such a thing, and the
+                           plate says so at length: their inner edges are empty sky,
+                           so there is nothing there to cut. This frame's are not
+                           empty and this is the only one of the three that has the
+                           control at all. The gantry runs
                            clean across the top of it and off the side, so a hard
                            stop puts a straight vertical line down the page at
                            whatever x the width happens to end on, and at this
                            opacity a straight line is the one thing that reads as
                            a crop rather than as stock.
-                           0.22 of 842px is 185px on the 1920×1080 frame, which
+                           0.22 of 650px is 143px on the 1920×1080 frame, which
                            finishes well before the gondola — the subject is in
                            the middle of the frame here, not spread across it,
                            which is exactly why the ramp the plate could not have
-                           is available to this one.                            */
-  --car-x: 0px;         /* out from the RIGHT edge of the page, positive → left  */
+                           is available to this one. It is a share of the width, so
+                           it followed --car-fill down without re-tuning; that is
+                           the whole reason it is a share.                      */
+  --car-x: -67px;       /* out from the RIGHT edge of the page, positive → left.
+                           Negative, which no other placement value here is, and
+                           it is doing a job rather than nudging: at the foot of
+                           the frame the pylon is the rightmost 10.7% of the width
+                           and nothing else is left, so 67px is very nearly the
+                           whole of that slab on the 1920×1080 frame this was tuned
+                           on (0.107 × 650px = 70px). Pushing it that far off the
+                           right edge takes the picture's own cut bottom off the
+                           page with it, which is what lets --car-fill sit under
+                           the 0.751 floor its comment used to describe.
+                           It is a length and the slab is a share, so the two only
+                           coincide exactly at one window height: on a much taller
+                           window a sliver of that edge comes back into the corner,
+                           at 12% opacity and a few tens of pixels wide. Re-tune
+                           the pair, not this one, if it ever reads.            */
   --car-y: 0px;         /* down from the top of the page, positive → down        */
   --car-crop: 0;        /* how much of the picture's TOP to cut off, as a share of
                            --car-w — the mirror of --plate-crop, which cuts the
                            foot. 0 because the track is already cut by the top of
                            the frame and cutting it again buys nothing; it is here
-                           because the two pictures should answer the same set of
+                           because the pictures should answer the same set of
                            questions, and because re-tuning --car-fill is exactly
                            when you want it.                                    */
   /* Picked by index.html, like --plate-src, and unset for the same reason. */
   --car-src: none;
+
+  /* The corner eye — the third plate, in the page's BOTTOM-RIGHT corner: the
+     London Eye seen rim-on, so the wheel reads as a mast of capsules rather than
+     as a circle. The block near the foot of this sheet has the rest.
+
+     It is the car's shape of control and not the plate's, because it is anchored
+     the car's way: one corner, one rule — its own bottom-right corner stands in
+     the page's, and its foot lands on --fold, the same line the plate's foot and
+     the cut title land on. There is no second rule and nothing to pin at the top:
+     as shot there is a tenth of a frame of empty sky above the mast, so the top
+     of the picture is not an edge and has nothing to stand in.
+
+     The frame is mirrored in build-plate.py — see the eye paragraph there. What
+     that buys here is the one thing the car needed --car-fade for and this does
+     not: after the flip the boarding platform and the A-frame leg run down into
+     the corner and the mast rises back into the page, and the two inner edges of
+     the picture, its left and its top, are empty sky. So the eye has no dissolve.
+     It is the plate's situation, not the car's, in the car's corner geometry. */
+  --eye-opacity: 0.12;  /* --plate-opacity's judgement a third time, and the same
+                           answer. Its own variable for the reason --car-opacity is
+                           its own: three pictures with three different amounts of
+                           dark in them.                                        */
+  --eye-fill: 0.36;     /* width as a share of --fold, as --car-fill is. There is
+                           no floor of the car's kind, because there is no cut edge
+                           anywhere the fold does not already handle: what the fold
+                           cuts is the picture's own foot, which is cut in the file
+                           too, and the frame's bottom edge landing on the page's
+                           reads as one line rather than as two.
+                           It has a CEILING instead, and it is the car rather than
+                           the file that sets it. What this value really sets is how
+                           tall the mast stands — the mast is 87.6% of the frame, so
+                           1.167 × the width — and the two pictures share the
+                           right-hand side of the page. Much past 0.39 the top of
+                           the mast arrives under the gondola and the two read as
+                           one machine: a cable car mounted on a Ferris wheel. 0.36
+                           makes the eye 389px wide on a 1920×1080 frame, stands the
+                           mast 454px up it, and leaves about 36px of paper between
+                           the two — enough to read as two corners.
+                           The ceiling holds at every window height without being
+                           restated, because both pictures are shares of --fold and
+                           the gap is a share of it too.
+                           389 under the car's 650 under the plate's 932, which is
+                           the order the three are meant to be read in: the plate is
+                           the paper, and these two are what is printed on it.   */
+  --eye-w: min(calc(var(--eye-fill) * var(--fold)), 2400px);
+                        /* the ceiling on --plate-w and --car-w, for the third
+                           time and the same reason: 2800px is the top rung
+                           index.html will fetch.                              */
+  --eye-x: 0px;         /* out from the RIGHT edge of the page, positive → left.
+                           0 and not the car's negative, and the difference is the
+                           frame rather than the taste: this one carries 4.5% of
+                           its own width of empty sky outside the cable stays, so
+                           at 0 the stays already stop about 17px short of the page
+                           edge on the frame this was tuned on. That gutter is the
+                           file's, and it is why the two corners on the right do
+                           not both jam into the same margin.                  */
+  --eye-y: 0px;         /* up from --fold, positive → up; negative hangs it past
+                           the fold. 0 IS the rule, and it is a variable for the
+                           reason --plate-y is: so the rule can be broken by hand
+                           and the arithmetic follows rather than assumes it.  */
+  --eye-crop: 0;        /* how much of the picture's FOOT to cut off, as a share of
+                           --eye-w — the plate's crop, in the plate's direction,
+                           because this picture is anchored at the bottom too. 0:
+                           the foot is already the frame's own edge standing on the
+                           fold. Here for the reason --car-crop is — the pictures
+                           should answer the same set of questions — and it is what
+                           you reach for when --eye-fill moves.                */
+  /* Picked by index.html, like --plate-src and --car-src. */
+  --eye-src: none;
 
   /* Spectral (Production Type) for the small lettered labels, Vollkorn (Friedrich
      Althausen) for everything meant to be read. Both self-hosted above.
@@ -610,15 +700,16 @@
   /* Slightly stronger on black. The plate's own blacks were lifted to a dark
      grey, so on #fff it has the paper to fall away into and on #000 it has
      nothing — at 0.12 the shadow half of it simply disappears into the page.
-     The car is the same picture stock and takes the same lift.
+     The car and the eye are the same picture stock and take the same lift.
      This is now the SECOND thing that differs between the themes rather than the
      only one: the grade itself is baked per theme (see the corner-plate block).
-     Which means all four numbers are worth re-reading against each other after
+     Which means all six numbers are worth re-reading against each other after
      any change to the dark grade — a dark ladder tuned to sit properly on black
      may well want these back at light's 0.12, since lifting the opacity was the
      only lever there used to be for the job the endpoints can now do directly. */
   --plate-opacity: 0.17;
   --car-opacity: 0.17;
+  --eye-opacity: 0.17;
 }
 
 /* ---- composing to one screen ---------------------------------------------
@@ -861,8 +952,8 @@ a { color: inherit; }
    negative layer is still above the paper. */
 
 /* Small-viewport units are the one thing here a browser might not have, and an
-   unknown unit inside a calc() takes --plate-band, --plate-w and --car-w down
-   with it, which is a page with no pictures in the corners at all rather than
+   unknown unit inside a calc() takes --plate-band, --plate-w, --car-w and --eye-w
+   down with it, which is a page with no pictures in the corners at all rather than
    pictures in the wrong corners.
    Every engine has had svh since 2022, so this is a backstop and not a policy:
    it gives back the pre-svh reading of the same datum, correct everywhere except
@@ -925,10 +1016,10 @@ body::after {
    index.html. body::after is the plate and body::before is the top scroll-snap
    port in the desktop block at the foot of this sheet, so body has none left,
    and the alternatives are worse than one empty div: .page::before would put the
-   car inside the page's own fade-in, so the two corners would arrive at
-   different times, and html::after would hand it the initial containing block
-   and a stacking order that depends on background propagation. A div costs one
-   line of HTML and answers neither question.
+   car inside the page's own fade-in, so the corners would arrive at different
+   times, and html::after would hand it the initial containing block and a
+   stacking order that depends on background propagation. A div costs one line of
+   HTML and answers neither question.
 
    It is anchored by its top-right corner rather than by two edges, which is
    --car-fill's job to explain and :root's comment does. So the box does not have
@@ -986,6 +1077,58 @@ body::after {
     #000 calc(var(--car-inner) + var(--car-fade) * var(--car-w)));
   mask-repeat: no-repeat;
   opacity: var(--car-opacity);
+}
+
+/* ---- the corner eye -------------------------------------------------------
+   The third plate: the London Eye rim-on, in the bottom-right corner of the
+   document, at --eye-opacity. Everything the corner-plate block says about why
+   the grade is baked rather than filtered, and about starting at the top of the
+   document and leaving at the fold, is true of this one too — same stock, same
+   script, same piece of paper.
+
+   It is an element for the reason .car is one: body::after is the plate and
+   body::before is the desktop scroll-snap port, so body has no pseudo left, and
+   the alternatives are the same two bad ones. Two empty divs cost two lines of
+   HTML and answer neither question.
+
+   What it takes from the CAR is its anchoring — one corner, one rule, and a size
+   measured against --fold rather than against a band — so --eye-fill behaves like
+   --car-fill and --eye-y moves the picture without resizing it. What it takes
+   from the PLATE is its geometry at the bottom of the page: the box's own bottom
+   edge is what the picture's foot stands on, so `height` carries --eye-y and the
+   crop is a negative `bottom` offset that pushes the foot out through it. One
+   edge doing both jobs, exactly as in the plate's block.
+
+   And it takes from the plate the thing the car could not have: no soft edge
+   anywhere. Its two inner edges are the left and the top, and after the mirror
+   both are empty sky — see --eye-fill's neighbours in :root and the eye paragraph
+   in build-plate.py. There is nothing there to cut, so there is no mask here, and
+   the ramp the car needs on its gantry would only be fading out sky.
+
+   z-index -1, out of flow, pointer-events none: as the other two. It is under the
+   type and under the cut title, which is the one thing on the page that shares
+   this corner — at 12% opacity the word crosses it the way the column crosses the
+   plate, ink straight onto stock. */
+.eye {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: calc(var(--fold) - var(--eye-y));
+  z-index: -1;
+  pointer-events: none;
+  background-image: var(--eye-src);
+  background-repeat: no-repeat;
+  /* The four-value form, for --plate-x's reason: --eye-x is a distance out from
+     the corner the picture stands in and nothing else. The vertical offset is the
+     crop and only the crop — the height above has already put the box's bottom
+     edge where --eye-y asks for it — and it is negative so the foot is pushed
+     below that edge and clipped by it. */
+  background-position:
+    right var(--eye-x)
+    bottom calc(-1 * var(--eye-crop) * var(--eye-w));
+  background-size: var(--eye-w) auto;
+  opacity: var(--eye-opacity);
 }
 
 /* ---- centered column + page fade-in -------------------------------------- */

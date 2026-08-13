@@ -35,14 +35,16 @@ design/
     plate-source.webp  the ungraded frame the tuner grades; written by the script
     plate-source.json  the constants it was last built with — the tuner's "was"
     car-source.webp    the same pair for the second picture, the one in the
-    car-source.json    top-right corner. Same grade, different frame.
+    car-source.json    top-right corner
+    eye-source.webp    and for the third, in the bottom-right. One pipeline over
+    eye-source.json    all three; a Grade per picture per theme.
   tools/
     render.mjs       Playwright: serves the repo, walks the matrix, writes shots/
     package.json     dev dependency (playwright) — not the site's
 ```
 
 The **lab** compares finished candidates; the **tuner** is for arriving at one.
-The **plate tuner** does the same job for the two photographs in the page's
+The **plate tuner** does the same job for the three photographs in the page's
 corners.
 
 ## Why it exists
@@ -181,9 +183,9 @@ masthead, intro, photo strip, work, education, contact and the toggle together,
 negative for left. A `translate` and not a margin, so the layout box stays put
 and nothing re-wraps at any offset, and the strip's full-bleed and edge fade
 travel with the text instead of being re-derived against a new centre. The cut
-title doesn't move (it is `.page`'s child, not `.col`'s) and neither do the two
-corner pictures, which is both the use of the row — judging the block against the
-plate and the car — and the alignment it costs. There is nothing to shift into on
+title doesn't move (it is `.page`'s child, not `.col`'s) and neither do the corner
+pictures, which is both the use of the row — judging the block against the plate,
+the car and the eye — and the alignment it costs. There is nothing to shift into on
 a phone, where the gutter is 1.35rem.
 
 ### The font lists
@@ -339,9 +341,11 @@ Notes on how it behaves:
 
 ## Plate tuner
 
-For the two photographs standing in `/portfolio`'s corners — **the plate**, St
-Paul's over the rooftops in the bottom-left, and **the car**, a cable car hanging
-off its pylon in the top-right. Serve the repo root (`run.bat`) and open:
+For the three photographs standing in `/portfolio`'s corners — **the plate**, St
+Paul's over the rooftops in the bottom-left; **the car**, a cable car hanging off
+its pylon in the top-right; and **the eye**, the London Eye seen rim-on so the
+wheel reads as a mast of capsules, in the bottom-right. Serve the repo root
+(`run.bat`) and open:
 
 ```
 http://localhost:8000/design/plate/plate-tuner.html
@@ -358,22 +362,33 @@ they are judged together:
   `<stem>-source.webp` (which the script writes for the purpose) and prints a block
   of Python to paste back.
   **A change here does not reach the site until `build-plate.py` runs again** —
-  once per picture: `python design/plate/build-plate.py <source> car`.
+  once per picture: `python design/plate/build-plate.py <source> car`, and likewise
+  `plate` or `eye`.
 - **The placement** — `--plate-opacity`, `--plate-fill`, `--plate-x`,
   `--plate-y`, `--plate-crop` for the plate; `--car-opacity`, `--car-fill`,
-  `--car-fade`, `--car-x`, `--car-y`, `--car-crop` for the car — is CSS, and is
+  `--car-fade`, `--car-x`, `--car-y`, `--car-crop` for the car; `--eye-opacity`,
+  `--eye-fill`, `--eye-x`, `--eye-y`, `--eye-crop` for the eye — is CSS, and is
   live in the iframe as you drag. That half exports as CSS. `--plate-y` may go
   negative, which hangs the plate past the fold into the second screen rather
-  than clipping it there; the crops cut the foot off the plate and the head off
-  the car, each as a share of that picture's own width so the same slice goes at
-  every window size.
+  than clipping it there; the crops cut the foot off the plate and the eye and the
+  head off the car, each as a share of that picture's own width so the same slice
+  goes at every window size. Only the car has a `fade` — its inner edge is the
+  gantry, cut clean across; the other two have empty sky there and want no ramp.
 
-**One grade, two frames.** `build-plate.py` has a single block of grade constants
-and runs it over both pictures: they are meant to read as one paper stock. So the
-`plate`/`car` switch in the top bar changes which frame you are looking at, not
-which numbers you are dragging — the point of it is to check that an answer found
-on one frame survives the other before you paste it. The picture you switch to is
-the one regraded live; the other stays as the last run of the script left it.
+**A grade per frame, per theme.** `build-plate.py` used to hold one block of grade
+constants and run it over every picture, on the theory that they should read as one
+paper stock. They still should, and what makes them is the pipeline — the same
+percentile exposure, the same shoulder, the same desaturation toward the same tint
+— which is still one pipeline. What is per picture is only where each frame's black
+and white are *pinned*, and those are absolute: one pair of endpoints cannot be
+right for a dome that fills its frame, a gondola on a wire and a steel lattice with
+sky through it. So there is a `Grade` per picture per theme, and both switches in
+the top bar do the same kind of thing — the theme button swaps which grade you are
+dragging and which paper it stands on, the picture button swaps which grade you are
+dragging and which frame it runs over. The picture you switch to is the one regraded
+live; the others stay as the last run of the script left them. They open on
+identical numbers, so nothing has diverged until somebody looks at one and says
+otherwise.
 
 Notes, mostly the same shape as the type tuner's:
 
@@ -381,16 +396,17 @@ Notes, mostly the same shape as the type tuner's:
   `plate-source.json`, which `build-plate.py` writes in the same run as the
   image; the placement's are probed off the live page. So there is no table here
   to drift out of step with either file, and no drift banner needed.
-- `--plate-opacity` and `--car-opacity` are declared twice in `styles.css` — both
-  pictures need more of themselves on black — so they are held, exported and
-  probed **per theme**, and the export puts each half in the right block.
+- `--plate-opacity`, `--car-opacity` and `--eye-opacity` are declared twice in
+  `styles.css` — every picture needs more of itself on black — so they are held,
+  exported and probed **per theme**, and the export puts each half in the right
+  block.
 - Three views: on the page (the one that decides anything), the picture alone at
   full strength on the page's own paper (where a lifted black is legible at all),
   and the matte, which lights the knocked-out sky up in orange.
 - Every placement row has to be something `getComputedStyle` hands back as a
-  number, which is why the size control is `--plate-fill` / `--car-fill` and not
-  `--plate-w` / `--car-w`: those are `min(calc(…), 2400px)` and come back as
-  their own text.
+  number, which is why the size control is `--plate-fill` / `--car-fill` /
+  `--eye-fill` and not `--plate-w` / `--car-w` / `--eye-w`: those are
+  `min(calc(…), 2400px)` and come back as their own text.
 - It is a preview, not a proof: eight bits against float32, graded at the
   source's 900px rather than at full width and downsampled, and a different grain
   stream. Decide numbers here; check them by running the script.
