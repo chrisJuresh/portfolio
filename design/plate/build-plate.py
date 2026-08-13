@@ -152,8 +152,8 @@ EXPOSURE_TARGET = 0.34     # ...this value, before the tone curve
 SAT_KEEP = 0.24            # fraction of original chroma kept
 CONTRAST = 0.36            # blend toward a smoothstep S-curve
 HIGHLIGHT_PUSH = 1.34      # >1 lifts highlights; 1.0 is off
-SHADOW = (0x30, 0x2e, 0x2a)    # where black lands — warm dark grey
-HIGHLIGHT = (0xff, 0xfa, 0xea)  # where white lands — warm cream
+SHADOW = (0x00, 0x00, 0x00)    # where black lands — pure black
+HIGHLIGHT = (0x5c, 0x5c, 0x5c)  # where white lands — mid grey
 GRAIN_SIGMA = 0.0075       # in output units, 0..1
 GRAIN_SEED = 20250615      # the frame's own date; any constant would do
 
