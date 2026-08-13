@@ -238,10 +238,10 @@ where a laptop at half brightness in a bright room has nothing left to give. A
 calibrated desktop display in a dim room will resolve all sixteen of those codes,
 which is why this reads as a display problem and is really a headroom problem.
 
-DARK_SHADOW and DARK_HIGHLIGHT are the answer to that paragraph, and the second is
-there because of the first. Lifting SHADOW alone would have raised the floor by
-narrowing the picture — the ceiling was not moving — so the dark end would arrive
-at the cost of everything between the two. Both move:
+DARK_SHADOW and the three *_DARK_HIGHLIGHT below are the answer to that paragraph,
+and the ceiling moved because the floor did. Lifting SHADOW alone would have raised
+the floor by narrowing the picture — the ceiling was not moving — so the dark end
+would arrive at the cost of everything between the two. Both move, on the plate:
 
     SHADOW    0x00 -> 0x2c    composite  0.0 -> 7.5    dL* 0.00 -> 2.05
     HIGHLIGHT 0x5c -> 0x8a    composite 15.6 -> 23.5   dL* 4.55 -> 7.97
@@ -256,6 +256,30 @@ Note what this does NOT change: the light grades. On white the picture's SHADOW
 end is its most visible part (dL* 10.7 off the paper) and it is HIGHLIGHT that is
 being lost into the page. The two papers fail at opposite ends, which is the whole
 argument for a Grade per theme, arrived at from the arithmetic rather than by eye.
+
+WHICH KNOB EACH PAPER ANSWERS TO
+---------------------------------
+The three pictures have to be equally loud as each other, and that is a different
+question from how loud they all are — a ratio rather than a level, so unlike the
+paragraph above it has the same answer on every display. What it does NOT have is
+the same answer on both papers, and the reason is a ceiling on one side and a floor
+on the other.
+
+On BLACK, the knob is these endpoints. Opacity cannot be it: --*-opacity multiplies
+the ink, so turning a picture down drags its SHADOW back toward the page and undoes
+the lift this whole section is about. The ceiling is free to move, so it moves.
+
+On WHITE, the knob is --*-opacity in styles.css, and the endpoints cannot be it.
+At 0.12 the furthest any ink can get from white paper is dL* 10.68, and the three
+pictures already sit at 9.89, 9.08 and 8.80 — inside the last dL* of the range.
+Solving for a HIGHLIGHT that equalises them there asks for 0x17 and 0x14, which is
+not a grade, it is crushing two of the pictures to a silhouette to buy a difference
+the paper has no room for. Raising a picture's opacity instead moves its whole band
+away from the paper and costs nothing, because on white nothing is being clipped
+into the page at the bottom.
+
+So: a picture's share of the light is set on black here, and on white in styles.css,
+and each is the only place its own paper leaves room for.
 
 The three levers, in the order of how much they actually move:
 
@@ -368,15 +392,31 @@ PLATE_LIGHT = Grade(
 # that lifting the floor flattens nothing. They are still one paper stock — the
 # pipeline above is shared stage for stage, and this is the endpoints only.
 DARK_SHADOW = (0x2c, 0x2c, 0x2c)     # composites to code 7.5 on black at 0.17
-DARK_HIGHLIGHT = (0x8a, 0x8a, 0x8a)  # ...and to code 23.5, so the band is 16 wide
-# One pair, named once and used by all three, which is the thing the comment at the
-# head of this section says not to do — and the exception is narrow and worth
-# stating. What must not be shared is a PICTURE's grade, because the frames are
-# different photographs and their endpoints answer to the frame. What is shared
-# here is a property of the PAPER: 0x00 lands on #000 for the plate exactly as it
-# does for the eye, and the floor that clears it is arithmetic rather than taste.
-# Anything a frame wants of its own goes in its own Grade below, which is why these
-# are two names and not a fourth Grade.
+# SHADOW is shared and HIGHLIGHT is not, and the split is the one the section above
+# argues for rather than a compromise between them. The floor is a property of the
+# PAPER: 0x00 lands on #000 for the plate exactly as it does for the eye, and the
+# value that clears the page is arithmetic. The ceiling is a property of the FRAME,
+# because what a picture's HIGHLIGHT does depends on how much of that picture is
+# near the top of its own range — and that is where sharing one pair went wrong.
+#
+# It went wrong measurably. Composited onto the page and measured over each
+# picture's own subject, one shared 0x8a put them at a mean of
+#
+#     plate dL* 2.91    car dL* 3.80    eye dL* 2.86
+#
+# so the car was putting about a third more light on the page than the other two.
+# Not because its endpoints differed — they did not — but because the gondola and
+# the gantry sit high in the frame's range where the dome and the lattice do not.
+# The percentile exposure in step 2 pins the TOP of each frame to the same place;
+# it says nothing about where the mass underneath it sits, and the mass is what a
+# picture's loudness is.
+#
+# So the three ceilings below are solved rather than judged: each is the HIGHLIGHT
+# that brings that picture's mean to the plate's 2.91, the plate being the one of
+# the three that was already right. See THE ARITHMETIC OF THE DARK PAPER.
+PLATE_DARK_HIGHLIGHT = (0x8a, 0x8a, 0x8a)   # the reference — dL* 2.91
+CAR_DARK_HIGHLIGHT = (0x61, 0x61, 0x61)     # was 0x8a, at dL* 3.80
+EYE_DARK_HIGHLIGHT = (0x90, 0x90, 0x90)     # was 0x8a, at dL* 2.86
 PLATE_DARK = Grade(
     EXPOSURE_PCT=99.0,
     EXPOSURE_TARGET=0.34,
@@ -384,7 +424,7 @@ PLATE_DARK = Grade(
     CONTRAST=0.36,
     HIGHLIGHT_PUSH=1.34,
     SHADOW=DARK_SHADOW,
-    HIGHLIGHT=DARK_HIGHLIGHT,
+    HIGHLIGHT=PLATE_DARK_HIGHLIGHT,
     GRAIN_SIGMA=0.0075,
 )
 
@@ -406,7 +446,7 @@ CAR_DARK = Grade(
     CONTRAST=0.36,
     HIGHLIGHT_PUSH=1.34,
     SHADOW=DARK_SHADOW,
-    HIGHLIGHT=DARK_HIGHLIGHT,
+    HIGHLIGHT=CAR_DARK_HIGHLIGHT,
     GRAIN_SIGMA=0.0075,
 )
 
@@ -431,7 +471,7 @@ EYE_DARK = Grade(
     CONTRAST=0.36,
     HIGHLIGHT_PUSH=1.34,
     SHADOW=DARK_SHADOW,
-    HIGHLIGHT=DARK_HIGHLIGHT,
+    HIGHLIGHT=EYE_DARK_HIGHLIGHT,
     GRAIN_SIGMA=0.0075,
 )
 
