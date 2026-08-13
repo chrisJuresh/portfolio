@@ -65,6 +65,12 @@
       var RUNGS = [800, 1300, 2000, 2800];
       var WAIT_MS = 1500;
 
+      /* A digest of every ladder file in portfolio/img/, appended to each rung's
+         URL — see rungUrl below for what it is for. design/plate/build-plate.py
+         prints the current value at the end of every run; paste it here whenever
+         it differs from this one, in the same commit as the re-baked files. */
+      var IMG_VERSION = "3785c80b";
+
       /* One entry per picture, and `fill` is the only thing that separates them:
          the width it is drawn at as a share of the first screen. All three are
          scaled to the height of that screen — see --fold in styles.css — so the
@@ -136,10 +142,25 @@
         };
 
         /* Light is unsuffixed. Keep this spelling and Picture.out_path() in
-           design/plate/build-plate.py together — they are the same two names. */
+           design/plate/build-plate.py together — they are the same two names.
+
+           ?v= is not decoration and not a cache-buster in the usual sense: it is
+           the only thing that makes a re-bake VISIBLE. A rung's filename is
+           content-independent — eye-800.webp is eye-800.webp before and after the
+           grade moves — and vercel.json caches /portfolio/img/ for a day with a
+           week of stale-while-revalidate, so re-baking a picture and deploying it
+           leaves every browser and every edge that already has the old bytes
+           serving them for up to 24 hours. That is not hypothetical: the eye
+           shipped mirrored in #24, was un-mirrored in #25 under the same filename,
+           and went on being mirrored on the deployment while being correct on
+           localhost, which sends no such headers.
+           Bumping IMG_VERSION changes the URL, so the new bytes are simply a
+           different resource and arrive at once. Forgetting to bump it leaves the
+           old behaviour exactly as it was — a day — rather than making it worse,
+           which is why the header itself is left long. */
         var rungUrl = function (p, width, theme) {
           return "img/" + p.stem + "-" + (theme === "dark" ? "dark-" : "") +
-                 width + ".webp";
+                 width + ".webp?v=" + IMG_VERSION;
         };
 
         /* A miss on a dark file is the ordinary untuned state and not an error:

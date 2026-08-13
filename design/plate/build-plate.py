@@ -276,6 +276,7 @@ which move a judgement you would make at --plate-opacity:
 
 from __future__ import annotations
 
+import hashlib
 import json
 import sys
 from dataclasses import dataclass
@@ -799,6 +800,27 @@ def write_neutral(pic: Picture, lin: np.ndarray, alpha_f: np.ndarray, computed: 
     }, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
 
 
+def ladder_stamp() -> str:
+    """A short digest of EVERY picture's ladder, for portfolio/index.html's
+    IMG_VERSION.
+
+    Over all of them and not just the one this run built, because it is one token
+    on the page covering every rung of every picture — so a run that touches only
+    the eye still has to report a value that accounts for the plate and the car,
+    or pasting it would silently revert their share of the URL.
+
+    Names as well as bytes, so that a rung appearing or disappearing moves the
+    stamp even in the impossible case where the remaining bytes are unchanged.
+    Sorted, because glob order is not promised and a stamp that depends on it
+    would differ between machines for one picture.
+    """
+    h = hashlib.sha256()
+    for p in sorted(OUT_DIR.glob("*.webp")):
+        h.update(p.name.encode("utf-8"))
+        h.update(p.read_bytes())
+    return h.hexdigest()[:8]
+
+
 def usage() -> str:
     """The invocation line out of the docstring, found rather than indexed.
 
@@ -894,6 +916,12 @@ def main() -> int:
     print(f"{pic.neutral_path.relative_to(REPO)}  "
           f"{pic.neutral_path.stat().st_size / 1024:.0f} KB"
           f"  + {pic.meta_path.name}   (design/plate/plate-tuner.html reads these)")
+
+    # Last line of the run, because it is the one thing left to do by hand. A
+    # re-bake that is not followed by this paste is invisible on the deployment
+    # for a day whatever else it got right — see rungUrl in portfolio/index.html.
+    print(f'\nvar IMG_VERSION = "{ladder_stamp()}";'
+          f"   <- portfolio/index.html, if it differs from what is there")
     return 0
 
 
