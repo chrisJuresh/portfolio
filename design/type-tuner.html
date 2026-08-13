@@ -1931,7 +1931,15 @@ frame.addEventListener("load", function () {
   var doc = frame.contentDocument;
   if (!doc) return;
   doc.documentElement.setAttribute("data-theme", state.theme);
-  Promise.all([addLink(doc, "/fonts/fonts.css"), addLink(doc, GFONT), addLink(doc, DFONT)])
+  /* fonts.css is asked for fresh every frame load. A cached copy of it is a copy
+     of the @font-face list, and a face added since is then invisible to the
+     preview while sitting on disk and being served — which this tool reports as
+     "nothing here — Comic Sans", i.e. as a missing file rather than a stale
+     sheet. That is the one lie it must not tell, and it cost an afternoon once.
+     Production revalidates this sheet (see vercel.json); the query makes the
+     tuner independent of whatever any cache in front of it decides to do. It is
+     ~5 KB, and only this dev page pays for it. */
+  Promise.all([addLink(doc, "/fonts/fonts.css?" + Date.now()), addLink(doc, GFONT), addLink(doc, DFONT)])
     .then(function () { return doc.fonts ? Promise.all(SELF.concat(GOOGLE).map(loadFace)) : null; })
     .then(function () { return doc.fonts ? doc.fonts.ready : null; })
     .then(function () { inject(); probe(); setStrip(wantStrip); });
