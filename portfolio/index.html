@@ -30,116 +30,220 @@
       root.setAttribute("data-theme", theme);
       root.className += " js";
 
-      /* ---- the corner plate -------------------------------------------------
-         The plate runs most of the way across the page and is the one heavy
-         thing on it, so it is neither named in the stylesheet nor fetched at one
+      /* ---- the corner pictures ----------------------------------------------
+         The plate in the bottom-left corner and the car in the top-right run
+         most of the way across the page between them and are the two heavy
+         things on it, so neither is named in the stylesheet nor fetched at one
          size.
          Here, before the stylesheet has even been asked for, we work out how
-         many real pixels this display will actually draw it in and fetch only
-         that rung of design/plate/build-plate.py's ladder — keep PLATES below
-         and OUT_WIDTHS there the same list.
+         many real pixels this display will actually draw each of them in and
+         fetch only that rung of design/plate/build-plate.py's ladder — keep
+         RUNGS below and OUT_WIDTHS there the same list.
 
-         The page then waits for it, briefly, because the plate is part of the
+         There is a ladder per THEME as well as per rung and per picture, because
+         the grade is baked and a picture on black wants different endpoints from
+         the same one on white — see ONE LADDER PER THEME in build-plate.py. So
+         this picks two files out of a grid, not a list, and it picks again when
+         the theme changes under it. A theme that has not been tuned away from
+         light has no ladder of its own on purpose; rungUrl's caller falls back to
+         the light file, which is the picture this page shipped before the grade
+         had a theme axis at all.
+
+         The page then waits for them, briefly, because they are part of the
          opening composition rather than decoration laid over it — the type is
-         printed ON it — and type arriving first with the picture sliding in
-         behind a moment later is worse than either. But it is still only a
-         picture: the wait is capped, and past the cap the page opens without it
-         rather than holding the words hostage to an ornament. It is dropped
-         rather than shown late for the same reason it is waited for at all.
+         printed ON the plate — and type arriving first with the pictures sliding
+         in behind a moment later is worse than either. But they are still only
+         pictures: the wait is capped, and past the cap the page opens without
+         them rather than holding the words hostage to an ornament. They are
+         dropped rather than shown late for the same reason they are waited for
+         at all.
 
          Nothing here can leave the page invisible. The class this adds only
          SHORTENS a reveal that styles.css already guarantees on its own, so a
          parse error, a dead network or a browser that never fires onload all
          end with the page up. */
-      var PLATES = [800, 1300, 2000, 2800];
+      var RUNGS = [800, 1300, 2000, 2800];
       var WAIT_MS = 1500;
 
-      /* --plate-w, in CSS pixels — the same sum styles.css does, and the three
-         constants are that sheet's. The plate is scaled to the height of the
-         first screen (see the two rules at --plate-fold there), so the window's
-         HEIGHT is in this and its width still is not: a narrow phone and a wide
-         desktop of the same height are sent the same picture, and the phone
-         simply cannot see all of it.
-         Keep these equal to --plate-fill and the ceiling on --plate-w in
-         styles.css. Being wrong picks a neighbouring rung, which is a slightly
-         soft or slightly heavy plate, not a broken one. */
-      var PLATE_FILL = 0.863, PLATE_MAX = 2400;
-      var plateW = function () {
-        return Math.min(PLATE_MAX, PLATE_FILL * (window.innerHeight || 1080));
-      };
-      var want = plateW() * (window.devicePixelRatio || 1);
-      var pick = PLATES[PLATES.length - 1];
-      for (var i = 0; i < PLATES.length; i++) {
-        if (PLATES[i] >= want) { pick = PLATES[i]; break; }
-      }
+      /* One entry per picture, and `fill` is the only thing that separates them:
+         the width it is drawn at as a share of the first screen. Both are scaled
+         to the height of that screen — see --fold in styles.css — so the
+         window's HEIGHT is in this and its width is not: a narrow phone and a
+         wide desktop of the same height are sent the same two files, and the
+         phone simply cannot see all of either.
+         Keep `fill` equal to --plate-fill and --car-fill in styles.css, and
+         `max` to the ceiling on --plate-w and --car-w there. Being wrong picks a
+         neighbouring rung, which is a slightly soft or slightly heavy picture,
+         not a broken one.
 
-      /* Metered or genuinely slow connections do not get it at all. It is an
-         ornament, and this is the one honest way to treat it as optional. */
+         `shown` and `src` are the state, and both are kept per THEME as well as
+         per picture: a theme's two ladders are different pictures rather than one
+         pair at two opacities. `shown` is the widest rung that has actually
+         RESOLVED for that picture on that theme and `src` is the URL it resolved
+         to. So flipping back to a theme you have already been in is a repaint and
+         not a fetch, and a rung upgrade on one theme does not make the page think
+         the other one has been upgraded too. */
+      var PICTURES = [
+        { stem: "plate", prop: "--plate-src", fill: 0.863, max: 2400,
+          shown: { light: 0, dark: 0 }, src: { light: null, dark: null } },
+        { stem: "car",   prop: "--car-src",   fill: 0.78,  max: 2400,
+          shown: { light: 0, dark: 0 }, src: { light: null, dark: null } }
+      ];
+      /* Its width in CSS pixels — the same sum styles.css does — and then the
+         smallest rung that covers it once the display's density is in, or the top
+         of the ladder if nothing does. Functions rather than a value computed
+         once, because the answer is wanted in three places — boot, a theme
+         change, and a move onto a denser or taller screen — and they have to
+         agree. */
+      var drawnAt = function (p) {
+        return Math.min(p.max, p.fill * (window.innerHeight || 1080));
+      };
+      var rungFor = function (p) {
+        var want = drawnAt(p) * (window.devicePixelRatio || 1);
+        for (var i = 0; i < RUNGS.length; i++) if (RUNGS[i] >= want) return RUNGS[i];
+        return RUNGS[RUNGS.length - 1];
+      };
+
+      /* Metered or genuinely slow connections do not get them at all. They are
+         ornaments, and this is the one honest way to treat them as optional. */
       var link = navigator.connection || {};
       var thin = link.saveData === true || /^(slow-)?2g$/.test(link.effectiveType || "");
 
       if (!thin) {
         root.className += " plate-wait";
-        var shown = 0;
-        var done = function (width, src) {
-          if (src) {
-            root.style.setProperty("--plate-src", 'url("' + src + '")');
-            shown = width;
-          }
-          root.classList.remove("plate-wait");
+        /* The hold ends when the last picture settles or when the cap fires,
+           whichever is first. A picture that arrives after that is still put on
+           the page — arriving late is a reason not to WAIT for one, not a reason
+           to throw it away. */
+        var outstanding = PICTURES.length;
+        var release = function () { root.classList.remove("plate-wait"); };
+
+        var current = function () {
+          return root.getAttribute("data-theme") === "dark" ? "dark" : "light";
         };
-        var fetchRung = function (width, settle) {
-          var url = "img/plate-" + width + ".webp";
-          var img = new Image();
-          img.onload = function () { settle(width, url); };
-          img.onerror = function () { settle(width, null); };
-          img.src = url;
-          /* Already in the cache: onload still fires, but this saves the wait on
-             browsers that defer it to a later task. */
-          if (img.complete && img.naturalWidth > 0) settle(width, url);
+        /* Every picture, at whatever each has resolved to for the theme on
+           screen. Off the stored URLs rather than off the load that triggered it,
+           so a theme flip repaints both from cache, and neither is blanked while
+           the other is still deciding. */
+        var paint = function () {
+          var theme = current();
+          for (var i = 0; i < PICTURES.length; i++) {
+            var src = PICTURES[i].src[theme];
+            if (src) root.style.setProperty(PICTURES[i].prop, 'url("' + src + '")');
+          }
         };
 
-        fetchRung(pick, done);
-        setTimeout(function () { done(0, null); }, WAIT_MS);
+        /* Light is unsuffixed. Keep this spelling and Picture.out_path() in
+           design/plate/build-plate.py together — they are the same two names. */
+        var rungUrl = function (p, width, theme) {
+          return "img/" + p.stem + "-" + (theme === "dark" ? "dark-" : "") +
+                 width + ".webp";
+        };
+
+        /* A miss on a dark file is the ordinary untuned state and not an error:
+           build-plate.py writes no dark ladder while dark's grade matches
+           light's, deliberately, rather than shipping a duplicate. So one retry
+           against the light rung of the same width, and only then give up. */
+        var fetchRung = function (p, width, theme, then) {
+          var attempt = function (url, fallback) {
+            var img = new Image();
+            var land = function (src) {
+              img.onload = img.onerror = null;   /* once, whichever way it lands */
+              if (src && width > p.shown[theme]) {
+                p.shown[theme] = width;
+                p.src[theme] = src;
+              }
+              paint();
+              if (then) then();
+            };
+            img.onload = function () { land(url); };
+            img.onerror = function () {
+              img.onload = img.onerror = null;
+              if (fallback) attempt(fallback, null); else land(null);
+            };
+            img.src = url;
+            /* Already in the cache: onload still fires, but this saves the wait
+               on browsers that defer it to a later task. */
+            if (img.complete && img.naturalWidth > 0) land(url);
+          };
+          attempt(rungUrl(p, width, theme),
+                  theme === "light" ? null : rungUrl(p, width, "light"));
+        };
+
+        for (var i = 0; i < PICTURES.length; i++) {
+          fetchRung(PICTURES[i], rungFor(PICTURES[i]), current(), function () {
+            if (--outstanding <= 0) release();
+          });
+        }
+        setTimeout(release, WAIT_MS);
+
+        /* Both pictures, for the theme on screen, up to whatever this display now
+           asks for. Measured on the spot rather than reusing the rung picked at
+           boot: the display may have been dragged onto a denser or taller screen
+           since, and this theme may never have been asked for at all. Upgrade
+           only — a rung already good enough is left alone, so dragging a window
+           up and down cannot thrash — and quietly, off the critical path: the
+           swap happens when the larger rung has finished loading, never by
+           blanking what is already on screen.
+           For the theme on screen only. The other is upgraded if and when it is
+           next shown, which is the same "never fetch a picture nobody is looking
+           at" the boot path already follows. */
+        var upgrade = function () {
+          var theme = current();
+          for (var j = 0; j < PICTURES.length; j++) {
+            var p = PICTURES[j];
+            var need = rungFor(p);
+            if (need > p.shown[theme]) fetchRung(p, need, theme);
+          }
+        };
+
+        /* Every route into a theme change lands on the same attribute of the same
+           element — the toggle in app.js, the system preference app.js follows
+           until you use that toggle, and the plate tuner priming localStorage —
+           so the attribute is what this watches. It is also the only seam
+           available: this script runs in <head>, before app.js exists, and
+           reaching forward into it would invert that order.
+
+           It never re-enters .plate-wait. The hold is for the opening
+           composition, where the type really is waiting on the picture it is
+           printed on; a flip mid-visit already has both pictures on screen, and
+           blanking them to wait for the other theme's pair would be worse than
+           the swap arriving a moment late. Same reason paint() leaves the
+           outgoing pictures up until the incoming ones have loaded. */
+        if (window.MutationObserver) {
+          new MutationObserver(function () {
+            paint();
+            upgrade();
+          }).observe(root, { attributes: true, attributeFilter: ["data-theme"] });
+        }
 
         /* Dragged onto a DENSER screen, or pulled TALLER. Both now ask for more:
            density because the same picture is drawn in more real pixels, height
-           because the plate is scaled to the fold and a taller window is a bigger
-           plate. Width still asks for nothing. Upgrade only — a plate already
-           good enough is left alone, so dragging a window up and down cannot
-           thrash — and quietly, off the critical path: the swap happens when the
-           larger rung has finished loading, never by blanking what is already on
-           screen. */
+           because both are scaled to the fold and a taller window is a bigger
+           picture. Width still asks for nothing — neither picture changes size in
+           a narrow window as against a wide one. */
         var timer;
         window.addEventListener("resize", function () {
           clearTimeout(timer);
-          timer = setTimeout(function () {
-            var need = plateW() * (window.devicePixelRatio || 1);
-            for (var j = 0; j < PLATES.length; j++) {
-              if (PLATES[j] > shown && (PLATES[j] >= need || j === PLATES.length - 1)) {
-                if (shown >= need) return;
-                fetchRung(PLATES[j], function (w, src) {
-                  if (src && w > shown) {
-                    root.style.setProperty("--plate-src", 'url("' + src + '")');
-                    shown = w;
-                  }
-                });
-                return;
-              }
-            }
-          }, 250);
+          timer = setTimeout(upgrade, 250);
         });
       }
     })();
   </script>
-  <link rel="stylesheet" href="styles.css?v=21">
+  <link rel="stylesheet" href="styles.css?v=22">
 </head>
 <body>
-  <!-- Only ever on screen while the corner plate is genuinely outstanding: it is
+  <!-- Only ever on screen while a corner picture is genuinely outstanding: it is
        display:none until <html> carries .plate-wait, and it fades in later than
-       any plate already in cache takes to arrive, so a fast load never paints
+       anything already in cache takes to arrive, so a fast load never paints
        it. See the loading line in styles.css. -->
   <div class="loading" role="status" aria-label="Loading"></div>
+  <!-- The corner car. The one thing on this page that is an element purely
+       because the stylesheet ran out of pseudo-elements to paint it with —
+       body::after is the plate and body::before is the desktop scroll-snap
+       port. Empty, decorative and sized entirely in CSS: see the .car block in
+       styles.css, which says why the alternatives were worse. -->
+  <div class="car"></div>
   <div class="page" id="page"></div>
   <!-- The second screen the cut title opens onto. Empty, and sized entirely in
        CSS: see the doorway block in styles.css. -->
