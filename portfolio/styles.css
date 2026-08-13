@@ -120,9 +120,14 @@
                           placement value that is not a length: --plate-x and
                           --plate-y move the picture and this one shortens it.   */
   /* The file itself. Left unset on purpose — index.html picks the rung that
-     suits the display and sets this, so a browser is never told to fetch the
-     2800px plate to draw it 400px wide. Unset means no plate, which is also the
-     fallback when it does not arrive in time. */
+     suits the display AND the ladder that suits the theme, and sets this, so a
+     browser is never told to fetch the 2800px plate to draw it 400px wide or the
+     dark plate to stand it on white. Unset means no plate, which is also the
+     fallback when it does not arrive in time.
+     Not declared again under [data-theme="dark"] below, and it could not usefully
+     be: the rung is a runtime measurement, so a second declaration here would
+     have to name one width and would then fight the one index.html sets. The
+     theme half of the choice is made in the same place as the rung half. */
   --plate-src: none;
 
   /* Spectral (Production Type) for the small lettered labels, Vollkorn (Friedrich
@@ -402,7 +407,13 @@
   --link-line:  #3a3a3a;
   /* Slightly stronger on black. The plate's own blacks were lifted to a dark
      grey, so on #fff it has the paper to fall away into and on #000 it has
-     nothing — at 0.12 the shadow half of it simply disappears into the page. */
+     nothing — at 0.12 the shadow half of it simply disappears into the page.
+     This is now the SECOND thing that differs between the themes rather than the
+     only one: the grade itself is baked per theme (see the corner-plate block).
+     Which means the two numbers are worth re-reading against each other after
+     any change to the dark grade — a dark ladder tuned to sit properly on black
+     may well want this back at light's 0.12, since lifting the opacity was the
+     only lever there used to be for the job the endpoints can now do directly. */
   --plate-opacity: 0.17;
 }
 
@@ -496,13 +507,21 @@ a { color: inherit; }
    something on the page, and the moment you notice it as a photograph it is too
    strong. Turn it off by setting --plate-opacity to 0.
 
-   The grade is baked into the file, not applied here — no sky, blacks lifted to a
-   warm dark grey, whites pushed just past the paper, tinted and grained.
-   design/plate/build-plate.py is the whole recipe and says why each stage is
-   where it is. Two consequences for this end: light and dark differ only in
-   --plate-opacity, since the grade holds up over both; and there is no filter
-   here, so the plate costs one paint and no compositing layer on a page that has
-   a momentum carousel to animate.
+   The grade is baked into the file, not applied here — no sky, blacks and whites
+   landing on two named endpoints, grained. design/plate/build-plate.py is the
+   whole recipe and says why each stage is where it is. Two consequences for this
+   end: there is no filter here, so the plate costs one paint and no compositing
+   layer on a page that has a momentum carousel to animate; and what this sheet
+   owns of the plate is placement and opacity, nothing about how it is graded.
+
+   That second half is why the theme axis is not in this file. --plate-opacity
+   below is still declared twice, and it still says how far the picture recedes
+   into the page — but it can only ever mix the plate further in, and it cannot
+   move where the blacks and whites LAND, which is the difference that actually
+   separates a plate on white from a plate on black. So the grade is baked per
+   theme instead: build-plate.py bakes a ladder each and index.html swaps
+   --plate-src when data-theme changes. Nothing in this block has to know, since
+   the file it names is a variable and the variable is somebody else's job.
 
    It has no soft edge, by choice — a dissolve wide enough to hide the top and
    right edges also sat on the dome and the drum, which are the subject. Left
