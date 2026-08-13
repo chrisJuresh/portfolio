@@ -30,17 +30,20 @@ design/
   type-tuner.html    interactive: free-form size/spacing/font sliders + CSS export
   shots/             committed renders + index.html contact sheet
   plate/
-    build-plate.py   develops a source into portfolio/img/plate-*.webp — the grade
+    build-plate.py   develops a source into portfolio/img/<stem>-*.webp — the grade
     plate-tuner.html interactive: the same pipeline on sliders + Python/CSS export
     plate-source.webp  the ungraded frame the tuner grades; written by the script
     plate-source.json  the constants it was last built with — the tuner's "was"
+    car-source.webp    the same pair for the second picture, the one in the
+    car-source.json    top-right corner. Same grade, different frame.
   tools/
     render.mjs       Playwright: serves the repo, walks the matrix, writes shots/
     package.json     dev dependency (playwright) — not the site's
 ```
 
 The **lab** compares finished candidates; the **tuner** is for arriving at one.
-The **plate tuner** does the same job for the photograph in the page's corner.
+The **plate tuner** does the same job for the two photographs in the page's
+corners.
 
 ## Why it exists
 
@@ -325,30 +328,41 @@ Notes on how it behaves:
 
 ## Plate tuner
 
-For the photograph standing in `/portfolio`'s bottom-left corner. Serve the repo
-root (`run.bat`) and open:
+For the two photographs standing in `/portfolio`'s corners — **the plate**, St
+Paul's over the rooftops in the bottom-left, and **the car**, a cable car hanging
+off its pylon in the top-right. Serve the repo root (`run.bat`) and open:
 
 ```
 http://localhost:8000/design/plate/plate-tuner.html
 ```
 
-The plate is two things shipped through two different pipes, and this window is
-where they are judged together:
+Each is two things shipped through two different pipes, and this window is where
+they are judged together:
 
-- **The grade and the sky matte** are baked into `portfolio/img/plate-*.webp` by
+- **The grade and the sky matte** are baked into `portfolio/img/<stem>-*.webp` by
   `build-plate.py` — exposure, saturation, contrast, the highlight shoulder, the
   two colours black and white land on, grain, and (when the script is the one
   cutting) the numbers that decide what counts as sky. Nothing in a browser can
   change that file, so the tuner runs the script's pipeline again in a canvas over
-  `plate-source.webp` (which the script writes for the purpose) and prints a block
+  `<stem>-source.webp` (which the script writes for the purpose) and prints a block
   of Python to paste back.
-  **A change here does not reach the site until `build-plate.py` runs again.**
-- **The placement** — `--plate-opacity`, `--plate-w`, `--plate-x`, `--plate-y`,
-  `--plate-crop` — is CSS, and is live in the iframe as you drag. That half
-  exports as CSS. `--plate-y` may go negative, which hangs the plate past the
-  fold into the second screen rather than clipping it there; `--plate-crop`
-  then cuts the foot off the picture, as a share of `--plate-w` so the same
-  slice goes at every window size.
+  **A change here does not reach the site until `build-plate.py` runs again** —
+  once per picture: `python design/plate/build-plate.py <source> car`.
+- **The placement** — `--plate-opacity`, `--plate-fill`, `--plate-x`,
+  `--plate-y`, `--plate-crop` for the plate; `--car-opacity`, `--car-fill`,
+  `--car-fade`, `--car-x`, `--car-y`, `--car-crop` for the car — is CSS, and is
+  live in the iframe as you drag. That half exports as CSS. `--plate-y` may go
+  negative, which hangs the plate past the fold into the second screen rather
+  than clipping it there; the crops cut the foot off the plate and the head off
+  the car, each as a share of that picture's own width so the same slice goes at
+  every window size.
+
+**One grade, two frames.** `build-plate.py` has a single block of grade constants
+and runs it over both pictures: they are meant to read as one paper stock. So the
+`plate`/`car` switch in the top bar changes which frame you are looking at, not
+which numbers you are dragging — the point of it is to check that an answer found
+on one frame survives the other before you paste it. The picture you switch to is
+the one regraded live; the other stays as the last run of the script left it.
 
 Notes, mostly the same shape as the type tuner's:
 
@@ -356,12 +370,16 @@ Notes, mostly the same shape as the type tuner's:
   `plate-source.json`, which `build-plate.py` writes in the same run as the
   image; the placement's are probed off the live page. So there is no table here
   to drift out of step with either file, and no drift banner needed.
-- `--plate-opacity` is declared twice in `styles.css` — the plate needs more of
-  itself on black — so it is held, exported and probed **per theme**, and the
-  export puts each half in the right block.
-- Three views: on the page (the one that decides anything), the plate alone at
+- `--plate-opacity` and `--car-opacity` are declared twice in `styles.css` — both
+  pictures need more of themselves on black — so they are held, exported and
+  probed **per theme**, and the export puts each half in the right block.
+- Three views: on the page (the one that decides anything), the picture alone at
   full strength on the page's own paper (where a lifted black is legible at all),
   and the matte, which lights the knocked-out sky up in orange.
+- Every placement row has to be something `getComputedStyle` hands back as a
+  number, which is why the size control is `--plate-fill` / `--car-fill` and not
+  `--plate-w` / `--car-w`: those are `min(calc(…), 2400px)` and come back as
+  their own text.
 - It is a preview, not a proof: eight bits against float32, graded at the
   source's 900px rather than at full width and downsampled, and a different grain
   stream. Decide numbers here; check them by running the script.

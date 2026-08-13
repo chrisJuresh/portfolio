@@ -99,6 +99,7 @@
   <div class="top">
     <strong>plate</strong>
     <span class="badge" id="count" data-n="0">0</span>
+    <span class="set" id="pics"></span>
     <span class="set" id="views"></span>
     <span class="set" id="sizes"></span>
     <span class="grow"></span>
@@ -141,34 +142,49 @@
 
 <script>
 /* ============================================================================
-   Plate tuner — everything about the photograph in the page's bottom-left corner.
+   Plate tuner — everything about the two photographs in the page's corners: the
+   plate in the bottom-left and the car in the top-right.
 
    Two halves that are tuned together and shipped apart, which is the whole
    reason this tool exists as one window:
 
-   * THE GRADE and THE MATTE are baked into portfolio/img/plate-*.webp by
+   * THE GRADE and THE MATTE are baked into portfolio/img/<stem>-*.webp by
      design/plate/build-plate.py. Nothing here can change the file. What this
      page does is run that script's pipeline again, in a canvas, over the same
-     input the script starts from — design/plate/plate-source.webp, which the
+     input the script starts from — design/plate/<stem>-source.webp, which the
      script writes for exactly this purpose — so that a slider answers in a frame
      instead of in a forty-second re-develop of a 19 MB raw. The answer you keep
      is a block of Python to paste back.
      The grade is TWO sets of numbers, one per theme, because the script bakes a
-     ladder for each — the plate on black wants its own endpoints rather than
+     ladder for each — a picture on black wants its own endpoints rather than
      more of light's, and opacity cannot say that. The theme button therefore
      swaps which grade you are dragging as well as which paper it stands on. The
      matte is not per theme and should not become so: it is the shape of the
      building, which is one photograph either way.
-   * THE PLACEMENT is four custom properties in portfolio/styles.css, and those
-     are live: the preview is the real page in an iframe with the regraded plate
-     dropped into it, so what moves under the type here moves there. All four are
-     lengths in the pixels of the 1920×1080 frame the picture was composed on,
-     not shares of the window — styles.css declares a fifth, --plate-fold, which
-     is that frame's own bottom edge and is the datum rather than a placement,
+   * THE PLACEMENT is a handful of custom properties in portfolio/styles.css, and
+     those are live: the preview is the real page in an iframe with the regraded
+     picture dropped into it, so what moves under the type here moves there.
+     styles.css declares one more, --fold, which is the bottom edge of the first
+     screen and is the datum both pictures are scaled to rather than a placement,
      which is why there is no slider for it here.
 
-   You cannot judge the first without the second. A grade read at 100% on a white
-   field is a different photograph from the same grade at --plate-opacity behind a
+   ONE GRADE, TWO FRAMES. build-plate.py has one block of grade constants per
+   THEME, and runs whichever the theme asks for over both pictures, deliberately —
+   the two are meant to read as one paper stock, and a grade tuned on one and
+   eyeballed onto the other is exactly how that comes apart. So the two switches
+   in the top bar do different things: the `plate`/`car` one changes which frame
+   you are LOOKING at, not which numbers you are dragging, while the theme one
+   changes both. The sliders are the same sliders across the pictures, and the
+   point of that switch is to check that an answer found on one frame survives the
+   other before you paste it.
+
+   The picture you have switched to is the one regraded live in the preview. The
+   other stays exactly as it shipped — it is whatever the last run of the script
+   put in portfolio/img/, which is the honest thing for it to be while you are
+   not looking at it, and it means the frame only ever carries one canvas.
+
+   You cannot judge the grade without the placement. A grade read at 100% on a
+   white field is a different photograph from the same grade at 0.12 behind a
    column of Sitka, and it is the second one that ships — hence the default view.
 
    WHERE THIS IS AND IS NOT THE TRUTH
@@ -246,36 +262,65 @@ var MATTE = [
     tip: "Blur on the alpha, in output pixels, so the roofline does not stair-step.\nApproximated here by three box passes; the script uses a real Gaussian." }
 ];
 
-/* The CSS half. `dark` marks the one that is declared twice in styles.css —
-   the plate needs more of itself on black — so it is held, exported and probed
-   per theme rather than shared. */
+/* The CSS half, one table per picture. `dark` marks the rows that are declared
+   twice in styles.css — both pictures need more of themselves on black — so they
+   are held, exported and probed per theme rather than shared.
+
+   Every row here has to be a value getComputedStyle can hand back as a NUMBER,
+   because that is how probe() reads what a row has moved FROM. That rules out
+   --plate-w and --car-w, which are min(calc(…), 2400px) expressions and come back
+   as their own text: the size control is --plate-fill / --car-fill, the share of
+   the first screen the picture is drawn across, which is the thing that is
+   actually written down in the sheet anyway. */
 var PLACE = [
   { k: "--plate-opacity", label: "opacity", unit: "",   min: 0, max: 0.6, step: 0.005, dp: 3, dark: true,
     tip: "The one number that decides whether this is paper stock or a picture.\nThe moment you notice it as a photograph it is too strong." },
-  { k: "--plate-w", label: "width",  unit: "px", min: 200, max: 2400, step: 1, dp: 1,
-    tip: "How far it runs across the page. Height follows the file's own aspect.\nA LENGTH, not a share of the window: the picture is drawn this wide on every display, so its right-hand edge lands in the same place on all of them. 1161.6 is 60.5% of the 1920 frame this was composed on, where that edge falls near the far side of the column of text — which is the point, it is what the type is printed on, not something beside it.\nSo the preview frame's width no longer changes the plate. It only changes where the column stands on it, which is the thing a narrow window really does move." },
+  { k: "--plate-fill", label: "width ÷ band",  unit: "", min: 0.2, max: 1.6, step: 0.001, dp: 3,
+    tip: "How wide the picture is drawn, as a share of the band between the top of the page and the fold. Height follows the file's own aspect, so this is the size control and there is only one.\nA share and not a length: both edges the plate is pinned by are held at every window height, and a taller window simply gets a bigger plate. It is also the control for how far down the frame the top of the band cuts — raise it and the vane climbs out of the top of the page, lower it and empty sky opens above it." },
   { k: "--plate-x", label: "out from left", unit: "px", min: -400, max: 400, step: 1, dp: 0,
     tip: "Positive moves it right, off the page's left edge." },
   { k: "--plate-y", label: "up from the fold", unit: "px", min: -1600, max: 1200, step: 1, dp: 0,
-    tip: "Positive lifts it off --plate-fold, the bottom edge of the 1920×1080 frame this was composed on — 1080px down the document, wherever the viewer's own fold happens to be.\nNegative hangs it PAST that line and down into the second screen — the box grows with it, so nothing is cut off there any more.\nBecause the datum is fixed and not 100vh, this is also the control for the one measurement that matters most: how far down the page the TOP of the picture arrives. It is the same on every screen." },
+    tip: "Positive lifts it off --fold, the bottom of the first screen.\nNegative hangs it PAST that line and down into the second screen — the box grows with it, so nothing is cut off there any more.\nIt shortens the band as it goes, so the picture shrinks with it: --plate-fill is a share of what is left." },
   { k: "--plate-crop", label: "crop the foot", unit: "", min: 0, max: 0.9, step: 0.005, dp: 3,
-    tip: "Cuts the BOTTOM off the picture — the rooftops and the glass in front of the dome.\nA share of the plate's width rather than a length of its own, so it survives 'width' being re-tuned without having to be re-measured after it.\nIt shortens the picture where it stands; it does not move it. Use 'up from the fold' for that." }
+    tip: "Cuts the BOTTOM off the picture — the rooftops and the glass in front of the dome.\nA share of the plate's width rather than a length of its own, so it survives the size being re-tuned without having to be re-measured after it.\nIt shortens the picture where it stands; it does not move it. Use 'up from the fold' for that." }
+];
+
+/* The car is anchored by one corner where the plate is anchored by two edges, so
+   it is a shorter list with one row the plate has no use for — the dissolve. */
+var CAR = [
+  { k: "--car-opacity", label: "opacity", unit: "", min: 0, max: 0.6, step: 0.005, dp: 3, dark: true,
+    tip: "Its own, not the plate's, though the two hold the same number today.\nTwo pictures with two different amounts of dark in them: the day one of them needs a nudge is the day sharing the variable would have been the bug." },
+  { k: "--car-fill", label: "width ÷ fold", unit: "", min: 0.2, max: 1.6, step: 0.001, dp: 3,
+    tip: "Width as a share of the first screen, as --plate-fill is of the band.\nIt has a floor at 0.751 and you can see it: the file is 1.332× as tall as it is wide, so below that the picture's own foot lands above the fold and a horizontal line appears across the pylon in mid-air. Past it the fold does the cutting, which is the page's own edge." },
+  { k: "--car-fade", label: "dissolve the inner edge", unit: "", min: 0, max: 0.6, step: 0.005, dp: 3,
+    tip: "How much of its own width the LEFT edge — the only edge of it that ends anywhere but a page edge — takes to fade into the paper.\nThe plate has no such control and wants none: its inner edges are empty sky. This frame's is the gantry, cut clean across, and at this opacity a straight vertical line is the one thing that reads as a crop.\n0 is a hard edge. Watch it against 'the plate' view, where it is at full strength." },
+  { k: "--car-x", label: "out from right", unit: "px", min: -400, max: 400, step: 1, dp: 0,
+    tip: "Positive moves it left, in off the page's right edge." },
+  { k: "--car-y", label: "down from the top", unit: "px", min: -1200, max: 1200, step: 1, dp: 0,
+    tip: "Positive pushes it down the page, away from the corner it is anchored in.\nUnlike the plate's, this does not resize anything — the car's box is the whole first screen either way." },
+  { k: "--car-crop", label: "crop the head", unit: "", min: 0, max: 0.9, step: 0.005, dp: 3,
+    tip: "Cuts the TOP off the picture — the gantry — which is the corner it is anchored to, so it is the mirror of the plate's crop and not a second copy of it.\nA share of the car's width, for the same reason: it survives the size being re-tuned." }
 ];
 
 var MATTE_GROUP = { name: "Sky matte", rows: MATTE, py: true,
   note: "No sky is wanted, only the building — the page's own paper is the sky. Watch this one in the matte view." };
 var GROUPS = [
   /* `dark` on the GROUP and not on a row: the whole grade is per-theme, because
-     build-plate.py bakes a ladder for each and the plate on black wants its own
+     build-plate.py bakes a ladder for each and a picture on black wants its own
      endpoints rather than more of light's. So every row below is held, previewed
      and exported twice, and the theme button decides which of the two you are
      dragging. The matte is NOT — it is the shape of the building, which is one
      photograph in both themes and would only be two chances to cut it
-     differently. */
+     differently.
+     Per theme and NOT per picture, which are the two axes this tool keeps apart:
+     the same grade runs over both frames, so the plate/car switch changes the
+     frame under these rows and never the rows themselves. */
   { name: "Grade", rows: GRADE, py: true, dark: true,
-    note: "Per theme, and baked into the files. Flip the theme button to tune the other one; re-run build-plate.py to ship either." },
+    note: "Per theme, shared by both pictures, and baked into every <stem>-*.webp. Flip the theme button to tune the other one; re-run build-plate.py, once per picture, to ship a change." },
   MATTE_GROUP,
-  { name: "Placement", rows: PLACE, css: true,
+  { name: "Placement — the plate, bottom-left", rows: PLACE, css: true,
+    note: "portfolio/styles.css, live in the frame." },
+  { name: "Placement — the car, top-right", rows: CAR, css: true,
     note: "portfolio/styles.css, live in the frame." }
 ];
 var ROWS = [];
@@ -286,10 +331,28 @@ GROUPS.forEach(function (g) { g.rows.forEach(function (r) {
   if (g.dark) r.dark = true;
   ROWS.push(r);
 }); });
+/* Every row that is CSS rather than Python: what probe() reads off the live page
+   and inject() writes back to it. Derived rather than listed again, so adding a
+   placement row to a table above is the whole of adding it. */
+var CSS_ROWS = ROWS.filter(function (r) { return r.group.css; });
 /* The one row this tool reaches for by name, because it drives two others — see
    applyLevel. Looked up rather than written twice, so the table above stays the
    only place a row is declared. */
 var LEVEL_ROW = ROWS.filter(function (r) { return r.k === "LEVEL"; })[0];
+
+/* ---- the two pictures ---------------------------------------------------- */
+/* `stem` is what build-plate.py names everything after — the source pair beside
+   this file and the ladder in portfolio/img — and `sel` is what paints it in
+   styles.css, which is what inject() has to override to put a live regrade under
+   the type. Two different kinds of selector because the plate had body::after
+   spare and the car did not; see the .car block in that sheet. */
+var SOURCES = [
+  { k: "plate", label: "plate", stem: "plate", sel: "body::after" },
+  { k: "car",   label: "car",   stem: "car",   sel: ".car" }
+];
+function picture() {
+  return SOURCES.filter(function (s) { return s.k === state.pic; })[0] || SOURCES[0];
+}
 
 /* ---- state --------------------------------------------------------------- */
 /* v3, and skipping a version, because two separate breakages each landed as a v2
@@ -307,7 +370,7 @@ var LEVEL_ROW = ROWS.filter(function (r) { return r.k === "LEVEL"; })[0];
    build-plate.py), so the version is bumped past both and the old keys are left
    to rot rather than read and converted. */
 var KEY = "plate-tuner-v3";
-var state = { vals: {}, place: {}, theme: "light", view: "page", preset: "frame", w: 0, h: 0, shut: {} };
+var state = { vals: {}, place: {}, theme: "light", view: "page", preset: "frame", pic: "plate", w: 0, h: 0, shut: {} };
 try {
   var saved = JSON.parse(localStorage.getItem(KEY) || "null");
   if (saved && saved.vals) state = {
@@ -316,6 +379,7 @@ try {
     theme:  saved.theme === "dark" ? "dark" : "light",
     view:   saved.view || "page",
     preset: saved.preset || "frame",
+    pic:    saved.pic === "car" ? "car" : "plate",
     w: saved.w || 0, h: saved.h || 0,
     shut:   saved.shut || {}
   };
@@ -418,6 +482,13 @@ function mulberry32(a) {
 
 function decode(img) {
   W = img.naturalWidth; H = img.naturalHeight; N = W * H;
+  /* Switching pictures lands here, and everything held between draws is sized in
+     the last one's pixels. The ImageData goes, and the matte's cache key goes to
+     a value no signature can equal, which is what makes the next draw rebuild the
+     matte, the bleed and the histogram from this frame instead of reusing the
+     other one's. */
+  out = null;
+  matteSig = null;
   var c = document.createElement("canvas");
   c.width = W; c.height = H;
   var g = c.getContext("2d", { willReadFrequently: true });
@@ -807,7 +878,7 @@ function probe() {
   var doc = frame.contentDocument, win = frame.contentWindow;
   if (!doc || !win || !doc.documentElement) return;
   var cs = win.getComputedStyle(doc.documentElement);
-  PLACE.forEach(function (r) {
+  CSS_ROWS.forEach(function (r) {
     var raw = cs.getPropertyValue(r.k).trim();
     base[keyOf(r)] = raw === "" ? 0 : parseFloat(raw);
     state.place[keyOf(r)] = base[keyOf(r)];
@@ -818,28 +889,35 @@ function probe() {
 
 /* Injected last and with no !important, so the preview meets the same cascade
    the exported CSS will meet in styles.css. The image is this tool's, though —
-   the plate on disk is whatever the last run of the script produced, and the
-   whole point is to see the grade that has not been baked yet. */
+   what is on disk is whatever the last run of the script produced, and the whole
+   point is to see the grade that has not been baked yet.
+   Both pictures' placement goes in every time, because both are on the page at
+   once and moving one is judged against the other. Only the picture being graded
+   has its file replaced: the background-image is written against that one's own
+   selector, and the other is left to the ladder in portfolio/img.
+   It has to be background-image and not --plate-src / --car-src, even though
+   those are what the sheet reads: index.html sets them as inline styles on
+   <html>, and an element style beats any rule this could write. */
 function inject() {
   var doc = frame.contentDocument;
   if (!doc || !doc.body || !plateURL) return;
   var tag = doc.getElementById("__plate");
   if (!tag) { tag = doc.createElement("style"); tag.id = "__plate"; }
-  var decls = PLACE.map(function (r) {
+  var decls = CSS_ROWS.map(function (r) {
     return "  " + r.k + ": " + num(val(r), r.dp) + r.unit + ";";
   }).join("\n");
   tag.textContent =
     ":root {\n" + decls + "\n}\n" +
-    "body::after { background-image: url(" + plateURL + "); }\n";
+    picture().sel + " { background-image: url(" + plateURL + "); }\n";
   doc.body.appendChild(tag);
 }
 
 /* ---- views --------------------------------------------------------------- */
 var sheet = document.getElementById("sheet");
 var VIEWS = [
-  { k: "page",  label: "on the page" },
-  { k: "plate", label: "the plate" },
-  { k: "matte", label: "the matte" }
+  { k: "page",    label: "on the page" },
+  { k: "picture", label: "the picture" },
+  { k: "matte",   label: "the matte" }
 ];
 
 function paintView() {
@@ -851,10 +929,10 @@ function paintView() {
   document.getElementById("scalenote").hidden = !page;
   document.getElementById("derived").hidden = !page;
   sheet.hidden = page;
-  /* Both bare views stand the plate at full strength on the page's own paper —
+  /* Both bare views stand the picture at full strength on the page's own paper —
      this is where the grade itself is legible, and a shoulder or a lifted black
      read at 0.12 cannot be judged at all. The matte view is the same picture
-     with the sky lit up in the panel's accent, so the roofline has something to
+     with the sky lit up in the panel's accent, so the cut edge has something to
      be read against instead of dissolving into the paper it is matched to. */
   sheet.style.background = state.theme === "dark" ? "#000" : "#fcfbf8";
   sheet.style.backgroundImage = state.view === "matte"
@@ -1156,6 +1234,9 @@ function paintChrome() {
   [].forEach.call(document.querySelectorAll("#sizes button"), function (b) {
     b.setAttribute("aria-pressed", b.dataset.k === state.preset ? "true" : "false");
   });
+  [].forEach.call(document.querySelectorAll("#pics button"), function (b) {
+    b.setAttribute("aria-pressed", b.dataset.k === state.pic ? "true" : "false");
+  });
 }
 
 var sayTimer = null;
@@ -1176,6 +1257,19 @@ function chips(host, items, isOn, pick) {
     host.appendChild(b);
   });
 }
+
+/* Which frame the grade is drawn on, and therefore which of the two the preview
+   is showing live. Not which numbers you are dragging — see ONE GRADE, TWO
+   FRAMES at the top. The old canvas is left in place until the new one has been
+   decoded and drawn, so the switch never blanks the frame. */
+chips(document.getElementById("pics"), SOURCES,
+  function (it) { return it.k === state.pic; },
+  function (it) {
+    if (it.k === state.pic) return;
+    state.pic = it.k; save();
+    paintChrome();
+    loadPicture(it.k);
+  });
 
 chips(document.getElementById("views"), VIEWS,
   function (it) { return it.k === state.view; },
@@ -1217,7 +1311,7 @@ frame.addEventListener("load", function () { probe(); inject(); paintDerived(); 
 /* ---- boot ---------------------------------------------------------------- */
 function warn(html) { document.getElementById("warn").innerHTML = html; }
 
-/* plate-source.json keys its grade by theme, because build-plate.py bakes one
+/* A <stem>-source.json keys its grade by theme, because build-plate.py bakes one
    per theme. A file written by an older build has no `light` key and carries a
    single flat grade instead — that one becomes the base for BOTH themes here,
    which is exactly what its single ladder was on the page. Worth the four lines:
@@ -1233,12 +1327,17 @@ function readGrade(g) {
   });
 }
 
-function boot() {
-  buildPanel();
-  paintView();
-  loadFrame();
-
-  fetch("plate-source.json?" + Date.now()).then(function (r) {
+/* One picture's source pair, fetched and decoded. Called on boot and again on
+   every switch, which is why it puts the panel back together each time: whether
+   the matte half exists at all is a property of the source that just arrived, not
+   of the tool. The grade constants are re-read too — both themes' — and they are
+   the same numbers either way, because build-plate.py writes one block per theme
+   into both files, so this is a no-op that keeps being true rather than a second
+   source of them. */
+function loadPicture(k) {
+  var stem = (SOURCES.filter(function (s) { return s.k === k; })[0] || SOURCES[0]).stem;
+  warn("");
+  return fetch(stem + "-source.json?" + Date.now()).then(function (r) {
     if (!r.ok) throw new Error(r.status);
     return r.json();
   }).then(function (meta) {
@@ -1247,8 +1346,8 @@ function boot() {
     /* null when the source arrived cut. The rows then have no base to be `was`,
        which is also why they cannot show as moved and cannot reach the export. */
     hasOwnMatte = !meta.matte;
-    if (hasOwnMatte) MATTE_GROUP.hidden = true;
-    else Object.keys(meta.matte).forEach(function (k) { base[k] = meta.matte[k]; });
+    MATTE_GROUP.hidden = hasOwnMatte;
+    if (!hasOwnMatte) Object.keys(meta.matte).forEach(function (k2) { base[k2] = meta.matte[k2]; });
     buildPanel();   /* again, now that it is known whether the matte panel exists */
     return new Promise(function (done, fail) {
       var img = new Image();
@@ -1265,11 +1364,19 @@ function boot() {
   }).catch(function (e) {
     /* Both failures land here and both have the same two causes, so say both. */
     warn("<strong>No source to grade.</strong> This tool needs " +
-         "<code>design/plate/plate-source.webp</code> and <code>plate-source.json</code>, which " +
-         "<code>build-plate.py</code> writes beside itself — run it once against the raw. " +
+         "<code>design/plate/" + stem + "-source.webp</code> and <code>" + stem +
+         "-source.json</code>, which <code>build-plate.py</code> writes beside itself — " +
+         "run it once against the source frame. " +
          "And it has to be served, not opened off the disk: <code>run.bat</code>, then " +
          "<code>localhost:8000/design/plate/plate-tuner.html</code>. (" + e.message + ")");
   });
+}
+
+function boot() {
+  buildPanel();
+  paintView();
+  loadFrame();
+  loadPicture(state.pic);
 }
 
 boot();

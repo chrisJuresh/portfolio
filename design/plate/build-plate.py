@@ -1,8 +1,16 @@
 #!/usr/bin/env python3
-"""Rebuild portfolio/img/plate-*.webp — the graded plate in the page's
-bottom-left corner, one file per rung of OUT_WIDTHS and per theme in GRADES.
+"""Rebuild the graded corner pictures — one file per rung of OUT_WIDTHS and per
+theme in GRADES, for whichever of PICTURES is named.
 
-    python design/plate/build-plate.py <source.rw2 | source.png>
+    python design/plate/build-plate.py <source.rw2 | source.png> [plate | car]
+
+Two pictures, one pipeline — see PICTURES. `plate` is St Paul's over the
+rooftops in the page's bottom-left corner and is the default; `car` is a cable
+car hanging off its pylon in the top-right. They share every constant below,
+which is the point rather than an economy: the two are meant to read as one
+paper stock the column is printed on, and a grade tuned on one and eyeballed
+onto the other is exactly how that comes apart. Each is built on its own run,
+because each has its own source frame and only one of them is usually moving.
 
 Writes the ladder from either of two sources. Deterministic: same input,
 byte-identical output (the grain is a seeded PRNG, not os entropy).
@@ -17,7 +25,7 @@ matte from a frame that has none, and because the reasoning in sky_matte() is
 worth more than the twenty lines it occupies.
 
 It also writes the two files design/plate/plate-tuner.html needs to preview a
-grade without this script — plate-source.webp and plate-source.json. See
+grade without this script — <name>-source.webp and <name>-source.json. See
 NEUTRAL SOURCE at the foot of this docstring. Every constant below is a slider
 in that tuner; the way to change one is to move it there, read the block it
 prints, and paste it back over the block here.
@@ -38,12 +46,20 @@ only places and dials it. Three reasons, in order of how much they cost:
   clipping them, and grain. Approximating it with the filter primitives that do
   exist would be both slower and worse.
 
-The frame is mirrored, left for right — see develop(). The plate stands in the
-page's BOTTOM-LEFT corner, and as shot the tower is on the right and the dome
-falls away to the left, so the picture's weight sat at the open end and its empty
-sky in the corner it is anchored to. Flipped, the tower carries the corner and the
-dome leans back into the page. Nothing downstream knows: the flip is the second
-line of the develop, so the matte, the grade and the tuner all see one frame.
+The plate's frame is mirrored, left for right — see load(), and `mirror` in
+PICTURES. The plate stands in the page's BOTTOM-LEFT corner, and as shot the
+tower is on the right and the dome falls away to the left, so the picture's
+weight sat at the open end and its empty sky in the corner it is anchored to.
+Flipped, the tower carries the corner and the dome leans back into the page.
+Nothing downstream knows: the flip is the second line of the develop, so the
+matte, the grade and the tuner all see one frame.
+
+The car is not mirrored, and for the same reason rather than a different one:
+as shot, the pylon already stands up the right-hand edge and the gondola already
+hangs down and to the left of it, which is what the top-right corner asks for.
+It is one line either way; what matters is that each frame is stood in its corner
+here, once, and every measurement downstream then describes the picture that
+ships.
 
 There is no vignette and no soft rectangular edge. An earlier cut dissolved the
 top and right edges into the page and it read as a lit corner with a building
@@ -67,10 +83,13 @@ So GRADES holds a Grade per theme and main() bakes a ladder for each. What the
 stylesheet still owns is placement and opacity; what the file owns is the grade,
 per theme, which is the same division as before with the theme axis added.
 
-The two ladders are named `plate-<width>.webp` and `plate-dark-<width>.webp`,
-matching how styles.css already declares `--plate-opacity` — once in `:root` and
-again in `:root[data-theme="dark"]`. Light is the unsuffixed one because it is
-the page's default and because that is the name the plate has always had.
+The theme axis crosses the picture axis rather than competing with it: GRADES is
+shared by both pictures for the same reason every other constant is, so a run
+writes one ladder per theme for the one stem it was given. The two ladders are
+named `<stem>-<width>.webp` and `<stem>-dark-<width>.webp`, matching how
+styles.css already declares `--plate-opacity` — once in `:root` and again in
+`:root[data-theme="dark"]`. Light is the unsuffixed one because it is the page's
+default and because that is the name the plate has always had.
 
 When a theme's Grade is identical to light's, its ladder is not written at all
 and portfolio/index.html falls back to the light file. That is a designed state
@@ -145,16 +164,18 @@ paper and ink of the theme it is standing in (styles.css `:root` and
 
 NEUTRAL SOURCE
 --------------
-plate-source.webp is step 1 and nothing else: the linear develop, sRGB-encoded so
+<name>-source.webp is step 1 and nothing else: the linear develop, sRGB-encoded so
 that eight bits are spent perceptually, scaled down to NEUTRAL_WIDTH, sky and all.
 Ungraded and unmatted on purpose — it is the input every stage above starts from,
 so a tool holding it can run the whole pipeline itself and show you the answer
 while you drag. That is design/plate/plate-tuner.html, and it is why the sky is
 still in the file: the matte is one of the things being tuned.
 
-Its companion plate-source.json carries the constants this script was last run
-with, so the tuner opens on the plate as it stands rather than on a table of
-numbers hand-copied from here that would drift the first time one changed.
+Its companion <name>-source.json carries the constants this script was last run
+with, so the tuner opens on the picture as it stands rather than on a table of
+numbers hand-copied from here that would drift the first time one changed. One
+pair per picture, and the grade in the two is the same grade — the tuner reads
+the plate's and offers the car's source as a second frame to check it against.
 
 The three ways the tuner's answer is an approximation of this script's, none of
 which move a judgement you would make at --plate-opacity:
@@ -169,6 +190,7 @@ from __future__ import annotations
 
 import json
 import sys
+from dataclasses import dataclass
 from pathlib import Path
 from typing import NamedTuple
 
@@ -272,22 +294,24 @@ SKY_LUMA_MIN = 0.130      # linear luma a pixel needs to seed the sky
 SKY_LUMA_LOW = 0.075      # ...and to stay in it, once something brighter vouches
 SKY_EDGE_BLUR = 1.2       # px at output scale, to keep the roofline from aliasing
 
-# ---- the plate ------------------------------------------------------------
-# One file per rung, and the page picks the smallest that covers it. The plate is
-# drawn at --plate-w, which is 50vw, so what a display actually needs is
+# ---- the ladder -----------------------------------------------------------
+# One file per rung per picture, and the page picks the smallest that covers it.
+# Both are scaled to the HEIGHT of the first screen — --plate-fill and --car-fill
+# in styles.css, shares of --fold — so what a display actually needs is
 #
-#     viewport CSS width / 2 * devicePixelRatio
+#     viewport CSS height * fill * devicePixelRatio
 #
-# which is 585 on a 390px phone at 3x, 1512 on a 1512px laptop at 2x, 1920 on a
-# 4K desktop at 1x, and 2560 on a 5K at 2x. The rungs bracket that range. They
-# are duplicated in portfolio/index.html, which does the picking — see PLATES
+# which for the plate is 2185 on a 844px phone at 3x, 1450 on a 840px laptop at
+# 2x, 932 on a 1080px desktop at 1x, and 2484 on a 1440px 5K at 2x, and about
+# nine tenths of each of those for the car. The rungs bracket that range. They
+# are duplicated in portfolio/index.html, which does the picking — see RUNGS
 # there, and keep the two lists the same.
 #
-# It cannot be one file. The top rung is 1.2 MB and the bottom is 100 KB, and
+# It cannot be one file. The top rung is 600 KB and the bottom is 50 KB, and
 # sending the first to a phone to decorate it at 12% opacity would cost more than
 # everything else on the page put together.
 OUT_WIDTHS = (800, 1300, 2000, 2800)
-# 78 rather than 82: the plate composites at --plate-opacity, so a WebP artefact
+# 78 rather than 82: the picture composites at 0.12, so a WebP artefact
 # arrives at an eighth of its strength, and nothing survives that. Measured over
 # the ladder, 78 is ~7% smaller than 82 with no difference visible on the page.
 WEBP_QUALITY = 78
@@ -304,15 +328,44 @@ NEUTRAL_QUALITY = 95
 HERE = Path(__file__).resolve().parent
 REPO = HERE.parents[1]
 OUT_DIR = REPO / "portfolio" / "img"
-NEUTRAL_PATH = HERE / "plate-source.webp"
-META_PATH = HERE / "plate-source.json"
 
 
-def out_path(width: int, theme: str) -> Path:
-    """Light is unsuffixed — see ONE LADDER PER THEME. portfolio/index.html
-    builds these same two names; keep the two spellings together."""
-    return OUT_DIR / (f"plate-{width}.webp" if theme == "light"
-                      else f"plate-{theme}-{width}.webp")
+# ---- the two pictures ------------------------------------------------------
+# Everything above this line is shared, and everything in here is a property of
+# one frame rather than of the grade. `mirror` is the only one that is a decision
+# — see the mirror paragraph in the docstring — and `stem` is what every file
+# either picture owns is named after, on both ends: portfolio/img/<stem>-*.webp
+# for the ladder, <stem>-source.webp and .json beside this script for the tuner,
+# and --<stem>-* for the custom properties in styles.css that place it.
+#
+# The theme is NOT in here. GRADES is shared, like every other constant above, so
+# the theme axis lives on out_path() and nowhere else in this class.
+@dataclass(frozen=True)
+class Picture:
+    stem: str
+    corner: str
+    mirror: bool
+
+    @property
+    def neutral_path(self) -> Path:
+        return HERE / f"{self.stem}-source.webp"
+
+    @property
+    def meta_path(self) -> Path:
+        return HERE / f"{self.stem}-source.json"
+
+    def out_path(self, width: int, theme: str) -> Path:
+        """Light is unsuffixed — see ONE LADDER PER THEME. portfolio/index.html
+        builds these same two names; keep the two spellings together."""
+        return OUT_DIR / (f"{self.stem}-{width}.webp" if theme == "light"
+                          else f"{self.stem}-{theme}-{width}.webp")
+
+
+PICTURES = {
+    "plate": Picture(stem="plate", corner="bottom-left", mirror=True),
+    "car":   Picture(stem="car",   corner="top-right",   mirror=False),
+}
+DEFAULT_PICTURE = "plate"
 
 # Rec.709 luma. The desaturation and the grain weight both need a scalar
 # brightness and it must be the same one, or the grain drifts off the mids.
@@ -390,7 +443,7 @@ def read_cut(path: Path) -> tuple[np.ndarray, np.ndarray]:
     return srgb_decode(bgra[..., ::-1]), a[..., 3]     # cv2 hands back BGR
 
 
-def load(path: Path) -> tuple[np.ndarray, np.ndarray, bool]:
+def load(path: Path, pic: Picture) -> tuple[np.ndarray, np.ndarray, bool]:
     """Source -> (linear-light RGB, alpha 0..1, whether the matte was computed).
 
     Two front ends, one grade behind them, and the mirror belongs to neither —
@@ -400,6 +453,9 @@ def load(path: Path) -> tuple[np.ndarray, np.ndarray, bool]:
     the neutral source the tuner grades, the coordinates in the comments — then
     describes one frame, the one that ships. Flipping the plate at the end would
     leave every measurement in this file mirror-image to the picture it is about.
+
+    Which is also why `mirror` is a property of the picture and not a flag on the
+    call: it decides which frame every one of those measurements is about.
     """
     if path.suffix.lower() == ".rw2":
         lin = develop(path)
@@ -408,7 +464,9 @@ def load(path: Path) -> tuple[np.ndarray, np.ndarray, bool]:
     else:
         lin, alpha = read_cut(path)
         computed = False
-    return lin[:, ::-1, :], alpha[:, ::-1], computed
+    if pic.mirror:
+        lin, alpha = lin[:, ::-1, :], alpha[:, ::-1]
+    return lin, alpha, computed
 
 
 def sky_matte(lin: np.ndarray) -> np.ndarray:
@@ -529,7 +587,7 @@ def grade_json(g: Grade) -> dict:
     }
 
 
-def write_neutral(lin: np.ndarray, alpha_f: np.ndarray, computed: bool) -> None:
+def write_neutral(pic: Picture, lin: np.ndarray, alpha_f: np.ndarray, computed: bool) -> None:
     """Step 1 on its own, plus the constants, for design/plate/plate-tuner.html.
 
     Encoded rather than left linear, and scaled by nothing. Eight bits of linear
@@ -553,12 +611,14 @@ def write_neutral(lin: np.ndarray, alpha_f: np.ndarray, computed: bool) -> None:
     if not computed:
         a = Image.fromarray(np.round(alpha_f * 255.0).astype(np.uint8), mode="L")
         img.putalpha(a.resize((NEUTRAL_WIDTH, height), Image.LANCZOS))
-    img.save(NEUTRAL_PATH, "WEBP", quality=NEUTRAL_QUALITY, method=6)
+    img.save(pic.neutral_path, "WEBP", quality=NEUTRAL_QUALITY, method=6)
 
-    META_PATH.write_text(json.dumps({
+    pic.meta_path.write_text(json.dumps({
         "_": "Written by build-plate.py. The constants plate-tuner.html opens on — "
-             "so that what it calls 'was' is what the plate on the page really is.",
-        "source": NEUTRAL_PATH.name,
+             "so that what it calls 'was' is what the picture on the page really is.",
+        "stem": pic.stem,
+        "corner": pic.corner,
+        "source": pic.neutral_path.name,
         "width": img.width,
         "height": img.height,
         "outWidths": list(OUT_WIDTHS),
@@ -574,9 +634,21 @@ def write_neutral(lin: np.ndarray, alpha_f: np.ndarray, computed: bool) -> None:
     }, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
 
 
+def usage() -> str:
+    """The invocation line out of the docstring, found rather than indexed.
+
+    It was indexed, and the index was wrong: the title above it has been one line
+    and is now two, so the constant pointed at the blank between them and the
+    error message printed nothing at all. Nobody notices a usage line that only
+    appears when you have already got the call wrong.
+    """
+    return next(ln.strip() for ln in __doc__.splitlines()
+                if ln.lstrip().startswith("python "))
+
+
 def main() -> int:
-    if len(sys.argv) != 2:
-        print(__doc__.strip().splitlines()[2].strip(), file=sys.stderr)
+    if not 2 <= len(sys.argv) <= 3:
+        print(usage(), file=sys.stderr)
         return 2
 
     src = Path(sys.argv[1])
@@ -584,11 +656,17 @@ def main() -> int:
         print(f"no such file: {src}", file=sys.stderr)
         return 1
 
-    lin, alpha_f, computed = load(src)
+    name = sys.argv[2] if len(sys.argv) == 3 else DEFAULT_PICTURE
+    pic = PICTURES.get(name)
+    if pic is None:
+        print(f"no such picture: {name} (one of {', '.join(PICTURES)})", file=sys.stderr)
+        return 2
+
+    lin, alpha_f, computed = load(src, pic)
     keep = alpha_f > 0.5
 
     OUT_DIR.mkdir(parents=True, exist_ok=True)
-    print(f"sky {(1.0 - keep.mean()) * 100:.1f}% of frame  "
+    print(f"{pic.stem} ({pic.corner})  sky {(1.0 - keep.mean()) * 100:.1f}% of frame  "
           f"({'cut here' if computed else 'matte supplied'})")
 
     written = set()
@@ -627,25 +705,30 @@ def main() -> int:
             if computed and SKY_EDGE_BLUR:
                 a = img.getchannel("A").filter(ImageFilter.GaussianBlur(SKY_EDGE_BLUR))
                 img.putalpha(a)
-            path = out_path(width, theme)
+            path = pic.out_path(width, theme)
             img.save(path, "WEBP", quality=WEBP_QUALITY, method=6)
             written.add(path)
             print(f"  {path.relative_to(REPO)}  {img.width}x{img.height}  "
                   f"{path.stat().st_size / 1024:.0f} KB")
 
-    # Anything matching the plate's own name that this run did not write. Against
-    # the set of paths rather than by parsing a width back out of the filename,
-    # which is what this did while there was one ladder and one shape of name:
-    # a rung dropped from OUT_WIDTHS and a whole theme falling back to light both
-    # leave files behind, and neither is a filename you can recognise by pattern.
-    for stale in sorted(OUT_DIR.glob("plate-*.webp")):
+    # Anything under THIS picture's stem that this run did not write. Against the
+    # set of paths rather than by parsing a width back out of the filename, which
+    # is what this did while there was one ladder and one shape of name: a rung
+    # dropped from OUT_WIDTHS and a whole theme falling back to light both leave
+    # files behind, and neither is a filename you can recognise by pattern.
+    #
+    # Scoped to the stem, so a run for one picture never reaches the other's
+    # ladder — which it would otherwise do on every single run, each picture
+    # being built on its own.
+    for stale in sorted(OUT_DIR.glob(f"{pic.stem}-*.webp")):
         if stale not in written:
             stale.unlink()
             print(f"  removed {stale.relative_to(REPO)} (not written this run)")
 
-    write_neutral(lin, alpha_f, computed)
-    print(f"{NEUTRAL_PATH.relative_to(REPO)}  {NEUTRAL_PATH.stat().st_size / 1024:.0f} KB"
-          f"  + {META_PATH.name}   (design/plate/plate-tuner.html reads these)")
+    write_neutral(pic, lin, alpha_f, computed)
+    print(f"{pic.neutral_path.relative_to(REPO)}  "
+          f"{pic.neutral_path.stat().st_size / 1024:.0f} KB"
+          f"  + {pic.meta_path.name}   (design/plate/plate-tuner.html reads these)")
     return 0
 
 
