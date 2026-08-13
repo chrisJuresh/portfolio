@@ -301,7 +301,7 @@
                            answer. Its own variable for the reason --car-opacity is
                            its own: three pictures with three different amounts of
                            dark in them.                                        */
-  --eye-fill: 0.36;     /* width as a share of --fold, as --car-fill is. There is
+  --eye-fill: 0.582;    /* width as a share of --fold, as --car-fill is. There is
                            no floor of the car's kind, because there is no cut edge
                            anywhere the fold does not already handle: what the fold
                            cuts is the picture's own foot, which is cut in the file
@@ -313,39 +313,55 @@
                            1.167 × the width — and the two pictures share the
                            right-hand side of the page. Much past 0.39 the top of
                            the mast arrives under the gondola and the two read as
-                           one machine: a cable car mounted on a Ferris wheel. 0.36
-                           makes the eye 389px wide on a 1920×1080 frame, stands the
-                           mast 454px up it, and leaves about 36px of paper between
-                           the two — enough to read as two corners.
+                           one machine: a cable car mounted on a Ferris wheel.
+                           0.582 is PAST that ceiling and knowingly so: it makes the
+                           eye 629px wide on a 1920×1080 frame, stands the mast 734px
+                           up it, and puts the top of the mast 346px below the top of
+                           the fold — where 0.36 left it at 626px with about 36px of
+                           paper under the car. That paper is gone; the mast now runs
+                           up behind the gondola by roughly 244px. The ceiling is
+                           written down rather than deleted because it is still the
+                           thing this value is trading against, and 0.39 is still
+                           where the trade stops costing anything.
+                           What bought the overrun is legibility, and only on the
+                           displays where the picture was not surviving at all: size
+                           is the one lever here that is not multiplied by
+                           --eye-opacity. See the note under WHY THESE ENDPOINTS in
+                           build-plate.py for what the endpoints could and could not
+                           do about the same complaint.
                            The ceiling holds at every window height without being
                            restated, because both pictures are shares of --fold and
-                           the gap is a share of it too.
-                           389 under the car's 650 under the plate's 932, which is
-                           the order the three are meant to be read in: the plate is
-                           the paper, and these two are what is printed on it.   */
+                           the gap is a share of it too. So does the overrun.
+                           629 beside the car's 650 and under the plate's 932 — the
+                           three used to be read in that order, smallest last, and at
+                           this width the eye and the car are level.            */
   --eye-w: min(calc(var(--eye-fill) * var(--fold)), 2400px);
                         /* the ceiling on --plate-w and --car-w, for the third
                            time and the same reason: 2800px is the top rung
                            index.html will fetch.                              */
-  --eye-x: -156px;      /* out from the RIGHT edge of the page, positive → left.
-                           Negative, like the car's, and doing the same KIND of job
-                           — carrying part of the file off the page rather than
-                           nudging the composition — but for the opposite content.
-                           The car pushes a cut edge off; this pushes empty sky off.
-                           The subject ends at 59.9% of the file's width and the
-                           remaining 40.1% is sky, so on the 1920×1080 frame this
-                           was tuned on 0.401 × 389px = 156px puts the cable stays
-                           on the page's right edge with nothing dead outside them.
-                           This is the value the frame not being mirrored is paid
-                           for in: see the eye paragraph in build-plate.py.
-                           A length against a share again, and the failure is the
-                           gentle one this time. Too tall a window and the margin
-                           outgrows the offset, so a gutter opens between the stays
-                           and the edge — 52px at a 1440 fold, which is empty paper
-                           rather than a cut. Too short and a little more sky than
-                           intended goes off the side, which is nothing at all. The
-                           car's version of this reintroduces a visible edge; this
-                           one only ever moves white.                          */
+  --eye-x: 247px;       /* out from the RIGHT edge of the page, positive → left.
+                           POSITIVE, which reverses what this value was doing, and
+                           the reversal is the whole of the change — read the sign
+                           before reading the number.
+                           The job it used to do: the subject ends at 59.9% of the
+                           file's width and the remaining 40.1% is sky, so a negative
+                           offset of 0.401 × --eye-w carries that dead margin off the
+                           right-hand edge and stands the cable stays on it. That is
+                           what the frame not being mirrored is paid for in — see the
+                           eye paragraph in build-plate.py. At 629px wide the same
+                           rule asks for -252px.
+                           +247px does the opposite: it pulls the file 247px INBOARD,
+                           so the 252px of dead sky stays on the page and the stays
+                           finish ~499px short of the edge. The picture is no longer
+                           anchored in the bottom-right corner — it stands in the
+                           right-hand third with paper on both sides of it, which is
+                           the one arrangement the corner geometry above was built to
+                           avoid. It is here because it was asked for by name; -252px
+                           is the value that restores the corner.
+                           A length against a share, and at this sign the drift is no
+                           longer the gentle one: a taller window widens the dead
+                           margin the offset is no longer cancelling, so the gap to
+                           the edge grows with the fold.                        */
   --eye-y: 0px;         /* up from --fold, positive → up; negative hangs it past
                            the fold. 0 IS the rule, and it is a variable for the
                            reason --plate-y is: so the rule can be broken by hand
