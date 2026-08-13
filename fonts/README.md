@@ -328,10 +328,21 @@ ID 0 and 13, the copyright and licence records, which the GUST licence requires.
 
 ### Deploying
 
-Already handled, and it now covers this whole folder rather than just Latin
-Modern: `vercel.json` sets a year-long `immutable` cache on `/fonts/(.*)`, which
-is safe because the filenames are stable and the contents never change. Anything
+`vercel.json` sets a year-long `immutable` cache on `/fonts/(.*).woff2`, which is
+safe because the filenames are stable and the contents never change. Anything
 rebuilt here therefore needs a new filename, not a new file under the old name.
+
+**`fonts.css` is deliberately outside that rule**, on `max-age=0,
+must-revalidate`. It used to be inside it, back when the pattern was `/fonts/(.*)`
+and the reasoning was "the contents never change" — true of the binaries, and
+false of the stylesheet, which gains a block every time a face is added here. The
+effect was that adding a face did nothing for anyone who had ever loaded the old
+sheet: the browser held it for a year and never asked again, so the `@font-face`
+simply did not exist for them. Friz Quadrata is how this was found — the face was
+on disk and served, and the type tuner still reported it missing, because the
+tuner was reading a cached sheet that predated it. The stylesheet is ~5 KB and
+revalidates with a 304; the binaries it points at are what the immutable year is
+actually for.
 
 ### Note
 
