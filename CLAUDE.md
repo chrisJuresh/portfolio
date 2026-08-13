@@ -50,6 +50,18 @@ open a PR into `main`.
    after the PR that reviewed it has closed, and a commit pushed there looks
    like ordinary work while reaching `development` never.
 
+   **Check that `--delete-branch` actually did it.** `gh` deletes the local
+   branch first and the remote second, and abandons the remote when the local
+   one fails — which it does whenever a worktree still holds the branch, so
+   every change here. It reports only `failed to delete local branch` and
+   leaves the branch it was asked to remove:
+
+   ```bash
+   git fetch origin --prune
+   git branch -r
+   git push origin --delete <branch>   # if it is still listed
+   ```
+
    **Confirm the merge against GitHub, not against git.** Everything merges
    here with `--squash`, which replays the diff as one new commit and keeps no
    ancestry, so `git branch -d`, `git branch --merged` and
