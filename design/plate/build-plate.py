@@ -2,14 +2,16 @@
 """Rebuild the graded corner pictures — one file per rung of OUT_WIDTHS and per
 theme in the picture's own `grades`, for whichever of PICTURES is named.
 
-    python design/plate/build-plate.py <source.rw2 | source.png> [plate | car]
+    python design/plate/build-plate.py <source.rw2 | source.png> [plate | car | eye]
 
-Two pictures, one pipeline — see PICTURES. `plate` is St Paul's over the
+Three pictures, one pipeline — see PICTURES. `plate` is St Paul's over the
 rooftops in the page's bottom-left corner and is the default; `car` is a cable
-car hanging off its pylon in the top-right. They share every stage of the
-pipeline and none of its numbers: each carries its own Grade per theme, so the
-four blocks under THE GRADE are the four answers. Each is built on its own run,
-because each has its own source frame and only one of them is usually moving.
+car hanging off its pylon in the top-right; `eye` is the London Eye seen rim-on,
+a mast of capsules, in the bottom-right. They share every stage of the pipeline
+and none of its numbers: each carries its own Grade per theme, so the blocks
+under THE GRADE are one answer per picture per theme. Each is built on its own
+run, because each has its own source frame and only one of them is usually
+moving.
 
 Writes the ladder from either of two sources. Deterministic: same input,
 byte-identical output (the grain is a seeded PRNG, not os entropy).
@@ -60,6 +62,14 @@ It is one line either way; what matters is that each frame is stood in its corne
 here, once, and every measurement downstream then describes the picture that
 ships.
 
+The eye is mirrored, and it is the plate's argument again in the opposite corner.
+As shot the mast of capsules stands left of centre and the boarding platform, the
+A-frame leg and its cable stays run down and away to the LEFT of it, leaving the
+right two-fifths of the frame empty sky — anchored bottom-right unflipped, the
+corner would hold nothing and the picture would sit marooned in the middle of the
+page pointing at the plate. Flipped, the leg drives into the corner and the mast
+rises back into the page.
+
 There is no vignette and no soft rectangular edge. An earlier cut dissolved the
 top and right edges into the page and it read as a lit corner with a building
 fading out of it rather than as a photograph — the dome, the drum and the
@@ -83,26 +93,27 @@ stylesheet still owns is placement and opacity; what the file owns is the grade,
 per theme, which is the same division as before with the theme axis added.
 
 The grade is per PICTURE as well, and that half arrived second. One set of
-numbers ran over both frames for a while, deliberately: the two are meant to read
-as one paper stock the column is printed on, and the fear was that a grade tuned
-on one and eyeballed onto the other is how that comes apart. What actually
-happened is that they are two photographs. The plate is a hazy backlit dome that
-fills its frame; the car is a gondola on a wire with a gantry cut across the top
-of it, shot in different light on a different day. SHADOW and HIGHLIGHT are
-absolute — they say where black and white LAND, in output units — so one pair
-cannot be right for both frames, and there was no knob that could say so:
---car-opacity mixes the car further into the page and moves neither endpoint,
+numbers ran over both frames for a while, deliberately: the pictures are meant to
+read as one paper stock the column is printed on, and the fear was that a grade
+tuned on one and eyeballed onto the next is how that comes apart. What actually
+happened is that they are separate photographs. The plate is a hazy backlit dome
+that fills its frame; the car is a gondola on a wire with a gantry cut across the
+top of it, shot in different light on a different day; the eye is a thin steel
+lattice against blown-out sky with almost no midtone in it at all. SHADOW and
+HIGHLIGHT are absolute — they say where black and white LAND, in output units —
+so one pair cannot be right for every frame, and there was no knob that could say
+so: --car-opacity mixes the car further into the page and moves neither endpoint,
 which is the same thing --plate-opacity could not do across the themes.
 
-Sharing them was also never what made the two read as one stock. The pipeline is
-what does that — percentile exposure, the same shoulder, the same desaturation
+Sharing them was also never what made the pictures read as one stock. The pipeline
+is what does that — percentile exposure, the same shoulder, the same desaturation
 toward the same tint — and that is still shared, stage for stage. What is per
 picture is only where each frame's ends are pinned.
 
-So the grade axes are picture × theme, four Grades, and the tuner has both
-switches: the theme button swaps which grade you are dragging AND which paper it
-stands on, the plate/car button swaps which grade you are dragging AND which
-frame it runs over. A run bakes one ladder per theme for the one stem it was
+So the grade axes are picture × theme, two Grades per picture, and the tuner has
+both switches: the theme button swaps which grade you are dragging AND which
+paper it stands on, the picture button swaps which grade you are dragging AND
+which frame it runs over. A run bakes one ladder per theme for the one stem it was
 given. The two ladders are named `<stem>-<width>.webp` and
 `<stem>-dark-<width>.webp`, matching how styles.css already declares
 `--plate-opacity` — once in `:root` and again in `:root[data-theme="dark"]`.
@@ -128,8 +139,8 @@ sky_matte().
 THE GRADE
 ---------
 Order matters; this is the pipeline, and every stage is a field of Grade below —
-so every stage is also a thing the two themes, and the two pictures, can disagree
-about. The pipeline itself is shared by all four; only its numbers are not.
+so every stage is also a thing the two themes, and the three pictures, can
+disagree about. The pipeline itself is shared by all six; only its numbers are not.
 
 1. Develop linear (`gamma=(1, 1)`, `no_auto_bright=True`). Grading multiplicative
    things — exposure, desaturation — in linear light is the difference between
@@ -182,9 +193,10 @@ stay quieter than the type at both ends — a half-page image that is louder tha
 the words becomes the thing you look at first — and "quieter than the type" is
 measured against the paper and ink of the theme it is standing in (styles.css
 `:root` and `:root[data-theme="dark"]`), which are inverted between the two. It is
-measured against the frame as well: the plate spreads a dome across half the page
-and the car hangs a gondola in a corner, so the same HIGHLIGHT that reads as
-recessive stone on one can be the brightest thing on the screen on the other.
+measured against the frame as well: the plate spreads a dome across half the page,
+the car hangs a gondola in a corner and the eye is a thin lattice with sky through
+it, so the same HIGHLIGHT that reads as recessive stone on one can be the
+brightest thing on the screen on the next.
 
 NEUTRAL SOURCE
 --------------
@@ -198,8 +210,9 @@ still in the file: the matte is one of the things being tuned.
 Its companion <name>-source.json carries the constants this script was last run
 with, so the tuner opens on the picture as it stands rather than on a table of
 numbers hand-copied from here that would drift the first time one changed. One
-pair per picture, and the grade in the two is the same grade — the tuner reads
-the plate's and offers the car's source as a second frame to check it against.
+pair per picture, and the grade in each is that picture's own grade — the tuner
+reads whichever it is pointed at and offers the others as frames to check it
+against.
 
 The three ways the tuner's answer is an approximation of this script's, none of
 which move a judgement you would make at --plate-opacity:
@@ -244,16 +257,20 @@ class Grade(NamedTuple):
     GRAIN_SIGMA: float                  # in output units, 0..1
 
 
-# Four Grades, named <STEM>_<THEME> — which is the name design/plate/plate-tuner.html
-# prints over each block it asks you to paste, so the block and the call it
-# replaces are found by the same word. Each is spelled out in full, and none is
-# written as another's name, on purpose: the whole point of splitting them is that
-# a number moved on one frame reaches nothing else, and `CAR_LIGHT = PLATE_LIGHT`
-# would quietly re-bake the car out of a session spent looking at the plate.
+# Two Grades per picture, named <STEM>_<THEME> — which is the name
+# design/plate/plate-tuner.html prints over each block it asks you to paste, so the
+# block and the call it replaces are found by the same word. Each is spelled out in
+# full, and none is written as another's name, on purpose: the whole point of
+# splitting them is that a number moved on one frame reaches nothing else, and
+# `CAR_LIGHT = PLATE_LIGHT` would quietly re-bake the car out of a session spent
+# looking at the plate.
 #
 # They open on identical numbers, because that is what shipped while there was one
-# grade for everything, so this commit changes no pixel of either picture. What it
-# changes is that moving one of them now moves one of them.
+# grade for everything, so splitting them changed no pixel of any picture. What it
+# changed is that moving one of them now moves one of them. The eye arrived after
+# the split and opens on the same numbers for the same reason from the other end:
+# a third picture off this pipeline is a third print of one paper stock until
+# somebody looks at it and says otherwise.
 PLATE_LIGHT = Grade(
     EXPOSURE_PCT=99.0,
     EXPOSURE_TARGET=0.34,
@@ -291,17 +308,31 @@ CAR_LIGHT = Grade(
 
 CAR_DARK = CAR_LIGHT
 
+EYE_LIGHT = Grade(
+    EXPOSURE_PCT=99.0,
+    EXPOSURE_TARGET=0.34,
+    SAT_KEEP=0.24,
+    CONTRAST=0.36,
+    HIGHLIGHT_PUSH=1.34,
+    SHADOW=(0x00, 0x00, 0x00),      # pure black
+    HIGHLIGHT=(0x5c, 0x5c, 0x5c),   # mid grey
+    GRAIN_SIGMA=0.0075,
+)
+
+EYE_DARK = EYE_LIGHT
+
 # Light first in each: it is the page's default, and out_path() spells it
 # unsuffixed. Hung off the Picture below rather than held in a second dict keyed
 # by stem, so there is no pair of tables to drift apart.
 PLATE_GRADES = {"light": PLATE_LIGHT, "dark": PLATE_DARK}
 CAR_GRADES = {"light": CAR_LIGHT, "dark": CAR_DARK}
+EYE_GRADES = {"light": EYE_LIGHT, "dark": EYE_DARK}
 
 GRAIN_SEED = 20250615      # the frame's own date; any constant would do
 # One seed for every grade, and not a field of Grade: the grain is the frame's
 # own, so a picture's two ladders wear the SAME grain at whatever strength each
 # asks for. Two streams would make flipping the theme move every grain in the
-# picture, on top of the change you meant. Sharing it across the two PICTURES
+# picture, on top of the change you meant. Sharing it across every one of PICTURES
 # costs nothing either way — they are different frames, so the same stream lands
 # on different pixels — and it keeps the seed what it is, a constant rather than a
 # decision.
@@ -356,8 +387,9 @@ SKY_EDGE_BLUR = 1.2       # px at output scale, to keep the roofline from aliasi
 #     viewport CSS height * fill * devicePixelRatio
 #
 # which for the plate is 2185 on a 844px phone at 3x, 1450 on a 840px laptop at
-# 2x, 932 on a 1080px desktop at 1x, and 2484 on a 1440px 5K at 2x, and about
-# nine tenths of each of those for the car. The rungs bracket that range. They
+# 2x, 932 on a 1080px desktop at 1x, and 2484 on a 1440px 5K at 2x, and roughly
+# seven tenths of each of those for the car and the eye. The rungs bracket that
+# range. They
 # are duplicated in portfolio/index.html, which does the picking — see RUNGS
 # there, and keep the two lists the same.
 #
@@ -384,7 +416,7 @@ REPO = HERE.parents[1]
 OUT_DIR = REPO / "portfolio" / "img"
 
 
-# ---- the two pictures ------------------------------------------------------
+# ---- the three pictures ----------------------------------------------------
 # Everything above this line is shared, and everything in here is a property of
 # one frame rather than of the grade. `mirror` is the only one that is a decision
 # — see the mirror paragraph in the docstring — and `stem` is what every file
@@ -421,10 +453,12 @@ class Picture:
 
 
 PICTURES = {
-    "plate": Picture(stem="plate", corner="bottom-left", mirror=True,
+    "plate": Picture(stem="plate", corner="bottom-left",  mirror=True,
                      grades=PLATE_GRADES),
-    "car":   Picture(stem="car",   corner="top-right",   mirror=False,
+    "car":   Picture(stem="car",   corner="top-right",    mirror=False,
                      grades=CAR_GRADES),
+    "eye":   Picture(stem="eye",   corner="bottom-right", mirror=True,
+                     grades=EYE_GRADES),
 }
 DEFAULT_PICTURE = "plate"
 

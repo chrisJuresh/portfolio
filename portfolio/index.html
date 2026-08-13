@@ -31,10 +31,10 @@
       root.className += " js";
 
       /* ---- the corner pictures ----------------------------------------------
-         The plate in the bottom-left corner and the car in the top-right run
-         most of the way across the page between them and are the two heavy
-         things on it, so neither is named in the stylesheet nor fetched at one
-         size.
+         The plate in the bottom-left corner, the car in the top-right and the eye
+         in the bottom-right run most of the way across the page between them and
+         are the heavy things on it, so none is named in the stylesheet nor fetched
+         at one size.
          Here, before the stylesheet has even been asked for, we work out how
          many real pixels this display will actually draw each of them in and
          fetch only that rung of design/plate/build-plate.py's ladder — keep
@@ -43,8 +43,8 @@
          There is a ladder per THEME as well as per rung and per picture, because
          the grade is baked and a picture on black wants different endpoints from
          the same one on white — see ONE LADDER PER THEME in build-plate.py. So
-         this picks two files out of a grid, not a list, and it picks again when
-         the theme changes under it. A theme that has not been tuned away from
+         this picks one file per picture out of a grid, not a list, and it picks
+         again when the theme changes under it. A theme that has not been tuned away from
          light has no ladder of its own on purpose; rungUrl's caller falls back to
          the light file, which is the picture this page shipped before the grade
          had a theme axis at all.
@@ -66,15 +66,15 @@
       var WAIT_MS = 1500;
 
       /* One entry per picture, and `fill` is the only thing that separates them:
-         the width it is drawn at as a share of the first screen. Both are scaled
-         to the height of that screen — see --fold in styles.css — so the
+         the width it is drawn at as a share of the first screen. All three are
+         scaled to the height of that screen — see --fold in styles.css — so the
          window's HEIGHT is in this and its width is not: a narrow phone and a
-         wide desktop of the same height are sent the same two files, and the
-         phone simply cannot see all of either.
-         Keep `fill` equal to --plate-fill and --car-fill in styles.css, and
-         `max` to the ceiling on --plate-w and --car-w there. Being wrong picks a
-         neighbouring rung, which is a slightly soft or slightly heavy picture,
-         not a broken one.
+         wide desktop of the same height are sent the same three files, and the
+         phone simply cannot see all of any of them.
+         Keep `fill` equal to --plate-fill, --car-fill and --eye-fill in
+         styles.css, and `max` to the ceiling on --plate-w, --car-w and --eye-w
+         there. Being wrong picks a neighbouring rung, which is a slightly soft or
+         slightly heavy picture, not a broken one.
 
          `shown` and `src` are the state, and both are kept per THEME as well as
          per picture: a theme's two ladders are different pictures rather than one
@@ -86,7 +86,9 @@
       var PICTURES = [
         { stem: "plate", prop: "--plate-src", fill: 0.863, max: 2400,
           shown: { light: 0, dark: 0 }, src: { light: null, dark: null } },
-        { stem: "car",   prop: "--car-src",   fill: 0.78,  max: 2400,
+        { stem: "car",   prop: "--car-src",   fill: 0.602, max: 2400,
+          shown: { light: 0, dark: 0 }, src: { light: null, dark: null } },
+        { stem: "eye",   prop: "--eye-src",   fill: 0.36,  max: 2400,
           shown: { light: 0, dark: 0 }, src: { light: null, dark: null } }
       ];
       /* Its width in CSS pixels — the same sum styles.css does — and then the
@@ -123,8 +125,8 @@
         };
         /* Every picture, at whatever each has resolved to for the theme on
            screen. Off the stored URLs rather than off the load that triggered it,
-           so a theme flip repaints both from cache, and neither is blanked while
-           the other is still deciding. */
+           so a theme flip repaints all of them from cache, and none is blanked
+           while another is still deciding. */
         var paint = function () {
           var theme = current();
           for (var i = 0; i < PICTURES.length; i++) {
@@ -206,8 +208,8 @@
 
            It never re-enters .plate-wait. The hold is for the opening
            composition, where the type really is waiting on the picture it is
-           printed on; a flip mid-visit already has both pictures on screen, and
-           blanking them to wait for the other theme's pair would be worse than
+           printed on; a flip mid-visit already has every picture on screen, and
+           blanking them to wait for the other theme's set would be worse than
            the swap arriving a moment late. Same reason paint() leaves the
            outgoing pictures up until the incoming ones have loaded. */
         if (window.MutationObserver) {
@@ -219,8 +221,8 @@
 
         /* Dragged onto a DENSER screen, or pulled TALLER. Both now ask for more:
            density because the same picture is drawn in more real pixels, height
-           because both are scaled to the fold and a taller window is a bigger
-           picture. Width still asks for nothing — neither picture changes size in
+           because all three are scaled to the fold and a taller window is a bigger
+           picture. Width still asks for nothing — no picture here changes size in
            a narrow window as against a wide one. */
         var timer;
         window.addEventListener("resize", function () {
@@ -261,12 +263,13 @@
        anything already in cache takes to arrive, so a fast load never paints
        it. See the loading line in styles.css. -->
   <div class="loading" role="status" aria-label="Loading"></div>
-  <!-- The corner car. The one thing on this page that is an element purely
-       because the stylesheet ran out of pseudo-elements to paint it with —
-       body::after is the plate and body::before is the desktop scroll-snap
-       port. Empty, decorative and sized entirely in CSS: see the .car block in
-       styles.css, which says why the alternatives were worse. -->
+  <!-- The corner car and the corner eye. The two things on this page that are
+       elements purely because the stylesheet ran out of pseudo-elements to paint
+       them with — body::after is the plate and body::before is the desktop
+       scroll-snap port. Empty, decorative and sized entirely in CSS: see the .car
+       and .eye blocks in styles.css, which say why the alternatives were worse. -->
   <div class="car"></div>
+  <div class="eye"></div>
   <div class="page" id="page"></div>
   <!-- The second screen the cut title opens onto. Empty, and sized entirely in
        CSS: see the doorway block in styles.css. -->
