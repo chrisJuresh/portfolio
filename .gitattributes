@@ -12,3 +12,5 @@
 *.jpg   binary
 *.jpeg  binary
 *.png   binary
+*.webp  binary
+*.rw2   binary

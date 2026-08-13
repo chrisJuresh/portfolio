@@ -140,27 +140,46 @@ Colours, the column width (`--col`), the carousel image height
 
 ## Typography
 
-Both pages are set in **Sitka** — Matthew Carter's serif, cut for reading on
+The two pages no longer agree. `/portfolio` is set in three self-hosted faces;
+`/projects` is still on the Sitka stack described further down.
+
+**`/portfolio`** — **Vollkorn** for anything meant to be read (`--serif-body`:
+body text, role lines, headings, contact), **Spectral** for the small lettered
+labels (`--serif-label`: name, tagline, projects link, theme toggle), and
+**Source Serif 4** for the year column (`--serif-num`). All three are OFL,
+subset and served from `/fonts`, declared at the top of `portfolio/styles.css`,
+~112 KB across five faces. The italic lead (`--serif-lead`) stays in Georgia.
+
+The year column is the slot with a reason rather than a preference behind it: it
+exists to keep a date from reading as loud as the organisation name beside it,
+which means old-style figures. Source Serif 4's *default* figures are lining and
+stand to 100.3% of the cap height — worse than what this slot was created to
+avoid — so the CSS asks for `font-variant-numeric: oldstyle-nums` and the subset
+keeps the `onum` feature that serves it. Rebuild the face without `onum` and the
+column silently goes loud. `fonts/README.md` has the measurements.
+
+Each stack still ends in the old Sitka chain. That tail is unreachable unless a
+font request fails, and it is kept for exactly that case: every word on the page
+now depends on a webfont, and the failure should land on a screen serif rather
+than on Times New Roman.
+
+**`/projects`** — still **Sitka**, Matthew Carter's serif, cut for reading on
 screen and bundled with Windows:
 
 ```css
 "Sitka Text", Charter, "Iowan Old Style", Georgia, serif
 ```
 
-Two things to know before editing it. `Sitka` on its own resolves nowhere: the
+Two things to know before editing that. `Sitka` on its own resolves nowhere: the
 family is addressed by optical size, and `Sitka Text` is the reading cut. And it
 can't be self-hosted — it's licensed with Windows, not redistributable — so the
 rest of the stack isn't decoration. macOS gets Charter, iOS Iowan Old Style,
 Android Georgia. Similar x-heights, so the layout holds, but not everyone sees the
-same face. That's the accepted cost of using Sitka at all, and the sizes on both
-pages are tuned to its x-height rather than the generic `serif` they used to fall
-back to.
-
-Two slots stay off Sitka, both Georgia: the year column (`--serif-num`), because
-Sitka's lining figures stand to 84% of the cap height beside them and read as loud
-as the organisation names, and the italic lead (`--serif-lead`), kept after being
-seen both ways. Its `0.95rem` is a Georgia size, so that slot can't be folded into
-`--serif-body` without resizing.
+same face. That's the accepted cost of using Sitka at all, and that page's sizes
+are tuned to its x-height rather than the generic `serif` they used to fall back
+to. `/portfolio`'s sizes are still Sitka's too, and were left that way
+deliberately: Vollkorn's x-height is 4% below Sitka's and Spectral's 6%, small
+enough that the faces were chosen at the existing sizes.
 
 How that was decided lives in `design/` — a dev-only lab that previews the real
 pages under any typeface variant, plus a tuner for arriving at one, and committed
@@ -174,7 +193,9 @@ Modern lost, measured rather than asserted. Neither folder affects a visitor; se
 The site deploys to Vercel as a plain static site — no framework preset,
 no build command. `vercel.json` enables clean URLs and sets a
 day-long `Cache-Control` (with a week of `stale-while-revalidate`) on the
-image directory. `.vercelignore` keeps `design/` out, so the lab and its
+image directory, plus a year-long `immutable` one on `/fonts` — so a rebuilt
+face needs a new filename, never a new file under an old one.
+`.vercelignore` keeps `design/` out, so the lab and its
 renders never reach the deployment.
 
 ## Status

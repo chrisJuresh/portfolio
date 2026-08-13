@@ -20,21 +20,132 @@
   <link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2032%2032'%3E%3Ctext%20x='16'%20y='23'%20font-family='Sitka%20Text,Charter,Iowan%20Old%20Style,Georgia,serif'%20font-size='19'%20text-anchor='middle'%20fill='%231a1917'%3Ecj%3C/text%3E%3C/svg%3E">
   <script>
     (function () {
+      var root = document.documentElement;
+
       var theme = "light";
       var savedTheme = null;
       try { savedTheme = localStorage.getItem("portfolio-theme"); } catch (_) {}
       if (savedTheme === "dark" || savedTheme === "light") theme = savedTheme;
       else if (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) theme = "dark";
-      document.documentElement.setAttribute("data-theme", theme);
-      document.documentElement.className += " js";
+      root.setAttribute("data-theme", theme);
+      root.className += " js";
+
+      /* ---- the corner plate -------------------------------------------------
+         The plate runs most of the way across the page and is the one heavy
+         thing on it, so it is neither named in the stylesheet nor fetched at one
+         size.
+         Here, before the stylesheet has even been asked for, we work out how
+         many real pixels this display will actually draw it in and fetch only
+         that rung of design/plate/build-plate.py's ladder — keep PLATES below
+         and OUT_WIDTHS there the same list.
+
+         The page then waits for it, briefly, because the plate is part of the
+         opening composition rather than decoration laid over it — the type is
+         printed ON it — and type arriving first with the picture sliding in
+         behind a moment later is worse than either. But it is still only a
+         picture: the wait is capped, and past the cap the page opens without it
+         rather than holding the words hostage to an ornament. It is dropped
+         rather than shown late for the same reason it is waited for at all.
+
+         Nothing here can leave the page invisible. The class this adds only
+         SHORTENS a reveal that styles.css already guarantees on its own, so a
+         parse error, a dead network or a browser that never fires onload all
+         end with the page up. */
+      var PLATES = [800, 1300, 2000, 2800];
+      var WAIT_MS = 1500;
+
+      /* --plate-w, in CSS pixels — the same sum styles.css does, and the three
+         constants are that sheet's. The plate is scaled to the height of the
+         first screen (see the two rules at --plate-fold there), so the window's
+         HEIGHT is in this and its width still is not: a narrow phone and a wide
+         desktop of the same height are sent the same picture, and the phone
+         simply cannot see all of it.
+         Keep these equal to --plate-fill and the ceiling on --plate-w in
+         styles.css. Being wrong picks a neighbouring rung, which is a slightly
+         soft or slightly heavy plate, not a broken one. */
+      var PLATE_FILL = 0.863, PLATE_MAX = 2400;
+      var plateW = function () {
+        return Math.min(PLATE_MAX, PLATE_FILL * (window.innerHeight || 1080));
+      };
+      var want = plateW() * (window.devicePixelRatio || 1);
+      var pick = PLATES[PLATES.length - 1];
+      for (var i = 0; i < PLATES.length; i++) {
+        if (PLATES[i] >= want) { pick = PLATES[i]; break; }
+      }
+
+      /* Metered or genuinely slow connections do not get it at all. It is an
+         ornament, and this is the one honest way to treat it as optional. */
+      var link = navigator.connection || {};
+      var thin = link.saveData === true || /^(slow-)?2g$/.test(link.effectiveType || "");
+
+      if (!thin) {
+        root.className += " plate-wait";
+        var shown = 0;
+        var done = function (width, src) {
+          if (src) {
+            root.style.setProperty("--plate-src", 'url("' + src + '")');
+            shown = width;
+          }
+          root.classList.remove("plate-wait");
+        };
+        var fetchRung = function (width, settle) {
+          var url = "img/plate-" + width + ".webp";
+          var img = new Image();
+          img.onload = function () { settle(width, url); };
+          img.onerror = function () { settle(width, null); };
+          img.src = url;
+          /* Already in the cache: onload still fires, but this saves the wait on
+             browsers that defer it to a later task. */
+          if (img.complete && img.naturalWidth > 0) settle(width, url);
+        };
+
+        fetchRung(pick, done);
+        setTimeout(function () { done(0, null); }, WAIT_MS);
+
+        /* Dragged onto a DENSER screen, or pulled TALLER. Both now ask for more:
+           density because the same picture is drawn in more real pixels, height
+           because the plate is scaled to the fold and a taller window is a bigger
+           plate. Width still asks for nothing. Upgrade only — a plate already
+           good enough is left alone, so dragging a window up and down cannot
+           thrash — and quietly, off the critical path: the swap happens when the
+           larger rung has finished loading, never by blanking what is already on
+           screen. */
+        var timer;
+        window.addEventListener("resize", function () {
+          clearTimeout(timer);
+          timer = setTimeout(function () {
+            var need = plateW() * (window.devicePixelRatio || 1);
+            for (var j = 0; j < PLATES.length; j++) {
+              if (PLATES[j] > shown && (PLATES[j] >= need || j === PLATES.length - 1)) {
+                if (shown >= need) return;
+                fetchRung(PLATES[j], function (w, src) {
+                  if (src && w > shown) {
+                    root.style.setProperty("--plate-src", 'url("' + src + '")');
+                    shown = w;
+                  }
+                });
+                return;
+              }
+            }
+          }, 250);
+        });
+      }
     })();
   </script>
-  <link rel="stylesheet" href="styles.css?v=17">
+  <link rel="stylesheet" href="styles.css?v=21">
 </head>
 <body>
+  <!-- Only ever on screen while the corner plate is genuinely outstanding: it is
+       display:none until <html> carries .plate-wait, and it fades in later than
+       any plate already in cache takes to arrive, so a fast load never paints
+       it. See the loading line in styles.css. -->
+  <div class="loading" role="status" aria-label="Loading"></div>
   <div class="page" id="page"></div>
+  <!-- The second screen the cut title opens onto. Empty, and sized entirely in
+       CSS: see the doorway block in styles.css. -->
+  <div class="doorway"></div>
   <noscript><p style="text-align:center;font-family:'Sitka Text',Charter,'Iowan Old Style',Georgia,serif;padding:2rem">This site needs JavaScript enabled.</p></noscript>
   <script src="content.js?v=3"></script>
-  <script src="app.js?v=17"></script>
+  <script src="app.js?v=19"></script>
 </body>
 </html>

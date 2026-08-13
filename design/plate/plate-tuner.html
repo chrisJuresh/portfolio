@@ -1,0 +1,1078 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Plate tuner — /portfolio</title>
+  <style>
+    :root { color-scheme: light dark; --ui: #1a1917; --ui-bg: #fcfbf8; --ui-panel: #f5f2ea; --ui-line: #d6d0c4; --ui-mut: #6f6a5d; --ui-hit: #8a5a2b; }
+    @media (prefers-color-scheme: dark) {
+      :root { --ui: #eaeaea; --ui-bg: #161616; --ui-panel: #1e1e1e; --ui-line: #3a3a3a; --ui-mut: #9a9a9a; --ui-hit: #d8a76a; }
+    }
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+    body {
+      margin: 0; display: flex; flex-direction: column;
+      background: var(--ui-bg); color: var(--ui);
+      font: 13px/1.45 "Segoe UI", system-ui, sans-serif;
+    }
+
+    /* ---- top bar ---------------------------------------------------------- */
+    .top {
+      flex: 0 0 auto; display: flex; flex-wrap: wrap; align-items: center; gap: 0.35rem;
+      padding: 0.5rem 0.8rem; border-bottom: 1px solid var(--ui-line);
+    }
+    .top strong { font-size: 11px; letter-spacing: 0.09em; text-transform: uppercase; color: var(--ui-mut); }
+    .grow { flex: 1 1 auto; }
+    button, input[type="text"], input[type="number"], textarea {
+      font: inherit; color: var(--ui); background: transparent;
+      border: 1px solid var(--ui-line); border-radius: 5px;
+    }
+    input[type="text"], input[type="number"], textarea { background: var(--ui-bg); color-scheme: light dark; }
+    button { padding: 0.24rem 0.55rem; cursor: pointer; }
+    button:hover { border-color: var(--ui-mut); }
+    button[aria-pressed="true"] { background: var(--ui); color: var(--ui-bg); border-color: var(--ui); }
+    .badge { padding: 0.1rem 0.4rem; border-radius: 99px; background: var(--ui-hit); color: var(--ui-bg); font-size: 11px; }
+    .badge[data-n="0"] { background: transparent; color: var(--ui-mut); }
+    .set { display: flex; gap: 0; }
+    .set button { border-radius: 0; margin-left: -1px; }
+    .set button:first-child { border-radius: 5px 0 0 5px; margin-left: 0; }
+    .set button:last-child { border-radius: 0 5px 5px 0; }
+
+    /* ---- layout ----------------------------------------------------------- */
+    .wrap { flex: 1 1 auto; display: flex; min-height: 0; }
+    .side { flex: 0 0 23rem; display: flex; flex-direction: column; min-height: 0; border-right: 1px solid var(--ui-line); background: var(--ui-panel); }
+    .controls { flex: 1 1 auto; overflow: auto; padding-bottom: 0.6rem; }
+    .stage { flex: 1 1 auto; overflow: auto; padding: 0.8rem; }
+    iframe { display: block; border: 1px solid var(--ui-line); background: #fff; }
+    /* The bare views stand on the page's own paper, at the plate's own opacity —
+       judging a grade against this tool's chrome would be judging it against a
+       colour the plate never meets. */
+    .sheet { display: inline-block; padding: 1.2rem; border: 1px solid var(--ui-line); }
+    .sheet canvas { display: block; max-width: 100%; height: auto; }
+    [hidden] { display: none !important; }
+
+    /* ---- groups + rows ---------------------------------------------------- */
+    .ghead {
+      width: 100%; display: flex; align-items: center; gap: 0.4rem;
+      padding: 0.45rem 0.7rem; border: 0; border-top: 1px solid var(--ui-line);
+      border-radius: 0; background: transparent; text-align: left;
+      font-size: 11px; letter-spacing: 0.09em; text-transform: uppercase; color: var(--ui-mut);
+    }
+    .ghead::before { content: "\25be"; font-size: 10px; }
+    .g.shut .ghead::before { content: "\25b8"; }
+    .g.shut .gbody { display: none; }
+    .gbody { padding: 0.15rem 0.7rem 0.5rem; }
+    .gnote { margin: 0.1rem 0 0.45rem; font-size: 10.5px; color: var(--ui-mut); }
+
+    .row { display: grid; grid-template-columns: 7.6rem 1fr 4.2rem 1rem; align-items: center; gap: 0.3rem; min-height: 1.55rem; }
+    .row > label { font-size: 11.5px; color: var(--ui-mut); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .row.on > label { color: var(--ui-hit); }
+    input[type="range"] { width: 100%; min-width: 0; accent-color: var(--ui-hit); }
+    input[type="number"] { width: 100%; padding: 0.08rem 0.2rem; font-size: 11.5px; }
+    input[type="color"] { width: 100%; height: 1.3rem; padding: 0; border: 1px solid var(--ui-line); border-radius: 4px; background: transparent; cursor: pointer; }
+    .undo { border: 0; padding: 0; width: 1rem; color: var(--ui-mut); visibility: hidden; line-height: 1; }
+    .row.on .undo { visibility: visible; }
+    .undo:hover { color: var(--ui-hit); }
+
+    .hint { font-size: 10.5px; color: var(--ui-mut); }
+    .warn { margin: 0; padding: 0.45rem 0.7rem; border-bottom: 1px solid var(--ui-line); background: rgba(216, 167, 106, 0.16); font-size: 11.5px; }
+    .warn:empty { display: none; }
+    .warn code { font-family: ui-monospace, Consolas, monospace; }
+
+    /* ---- export drawer ---------------------------------------------------- */
+    .export { flex: 0 0 auto; border-top: 1px solid var(--ui-line); max-height: 60%; overflow: auto; }
+    .export > summary { padding: 0.4rem 0.7rem; cursor: pointer; font-size: 11px; letter-spacing: 0.09em; text-transform: uppercase; color: var(--ui-mut); }
+    .ebody { padding: 0 0.7rem 0.6rem; }
+    .ebody h3 { margin: 0.4rem 0 0.2rem; font: 10.5px/1.4 ui-monospace, Consolas, monospace; color: var(--ui-mut); }
+    textarea { width: 100%; height: 9rem; padding: 0.4rem; resize: vertical; font: 11px/1.4 ui-monospace, Consolas, monospace; white-space: pre; }
+    .ebtns { display: flex; gap: 0.3rem; align-items: center; margin-top: 0.3rem; }
+  </style>
+</head>
+<body>
+  <div class="top">
+    <strong>plate</strong>
+    <span class="badge" id="count" data-n="0">0</span>
+    <span class="set" id="views"></span>
+    <span class="set" id="sizes"></span>
+    <span class="grow"></span>
+    <span class="hint" id="stat"></span>
+    <button id="theme" type="button">theme</button>
+    <button id="resetall" type="button">reset all</button>
+  </div>
+
+  <p class="warn" id="warn"></p>
+
+  <div class="wrap">
+    <div class="side">
+      <div class="controls" id="controls"></div>
+      <details class="export" open>
+        <summary>what to paste</summary>
+        <div class="ebody">
+          <h3>design/plate/build-plate.py — then re-run it</h3>
+          <textarea id="outpy" spellcheck="false" readonly></textarea>
+          <div class="ebtns"><button data-copy="outpy" type="button">copy</button>
+            <span class="hint">the grade is baked into the file: nothing here shows on the site until the script runs again</span></div>
+          <h3>portfolio/styles.css</h3>
+          <textarea id="outcss" spellcheck="false" readonly style="height:6rem"></textarea>
+          <div class="ebtns"><button data-copy="outcss" type="button">copy</button>
+            <span class="hint">live already — this half is only CSS</span></div>
+        </div>
+      </details>
+    </div>
+    <main class="stage">
+      <iframe id="frame" title="portfolio preview"></iframe>
+      <div class="sheet" id="sheet" hidden><canvas id="cv"></canvas></div>
+    </main>
+  </div>
+
+<script>
+/* ============================================================================
+   Plate tuner — everything about the photograph in the page's bottom-left corner.
+
+   Two halves that are tuned together and shipped apart, which is the whole
+   reason this tool exists as one window:
+
+   * THE GRADE and THE MATTE are baked into portfolio/img/plate-*.webp by
+     design/plate/build-plate.py. Nothing here can change the file. What this
+     page does is run that script's pipeline again, in a canvas, over the same
+     input the script starts from — design/plate/plate-source.webp, which the
+     script writes for exactly this purpose — so that a slider answers in a frame
+     instead of in a forty-second re-develop of a 19 MB raw. The answer you keep
+     is a block of Python to paste back.
+   * THE PLACEMENT is four custom properties in portfolio/styles.css, and those
+     are live: the preview is the real page in an iframe with the regraded plate
+     dropped into it, so what moves under the type here moves there. All four are
+     lengths in the pixels of the 1920×1080 frame the picture was composed on,
+     not shares of the window — styles.css declares a fifth, --plate-fold, which
+     is that frame's own bottom edge and is the datum rather than a placement,
+     which is why there is no slider for it here.
+
+   You cannot judge the first without the second. A grade read at 100% on a white
+   field is a different photograph from the same grade at --plate-opacity behind a
+   column of Sitka, and it is the second one that ships — hence the default view.
+
+   WHERE THIS IS AND IS NOT THE TRUTH
+   The pipeline below is a transcription of build-plate.py, stage for stage, and
+   the constants are its constants. It parts company in four places, all of them
+   noted again at the point they happen:
+     * eight bits and a lossy source file, against float32 off the raw;
+     * the grade runs at the source's 900px rather than at full width and then
+       downsampling, so the shipped curve is a shade smoother than this one;
+     * the grain is a different pseudo-random stream, so it is the right strength
+       and the wrong pattern, and it is the wrong size too (see NEUTRAL SOURCE in
+       build-plate.py);
+     * the exposure percentile is read off a 4096-bin histogram rather than a
+       sort, which moves it by less than a thousandth of a stop.
+   None of the four is visible at --plate-opacity. All four mean this is where
+   you decide a number, not where you check one — for that, run the script and
+   look at the page.
+   ========================================================================== */
+"use strict";
+
+var LUTN = 4096;          /* steps in the tone-curve lookup — see buildLUT */
+var HIST = 4096;          /* bins in the exposure histogram */
+var BLEED = 3;            /* px of sky painted over with the building beside it */
+
+/* ---- what build-plate.py says today -------------------------------------- */
+/* Not a table of literals: plate-source.json is written by the script in the
+   same run that writes the source image, so "was" here is what the plate on the
+   page actually is, and there is no second copy of the constants to drift.
+   Bounds and labels are this tool's own — they are a question of what is worth
+   dragging through, which the script has no opinion about.
+   dp: how many decimals the exported Python carries, so the block reads like the
+   block it replaces rather than like a float. */
+var GRADE = [
+  { k: "EXPOSURE_PCT",    label: "exposure %ile", min: 90, max: 99.99, step: 0.01, dp: 2,
+    tip: "Which percentile of the building's brightness is driven to the exposure below.\nHigh enough to mean the sunlit stone; short of 100 so one specular highlight cannot set the whole frame." },
+  { k: "EXPOSURE_TARGET", label: "exposure",      min: 0.1, max: 0.8,  step: 0.005, dp: 3,
+    tip: "Where that percentile lands, in linear light, before any tone curve.\nThis is the brightness knob. Everything below shapes what it hands over." },
+  { k: "SAT_KEEP",        label: "colour kept",   min: 0,   max: 1,    step: 0.01, dp: 2,
+    tip: "Fraction of the original chroma left in.\n0 is a duotone: the tint below is then the only colour in the picture.\n1 keeps the day as it was, and the tint rides on top of it." },
+  { k: "CONTRAST",        label: "contrast",      min: 0,   max: 1,    step: 0.01, dp: 2,
+    tip: "How far the tone curve is blended toward a smoothstep S.\n0 leaves it straight." },
+  { k: "HIGHLIGHT_PUSH",  label: "highlight push", min: 1,  max: 2.5,  step: 0.01, dp: 2,
+    tip: "Lifts the top of the range without clipping it — it is a power of the INVERSE, so it cannot take anything past white.\n1 is off." },
+  { k: "SHADOW",          label: "blacks land on", colour: true,
+    tip: "Where black ends up. Lifting it off #000 is what stops the plate reading as a photograph and starts it reading as stock.\nKeep it well short of the ink (#1a1917) or the picture starts competing with the type." },
+  { k: "HIGHLIGHT",       label: "whites land on", colour: true,
+    tip: "Where white ends up. A hair above the paper (#fcfbf8) and the sunlit stone stays the brightest thing in the corner without glowing." },
+  { k: "GRAIN_SIGMA",     label: "grain",         min: 0,   max: 0.03, step: 0.0005, dp: 4,
+    tip: "Monochrome, weighted to the mids: none in the lifted blacks, where it would read as sensor noise, and none in the highlights, where it would read as JPEG." },
+  /* Not one of build-plate.py's constants, and never will be: it is the two rows
+     above moved together, and what it exports is those two colours. It is here
+     because "all of it darker" is the one thing neither the pickers nor
+     --plate-opacity can say. The pickers cannot because it takes both of them at
+     once and by eye, in tandem, in hex. Opacity cannot because the whites land a
+     hair ABOVE the paper — at 0.6 the sunlit stone composites to 254,250,240
+     against paper of 252,251,248 — so turning it up deepens the shadows and
+     warms the highlights and never brings the top of the picture down at all.
+     Last in the group rather than beside the endpoints it drives, because the
+     rows above it are the pipeline in order and this is not a stage. */
+  { k: "LEVEL",           label: "overall level", min: 0.3, max: 1.1, step: 0.005, dp: 3, tool: true,
+    tip: "Both endpoints at once, as a fraction of what the file says. The one knob for \"all of it darker\".\nOpacity cannot do this — the whites land just above the paper, so no amount of it brings the sunlit stone down.\n1 is the file's own two colours. It exports as those colours, not as itself." }
+];
+
+/* Brightness is the whole test on this frame — there is no blueness slider, and
+   there was one here until the photograph changed. The sky is a hazy backlit
+   white and the dome's stone, lit by it, is the BLUER of the two; a blueness
+   floor would knock out the building and keep the sky. build-plate.py's
+   constants block has the measurements. */
+var MATTE = [
+  { k: "SKY_LUMA_MIN",  label: "bright seed", min: 0.02, max: 0.30, step: 0.002, dp: 3,
+    tip: "How bright a pixel must be to START a patch of sky.\nThis is the confident test. The sky sits at 0.10–0.18 and nothing built gets past 0.15." },
+  { k: "SKY_LUMA_LOW",  label: "dim spread", min: 0.01, max: 0.20, step: 0.0025, dp: 3,
+    tip: "How bright it must be to STAY in one it already touches.\nThe top corner of the sky falls to 0.083 — this is what carries the matte into it without opening the tower's sunlit lead, which is brighter still but touches nothing that seeds." },
+  { k: "SKY_EDGE_BLUR", label: "edge softness", min: 0, max: 4,  step: 0.1, dp: 1,
+    tip: "Blur on the alpha, in output pixels, so the roofline does not stair-step.\nApproximated here by three box passes; the script uses a real Gaussian." }
+];
+
+/* The CSS half. `dark` marks the one that is declared twice in styles.css —
+   the plate needs more of itself on black — so it is held, exported and probed
+   per theme rather than shared. */
+var PLACE = [
+  { k: "--plate-opacity", label: "opacity", unit: "",   min: 0, max: 0.6, step: 0.005, dp: 3, dark: true,
+    tip: "The one number that decides whether this is paper stock or a picture.\nThe moment you notice it as a photograph it is too strong." },
+  { k: "--plate-w", label: "width",  unit: "px", min: 200, max: 2400, step: 1, dp: 1,
+    tip: "How far it runs across the page. Height follows the file's own aspect.\nA LENGTH, not a share of the window: the picture is drawn this wide on every display, so its right-hand edge lands in the same place on all of them. 1161.6 is 60.5% of the 1920 frame this was composed on, where that edge falls near the far side of the column of text — which is the point, it is what the type is printed on, not something beside it.\nSo the preview frame's width no longer changes the plate. It only changes where the column stands on it, which is the thing a narrow window really does move." },
+  { k: "--plate-x", label: "out from left", unit: "px", min: -400, max: 400, step: 1, dp: 0,
+    tip: "Positive moves it right, off the page's left edge." },
+  { k: "--plate-y", label: "up from the fold", unit: "px", min: -1600, max: 1200, step: 1, dp: 0,
+    tip: "Positive lifts it off --plate-fold, the bottom edge of the 1920×1080 frame this was composed on — 1080px down the document, wherever the viewer's own fold happens to be.\nNegative hangs it PAST that line and down into the second screen — the box grows with it, so nothing is cut off there any more.\nBecause the datum is fixed and not 100vh, this is also the control for the one measurement that matters most: how far down the page the TOP of the picture arrives. It is the same on every screen." },
+  { k: "--plate-crop", label: "crop the foot", unit: "", min: 0, max: 0.9, step: 0.005, dp: 3,
+    tip: "Cuts the BOTTOM off the picture — the rooftops and the glass in front of the dome.\nA share of the plate's width rather than a length of its own, so it survives 'width' being re-tuned without having to be re-measured after it.\nIt shortens the picture where it stands; it does not move it. Use 'up from the fold' for that." }
+];
+
+var MATTE_GROUP = { name: "Sky matte", rows: MATTE, py: true,
+  note: "No sky is wanted, only the building — the page's own paper is the sky. Watch this one in the matte view." };
+var GROUPS = [
+  { name: "Grade", rows: GRADE, py: true,
+    note: "Baked into every plate-*.webp. Re-run build-plate.py to ship a change." },
+  MATTE_GROUP,
+  { name: "Placement", rows: PLACE, css: true,
+    note: "portfolio/styles.css, live in the frame." }
+];
+var ROWS = [];
+GROUPS.forEach(function (g) { g.rows.forEach(function (r) { r.group = g; ROWS.push(r); }); });
+/* The one row this tool reaches for by name, because it drives two others — see
+   applyLevel. Looked up rather than written twice, so the table above stays the
+   only place a row is declared. */
+var LEVEL_ROW = ROWS.filter(function (r) { return r.k === "LEVEL"; })[0];
+
+/* ---- state --------------------------------------------------------------- */
+var KEY = "plate-tuner-v1";
+var state = { vals: {}, place: {}, theme: "light", view: "page", preset: "window", w: 0, h: 0, shut: {} };
+try {
+  var saved = JSON.parse(localStorage.getItem(KEY) || "null");
+  if (saved && saved.vals) state = {
+    vals:   saved.vals || {},
+    place:  saved.place || {},
+    theme:  saved.theme === "dark" ? "dark" : "light",
+    view:   saved.view || "page",
+    preset: saved.preset || "window",
+    w: saved.w || 0, h: saved.h || 0,
+    shut:   saved.shut || {}
+  };
+} catch (_) {}
+function save() { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (_) {} }
+
+/* Defaults arrive from two different places and at two different times: the
+   grade and the matte come out of plate-source.json when it loads, the placement
+   is read off the live page once the frame is up — and only for the theme the
+   frame is currently in, since --plate-opacity is declared twice and only one of
+   the two declarations is winning at any moment.
+   Which is why the placement half is remembered between sessions, in state.place,
+   while the grade half is not: what a row has moved FROM has to be known for both
+   themes at once or a change made on white disappears out of the export the
+   moment you flip to black to check it — and the black frame cannot see the
+   white declaration to re-read it. Re-probed and overwritten every time the frame
+   does show that theme, so an edit to styles.css still lands. */
+var base = {};
+Object.keys(state.place).forEach(function (k) { base[k] = state.place[k]; });
+/* The third place, and the only one that is written down here: a tool-only row
+   has no line in any file to read a default off, so 1 — "the endpoints exactly as
+   the file has them" — is its own base. */
+base.LEVEL = 1;
+
+/* The key a row's value is filed under. Per-theme rows carry the theme in the
+   key, so flipping the toggle genuinely swaps which number you are dragging. */
+function keyOf(r) { return r.dark ? r.k + "@" + state.theme : r.k; }
+function baseOf(r) { return base[keyOf(r)]; }
+function val(r) { var v = state.vals[keyOf(r)]; return v == null ? baseOf(r) : v; }
+function changed(r) {
+  var v = state.vals[keyOf(r)], b = baseOf(r);
+  return v != null && b != null && String(v) !== String(b);
+}
+function changedRows() { return ROWS.filter(changed); }
+/* changed() answers for the theme you are looking at, which is what a row's own
+   highlight wants. Everything that leaves this tool — the export, the badge over
+   it — has to answer for both, or a number moved on white would vanish from the
+   block the moment you flipped to black to check it. */
+function movedAnywhere(r) {
+  return r.dark ? (changedIn(r, "light") || changedIn(r, "dark")) : changed(r);
+}
+function changeCount() {
+  var n = 0;
+  ROWS.forEach(function (r) {
+    /* The badge counts lines to paste, and a tool-only row is not one of them —
+       it is counted by the two endpoint rows it has already moved. */
+    if (r.tool) return;
+    if (!r.dark) { if (changed(r)) n++; return; }
+    if (changedIn(r, "light")) n++;
+    if (changedIn(r, "dark")) n++;
+  });
+  return n;
+}
+
+function num(v, dp) { return Number(v).toFixed(dp == null ? 3 : dp); }
+/* dp is the precision a row is worth dragging at, and it is right for the slider
+   readout. In an exported block it is noise — 0.400 where the file it replaces
+   says 0.34 reads as a different kind of number. So the trailing zeros come off
+   on the way out, keeping the one decimal that tells Python this is a float. */
+function tidy(s, float) {
+  if (s.indexOf(".") < 0) return float ? s + ".0" : s;
+  s = s.replace(/0+$/, "");
+  return s.slice(-1) === "." ? (float ? s + "0" : s.slice(0, -1)) : s;
+}
+function hex(v) { return String(v).toLowerCase(); }
+function rgbOf(h) {
+  h = String(h).replace("#", "");
+  return [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16)];
+}
+
+/* ---- the source ---------------------------------------------------------- */
+/* Decoded once into the two arrays every stage reads: linear RGB and linear
+   luma. Held as floats rather than recomputed per draw because the sliders move
+   and the photograph does not. */
+var META = null, N = 0, W = 0, H = 0;
+var lin = null, luma = null, noise = null, lumaMax = 1;
+/* Set when the source arrives already cut — plate-source.webp carries an alpha
+   channel and plate-source.json's `matte` is null. Then the matte is an input,
+   not a decision: srcAlpha IS the answer, the panel below hides itself, and the
+   only stage left to tune is the grade. */
+var srcAlpha = null, hasOwnMatte = false;
+
+function srgbToLinear(u) {
+  var c = u / 255;
+  return c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+}
+
+/* Deterministic, like the script's seeded PRNG — a different stream, but the
+   point of seeding is that the grain does not crawl while you drag a slider. */
+function mulberry32(a) {
+  return function () {
+    a |= 0; a = a + 0x6D2B79F5 | 0;
+    var t = Math.imul(a ^ a >>> 15, 1 | a);
+    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  };
+}
+
+function decode(img) {
+  W = img.naturalWidth; H = img.naturalHeight; N = W * H;
+  var c = document.createElement("canvas");
+  c.width = W; c.height = H;
+  var g = c.getContext("2d", { willReadFrequently: true });
+  g.drawImage(img, 0, 0);
+  var d = g.getImageData(0, 0, W, H).data;   /* taints and throws on file:// — see boot() */
+
+  var lut = new Float32Array(256);
+  for (var i = 0; i < 256; i++) lut[i] = srgbToLinear(i);
+
+  lin = new Float32Array(N * 3);
+  luma = new Float32Array(N);
+  srcAlpha = hasOwnMatte ? new Float32Array(N) : null;
+  lumaMax = 0;
+  for (var p = 0, q = 0; p < N; p++, q += 3) {
+    var r = lut[d[p * 4]], gg = lut[d[p * 4 + 1]], b = lut[d[p * 4 + 2]];
+    lin[q] = r; lin[q + 1] = gg; lin[q + 2] = b;
+    var y = 0.2126 * r + 0.7152 * gg + 0.0722 * b;
+    luma[p] = y;
+    if (y > lumaMax) lumaMax = y;
+    if (srcAlpha) srcAlpha[p] = d[p * 4 + 3];
+  }
+
+  var rnd = mulberry32(20250825);
+  noise = new Float32Array(N);
+  for (var n = 0; n < N; n++) {
+    /* Box-Muller, one normal per pixel: the script's grain is monochrome, so all
+       three channels of a pixel move together or the grain turns into colour. */
+    var u = Math.max(1e-9, rnd()), v = rnd();
+    noise[n] = Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+  }
+}
+
+/* ---- the sky matte ------------------------------------------------------- */
+/* build-plate.py's sky_matte(), plus its bleed() precomputed as a lookup: for
+   every sky pixel within BLEED of the building, which building pixel is to be
+   painted over it. Rebuilt only when one of the three matte constants moves —
+   it is the expensive half, and the grade is dragged far more often. */
+var sky = null, alpha = null, bleedFrom = null, hist = null, matteSig = "";
+
+function matteSignature() {
+  return MATTE.map(function (r) { return val(r); }).join("|");
+}
+
+function buildMatte() {
+  var sig = matteSignature();
+  if (sig === matteSig) return;
+  matteSig = sig;
+
+  /* Nothing to decide when the source was cut before it got here. `sky` is still
+     wanted — it is what "the building" means to the exposure histogram — but the
+     alpha is copied rather than derived, and the bleed runs over everything short
+     of fully opaque, which is what build-plate.py does. On a hand-cut matte that
+     band can be a fifth of the frame rather than the pixel or two a computed one
+     leaves, and every one of those pixels is still wearing the sky. */
+  if (hasOwnMatte) {
+    sky = new Uint8Array(N);
+    alpha = new Float32Array(N);
+    var hole = new Uint8Array(N);
+    for (var m = 0; m < N; m++) {
+      alpha[m] = srcAlpha[m];
+      sky[m] = srcAlpha[m] < 128 ? 1 : 0;
+      hole[m] = srcAlpha[m] < 255 ? 1 : 0;
+    }
+    buildBleed(hole);
+    buildHistogram();
+    return;
+  }
+
+  var lmin = +val(MATTE[0]), llow = +val(MATTE[1]), soft = +val(MATTE[2]);
+
+  /* Label the permissive predicate, then keep only the components that both
+     contain a confident pixel and reach the top edge. A flood from the seed
+     would answer the first question and not the second; a flood from the top
+     edge, the second and not the first. */
+  var comp = new Int32Array(N).fill(-1);
+  var grow = new Uint8Array(N);
+  for (var i = 0; i < N; i++) grow[i] = (luma[i] > llow) ? 1 : 0;
+
+  var stack = new Int32Array(N), keep = [];
+  var nc = 0;
+  for (var s = 0; s < N; s++) {
+    if (!grow[s] || comp[s] >= 0) continue;
+    var top = 0, seeded = 0, sp = 0;
+    stack[sp++] = s; comp[s] = nc;
+    while (sp > 0) {
+      var p = stack[--sp];
+      if (p < W) top = 1;
+      if (luma[p] > lmin) seeded = 1;
+      var x = p % W, y = (p - x) / W;
+      if (x > 0     && grow[p - 1] && comp[p - 1] < 0) { comp[p - 1] = nc; stack[sp++] = p - 1; }
+      if (x < W - 1 && grow[p + 1] && comp[p + 1] < 0) { comp[p + 1] = nc; stack[sp++] = p + 1; }
+      if (y > 0     && grow[p - W] && comp[p - W] < 0) { comp[p - W] = nc; stack[sp++] = p - W; }
+      if (y < H - 1 && grow[p + W] && comp[p + W] < 0) { comp[p + W] = nc; stack[sp++] = p + W; }
+    }
+    keep[nc++] = (top && seeded) ? 1 : 0;
+  }
+
+  sky = new Uint8Array(N);
+  for (var k = 0; k < N; k++) sky[k] = (comp[k] >= 0 && keep[comp[k]]) ? 1 : 0;
+
+  fillHoles();
+  buildAlpha(soft);
+  buildBleed(sky);
+  buildHistogram();
+}
+
+/* binary_fill_holes: anything the sky encloses is sky. Reached by flooding the
+   NON-sky from the border — what the flood cannot reach is enclosed. Small dark
+   specks on the skyline are the point; the building is not swallowed because it
+   runs off the bottom and both sides of the frame and so is on the border, and
+   neither are the weathervane and the cross, which are attached to it. */
+function fillHoles() {
+  var seen = new Uint8Array(N), stack = new Int32Array(N), sp = 0;
+  function push(p) { if (!sky[p] && !seen[p]) { seen[p] = 1; stack[sp++] = p; } }
+  for (var x = 0; x < W; x++) { push(x); push((H - 1) * W + x); }
+  for (var y = 0; y < H; y++) { push(y * W); push(y * W + W - 1); }
+  while (sp > 0) {
+    var p = stack[--sp], px = p % W, py = (p - px) / W;
+    if (px > 0)     push(p - 1);
+    if (px < W - 1) push(p + 1);
+    if (py > 0)     push(p - W);
+    if (py < H - 1) push(p + W);
+  }
+  for (var i = 0; i < N; i++) if (!sky[i] && !seen[i]) sky[i] = 1;
+}
+
+/* Three box passes stand in for the script's Gaussian. Same job — stop the
+   roofline stair-stepping — and within a hair of the same falloff, which is as
+   much as a 1px feather can be judged to anyway. */
+function buildAlpha(sigma) {
+  var a = new Float32Array(N);
+  for (var i = 0; i < N; i++) a[i] = sky[i] ? 0 : 255;
+  var r = Math.round(sigma);
+  if (r > 0) for (var pass = 0; pass < 3; pass++) a = boxBlur(a, r);
+  alpha = a;
+}
+
+function boxBlur(a, r) {
+  var tmp = new Float32Array(N), out = new Float32Array(N), x, y, i, sum, n;
+  for (y = 0; y < H; y++) {
+    for (x = 0; x < W; x++) {
+      sum = 0; n = 0;
+      for (i = x - r; i <= x + r; i++) if (i >= 0 && i < W) { sum += a[y * W + i]; n++; }
+      tmp[y * W + x] = sum / n;
+    }
+  }
+  for (x = 0; x < W; x++) {
+    for (y = 0; y < H; y++) {
+      sum = 0; n = 0;
+      for (i = y - r; i <= y + r; i++) if (i >= 0 && i < H) { sum += tmp[i * W + x]; n++; }
+      out[y * W + x] = sum / n;
+    }
+  }
+  return out;
+}
+
+/* The sky's own graded colour must not survive anywhere near the roofline: it is
+   a mid tone, the page behind it is white or black, and the feathered pixels
+   would mix the two into a fringe that reads as a bad cut-out. So each sky pixel
+   near the edge is told which building pixel to wear instead. Rings out from the
+   boundary, carrying the ORIGINAL source index along, so every pixel copies real
+   building rather than a copy of a copy. */
+function buildBleed(hole) {
+  bleedFrom = new Int32Array(N).fill(-1);
+  var front = [], next, i, p, x, y;
+  for (i = 0; i < N; i++) {
+    if (!hole[i]) continue;
+    x = i % W; y = (i - x) / W;
+    var src = -1;
+    if (x > 0 && !hole[i - 1]) src = i - 1;
+    else if (x < W - 1 && !hole[i + 1]) src = i + 1;
+    else if (y > 0 && !hole[i - W]) src = i - W;
+    else if (y < H - 1 && !hole[i + W]) src = i + W;
+    if (src >= 0) { bleedFrom[i] = src; front.push(i); }
+  }
+  for (var step = 1; step < BLEED; step++) {
+    next = [];
+    for (var f = 0; f < front.length; f++) {
+      p = front[f]; x = p % W; y = (p - x) / W;
+      var from = bleedFrom[p];
+      if (x > 0     && hole[p - 1] && bleedFrom[p - 1] < 0) { bleedFrom[p - 1] = from; next.push(p - 1); }
+      if (x < W - 1 && hole[p + 1] && bleedFrom[p + 1] < 0) { bleedFrom[p + 1] = from; next.push(p + 1); }
+      if (y > 0     && hole[p - W] && bleedFrom[p - W] < 0) { bleedFrom[p - W] = from; next.push(p - W); }
+      if (y < H - 1 && hole[p + W] && bleedFrom[p + W] < 0) { bleedFrom[p + W] = from; next.push(p + W); }
+    }
+    front = next;
+  }
+}
+
+/* The exposure percentile is measured over the building only — the sky is a
+   fifth of the frame and sits in its own narrow band, so leaving it in drags the
+   number away from the stone the exposure is for. Binned rather than sorted:
+   4096 bins across the frame's whole range is a hundredth of a percent of the
+   luma per bin, and the percentile is interpolated inside its bin on top of
+   that. Rebuilt with the matte, since the matte is what "the building" means. */
+function buildHistogram() {
+  hist = new Uint32Array(HIST + 1);
+  for (var i = 0; i < N; i++) {
+    if (sky[i]) continue;
+    var b = (luma[i] / lumaMax) * HIST | 0;
+    hist[b < 0 ? 0 : b > HIST ? HIST : b]++;
+  }
+}
+
+function percentile(pct) {
+  var total = 0, i;
+  for (i = 0; i <= HIST; i++) total += hist[i];
+  if (!total) return 1e-6;
+  var want = total * pct / 100, run = 0;
+  for (i = 0; i <= HIST; i++) {
+    if (run + hist[i] >= want) {
+      var within = hist[i] ? (want - run) / hist[i] : 0;
+      return (i + within) / HIST * lumaMax;
+    }
+    run += hist[i];
+  }
+  return lumaMax;
+}
+
+/* ---- the grade ----------------------------------------------------------- */
+/* Steps 4, 5 and 6 of the pipeline are one function of one number, applied to
+   each channel independently — encode to sRGB, blend toward the S-curve, push
+   the shoulder — and only the endpoints it lands between differ between
+   channels. So it is a lookup table, built once per draw. That is what turns a
+   two-pow-per-channel loop over a million pixels into three array reads, and it
+   is why a slider answers while it is still moving. */
+function buildLUT(contrast, push) {
+  var L = new Float32Array(LUTN + 1);
+  for (var i = 0; i <= LUTN; i++) {
+    var x = i / LUTN;
+    var t = x <= 0.0031308 ? x * 12.92 : 1.055 * Math.pow(x, 1 / 2.4) - 0.055;
+    if (t < 0) t = 0; else if (t > 1) t = 1;
+    t = t + (t * t * (3 - 2 * t) - t) * contrast;
+    L[i] = 1 - Math.pow(1 - t, push);
+  }
+  return L;
+}
+
+var out = null, plateURL = null;
+var cv = document.getElementById("cv");
+
+function drawPlate() {
+  buildMatte();
+
+  var pct = +val(GRADE[0]), target = +val(GRADE[1]), keep = +val(GRADE[2]);
+  var lutT = buildLUT(+val(GRADE[3]), +val(GRADE[4]));
+  var sh = rgbOf(val(GRADE[5])), hi = rgbOf(val(GRADE[6])), sigma = +val(GRADE[7]);
+  var scale = target / Math.max(percentile(pct), 1e-6);
+
+  var sr = sh[0] / 255, sg = sh[1] / 255, sb = sh[2] / 255;
+  var dr = hi[0] / 255 - sr, dg = hi[1] / 255 - sg, db = hi[2] / 255 - sb;
+
+  if (!out) out = new ImageData(W, H);
+  var d = out.data;
+
+  for (var i = 0, q = 0, o = 0; i < N; i++, q += 3, o += 4) {
+    var y = luma[i];
+    /* exposure and desaturation in linear light, in one expression: the script's
+       scale-then-mix-toward-luma, with the mix written out. */
+    var xr = (y + (lin[q]     - y) * keep) * scale;
+    var xg = (y + (lin[q + 1] - y) * keep) * scale;
+    var xb = (y + (lin[q + 2] - y) * keep) * scale;
+    xr = xr < 0 ? 0 : xr > 1 ? 1 : xr;
+    xg = xg < 0 ? 0 : xg > 1 ? 1 : xg;
+    xb = xb < 0 ? 0 : xb > 1 ? 1 : xb;
+
+    var vr = sr + dr * lutT[(xr * LUTN) | 0];
+    var vg = sg + dg * lutT[(xg * LUTN) | 0];
+    var vb = sb + db * lutT[(xb * LUTN) | 0];
+
+    if (sigma) {
+      var grey = 0.2126 * vr + 0.7152 * vg + 0.0722 * vb;
+      var w = 4 * grey * (1 - grey);
+      var n = noise[i] * sigma * (w < 0 ? 0 : w > 1 ? 1 : w);
+      vr += n; vg += n; vb += n;
+    }
+
+    d[o]     = vr < 0 ? 0 : vr > 1 ? 255 : vr * 255;
+    d[o + 1] = vg < 0 ? 0 : vg > 1 ? 255 : vg * 255;
+    d[o + 2] = vb < 0 ? 0 : vb > 1 ? 255 : vb * 255;
+    d[o + 3] = alpha[i];
+  }
+
+  /* The bleed reads only pixels the loop above has already written, and every
+     source is a building pixel, so one pass over the boundary is the whole job. */
+  for (var s = 0; s < N; s++) {
+    var from = bleedFrom[s];
+    if (from < 0) continue;
+    d[s * 4] = d[from * 4]; d[s * 4 + 1] = d[from * 4 + 1]; d[s * 4 + 2] = d[from * 4 + 2];
+  }
+
+  cv.width = W; cv.height = H;
+  cv.getContext("2d").putImageData(out, 0, 0);
+  publish();
+}
+
+/* An object URL rather than a data URL: the frame is handed a ~1 MB image on
+   every draw, and base64 in a stylesheet would cost a re-parse of the whole
+   declaration each time. The old one is revoked after the new one is in, so the
+   frame never repaints through a gap. */
+function publish() {
+  cv.toBlob(function (b) {
+    if (!b) return;
+    var was = plateURL;
+    plateURL = URL.createObjectURL(b);
+    inject();
+    if (was) URL.revokeObjectURL(was);
+  }, "image/png");
+}
+
+/* ---- the frame ----------------------------------------------------------- */
+var frame = document.getElementById("frame");
+var SIZES = [
+  { k: "window",  label: "my window" },
+  { k: "desktop", label: "desktop", w: 1440, h: 900 },
+  { k: "laptop",  label: "laptop",  w: 1280, h: 720 },
+  { k: "tablet",  label: "tablet",  w: 820,  h: 1180 },
+  { k: "mobile",  label: "mobile",  w: 390,  h: 844 }
+];
+function winSize() { return { w: Math.max(320, window.innerWidth - 400), h: Math.max(400, window.innerHeight - 120) }; }
+function sizeFrame() {
+  if (!state.w || !state.h) { var d = winSize(); state.w = state.w || d.w; state.h = state.h || d.h; }
+  frame.style.width = state.w + "px";
+  frame.style.height = state.h + "px";
+}
+function setPreset(k) {
+  var s = SIZES.filter(function (x) { return x.k === k; })[0];
+  if (!s) return;
+  var d = s.k === "window" ? winSize() : { w: s.w, h: s.h };
+  state.preset = k; state.w = d.w; state.h = d.h;
+  sizeFrame(); save(); paintChrome();
+}
+
+function loadFrame() {
+  /* Same origin, so the theme the page reads on boot can be primed for it —
+     which matters here more than in the type tuner, because the plate is one of
+     the two things on this site that is declared differently on black. */
+  try { localStorage.setItem("portfolio-theme", state.theme); } catch (_) {}
+  frame.src = "/portfolio/?plate=" + Date.now();
+  sizeFrame();
+}
+
+/* The placement defaults are read off the page rather than written down here, so
+   this tool cannot disagree with styles.css about what it is changing. Read once
+   per theme, on the load that first shows that theme. */
+function probe() {
+  var doc = frame.contentDocument, win = frame.contentWindow;
+  if (!doc || !win || !doc.documentElement) return;
+  var cs = win.getComputedStyle(doc.documentElement);
+  PLACE.forEach(function (r) {
+    var raw = cs.getPropertyValue(r.k).trim();
+    base[keyOf(r)] = raw === "" ? 0 : parseFloat(raw);
+    state.place[keyOf(r)] = base[keyOf(r)];
+  });
+  save();
+  paintChrome();
+}
+
+/* Injected last and with no !important, so the preview meets the same cascade
+   the exported CSS will meet in styles.css. The image is this tool's, though —
+   the plate on disk is whatever the last run of the script produced, and the
+   whole point is to see the grade that has not been baked yet. */
+function inject() {
+  var doc = frame.contentDocument;
+  if (!doc || !doc.body || !plateURL) return;
+  var tag = doc.getElementById("__plate");
+  if (!tag) { tag = doc.createElement("style"); tag.id = "__plate"; }
+  var decls = PLACE.map(function (r) {
+    return "  " + r.k + ": " + num(val(r), r.dp) + r.unit + ";";
+  }).join("\n");
+  tag.textContent =
+    ":root {\n" + decls + "\n}\n" +
+    "body::after { background-image: url(" + plateURL + "); }\n";
+  doc.body.appendChild(tag);
+}
+
+/* ---- views --------------------------------------------------------------- */
+var sheet = document.getElementById("sheet");
+var VIEWS = [
+  { k: "page",  label: "on the page" },
+  { k: "plate", label: "the plate" },
+  { k: "matte", label: "the matte" }
+];
+
+function paintView() {
+  var page = state.view === "page";
+  frame.hidden = !page;
+  sheet.hidden = page;
+  /* Both bare views stand the plate at full strength on the page's own paper —
+     this is where the grade itself is legible, and a shoulder or a lifted black
+     read at 0.12 cannot be judged at all. The matte view is the same picture
+     with the sky lit up in the panel's accent, so the roofline has something to
+     be read against instead of dissolving into the paper it is matched to. */
+  sheet.style.background = state.theme === "dark" ? "#000" : "#fcfbf8";
+  sheet.style.backgroundImage = state.view === "matte"
+    ? "linear-gradient(rgba(216, 167, 106, 0.9), rgba(216, 167, 106, 0.9))"
+    : "none";
+  if (W) cv.style.width = Math.min(W, 820) + "px";
+}
+
+/* ---- the two blocks to paste --------------------------------------------- */
+function pyBlock() {
+  var moved = ROWS.filter(function (r) { return r.group.py && !r.tool && changed(r); });
+  if (!moved.length) return "# nothing in the grade or the matte has moved";
+  var out = [];
+  out.push("# " + Array(72).join("─"));
+  out.push("# plate-tuner — " + moved.length + " constant" + (moved.length === 1 ? "" : "s") +
+           " moved, " + new Date().toISOString().slice(0, 16).replace("T", " "));
+  out.push("# Paste over the matching lines in build-plate.py, then re-run it against");
+  out.push("# the raw. Nothing changes on the site until you do.");
+  out.push("# " + Array(72).join("─"));
+  GROUPS.forEach(function (g) {
+    if (!g.py) return;
+    g.rows.forEach(function (r) {
+      if (r.tool || !changed(r)) return;
+      var v = r.colour ? pyTuple(val(r)) : tidy(num(val(r), r.dp), true);
+      var was = r.colour ? pyTuple(baseOf(r)) : tidy(num(baseOf(r), r.dp), true);
+      var line = r.k + " = " + v;
+      while (line.length < 40) line += " ";
+      out.push(line + "# was " + was);
+    });
+  });
+  return out.join("\n");
+}
+function pyTuple(h) {
+  return "(" + rgbOf(h).map(function (c) { return "0x" + ("0" + c.toString(16)).slice(-2); }).join(", ") + ")";
+}
+
+function cssBlock() {
+  var moved = ROWS.filter(function (r) { return r.group.css && movedAnywhere(r); });
+  if (!moved.length) return "/* nothing placed differently yet */";
+  var bySel = { ":root": [], '[data-theme="dark"]': [] };
+  /* A per-theme row can have moved in one theme, the other, or both, and each
+     belongs in its own block — so it is emitted once per theme it moved in. */
+  moved.forEach(function (r) {
+    if (r.dark) {
+      ["light", "dark"].forEach(function (t) {
+        if (!changedIn(r, t)) return;
+        bySel[t === "dark" ? '[data-theme="dark"]' : ":root"].push(decl(r, t));
+      });
+    } else {
+      bySel[":root"].push(decl(r, null));
+    }
+  });
+  var out = [];
+  Object.keys(bySel).forEach(function (sel) {
+    if (!bySel[sel].length) return;
+    out.push(sel + " {");
+    bySel[sel].forEach(function (l) { out.push(l); });
+    out.push("}");
+  });
+  return out.join("\n");
+}
+function changedIn(r, theme) {
+  var kk = r.k + "@" + theme, v = state.vals[kk], b = base[kk];
+  return v != null && b != null && String(v) !== String(b);
+}
+function decl(r, theme) {
+  var kk = theme ? r.k + "@" + theme : r.k;
+  var line = "  " + r.k + ": " + tidy(num(state.vals[kk], r.dp)) + r.unit + ";";
+  while (line.length < 34) line += " ";
+  return line + "/* was " + tidy(num(base[kk], r.dp)) + r.unit + " */";
+}
+
+/* ---- panel --------------------------------------------------------------- */
+var controls = document.getElementById("controls");
+
+function buildPanel() {
+  controls.innerHTML = "";
+  GROUPS.forEach(function (g) {
+    /* Rows are still built for a hidden group — only the box is left out of the
+       page. They stay addressable, so val() and the saved state keep working
+       without knowing which panels happen to be on screen. */
+    var box = document.createElement("div");
+    box.className = "g" + (state.shut[g.name] ? " shut" : "");
+    var head = document.createElement("button");
+    head.type = "button"; head.className = "ghead"; head.textContent = g.name;
+    head.addEventListener("click", function () {
+      state.shut[g.name] = !state.shut[g.name];
+      box.classList.toggle("shut"); save();
+    });
+    box.appendChild(head);
+    var body = document.createElement("div");
+    body.className = "gbody";
+    if (g.note) {
+      var note = document.createElement("p");
+      note.className = "gnote"; note.textContent = g.note;
+      body.appendChild(note);
+    }
+    g.rows.forEach(function (r) { body.appendChild(rowEl(r)); });
+    box.appendChild(body);
+    if (!g.hidden) controls.appendChild(box);
+  });
+}
+
+function rowEl(r) {
+  var el = document.createElement("div");
+  el.className = "row";
+  var lab = document.createElement("label");
+  lab.textContent = r.label;
+  if (r.tip) lab.title = r.tip;
+  el.appendChild(lab);
+
+  if (r.colour) {
+    var col = document.createElement("input");
+    col.type = "color";
+    var txt = document.createElement("input");
+    txt.type = "text";
+    col.addEventListener("input", function () { set(r, hex(col.value)); });
+    txt.addEventListener("change", function () {
+      if (/^#[0-9a-fA-F]{6}$/.test(txt.value)) set(r, hex(txt.value));
+      else paintChrome();
+    });
+    el.appendChild(col); el.appendChild(txt);
+    r.col = col; r.txt = txt;
+  } else {
+    var rng = document.createElement("input");
+    rng.type = "range"; rng.min = r.min; rng.max = r.max; rng.step = r.step;
+    var box = document.createElement("input");
+    box.type = "number"; box.min = r.min; box.max = r.max; box.step = r.step;
+    rng.addEventListener("input", function () { set(r, +rng.value); });
+    box.addEventListener("input", function () {
+      if (box.value !== "" && isFinite(+box.value)) set(r, +box.value);
+    });
+    el.appendChild(rng); el.appendChild(box);
+    r.rng = rng; r.box = box;
+  }
+
+  var undo = document.createElement("button");
+  undo.type = "button"; undo.className = "undo"; undo.textContent = "↺";
+  undo.title = "back to what the source says";
+  undo.addEventListener("click", function () { set(r, null); });
+  el.appendChild(undo);
+  r.el = el;
+  return el;
+}
+
+/* One entry point for every change, so there is exactly one place that decides
+   what a change costs. A matte constant rebuilds the matte and the histogram; a
+   grade constant does not; a placement row touches no pixels at all and only
+   rewrites the frame's stylesheet. */
+function set(r, v) {
+  var kk = keyOf(r);
+  if (v == null) delete state.vals[kk]; else state.vals[kk] = v;
+  if (r === LEVEL_ROW) applyLevel();
+  save();
+  paintChrome();
+  if (r.group.css) inject(); else schedule();
+}
+
+/* What "overall level" actually does: write the two endpoint rows. So it needs no
+   stage of its own in drawPlate, nothing in plate-source.json, and nothing in
+   build-plate.py — the block to paste is the two colour lines it has moved, which
+   is what the tool would have printed if you had picked them by hand.
+   Absolute, and anchored on the file's own two colours rather than on wherever the
+   pickers currently sit: dragging back to 1 therefore lands exactly on the file
+   again, and a hundred drags do not walk away from it eight bits at a time the way
+   a multiply-what-is-there would. The cost is that it OVERWRITES a hand-picked
+   endpoint, which is the honest bargain for one knob driving two — and the
+   swatches move under the slider as it goes, so it is never a silent one. */
+function applyLevel() {
+  var f = +val(LEVEL_ROW);
+  ["SHADOW", "HIGHLIGHT"].forEach(function (k) {
+    state.vals[k] = "#" + rgbOf(base[k]).map(function (c) {
+      c = Math.round(c * f);
+      return ("0" + (c < 0 ? 0 : c > 255 ? 255 : c).toString(16)).slice(-2);
+    }).join("");
+  });
+}
+
+/* Coalesced to one draw per frame: a range input fires on every pixel of the
+   drag, and the grade is a pass over a million of them. */
+var pending = null;
+function schedule() {
+  if (pending) return;
+  pending = requestAnimationFrame(function () {
+    pending = null;
+    var t0 = performance.now();
+    drawPlate();
+    say(Math.round(performance.now() - t0) + " ms");
+  });
+}
+
+function paintChrome() {
+  ROWS.forEach(function (r) {
+    var v = val(r);
+    if (v == null) return;
+    r.el.classList.toggle("on", changed(r));
+    if (r.colour) {
+      if (document.activeElement !== r.col) r.col.value = String(v);
+      if (document.activeElement !== r.txt) r.txt.value = String(v);
+    } else {
+      if (document.activeElement !== r.rng) r.rng.value = v;
+      if (document.activeElement !== r.box) r.box.value = num(v, r.dp);
+    }
+  });
+  var n = changeCount();
+  var badge = document.getElementById("count");
+  badge.textContent = n; badge.setAttribute("data-n", n);
+  document.getElementById("outpy").value = pyBlock();
+  document.getElementById("outcss").value = cssBlock();
+  [].forEach.call(document.querySelectorAll("#views button"), function (b) {
+    b.setAttribute("aria-pressed", b.dataset.k === state.view ? "true" : "false");
+  });
+  [].forEach.call(document.querySelectorAll("#sizes button"), function (b) {
+    b.setAttribute("aria-pressed", b.dataset.k === state.preset ? "true" : "false");
+  });
+}
+
+var sayTimer = null;
+function say(msg) {
+  var el = document.getElementById("stat");
+  el.textContent = msg;
+  clearTimeout(sayTimer);
+  sayTimer = setTimeout(function () { el.textContent = ""; }, 1600);
+}
+
+/* ---- chrome -------------------------------------------------------------- */
+function chips(host, items, isOn, pick) {
+  items.forEach(function (it) {
+    var b = document.createElement("button");
+    b.type = "button"; b.dataset.k = it.k; b.textContent = it.label;
+    b.setAttribute("aria-pressed", isOn(it) ? "true" : "false");
+    b.addEventListener("click", function () { pick(it); });
+    host.appendChild(b);
+  });
+}
+
+chips(document.getElementById("views"), VIEWS,
+  function (it) { return it.k === state.view; },
+  function (it) { state.view = it.k; save(); paintView(); paintChrome(); });
+
+chips(document.getElementById("sizes"), SIZES,
+  function (it) { return it.k === state.preset; },
+  function (it) { setPreset(it.k); });
+
+document.getElementById("theme").addEventListener("click", function () {
+  state.theme = state.theme === "dark" ? "light" : "dark";
+  save();
+  loadFrame();          /* the page reads the theme on boot, so it is a reload */
+  paintView(); paintChrome();
+});
+
+document.getElementById("resetall").addEventListener("click", function () {
+  if (!changeCount() || !confirm("Put every slider back to what the files say?")) return;
+  state.vals = {};
+  save(); paintChrome(); schedule(); inject();
+});
+
+[].forEach.call(document.querySelectorAll("[data-copy]"), function (b) {
+  b.addEventListener("click", function () {
+    var t = document.getElementById(b.dataset.copy);
+    t.select();
+    navigator.clipboard.writeText(t.value).then(function () { say("copied"); },
+      function () { document.execCommand("copy"); say("copied"); });
+  });
+});
+
+frame.addEventListener("load", function () { probe(); inject(); });
+window.addEventListener("resize", function () { if (state.preset === "window") setPreset("window"); });
+
+/* ---- boot ---------------------------------------------------------------- */
+function warn(html) { document.getElementById("warn").innerHTML = html; }
+
+function boot() {
+  buildPanel();
+  paintView();
+  loadFrame();
+
+  fetch("plate-source.json?" + Date.now()).then(function (r) {
+    if (!r.ok) throw new Error(r.status);
+    return r.json();
+  }).then(function (meta) {
+    META = meta;
+    Object.keys(meta.grade).forEach(function (k) { base[k] = meta.grade[k]; });
+    /* null when the source arrived cut. The rows then have no base to be `was`,
+       which is also why they cannot show as moved and cannot reach the export. */
+    hasOwnMatte = !meta.matte;
+    if (hasOwnMatte) MATTE_GROUP.hidden = true;
+    else Object.keys(meta.matte).forEach(function (k) { base[k] = meta.matte[k]; });
+    buildPanel();   /* again, now that it is known whether the matte panel exists */
+    return new Promise(function (done, fail) {
+      var img = new Image();
+      img.onload = function () { done(img); };
+      img.onerror = function () { fail(new Error("image")); };
+      img.src = meta.source + "?" + Date.now();
+    });
+  }).then(function (img) {
+    decode(img);
+    paintView();          /* the bare views can only be sized once there is a size */
+    paintChrome();
+    schedule();
+  }).catch(function (e) {
+    /* Both failures land here and both have the same two causes, so say both. */
+    warn("<strong>No source to grade.</strong> This tool needs " +
+         "<code>design/plate/plate-source.webp</code> and <code>plate-source.json</code>, which " +
+         "<code>build-plate.py</code> writes beside itself — run it once against the raw. " +
+         "And it has to be served, not opened off the disk: <code>run.bat</code>, then " +
+         "<code>localhost:8000/design/plate/plate-tuner.html</code>. (" + e.message + ")");
+  });
+}
+
+boot();
+</script>
+</body>
+</html>

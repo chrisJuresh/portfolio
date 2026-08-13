@@ -1,5 +1,10 @@
-# local tooling / editor
-.claude/
+# local tooling / editor. `.claude/` is ignored except the three files that carry the
+# worktree-per-change rule: the hook has to exist inside every worktree as well as the
+# main checkout, and a worktree only gets a file if git puts it there.
+.claude/*
+!.claude/settings.json
+!.claude/worktree-per-change.json
+!.claude/hooks/
 .openai/
 .agents/
 .codex/
@@ -21,6 +26,18 @@ __pycache__/
 # in img/. Kept local to keep the repo lean and Vercel deploys fast. Regenerate
 # img/ from these with the Pillow step in README.md.
 photos/
+
+# camera raws, wherever they are dropped. Same reasoning as photos/ — a single
+# RW2 off the GX80 is ~19MB — but by extension, because the one the corner plate
+# is built from is handed to design/plate/build-plate.py by path and so tends to
+# sit wherever it was unpacked rather than under photos/.
+*.rw2
+
+# ...and the same for a cut-out plate source, which is a 20MB RGBA PNG and gets
+# dropped in the same place. Root only, by path rather than by extension: the
+# repo's other PNGs are design/og/og-source.png and the committed shots, and a
+# blanket *.png would take those with it.
+/*.png
 
 # secrets — never commit
 .env
