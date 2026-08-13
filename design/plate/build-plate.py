@@ -203,6 +203,52 @@ the car hangs a gondola in a corner and the eye is a thin lattice with sky throu
 it, so the same HIGHLIGHT that reads as recessive stone on one can be the
 brightest thing on the screen on the next.
 
+WHAT THE ENDPOINTS CANNOT FIX: THE OPACITY EATS THEM
+----------------------------------------------------
+They are the first place to reach for and they are also, on their own, the weakest
+lever on this page, because nothing here is ever seen at full strength. The
+stylesheet composites every picture at --plate-/--car-/--eye-opacity, so what a
+display is asked to show is
+
+    paper * (1 - opacity) + ink * opacity
+
+and a move of N units between two endpoints arrives as N * opacity. At the eye's
+0.12 on white, the whole ladder from SHADOW to HIGHLIGHT — 92 units of ink —
+becomes ELEVEN 8-bit codes on screen, 224 to 235. The entire picture is eleven
+greys. Moving both endpoints five units, which is a visible change in the tuner
+at full strength, moves the composite by 0.6 of one code: below the quantiser,
+and below any display's ability to show it either way.
+
+So an endpoint pair is the knob for WHERE the picture sits and a poor one for
+whether it can be seen at all. The measurements, in CIE L* because eight bits are
+not a perceptual unit:
+
+    light, 0.12 on #fff    picture spans dL* 3.88, sits dL* 10.7..6.8 off the paper
+    dark,  0.17 on #000    picture spans dL* 4.55, sits dL* 0..4.6 off the paper
+
+Two things fall out of that table, and both are about the second row. The dark
+picture's SHADOW end is not near the page, it IS the page — 0x00 * 0.17 = 0, the
+same code as the paper — so a fifth or so of the frame is not being dimmed, it is
+being deleted, and what is left runs from code 0 to code 16. That band is exactly
+where an OLED panel's own black handling lives: near-black codes are where
+per-pixel dimming, and any black crush on top of it, do their worst. It is also
+where a laptop at half brightness in a bright room has nothing left to give. A
+calibrated desktop display in a dim room will resolve all sixteen of those codes,
+which is why this reads as a display problem and is really a headroom problem.
+
+The three levers, in the order of how much they actually move:
+
+* --*-opacity, which multiplies both the distance from the paper AND the number of
+  distinct codes the picture is drawn in. It is the only one that widens the band.
+* the picture's SIZE (--*-fill), which changes no code at all but changes how many
+  pixels each surviving code is spread over — the one lever that helps a picture
+  that is already at the quantiser floor.
+* the endpoints here, which slide the band without widening it, and which are
+  worth tuning only once the band is wide enough to see.
+
+Lift SHADOW off the paper before anything else on the dark side: on black, SHADOW
+is the end that is being thrown away, and on white it is HIGHLIGHT.
+
 NEUTRAL SOURCE
 --------------
 <name>-source.webp is step 1 and nothing else: the linear develop, sRGB-encoded so
@@ -319,12 +365,30 @@ EYE_LIGHT = Grade(
     SAT_KEEP=0.24,
     CONTRAST=0.36,
     HIGHLIGHT_PUSH=1.34,
+    SHADOW=(0x05, 0x05, 0x05),      # off black
+    HIGHLIGHT=(0x61, 0x61, 0x61),   # mid grey
+    GRAIN_SIGMA=0.0075,
+)
+
+# The first of the six to be spelled out rather than aliased, so the eye is the
+# first picture with a dark ladder of its own on disk. What ended the aliasing is
+# LIGHT moving, not dark: dark holds the numbers both themes shared, and the two
+# lines below are what every one of these blocks looked like this morning.
+#
+# Which is worth reading twice before treating it as a dark-theme answer, because
+# it is not one. It is what "tune light, leave dark where it was" spells, and on
+# this picture dark is the harder of the two papers — see WHY THESE ENDPOINTS and
+# the note under it.
+EYE_DARK = Grade(
+    EXPOSURE_PCT=99.0,
+    EXPOSURE_TARGET=0.34,
+    SAT_KEEP=0.24,
+    CONTRAST=0.36,
+    HIGHLIGHT_PUSH=1.34,
     SHADOW=(0x00, 0x00, 0x00),      # pure black
     HIGHLIGHT=(0x5c, 0x5c, 0x5c),   # mid grey
     GRAIN_SIGMA=0.0075,
 )
-
-EYE_DARK = EYE_LIGHT
 
 # Light first in each: it is the page's default, and out_path() spells it
 # unsuffixed. Hung off the Picture below rather than held in a second dict keyed
