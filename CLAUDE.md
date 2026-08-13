@@ -42,14 +42,21 @@ open a PR into `main`.
 5. Leave the worktree standing until its PR merges and name the path in your
    reply. **Once it has merged, take all three down**: the remote branch with
    `--delete-branch` above, the worktree with `ExitWorktree`
-   (`action: "remove"`), then the local branch with `git branch -d <branch>`.
-   In that order — deleting a branch out from under a live worktree leaves the
-   worktree on a detached HEAD. Use `-d` rather than `-D`: refusing to delete an
-   unmerged branch is exactly the check you want at that step.
+   (`action: "remove"`), then the local branch. In that order — deleting a
+   branch out from under a live worktree leaves the worktree on a detached
+   HEAD.
 
    A merged branch left standing is not untidiness. It is a live push target
    after the PR that reviewed it has closed, and a commit pushed there looks
    like ordinary work while reaching `development` never.
+
+   **Confirm the merge against GitHub, not against git.** Everything merges
+   here with `--squash`, which replays the diff as one new commit and keeps no
+   ancestry, so `git branch -d`, `git branch --merged` and
+   `git merge-base --is-ancestor` all read a merged branch as unmerged — every
+   branch in this repo, not an edge case. Ask
+   `gh pr view <n> --json state --jq .state` for `MERGED`, then
+   `git branch -D <branch>`.
 
 The rule lives in `.claude/settings.json`, `.claude/hooks/worktree-guard.py` and
 `.claude/worktree-per-change.json`, all committed — a worktree only gets a file
