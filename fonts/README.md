@@ -361,12 +361,23 @@ Ernst Friz's 1973 face, in Adobe's Std cut. Declared in `fonts.css` at weights
 
 | File | Size | Weight | Slot |
 |---|---|---|---|
-| `frizquadrata-regular.woff2` | 17 KB | 500 | — |
-| `frizquadrata-bold.woff2` | 17 KB | 700 | — |
+| `frizquadrata-regular.woff2` | 17 KB | 500 | — as supplied, kept as the record |
+| `frizquadrata-bold.woff2` | 17 KB | 700 | — as supplied, kept as the record |
+| `frizquadrata-regular-fixedmetrics.woff2` | 17 KB | 500 | `--serif-display`, local preview only |
+| `frizquadrata-bold-fixedmetrics.woff2` | 17 KB | 700 | local preview only |
 
-Nothing links these files today, so nothing is being served. That stops being
-true the moment a page links `fonts.css` or a `@font-face` moves into
-`portfolio/styles.css`.
+**Nothing served from `chrisj.uk` links any of these**, and that is a licence
+constraint rather than an oversight — see below. What *does* link them is
+`friz-local.css`, attached by `portfolio/index.html` on `localhost` and
+`127.0.0.1` and on no other hostname, so the cut title can be designed against
+the face it is tuned for. `fonts.css` names them too and is still linked by no
+page. The gate is an exact hostname match, so `localhost.evil.com` does not open
+it; verified.
+
+That stops being true the moment a page links `fonts.css`, or a `@font-face`
+moves into `portfolio/styles.css`, or the hostname test in `index.html` is
+loosened. Any of those three is the thing to look at first if these files ever
+appear in a production waterfall.
 
 ### Where these came from
 
@@ -384,10 +395,10 @@ four formats and the generated CSS were dropped; `.eot` serves IE 8-11 and
 `.ttf`/`.woff` serve browsers that predate 2014, none of which this site
 supports.
 
-### Its declared x-height is wrong
+### Its declared x-height was wrong — and is now fixed, in a second pair of files
 
-Measured from the files, the OS/2 metric fields disagree with the outlines they
-describe — in both faces, by the same factor:
+Measured from the supplied files, the OS/2 metric fields disagree with the
+outlines they describe — in both faces, by the same factor:
 
 | Field | Declared | Drawn | Ratio |
 |---|---|---|---|
@@ -410,13 +421,43 @@ Confirmed in Chromium rather than inferred from the tables — with the face set
 | `1ex` | **22.45px** | 46.0px | tracks the stale field |
 | `1cap` | **32.17px** | 65.8px | same |
 
-None of those are used in this repo today, which is the only reason this is a
-note rather than a bug.
+This **stopped** being unused, and so stopped being a note. `portfolio/styles.css`
+sets the cut title's clip box in `cap` — deliberately, so the same fraction of
+letter shows in any face at any size — and against the supplied file that box
+came out half the height it should, showing a band through the middles of the
+letters instead of their top 0.62.
 
-It is left uncorrected on purpose, for the same reason the faces are unsubset —
-see above. Correcting it is two integer writes with `fontTools` if it ever
-matters, and it would need a new filename, because `vercel.json` puts a
-year-long `immutable` cache on `/fonts/(.*)`.
+So the two integer writes were made, into a **new pair of files**:
+
+```bash
+python - <<'PY'
+from fontTools.ttLib import TTFont
+for src, dst in (("frizquadrata-regular.woff2", "frizquadrata-regular-fixedmetrics.woff2"),
+                 ("frizquadrata-bold.woff2",    "frizquadrata-bold-fixedmetrics.woff2")):
+    f = TTFont(src)
+    f["OS/2"].sxHeight   = 942    # drawn top of 'x'
+    f["OS/2"].sCapHeight = 1348   # drawn top of 'H'
+    f.flavor = "woff2"
+    f.save(dst)
+PY
+```
+
+Nothing else is touched, and that was checked rather than assumed: all 263 glyph
+outlines compare bounds-identical, the name table is unchanged, and the GPOS
+kerning is intact. `size-adjust` is not an alternative — it scales the outlines
+and the stale field together, so the ratio it is meant to correct survives.
+
+Confirmed in Chromium against the fixed file, at `100px`: `1cap` resolves to
+**65.81px** and `1ex` to **45.98px**, against the 32.17 and 22.45 the supplied
+file gave. Drawn cap is 0.6582 em, so that is exact.
+
+**New filenames, not new contents under the old ones**, because `vercel.json`
+puts a year-long `immutable` cache on `/fonts/(.*).woff2`. The originals stay in
+the folder untouched: they are the record of what was supplied, and the reason
+the faces are unsubset applies to them just as much.
+
+Fixing what the file says about itself does not change what may be done with it
+— the licence position below is unaffected.
 
 ### If it is ever adopted
 
