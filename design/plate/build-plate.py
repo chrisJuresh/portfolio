@@ -62,13 +62,18 @@ It is one line either way; what matters is that each frame is stood in its corne
 here, once, and every measurement downstream then describes the picture that
 ships.
 
-The eye is mirrored, and it is the plate's argument again in the opposite corner.
-As shot the mast of capsules stands left of centre and the boarding platform, the
-A-frame leg and its cable stays run down and away to the LEFT of it, leaving the
-right two-fifths of the frame empty sky — anchored bottom-right unflipped, the
-corner would hold nothing and the picture would sit marooned in the middle of the
-page pointing at the plate. Flipped, the leg drives into the corner and the mast
-rises back into the page.
+The eye is not mirrored. It is the frame as shot, and the frame as shot is what
+was asked for — which is worth writing down here because this is the one property
+on Picture that is a decision, and the argument the plate makes is available for
+this one too and was declined. That argument would run: the mast of capsules
+stands left of centre and the boarding platform, the A-frame leg and its cable
+stays run down and away to the LEFT of it, so the right two-fifths of the frame is
+empty sky and the corner the picture is anchored to holds none of the subject.
+What answers that is --eye-x in styles.css rather than a flip here: the dead
+margin is pushed off the right-hand edge of the page, which puts the stays in the
+corner while leaving the photograph the way round it was taken. The mast then
+stands near the page's edge with the leg leaning in, which is the car's
+arrangement rather than the plate's, arrived at without touching the negative.
 
 There is no vignette and no soft rectangular edge. An earlier cut dissolved the
 top and right edges into the page and it read as a lit corner with a building
@@ -457,7 +462,7 @@ PICTURES = {
                      grades=PLATE_GRADES),
     "car":   Picture(stem="car",   corner="top-right",    mirror=False,
                      grades=CAR_GRADES),
-    "eye":   Picture(stem="eye",   corner="bottom-right", mirror=True,
+    "eye":   Picture(stem="eye",   corner="bottom-right", mirror=False,
                      grades=EYE_GRADES),
 }
 DEFAULT_PICTURE = "plate"

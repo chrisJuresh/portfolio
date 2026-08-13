@@ -284,12 +284,19 @@
      as shot there is a tenth of a frame of empty sky above the mast, so the top
      of the picture is not an edge and has nothing to stand in.
 
-     The frame is mirrored in build-plate.py — see the eye paragraph there. What
-     that buys here is the one thing the car needed --car-fade for and this does
-     not: after the flip the boarding platform and the A-frame leg run down into
-     the corner and the mast rises back into the page, and the two inner edges of
-     the picture, its left and its top, are empty sky. So the eye has no dissolve.
-     It is the plate's situation, not the car's, in the car's corner geometry. */
+     The frame is NOT mirrored — see the eye paragraph in build-plate.py, where the
+     plate's flip-it argument is set out for this frame and declined. What that
+     leaves for this end is --eye-x, which does the job the flip would have: the
+     subject occupies the left three-fifths of the file and the right two-fifths is
+     empty sky, so the dead margin is pushed off the page rather than folded to the
+     other side of the picture.
+
+     What it costs is nothing the car did not already cost. The picture's two inner
+     edges are its left and its top, and in this frame both are empty sky — 4.5% of
+     the width outside the stays, a tenth of the height above the mast — so there is
+     nothing there to cut and the eye has no dissolve. That is the plate's
+     situation, not the car's, in the car's corner geometry, and it does not depend
+     on which way round the negative is. */
   --eye-opacity: 0.12;  /* --plate-opacity's judgement a third time, and the same
                            answer. Its own variable for the reason --car-opacity is
                            its own: three pictures with three different amounts of
@@ -320,14 +327,25 @@
                         /* the ceiling on --plate-w and --car-w, for the third
                            time and the same reason: 2800px is the top rung
                            index.html will fetch.                              */
-  --eye-x: 0px;         /* out from the RIGHT edge of the page, positive → left.
-                           0 and not the car's negative, and the difference is the
-                           frame rather than the taste: this one carries 4.5% of
-                           its own width of empty sky outside the cable stays, so
-                           at 0 the stays already stop about 17px short of the page
-                           edge on the frame this was tuned on. That gutter is the
-                           file's, and it is why the two corners on the right do
-                           not both jam into the same margin.                  */
+  --eye-x: -156px;      /* out from the RIGHT edge of the page, positive → left.
+                           Negative, like the car's, and doing the same KIND of job
+                           — carrying part of the file off the page rather than
+                           nudging the composition — but for the opposite content.
+                           The car pushes a cut edge off; this pushes empty sky off.
+                           The subject ends at 59.9% of the file's width and the
+                           remaining 40.1% is sky, so on the 1920×1080 frame this
+                           was tuned on 0.401 × 389px = 156px puts the cable stays
+                           on the page's right edge with nothing dead outside them.
+                           This is the value the frame not being mirrored is paid
+                           for in: see the eye paragraph in build-plate.py.
+                           A length against a share again, and the failure is the
+                           gentle one this time. Too tall a window and the margin
+                           outgrows the offset, so a gutter opens between the stays
+                           and the edge — 52px at a 1440 fold, which is empty paper
+                           rather than a cut. Too short and a little more sky than
+                           intended goes off the side, which is nothing at all. The
+                           car's version of this reintroduces a visible edge; this
+                           one only ever moves white.                          */
   --eye-y: 0px;         /* up from --fold, positive → up; negative hangs it past
                            the fold. 0 IS the rule, and it is a variable for the
                            reason --plate-y is: so the rule can be broken by hand
@@ -1100,10 +1118,11 @@ body::after {
    edge doing both jobs, exactly as in the plate's block.
 
    And it takes from the plate the thing the car could not have: no soft edge
-   anywhere. Its two inner edges are the left and the top, and after the mirror
-   both are empty sky — see --eye-fill's neighbours in :root and the eye paragraph
-   in build-plate.py. There is nothing there to cut, so there is no mask here, and
-   the ramp the car needs on its gantry would only be fading out sky.
+   anywhere. Its two inner edges are the left and the top, and in this frame both
+   are empty sky — see --eye-x's block in :root, and the eye paragraph in
+   build-plate.py for why the frame is the way round it is. There is nothing there
+   to cut, so there is no mask here, and the ramp the car needs on its gantry would
+   only be fading out sky.
 
    z-index -1, out of flow, pointer-events none: as the other two. It is under the
    type and under the cut title, which is the one thing on the page that shares
