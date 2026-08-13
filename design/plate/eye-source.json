@@ -28,8 +28,8 @@
       "SAT_KEEP": 0.24,
       "CONTRAST": 0.36,
       "HIGHLIGHT_PUSH": 1.34,
-      "SHADOW": "#000000",
-      "HIGHLIGHT": "#5c5c5c",
+      "SHADOW": "#2c2c2c",
+      "HIGHLIGHT": "#8a8a8a",
       "GRAIN_SIGMA": 0.0075
     }
   },
