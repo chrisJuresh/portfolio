@@ -89,36 +89,82 @@
      Opacity first because it is the only one of the four that is a judgement
      rather than a measurement, and it is the one that gets argued about. */
   --plate-opacity: 0.12;
-  /* Every length below is in the pixels of the frame the picture was composed
-     on — 1920×1080 — and not in a share of the viewer's window. The placement
-     was made against the dome, the drum and the near tower, and a composition
-     made against those does not survive being re-scaled: the 60.5vw that stood
-     the tower in the corner on a 1920 display had it swallowing the corner on a
-     2560 one, and the top edge of the picture — the first thing the eye meets,
-     above the column — arrived 100px down the page on a 1366 laptop and 80px
-     ABOVE it, decapitated, on a 2560 desktop. So the plate is drawn at one size,
-     from one datum, everywhere, and what varies with the window is only how much
-     of it that window happens to reach — which is the bargain a plate tipped
-     into a book makes as well.
-     --plate-fold is the odd one out: not a placement but the datum the other
-     three are measured from, the bottom edge of that reference frame. It is the
-     value that used to be 100vh, and being 100vh is what moved the picture.    */
-  --plate-fold: 1080px;
-  --plate-w: 1161.6px; /* how wide it runs — height follows the file's own aspect.
-                          60.5% of the 1920 frame, which is where it was tuned   */
-  --plate-x: 0px;      /* out from the left edge of the page, positive → right   */
-  --plate-y: -310px;   /* up from --plate-fold, positive → up; negative hangs it
-                          past the fold, into the second screen                  */
-  --plate-crop: 0.15;  /* how much of the picture's BOTTOM to cut off, as a share
-                          of --plate-w rather than a length of its own: the
-                          plate's height is a fixed multiple of its width, so a
-                          share of one is a share of the other, and the crop
-                          survives --plate-w being re-tuned without having to be
-                          re-measured after it. 0.15 takes off a sixth of the
-                          width — about 11% of the height on this frame. It is a
-                          crop and not a nudge, which is why it is the one
-                          placement value that is not a length: --plate-x and
-                          --plate-y move the picture and this one shortens it.   */
+  /* The picture is placed by two rules, and every length below exists to serve
+     them:
+
+       * its bottom edge, AFTER the crop, sits on the bottom of the page you
+         open — the fold, before any scrolling has happened;
+       * its top — the weathervane on the near tower — stands square in the
+         page's top-left corner.
+
+     Two edges pinned to the window is one more than a fixed size can hold, so
+     the plate is not drawn at one size everywhere. The band between those two
+     edges IS the first screen, and the picture is scaled to fill it. A taller
+     window therefore gets a bigger plate, which is the whole of what changed
+     here: it used to be one length in every window, measured off a 1080px datum,
+     and the price of that was a bottom edge that landed wherever the window
+     happened to end and a top edge that arrived somewhere different on every
+     display. Scaling costs the plate its fixed pixel size and buys back both
+     edges — the same PICTURE, in the same two corners, on every screen.
+
+     Nothing below is measured against the window's WIDTH, which is why both
+     rules hold at every horizontal size without a breakpoint anywhere: a wider
+     window simply reaches further along the same picture, which is the bargain
+     a plate tipped into a book makes as well. Below about 790px of width its
+     right-hand edge is off-screen and you are looking at the left-hand part of
+     it at full size rather than at the whole of it shrunk — and that is the
+     intended reading, since the corner the two rules pin are both on the left. */
+  --plate-fold: 100svh; /* the datum: the bottom of the page before any scrolling.
+                           svh and not vh, and the difference is a phone: vh is
+                           the height with the browser's own chrome retracted,
+                           which is not what is on screen when the page opens.
+                           On a desktop the two are the same number.            */
+  --plate-y: 0px;       /* up from --plate-fold, positive → up; negative hangs it
+                           past the fold, into the second screen. 0 IS the first
+                           rule, and it is still a variable so that the rule can
+                           be broken by hand — the arithmetic below follows it
+                           rather than assuming it.                             */
+  --plate-band: calc(var(--plate-fold) - var(--plate-y));  /* what those two
+                           leave for the picture to fill, top of page to fold  */
+  --plate-fill: 0.863;  /* the second rule, as a number: the picture's width as a
+                           share of the band it fills. The file is taller than it
+                           is wide, so a wider picture is a taller one, and this
+                           is really the control for how far down the frame the
+                           top of the band cuts — raise it and the vane climbs
+                           out of the top of the page, lower it and the vane sinks
+                           and empty sky opens above it. 0.863 stands it in the
+                           corner. Tuned on 1920×1080, where it makes the plate
+                           932px wide.                                          */
+  --plate-w: min(calc(var(--plate-fill) * var(--plate-band)), 2400px);
+                        /* the extreme exception, and the only one. Past a 2781px
+                           band the picture stops growing and the second rule
+                           gives: the vane sinks down off the corner rather than
+                           the plate going on getting bigger. The reason is that
+                           the source is a photograph and not a vector — the top
+                           rung of the ladder index.html fetches is 2800px, and
+                           past this the page would be asking to have it enlarged.
+                           No display is anywhere near: a 4K desktop 2160px tall
+                           asks for 1864px.
+                           There is deliberately no floor. A short window gets a
+                           small plate, and a small plate is still the same
+                           picture in the same two corners — where a floor would
+                           hold it at a size the band cannot take and push the
+                           vane clean off the top of the page, which is the one
+                           thing the rules are here to prevent.                  */
+  --plate-x: 0px;       /* out from the left edge of the page, positive → right  */
+  --plate-crop: 0.15;   /* how much of the picture's BOTTOM to cut off, as a share
+                           of --plate-w rather than a length of its own: the
+                           plate's height is a fixed multiple of its width, so a
+                           share of one is a share of the other, and the crop
+                           survives --plate-w changing — which it now does with
+                           every window — without having to be re-measured after
+                           it. 0.15 takes off a sixth of the width, about 11% of
+                           the height. It is a crop and not a nudge, which is why
+                           it is the one placement value that is not a length.
+                           It does interact with --plate-fill: the band is fixed,
+                           so cutting more off the foot slides the whole picture
+                           down inside it and the vane goes with it. Re-crop and
+                           the corner needs re-tuning.                           */
   /* The file itself. Left unset on purpose — index.html picks the rung that
      suits the display and sets this, so a browser is never told to fetch the
      2800px plate to draw it 400px wide. Unset means no plate, which is also the
@@ -509,48 +555,42 @@ a { color: inherit; }
    and bottom are the page's own corner, so only two edges exist to see, and at
    this opacity they read as the edge of a tipped-in plate rather than as a crop.
 
-   The box's bottom edge IS the plate's bottom edge, and --plate-y is the whole
-   of the difference between it and the datum: the box is
-   `--plate-fold - --plate-y`, so a positive value lifts the picture and shortens
-   the box with it, and a negative one hangs the picture past the datum and
-   lengthens the box to follow. That is why the box is sized rather than the
-   background offset — the two used to be independent, and the picture was then
-   clipped at the box's foot whatever you did to the offset, which made "down" a
-   direction the plate could not go.
+   The box is the band: it starts at the top of the DOCUMENT and its bottom edge
+   is the fold, less --plate-y. Both of the two rules are held by that one box.
+   The bottom edge holds the first directly — the picture is scaled to overflow
+   the box at both ends and is clipped by it, so the picture's visible foot IS
+   the box's foot, wherever the fold is. The top edge holds the second, because
+   --plate-fill is chosen to make the overflow at the top come out at the vane.
+
+   That is why the box is sized rather than the background offset. The two used to
+   be independent, and the picture was then clipped at the box's foot whatever you
+   did to the offset, which made "down" a direction the plate could not go.
 
    --plate-crop then trims the bottom, and it does it with the same edge: the
    background is pushed DOWN past the box's bottom by the crop, so what falls
    outside is what is cut. One edge, doing both jobs, which is why cropping the
    foreground does not also move the picture up the page.
 
-   The box otherwise starts at the top of the DOCUMENT and runs to a fixed depth,
-   so the plate is there on the page you open, in the corner under the column, and
-   it leaves as you scroll: it is part of the opening composition rather than a
-   watermark. Neither of the two alternatives is this. `fixed` would pin it to the
-   window and it would follow you down the whole document; `inset: 0` would hand
-   it the document's bottom corner, which on desktop is the foot of the second
-   screen and is not somewhere you arrive by opening the page.
+   Starting at the top of the document and stopping at the fold is what makes this
+   part of the opening composition rather than a watermark: it is in the corner
+   under the column on the page you open, and it leaves as you scroll. Neither of
+   the two alternatives is that. `fixed` would pin it to the window and it would
+   follow you down the whole document; `inset: 0` would hand it the document's
+   bottom corner, which on desktop is the foot of the second screen and is not
+   somewhere you arrive by opening the page.
 
-   --plate-fold and not 100vh, which is the whole of the change: measured against
-   a viewport unit this was a different picture on every display, and the edge it
-   moved most was the top one. What that costs is the shared datum — `.cut-title`
-   still sits at `calc(100vh - var(--cue-clip))`, so the plate's bottom edge and
-   the cut agree only on a 1080-tall screen. It is a smaller loss than it sounds:
-   --plate-y already hangs the plate 310px past the datum, so the two edges have
-   not coincided since the plate was last placed, and what was actually shared was
-   the number they were each measured from rather than any line you can see. A
-   picture that arrives in the same place on every screen is worth more than that.
-
-   It also means the plate no longer knows how wide the window is. Below about
-   1160px its right-hand edge is off-screen, and on a phone you are looking at the
-   left-hand quarter of it at full size rather than at the whole of it shrunk —
-   which is the intended reading, since shrinking it is the thing that moved the
-   composition in the first place, but it is why there is no width here that
-   responds to anything.
+   Measuring the box against the fold again also puts the plate and the cut back
+   on one datum: `.cut-title` sits at `calc(100vh - var(--cue-clip))`, so with
+   --plate-y at 0 the picture's foot and the line the word is cut on are the same
+   line, on every screen rather than only on a 1080-tall one. (They part company
+   by the height of the browser's own chrome on a phone, where the plate uses svh
+   and the cut uses vh — the plate's foot is what you can see, the cut's is where
+   the document ends. Two different questions, and each is asking the right one.)
 
    background-position does the vertical anchoring rather than a height on the
    box, so the file's own aspect ratio is nowhere in this sheet and cannot drift
-   out of step with it when the plate is re-cropped.
+   out of step with it when the plate is re-cropped. The aspect is why --plate-fill
+   has the value it has, but it is not written down here and does not need to be.
 
    ::after, not ::before: the desktop block at the foot of this sheet spends
    body::before on the top scroll-snap port. Absolutely positioned, so it is out
@@ -559,13 +599,24 @@ a { color: inherit; }
    z-index -1 puts it under the type. body's own background propagates to the
    canvas — html sets none — so body paints no background of its own here and a
    negative layer is still above the paper. */
+
+/* Small-viewport units are the one thing here a browser might not have, and an
+   unknown unit inside a calc() takes --plate-band and --plate-w down with it,
+   which is a page with no plate at all rather than a plate in the wrong place.
+   Every engine has had svh since 2022, so this is a backstop and not a policy:
+   it gives back the pre-svh reading of the same datum, correct everywhere except
+   a phone with retracting chrome. */
+@supports not (height: 100svh) {
+  :root { --plate-fold: 100vh; }
+}
+
 body::after {
   content: "";
   position: absolute;
   top: 0;
   left: 0;
   right: 0;
-  height: calc(var(--plate-fold) - var(--plate-y));
+  height: var(--plate-band);
   z-index: -1;
   pointer-events: none;
   background-image: var(--plate-src);
@@ -584,15 +635,17 @@ body::after {
   background-position:
     left var(--plate-x)
     bottom calc(-1 * var(--plate-crop) * var(--plate-w));
-  /* The same 1161.6px in every window, not three-fifths of each one. Height
-     follows the file's own aspect, so the aspect ratio lives in the file and not
-     in this sheet.
-     Sized against the 1920 frame and not against the gutter: the plate is meant
-     to run in behind the measure rather than stand beside it, so on that frame
-     its right-hand edge falls near the far side of the column instead of in the
-     margin. Nothing in the column paints a background — the type sits straight on
-     the plate, which is the point — so the only thing that edge crosses is white
-     space between lines. */
+  /* Width from --plate-w, height `auto` from the file's own aspect — so the
+     aspect ratio lives in the file and not in this sheet, and the picture is
+     never squeezed to fit a band it is the wrong shape for. It overflows the
+     band instead, at both ends, and the box does the cutting.
+     The plate is meant to run in behind the measure rather than stand beside it,
+     and at 932px on the 1920 frame it was tuned on, its right-hand edge falls
+     near the far side of the column instead of out in the margin. Nothing in the
+     column paints a background — the type sits straight on the plate, which is
+     the point — so the only thing that edge crosses is white space between
+     lines. On a taller window it grows past the column, which is the one thing
+     scaling to the fold gives up, and it is white space out there too. */
   background-size: var(--plate-w) auto;
   opacity: var(--plate-opacity);
 }
