@@ -1,10 +1,12 @@
-# local tooling / editor. `.claude/` is ignored except the three files that carry the
-# worktree-per-change rule: the hook has to exist inside every worktree as well as the
-# main checkout, and a worktree only gets a file if git puts it there.
+# local tooling / editor. `.claude/` is ignored except the four files every worktree
+# needs: the three that carry the worktree-per-change rule, and the launch config the
+# preview starts the static server from. A worktree only gets a file if git puts it
+# there, so anything ignored here is missing from the tree every change is made in.
 .claude/*
 !.claude/settings.json
 !.claude/worktree-per-change.json
 !.claude/hooks/
+!.claude/launch.json
 .openai/
 .agents/
 .codex/
