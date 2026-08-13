@@ -1,15 +1,14 @@
 #!/usr/bin/env python3
 """Rebuild the graded corner pictures — one file per rung of OUT_WIDTHS and per
-theme in GRADES, for whichever of PICTURES is named.
+theme in the picture's own `grades`, for whichever of PICTURES is named.
 
     python design/plate/build-plate.py <source.rw2 | source.png> [plate | car]
 
 Two pictures, one pipeline — see PICTURES. `plate` is St Paul's over the
 rooftops in the page's bottom-left corner and is the default; `car` is a cable
-car hanging off its pylon in the top-right. They share every constant below,
-which is the point rather than an economy: the two are meant to read as one
-paper stock the column is printed on, and a grade tuned on one and eyeballed
-onto the other is exactly how that comes apart. Each is built on its own run,
+car hanging off its pylon in the top-right. They share every stage of the
+pipeline and none of its numbers: each carries its own Grade per theme, so the
+four blocks under THE GRADE are the four answers. Each is built on its own run,
 because each has its own source frame and only one of them is usually moving.
 
 Writes the ladder from either of two sources. Deterministic: same input,
@@ -68,8 +67,8 @@ colonnade are spread right across the frame, so any ramp wide enough to hide an
 edge is also on top of the subject. What makes the plate recede is
 `--plate-opacity` in the stylesheet.
 
-ONE LADDER PER THEME
---------------------
+A GRADE PER PICTURE, A LADDER PER THEME
+---------------------------------------
 `--plate-opacity` was for a long time the whole of the difference between the
 plate on white and the plate on black, and one baked file served both. Opacity
 alone can only ever do one thing, though: mix the picture further into the page.
@@ -79,22 +78,43 @@ on paper the plate is a grey building on white and on black it is the same grey
 building with nothing under it, and the two want different endpoints rather than
 different amounts of one set.
 
-So GRADES holds a Grade per theme and main() bakes a ladder for each. What the
+So a Picture holds a Grade per theme and main() bakes a ladder for each. What the
 stylesheet still owns is placement and opacity; what the file owns is the grade,
 per theme, which is the same division as before with the theme axis added.
 
-The theme axis crosses the picture axis rather than competing with it: GRADES is
-shared by both pictures for the same reason every other constant is, so a run
-writes one ladder per theme for the one stem it was given. The two ladders are
-named `<stem>-<width>.webp` and `<stem>-dark-<width>.webp`, matching how
-styles.css already declares `--plate-opacity` — once in `:root` and again in
-`:root[data-theme="dark"]`. Light is the unsuffixed one because it is the page's
-default and because that is the name the plate has always had.
+The grade is per PICTURE as well, and that half arrived second. One set of
+numbers ran over both frames for a while, deliberately: the two are meant to read
+as one paper stock the column is printed on, and the fear was that a grade tuned
+on one and eyeballed onto the other is how that comes apart. What actually
+happened is that they are two photographs. The plate is a hazy backlit dome that
+fills its frame; the car is a gondola on a wire with a gantry cut across the top
+of it, shot in different light on a different day. SHADOW and HIGHLIGHT are
+absolute — they say where black and white LAND, in output units — so one pair
+cannot be right for both frames, and there was no knob that could say so:
+--car-opacity mixes the car further into the page and moves neither endpoint,
+which is the same thing --plate-opacity could not do across the themes.
 
-When a theme's Grade is identical to light's, its ladder is not written at all
-and portfolio/index.html falls back to the light file. That is a designed state
-and not a missing one: two byte-identical ladders on disk would be pure cost, so
-the dark files exist exactly when dark has been tuned to something of its own.
+Sharing them was also never what made the two read as one stock. The pipeline is
+what does that — percentile exposure, the same shoulder, the same desaturation
+toward the same tint — and that is still shared, stage for stage. What is per
+picture is only where each frame's ends are pinned.
+
+So the grade axes are picture × theme, four Grades, and the tuner has both
+switches: the theme button swaps which grade you are dragging AND which paper it
+stands on, the plate/car button swaps which grade you are dragging AND which
+frame it runs over. A run bakes one ladder per theme for the one stem it was
+given. The two ladders are named `<stem>-<width>.webp` and
+`<stem>-dark-<width>.webp`, matching how styles.css already declares
+`--plate-opacity` — once in `:root` and again in `:root[data-theme="dark"]`.
+Light is the unsuffixed one because it is the page's default and because that is
+the name the plate has always had.
+
+When a picture's dark Grade is identical to its own light one, its dark ladder is
+not written at all and portfolio/index.html falls back to the light file. That is
+a designed state and not a missing one: two byte-identical ladders on disk would
+be pure cost, so a picture's dark files exist exactly when its dark has been
+tuned to something of its own. The comparison is within one picture — the plate
+having tuned its dark says nothing about whether the car needs to.
 
 The one thing alpha is used for is the sky, and it is a matte rather than a crop.
 No sky is wanted, only the building. Cropping it out was tried first and cannot
@@ -108,7 +128,8 @@ sky_matte().
 THE GRADE
 ---------
 Order matters; this is the pipeline, and every stage is a field of Grade below —
-so every stage is also a thing the two themes can disagree about.
+so every stage is also a thing the two themes, and the two pictures, can disagree
+about. The pipeline itself is shared by all four; only its numbers are not.
 
 1. Develop linear (`gamma=(1, 1)`, `no_auto_bright=True`). Grading multiplicative
    things — exposure, desaturation — in linear light is the difference between
@@ -155,12 +176,15 @@ loud the plate is: everything before them shapes a 0..1 ramp, and they say what
 0 and 1 mean in ink. They are the first place to reach for, and the reason the
 tuner has an "overall level" slider that drives both at once.
 
-They are also the pair with the most obviously theme-dependent answer, which is
-what ONE LADDER PER THEME above is about. The plate has to stay quieter than the
-type at both ends — a half-page image that is louder than the words becomes the
-thing you look at first — and "quieter than the type" is measured against the
-paper and ink of the theme it is standing in (styles.css `:root` and
-`:root[data-theme="dark"]`), which are inverted between the two.
+They are also the pair whose answer depends most obviously on both axes, which is
+what A GRADE PER PICTURE, A LADDER PER THEME above is about. Either picture has to
+stay quieter than the type at both ends — a half-page image that is louder than
+the words becomes the thing you look at first — and "quieter than the type" is
+measured against the paper and ink of the theme it is standing in (styles.css
+`:root` and `:root[data-theme="dark"]`), which are inverted between the two. It is
+measured against the frame as well: the plate spreads a dome across half the page
+and the car hangs a gondola in a corner, so the same HIGHLIGHT that reads as
+recessive stone on one can be the brightest thing on the screen on the other.
 
 NEUTRAL SOURCE
 --------------
@@ -202,7 +226,8 @@ from scipy import ndimage
 
 # ---- the grade ------------------------------------------------------------
 class Grade(NamedTuple):
-    """One theme's worth of the pipeline in THE GRADE above, stage by stage.
+    """One picture's worth of the pipeline in THE GRADE above, in one theme,
+    stage by stage.
 
     The fields are SHOUTED because they are the constants — these are the names
     design/plate/plate-tuner.html prints in the block you paste back, and they
@@ -219,7 +244,17 @@ class Grade(NamedTuple):
     GRAIN_SIGMA: float                  # in output units, 0..1
 
 
-GRADE_LIGHT = Grade(
+# Four Grades, named <STEM>_<THEME> — which is the name design/plate/plate-tuner.html
+# prints over each block it asks you to paste, so the block and the call it
+# replaces are found by the same word. Each is spelled out in full, and none is
+# written as another's name, on purpose: the whole point of splitting them is that
+# a number moved on one frame reaches nothing else, and `CAR_LIGHT = PLATE_LIGHT`
+# would quietly re-bake the car out of a session spent looking at the plate.
+#
+# They open on identical numbers, because that is what shipped while there was one
+# grade for everything, so this commit changes no pixel of either picture. What it
+# changes is that moving one of them now moves one of them.
+PLATE_LIGHT = Grade(
     EXPOSURE_PCT=99.0,
     EXPOSURE_TARGET=0.34,
     SAT_KEEP=0.24,
@@ -230,27 +265,46 @@ GRADE_LIGHT = Grade(
     GRAIN_SIGMA=0.0075,
 )
 
-# Dark opens as light itself, which is deliberately the least interesting thing
-# it could be: identical means main() writes no dark ladder at all, the page
-# falls back to the light file, and the plate on black is exactly what it is
-# today. Nothing about the picture changes until somebody moves a number — and
-# the way to move one is in the tuner, on the dark preview, where the question
-# "is this too loud on black" is actually visible.
+# A picture's dark opens as its OWN light, which is deliberately the least
+# interesting thing it could be: identical means main() writes no dark ladder for
+# it at all, the page falls back to its light file, and the picture on black is
+# exactly what it is today. Nothing changes until somebody moves a number — and
+# the way to move one is in the tuner, on the dark preview, where the question "is
+# this too loud on black" is actually visible.
 #
-# The tuner prints this as a Grade(...) of its own rather than as a second name
-# for light's, so pasting its answer is what ends the aliasing. Until then, a
-# hand edit to GRADE_LIGHT does move both, which is the right default for two
-# grades that are meant to be the same picture.
-GRADE_DARK = GRADE_LIGHT
+# The tuner prints this as a Grade(...) of its own rather than as a second name for
+# light's, so pasting its answer is what ends the aliasing. Until then a hand edit
+# to PLATE_LIGHT does move both, which is the right default for two grades that are
+# meant to be the same picture on two papers. It does NOT reach the car.
+PLATE_DARK = PLATE_LIGHT
 
-# Light first: it is the page's default, and out_path() spells it unsuffixed.
-GRADES = {"light": GRADE_LIGHT, "dark": GRADE_DARK}
+CAR_LIGHT = Grade(
+    EXPOSURE_PCT=99.0,
+    EXPOSURE_TARGET=0.34,
+    SAT_KEEP=0.24,
+    CONTRAST=0.36,
+    HIGHLIGHT_PUSH=1.34,
+    SHADOW=(0x00, 0x00, 0x00),      # pure black
+    HIGHLIGHT=(0x5c, 0x5c, 0x5c),   # mid grey
+    GRAIN_SIGMA=0.0075,
+)
+
+CAR_DARK = CAR_LIGHT
+
+# Light first in each: it is the page's default, and out_path() spells it
+# unsuffixed. Hung off the Picture below rather than held in a second dict keyed
+# by stem, so there is no pair of tables to drift apart.
+PLATE_GRADES = {"light": PLATE_LIGHT, "dark": PLATE_DARK}
+CAR_GRADES = {"light": CAR_LIGHT, "dark": CAR_DARK}
 
 GRAIN_SEED = 20250615      # the frame's own date; any constant would do
-# One seed for both themes, and not a field of Grade: the grain is the frame's
-# own, so the two ladders wear the SAME grain at whatever strength each asks for.
-# Two streams would make flipping the theme move every grain in the picture, on
-# top of the change you meant.
+# One seed for every grade, and not a field of Grade: the grain is the frame's
+# own, so a picture's two ladders wear the SAME grain at whatever strength each
+# asks for. Two streams would make flipping the theme move every grain in the
+# picture, on top of the change you meant. Sharing it across the two PICTURES
+# costs nothing either way — they are different frames, so the same stream lands
+# on different pixels — and it keeps the seed what it is, a constant rather than a
+# decision.
 
 # ---- the sky matte --------------------------------------------------------
 # Brightness alone separates this frame, and it has to: the sky is a hazy backlit
@@ -338,13 +392,17 @@ OUT_DIR = REPO / "portfolio" / "img"
 # for the ladder, <stem>-source.webp and .json beside this script for the tuner,
 # and --<stem>-* for the custom properties in styles.css that place it.
 #
-# The theme is NOT in here. GRADES is shared, like every other constant above, so
-# the theme axis lives on out_path() and nowhere else in this class.
+# The grade IS in here, one Grade per theme, because it is a property of the frame
+# like everything else on this class — see A GRADE PER PICTURE, A LADDER PER THEME.
+# The theme axis is the one thing that stays outside it: `grades` is keyed by theme
+# and out_path() spells the theme into the filename, and those two are the whole of
+# it.
 @dataclass(frozen=True)
 class Picture:
     stem: str
     corner: str
     mirror: bool
+    grades: dict[str, Grade]
 
     @property
     def neutral_path(self) -> Path:
@@ -355,15 +413,18 @@ class Picture:
         return HERE / f"{self.stem}-source.json"
 
     def out_path(self, width: int, theme: str) -> Path:
-        """Light is unsuffixed — see ONE LADDER PER THEME. portfolio/index.html
-        builds these same two names; keep the two spellings together."""
+        """Light is unsuffixed — see A GRADE PER PICTURE, A LADDER PER THEME.
+        portfolio/index.html builds these same two names; keep the two spellings
+        together."""
         return OUT_DIR / (f"{self.stem}-{width}.webp" if theme == "light"
                           else f"{self.stem}-{theme}-{width}.webp")
 
 
 PICTURES = {
-    "plate": Picture(stem="plate", corner="bottom-left", mirror=True),
-    "car":   Picture(stem="car",   corner="top-right",   mirror=False),
+    "plate": Picture(stem="plate", corner="bottom-left", mirror=True,
+                     grades=PLATE_GRADES),
+    "car":   Picture(stem="car",   corner="top-right",   mirror=False,
+                     grades=CAR_GRADES),
 }
 DEFAULT_PICTURE = "plate"
 
@@ -622,10 +683,11 @@ def write_neutral(pic: Picture, lin: np.ndarray, alpha_f: np.ndarray, computed: 
         "width": img.width,
         "height": img.height,
         "outWidths": list(OUT_WIDTHS),
-        # Keyed by theme, because the grade is. The tuner files each theme's
-        # numbers under its own key and shows you the one you are looking at —
-        # the same shape its per-theme placement rows already use.
-        "grade": {theme: grade_json(g) for theme, g in GRADES.items()},
+        # Keyed by theme, because the grade is. The picture axis needs no key: this
+        # file IS one picture's, so <stem>-source.json holding its own two themes is
+        # the whole of per-picture on this end. The tuner files each theme's numbers
+        # under its own key and shows you the one you are looking at.
+        "grade": {theme: grade_json(g) for theme, g in pic.grades.items()},
         "matte": {
             "SKY_LUMA_MIN": SKY_LUMA_MIN,
             "SKY_LUMA_LOW": SKY_LUMA_LOW,
@@ -670,12 +732,12 @@ def main() -> int:
           f"({'cut here' if computed else 'matte supplied'})")
 
     written = set()
-    for theme, g in GRADES.items():
-        # A theme that has not been tuned away from light writes nothing: the
-        # page falls back to the light file, so a second identical ladder would
-        # be a megabyte of duplicate on disk and in the repo, bought with
-        # nothing. See ONE LADDER PER THEME.
-        if theme != "light" and g == GRADES["light"]:
+    for theme, g in pic.grades.items():
+        # A theme that has not been tuned away from THIS PICTURE's light writes
+        # nothing: the page falls back to the light file, so a second identical
+        # ladder would be a megabyte of duplicate on disk and in the repo, bought
+        # with nothing. See A GRADE PER PICTURE, A LADDER PER THEME.
+        if theme != "light" and g == pic.grades["light"]:
             print(f"{theme}: same grade as light — no ladder "
                   f"(portfolio/index.html falls back to the light file)")
             continue
