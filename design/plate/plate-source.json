@@ -12,14 +12,26 @@
     2800
   ],
   "grade": {
-    "EXPOSURE_PCT": 99.0,
-    "EXPOSURE_TARGET": 0.34,
-    "SAT_KEEP": 0.24,
-    "CONTRAST": 0.36,
-    "HIGHLIGHT_PUSH": 1.34,
-    "SHADOW": "#000000",
-    "HIGHLIGHT": "#5c5c5c",
-    "GRAIN_SIGMA": 0.0075
+    "light": {
+      "EXPOSURE_PCT": 99.0,
+      "EXPOSURE_TARGET": 0.34,
+      "SAT_KEEP": 0.24,
+      "CONTRAST": 0.36,
+      "HIGHLIGHT_PUSH": 1.34,
+      "SHADOW": "#000000",
+      "HIGHLIGHT": "#5c5c5c",
+      "GRAIN_SIGMA": 0.0075
+    },
+    "dark": {
+      "EXPOSURE_PCT": 99.0,
+      "EXPOSURE_TARGET": 0.34,
+      "SAT_KEEP": 0.24,
+      "CONTRAST": 0.36,
+      "HIGHLIGHT_PUSH": 1.34,
+      "SHADOW": "#2c2c2c",
+      "HIGHLIGHT": "#8a8a8a",
+      "GRAIN_SIGMA": 0.0075
+    }
   },
   "matte": null
 }

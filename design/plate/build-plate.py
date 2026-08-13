@@ -226,6 +226,8 @@ not a perceptual unit:
     light, 0.12 on #fff    picture spans dL* 3.88, sits dL* 10.7..6.8 off the paper
     dark,  0.17 on #000    picture spans dL* 4.55, sits dL* 0..4.6 off the paper
 
+THE ARITHMETIC OF THE DARK PAPER
+--------------------------------
 Two things fall out of that table, and both are about the second row. The dark
 picture's SHADOW end is not near the page, it IS the page — 0x00 * 0.17 = 0, the
 same code as the paper — so a fifth or so of the frame is not being dimmed, it is
@@ -235,6 +237,25 @@ per-pixel dimming, and any black crush on top of it, do their worst. It is also
 where a laptop at half brightness in a bright room has nothing left to give. A
 calibrated desktop display in a dim room will resolve all sixteen of those codes,
 which is why this reads as a display problem and is really a headroom problem.
+
+DARK_SHADOW and DARK_HIGHLIGHT are the answer to that paragraph, and the second is
+there because of the first. Lifting SHADOW alone would have raised the floor by
+narrowing the picture — the ceiling was not moving — so the dark end would arrive
+at the cost of everything between the two. Both move:
+
+    SHADOW    0x00 -> 0x2c    composite  0.0 -> 7.5    dL* 0.00 -> 2.05
+    HIGHLIGHT 0x5c -> 0x8a    composite 15.6 -> 23.5   dL* 4.55 -> 7.97
+
+which takes the picture off the paper at both ends and widens what it spans from
+dL* 4.55 to 5.92. The type it must stay under is #eaeaea on #000, dL* 92.7, so
+this is still an order of magnitude quieter than the words and the reason to stop
+here is not the type — there is room — it is that a floor much above this stops
+reading as ink on black paper and starts reading as a grey card laid on it.
+
+Note what this does NOT change: the light grades. On white the picture's SHADOW
+end is its most visible part (dL* 10.7 off the paper) and it is HIGHLIGHT that is
+being lost into the page. The two papers fail at opposite ends, which is the whole
+argument for a Grade per theme, arrived at from the arithmetic rather than by eye.
 
 The three levers, in the order of how much they actually move:
 
@@ -334,18 +355,38 @@ PLATE_LIGHT = Grade(
     GRAIN_SIGMA=0.0075,
 )
 
-# A picture's dark opens as its OWN light, which is deliberately the least
-# interesting thing it could be: identical means main() writes no dark ladder for
-# it at all, the page falls back to its light file, and the picture on black is
-# exactly what it is today. Nothing changes until somebody moves a number — and
-# the way to move one is in the tuner, on the dark preview, where the question "is
-# this too loud on black" is actually visible.
+# A picture's dark opened as its OWN light for as long as the question on black was
+# "is this too loud", which is the question the light grade is already an answer to.
+# It is the wrong question. On black the picture is not too loud, it is not there:
+# see THE ARITHMETIC OF THE DARK PAPER in the docstring for the measurement, but
+# the short of it is that SHADOW=0x00 composites onto a #000 page at exactly the
+# page's own value, so the dark end of every one of these pictures is not dim, it
+# is deleted.
 #
-# The tuner prints this as a Grade(...) of its own rather than as a second name for
-# light's, so pasting its answer is what ends the aliasing. Until then a hand edit
-# to PLATE_LIGHT does move both, which is the right default for two grades that are
-# meant to be the same picture on two papers. It does NOT reach the car.
-PLATE_DARK = PLATE_LIGHT
+# So all three darks are spelled out below, and all three move the same two
+# endpoints in the same direction: SHADOW up off the paper, HIGHLIGHT up with it so
+# that lifting the floor flattens nothing. They are still one paper stock — the
+# pipeline above is shared stage for stage, and this is the endpoints only.
+DARK_SHADOW = (0x2c, 0x2c, 0x2c)     # composites to code 7.5 on black at 0.17
+DARK_HIGHLIGHT = (0x8a, 0x8a, 0x8a)  # ...and to code 23.5, so the band is 16 wide
+# One pair, named once and used by all three, which is the thing the comment at the
+# head of this section says not to do — and the exception is narrow and worth
+# stating. What must not be shared is a PICTURE's grade, because the frames are
+# different photographs and their endpoints answer to the frame. What is shared
+# here is a property of the PAPER: 0x00 lands on #000 for the plate exactly as it
+# does for the eye, and the floor that clears it is arithmetic rather than taste.
+# Anything a frame wants of its own goes in its own Grade below, which is why these
+# are two names and not a fourth Grade.
+PLATE_DARK = Grade(
+    EXPOSURE_PCT=99.0,
+    EXPOSURE_TARGET=0.34,
+    SAT_KEEP=0.24,
+    CONTRAST=0.36,
+    HIGHLIGHT_PUSH=1.34,
+    SHADOW=DARK_SHADOW,
+    HIGHLIGHT=DARK_HIGHLIGHT,
+    GRAIN_SIGMA=0.0075,
+)
 
 CAR_LIGHT = Grade(
     EXPOSURE_PCT=99.0,
@@ -358,7 +399,16 @@ CAR_LIGHT = Grade(
     GRAIN_SIGMA=0.0075,
 )
 
-CAR_DARK = CAR_LIGHT
+CAR_DARK = Grade(
+    EXPOSURE_PCT=99.0,
+    EXPOSURE_TARGET=0.34,
+    SAT_KEEP=0.24,
+    CONTRAST=0.36,
+    HIGHLIGHT_PUSH=1.34,
+    SHADOW=DARK_SHADOW,
+    HIGHLIGHT=DARK_HIGHLIGHT,
+    GRAIN_SIGMA=0.0075,
+)
 
 EYE_LIGHT = Grade(
     EXPOSURE_PCT=99.0,
@@ -371,23 +421,17 @@ EYE_LIGHT = Grade(
     GRAIN_SIGMA=0.0075,
 )
 
-# The first of the six to be spelled out rather than aliased, so the eye is the
-# first picture with a dark ladder of its own on disk. What ended the aliasing is
-# LIGHT moving, not dark: dark holds the numbers both themes shared, and the two
-# lines below are what every one of these blocks looked like this morning.
-#
-# Which is worth reading twice before treating it as a dark-theme answer, because
-# it is not one. It is what "tune light, leave dark where it was" spells, and on
-# this picture dark is the harder of the two papers — see WHY THESE ENDPOINTS and
-# the note under it.
+# The eye was the first of the six to be spelled out, and for a reason that was not
+# a dark-theme judgement at all: light moved and dark stayed, so this block held the
+# numbers both themes had shared. It now holds the same pair as the other two.
 EYE_DARK = Grade(
     EXPOSURE_PCT=99.0,
     EXPOSURE_TARGET=0.34,
     SAT_KEEP=0.24,
     CONTRAST=0.36,
     HIGHLIGHT_PUSH=1.34,
-    SHADOW=(0x00, 0x00, 0x00),      # pure black
-    HIGHLIGHT=(0x5c, 0x5c, 0x5c),   # mid grey
+    SHADOW=DARK_SHADOW,
+    HIGHLIGHT=DARK_HIGHLIGHT,
     GRAIN_SIGMA=0.0075,
 )
 
