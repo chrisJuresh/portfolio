@@ -73,3 +73,20 @@ open a PR into `main`.
 The rule lives in `.claude/settings.json`, `.claude/hooks/worktree-guard.py` and
 `.claude/worktree-per-change.json`, all committed — a worktree only gets a file
 if git puts it there, so `.gitignore` un-ignores exactly those three.
+
+## Agent skills
+
+### Issue tracker
+
+Issues live as GitHub issues in `chrisJuresh/portfolio`, driven by the `gh` CLI.
+See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+The five canonical roles, each label string equal to its name. See
+`docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Single-context — one `CONTEXT.md` and `docs/adr/` at the repo root. See
+`docs/agents/domain.md`.
