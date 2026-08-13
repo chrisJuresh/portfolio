@@ -1,4 +1,12 @@
 /* ============================================================================
+   Faces that are available but not rendering on the live page. The faces
+   /portfolio is actually set in are declared at the top of portfolio/styles.css
+   instead — every word on the page needs one of those, and a second <link>
+   would block the first paint. Nothing here is linked by any page today; see
+   README.md for what each face is and why it is kept.
+   ========================================================================== */
+
+/* ============================================================================
    Latin Modern Roman — the OpenType successor to Knuth's Computer Modern,
    maintained by GUST (the Polish TeX Users Group).
 
@@ -62,6 +70,45 @@
   font-family: "LM Roman 12";
   src: url("/fonts/lmroman12-regular.woff2") format("woff2");
   font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* ============================================================================
+   Friz Quadrata Std — Ernst Friz, 1973; the Std cut is Adobe's.
+
+   Unlike everything else in this folder, this face is NOT redistributable. It
+   is a commercial Adobe/ITC typeface and the files here are a conversion of a
+   desktop release, not a licensed webfont build. Read the licence note in
+   README.md before any page links this file — serving it from chrisj.uk is
+   redistribution, and a desktop licence does not cover it.
+
+   Source:  supplied as a pre-built webfont kit (eot/ttf/woff/woff2). The two
+            .woff2 faces are shipped byte-for-byte as they arrived — not
+            re-subset here, so nothing in the conversion is attributed to us.
+   Weights: the roman is usWeightClass 500 and is declared at 500 because that
+            is what it is. `font-weight: 400` and `normal` still reach it —
+            CSS font matching checks 500 first when 400 is asked for and 400 is
+            absent — so declaring it honestly costs nothing.
+   Cover:   253 codepoints, 263 glyphs — Latin-1 plus a little Latin Extended-A.
+            Narrower than the 358-glyph subsets the other faces here carry.
+   Kerning: present, in GPOS. `liga`, `frac`, `sups`, `ordn` are there too.
+
+   Its declared x-height is wrong — 0.225 em against 0.460 em drawn. See
+   README.md; it breaks `font-size-adjust` and the `ex`/`cap` units, and it is
+   a defect in the supplied files rather than something to work around in CSS.
+   ========================================================================== */
+@font-face {
+  font-family: "Friz Quadrata Std";
+  src: url("/fonts/frizquadrata-regular.woff2") format("woff2");
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Friz Quadrata Std";
+  src: url("/fonts/frizquadrata-bold.woff2") format("woff2");
+  font-weight: 700;
   font-style: normal;
   font-display: swap;
 }
