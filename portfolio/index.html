@@ -54,16 +54,20 @@
       var PLATES = [800, 1300, 2000, 2800];
       var WAIT_MS = 1500;
 
-      /* --plate-w, in CSS pixels. It is a LENGTH and not a share of the window —
-         the plate is drawn the same size on every display — so the window's own
-         width is not in this sum at all, and the only thing left that decides how
-         many real pixels get drawn is the display's density. A narrow phone asks
-         for exactly what a 4K desktop asks for, because it is going to be sent
-         exactly the same picture and simply cannot see all of it.
-         Keep it equal to --plate-w in styles.css; being wrong picks a neighbouring
-         rung, which is a slightly soft or slightly heavy plate, not a broken one. */
-      var PLATE_W = 1161.6;
-      var want = PLATE_W * (window.devicePixelRatio || 1);
+      /* --plate-w, in CSS pixels — the same sum styles.css does, and the three
+         constants are that sheet's. The plate is scaled to the height of the
+         first screen (see the two rules at --plate-fold there), so the window's
+         HEIGHT is in this and its width still is not: a narrow phone and a wide
+         desktop of the same height are sent the same picture, and the phone
+         simply cannot see all of it.
+         Keep these equal to --plate-fill and the ceiling on --plate-w in
+         styles.css. Being wrong picks a neighbouring rung, which is a slightly
+         soft or slightly heavy plate, not a broken one. */
+      var PLATE_FILL = 0.863, PLATE_MAX = 2400;
+      var plateW = function () {
+        return Math.min(PLATE_MAX, PLATE_FILL * (window.innerHeight || 1080));
+      };
+      var want = plateW() * (window.devicePixelRatio || 1);
       var pick = PLATES[PLATES.length - 1];
       for (var i = 0; i < PLATES.length; i++) {
         if (PLATES[i] >= want) { pick = PLATES[i]; break; }
@@ -98,18 +102,19 @@
         fetchRung(pick, done);
         setTimeout(function () { done(0, null); }, WAIT_MS);
 
-        /* Dragged onto a DENSER screen. Pulling the window wider no longer asks
-           for anything — the plate is the same size in it either way — so what is
-           left to catch is the laptop moved onto a hidpi monitor, which changes
-           devicePixelRatio and fires this. Upgrade only — a plate already good
-           enough is left alone, so this cannot thrash — and quietly, off the
-           critical path: the swap happens when the larger rung has finished
-           loading, never by blanking what is already on screen. */
+        /* Dragged onto a DENSER screen, or pulled TALLER. Both now ask for more:
+           density because the same picture is drawn in more real pixels, height
+           because the plate is scaled to the fold and a taller window is a bigger
+           plate. Width still asks for nothing. Upgrade only — a plate already
+           good enough is left alone, so dragging a window up and down cannot
+           thrash — and quietly, off the critical path: the swap happens when the
+           larger rung has finished loading, never by blanking what is already on
+           screen. */
         var timer;
         window.addEventListener("resize", function () {
           clearTimeout(timer);
           timer = setTimeout(function () {
-            var need = PLATE_W * (window.devicePixelRatio || 1);
+            var need = plateW() * (window.devicePixelRatio || 1);
             for (var j = 0; j < PLATES.length; j++) {
               if (PLATES[j] > shown && (PLATES[j] >= need || j === PLATES.length - 1)) {
                 if (shown >= need) return;
@@ -127,7 +132,7 @@
       }
     })();
   </script>
-  <link rel="stylesheet" href="styles.css?v=20">
+  <link rel="stylesheet" href="styles.css?v=21">
 </head>
 <body>
   <!-- Only ever on screen while the corner plate is genuinely outstanding: it is
