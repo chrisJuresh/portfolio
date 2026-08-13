@@ -88,20 +88,33 @@
             Narrower than the 358-glyph subsets the other faces here carry.
    Kerning: present, in GPOS. `liga`, `frac`, `sups`, `ordn` are there too.
 
-   Its declared x-height is wrong — 0.225 em against 0.460 em drawn. See
-   README.md; it breaks `font-size-adjust` and the `ex`/`cap` units, and it is
-   a defect in the supplied files rather than something to work around in CSS.
+   Its declared x-height was wrong — 0.225 em against 0.460 em drawn, and its
+   cap-height with it, both being the CFF original's values at a 1000-unit em
+   left behind when the outlines were scaled to 2048. That breaks
+   `font-size-adjust` and the `ex` and `cap` units, and the cut title in
+   portfolio/styles.css is measured in `cap`, so it stopped being a note and
+   became a bug. The blocks below therefore name the -fixedmetrics pair: the
+   same supplied binaries with exactly two integers rewritten to the drawn tops
+   of `x` and `H` (sxHeight 460 -> 942, sCapHeight 659 -> 1348), outlines, name
+   table and GPOS kerning verified unchanged. New filenames because
+   vercel.json caches /fonts/(.*).woff2 immutable for a year; the originals stay
+   in the folder as the record of what arrived. See README.md.
+
+   This sheet is still linked by no page, and these two faces are still the ones
+   in here that may not be served — Friz Quadrata Std is a commercial Adobe/ITC
+   cut and the kit carries no webfont licence. Fixing the metrics changed what
+   the file says about itself, not what may be done with it.
    ========================================================================== */
 @font-face {
   font-family: "Friz Quadrata Std";
-  src: url("/fonts/frizquadrata-regular.woff2") format("woff2");
+  src: url("/fonts/frizquadrata-regular-fixedmetrics.woff2") format("woff2");
   font-weight: 500;
   font-style: normal;
   font-display: swap;
 }
 @font-face {
   font-family: "Friz Quadrata Std";
-  src: url("/fonts/frizquadrata-bold.woff2") format("woff2");
+  src: url("/fonts/frizquadrata-bold-fixedmetrics.woff2") format("woff2");
   font-weight: 700;
   font-style: normal;
   font-display: swap;

@@ -318,12 +318,12 @@
      CFF original when the outlines were scaled to 2048, so `1cap` resolves to
      0.322em against 0.658em of drawn capital. Every fallback below was checked
      and is truthful, so the numbers here are set for a face that tells the truth.
-     A real desktop install — the only Friz this stack can actually reach today —
-     is EXPECTED to be truthful, since the stale field is exactly the CFF
-     original's own value at its own em, but that is inference: no copy was
-     installed here to measure, and it is worth checking on one that has it.
-     design/type-tuner.html loads the broken webfont, so the tuner and this
-     stylesheet WILL disagree about the cut until that file is patched. */
+     A real desktop install is EXPECTED to be truthful, since the stale field is
+     exactly the CFF original's own value at its own em, but that is inference:
+     no copy was installed here to measure, and it is worth checking on one that
+     has it. The webfont no longer has to be inferred about — the -fixedmetrics
+     pair carries 1348/2048 and was measured resolving `1cap` at 0.658em, which
+     is what both the localhost preview and design/type-tuner.html now load. */
   --serif-display: "Friz Quadrata", "Friz Quadrata Std", "ITC Friz Quadrata",
                    "Sitka Banner", Constantia, Georgia, serif;
 
@@ -1288,10 +1288,13 @@ body::after {
 /* THE SWITCH THAT IS NOT THROWN, and why the numbers above are for a face this
    sheet cannot currently reach.
 
-   Nothing here fetches Friz. The family is named in --serif-display, so it
-   renders for a reader who happens to have it installed and for nobody else —
-   measured: on this machine the page falls through to Sitka Banner, and all
-   three Friz names resolve to the default serif. Every --cue-* value above is
+   Nothing here fetches Friz. The family is named in --serif-display, so on any
+   origin it renders for a reader who happens to have it installed and for
+   nobody else — measured on this machine, where all three Friz names resolved
+   to the default serif and the page fell through to Sitka Banner, which is what
+   prompted the localhost preview described at the foot of this comment. That
+   preview is a <script> in index.html, not this sheet: served, this sheet still
+   fetches nothing. Every --cue-* value above is
    nevertheless set for Friz, per the tuning session that chose the face; the
    cost, until this block is uncommented, is that Sitka Banner is being set at
    Friz's measurements — the word makes 96.5% of the measure instead of 100%,
@@ -1300,23 +1303,38 @@ body::after {
    --cue-track -0.012em, --cue-cap 4.187rem, and Sitka Banner back to the head of
    the stack.
 
-   TWO THINGS MUST HAPPEN BEFORE THIS IS UNCOMMENTED, and neither is cosmetic.
+   TWO THINGS HAD TO HAPPEN BEFORE THIS COULD BE UNCOMMENTED. One is done; the
+   one that remains is the one this repository cannot settle on its own.
 
-   1. THE LICENCE. Friz Quadrata Std is a commercial Adobe/ITC cut and the woff2
-      in /fonts is a conversion of a desktop release with no webfont licence
-      behind it. Serving it from chrisj.uk is redistribution; a desktop or
-      Creative Cloud licence does not grant it, and the fsType bit being 0 is a
-      technical flag, not a grant. This is why /fonts/fonts.css is linked by no
-      page. See fonts/README.md. Settle it first.
-   2. THE FILE'S CAP METRIC IS WRONG. Its `sCapHeight` is 659 — correct for the
-      1000-unit em of the CFF original, left behind when the outlines were scaled
-      to 2048. So `1cap` resolves to 0.322em against 0.658em of drawn capital,
-      and this cut is measured in `cap`: uncommenting as-is puts the clip box top
-      half a capital BELOW the tops of the letters and shows a band through their
-      middles rather than the top 0.62 of them. `size-adjust` does not fix it —
-      it scales the outlines and the stale field together. The fix is two integer
-      writes with fontTools (sxHeight 460 -> 942, sCapHeight 659 -> 1348) under a
-      NEW filename, because vercel.json caches /fonts/(.*) immutable for a year.
+   1. THE LICENCE — STILL OPEN, AND STILL THE GATE. Friz Quadrata Std is a
+      commercial Adobe/ITC cut and the woff2 in /fonts is a conversion of a
+      desktop release with no webfont licence behind it. Serving it from
+      chrisj.uk is redistribution; a desktop or Creative Cloud licence does not
+      grant it, and the fsType bit being 0 is a technical flag, not a grant.
+      This is why /fonts/fonts.css is linked by no page. See fonts/README.md.
+      Settle it first. Nothing below this line is blocked on anything else.
+   2. THE FILE'S CAP METRIC WAS WRONG — FIXED, in a new pair of files. Its
+      `sCapHeight` was 659 and its `sxHeight` 460: correct for the 1000-unit em
+      of the CFF original, left behind when the outlines were scaled to 2048. So
+      `1cap` resolved to 0.322em against 0.658em of drawn capital, and this cut
+      is measured in `cap` — uncommenting as-was would have put the clip box top
+      half a capital BELOW the tops of the letters and shown a band through
+      their middles rather than the top 0.62 of them. `size-adjust` does not fix
+      it: it scales the outlines and the stale field together.
+      frizquadrata-{regular,bold}-fixedmetrics.woff2 are that same third-party
+      binary with exactly those two integers rewritten to the drawn tops of `x`
+      and `H` (942 and 1348); all 263 outlines, the name table and the GPOS
+      kerning were verified unchanged. New filenames because vercel.json caches
+      /fonts/(.*).woff2 immutable for a year. The originals are kept beside them
+      untouched, as the record of what arrived.
+
+   MEANWHILE, SO THE FACE CAN BE LOOKED AT: portfolio/index.html attaches
+   /fonts/friz-local.css on localhost and 127.0.0.1 only, which declares the
+   -fixedmetrics pair. That is the only reason this face renders anywhere today,
+   it renders on no origin, and it is deliberately NOT this block — designing
+   against a licensed desktop font is not the same act as serving it. When the
+   licence is settled, uncomment here and delete fonts/friz-local.css and the
+   script in index.html that loads it, in the same change.
 
 @font-face {
   font-family: "Friz Quadrata Std";
