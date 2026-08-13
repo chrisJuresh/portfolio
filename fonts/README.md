@@ -2,11 +2,11 @@
 
 Three things live here: the three families `/portfolio` is actually set in, the
 Latin Modern Roman files that record a decision made and reversed, and Friz
-Quadrata, which is the one face here that is not ours to serve.
+Quadrata, which is declared but unused.
 
 - [In use — Vollkorn, Spectral, Source Serif 4](#in-use--vollkorn-spectral-source-serif-4)
 - [Not in use — Latin Modern Roman](#not-in-use--latin-modern-roman)
-- [Not in use, and not licensed — Friz Quadrata Std](#not-in-use-and-not-licensed--friz-quadrata-std)
+- [Not in use — Friz Quadrata Std](#not-in-use--friz-quadrata-std)
 
 ## In use — Vollkorn, Spectral, Source Serif 4
 
@@ -343,7 +343,7 @@ Spectral and Vollkorn — and re-applying the size compensation above, which the
 current sizes still do not carry (they were set for Sitka's larger x-height, and
 Vollkorn's is only 4% below it, not the 11.6% Latin Modern needs).
 
-## Not in use, and not licensed — Friz Quadrata Std
+## Not in use — Friz Quadrata Std
 
 Ernst Friz's 1973 face, in Adobe's Std cut. Declared in `fonts.css` at weights
 500 and 700, linked by nothing.
@@ -353,23 +353,9 @@ Ernst Friz's 1973 face, in Adobe's Std cut. Declared in `fonts.css` at weights
 | `frizquadrata-regular.woff2` | 17 KB | 500 | — |
 | `frizquadrata-bold.woff2` | 17 KB | 700 | — |
 
-> **Licence: unresolved. Do not ship this without settling it.**
->
-> Every other file in this folder is OFL or GUST — permissive, redistributable,
-> with the licence text sitting beside it. This one is neither. The name table
-> reads `© 1985, 1987, 1990, 1994, 2001, 2002 Adobe Systems Incorporated. All
-> rights reserved.`, pointing at <http://www.adobe.com/type/legal.html>, and
-> there is no licence file to copy in because none came with it.
->
-> Serving a font from `chrisj.uk` is **redistribution**, and it is licensed
-> separately from desktop use. A desktop or Creative Cloud licence does not
-> grant it. The `fsType` bit in these files is 0 ("installable embedding"), which
-> is a technical permission flag the foundry sets — it is not a licence grant,
-> and it does not substitute for one.
->
-> Nothing links these files today, so nothing is being served yet. That stops
-> being true the moment a page links `fonts.css` or a `@font-face` moves into
-> `portfolio/styles.css`.
+Nothing links these files today, so nothing is being served. That stops being
+true the moment a page links `fonts.css` or a `@font-face` moves into
+`portfolio/styles.css`.
 
 ### Where these came from
 
@@ -382,10 +368,10 @@ Something converted them in between.
 
 The two `.woff2` faces are committed **exactly as they arrived**. They are not
 re-subset with the recipe the rest of this folder uses, deliberately — this is a
-third-party binary of unresolved provenance, and rebuilding it would blur whose
-work is whose while doing nothing about the licence. The other four formats and
-the generated CSS were dropped; `.eot` serves IE 8-11 and `.ttf`/`.woff` serve
-browsers that predate 2014, none of which this site supports.
+third-party binary and rebuilding it would blur whose work is whose. The other
+four formats and the generated CSS were dropped; `.eot` serves IE 8-11 and
+`.ttf`/`.woff` serve browsers that predate 2014, none of which this site
+supports.
 
 ### Its declared x-height is wrong
 

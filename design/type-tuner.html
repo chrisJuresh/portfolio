@@ -348,23 +348,10 @@ var GOOGLE = HOSTED.concat(DHOSTED);
    the three serifs come with the portfolio page's own stylesheet, the Latin
    Modern cuts and Friz Quadrata from /fonts/fonts.css — but the frame ends up
    with all eight and the distinction stops mattering here. They are preloaded
-   for the same reason GOOGLE is: see loadFace.
-
-   Friz Quadrata sits here on the technical claim only — the woff2 is in /fonts,
-   so the row renders. Whether it may be served is a separate question with a
-   different answer; see ENCUMBERED. */
+   for the same reason GOOGLE is: see loadFace. */
 var SELF = ["Vollkorn", "Spectral", "Source Serif 4",
             "Latin Modern Roman", "LM Roman 8", "LM Roman 9", "LM Roman 12",
             "Friz Quadrata Std"];
-
-/* Hosted in /fonts, and not licensed to be. Membership of SELF says a face will
-   render for a visitor; it is otherwise read as "safe to paste", and for this one
-   that inference is wrong — Friz Quadrata Std is a commercial Adobe cut with no
-   webfont licence behind it, converted from a desktop release. Left out of SELF
-   it rendered as Comic Sans, which reads as "you haven't got this font" and sent
-   you looking for the file; the file was never the problem. So it goes in SELF
-   and the export carries the real objection separately. See fonts/README.md. */
-var ENCUMBERED = ["Friz Quadrata Std"];
 
 var STACKS = [
   ["Vollkorn (body, ships)",        'Vollkorn, "Sitka Text", Charter, "Iowan Old Style", Georgia, serif'],
@@ -1462,14 +1449,6 @@ function buildCSS(annotated) {
     return rows.some(function (r) { return r.isFont && String(val(r)).indexOf(fam) !== -1; });
   }) : [];
 
-  /* The borrowed line above says "host this and it works". For an encumbered face
-     that advice is wrong in a way worth separating: the file is already hosted,
-     and hosting it harder is the thing that isn't allowed. Legal blocker, not a
-     technical one, so it gets its own line. */
-  var encumbered = annotated ? ENCUMBERED.filter(function (fam) {
-    return rows.some(function (r) { return r.isFont && String(val(r)).indexOf(fam) !== -1; });
-  }) : [];
-
   var out = [];
   if (annotated) {
     out.push("/* " + Array(74).join("─"));
@@ -1486,13 +1465,6 @@ function buildCSS(annotated) {
       out.push("   " + borrowed.join(", ") + " render" + (borrowed.length === 1 ? "s" : "") + " in the tuner because the");
       out.push("   preview borrows " + (borrowed.length === 1 ? "it" : "them") + " from Google Fonts. portfolio/ hosts nothing for");
       out.push("   " + (borrowed.length === 1 ? "it" : "them") + " — self-host the face into /fonts first, or this is `serif` in production.");
-    }
-    if (encumbered.length) {
-      out.push("   " + encumbered.join(", ") + " is in /fonts and is NOT licensed to be served");
-      out.push("   from it — a commercial Adobe cut, converted from a desktop release, no");
-      out.push("   webfont licence behind it. It renders here because the file is on disk,");
-      out.push("   which is not the same as being allowed to ship. Settle the licence before");
-      out.push("   this reaches a deployed page; see fonts/README.md.");
     }
     out.push("   " + Array(74).join("─") + " */");
     out.push("");

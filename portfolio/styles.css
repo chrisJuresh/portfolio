@@ -168,18 +168,36 @@
      whose italic is a true italic rather than Georgia's. */
   --serif-lead:  Georgia, "Iowan Old Style", "Palatino Linotype", serif;
 
-  /* Ogg — Sharp Type's high-contrast calligraphic serif, used at one size and
-     one place only: the cut title at the foot of the page. It is a retail
-     licence, so there is nothing to self-host in this repo; naming the family
-     picks up a copy installed on the reader's machine, and the @font-face block
-     below is the two-line switch once the woff2 files exist. See --cue-* for the
-     rest, and note that NOTHING in the cut depends on which of these resolves:
-     the clip is measured in `cap`, read from the face that actually loads.
-     Fallbacks in order of nearness to Ogg: Didot (macOS), Bodoni MT (ships with
-     Office), Big Caslon (macOS), then Sitka Banner — Sitka's display cut, which
-     is the one Windows always has and the one that reads as deliberate here,
-     since the rest of the page is already Sitka. */
-  --serif-display: "Ogg Roman", "Ogg", Didot, "Bodoni MT", "Big Caslon",
+  /* Friz Quadrata — Ernst Friz, 1973; a glyphic serif with flared, wedge-cut
+     stems. Used at one size and one place only: the cut title at the foot of the
+     page. Like the Ogg it replaces it is named rather than served — there is a
+     woff2 in /fonts, but it is a commercial Adobe cut with no webfont licence
+     behind it, and serving a font from chrisj.uk is redistribution. So NOTHING
+     here fetches it: naming the family picks up a copy installed on the reader's
+     machine and nothing else. See fonts/README.md before that changes, and note
+     that /fonts/fonts.css is linked by no page for the same reason.
+     Three names because one design ships under three: the /fonts webfont calls
+     itself "Friz Quadrata Std", a desktop install may be either of the others.
+     Fallbacks after them: Sitka Banner — Sitka's display cut, the one Windows
+     always has and the one that reads as deliberate here, since the rest of the
+     page is already Sitka — then Constantia and Georgia. The Didones that used
+     to sit at the head of this tail went with Ogg; they were chosen for nearness
+     to a high-contrast Didone and are nothing like this face.
+
+     ONE CAVEAT, and it is the reason --cue-* below is tuned the way it is. The
+     cut is measured in `cap`, read from whichever face resolves, and that is
+     face-independent only while a face tells the truth about itself. The /fonts
+     webfont does not: its `sCapHeight` was left at the 1000-unit scale of the
+     CFF original when the outlines were scaled to 2048, so `1cap` resolves to
+     0.322em against 0.658em of drawn capital. Every fallback below was checked
+     and is truthful, so the numbers here are set for a face that tells the truth.
+     A real desktop install — the only Friz this stack can actually reach today —
+     is EXPECTED to be truthful, since the stale field is exactly the CFF
+     original's own value at its own em, but that is inference: no copy was
+     installed here to measure, and it is worth checking on one that has it.
+     design/type-tuner.html loads the broken webfont, so the tuner and this
+     stylesheet WILL disagree about the cut until that file is patched. */
+  --serif-display: "Friz Quadrata", "Friz Quadrata Std", "ITC Friz Quadrata",
                    "Sitka Banner", Constantia, Georgia, serif;
 
   /* ---- the vertical ladder ------------------------------------------------
@@ -238,31 +256,79 @@
        --cue-show   how much of the word survives the cut, as a fraction of the
                     CAP HEIGHT — not of the em box, and not a pixel height. It
                     is `1cap`, read from whichever face actually resolved, so
-                    the same fraction of letter is shown in Ogg, in Didot and in
-                    the Sitka fallback, at every size, with no per-face tuning.
-                    That is the whole reason the setup is built this way.
-                    0.62 is set by the two letters that die first, not by taste:
-                    R stops reading as P only once its bowl has closed (~0.55 in
-                    a Didone), and J is a bare stem until its hook starts (~0.6).
-                    Above ~0.75 it stops reading as cut and starts reading as a
-                    word with an odd baseline; below ~0.55 PROJECTS goes.
+                    the same fraction of letter is shown in Friz, in Sitka Banner
+                    and in Georgia, at every size, with no per-face tuning. That
+                    is the whole reason the setup is built this way — and see the
+                    caveat on --serif-display for the one kind of face that
+                    breaks it, which is a face that misreports its own cap.
+                    0.62 is set by the letters that die first, not by taste: R
+                    stops reading as P only once its bowl has closed (~0.55 in a
+                    Didone, 0.49 in Georgia). Above ~0.75 it stops reading as cut
+                    and starts reading as a word with an odd baseline; below
+                    ~0.55 PROJECTS goes.
+                    The other half of that rule is now moot and worth saying so:
+                    it used to read "J is a bare stem until its hook starts
+                    (~0.6)". In Friz the J DESCENDS — its hook bottoms out 0.349
+                    cap BELOW the baseline, where Georgia's J sits on it. The cut
+                    box is the cap slab, cap top to baseline, so no value of this
+                    number can reach the hook: cut, Friz's J is a bare stem at
+                    0.62 and at 1.0 alike, and the word reads PRO|ECTS. It comes
+                    back whole in the doorway regime, where the clip comes off
+                    and the descender has somewhere to hang. That is a property
+                    of the face, not a number to tune — it is the one real cost
+                    of setting this word in Friz.
        --cue-size   the word's size as a fraction of the text column's own
                     width, in cqw against .cut-title. So it is one proportion at
                     every window size instead of a size that suits one of them,
                     and it stays that proportion when the column starts
-                    narrowing on small screens. 25.32 sets the word to exactly
-                    the full measure in the Sitka fallback — this is the one
-                    number that IS face-specific, because fitting a word to a
-                    measure depends on that face's advance widths. Retune it if
-                    Ogg lands (divide by the word's overflow ratio) and leave
-                    everything else alone.
-       --cue-track  tracking. Display caps this large want it drawn in; the same
-                    word at 15px would want it opened out.
+                    narrowing on small screens. It is the one number that IS
+                    face-specific, because fitting a word to a measure depends on
+                    that face's advance widths — and on --cue-track, since the
+                    tracking is part of what has to fit.
+                    Not eyeballed: it is 100 / (the advance of PROJECTS in em at
+                    the tracking below), which is the size at which the word's
+                    box is exactly the measure. Friz sets PROJECTS in 4.1973em
+                    plus 8 tracking steps = 4.3573em, so 100/4.3573 = 22.95. The
+                    same arithmetic returns 25.33 for Sitka Banner at -0.012em,
+                    which is the 25.32 this replaces — so the rule is the rule
+                    the old number was already following. Re-derive it, do not
+                    nudge it, if the face or the tracking changes.
+       --cue-track  tracking. Positive, which is not what the size alone would
+                    suggest, and the reason is the face rather than the size.
+                    Two forces pull opposite ways here: display caps this large
+                    want the tracking drawn in, and a string of capitals wants it
+                    opened out, caps being fitted for use as initials inside
+                    lower case. Which force wins is a question about the face. It
+                    was a Didone here before, loosely fitted with hairline serifs
+                    leaving optical holes, so the display force won and the value
+                    was -0.012em. Friz is the opposite: its caps are fitted tight
+                    and its wedge arms overhang their own advance — T measures
+                    negative sidebearings on BOTH sides. Set solid, the ink gaps
+                    in the visible band run 0.011 cap at CT and 0.000 at TS, so
+                    the last two letters of the word touch before any tracking is
+                    applied at all, and the old negative value drove them into
+                    each other.
+                    0.02em is derived the same way the size is: it puts Friz's
+                    tightest pair at 0.030 cap, which is where -0.012em put
+                    Sitka's tightest pair. Same optical tightness, measured on
+                    the pair that governs rather than on the average.
+                    What it cannot fix: Friz's gaps are UNEVEN in this word — EC
+                    opens to 0.216 cap while TS holds 0.030, a 7x spread against
+                    Sitka's 3.7x — and tracking is additive, so no single value
+                    evens them out. The word reads a little gappy at EC and that
+                    is the face, not the number.
      --cue-cap-drop is not a knob — it is only read by browsers without
      text-box-trim (Firefox, as of writing). See the @supports block below. */
   --cue-show:  0.62;
-  --cue-size:  25.32cqw;
-  --cue-track: -0.012em;
+  --cue-size:  22.95cqw;
+  --cue-track: 0.02em;
+  /* NOT re-derived for Friz, and the one number here that is still Sitka's. The
+     formula written at the @supports block returns ~0.13em for Sitka Banner, not
+     the 0.075em standing here, so it does not reproduce its own value and cannot
+     be trusted to produce Friz's. Applied consistently it would say 0.016em —
+     Friz's ascent clears its cap by almost nothing — but that is a derivation
+     from a formula already known to be wrong by a factor of two. It only bites
+     in Firefox; measure it there against the real face before changing it. */
   --cue-cap-drop: 0.075em;
 
   /* The white between the last contact line and the top of the cut word. The
@@ -276,16 +342,19 @@
   --cue-gap: calc(var(--rhyme) + var(--name-half-leading) - var(--contact-tail));
 
   /* The cap slab of the cut word, as a length: --cue-size x the face's cap
-     ratio, 6.836rem x 0.6123. The `cap` unit says the same thing exactly and is
-     what the element itself is measured in, but a unit that resolves against one
-     element's own font cannot be spent by the height budget below or by a box
-     that is not set in that font — so the same measure is also written here in
-     rem. MEASURED from the face; re-measure alongside --cv-static if the display
-     face changes.
+     ratio. 22.95cqw of --col's 27rem is 6.1965rem, and Friz's cap is 1348 of its
+     2048 units = 0.6582, so 6.1965 x 0.6582 = 4.079. (It was 6.836 x 0.6123 for
+     Sitka Banner, which is the 4.187 this replaces.) The `cap` unit says the same
+     thing exactly and is what the element itself is measured in, but a unit that
+     resolves against one element's own font cannot be spent by the height budget
+     below or by a box that is not set in that font — so the same measure is also
+     written here in rem. MEASURED from the face; re-measure if the display face
+     changes. --cv-static is NOT affected: it is defined as the document minus
+     the clip, so a change to the cut word's height falls outside it.
      --cue-clip is then the visible slice: the part of the word that survives the
      cut. Both regimes hold the word's cap top exactly --cue-clip above the fold;
      they differ only in what does the cutting (see the doorway block below). */
-  --cue-cap:  4.187rem;
+  --cue-cap:  4.079rem;
   --cue-clip: calc(var(--cue-show) * var(--cue-cap));
 
   /* ---- where the word lands once it is a title -----------------------------
@@ -988,17 +1057,45 @@ body::after {
 }
 
 /* ---- the cut title ------------------------------------------------------- */
-/* Ogg is a retail licence and cannot be committed here. To self-host it, drop
-   the subset woff2 into /fonts/ and uncomment this; the family is already first
-   in --serif-display, so nothing else changes.
+/* THE SWITCH THAT IS NOT THROWN, and why the numbers above are for a face this
+   sheet cannot currently reach.
+
+   Nothing here fetches Friz. The family is named in --serif-display, so it
+   renders for a reader who happens to have it installed and for nobody else —
+   measured: on this machine the page falls through to Sitka Banner, and all
+   three Friz names resolve to the default serif. Every --cue-* value above is
+   nevertheless set for Friz, per the tuning session that chose the face; the
+   cost, until this block is uncommented, is that Sitka Banner is being set at
+   Friz's measurements — the word makes 96.5% of the measure instead of 100%,
+   and carries +0.02em where Sitka wants -0.012em. If the face is abandoned,
+   revert the four values rather than patching around them: --cue-size 25.32cqw,
+   --cue-track -0.012em, --cue-cap 4.187rem, and Sitka Banner back to the head of
+   the stack.
+
+   TWO THINGS MUST HAPPEN BEFORE THIS IS UNCOMMENTED, and neither is cosmetic.
+
+   1. THE LICENCE. Friz Quadrata Std is a commercial Adobe/ITC cut and the woff2
+      in /fonts is a conversion of a desktop release with no webfont licence
+      behind it. Serving it from chrisj.uk is redistribution; a desktop or
+      Creative Cloud licence does not grant it, and the fsType bit being 0 is a
+      technical flag, not a grant. This is why /fonts/fonts.css is linked by no
+      page. See fonts/README.md. Settle it first.
+   2. THE FILE'S CAP METRIC IS WRONG. Its `sCapHeight` is 659 — correct for the
+      1000-unit em of the CFF original, left behind when the outlines were scaled
+      to 2048. So `1cap` resolves to 0.322em against 0.658em of drawn capital,
+      and this cut is measured in `cap`: uncommenting as-is puts the clip box top
+      half a capital BELOW the tops of the letters and shows a band through their
+      middles rather than the top 0.62 of them. `size-adjust` does not fix it —
+      it scales the outlines and the stale field together. The fix is two integer
+      writes with fontTools (sxHeight 460 -> 942, sCapHeight 659 -> 1348) under a
+      NEW filename, because vercel.json caches /fonts/(.*) immutable for a year.
 
 @font-face {
-  font-family: "Ogg Roman";
-  src: url("/fonts/ogg-roman.woff2") format("woff2");
-  font-weight: 400;
+  font-family: "Friz Quadrata Std";
+  src: url("/fonts/frizquadrata-regular-fixedmetrics.woff2") format("woff2");
+  font-weight: 500;
   font-style: normal;
   font-display: swap;
-  size-adjust: 100%;
 }
 */
 
