@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
-"""Rebuild portfolio/img/plate.webp — the graded facade plate in the page's
-bottom-left corner.
+"""Rebuild portfolio/img/plate-*.webp — the graded plate in the page's
+bottom-left corner, one file per rung of OUT_WIDTHS.
 
     python design/plate/build-plate.py <source.rw2 | source.png>
 
-Writes portfolio/img/plate.webp from either of two sources. Deterministic: same
-input, byte-identical output (the grain is a seeded PRNG, not os entropy).
+Writes the ladder from either of two sources. Deterministic: same input,
+byte-identical output (the grain is a seeded PRNG, not os entropy).
 
 * A Panasonic RW2, developed here and cut here — sky_matte() finds the sky.
 * An RGBA PNG whose sky has already been cut, by hand or by whatever tool. Its
@@ -102,7 +102,7 @@ Order matters; this is the pipeline, and every stage is a constant below.
 7. Grain, GRAIN_SIGMA, monochrome, weighted `4t(1-t)` so it peaks in the mids and
    dies at both ends. Grain in the lifted blacks would read as sensor noise and
    undo the point of lifting them; grain in the highlights reads as JPEG.
-8. Downsample to OUT_WIDTH, attach the sky matte as alpha, encode.
+8. Downsample to each rung of OUT_WIDTHS, attach the matte as alpha, encode.
 
 WHY THESE ENDPOINTS
 -------------------
@@ -140,6 +140,7 @@ import json
 import sys
 from pathlib import Path
 
+import cv2
 import numpy as np
 import rawpy
 from PIL import Image, ImageFilter
@@ -151,8 +152,8 @@ EXPOSURE_TARGET = 0.34     # ...this value, before the tone curve
 SAT_KEEP = 0.24            # fraction of original chroma kept
 CONTRAST = 0.36            # blend toward a smoothstep S-curve
 HIGHLIGHT_PUSH = 1.34      # >1 lifts highlights; 1.0 is off
-SHADOW = (0x30, 0x2e, 0x2a)    # where black lands — warm dark grey
-HIGHLIGHT = (0xff, 0xfa, 0xea)  # where white lands — warm cream
+SHADOW = (0x00, 0x00, 0x00)    # where black lands — pure black
+HIGHLIGHT = (0x5c, 0x5c, 0x5c)  # where white lands — mid grey
 GRAIN_SIGMA = 0.0075       # in output units, 0..1
 GRAIN_SEED = 20250615      # the frame's own date; any constant would do
 
@@ -199,8 +200,24 @@ SKY_LUMA_LOW = 0.075      # ...and to stay in it, once something brighter vouche
 SKY_EDGE_BLUR = 1.2       # px at output scale, to keep the roofline from aliasing
 
 # ---- the plate ------------------------------------------------------------
-OUT_WIDTH = 1100           # 2x the ~544px the stylesheet draws it at
-WEBP_QUALITY = 82
+# One file per rung, and the page picks the smallest that covers it. The plate is
+# drawn at --plate-w, which is 50vw, so what a display actually needs is
+#
+#     viewport CSS width / 2 * devicePixelRatio
+#
+# which is 585 on a 390px phone at 3x, 1512 on a 1512px laptop at 2x, 1920 on a
+# 4K desktop at 1x, and 2560 on a 5K at 2x. The rungs bracket that range. They
+# are duplicated in portfolio/index.html, which does the picking — see PLATES
+# there, and keep the two lists the same.
+#
+# It cannot be one file. The top rung is 1.2 MB and the bottom is 100 KB, and
+# sending the first to a phone to decorate it at 12% opacity would cost more than
+# everything else on the page put together.
+OUT_WIDTHS = (800, 1300, 2000, 2800)
+# 78 rather than 82: the plate composites at --plate-opacity, so a WebP artefact
+# arrives at an eighth of its strength, and nothing survives that. Measured over
+# the ladder, 78 is ~7% smaller than 82 with no difference visible on the page.
+WEBP_QUALITY = 78
 
 # ---- the tuner's copy -----------------------------------------------------
 # Narrower than the plate: it is graded per-pixel in a browser on every drag, and
@@ -213,9 +230,13 @@ NEUTRAL_QUALITY = 95
 
 HERE = Path(__file__).resolve().parent
 REPO = HERE.parents[1]
-OUT_PATH = REPO / "portfolio" / "img" / "plate.webp"
+OUT_DIR = REPO / "portfolio" / "img"
 NEUTRAL_PATH = HERE / "plate-source.webp"
 META_PATH = HERE / "plate-source.json"
+
+
+def out_path(width: int) -> Path:
+    return OUT_DIR / f"plate-{width}.webp"
 
 # Rec.709 luma. The desaturation and the grain weight both need a scalar
 # brightness and it must be the same one, or the grain drifts off the mids.
@@ -270,15 +291,27 @@ def read_cut(path: Path) -> tuple[np.ndarray, np.ndarray]:
     why bleed() matters more here than it ever did for the raw: the feathered
     band is a couple of pixels wide on a computed matte and can be a fifth of the
     frame on a hand-cut one.
+
+    Read with OpenCV and not Pillow, which is the whole reason cv2 is imported.
+    Pillow decodes a 16-bit RGBA PNG by silently truncating it to 8 — no error,
+    no warning, mode still reports "RGBA" — and 8 bits is not enough for this
+    picture. It is low-key: half of it sits under luma 25/255, where eight bits
+    leave about 45 distinct codes for the shadows, and the grade below then
+    stretches exactly that range. Sixteen bits give ~4900 codes over the same
+    span, which is the difference between a smooth dome and a banded one.
     """
-    img = Image.open(path)
-    if img.mode != "RGBA":
+    a = cv2.imread(str(path), cv2.IMREAD_UNCHANGED)
+    if a is None:
+        raise SystemExit(f"could not decode {path.name}")
+    if a.ndim != 3 or a.shape[2] != 4:
         raise SystemExit(
-            f"{path.name} is {img.mode}, not RGBA — a cut-out source has to carry "
-            f"its matte in an alpha channel. Pass the raw instead to have one cut."
+            f"{path.name} has no alpha channel — a cut-out source has to carry "
+            f"its matte in one. Pass the raw instead to have a matte cut."
         )
-    a = np.asarray(img).astype(np.float32) / 255.0
-    return srgb_decode(a[..., :3]), a[..., 3]
+    full = 65535.0 if a.dtype == np.uint16 else 255.0
+    a = a.astype(np.float32) / full
+    bgra = a[..., :3]
+    return srgb_decode(bgra[..., ::-1]), a[..., 3]     # cv2 hands back BGR
 
 
 def load(path: Path) -> tuple[np.ndarray, np.ndarray, bool]:
@@ -435,7 +468,7 @@ def write_neutral(lin: np.ndarray, alpha_f: np.ndarray, computed: bool) -> None:
         "source": NEUTRAL_PATH.name,
         "width": img.width,
         "height": img.height,
-        "outWidth": OUT_WIDTH,
+        "outWidths": list(OUT_WIDTHS),
         "grade": {
             "EXPOSURE_PCT": EXPOSURE_PCT,
             "EXPOSURE_TARGET": EXPOSURE_TARGET,
@@ -473,28 +506,36 @@ def main() -> int:
     # exactly the mix that becomes a fringe.
     graded = bleed(graded, alpha_f < 1.0)
 
-    img = Image.fromarray(np.round(graded * 255.0).astype(np.uint8), mode="RGB")
-    alpha = Image.fromarray(np.round(alpha_f * 255.0).astype(np.uint8), mode="L")
+    full = Image.fromarray(np.round(graded * 255.0).astype(np.uint8), mode="RGB")
+    full.putalpha(Image.fromarray(np.round(alpha_f * 255.0).astype(np.uint8), mode="L"))
+
+    OUT_DIR.mkdir(parents=True, exist_ok=True)
+    print(f"sky {(1.0 - keep.mean()) * 100:.1f}% of frame  "
+          f"({'cut here' if computed else 'matte supplied'})")
 
     # Downsample after grading, not before: the grain is sized in output pixels,
     # and a curve applied at full resolution then resampled is smoother than the
     # reverse — resampling averages, which is exactly what softens the shoulder.
-    height = round(img.height * OUT_WIDTH / img.width)
-    img = img.resize((OUT_WIDTH, height), Image.LANCZOS)
-    alpha = alpha.resize((OUT_WIDTH, height), Image.LANCZOS)
-    # Only a matte this script cut needs feathering — it comes out of sky_matte()
-    # hard-edged, one bit per pixel. A supplied one arrives anti-aliased already,
-    # and blurring it again would walk the roofline twice.
-    if computed and SKY_EDGE_BLUR:
-        alpha = alpha.filter(ImageFilter.GaussianBlur(SKY_EDGE_BLUR))
-    img.putalpha(alpha)
+    # Every rung comes off the SAME graded full-resolution frame for that reason,
+    # rather than each off the one above it.
+    for width in OUT_WIDTHS:
+        height = round(full.height * width / full.width)
+        img = full.resize((width, height), Image.LANCZOS)
+        # Only a matte this script cut needs feathering — it comes out of
+        # sky_matte() hard-edged, one bit per pixel. A supplied one arrives
+        # anti-aliased already, and blurring it again walks the roofline twice.
+        if computed and SKY_EDGE_BLUR:
+            a = img.getchannel("A").filter(ImageFilter.GaussianBlur(SKY_EDGE_BLUR))
+            img.putalpha(a)
+        path = out_path(width)
+        img.save(path, "WEBP", quality=WEBP_QUALITY, method=6)
+        print(f"  {path.relative_to(REPO)}  {img.width}x{img.height}  "
+              f"{path.stat().st_size / 1024:.0f} KB")
 
-    OUT_PATH.parent.mkdir(parents=True, exist_ok=True)
-    img.save(OUT_PATH, "WEBP", quality=WEBP_QUALITY, method=6)
-    print(f"{OUT_PATH.relative_to(REPO)}  {img.width}x{img.height}  "
-          f"{OUT_PATH.stat().st_size / 1024:.0f} KB  "
-          f"sky {(1.0 - keep.mean()) * 100:.1f}% of frame  "
-          f"({'cut here' if computed else 'matte supplied'})")
+    for stale in sorted(OUT_DIR.glob("plate-*.webp")):
+        if int(stale.stem.split("-")[1]) not in OUT_WIDTHS:
+            stale.unlink()
+            print(f"  removed {stale.relative_to(REPO)} (no longer a rung)")
 
     write_neutral(lin, alpha_f, computed)
     print(f"{NEUTRAL_PATH.relative_to(REPO)}  {NEUTRAL_PATH.stat().st_size / 1024:.0f} KB"

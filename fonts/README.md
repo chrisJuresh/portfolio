@@ -1,10 +1,12 @@
 # Fonts
 
-Two things live here: the three families `/portfolio` is actually set in, and the
-Latin Modern Roman files that record a decision made and reversed.
+Three things live here: the three families `/portfolio` is actually set in, the
+Latin Modern Roman files that record a decision made and reversed, and Friz
+Quadrata, which is the one face here that is not ours to serve.
 
 - [In use — Vollkorn, Spectral, Source Serif 4](#in-use--vollkorn-spectral-source-serif-4)
 - [Not in use — Latin Modern Roman](#not-in-use--latin-modern-roman)
+- [Not in use, and not licensed — Friz Quadrata Std](#not-in-use-and-not-licensed--friz-quadrata-std)
 
 ## In use — Vollkorn, Spectral, Source Serif 4
 
@@ -340,3 +342,99 @@ Adopting Latin Modern now would mean editing `--serif` (projects) and
 Spectral and Vollkorn — and re-applying the size compensation above, which the
 current sizes still do not carry (they were set for Sitka's larger x-height, and
 Vollkorn's is only 4% below it, not the 11.6% Latin Modern needs).
+
+## Not in use, and not licensed — Friz Quadrata Std
+
+Ernst Friz's 1973 face, in Adobe's Std cut. Declared in `fonts.css` at weights
+500 and 700, linked by nothing.
+
+| File | Size | Weight | Slot |
+|---|---|---|---|
+| `frizquadrata-regular.woff2` | 17 KB | 500 | — |
+| `frizquadrata-bold.woff2` | 17 KB | 700 | — |
+
+> **Licence: unresolved. Do not ship this without settling it.**
+>
+> Every other file in this folder is OFL or GUST — permissive, redistributable,
+> with the licence text sitting beside it. This one is neither. The name table
+> reads `© 1985, 1987, 1990, 1994, 2001, 2002 Adobe Systems Incorporated. All
+> rights reserved.`, pointing at <http://www.adobe.com/type/legal.html>, and
+> there is no licence file to copy in because none came with it.
+>
+> Serving a font from `chrisj.uk` is **redistribution**, and it is licensed
+> separately from desktop use. A desktop or Creative Cloud licence does not
+> grant it. The `fsType` bit in these files is 0 ("installable embedding"), which
+> is a technical permission flag the foundry sets — it is not a licence grant,
+> and it does not substitute for one.
+>
+> Nothing links these files today, so nothing is being served yet. That stops
+> being true the moment a page links `fonts.css` or a `@font-face` moves into
+> `portfolio/styles.css`.
+
+### Where these came from
+
+Supplied as a pre-built webfont kit — `.eot`, `.ttf`, `.woff`, `.woff2` per face,
+plus a generated `stylesheet.css` and demo page. That shape is the signature of a
+webfont-generator run over a desktop release, and the files bear it out: the
+version string is Adobe's own `hotconv` / `makeotf` PostScript toolchain, but the
+outlines arrive as TrueType `glyf` rather than the CFF the Std release ships.
+Something converted them in between.
+
+The two `.woff2` faces are committed **exactly as they arrived**. They are not
+re-subset with the recipe the rest of this folder uses, deliberately — this is a
+third-party binary of unresolved provenance, and rebuilding it would blur whose
+work is whose while doing nothing about the licence. The other four formats and
+the generated CSS were dropped; `.eot` serves IE 8-11 and `.ttf`/`.woff` serve
+browsers that predate 2014, none of which this site supports.
+
+### Its declared x-height is wrong
+
+Measured from the files, the OS/2 metric fields disagree with the outlines they
+describe — in both faces, by the same factor:
+
+| Field | Declared | Drawn | Ratio |
+|---|---|---|---|
+| x-height | 460 units = **0.225 em** | 942 units = **0.460 em** | 2.048x |
+| cap-height | 659 units = **0.322 em** | 1348 units = **0.658 em** | 2.046x |
+
+`unitsPerEm` is 2048. Those declared values are correct for an em of **1000** —
+which is what the CFF original had. The conversion scaled the outlines to 2048
+and left `sxHeight` and `sCapHeight` behind at their old scale.
+
+What it breaks: `font-size-adjust` reads `sxHeight`, and so do the CSS `ex` and
+`cap` units and the metric-matching browsers do when sizing a fallback. All of
+them will size this face against an x-height less than half its real one.
+
+Confirmed in Chromium rather than inferred from the tables — with the face set at
+`100px`:
+
+| Unit | Resolves to | Should be | |
+|---|---|---|---|
+| `1ex` | **22.45px** | 46.0px | tracks the stale field |
+| `1cap` | **32.17px** | 65.8px | same |
+
+None of those are used in this repo today, which is the only reason this is a
+note rather than a bug.
+
+It is left uncorrected on purpose, for the same reason the faces are unsubset —
+see above. Correcting it is two integer writes with `fontTools` if it ever
+matters, and it would need a new filename, because `vercel.json` puts a
+year-long `immutable` cache on `/fonts/(.*)`.
+
+### If it is ever adopted
+
+- **The roman is a 500, and is declared as one.** `usWeightClass` is 500 and
+  `fonts.css` matches it. This does *not* put it out of reach of a normal body
+  stack: when `font-weight: 400` is asked for and no 400 is declared, CSS font
+  matching checks 500 before anything else, so 400 and `normal` both land on
+  this face with no synthesis. Measured — 400 and 500 render identically.
+- **Check the coverage.** 253 codepoints, 263 glyphs — Latin-1 plus a little
+  Latin Extended-A. The other faces here carry 358-glyph subsets covering
+  General Punctuation, arrows and f-ligatures. This one has no f-ligatures, and
+  its punctuation is thinner. `portfolio/content.js` is hand-edited prose, so a
+  gap shows up as a missing glyph on the next content edit.
+- Kerning is present, in GPOS, along with `liga`, `frac`, `sups` and `ordn`.
+- Its x/cap ratio is 0.698 — close to Georgia's 0.695 and above Vollkorn's 0.678,
+  so at a given `font-size` it reads slightly larger than the current body face.
+  Its `typoAscender − typoDescender` is exactly 1.000 em, the same as Sitka's, so
+  the half-leading arithmetic in the table above would need redoing for it.

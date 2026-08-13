@@ -133,7 +133,7 @@
    Two halves that are tuned together and shipped apart, which is the whole
    reason this tool exists as one window:
 
-   * THE GRADE and THE MATTE are baked into portfolio/img/plate.webp by
+   * THE GRADE and THE MATTE are baked into portfolio/img/plate-*.webp by
      design/plate/build-plate.py. Nothing here can change the file. What this
      page does is run that script's pipeline again, in a canvas, over the same
      input the script starts from — design/plate/plate-source.webp, which the
@@ -142,7 +142,11 @@
      is a block of Python to paste back.
    * THE PLACEMENT is four custom properties in portfolio/styles.css, and those
      are live: the preview is the real page in an iframe with the regraded plate
-     dropped into it, so what moves under the type here moves there.
+     dropped into it, so what moves under the type here moves there. All four are
+     lengths in the pixels of the 1920×1080 frame the picture was composed on,
+     not shares of the window — styles.css declares a fifth, --plate-fold, which
+     is that frame's own bottom edge and is the datum rather than a placement,
+     which is why there is no slider for it here.
 
    You cannot judge the first without the second. A grade read at 100% on a white
    field is a different photograph from the same grade at --plate-opacity behind a
@@ -229,19 +233,21 @@ var MATTE = [
 var PLACE = [
   { k: "--plate-opacity", label: "opacity", unit: "",   min: 0, max: 0.6, step: 0.005, dp: 3, dark: true,
     tip: "The one number that decides whether this is paper stock or a picture.\nThe moment you notice it as a photograph it is too strong." },
-  { k: "--plate-w", label: "width",  unit: "vw", min: 10,   max: 100, step: 0.5, dp: 1,
-    tip: "How far it runs across the page. Height follows the file's own aspect.\nAt 50 its right-hand edge falls inside the column of text, which is the point — it is what the type is printed on, not something beside it." },
+  { k: "--plate-w", label: "width",  unit: "px", min: 200, max: 2400, step: 1, dp: 1,
+    tip: "How far it runs across the page. Height follows the file's own aspect.\nA LENGTH, not a share of the window: the picture is drawn this wide on every display, so its right-hand edge lands in the same place on all of them. 1161.6 is 60.5% of the 1920 frame this was composed on, where that edge falls near the far side of the column of text — which is the point, it is what the type is printed on, not something beside it.\nSo the preview frame's width no longer changes the plate. It only changes where the column stands on it, which is the thing a narrow window really does move." },
   { k: "--plate-x", label: "out from left", unit: "px", min: -400, max: 400, step: 1, dp: 0,
     tip: "Positive moves it right, off the page's left edge." },
-  { k: "--plate-y", label: "up from bottom", unit: "px", min: -400, max: 400, step: 1, dp: 0,
-    tip: "Positive lifts it off the bottom of the first screen." }
+  { k: "--plate-y", label: "up from the fold", unit: "px", min: -1600, max: 1200, step: 1, dp: 0,
+    tip: "Positive lifts it off --plate-fold, the bottom edge of the 1920×1080 frame this was composed on — 1080px down the document, wherever the viewer's own fold happens to be.\nNegative hangs it PAST that line and down into the second screen — the box grows with it, so nothing is cut off there any more.\nBecause the datum is fixed and not 100vh, this is also the control for the one measurement that matters most: how far down the page the TOP of the picture arrives. It is the same on every screen." },
+  { k: "--plate-crop", label: "crop the foot", unit: "", min: 0, max: 0.9, step: 0.005, dp: 3,
+    tip: "Cuts the BOTTOM off the picture — the rooftops and the glass in front of the dome.\nA share of the plate's width rather than a length of its own, so it survives 'width' being re-tuned without having to be re-measured after it.\nIt shortens the picture where it stands; it does not move it. Use 'up from the fold' for that." }
 ];
 
 var MATTE_GROUP = { name: "Sky matte", rows: MATTE, py: true,
   note: "No sky is wanted, only the building — the page's own paper is the sky. Watch this one in the matte view." };
 var GROUPS = [
   { name: "Grade", rows: GRADE, py: true,
-    note: "Baked into plate.webp. Re-run build-plate.py to ship a change." },
+    note: "Baked into every plate-*.webp. Re-run build-plate.py to ship a change." },
   MATTE_GROUP,
   { name: "Placement", rows: PLACE, css: true,
     note: "portfolio/styles.css, live in the frame." }
@@ -724,7 +730,7 @@ function probe() {
 
 /* Injected last and with no !important, so the preview meets the same cascade
    the exported CSS will meet in styles.css. The image is this tool's, though —
-   plate.webp on disk is whatever the last run of the script produced, and the
+   the plate on disk is whatever the last run of the script produced, and the
    whole point is to see the grade that has not been baked yet. */
 function inject() {
   var doc = frame.contentDocument;
