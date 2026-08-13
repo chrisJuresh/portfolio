@@ -420,6 +420,13 @@
                     which is the 25.32 this replaces — so the rule is the rule
                     the old number was already following. Re-derive it, do not
                     nudge it, if the face or the tracking changes.
+                    This value is the COLUMN's, and it is the one the word is set
+                    at wherever the word is the last line of the column. In the
+                    one-screen band the word leaves the column for the gutter
+                    beside it and the measure changes, so the same rule is
+                    re-derived against that measure — see --cue-measure in the
+                    one-screen block, which also says why it fits the word's INK
+                    there and its BOX here.
        --cue-track  tracking. Positive, which is not what the size alone would
                     suggest, and the reason is the face rather than the size.
                     Two forces pull opposite ways here: display caps this large
@@ -480,7 +487,11 @@
      the clip, so a change to the cut word's height falls outside it.
      --cue-clip is then the visible slice: the part of the word that survives the
      cut. Both regimes hold the word's cap top exactly --cue-clip above the fold;
-     they differ only in what does the cutting (see the doorway block below). */
+     they differ only in what does the cutting (see the doorway block below).
+     Like --cue-size, this is the value for a word set to the COLUMN. In the
+     one-screen band it is re-derived against the gutter — the same cap ratio
+     times the same kind of size ratio, but against a measure that is no longer
+     a constant, so it is a calc() there and a length here. */
   --cue-cap:  4.079rem;
   --cue-clip: calc(var(--cue-show) * var(--cue-cap));
 
@@ -647,6 +658,89 @@
    cascade; the two blocks are one idea and the gates must be kept in step. */
 @media (min-width: 1100px) and (min-height: 983px) {
   :root {
+    /* ---- the cut word's measure, out in the gutter -------------------------
+       This is the band where the word leaves the column and stands in the
+       page's bottom-left corner instead (see the doorway block at the foot of
+       this sheet, which does the moving). Out there it has a measure of its
+       own, and one rule sets it: the white to the LEFT of the word — page edge
+       to the P — and the white to its RIGHT — the S to the line the resume
+       starts on — are the same measure, and that measure is --title-left, the
+       page's own margin, which is already the inset the word's corner is set
+       to. So the word is as wide as the gutter less a margin at each end, and
+       the SIZE is whatever makes it exactly that wide. Nothing here is a
+       chosen length: give the page a different width and the word is re-fitted
+       to the space that is left, with the two margins still equal.
+       --edge is "where the text column starts", declared once up in the base
+       block and used by the carousel for the same reason. In this band its
+       max() always resolves to the 50vw term, since the narrowest window here
+       makes that term 334px against a floor of 1.35rem.
+
+       It is written in vw, and one thing follows from that and is worth having
+       in writing: 100vw counts the vertical scrollbar and the column is
+       centred in the width WITHOUT it, so --cue-measure runs half a scrollbar
+       wide of the true gutter — 7.5px on Windows, nothing at all where
+       scrollbars are overlaid, and this band always has a scrollbar because
+       the doorway gives it one. The word itself does not inherit that error.
+       Both of the things that have to be exact are held off something else:
+       the two margins off percentages of the containing block, which do not
+       count the scrollbar, and the CUT off the word's own `cap`, read from the
+       face at the size it actually resolved to. What is left reading the vw
+       twin is the height BUDGET alone — .doorway's height, --slide-h,
+       --rhyme — where being 0.72px out (0.62 x 0.1545 x 7.5) puts the second
+       screen's title that far below --title-top and takes that much off the
+       photo strip. Constant at every window size, and not worth a script.
+       It is worth knowing WHY the cut is not allowed to spend it, because the
+       number looks harmless: 0.72px is 0.9% of the cap at 1920 but 3.9% of it
+       at the narrow end of this band, where the word is a quarter the size. Off
+       --cue-clip the cut would therefore drift from 0.628 of the cap to 0.659
+       across the band — inside the 0.55-0.75 the paragraph on --cue-show gives
+       as legible, but drifting, and "the same fraction of letter at every size"
+       is the whole of what that number is for.
+
+       --cue-size is the same derivation as the base block's and re-derived
+       rather than reused, for two reasons. The measure is no longer --col, so
+       the cqw the base value is a percentage OF means something different; and
+       out here the fit is to the word's INK rather than to its box. The box has
+       a bearing at each end — the P's 90 units of left sidebearing, the S's 69
+       of right, and the trailing tracking step, all of it white — and fitting
+       the box would leave the two margins unequal by their difference, 0.0098
+       of the font size, which is the one thing this measure exists to make
+       equal. So: the ink of PROJECTS spans 4.1973em of advances, plus the 7
+       tracking steps BETWEEN the letters, less those two bearings —
+       4.1973 + 0.14 - 0.0439 - 0.0337 = 4.2596em — and 100/4.2596 = 23.48.
+       (There is no kerning to carry: the face has GPOS, and not one of this
+       word's seven pairs is in it.) Re-derive it, do not nudge it, if the face
+       or --cue-track changes; --cue-bearing is measured from the same face and
+       is what puts the P's ink, rather than its box, on the margin.
+
+       --cue-cap then follows as it does in the base block — the face's cap
+       ratio times the size — except that the size is now a proportion of a
+       measure rather than a length: 0.6582 x 0.2348 = 0.1545 of it.
+       Which makes every height on the page that was spending a constant here
+       spend a function of the window's WIDTH instead, and that is new. The word
+       is 4.079rem of cap at every window today; it is 1.52rem of it at
+       1100x983 and 5.31rem at 1920x1080, so the photo strip — the remainder,
+       and the one element on the page with no intrinsic height — hands back
+       25px at the narrow end and gives up 12px at the wide one (267px against
+       242px, and 309px against 321px). Two notes follow from that:
+       * The 983px floor above is derived as "the height at which the remainder
+         falls to exactly 15rem", and that height is now a function of the width
+         as well. The gate is deliberately left at 983px anyway. It is the
+         height below which photographs would have to go under their designed
+         minimum SOMEWHERE in the band, which is still true, and a floor that
+         moved with the width would be a breakpoint that moved with the width.
+         What changes is only that at the narrow end the strip is no longer
+         sitting exactly on that minimum when the gate opens.
+       * A window that is dragged WIDER now re-sizes the strip, where before
+         only a taller one did. index.html's rung picker is unaffected and
+         needs no change: both corner pictures are scaled to --fold, so the
+         width is still nothing to them, and the comment there saying "width
+         still asks for nothing" is still about them and still true. */
+    --cue-measure: calc(var(--edge) - 2 * var(--title-left));
+    --cue-size:    23.48cqw;
+    --cue-bearing: 0.0439em;
+    --cue-cap:     calc(0.1545 * var(--cue-measure));
+
     --slide-h: clamp(15rem,
                      calc(100vh - var(--rhyme) - var(--cue-gap)
                           - var(--cue-clip) - var(--cv-static)),
@@ -1434,6 +1528,12 @@ body::after {
    what .doorway is tall. The document is then 100vh + (Y - T), and the word
    arrives at T on the nose at every window height, with no script and no
    scroll-driven animation.
+   One footnote on Y, since two things now measure it. The word is CUT off its
+   own `cap` and .doorway is tall off --cue-clip, which is the same line arrived
+   at twice — exactly, wherever scrollbars are overlaid, and 0.72px apart where
+   they are not, in the direction of resting the title that far under T. See the
+   scrollbar paragraph at --cue-measure for why the cut is the one that gets to
+   be exact.
 
    Two consequences worth naming:
    * The cut becomes REAL. Everywhere else the word is clipped to --cue-clip by
@@ -1442,12 +1542,34 @@ body::after {
      there and the bottom of the window does the cutting, which is what the
      device was always drawing. So the clip comes off: leave it on and the word
      would arrive in the corner still guillotined.
-   * The word leaves the measure. It is no longer the last line of the column but
-     the title of its own screen, so it is set to the page's margin instead of
-     the text's — --title-left from the window's edge, the same measure as the
-     white above it, which is what makes the corner read as a corner. It keeps
-     the column's WIDTH, since --cue-size is a proportion of --col and every
-     height in the budget above is derived from it. A change of position only.
+   * The word leaves the measure — both of them. It is no longer the last line of
+     the column but the title of its own screen, so it is set to the page's
+     margin instead of the text's — --title-left from the window's edge, the same
+     measure as the white above it, which is what makes the corner read as a
+     corner. And it is no longer the column's width either: it is fitted to the
+     gutter it now stands in, so that the white either side of it is that same
+     --title-left twice over — page edge to the P, S to the line the resume
+     starts on. See --cue-measure in the one-screen block for the whole of that
+     derivation; here it is only placed.
+     The placement is two insets and no width. `left` puts the box on the
+     margin; `right` puts its far edge --title-left short of the column's left
+     edge, which sits at 50% - --col/2 of .page's padding box — .page's padding
+     is symmetrical, so the column's centre is the box's centre. Percentages of
+     the containing block rather than of the viewport on purpose: they do not
+     count the scrollbar, and both margins are therefore exactly equal on a
+     window that has one. --cue-measure, which does count it, is spent only on
+     the height budget and says so.
+     `width: auto` between the two insets is what makes the fit happen at all —
+     .cut-title is the container --cue-size is a percentage of, so the word takes
+     its size from whatever the two insets leave. Inline-size containment cannot
+     make that circular: the used width comes from the insets, never from the
+     word inside.
+     --cue-bearing is the last of it, and it is the difference between fitting
+     the word's box and fitting its ink. The P's outline starts 0.0439em inside
+     its own advance, so the box goes that much further left than the margin and
+     the INK lands on it. Relative, not a negative margin: a negative margin
+     would widen the box rather than move it, and the word would be fitted to
+     the wrong measure by exactly the bearing.
 
    .cut-title is positioned rather than laid out for one reason: .page is exactly
    one screen and the doorway is the next, so the title can be a flex item of
@@ -1489,13 +1611,31 @@ body::after {
   }
   .cut-title {
     position: absolute;
-    top: calc(100vh - var(--cue-clip));
+    top: 100vh;
     left: var(--title-left);
-    width: var(--col);
+    right: calc(50% + var(--col) / 2 + var(--title-left));
+    width: auto;
     max-width: none;
     margin: 0;
   }
-  .cut-title > a { overflow: visible; height: auto; }
+  .cut-title > a {
+    overflow: visible;
+    height: auto;
+    /* The cut, and the same expression the flow regime cuts with — the box is
+       pinned to the fold and the word is lifted --cue-show of its own cap back
+       above it. `1cap` is read from the face that resolved at the size that
+       resolved, so it is exact where --cue-clip is a budget estimate, and the
+       two regimes now say the cut the same way instead of one saying it in
+       `cap` and the other in a rem twin. A negative margin rather than an
+       offset on `top`, because the unit only means anything on the element
+       whose font it is read from: on .cut-title, `1cap` would be the body
+       serif at 15px. It cannot collapse through .cut-title either — a
+       container establishes an independent formatting context — and .cut-title
+       carries no paint containment, so the lifted word is not clipped. */
+    margin-top: calc(-1 * var(--cue-show) * 1cap);
+    position: relative;
+    left: calc(-1 * var(--cue-bearing));
+  }
 }
 
 /* ---- respect reduced-motion preferences ---------------------------------- */
