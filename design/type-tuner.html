@@ -543,7 +543,15 @@ var GROUPS = [
   { name: "Page", rows: [
     { sel: "body",  prop: "font-size",   unit: "px",  def: 15,   min: 11, max: 22, step: 0.25, label: "base size",   hi: ".col" },
     { sel: "body",  prop: "line-height", unit: "",    def: 1.55,                    label: "base leading",           hi: ".col" },
-    { sel: ":root", prop: "--col",       unit: "rem", def: 27,   min: 16, max: 44, step: 0.25, label: "column width", hi: ".col" }
+    { sel: ":root", prop: "--col",       unit: "rem", def: 27,   min: 16, max: 44, step: 0.25, label: "column width", hi: ".col" },
+
+    /* The one row here that moves the CV rather than setting it: the whole block
+       off the page's centre line. Outline and no tint, like the edge fade — a
+       wash of orange over the entire column hides everything being judged. */
+    { sel: ".col",  prop: "translate",   unit: "rem", def: null, min: -14, max: 14, step: 0.05,
+      label: "shift right", hi: ".col", hiLine: true,
+      note: "not declared today — the column is centred by `margin: 0 auto auto`",
+      tip: "The whole resume block, off centre: masthead, intro, photo strip, work, education, contact and the toggle all move together, because all of them are .col. Negative moves it left.\n`translate` rather than a margin, deliberately. The layout box stays where it was and only the paint moves, so nothing re-wraps at any offset and the strip's full-bleed and its edge fade travel with the text instead of being re-derived against a new centre — which is what a margin would ask for.\nWhat does NOT move: the cut title (it is .page's own child, not .col's, so PROJECTS stays on the page's own axis) and the two corner pictures, which are painted on body. That is the point of the row — it is for judging the block against the plate and the car — and it is also what a shift takes out of alignment, so watch the title's left edge as well as the column's.\nOn a narrow window there is nothing to shift into: at 27rem the gutter is down to 1.35rem on a phone, and html and body clip overflow-x, so the text simply leaves the screen. Judge this at a real desktop size." }
   ] },
 
   /* hi: a custom property governs whatever reads it, so these point at the text

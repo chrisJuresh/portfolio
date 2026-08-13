@@ -175,6 +175,17 @@ as you drag — same trick as the lab, so nothing is cloned and it can't drift.
 This is the tool the current stack was chosen with; the four rows start on the
 stacks `portfolio/styles.css` declares today, marked `(ships)` in each list.
 
+**Page → shift right** is the one row that moves the CV rather than setting it:
+`.col { translate }`, the whole resume block off the page's centre line —
+masthead, intro, photo strip, work, education, contact and the toggle together,
+negative for left. A `translate` and not a margin, so the layout box stays put
+and nothing re-wraps at any offset, and the strip's full-bleed and edge fade
+travel with the text instead of being re-derived against a new centre. The cut
+title doesn't move (it is `.page`'s child, not `.col`'s) and neither do the two
+corner pictures, which is both the use of the row — judging the block against the
+plate and the car — and the alignment it costs. There is nothing to shift into on
+a phone, where the gutter is 1.35rem.
+
 ### The font lists
 
 **Whichever face the pointer is on is the face in the page**, so the way to
