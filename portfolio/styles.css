@@ -114,17 +114,21 @@
      right-hand edge is off-screen and you are looking at the left-hand part of
      it at full size rather than at the whole of it shrunk — and that is the
      intended reading, since the corner the two rules pin are both on the left. */
-  --plate-fold: 100svh; /* the datum: the bottom of the page before any scrolling.
-                           svh and not vh, and the difference is a phone: vh is
-                           the height with the browser's own chrome retracted,
-                           which is not what is on screen when the page opens.
-                           On a desktop the two are the same number.            */
-  --plate-y: 0px;       /* up from --plate-fold, positive → up; negative hangs it
+  --fold: 100svh;       /* the datum, and the page's rather than the plate's —
+                           the corner car below is measured off the same line, and
+                           the two pictures growing together is the whole reason
+                           it is one variable and not one each.
+                           The bottom of the page before any scrolling. svh and
+                           not vh, and the difference is a phone: vh is the height
+                           with the browser's own chrome retracted, which is not
+                           what is on screen when the page opens. On a desktop the
+                           two are the same number.                             */
+  --plate-y: 0px;       /* up from --fold, positive → up; negative hangs it
                            past the fold, into the second screen. 0 IS the first
                            rule, and it is still a variable so that the rule can
                            be broken by hand — the arithmetic below follows it
                            rather than assuming it.                             */
-  --plate-band: calc(var(--plate-fold) - var(--plate-y));  /* what those two
+  --plate-band: calc(var(--fold) - var(--plate-y));  /* what those two
                            leave for the picture to fill, top of page to fold  */
   --plate-fill: 0.863;  /* the second rule, as a number: the picture's width as a
                            share of the band it fills. The file is taller than it
@@ -175,6 +179,78 @@
      have to name one width and would then fight the one index.html sets. The
      theme half of the choice is made in the same place as the rung half. */
   --plate-src: none;
+
+  /* The corner car — the second plate, in the page's TOP-RIGHT corner, and the
+     block after the plate's has the whole of it. Same grade, same ladder, same
+     script; a shorter set of controls, because it is anchored by one rule where
+     the plate is anchored by two.
+
+     That rule: the picture's own top-right corner stands in the page's. As shot
+     the pylon already runs up the right-hand edge of the frame and the gondola
+     already hangs down and to the left of it, so the corner carries the weight
+     and the car leans into the page — which is what the plate's mirror was for,
+     and is why this frame does not need one (see PICTURES in build-plate.py).
+
+     There is no second rule, and no bottom edge to pin. The plate holds the foot
+     of the first screen because it is what the column is printed on and the cut
+     title lands on the same line; the car is an accent in the opposite corner
+     and is finished well above the fold, so pinning its foot anywhere would only
+     stretch it. What it gets instead of a second rule is the plate's scaling —
+     --fold, not a fixed length — so on a taller window the two grow together. A
+     car that stayed 400px while the plate went to 1400 would drift out of scale
+     with it on exactly the displays where both are most visible. */
+  --car-opacity: 0.12;  /* the same judgement as --plate-opacity, and the same
+                           answer, for now. Separate because they are two
+                           pictures with two different amounts of dark in them,
+                           and the day one of them needs a nudge is the day
+                           sharing the variable would have been the bug.       */
+  --car-fill: 0.78;     /* the picture's width as a share of --fold, exactly as
+                           --plate-fill is a share of the band.
+                           It has a floor, and the floor is the reason for the
+                           value: the file is 1.332 times as tall as it is wide,
+                           so below 0.751 the picture's own foot lands ABOVE the
+                           fold and you get a horizontal line across the pylon in
+                           mid-air. Past it the foot is cut by the fold instead,
+                           which is the page's own edge and reads as one. 0.78
+                           clears that by a little rather than sitting on it, and
+                           makes the car 842px wide on a 1920×1080 frame against
+                           the plate's 932 — the smaller of the two, in the corner
+                           you read second.                                     */
+  --car-w: min(calc(var(--car-fill) * var(--fold)), 2400px);
+                        /* the same ceiling as --plate-w and for the same reason:
+                           2800px is the top rung index.html will fetch, and past
+                           this the page would be asking to have a photograph
+                           enlarged. Nothing is near it — a 4K desktop 2160px tall
+                           asks for 1685px. And no floor, as the plate has none:
+                           a short window gets a small car, which is still the
+                           same picture in the same corner.                     */
+  --car-fade: 0.22;     /* how much of the picture's own width its INNER edge —
+                           the left one, the only edge of it that ends anywhere
+                           but a page edge — takes to dissolve into the paper.
+                           The plate needs no such thing and says so at length:
+                           its two inner edges are empty sky, so there is nothing
+                           there to cut. This frame's are not. The gantry runs
+                           clean across the top of it and off the side, so a hard
+                           stop puts a straight vertical line down the page at
+                           whatever x the width happens to end on, and at this
+                           opacity a straight line is the one thing that reads as
+                           a crop rather than as stock.
+                           0.22 of 842px is 185px on the 1920×1080 frame, which
+                           finishes well before the gondola — the subject is in
+                           the middle of the frame here, not spread across it,
+                           which is exactly why the ramp the plate could not have
+                           is available to this one.                            */
+  --car-x: 0px;         /* out from the RIGHT edge of the page, positive → left  */
+  --car-y: 0px;         /* down from the top of the page, positive → down        */
+  --car-crop: 0;        /* how much of the picture's TOP to cut off, as a share of
+                           --car-w — the mirror of --plate-crop, which cuts the
+                           foot. 0 because the track is already cut by the top of
+                           the frame and cutting it again buys nothing; it is here
+                           because the two pictures should answer the same set of
+                           questions, and because re-tuning --car-fill is exactly
+                           when you want it.                                    */
+  /* Picked by index.html, like --plate-src, and unset for the same reason. */
+  --car-src: none;
 
   /* Spectral (Production Type) for the small lettered labels, Vollkorn (Friedrich
      Althausen) for everything meant to be read. Both self-hosted above.
@@ -523,13 +599,15 @@
   /* Slightly stronger on black. The plate's own blacks were lifted to a dark
      grey, so on #fff it has the paper to fall away into and on #000 it has
      nothing — at 0.12 the shadow half of it simply disappears into the page.
+     The car is the same picture stock and takes the same lift.
      This is now the SECOND thing that differs between the themes rather than the
      only one: the grade itself is baked per theme (see the corner-plate block).
-     Which means the two numbers are worth re-reading against each other after
+     Which means all four numbers are worth re-reading against each other after
      any change to the dark grade — a dark ladder tuned to sit properly on black
-     may well want this back at light's 0.12, since lifting the opacity was the
+     may well want these back at light's 0.12, since lifting the opacity was the
      only lever there used to be for the job the endpoints can now do directly. */
   --plate-opacity: 0.17;
+  --car-opacity: 0.17;
 }
 
 /* ---- composing to one screen ---------------------------------------------
@@ -689,13 +767,14 @@ a { color: inherit; }
    negative layer is still above the paper. */
 
 /* Small-viewport units are the one thing here a browser might not have, and an
-   unknown unit inside a calc() takes --plate-band and --plate-w down with it,
-   which is a page with no plate at all rather than a plate in the wrong place.
+   unknown unit inside a calc() takes --plate-band, --plate-w and --car-w down
+   with it, which is a page with no pictures in the corners at all rather than
+   pictures in the wrong corners.
    Every engine has had svh since 2022, so this is a backstop and not a policy:
    it gives back the pre-svh reading of the same datum, correct everywhere except
    a phone with retracting chrome. */
 @supports not (height: 100svh) {
-  :root { --plate-fold: 100vh; }
+  :root { --fold: 100vh; }
 }
 
 body::after {
@@ -736,6 +815,83 @@ body::after {
      scaling to the fold gives up, and it is white space out there too. */
   background-size: var(--plate-w) auto;
   opacity: var(--plate-opacity);
+}
+
+/* ---- the corner car -------------------------------------------------------
+   The second plate: a cable car hanging off its pylon, in the top-right corner
+   of the document, at --car-opacity. Everything the block above says about why
+   the plate is a baked file rather than a CSS filter, why it has no soft edge,
+   and why it starts at the top of the document and leaves at the fold is true
+   of this one word for word — it is the same photograph stock, off the same
+   script, and the two are meant to be read as one piece of paper.
+
+   Three things are its own.
+
+   An element and not a pseudo, and that is the whole reason .car exists in
+   index.html. body::after is the plate and body::before is the top scroll-snap
+   port in the desktop block at the foot of this sheet, so body has none left,
+   and the alternatives are worse than one empty div: .page::before would put the
+   car inside the page's own fade-in, so the two corners would arrive at
+   different times, and html::after would hand it the initial containing block
+   and a stacking order that depends on background propagation. A div costs one
+   line of HTML and answers neither question.
+
+   It is anchored by its top-right corner rather than by two edges, which is
+   --car-fill's job to explain and :root's comment does. So the box does not have
+   to be the picture's own frame — it is only a clip, and what it clips is the
+   fold: like the plate, the car is part of the composition of the page you open
+   and is gone by the second screen. Its foot lands well above that line at every
+   size the ceiling on --car-w allows, so in practice the clip never fires; it is
+   there so that a hand-tuned --car-fill or --car-y cannot hang a photograph into
+   the doorway.
+
+   --car-crop cuts the TOP rather than the foot, which is the corner it is
+   anchored to — same arithmetic as --plate-crop with the sign of the edge
+   changed, so what falls outside the box's top edge is what is cut.
+
+   And it has the soft edge the plate refused, on one side, for the reason the
+   plate refused it everywhere: a ramp is only available where the subject is not
+   under it. --car-fade says the rest. It is a mask and not a second baked alpha
+   on purpose — where a picture's inner edge should start dissolving depends on
+   how wide it is drawn and where it is standing, and those are --car-fill and
+   --car-x, which are here. Baking it would fix the ramp in the file's own pixels
+   and then re-tuning either one would silently move it off the gantry. The grade
+   is baked because it is the same at every size; this is not.
+
+   z-index -1, out of flow, pointer-events none: as the plate. It is under the
+   type and under the photo strip that bleeds past it on the right, which is
+   where the two of them meet — at this opacity the strip's own edge mask carries
+   the car through rather than painting over it. */
+.car {
+  /* The picture's inner edge, in the box's own coordinates: the box is the full
+     width of the page and the picture hangs off its right-hand end. Named so
+     that the three places the mask needs it read as one thing. */
+  --car-inner: calc(100% - var(--car-x) - var(--car-w));
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: var(--fold);
+  z-index: -1;
+  pointer-events: none;
+  background-image: var(--car-src);
+  background-repeat: no-repeat;
+  background-position:
+    right var(--car-x)
+    top calc(var(--car-y) - var(--car-crop) * var(--car-w));
+  background-size: var(--car-w) auto;
+  /* Two stops and a hint, which is the same ramp .carousel builds at each of its
+     own ends: the bare position between them is a colour hint, and putting it at
+     0.25 + --fade-bend of the span is the power-of-two ease that matches a
+     smoothstep, so the dissolve has no piecewise-linear kink in it to catch the
+     eye. Everything left of the picture is paper anyway, so masking the whole
+     box costs nothing to the left of the first stop. */
+  mask-image: linear-gradient(to right,
+    transparent var(--car-inner),
+    calc(var(--car-inner) + (0.25 + var(--fade-bend)) * var(--car-fade) * var(--car-w)),
+    #000 calc(var(--car-inner) + var(--car-fade) * var(--car-w)));
+  mask-repeat: no-repeat;
+  opacity: var(--car-opacity);
 }
 
 /* ---- centered column + page fade-in -------------------------------------- */
