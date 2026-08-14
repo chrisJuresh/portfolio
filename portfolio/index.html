@@ -253,30 +253,13 @@
       }
     })();
   </script>
-  <link rel="stylesheet" href="styles.css?v=22">
-  <script>
-    /* ---- the cut title's real face, on this machine only --------------------
-       --serif-display leads with Friz Quadrata and every --cue-* number in the
-       stylesheet is derived for it, but nothing on the shipped page fetches it:
-       it is a commercial Adobe/ITC cut with no webfont licence, so serving it
-       from chrisj.uk would be redistribution. A reader without it installed
-       falls through to Sitka Banner and always has.
-       That also means the one face the title is tuned for is the one face the
-       author cannot see while tuning it. So on localhost — and only there — the
-       @font-face blocks in /fonts/friz-local.css are attached, which point at
-       the -fixedmetrics pair whose cap height is not a lie. Everywhere else
-       this does nothing at all, which is the point; see fonts/friz-local.css.
-       Appended after styles.css rather than written as a <link> above it so it
-       cannot delay the first paint of a page it is absent from in production. */
-    (function () {
-      var h = location.hostname;
-      if (h !== "localhost" && h !== "127.0.0.1" && h !== "[::1]") return;
-      var l = document.createElement("link");
-      l.rel = "stylesheet";
-      l.href = "/fonts/friz-local.css";
-      document.head.appendChild(l);
-    })();
-  </script>
+  <!-- The cut title's face is now served to everyone from an @font-face at the
+       foot of styles.css. This used to be followed by a script that attached
+       /fonts/friz-local.css on localhost only, because the licence to serve Friz
+       Quadrata was unsettled and the author could otherwise never see the face
+       the title is tuned for. The licence is settled; the script and the sheet
+       it loaded are both gone. See the cut title block in styles.css. -->
+  <link rel="stylesheet" href="styles.css?v=23">
 </head>
 <body>
   <!-- Only ever on screen while a corner picture is genuinely outstanding: it is
