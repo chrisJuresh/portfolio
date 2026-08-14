@@ -267,12 +267,12 @@
                            is available to this one. It is a share of the width, so
                            it followed --car-fill down without re-tuning; that is
                            the whole reason it is a share.                      */
-  --car-x: -67px;       /* out from the RIGHT edge of the page, positive → left.
+  --car-x: -75px;       /* out from the RIGHT edge of the page, positive → left.
                            Negative, which no other placement value here is, and
                            it is doing a job rather than nudging: at the foot of
                            the frame the pylon is the rightmost 10.7% of the width
-                           and nothing else is left, so 67px is very nearly the
-                           whole of that slab on the 1920×1080 frame this was tuned
+                           and nothing else is left, so 75px carries the whole of
+                           that slab off the 1920×1080 frame this was tuned
                            on (0.107 × 650px = 70px). Pushing it that far off the
                            right edge takes the picture's own cut bottom off the
                            page with it, which is what lets --car-fill sit under
@@ -282,7 +282,9 @@
                            window a sliver of that edge comes back into the corner,
                            at 12% opacity and a few tens of pixels wide. Re-tune
                            the pair, not this one, if it ever reads.            */
-  --car-y: 0px;         /* down from the top of the page, positive → down        */
+  --car-y: -54px;       /* down from the top of the page, positive → down, so this
+                           lifts the picture off the top edge rather than pushing
+                           it down — the same trick --car-x plays on the right    */
   --car-crop: 0;        /* how much of the picture's TOP to cut off, as a share of
                            --car-w — the mirror of --plate-crop, which cuts the
                            foot. 0 because the track is already cut by the top of
