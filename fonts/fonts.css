@@ -100,10 +100,12 @@
    vercel.json caches /fonts/(.*).woff2 immutable for a year; the originals stay
    in the folder as the record of what arrived. See README.md.
 
-   This sheet is still linked by no page, and these two faces are still the ones
-   in here that may not be served — Friz Quadrata Std is a commercial Adobe/ITC
-   cut and the kit carries no webfont licence. Fixing the metrics changed what
-   the file says about itself, not what may be done with it.
+   This sheet is still linked by no page. The regular below is nevertheless
+   served now — portfolio/styles.css declares it itself, for the cut title — on a
+   webfont licence covering chrisj.uk that was settled after this comment first
+   said it could not be. See README.md for what that licence covers before
+   serving the BOLD, which no page asks for and which nothing has cleared for any
+   use the regular's grant does not already cover.
    ========================================================================== */
 @font-face {
   font-family: "Friz Quadrata Std";
