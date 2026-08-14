@@ -413,10 +413,18 @@ var LEAD  = STACKS[3][1];
 
    The first entry is what styles.css declares today, character for character —
    the sheet wraps it across two lines, this is the same value on one. */
+var FRIZ = '"Friz Quadrata", "Friz Quadrata Std", "ITC Friz Quadrata", "Sitka Banner", Constantia, Georgia, serif';
+
+/* What styles.css declared BEFORE Friz, kept as a row because it is the state
+   every --cue-* number would be reverted to if the face were abandoned, and
+   because a tool that can only show the current answer cannot show it is an
+   answer. Reverting means this stack AND --cue-size 25.32, --cue-track -0.012,
+   --cue-cap 4.187rem together — the three are one decision, not three knobs. */
 var OGG = '"Ogg Roman", "Ogg", Didot, "Bodoni MT", "Big Caslon", "Sitka Banner", Constantia, Georgia, serif';
 
 var DISPLAY = [
-  ["Ogg → Sitka Banner (ships)", OGG],
+  ["Friz → Sitka Banner (ships)", FRIZ],
+  ["Ogg → Sitka Banner (was)",    OGG],
 
   /* The two retail faces, asked for on their own rather than at the head of a
      fallback chain — which is the only way to find out whether this machine has
@@ -535,7 +543,15 @@ var GROUPS = [
   { name: "Page", rows: [
     { sel: "body",  prop: "font-size",   unit: "px",  def: 15,   min: 11, max: 22, step: 0.25, label: "base size",   hi: ".col" },
     { sel: "body",  prop: "line-height", unit: "",    def: 1.55,                    label: "base leading",           hi: ".col" },
-    { sel: ":root", prop: "--col",       unit: "rem", def: 27,   min: 16, max: 44, step: 0.25, label: "column width", hi: ".col" }
+    { sel: ":root", prop: "--col",       unit: "rem", def: 27,   min: 16, max: 44, step: 0.25, label: "column width", hi: ".col" },
+
+    /* The one row here that moves the CV rather than setting it: the whole block
+       off the page's centre line. Outline and no tint, like the edge fade — a
+       wash of orange over the entire column hides everything being judged. */
+    { sel: ".col",  prop: "translate",   unit: "rem", def: null, min: -14, max: 14, step: 0.05,
+      label: "shift right", hi: ".col", hiLine: true,
+      note: "not declared today — the column is centred by `margin: 0 auto auto`",
+      tip: "The whole resume block, off centre: masthead, intro, photo strip, work, education, contact and the toggle all move together, because all of them are .col. Negative moves it left.\n`translate` rather than a margin, deliberately. The layout box stays where it was and only the paint moves, so nothing re-wraps at any offset and the strip's full-bleed and its edge fade travel with the text instead of being re-derived against a new centre — which is what a margin would ask for.\nWhat does NOT move: the cut title (it is .page's own child, not .col's, so PROJECTS stays on the page's own axis) and the two corner pictures, which are painted on body. That is the point of the row — it is for judging the block against the plate and the car — and it is also what a shift takes out of alignment, so watch the title's left edge as well as the column's.\nOn a narrow window there is nothing to shift into: at 27rem the gutter is down to 1.35rem on a phone, and html and body clip overflow-x, so the text simply leaves the screen. Judge this at a real desktop size." }
   ] },
 
   /* hi: a custom property governs whatever reads it, so these point at the text
@@ -662,21 +678,21 @@ var GROUPS = [
      visible slice is 62% of one capital, and a wash of orange behind it hides the
      thing being judged. */
   { name: "PROJECTS — the cut title", rows: [
-    { sel: ":root", prop: "--serif-display", kind: "font", stacks: DISPLAY, def: OGG,
+    { sel: ":root", prop: "--serif-display", kind: "font", stacks: DISPLAY, def: FRIZ,
       label: "display face", hi: ".cut-title > a", hiLine: true,
-      tip: "Its own list, not the body one: fifty-odd faces judged on eight capitals with two thirds of each one cut away, which is a different question from what reads well at 15px.\nOgg is a retail licence with nothing to self-host, so the shipped stack is a chain of near-misses ending at Sitka Banner — which is what every Windows reader actually sees." },
+      tip: "Its own list, not the body one: fifty-odd faces judged on eight capitals with two thirds of each one cut away, which is a different question from what reads well at 15px.\nFriz Quadrata is what the stylesheet names and what every number below is derived for. It is a commercial Adobe/ITC cut with no webfont licence, so it is NOT served: a reader without it installed gets the tail of the stack, which ends at Sitka Banner. This tool sees it because /fonts/fonts.css declares it locally." },
 
-    { sel: ":root", prop: "--cue-size", unit: "cqw", def: 25.32, min: 6, max: 60, step: 0.01,
+    { sel: ":root", prop: "--cue-size", unit: "cqw", def: 22.95, min: 6, max: 60, step: 0.01,
       label: "word size", hi: ".cut-title > a", hiLine: true,
-      tip: "The word's size as a fraction of the column's own width, in cqw against .cut-title — one proportion at every window size instead of a size that suits one of them.\n25.32 sets PROJECTS to exactly the full measure in the Sitka Banner fallback. It is the one number in this group that is face-specific, because fitting a word to a measure depends on that face's advance widths: expect to retune it after every change of face above." },
+      tip: "The word's size as a fraction of the column's own width, in cqw against .cut-title — one proportion at every window size instead of a size that suits one of them.\nIt is the one number in this group that is face-specific, and it is DERIVED, not eyeballed: 100 / (the advance of PROJECTS in em at the tracking below). Friz sets it in 4.1973em + 8 tracking steps = 4.3573em, so 100/4.3573 = 22.95 and the word's box is exactly the measure. The same arithmetic returns 25.33 for Sitka Banner at -0.012em. Re-derive it after any change of face or tracking; do not nudge it.\nONE CAVEAT ON THE FRAME: this is the value that ships for a word set to the COLUMN, which is every frame in the list below it. Past 1100x983 the word leaves the column for the gutter beside the resume and styles.css re-derives the same rule against that measure — 23.48cqw, fitted to the word's ink — so at that size, which only \"my window\" reaches, the slider starts from a value the page is not using. What it exports is still the column's number, which is the one styles.css declares here." },
 
     { sel: ":root", prop: "--cue-show", unit: "", def: 0.62, min: 0.2, max: 1.4, step: 0.01,
       label: "shown of the cap", hi: ".cut-title > a", hiLine: true,
-      tip: "How much of the word survives the cut, as a fraction of its CAP HEIGHT — read as `1cap` from whichever face resolved, so the same fraction of letter shows in any face at any size.\n0.62 is set by the two letters that die first, not by taste: R stops reading as P once its bowl has closed (~0.55 in a Didone), and J is a bare stem until its hook starts (~0.6). Above ~0.75 it stops reading as cut and starts reading as a word with an odd baseline." },
+      tip: "How much of the word survives the cut, as a fraction of its CAP HEIGHT — read as `1cap` from whichever face resolved, so the same fraction of letter shows in any face at any size.\n0.62 is set by the letters that die first, not by taste: R stops reading as P once its bowl has closed (~0.55 in a Didone, 0.49 in Georgia). Above ~0.75 it stops reading as cut and starts reading as a word with an odd baseline; below ~0.55 PROJECTS goes.\nThe J half of that rule is moot in Friz, whose J descends 0.349 cap below the baseline — outside the cap slab the clip box is, so cut, it is a bare stem at every value and the word reads PRO|ECTS. That is the face, not a number to tune." },
 
-    { sel: ":root", prop: "--cue-track", unit: "em", def: -0.012, min: -0.08, max: 0.2, step: 0.001,
+    { sel: ":root", prop: "--cue-track", unit: "em", def: 0.02, min: -0.08, max: 0.2, step: 0.001,
       label: "tracking", hi: ".cut-title > a", hiLine: true,
-      tip: "Display caps this large want the tracking drawn in; the same word at 15px would want it opened out." },
+      tip: "Two forces pull opposite ways: display caps this large want the tracking drawn in, and a string of capitals wants it opened out. Which wins is a question about the face.\nPositive here because Friz's caps are fitted tight and its wedge arms overhang their own advance — T measures negative sidebearings on BOTH sides. Set solid, the ink gaps in the visible band run 0.011 cap at CT and 0.000 at TS, so the last two letters touch before any tracking at all. 0.02em puts the tightest pair at 0.030 cap, which is where -0.012em put Sitka's tightest pair: same optical tightness, measured on the pair that governs.\nWhat it cannot fix: the gaps are UNEVEN — EC opens to 0.216 cap against TS's 0.030 — and tracking is additive, so no single value evens them out." },
 
     { sel: ".cut-title > a", prop: "font-weight", unit: "", def: 400, min: 100, max: 900, step: 25,
       label: "weight", hi: ".cut-title > a", hiLine: true,
@@ -1379,8 +1395,9 @@ function faceNote(r) {
 /* Does PROJECTS still fit the column, and at what size would it?
 
    This is the failure the tool could not see. --cue-size is the ONE face-specific
-   number in the cut title — 25.32cqw fits the word to the full measure in Sitka
-   Banner and in nothing else — and `.cut-title > a` clips on both axes, so a wider
+   number in the cut title — 22.95cqw fits the word to the full measure in Friz
+   and in nothing else, as 25.32 did in Sitka Banner before it — and
+   `.cut-title > a` clips on both axes, so a wider
    face does not overflow visibly, it loses its tail. Silently: a cut title is
    MEANT to be cut, so a T sliced down its stem by the right-hand edge reads as the
    device working. Of the faces in DISPLAY that resolve on this machine, thirty-four

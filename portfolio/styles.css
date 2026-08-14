@@ -115,9 +115,9 @@
      it at full size rather than at the whole of it shrunk — and that is the
      intended reading, since the corner the two rules pin are both on the left. */
   --fold: 100svh;       /* the datum, and the page's rather than the plate's —
-                           the corner car below is measured off the same line, and
-                           the two pictures growing together is the whole reason
-                           it is one variable and not one each.
+                           the corner car and the corner eye below are measured off
+                           the same line, and the three pictures growing together is
+                           the whole reason it is one variable and not one each.
                            The bottom of the page before any scrolling. svh and
                            not vh, and the difference is a phone: vh is the height
                            with the browser's own chrome retracted, which is not
@@ -199,58 +199,213 @@
      --fold, not a fixed length — so on a taller window the two grow together. A
      car that stayed 400px while the plate went to 1400 would drift out of scale
      with it on exactly the displays where both are most visible. */
-  --car-opacity: 0.12;  /* the same judgement as --plate-opacity, and the same
-                           answer, for now. Separate because they are two
-                           pictures with two different amounts of dark in them,
-                           and the day one of them needs a nudge is the day
-                           sharing the variable would have been the bug.       */
-  --car-fill: 0.78;     /* the picture's width as a share of --fold, exactly as
+  --car-opacity: 0.135; /* the same judgement as --plate-opacity and NO LONGER the
+                           same answer — this is the day the comment below was
+                           written for, and the reason the variable was kept
+                           separate.
+                           On white the three pictures were not equally loud: laid
+                           on the page and measured over each one's own subject,
+                           the plate sat dL* 9.89 off the paper, the eye 9.08 and
+                           this 8.80, so the car read as the palest of the three
+                           beside a plate that was right. The cause is the frame
+                           and not the grade — they were baked on identical
+                           endpoints; the gondola and the gantry simply sit higher
+                           in the frame's own range than the dome does, and step 2
+                           pins the top of each frame without saying anything about
+                           the mass under it.
+                           0.135 is solved rather than judged: it is the opacity at
+                           which this picture's mean reaches the plate's 9.89.
+                           Opacity is the knob on THIS paper because the endpoints
+                           cannot be — at 0.12 the furthest any ink gets from white
+                           is dL* 10.68 and all three already sit inside the last
+                           dL* of it, so equalising by HIGHLIGHT would mean crushing
+                           the car to a silhouette. On black the argument inverts
+                           and the endpoints do the work; see WHICH KNOB EACH PAPER
+                           ANSWERS TO in build-plate.py. The dark block near the
+                           foot of this sheet restates all three at 0.17 and so is
+                           unaffected by this line.                            */
+  --car-fill: 0.602;    /* the picture's width as a share of --fold, exactly as
                            --plate-fill is a share of the band.
-                           It has a floor, and the floor is the reason for the
-                           value: the file is 1.332 times as tall as it is wide,
-                           so below 0.751 the picture's own foot lands ABOVE the
-                           fold and you get a horizontal line across the pylon in
-                           mid-air. Past it the foot is cut by the fold instead,
-                           which is the page's own edge and reads as one. 0.78
-                           clears that by a little rather than sitting on it, and
-                           makes the car 842px wide on a 1920×1080 frame against
-                           the plate's 932 — the smaller of the two, in the corner
-                           you read second.                                     */
+                           It USED to have a floor at 0.751, and the floor used to
+                           be the reason for the value: the file is 1.332 times as
+                           tall as it is wide, so below that the picture's own foot
+                           lands ABOVE the fold and there is a horizontal line
+                           across the pylon in mid-air where the frame ends. What
+                           takes the floor away is --car-x below, which now carries
+                           that foot off the right-hand edge of the page instead of
+                           relying on the fold to cut it — the two are tuned
+                           together and moving either one alone puts the line back.
+                           0.602 makes the car 650px wide on a 1920×1080 frame
+                           against the plate's 932, so the corner you read second
+                           is now clearly the quieter of the two rather than only
+                           slightly.                                            */
   --car-w: min(calc(var(--car-fill) * var(--fold)), 2400px);
                         /* the same ceiling as --plate-w and for the same reason:
                            2800px is the top rung index.html will fetch, and past
                            this the page would be asking to have a photograph
                            enlarged. Nothing is near it — a 4K desktop 2160px tall
-                           asks for 1685px. And no floor, as the plate has none:
+                           asks for 1300px. And no floor, as the plate has none:
                            a short window gets a small car, which is still the
                            same picture in the same corner.                     */
   --car-fade: 0.22;     /* how much of the picture's own width its INNER edge —
                            the left one, the only edge of it that ends anywhere
                            but a page edge — takes to dissolve into the paper.
-                           The plate needs no such thing and says so at length:
-                           its two inner edges are empty sky, so there is nothing
-                           there to cut. This frame's are not. The gantry runs
+                           Neither of the other two needs such a thing, and the
+                           plate says so at length: their inner edges are empty sky,
+                           so there is nothing there to cut. This frame's are not
+                           empty and this is the only one of the three that has the
+                           control at all. The gantry runs
                            clean across the top of it and off the side, so a hard
                            stop puts a straight vertical line down the page at
                            whatever x the width happens to end on, and at this
                            opacity a straight line is the one thing that reads as
                            a crop rather than as stock.
-                           0.22 of 842px is 185px on the 1920×1080 frame, which
+                           0.22 of 650px is 143px on the 1920×1080 frame, which
                            finishes well before the gondola — the subject is in
                            the middle of the frame here, not spread across it,
                            which is exactly why the ramp the plate could not have
-                           is available to this one.                            */
-  --car-x: 0px;         /* out from the RIGHT edge of the page, positive → left  */
-  --car-y: 0px;         /* down from the top of the page, positive → down        */
+                           is available to this one. It is a share of the width, so
+                           it followed --car-fill down without re-tuning; that is
+                           the whole reason it is a share.                      */
+  --car-x: -75px;       /* out from the RIGHT edge of the page, positive → left.
+                           Negative, which no other placement value here is, and
+                           it is doing a job rather than nudging: at the foot of
+                           the frame the pylon is the rightmost 10.7% of the width
+                           and nothing else is left, so 75px carries the whole of
+                           that slab off the 1920×1080 frame this was tuned
+                           on (0.107 × 650px = 70px). Pushing it that far off the
+                           right edge takes the picture's own cut bottom off the
+                           page with it, which is what lets --car-fill sit under
+                           the 0.751 floor its comment used to describe.
+                           It is a length and the slab is a share, so the two only
+                           coincide exactly at one window height: on a much taller
+                           window a sliver of that edge comes back into the corner,
+                           at 12% opacity and a few tens of pixels wide. Re-tune
+                           the pair, not this one, if it ever reads.            */
+  --car-y: -54px;       /* down from the top of the page, positive → down, so this
+                           lifts the picture off the top edge rather than pushing
+                           it down — the same trick --car-x plays on the right    */
   --car-crop: 0;        /* how much of the picture's TOP to cut off, as a share of
                            --car-w — the mirror of --plate-crop, which cuts the
                            foot. 0 because the track is already cut by the top of
                            the frame and cutting it again buys nothing; it is here
-                           because the two pictures should answer the same set of
+                           because the pictures should answer the same set of
                            questions, and because re-tuning --car-fill is exactly
                            when you want it.                                    */
   /* Picked by index.html, like --plate-src, and unset for the same reason. */
   --car-src: none;
+
+  /* The corner eye — the third plate, in the page's BOTTOM-RIGHT corner: the
+     London Eye seen rim-on, so the wheel reads as a mast of capsules rather than
+     as a circle. The block near the foot of this sheet has the rest.
+
+     It is the car's shape of control and not the plate's, because it is anchored
+     the car's way: one corner, one rule — its own bottom-right corner stands in
+     the page's, and its foot lands on --fold, the same line the plate's foot and
+     the cut title land on. There is no second rule and nothing to pin at the top:
+     as shot there is a tenth of a frame of empty sky above the mast, so the top
+     of the picture is not an edge and has nothing to stand in.
+
+     The frame is NOT mirrored — see the eye paragraph in build-plate.py, where the
+     plate's flip-it argument is set out for this frame and declined. What that
+     leaves for this end is --eye-x, which does the job the flip would have: the
+     subject occupies the left three-fifths of the file and the right two-fifths is
+     empty sky, so the dead margin is pushed off the page rather than folded to the
+     other side of the picture.
+
+     What it costs is nothing the car did not already cost. The picture's two inner
+     edges are its left and its top, and in this frame both are empty sky — 4.5% of
+     the width outside the stays, a tenth of the height above the mast — so there is
+     nothing there to cut and the eye has no dissolve. That is the plate's
+     situation, not the car's, in the car's corner geometry, and it does not depend
+     on which way round the negative is. */
+  --eye-opacity: 0.131; /* --plate-opacity's judgement a third time, and a third
+                           answer — solved the way --car-opacity is, and read that
+                           block first: it carries the argument for both.
+                           This one measured dL* 9.08 against the plate's 9.89, so
+                           it was the middle of the three rather than the outlier,
+                           and 0.131 is where its mean reaches the plate's.
+                           Part of that gap is this sheet's doing and not the
+                           frame's: the eye is the one picture whose LIGHT endpoints
+                           are not the other two's — 0x05/0x61 against 0x00/0x5c —
+                           which is a lighter ink on white and so a fainter picture.
+                           Compensated here rather than reverted there, because the
+                           endpoints were tuned on purpose and this line can pay for
+                           them without touching the negative.                 */
+  --eye-fill: 0.582;    /* width as a share of --fold, as --car-fill is. There is
+                           no floor of the car's kind, because there is no cut edge
+                           anywhere the fold does not already handle: what the fold
+                           cuts is the picture's own foot, which is cut in the file
+                           too, and the frame's bottom edge landing on the page's
+                           reads as one line rather than as two.
+                           It has a CEILING instead, and it is the car rather than
+                           the file that sets it. What this value really sets is how
+                           tall the mast stands — the mast is 87.6% of the frame, so
+                           1.167 × the width — and the two pictures share the
+                           right-hand side of the page. Much past 0.39 the top of
+                           the mast arrives under the gondola and the two read as
+                           one machine: a cable car mounted on a Ferris wheel.
+                           0.582 is PAST that ceiling and knowingly so: it makes the
+                           eye 629px wide on a 1920×1080 frame, stands the mast 734px
+                           up it, and puts the top of the mast 346px below the top of
+                           the fold — where 0.36 left it at 626px with about 36px of
+                           paper under the car. That paper is gone; the mast now runs
+                           up behind the gondola by roughly 244px. The ceiling is
+                           written down rather than deleted because it is still the
+                           thing this value is trading against, and 0.39 is still
+                           where the trade stops costing anything.
+                           What bought the overrun is legibility, and only on the
+                           displays where the picture was not surviving at all: size
+                           is the one lever here that is not multiplied by
+                           --eye-opacity. See the note under WHY THESE ENDPOINTS in
+                           build-plate.py for what the endpoints could and could not
+                           do about the same complaint.
+                           The ceiling holds at every window height without being
+                           restated, because both pictures are shares of --fold and
+                           the gap is a share of it too. So does the overrun.
+                           629 beside the car's 650 and under the plate's 932 — the
+                           three used to be read in that order, smallest last, and at
+                           this width the eye and the car are level.            */
+  --eye-w: min(calc(var(--eye-fill) * var(--fold)), 2400px);
+                        /* the ceiling on --plate-w and --car-w, for the third
+                           time and the same reason: 2800px is the top rung
+                           index.html will fetch.                              */
+  --eye-x: 247px;       /* out from the RIGHT edge of the page, positive → left.
+                           POSITIVE, which reverses what this value was doing, and
+                           the reversal is the whole of the change — read the sign
+                           before reading the number.
+                           The job it used to do: the subject ends at 59.9% of the
+                           file's width and the remaining 40.1% is sky, so a negative
+                           offset of 0.401 × --eye-w carries that dead margin off the
+                           right-hand edge and stands the cable stays on it. That is
+                           what the frame not being mirrored is paid for in — see the
+                           eye paragraph in build-plate.py. At 629px wide the same
+                           rule asks for -252px.
+                           +247px does the opposite: it pulls the file 247px INBOARD,
+                           so the 252px of dead sky stays on the page and the stays
+                           finish ~499px short of the edge. The picture is no longer
+                           anchored in the bottom-right corner — it stands in the
+                           right-hand third with paper on both sides of it, which is
+                           the one arrangement the corner geometry above was built to
+                           avoid. It is here because it was asked for by name; -252px
+                           is the value that restores the corner.
+                           A length against a share, and at this sign the drift is no
+                           longer the gentle one: a taller window widens the dead
+                           margin the offset is no longer cancelling, so the gap to
+                           the edge grows with the fold.                        */
+  --eye-y: 0px;         /* up from --fold, positive → up; negative hangs it past
+                           the fold. 0 IS the rule, and it is a variable for the
+                           reason --plate-y is: so the rule can be broken by hand
+                           and the arithmetic follows rather than assumes it.  */
+  --eye-crop: 0;        /* how much of the picture's FOOT to cut off, as a share of
+                           --eye-w — the plate's crop, in the plate's direction,
+                           because this picture is anchored at the bottom too. 0:
+                           the foot is already the frame's own edge standing on the
+                           fold. Here for the reason --car-crop is — the pictures
+                           should answer the same set of questions — and it is what
+                           you reach for when --eye-fill moves.                */
+  /* Picked by index.html, like --plate-src and --car-src. */
+  --eye-src: none;
 
   /* Spectral (Production Type) for the small lettered labels, Vollkorn (Friedrich
      Althausen) for everything meant to be read. Both self-hosted above.
@@ -318,12 +473,12 @@
      CFF original when the outlines were scaled to 2048, so `1cap` resolves to
      0.322em against 0.658em of drawn capital. Every fallback below was checked
      and is truthful, so the numbers here are set for a face that tells the truth.
-     A real desktop install — the only Friz this stack can actually reach today —
-     is EXPECTED to be truthful, since the stale field is exactly the CFF
-     original's own value at its own em, but that is inference: no copy was
-     installed here to measure, and it is worth checking on one that has it.
-     design/type-tuner.html loads the broken webfont, so the tuner and this
-     stylesheet WILL disagree about the cut until that file is patched. */
+     A real desktop install is EXPECTED to be truthful, since the stale field is
+     exactly the CFF original's own value at its own em, but that is inference:
+     no copy was installed here to measure, and it is worth checking on one that
+     has it. The webfont no longer has to be inferred about — the -fixedmetrics
+     pair carries 1348/2048 and was measured resolving `1cap` at 0.658em, which
+     is what both the localhost preview and design/type-tuner.html now load. */
   --serif-display: "Friz Quadrata", "Friz Quadrata Std", "ITC Friz Quadrata",
                    "Sitka Banner", Constantia, Georgia, serif;
 
@@ -420,6 +575,13 @@
                     which is the 25.32 this replaces — so the rule is the rule
                     the old number was already following. Re-derive it, do not
                     nudge it, if the face or the tracking changes.
+                    This value is the COLUMN's, and it is the one the word is set
+                    at wherever the word is the last line of the column. In the
+                    one-screen band the word leaves the column for the gutter
+                    beside it and the measure changes, so the same rule is
+                    re-derived against that measure — see --cue-measure in the
+                    one-screen block, which also says why it fits the word's INK
+                    there and its BOX here.
        --cue-track  tracking. Positive, which is not what the size alone would
                     suggest, and the reason is the face rather than the size.
                     Two forces pull opposite ways here: display caps this large
@@ -480,7 +642,11 @@
      the clip, so a change to the cut word's height falls outside it.
      --cue-clip is then the visible slice: the part of the word that survives the
      cut. Both regimes hold the word's cap top exactly --cue-clip above the fold;
-     they differ only in what does the cutting (see the doorway block below). */
+     they differ only in what does the cutting (see the doorway block below).
+     Like --cue-size, this is the value for a word set to the COLUMN. In the
+     one-screen band it is re-derived against the gutter — the same cap ratio
+     times the same kind of size ratio, but against a measure that is no longer
+     a constant, so it is a calc() there and a length here. */
   --cue-cap:  4.079rem;
   --cue-clip: calc(var(--cue-show) * var(--cue-cap));
 
@@ -599,15 +765,16 @@
   /* Slightly stronger on black. The plate's own blacks were lifted to a dark
      grey, so on #fff it has the paper to fall away into and on #000 it has
      nothing — at 0.12 the shadow half of it simply disappears into the page.
-     The car is the same picture stock and takes the same lift.
+     The car and the eye are the same picture stock and take the same lift.
      This is now the SECOND thing that differs between the themes rather than the
      only one: the grade itself is baked per theme (see the corner-plate block).
-     Which means all four numbers are worth re-reading against each other after
+     Which means all six numbers are worth re-reading against each other after
      any change to the dark grade — a dark ladder tuned to sit properly on black
      may well want these back at light's 0.12, since lifting the opacity was the
      only lever there used to be for the job the endpoints can now do directly. */
   --plate-opacity: 0.17;
   --car-opacity: 0.17;
+  --eye-opacity: 0.17;
 }
 
 /* ---- composing to one screen ---------------------------------------------
@@ -647,6 +814,89 @@
    cascade; the two blocks are one idea and the gates must be kept in step. */
 @media (min-width: 1100px) and (min-height: 983px) {
   :root {
+    /* ---- the cut word's measure, out in the gutter -------------------------
+       This is the band where the word leaves the column and stands in the
+       page's bottom-left corner instead (see the doorway block at the foot of
+       this sheet, which does the moving). Out there it has a measure of its
+       own, and one rule sets it: the white to the LEFT of the word — page edge
+       to the P — and the white to its RIGHT — the S to the line the resume
+       starts on — are the same measure, and that measure is --title-left, the
+       page's own margin, which is already the inset the word's corner is set
+       to. So the word is as wide as the gutter less a margin at each end, and
+       the SIZE is whatever makes it exactly that wide. Nothing here is a
+       chosen length: give the page a different width and the word is re-fitted
+       to the space that is left, with the two margins still equal.
+       --edge is "where the text column starts", declared once up in the base
+       block and used by the carousel for the same reason. In this band its
+       max() always resolves to the 50vw term, since the narrowest window here
+       makes that term 334px against a floor of 1.35rem.
+
+       It is written in vw, and one thing follows from that and is worth having
+       in writing: 100vw counts the vertical scrollbar and the column is
+       centred in the width WITHOUT it, so --cue-measure runs half a scrollbar
+       wide of the true gutter — 7.5px on Windows, nothing at all where
+       scrollbars are overlaid, and this band always has a scrollbar because
+       the doorway gives it one. The word itself does not inherit that error.
+       Both of the things that have to be exact are held off something else:
+       the two margins off percentages of the containing block, which do not
+       count the scrollbar, and the CUT off the word's own `cap`, read from the
+       face at the size it actually resolved to. What is left reading the vw
+       twin is the height BUDGET alone — .doorway's height, --slide-h,
+       --rhyme — where being 0.72px out (0.62 x 0.1545 x 7.5) puts the second
+       screen's title that far below --title-top and takes that much off the
+       photo strip. Constant at every window size, and not worth a script.
+       It is worth knowing WHY the cut is not allowed to spend it, because the
+       number looks harmless: 0.72px is 0.9% of the cap at 1920 but 3.9% of it
+       at the narrow end of this band, where the word is a quarter the size. Off
+       --cue-clip the cut would therefore drift from 0.628 of the cap to 0.659
+       across the band — inside the 0.55-0.75 the paragraph on --cue-show gives
+       as legible, but drifting, and "the same fraction of letter at every size"
+       is the whole of what that number is for.
+
+       --cue-size is the same derivation as the base block's and re-derived
+       rather than reused, for two reasons. The measure is no longer --col, so
+       the cqw the base value is a percentage OF means something different; and
+       out here the fit is to the word's INK rather than to its box. The box has
+       a bearing at each end — the P's 90 units of left sidebearing, the S's 69
+       of right, and the trailing tracking step, all of it white — and fitting
+       the box would leave the two margins unequal by their difference, 0.0098
+       of the font size, which is the one thing this measure exists to make
+       equal. So: the ink of PROJECTS spans 4.1973em of advances, plus the 7
+       tracking steps BETWEEN the letters, less those two bearings —
+       4.1973 + 0.14 - 0.0439 - 0.0337 = 4.2596em — and 100/4.2596 = 23.48.
+       (There is no kerning to carry: the face has GPOS, and not one of this
+       word's seven pairs is in it.) Re-derive it, do not nudge it, if the face
+       or --cue-track changes; --cue-bearing is measured from the same face and
+       is what puts the P's ink, rather than its box, on the margin.
+
+       --cue-cap then follows as it does in the base block — the face's cap
+       ratio times the size — except that the size is now a proportion of a
+       measure rather than a length: 0.6582 x 0.2348 = 0.1545 of it.
+       Which makes every height on the page that was spending a constant here
+       spend a function of the window's WIDTH instead, and that is new. The word
+       is 4.079rem of cap at every window today; it is 1.52rem of it at
+       1100x983 and 5.31rem at 1920x1080, so the photo strip — the remainder,
+       and the one element on the page with no intrinsic height — hands back
+       25px at the narrow end and gives up 12px at the wide one (267px against
+       242px, and 309px against 321px). Two notes follow from that:
+       * The 983px floor above is derived as "the height at which the remainder
+         falls to exactly 15rem", and that height is now a function of the width
+         as well. The gate is deliberately left at 983px anyway. It is the
+         height below which photographs would have to go under their designed
+         minimum SOMEWHERE in the band, which is still true, and a floor that
+         moved with the width would be a breakpoint that moved with the width.
+         What changes is only that at the narrow end the strip is no longer
+         sitting exactly on that minimum when the gate opens.
+       * A window that is dragged WIDER now re-sizes the strip, where before
+         only a taller one did. index.html's rung picker is unaffected and
+         needs no change: both corner pictures are scaled to --fold, so the
+         width is still nothing to them, and the comment there saying "width
+         still asks for nothing" is still about them and still true. */
+    --cue-measure: calc(var(--edge) - 2 * var(--title-left));
+    --cue-size:    23.48cqw;
+    --cue-bearing: 0.0439em;
+    --cue-cap:     calc(0.1545 * var(--cue-measure));
+
     --slide-h: clamp(15rem,
                      calc(100vh - var(--rhyme) - var(--cue-gap)
                           - var(--cue-clip) - var(--cv-static)),
@@ -767,8 +1017,8 @@ a { color: inherit; }
    negative layer is still above the paper. */
 
 /* Small-viewport units are the one thing here a browser might not have, and an
-   unknown unit inside a calc() takes --plate-band, --plate-w and --car-w down
-   with it, which is a page with no pictures in the corners at all rather than
+   unknown unit inside a calc() takes --plate-band, --plate-w, --car-w and --eye-w
+   down with it, which is a page with no pictures in the corners at all rather than
    pictures in the wrong corners.
    Every engine has had svh since 2022, so this is a backstop and not a policy:
    it gives back the pre-svh reading of the same datum, correct everywhere except
@@ -831,10 +1081,10 @@ body::after {
    index.html. body::after is the plate and body::before is the top scroll-snap
    port in the desktop block at the foot of this sheet, so body has none left,
    and the alternatives are worse than one empty div: .page::before would put the
-   car inside the page's own fade-in, so the two corners would arrive at
-   different times, and html::after would hand it the initial containing block
-   and a stacking order that depends on background propagation. A div costs one
-   line of HTML and answers neither question.
+   car inside the page's own fade-in, so the corners would arrive at different
+   times, and html::after would hand it the initial containing block and a
+   stacking order that depends on background propagation. A div costs one line of
+   HTML and answers neither question.
 
    It is anchored by its top-right corner rather than by two edges, which is
    --car-fill's job to explain and :root's comment does. So the box does not have
@@ -892,6 +1142,59 @@ body::after {
     #000 calc(var(--car-inner) + var(--car-fade) * var(--car-w)));
   mask-repeat: no-repeat;
   opacity: var(--car-opacity);
+}
+
+/* ---- the corner eye -------------------------------------------------------
+   The third plate: the London Eye rim-on, in the bottom-right corner of the
+   document, at --eye-opacity. Everything the corner-plate block says about why
+   the grade is baked rather than filtered, and about starting at the top of the
+   document and leaving at the fold, is true of this one too — same stock, same
+   script, same piece of paper.
+
+   It is an element for the reason .car is one: body::after is the plate and
+   body::before is the desktop scroll-snap port, so body has no pseudo left, and
+   the alternatives are the same two bad ones. Two empty divs cost two lines of
+   HTML and answer neither question.
+
+   What it takes from the CAR is its anchoring — one corner, one rule, and a size
+   measured against --fold rather than against a band — so --eye-fill behaves like
+   --car-fill and --eye-y moves the picture without resizing it. What it takes
+   from the PLATE is its geometry at the bottom of the page: the box's own bottom
+   edge is what the picture's foot stands on, so `height` carries --eye-y and the
+   crop is a negative `bottom` offset that pushes the foot out through it. One
+   edge doing both jobs, exactly as in the plate's block.
+
+   And it takes from the plate the thing the car could not have: no soft edge
+   anywhere. Its two inner edges are the left and the top, and in this frame both
+   are empty sky — see --eye-x's block in :root, and the eye paragraph in
+   build-plate.py for why the frame is the way round it is. There is nothing there
+   to cut, so there is no mask here, and the ramp the car needs on its gantry would
+   only be fading out sky.
+
+   z-index -1, out of flow, pointer-events none: as the other two. It is under the
+   type and under the cut title, which is the one thing on the page that shares
+   this corner — at 12% opacity the word crosses it the way the column crosses the
+   plate, ink straight onto stock. */
+.eye {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: calc(var(--fold) - var(--eye-y));
+  z-index: -1;
+  pointer-events: none;
+  background-image: var(--eye-src);
+  background-repeat: no-repeat;
+  /* The four-value form, for --plate-x's reason: --eye-x is a distance out from
+     the corner the picture stands in and nothing else. The vertical offset is the
+     crop and only the crop — the height above has already put the box's bottom
+     edge where --eye-y asks for it — and it is negative so the foot is pushed
+     below that edge and clipped by it. */
+  background-position:
+    right var(--eye-x)
+    bottom calc(-1 * var(--eye-crop) * var(--eye-w));
+  background-size: var(--eye-w) auto;
+  opacity: var(--eye-opacity);
 }
 
 /* ---- centered column + page fade-in -------------------------------------- */
@@ -1288,10 +1591,13 @@ body::after {
 /* THE SWITCH THAT IS NOT THROWN, and why the numbers above are for a face this
    sheet cannot currently reach.
 
-   Nothing here fetches Friz. The family is named in --serif-display, so it
-   renders for a reader who happens to have it installed and for nobody else —
-   measured: on this machine the page falls through to Sitka Banner, and all
-   three Friz names resolve to the default serif. Every --cue-* value above is
+   Nothing here fetches Friz. The family is named in --serif-display, so on any
+   origin it renders for a reader who happens to have it installed and for
+   nobody else — measured on this machine, where all three Friz names resolved
+   to the default serif and the page fell through to Sitka Banner, which is what
+   prompted the localhost preview described at the foot of this comment. That
+   preview is a <script> in index.html, not this sheet: served, this sheet still
+   fetches nothing. Every --cue-* value above is
    nevertheless set for Friz, per the tuning session that chose the face; the
    cost, until this block is uncommented, is that Sitka Banner is being set at
    Friz's measurements — the word makes 96.5% of the measure instead of 100%,
@@ -1300,23 +1606,38 @@ body::after {
    --cue-track -0.012em, --cue-cap 4.187rem, and Sitka Banner back to the head of
    the stack.
 
-   TWO THINGS MUST HAPPEN BEFORE THIS IS UNCOMMENTED, and neither is cosmetic.
+   TWO THINGS HAD TO HAPPEN BEFORE THIS COULD BE UNCOMMENTED. One is done; the
+   one that remains is the one this repository cannot settle on its own.
 
-   1. THE LICENCE. Friz Quadrata Std is a commercial Adobe/ITC cut and the woff2
-      in /fonts is a conversion of a desktop release with no webfont licence
-      behind it. Serving it from chrisj.uk is redistribution; a desktop or
-      Creative Cloud licence does not grant it, and the fsType bit being 0 is a
-      technical flag, not a grant. This is why /fonts/fonts.css is linked by no
-      page. See fonts/README.md. Settle it first.
-   2. THE FILE'S CAP METRIC IS WRONG. Its `sCapHeight` is 659 — correct for the
-      1000-unit em of the CFF original, left behind when the outlines were scaled
-      to 2048. So `1cap` resolves to 0.322em against 0.658em of drawn capital,
-      and this cut is measured in `cap`: uncommenting as-is puts the clip box top
-      half a capital BELOW the tops of the letters and shows a band through their
-      middles rather than the top 0.62 of them. `size-adjust` does not fix it —
-      it scales the outlines and the stale field together. The fix is two integer
-      writes with fontTools (sxHeight 460 -> 942, sCapHeight 659 -> 1348) under a
-      NEW filename, because vercel.json caches /fonts/(.*) immutable for a year.
+   1. THE LICENCE — STILL OPEN, AND STILL THE GATE. Friz Quadrata Std is a
+      commercial Adobe/ITC cut and the woff2 in /fonts is a conversion of a
+      desktop release with no webfont licence behind it. Serving it from
+      chrisj.uk is redistribution; a desktop or Creative Cloud licence does not
+      grant it, and the fsType bit being 0 is a technical flag, not a grant.
+      This is why /fonts/fonts.css is linked by no page. See fonts/README.md.
+      Settle it first. Nothing below this line is blocked on anything else.
+   2. THE FILE'S CAP METRIC WAS WRONG — FIXED, in a new pair of files. Its
+      `sCapHeight` was 659 and its `sxHeight` 460: correct for the 1000-unit em
+      of the CFF original, left behind when the outlines were scaled to 2048. So
+      `1cap` resolved to 0.322em against 0.658em of drawn capital, and this cut
+      is measured in `cap` — uncommenting as-was would have put the clip box top
+      half a capital BELOW the tops of the letters and shown a band through
+      their middles rather than the top 0.62 of them. `size-adjust` does not fix
+      it: it scales the outlines and the stale field together.
+      frizquadrata-{regular,bold}-fixedmetrics.woff2 are that same third-party
+      binary with exactly those two integers rewritten to the drawn tops of `x`
+      and `H` (942 and 1348); all 263 outlines, the name table and the GPOS
+      kerning were verified unchanged. New filenames because vercel.json caches
+      /fonts/(.*).woff2 immutable for a year. The originals are kept beside them
+      untouched, as the record of what arrived.
+
+   MEANWHILE, SO THE FACE CAN BE LOOKED AT: portfolio/index.html attaches
+   /fonts/friz-local.css on localhost and 127.0.0.1 only, which declares the
+   -fixedmetrics pair. That is the only reason this face renders anywhere today,
+   it renders on no origin, and it is deliberately NOT this block — designing
+   against a licensed desktop font is not the same act as serving it. When the
+   licence is settled, uncomment here and delete fonts/friz-local.css and the
+   script in index.html that loads it, in the same change.
 
 @font-face {
   font-family: "Friz Quadrata Std";
@@ -1416,6 +1737,12 @@ body::after {
    what .doorway is tall. The document is then 100vh + (Y - T), and the word
    arrives at T on the nose at every window height, with no script and no
    scroll-driven animation.
+   One footnote on Y, since two things now measure it. The word is CUT off its
+   own `cap` and .doorway is tall off --cue-clip, which is the same line arrived
+   at twice — exactly, wherever scrollbars are overlaid, and 0.72px apart where
+   they are not, in the direction of resting the title that far under T. See the
+   scrollbar paragraph at --cue-measure for why the cut is the one that gets to
+   be exact.
 
    Two consequences worth naming:
    * The cut becomes REAL. Everywhere else the word is clipped to --cue-clip by
@@ -1424,12 +1751,34 @@ body::after {
      there and the bottom of the window does the cutting, which is what the
      device was always drawing. So the clip comes off: leave it on and the word
      would arrive in the corner still guillotined.
-   * The word leaves the measure. It is no longer the last line of the column but
-     the title of its own screen, so it is set to the page's margin instead of
-     the text's — --title-left from the window's edge, the same measure as the
-     white above it, which is what makes the corner read as a corner. It keeps
-     the column's WIDTH, since --cue-size is a proportion of --col and every
-     height in the budget above is derived from it. A change of position only.
+   * The word leaves the measure — both of them. It is no longer the last line of
+     the column but the title of its own screen, so it is set to the page's
+     margin instead of the text's — --title-left from the window's edge, the same
+     measure as the white above it, which is what makes the corner read as a
+     corner. And it is no longer the column's width either: it is fitted to the
+     gutter it now stands in, so that the white either side of it is that same
+     --title-left twice over — page edge to the P, S to the line the resume
+     starts on. See --cue-measure in the one-screen block for the whole of that
+     derivation; here it is only placed.
+     The placement is two insets and no width. `left` puts the box on the
+     margin; `right` puts its far edge --title-left short of the column's left
+     edge, which sits at 50% - --col/2 of .page's padding box — .page's padding
+     is symmetrical, so the column's centre is the box's centre. Percentages of
+     the containing block rather than of the viewport on purpose: they do not
+     count the scrollbar, and both margins are therefore exactly equal on a
+     window that has one. --cue-measure, which does count it, is spent only on
+     the height budget and says so.
+     `width: auto` between the two insets is what makes the fit happen at all —
+     .cut-title is the container --cue-size is a percentage of, so the word takes
+     its size from whatever the two insets leave. Inline-size containment cannot
+     make that circular: the used width comes from the insets, never from the
+     word inside.
+     --cue-bearing is the last of it, and it is the difference between fitting
+     the word's box and fitting its ink. The P's outline starts 0.0439em inside
+     its own advance, so the box goes that much further left than the margin and
+     the INK lands on it. Relative, not a negative margin: a negative margin
+     would widen the box rather than move it, and the word would be fitted to
+     the wrong measure by exactly the bearing.
 
    .cut-title is positioned rather than laid out for one reason: .page is exactly
    one screen and the doorway is the next, so the title can be a flex item of
@@ -1471,13 +1820,31 @@ body::after {
   }
   .cut-title {
     position: absolute;
-    top: calc(100vh - var(--cue-clip));
+    top: 100vh;
     left: var(--title-left);
-    width: var(--col);
+    right: calc(50% + var(--col) / 2 + var(--title-left));
+    width: auto;
     max-width: none;
     margin: 0;
   }
-  .cut-title > a { overflow: visible; height: auto; }
+  .cut-title > a {
+    overflow: visible;
+    height: auto;
+    /* The cut, and the same expression the flow regime cuts with — the box is
+       pinned to the fold and the word is lifted --cue-show of its own cap back
+       above it. `1cap` is read from the face that resolved at the size that
+       resolved, so it is exact where --cue-clip is a budget estimate, and the
+       two regimes now say the cut the same way instead of one saying it in
+       `cap` and the other in a rem twin. A negative margin rather than an
+       offset on `top`, because the unit only means anything on the element
+       whose font it is read from: on .cut-title, `1cap` would be the body
+       serif at 15px. It cannot collapse through .cut-title either — a
+       container establishes an independent formatting context — and .cut-title
+       carries no paint containment, so the lifted word is not clipped. */
+    margin-top: calc(-1 * var(--cue-show) * 1cap);
+    position: relative;
+    left: calc(-1 * var(--cue-bearing));
+  }
 }
 
 /* ---- respect reduced-motion preferences ---------------------------------- */
