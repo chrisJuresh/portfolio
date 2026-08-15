@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Glass tuner — the bar over the photographs</title>
+  <title>Glass tuner — the Panel's titlebar</title>
   <style>
     :root { color-scheme: light dark; --ui: #1a1917; --ui-bg: #fcfbf8; --ui-panel: #f5f2ea; --ui-line: #d6d0c4; --ui-mut: #6f6a5d; --ui-hit: #8a5a2b; }
     @media (prefers-color-scheme: dark) {
@@ -115,7 +115,7 @@
 
     <main class="stage">
       <canvas id="c"></canvas>
-      <p class="note">drag to move the bar · wheel scrolls the photographs</p>
+      <p class="note">drag to move the bar · wheel scrolls the photographs · the Frame is drawn at 1200 CSS px wide, so give the window room</p>
     </main>
   </div>
 
@@ -123,14 +123,15 @@
 <script>
 /* =============================================================================
    Glass tuner — every liquid-glass-studio setting on a slider, with the bar
-   standing over the real photographs.
+   standing where it will stand on the page.
 
    WHY IT EXISTS
    The effect can't be judged from a parameter list. It is refraction over a
    *particular* backdrop: the same numbers that look like glass over a building
-   look like a smear over a close-up flower. So the backdrop here is the actual
-   /portfolio carousel — the same files, the same 3:4 crop, the same gap — and
-   the bar sits on top of it where it would sit on the page.
+   look like a smear over a close-up flower. So the backdrops here are the real
+   ones — the Projects Panel's Frame with the shipped recording inside it, and
+   the /portfolio carousel with the same files, the same 3:4 crop and the same
+   gap — and the bar sits on top of them where it would sit on the page.
 
    WHAT WAS PORTED
    The upstream project (github.com/iyinchao/liquid-glass-studio, MIT) is React +
@@ -148,15 +149,33 @@
        untouched.
      · The rounded rect is placed by drag or by slider rather than following the
        pointer, so it stays where you left it while you work the panel.
-     · Shape defaults are a bar (420x56, fully rounded, second shape off) rather
-       than the studio's 200x200 square. Every other default is upstream's, and
-       the export names the default beside each value either way.
+     · Every default is upstream's except the ones the export lists as moved —
+       see THE TITLEBAR below, which is what most of them now are.
+
+   THE TITLEBAR (#66)
+   The subject is no longer a bar in the abstract: it is the Projects Panel's
+   browser Frame, and the defaults below are the material settled against the
+   design render. Three things carry that:
+
+     · The Frame itself is drawn into the scene at the render's proportions —
+       see THE FRAME's constants — so the glass can be judged standing where it
+       will stand rather than floating over a photograph.
+     · Three treatments of WHAT SITS BEHIND THE GLASS, one chip apart, because
+       that is the open question the render cannot answer for itself: its own
+       backdrop is near-black there, so `panel · dark` and `panel · marble` are
+       indistinguishable in it and only `panel · recording` is visibly not it.
+     · A straight bottom edge. The SDF draws one rounded rect and a titlebar has
+       corners at the top and a cut at the bottom, so the shape is twice the
+       strip's height and the bottom half is thrown away — `bottom cut`, and the
+       comment on the scissor pass in draw() for how.
 
    THE OUTPUT IS THE POINT
    The export is the whole settings object as JSON, with the changed ones listed
    above it in readable form. Paste it into a message and it can be applied
    without anyone re-deriving what moved; paste an old export back into the box
-   and hit import to return to it.
+   and hit import to return to it. Every length in it is a CSS px against a
+   Frame 1200 wide — the export says so, because at half that width they all
+   halve.
    ========================================================================== */
 
 "use strict";
@@ -710,9 +729,10 @@ void main() {
    `tip` is the title text — written from the shader, not guessed. */
 var GROUPS = [
   { name: "Scene", note: "the backdrop and where the bar stands — not part of the glass", rows: [
-    { k: "backdrop", type: "chips", def: "strip",
-      options: [["strip", "photo strip"], ["single", "one photo"], ["checker", "checkerboard"], ["paper", "paper"]],
-      tip: "What the glass is standing on.\nThe photo strip is the real /portfolio carousel: same files, same 3:4 crop, same gap.\nThe checkerboard is the fastest way to read the refraction — straight lines show every bend." },
+    { k: "backdrop", type: "chips", def: "dark", studio: "strip",
+      options: [["dark", "panel · dark"], ["marble", "panel · marble"], ["clip", "panel · recording"],
+                ["strip", "photo strip"], ["single", "one photo"], ["checker", "checkerboard"], ["paper", "paper"]],
+      tip: "What the glass is standing on.\nThe three panel treatments draw the Projects Panel's Frame and differ only in WHAT IS\nBEHIND THE TITLEBAR: the Frame's own dark fill, the page backdrop showing through it,\nor the recording carrying on up under the chrome. That is the question #66 exists to\nsettle, and it is one chip apart so the three can be compared by flicking between them.\nThe photo strip is the real /portfolio carousel: same files, same 3:4 crop, same gap.\nThe checkerboard is the fastest way to read the refraction — straight lines show every bend." },
     { k: "photo", type: "num", min: 0, max: 1, step: 1, def: 0, label: "photograph",
       tip: "Which photograph. The range follows content.js, so it is whatever the carousel holds today." },
     { k: "stripPos", type: "num", min: 0, max: 1, step: 0.001, def: 0.06, label: "strip position",
@@ -721,60 +741,60 @@ var GROUPS = [
       tip: "Photograph height as a percentage of the canvas height. The live page uses clamp(15rem, 40vh, 24rem)." },
     { k: "barX", type: "num", min: -700, max: 700, step: 1, def: 0, label: "bar x",
       tip: "Bar centre, CSS px right of the canvas centre. Dragging the bar writes here." },
-    { k: "barY", type: "num", min: -500, max: 500, step: 1, def: 0, label: "bar y",
-      tip: "Bar centre, CSS px above the canvas centre." },
+    { k: "barY", type: "num", min: -500, max: 500, step: 1, def: 267, studio: 0, label: "bar y",
+      tip: "Bar centre, CSS px above the canvas centre.\n267 is where the bar sits ON the Frame's titlebar: the Frame is centred and 617 tall, the\nshape is twice the strip's height, so 617/2 − 41.5. It does not depend on the stage's size —\nresize the window and the bar stays on the chrome." },
     { k: "theme", type: "chips", def: "light", options: [["light", "light"], ["dark", "dark"]],
       tip: "The paper colour behind and around the photographs — #fff or #000, as on the real page." },
-    { k: "dpr", type: "num", min: 1, max: 3, step: 0.05, def: 0, label: "pixel ratio",
-      tip: "Device pixel ratio the canvas renders at. It is a shader input, not just a quality knob:\nthe refraction offset is scaled by it, so a 1x and a 2x screen do not look identical.\n0 means follow this display (capped at 2)." }
+    { k: "dpr", type: "num", min: 0, max: 3, step: 0.05, def: 0, label: "pixel ratio",
+      tip: "Device pixel ratio the canvas renders at. It is a shader input, not just a quality knob:\nthe refraction offset is scaled by it, so a 1x and a 2x screen do not look identical.\nANYTHING BELOW 1 MEANS FOLLOW THIS DISPLAY, capped at 2 — the row has to reach the sentinel\nfor the export to survive a round trip, because import clamps every number into its own\nrange and a minimum of 1 turned 'follow the display' into 'pinned at 1' on the way back in,\nsilently changing what the refraction does." }
   ] },
 
   { name: "Refraction", rows: [
-    { k: "refThickness", type: "num", min: 1, max: 80, step: 0.01, def: 20, label: "thickness",
-      tip: "How far in from the edge the bending reaches, in CSS px. Past it the glass is flat and\nonly blurs. This is the single most visible control — it is the width of the bevel." },
-    { k: "refFactor", type: "num", min: 1, max: 4, step: 0.01, def: 1.4, label: "refraction",
-      tip: "Index of refraction, applied through Snell's law across that band.\n1 is no bend at all; real glass is about 1.5." },
+    { k: "refThickness", type: "num", min: 1, max: 80, step: 0.01, def: 10, studio: 20, label: "thickness",
+      tip: "How far in from the edge the bending reaches, in CSS px. Past it the glass is flat and\nonly blurs. This is the single most visible control — it is the width of the bevel.\n10 is a quarter of the strip's height. NOT SETTLED AGAINST THE RENDER: it is near-black\nbehind the render's titlebar, and a bend in nothing is invisible. Judged over the\ncheckerboard and the recording instead." },
+    { k: "refFactor", type: "num", min: 1, max: 4, step: 0.01, def: 1.5, studio: 1.4, label: "refraction",
+      tip: "Index of refraction, applied through Snell's law across that band.\n1 is no bend at all; real glass is about 1.5, which is what this is." },
     { k: "refDispersion", type: "num", min: 0, max: 50, step: 0.01, def: 7, label: "dispersion",
       tip: "Chromatic fringing: red and blue are offset by ∓2% of the refraction offset, times this.\nColour separation at the bevel, strongest where the bend is strongest." },
-    { k: "refFresnelRange", type: "num", min: 0, max: 100, step: 0.01, def: 30, label: "fresnel size",
-      tip: "How far the bright rim reaches in from the edge. Larger is a wider rim." },
+    { k: "refFresnelRange", type: "num", min: 0, max: 100, step: 0.01, def: 34, studio: 30, label: "fresnel size",
+      tip: "How far the bright rim reaches in from the edge. Larger is a wider rim.\n34 puts the rim's reach at about 4 CSS px, which is the render's 6.5 at its own scale." },
     { k: "refFresnelHardness", type: "num", min: 0, max: 100, step: 0.01, def: 20, label: "fresnel hardness",
       tip: "Pushes the rim toward fully lit before the falloff is taken, so its inner edge\nstops being a gradient and becomes a line." },
-    { k: "refFresnelFactor", type: "num", min: 0, max: 100, step: 0.01, def: 20, label: "fresnel intensity",
-      tip: "How bright the rim is. 0 removes it." }
+    { k: "refFresnelFactor", type: "num", min: 0, max: 100, step: 0.01, def: 11.5, studio: 20, label: "fresnel intensity",
+      tip: "How bright the rim is. 0 removes it.\n11.5 lands the top rim's peak at 66 of 255 against a body of 44 — the render's numbers." }
   ] },
 
   { name: "Glare", rows: [
-    { k: "glareRange", type: "num", min: 0, max: 100, step: 0.01, def: 30, label: "glare size",
-      tip: "How far the specular streak reaches in from the edge — same geometry as fresnel size,\nbut for the highlight rather than the rim." },
+    { k: "glareRange", type: "num", min: 0, max: 100, step: 0.01, def: 34, studio: 30, label: "glare size",
+      tip: "How far the specular streak reaches in from the edge — same geometry as fresnel size,\nbut for the highlight rather than the rim.\n34 for the same reason it is 34 there: the render's two side rims reach about as far in as\nits top one does, so the streak and the rim are given the same width rather than two\nnumbers that happen to be close." },
     { k: "glareHardness", type: "num", min: 0, max: 100, step: 0.01, def: 20, label: "glare hardness",
       tip: "Sharpens the inner boundary of the streak, as fresnel hardness does for the rim." },
-    { k: "glareFactor", type: "num", min: 0, max: 120, step: 0.01, def: 90, label: "glare intensity",
-      tip: "Brightness of the streak before convergence is applied. Above 100 it saturates,\nwhich is why the slider goes to 120." },
+    { k: "glareFactor", type: "num", min: 0, max: 120, step: 0.01, def: 26, studio: 90, label: "glare intensity",
+      tip: "Brightness of the streak before convergence is applied. Above 100 it saturates,\nwhich is why the slider goes to 120.\n26 is what puts the side rims at 85 against the top rim's 66, which is the difference the\nrender has between them." },
     { k: "glareConvergence", type: "num", min: 0, max: 100, step: 0.01, def: 50, label: "convergence",
       tip: "The exponent on the angular term. Low spreads the highlight around the whole edge;\nhigh pulls it into a short, hard glint." },
-    { k: "glareOppositeFactor", type: "num", min: 0, max: 100, step: 0.01, def: 80, label: "opposite side",
-      tip: "Brightness of the counter-highlight on the far side from the light. 0 lights one side only." },
-    { k: "glareAngle", type: "num", min: -180, max: 180, step: 0.01, def: -45, label: "angle",
-      tip: "Where the light is coming from, in degrees." }
+    { k: "glareOppositeFactor", type: "num", min: 0, max: 100, step: 0.01, def: 100, studio: 80, label: "opposite side",
+      tip: "Brightness of the counter-highlight on the far side from the light. 0 lights one side only.\n100 because the render's two side rims are the same brightness — 85 and 90 — and anything\nless lights one end of the titlebar and not the other." },
+    { k: "glareAngle", type: "num", min: -180, max: 180, step: 0.01, def: 90, studio: -45, label: "angle",
+      tip: "Where the light is coming from, in degrees.\nTHE SHADER DOUBLES THIS ANGLE, so it does not read as a direction: 0 lights the top and\nbottom edges, 90 lights the left and right, 45 lights the corners. The render's rim is\nbrightest down the two ends, so 90." }
   ] },
 
   { name: "Blur & tint", rows: [
-    { k: "blurRadius", type: "num", min: 1, max: 200, step: 1, def: 1, label: "blur radius",
-      tip: "Gaussian radius on the backdrop the glass reads, in device px. This is the frosting.\nCosts two passes of (2r+1) taps per pixel — 200 is genuinely expensive." },
+    { k: "blurRadius", type: "num", min: 1, max: 200, step: 1, def: 24, studio: 1, label: "blur radius",
+      tip: "Gaussian radius on the backdrop the glass reads, in device px. This is the frosting.\nCosts two passes of (2r+1) taps per pixel — 200 is genuinely expensive.\nNOT SETTLED AGAINST THE RENDER either: a blur of near-black is near-black. 24 is what\nleaves the vault's toolbar readable as shapes but not as words under the recording." },
     { k: "blurEdge", type: "bool", def: true, label: "blur the edge",
       tip: "On: the bevel reads the blurred backdrop like the rest of the glass.\nOff: it fades from the sharp backdrop at the very edge to blurred further in,\nwhich keeps the refracted detail legible." },
-    { k: "tintColor", type: "color", def: "#ffffff", label: "tint",
-      tip: "Colour mixed into the glass." },
-    { k: "tintAlpha", type: "num", min: 0, max: 1, step: 0.01, def: 0, label: "tint amount",
-      tip: "How much of that colour, at 0.8x. 0 is untinted." }
+    { k: "tintColor", type: "color", def: "#fab2ff", studio: "#ffffff", label: "tint",
+      tip: "Colour mixed into the glass.\nA light violet, and it looks far too pink in the swatch — over the Frame's near-black fill\nit lands on the render's (44,38,49). The render's chrome really is violet: green sits 6\nbelow red and 11 below blue everywhere along the bar, on both sides of it." },
+    { k: "tintAlpha", type: "num", min: 0, max: 1, step: 0.01, def: 0.135, studio: 0, label: "tint amount",
+      tip: "How much of that colour, at 0.8x. 0 is untinted.\nTHE RENDER FIXES THE PRODUCT, NOT THE SPLIT: it only shows the glass over near-black, and\nevery pair of colour and amount that multiplies out the same is equally faithful to it.\nThis is the lowest amount that reaches the render's value, which leaves the most of the\nbackdrop showing — the reading the three treatments are there to be judged under. A darker\ntint at three times the amount matches the render just as well and behaves like smoked\nglass over anything bright." }
   ] },
 
   { name: "Shadow", rows: [
     { k: "shadowExpand", type: "num", min: 2, max: 100, step: 0.01, def: 25, label: "expand",
-      tip: "How far the drop shadow spreads from the shape. It is drawn into the backdrop before\nthe blur, so the glass refracts its own shadow — which is why it reads as thickness." },
-    { k: "shadowFactor", type: "num", min: 0, max: 100, step: 0.01, def: 15, label: "intensity",
-      tip: "How dark the shadow is. 0 removes it." },
+      tip: "How far the drop shadow spreads from the shape. It is drawn into the backdrop before\nthe blur, so the glass refracts its own shadow — which is why it reads as thickness.\nInert while intensity is 0, which is where the render puts it." },
+    { k: "shadowFactor", type: "num", min: 0, max: 100, step: 0.01, def: 0, studio: 15, label: "intensity",
+      tip: "How dark the shadow is. 0 removes it.\nThe render has none: the backdrop three pixels above the titlebar is the same near-black as\nthe backdrop anywhere else. Left at 0, which also stops the shadow eating the panel's own\n#08090a — at the studio's 15 it subtracts more than that colour has." },
     { k: "shadowX", type: "num", min: -20, max: 20, step: 0.1, def: 0, label: "offset x",
       tip: "Shadow offset, CSS px." },
     { k: "shadowY", type: "num", min: -20, max: 20, step: 0.1, def: -10, label: "offset y",
@@ -782,14 +802,16 @@ var GROUPS = [
   ] },
 
   { name: "Shape", rows: [
-    { k: "shapeWidth", type: "num", min: 20, max: 800, step: 1, def: 420, studio: 200, label: "width",
-      tip: "Bar width in CSS px." },
-    { k: "shapeHeight", type: "num", min: 20, max: 800, step: 1, def: 56, studio: 200, label: "height",
-      tip: "Bar height in CSS px." },
-    { k: "shapeRadius", type: "num", min: 1, max: 100, step: 0.1, def: 100, studio: 80, label: "corner radius",
-      tip: "Corner radius as a percentage of half the short side. 100 is a full pill." },
-    { k: "shapeRoundness", type: "num", min: 2, max: 7, step: 0.01, def: 5, label: "superellipse",
-      tip: "The exponent the corners are drawn with. 2 is a circular arc; higher is the squircle —\nthe corner meets the straight edge with no visible join." },
+    { k: "shapeWidth", type: "num", min: 20, max: 1600, step: 1, def: 1200, studio: 200, label: "width",
+      tip: "Bar width in CSS px. 1200 is the Frame's width — the reference every other length here\nis stated against." },
+    { k: "shapeHeight", type: "num", min: 20, max: 800, step: 1, def: 83, studio: 200, label: "height",
+      tip: "Bar height in CSS px, and it is TWICE the titlebar's 41.5 on purpose: the bottom half is\nthrown away by `bottom cut` below, which is how a rounded rect grows a straight edge." },
+    { k: "shapeRadius", type: "num", min: 1, max: 100, step: 0.1, def: 47.2, studio: 80, label: "corner radius",
+      tip: "Corner radius as a percentage of half the short side. 100 is a full pill.\n47.2% of 41.5 is 19.6 CSS px — the render's window corner, 30px at its own scale." },
+    { k: "shapeRoundness", type: "num", min: 2, max: 7, step: 0.01, def: 2.2, studio: 5, label: "superellipse",
+      tip: "The exponent the corners are drawn with. 2 is a circular arc; higher is the squircle —\nthe corner meets the straight edge with no visible join.\nThe render's right corner fits 2.20 and its left 2.10, each within half a pixel of rms over\n32 sampled columns: all but circular, and nowhere near the studio's 5." },
+    { k: "barCut", type: "num", min: 0, max: 400, step: 0.5, def: 41.5, local: true, label: "bottom cut",
+      tip: "Throw away everything more than this many CSS px below the bar's TOP edge, so the shape\nends in a straight line instead of two more corners. 0 leaves the whole rounded rect.\nNot an upstream control — the shipping Frame will do the same thing by clipping a canvas\nthe height of the strip, and the scissor pass in draw() says why the seam is exact." },
     { k: "mergeRate", type: "num", min: 0, max: 0.3, step: 0.01, def: 0.05, label: "merge rate",
       tip: "How softly the bar blends into the second shape where they meet — a metaball join.\nOnly visible with the second shape on." },
     { k: "showShape1", type: "bool", def: false, studio: true, label: "second shape",
@@ -813,7 +835,10 @@ var BY_KEY = {};
 ROWS.forEach(function (r) { BY_KEY[r.k] = r; });
 
 /* ---- state --------------------------------------------------------------- */
-var STORE = "glass-tuner-v1";
+/* Bumped with #66: the defaults below stopped being upstream's and became the
+   settled titlebar, so a v1 blob restored over them would silently reinstate
+   the old bar and read as this file not having changed. */
+var STORE = "glass-tuner-v2";
 var state = {};
 ROWS.forEach(function (r) { state[r.k] = r.def; });
 
@@ -855,19 +880,232 @@ function imageFor(i) {
   return img;
 }
 
-function drawCover(img, x, y, w, h) {
-  if (!img || !img.complete || !img.naturalWidth) return false;
-  var sr = img.naturalWidth / img.naturalHeight;
+/* `cover`, with the crop anchored where the caller asks: 0.5 is centred, which
+   is what the carousel does, and 0 is from the top edge, which is what
+   .panel-clip does to the recording and therefore what this has to do too. */
+function drawCover(src, x, y, w, h, anchorY) {
+  var iw = src ? src.naturalWidth || src.videoWidth || 0 : 0;
+  var ih = src ? src.naturalHeight || src.videoHeight || 0 : 0;
+  if (!iw || !ih) return false;
+  var a = anchorY === undefined ? 0.5 : anchorY;
+  var sr = iw / ih;
   var dr = w / h;
   var sw, sh, sx, sy;
-  if (sr > dr) { sh = img.naturalHeight; sw = sh * dr; sx = (img.naturalWidth - sw) / 2; sy = 0; }
-  else { sw = img.naturalWidth; sh = sw / dr; sx = 0; sy = (img.naturalHeight - sh) / 2; }
-  sctx.drawImage(img, sx, sy, sw, sh, x, y, w, h);
+  if (sr > dr) { sh = ih; sw = sh * dr; sx = (iw - sw) * 0.5; sy = 0; }
+  else { sw = iw; sh = sw / dr; sx = 0; sy = (ih - sh) * a; }
+  sctx.drawImage(src, sx, sy, sw, sh, x, y, w, h);
   return true;
+}
+
+/* ---- the Frame ------------------------------------------------------------
+   GEOMETRY OFF THE DESIGN RENDER, and the render is not in this repository —
+   the same arrangement, and for the same reason, as the .panel block in
+   portfolio/styles.css: it is a still of the real photo grid and shows
+   uncensored photographs of real people, so these are constants of the
+   composition rather than derivations anyone here can re-run.
+
+   What was measured, in the render's own 2568px-wide pixels: the Frame spans
+   x 574 to 2411 — 1837 wide — and its top edge is at y 534.5. The titlebar ends
+   at y 598, where the grid's own white background begins, so the strip is 63.5
+   tall. Both top corners fit a superellipse of radius 30 — the right at an
+   exponent of 2.20 and the left at 2.10, each to within half a pixel of rms
+   over 32 sampled columns. The exponent is the surprise: the studio's default
+   is 5 and this is all but a circle.
+
+   Restated against the Frame's width, which is the only form of any of it that
+   survives being scaled: titlebar 3.457%, corner radius 1.633%. FRAME_W is
+   where they become pixels again, and it is the reference the whole export is
+   stated at — every length in Refraction, Glare and Blur is a CSS px at THIS
+   width. Halve the Frame and they all halve with it.
+
+   The ratio is --panel-frame-ratio, off the same render and already carried by
+   the stylesheet; it is repeated rather than imported because nothing here can
+   read a custom property out of a sheet this page does not load.
+
+   The two lengths are written out rather than left as arithmetic, because three
+   controls are set from them by hand — `bottom cut` is the titlebar, `bar y` is
+   half the Frame minus it, and `corner radius` is a percentage of half the
+   shape — and a constant that disagrees with a slider by a hundredth of a
+   pixel is a discrepancy someone has to spend a minute disproving. */
+var FRAME_W = 1200;
+var FRAME_RATIO = 1.945;
+var FRAME_H = Math.round(FRAME_W / FRAME_RATIO);   /* 617 */
+var BAR_H = 41.5;                                  /* 3.457% of FRAME_W */
+var FRAME_R = 19.6;                                /* 1.633% of FRAME_W */
+
+/* ---- the drift banner -----------------------------------------------------
+   FIVE SLIDER DEFAULTS ARE SET BY HAND FROM THOSE FIVE NUMBERS. The shape is
+   the Frame's width by twice the strip, the cut is the strip again, the corner
+   is a share of half the shape, and the bar stands at half the Frame less the
+   strip. Retyped rather than computed, for the reason above — which means
+   moving FRAME_W or the ratio would silently leave five defaults describing a
+   Frame that is no longer the one being drawn.
+   So they are checked against the constants on load and any mismatch is named
+   in the banner: the same arrangement, and for the same reason, as
+   type-tuner.html's banner over its own declared defaults. If it fires, the
+   DEFAULTS are what to fix. */
+function frameDrift() {
+  var want = {
+    shapeWidth: FRAME_W,
+    shapeHeight: BAR_H * 2,
+    barCut: BAR_H,
+    barY: FRAME_H / 2 - BAR_H,
+    shapeRadius: FRAME_R / BAR_H * 100
+  };
+  return Object.keys(want).filter(function (k) {
+    return Math.abs(BY_KEY[k].def - want[k]) > 0.05;
+  }).map(function (k) {
+    return k + " is " + fmt(BY_KEY[k].def) + ", the Frame wants " + fmt(want[k]);
+  });
+}
+
+var drift = frameDrift();
+if (drift.length) {
+  warn.textContent = ("These defaults no longer describe the Frame this draws — " +
+    drift.join("; ") + ". " + warn.textContent).trim();
+}
+
+/* --panel-bg and --panel-frame-fill, copied for the same reason. */
+var PANEL_BG = "#08090a";
+var FRAME_FILL = "#131518";
+
+var PANEL_MODES = { dark: 1, marble: 1, clip: 1 };
+
+function frameRect(W, H, dpr) {
+  var w = FRAME_W * dpr, h = FRAME_H * dpr;
+  return {
+    x: Math.round((W - w) / 2), y: Math.round((H - h) / 2),
+    w: w, h: h, r: FRAME_R * dpr, bar: BAR_H * dpr
+  };
+}
+
+/* ---- the recording --------------------------------------------------------
+   The clip #65 shipped, through the same two sources the Panel serves it from.
+   Detached from the document on purpose: a muted video decodes and plays
+   perfectly well without being in a layout, and the only consumer here is
+   drawImage. */
+var clipVideo = document.createElement("video");
+clipVideo.muted = true;
+clipVideo.loop = true;
+clipVideo.playsInline = true;
+clipVideo.preload = "auto";
+[["webm", "video/webm"], ["mp4", "video/mp4"]].forEach(function (f) {
+  var s = document.createElement("source");
+  s.src = "../portfolio/video/photos-grid." + f[0];
+  s.type = f[1];
+  clipVideo.appendChild(s);
+});
+clipVideo.load();
+
+/* ---- the marble -----------------------------------------------------------
+   A STAND-IN, and it is meant to be thrown away: #68 bakes the real plate from
+   Texturelabs stone_162 the way design/effects/build-textures.py bakes the film
+   and the paper, and when that lands this should load it instead. What it has
+   to be right about for #66 is only what the glass reads — a near-black ground
+   with a few near-white veins over it, so the refraction has a hard light edge
+   to bend and the blur has something to lose.
+
+   Deterministic, from one seeded generator: flicking between two treatments has
+   to compare two parameter sets and not also two marbles. */
+function mulberry32(a) {
+  return function () {
+    a |= 0; a = (a + 0x6d2b79f5) | 0;
+    var t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function paintMarble(ctx, W, H, dpr) {
+  ctx.fillStyle = "#0a0a0c";
+  ctx.fillRect(0, 0, W, H);
+
+  var ramp = ctx.createLinearGradient(0, 0, W * 0.7, H);
+  ramp.addColorStop(0, "rgba(255,255,255,0.10)");
+  ramp.addColorStop(0.55, "rgba(255,255,255,0.028)");
+  ramp.addColorStop(1, "rgba(255,255,255,0)");
+  ctx.fillStyle = ramp;
+  ctx.fillRect(0, 0, W, H);
+
+  /* Two passes over the same seeds: a blurred halo, then the core inside it.
+     One stroke on its own reads as a drawn line rather than a vein. */
+  [{ blur: 3.2, alpha: 0.45 }, { blur: 0, alpha: 1 }].forEach(function (pass) {
+    var rnd = mulberry32(0x5eed01);
+    ctx.filter = pass.blur ? "blur(" + (pass.blur * dpr).toFixed(2) + "px)" : "none";
+    ctx.lineCap = "round";
+    for (var i = 0; i < 24; i++) {
+      var y0 = (rnd() * 1.7 - 0.35) * H;
+      var y1 = y0 + (rnd() - 0.5) * H * 0.9;
+      var sag = (rnd() - 0.5) * H * 0.55;
+      var hair = i % 3 === 0;
+      var alpha = (hair ? 0.07 + rnd() * 0.07 : 0.12 + rnd() * 0.16) * pass.alpha;
+      ctx.strokeStyle = "rgba(238,236,232," + alpha.toFixed(3) + ")";
+      ctx.lineWidth = (hair ? 0.6 + rnd() * 1.1 : 1.5 + rnd() * 3.2) * dpr;
+      ctx.beginPath();
+      ctx.moveTo(-W * 0.05, y0);
+      ctx.bezierCurveTo(W * 0.3, y0 + sag, W * 0.7, y1 - sag, W * 1.05, y1);
+      ctx.stroke();
+    }
+  });
+  ctx.filter = "none";
+}
+
+/* Everything in a panel treatment except the recording, which moves. Cached
+   against its own inputs so a 60fps video does not re-bake the marble 60 times
+   a second. */
+var panelBase = document.createElement("canvas");
+var pctx = panelBase.getContext("2d");
+var panelBaseKey = "";
+
+function panelBaseFor(W, H, dpr, mode) {
+  var key = [W, H, dpr, mode].join("/");
+  if (panelBaseKey === key) return panelBase;
+  if (panelBase.width !== W || panelBase.height !== H) { panelBase.width = W; panelBase.height = H; }
+
+  if (mode === "marble") paintMarble(pctx, W, H, dpr);
+  else { pctx.fillStyle = PANEL_BG; pctx.fillRect(0, 0, W, H); }
+
+  var f = frameRect(W, H, dpr);
+  pctx.save();
+  pctx.beginPath();
+  pctx.roundRect(f.x, f.y, f.w, f.h, f.r);
+  pctx.clip();
+  /* THE FILL STOPS AT THE TITLEBAR UNDER `marble`, and that is the whole
+     treatment: the strip is left showing whatever the page has behind the
+     chrome. Under the other two the Frame is opaque all the way up. */
+  var top = mode === "marble" ? f.y + f.bar : f.y;
+  pctx.fillStyle = FRAME_FILL;
+  pctx.fillRect(f.x, top, f.w, f.y + f.h - top);
+  pctx.restore();
+
+  panelBaseKey = key;
+  return panelBase;
+}
+
+function paintPanel(W, H, dpr, mode) {
+  sctx.drawImage(panelBaseFor(W, H, dpr, mode), 0, 0);
+
+  var f = frameRect(W, H, dpr);
+  sctx.save();
+  sctx.beginPath();
+  sctx.roundRect(f.x, f.y, f.w, f.h, f.r);
+  sctx.clip();
+  /* `cover` from the top edge, as .panel-clip does — and under `clip` the box
+     starts at the Frame's top rather than under the strip, which is that
+     treatment: the picture carries on up behind the glass. Nothing is drawn
+     until the first frame decodes, and the Frame's fill underneath is what the
+     shipping page shows in that moment too. */
+  var vy = mode === "clip" ? f.y : f.y + f.bar;
+  drawCover(clipVideo, f.x, vy, f.w, f.y + f.h - vy, 0);
+  sctx.restore();
 }
 
 function paintScene(W, H, dpr) {
   if (scene.width !== W || scene.height !== H) { scene.width = W; scene.height = H; }
+
+  /* Before the theme is read, because the panel is dark in both — .panel
+     answers to the site's toggle no more than this does. */
+  if (PANEL_MODES[state.backdrop]) { paintPanel(W, H, dpr, state.backdrop); return; }
 
   var dark = state.theme === "dark";
   var paper = dark ? "#000" : "#fff";
@@ -1103,7 +1341,7 @@ function draw(now) {
   requestAnimationFrame(draw);
 
   var rect = canvas.getBoundingClientRect();
-  var dpr = state.dpr > 0 ? state.dpr : Math.min(window.devicePixelRatio || 1, 2);
+  var dpr = state.dpr >= 1 ? state.dpr : Math.min(window.devicePixelRatio || 1, 2);
   var w = Math.max(1, Math.round(rect.width * dpr));
   var h = Math.max(1, Math.round(rect.height * dpr));
 
@@ -1115,6 +1353,15 @@ function draw(now) {
     sizeTarget(tV, W, H);
     sizeTarget(tH, W, H);
     sceneDirty = true;
+  }
+
+  /* The recording runs only while something is looking at it, and a moving
+     backdrop is the one thing that makes the scene dirty every frame. */
+  if (PANEL_MODES[state.backdrop]) {
+    if (clipVideo.paused) clipVideo.play().catch(function () {});
+    if (!clipVideo.paused && clipVideo.readyState >= 2) sceneDirty = true;
+  } else if (!clipVideo.paused) {
+    clipVideo.pause();
   }
 
   if (sceneDirty) {
@@ -1151,17 +1398,21 @@ function draw(now) {
   gl.bindVertexArray(vao);
   gl.viewport(0, 0, W, H);
 
-  /* pass 1 — backdrop + shadow */
+  /* pass 1 — backdrop + shadow. A function because the bottom cut below draws
+     it a second time, and the two have to agree to the pixel. */
+  function bgPass() {
+    gl.useProgram(progBg.p);
+    shapeUniforms(progBg);
+    u1f(progBg, "u_shadowExpand", state.shadowExpand);
+    u1f(progBg, "u_shadowFactor", state.shadowFactor / 100);
+    u2f(progBg, "u_shadowPosition", -state.shadowX, -state.shadowY);
+    gl.activeTexture(gl.TEXTURE0);
+    gl.bindTexture(gl.TEXTURE_2D, sceneTex);
+    u1i(progBg, "u_bgTexture", 0);
+    gl.drawArrays(gl.TRIANGLES, 0, 3);
+  }
   gl.bindFramebuffer(gl.FRAMEBUFFER, tBg.fbo);
-  gl.useProgram(progBg.p);
-  shapeUniforms(progBg);
-  u1f(progBg, "u_shadowExpand", state.shadowExpand);
-  u1f(progBg, "u_shadowFactor", state.shadowFactor / 100);
-  u2f(progBg, "u_shadowPosition", -state.shadowX, -state.shadowY);
-  gl.activeTexture(gl.TEXTURE0);
-  gl.bindTexture(gl.TEXTURE_2D, sceneTex);
-  u1i(progBg, "u_bgTexture", 0);
-  gl.drawArrays(gl.TRIANGLES, 0, 3);
+  bgPass();
 
   /* passes 2 and 3 — separable gaussian */
   var radiusPx = Math.round(state.blurRadius);
@@ -1213,6 +1464,34 @@ function draw(now) {
   gl.bindTexture(gl.TEXTURE_2D, tBg.tex);
   u1i(progMain, "u_bg", 1);
   gl.drawArrays(gl.TRIANGLES, 0, 3);
+
+  /* pass 5 — the bottom cut, and only where there is one.
+     A titlebar has the window's corners at the top and a straight edge where
+     the content starts; the SDF draws one rounded rect, which has four. So the
+     shape is twice the strip's height and everything below the cut is put back
+     to the background pass — the same pixels the main pass just wrote OUTSIDE
+     the shape, so the seam is exact rather than approximately dark. The scissor
+     is in device px from the BOTTOM, which is where gl_FragCoord and spring.y
+     both live, so the line stays glued to the shape through the drag morph.
+
+     THE SHADOW IS NOT CUT WITH IT, and whoever raises `intensity` off 0 for the
+     Frame needs to know why. FRAG_BG spreads the shadow symmetrically about the
+     shape's outline, and the shape here is the WHOLE doubled rect — so under the
+     cut there is no shadow where a titlebar would cast one, and a phantom band
+     around the discarded half's own bottom edge, one strip-height lower. On
+     white paper at intensity 40 it measures 240 just under the cut against 199
+     forty pixels further down, with the backdrop above the bar at 221. Settled
+     at 0 because the render has no shadow at all, so it costs nothing today;
+     cutting it properly means clipping inside FRAG_BG, which is ported code. */
+  if (state.barCut > 0) {
+    var cut = Math.round(spring.y + (sh / 2 - state.barCut) * DPR);
+    if (cut > 0) {
+      gl.enable(gl.SCISSOR_TEST);
+      gl.scissor(0, 0, W, Math.min(H, cut));
+      bgPass();
+      gl.disable(gl.SCISSOR_TEST);
+    }
+  }
 
   frames++;
   if (now - fpsAt > 500) {
@@ -1398,7 +1677,14 @@ function sync() {
    changes. Both are in one block on purpose — one copy, one paste. */
 function buildExport() {
   var lines = [];
-  lines.push("glass-tuner v1 — liquid-glass-studio settings, /portfolio bar");
+  lines.push("glass-tuner v2 — liquid-glass-studio settings, the Panel's titlebar");
+  /* WITHOUT THESE TWO THE NUMBERS BELOW MEAN NOTHING. Every length is a CSS px
+     against a Frame 1200 wide, and the refraction offset is multiplied by the
+     device pixel ratio inside the shader — so the same settings on a 2x display
+     bend twice as far. Both travel with the export rather than being remembered. */
+  lines.push("reference: Frame " + FRAME_W + " CSS px wide, titlebar " + fmt(BAR_H) +
+             " — scale every length with the Frame's width");
+  lines.push("rendering at dpr " + fmt(DPR) + (state.dpr >= 1 ? " (pinned)" : " (this display)"));
 
   var moved = ROWS.filter(changed);
   if (!moved.length) {
@@ -1419,14 +1705,26 @@ function buildExport() {
   var deviates = ROWS.filter(function (r) { return "studio" in r; });
   if (deviates.length) {
     lines.push("");
-    lines.push("defaults above are this tuner's. It starts as a bar, upstream starts as a square:");
+    lines.push("these defaults are the settled titlebar, not upstream's. Where the two differ:");
     deviates.forEach(function (r) {
       lines.push("  " + r.k + " — here " + fmt(r.def) + ", liquid-glass-studio " + fmt(r.studio));
     });
   }
 
+  /* The rows with no upstream counterpart at all. Without this they are settled
+     values that reach a reader only inside the JSON, because "changed from
+     default" cannot list a default and the line above has nothing to compare. */
+  var local = ROWS.filter(function (r) { return r.local; });
+  if (local.length) {
+    lines.push("");
+    lines.push("controls liquid-glass-studio does not have:");
+    local.forEach(function (r) {
+      lines.push("  " + r.k + " — " + fmt(state[r.k]) + (changed(r) ? ", default " + fmt(r.def) : ""));
+    });
+  }
+
   lines.push("");
-  lines.push("glass-state v1: " + JSON.stringify(state));
+  lines.push("glass-state v2: " + JSON.stringify(state));
   return lines.join("\n");
 }
 
@@ -1439,9 +1737,16 @@ document.getElementById("copy").addEventListener("click", function () {
   );
 });
 
+/* A v1 export still imports, and has to be told apart rather than merely
+   tolerated: it was taken when the defaults were upstream's and it carries no
+   `barCut`, so importing one leaves the cut where it is and lands a titlebar's
+   silhouette over whatever backdrop the old blob names. Same hazard the STORE
+   bump is for, and the only honest fix is to say which version arrived. */
 document.getElementById("import").addEventListener("click", function () {
   var text = document.getElementById("out").value;
-  var at = text.indexOf("glass-state v1:");
+  var at = text.indexOf("glass-state v2:");
+  var old = at < 0 && text.indexOf("glass-state v1:") >= 0;
+  if (old) at = text.indexOf("glass-state v1:");
   var json = at >= 0 ? text.slice(at + 15) : text.slice(text.indexOf("{"));
   var obj;
   try { obj = JSON.parse(json.trim()); } catch (e) { status("not a glass-tuner export"); return; }
@@ -1455,7 +1760,7 @@ document.getElementById("import").addEventListener("click", function () {
   sceneDirty = true;
   save();
   sync();
-  status("imported " + n + " settings");
+  status("imported " + n + " settings" + (old ? " from a v1 export — check the shape" : ""));
 });
 
 document.getElementById("reset").addEventListener("click", function () {
