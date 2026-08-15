@@ -124,6 +124,29 @@ is line endings — and leaves a `settings.json.*.bak` to delete.
 a file if git puts it there, so anything ignored is missing from every tree the
 work is actually done in.
 
+## Verifying a change to /portfolio
+
+`/portfolio` has a consumer outside this repository: the author's GitHub profile
+README is an hourly screenshot of it, taken by `chrisJuresh/chrisJuresh`. It
+asserts hard on structure and geometry, so it breaks loudly, and asserts nothing
+about colour, so a theme regression breaks it silently for an hour. Before
+merging anything that touches `/portfolio`'s markup, layout, spacing or colour:
+
+```bash
+python design/tools/check-capture-contract.py
+```
+
+It serves the tree it is invoked from, fetches the profile repo's capture script
+at run time, and reports `captureWidth` (592), `cropHeight` (852), the four
+gutters (80) and the mean luminance of both renders. Exit `0` passes, `1` is a
+broken contract, `2` means it could not run.
+
+**Do not verify this with `preview_start`** — it serves the main checkout, not
+the worktree the edit is in, so it measures `development` while looking like it
+measured your branch. `docs/agents/capture-contract.md` has the rest of the
+traps, the baseline comparison recipe, and which of the four numbers may
+legitimately move.
+
 ## Agent skills
 
 ### Issue tracker
