@@ -302,23 +302,32 @@
   /* Picked by index.html, like --plate-src, and unset for the same reason. */
   --car-src: none;
 
-  /* The corner eye — the third plate, in the page's BOTTOM-RIGHT corner: the
+  /* The corner eye — the third plate, in the page's BOTTOM-RIGHT quarter: the
      London Eye seen rim-on, so the wheel reads as a mast of capsules rather than
      as a circle. The block near the foot of this sheet has the rest.
 
-     It is the car's shape of control and not the plate's, because it is anchored
-     the car's way: one corner, one rule — its own bottom-right corner stands in
-     the page's, and its foot lands on --fold, the same line the plate's foot and
-     the cut title land on. There is no second rule and nothing to pin at the top:
-     as shot there is a tenth of a frame of empty sky above the mast, so the top
-     of the picture is not an edge and has nothing to stand in.
+     VERTICALLY it is the car's shape of control and not the plate's, because it is
+     anchored the car's way: one edge, one rule — its foot lands on --fold, the same
+     line the plate's foot and the cut title land on. There is no second rule and
+     nothing to pin at the top: as shot there is a tenth of a frame of empty sky
+     above the mast, so the top of the picture is not an edge and has nothing to
+     stand in.
+
+     HORIZONTALLY it is neither of them, and this is the one picture of the three
+     that is not measured off a page edge at all. It hangs off --edge — the line the
+     text column starts on, which is also where the photo strip's first photograph
+     stands — so the distance from the strip to the wheel is a constant and the
+     window's right-hand edge is nothing to it. See --eye-x for why: the strip is
+     pinned to a CENTRED column and a corner is pinned to the window, so the two
+     used to travel at different speeds and the gap between them was whatever the
+     width happened to make it.
 
      The frame is NOT mirrored — see the eye paragraph in build-plate.py, where the
      plate's flip-it argument is set out for this frame and declined. What that
-     leaves for this end is --eye-x, which does the job the flip would have: the
-     subject occupies the left three-fifths of the file and the right two-fifths is
-     empty sky, so the dead margin is pushed off the page rather than folded to the
-     other side of the picture.
+     leaves for this end is the choice of which edge --eye-x pins: the subject
+     occupies the left three-fifths of the file and the right two-fifths is empty
+     sky, so it is the picture's LEFT edge that is held and the dead margin that is
+     allowed to run off the page.
 
      What it costs is nothing the car did not already cost. The picture's two inner
      edges are its left and its top, and in this frame both are empty sky — 4.5% of
@@ -377,29 +386,43 @@
                         /* the ceiling on --plate-w and --car-w, for the third
                            time and the same reason: 2800px is the top rung
                            index.html will fetch.                              */
-  --eye-x: 247px;       /* out from the RIGHT edge of the page, positive → left.
-                           POSITIVE, which reverses what this value was doing, and
-                           the reversal is the whole of the change — read the sign
-                           before reading the number.
-                           The job it used to do: the subject ends at 59.9% of the
-                           file's width and the remaining 40.1% is sky, so a negative
-                           offset of 0.401 × --eye-w carries that dead margin off the
-                           right-hand edge and stands the cable stays on it. That is
-                           what the frame not being mirrored is paid for in — see the
-                           eye paragraph in build-plate.py. At 629px wide the same
-                           rule asks for -252px.
-                           +247px does the opposite: it pulls the file 247px INBOARD,
-                           so the 252px of dead sky stays on the page and the stays
-                           finish ~499px short of the edge. The picture is no longer
-                           anchored in the bottom-right corner — it stands in the
-                           right-hand third with paper on both sides of it, which is
-                           the one arrangement the corner geometry above was built to
-                           avoid. It is here because it was asked for by name; -252px
-                           is the value that restores the corner.
-                           A length against a share, and at this sign the drift is no
-                           longer the gentle one: a taller window widens the dead
-                           margin the offset is no longer cancelling, so the gap to
-                           the edge grows with the fold.                        */
+  --eye-x: 292.94px;    /* INBOARD from the photo strip, positive → right: the gap
+                           between the strip's first photograph and the picture's
+                           own left edge. Not a page edge, and that is the whole of
+                           what changed — read what it is measured FROM before
+                           reading the number.
+                           It used to be 247px out from the window's right edge, and
+                           the trouble with that was not the number. The strip is
+                           pinned to a centred column, so its first photograph moves
+                           half a pixel for every pixel of window; a corner offset
+                           moves a whole one. Widen the window by 200px and the two
+                           part company by 100px. The picture was placed by eye on a
+                           1920×1080 screen, so that placement was right on exactly
+                           one display and drifted on every other.
+                           292.94px is that same placement, re-measured against the
+                           strip instead: at 1920×1080 the first photograph stands at
+                           736.5px and the picture's left edge at 1029.44px, and the
+                           difference is this. So the display it was tuned on looks
+                           the way it did, and every other one now looks the way that
+                           one does — no breakpoint, because --edge is a function of
+                           the width and this is a constant added to it.
+                           The LEFT edge is what is pinned, not the right, and that
+                           is a choice the file's own asymmetry makes: the subject
+                           ends at 59.9% of the width and the remaining 40.1% is sky
+                           (see build-plate.py's eye paragraph for why it was not
+                           simply flipped). --eye-w is a share of --fold, so a taller
+                           window hands the picture more width — and holding the left
+                           edge spends all of it on the right, pushing dead sky
+                           towards the page's edge, where holding the right edge
+                           would have walked the mast in over the column instead.
+                           What that costs is at the far end, and it is cheap twice
+                           over. Sky begins to leave the page above roughly
+                           0.86 × width − 130px of height — 1517px on a 1920-wide
+                           window — and that is what the sky is FOR. The stays only
+                           reach the box's right edge past about 1.43 × width − 220px,
+                           which is 2532px at 1920: a window half again as tall as it
+                           is wide. Nothing scrolls sideways when they do (html and
+                           body see to that), and the mast is nowhere near it.  */
   --eye-y: 0px;         /* up from --fold, positive → up; negative hangs it past
                            the fold. 0 IS the rule, and it is a variable for the
                            reason --plate-y is: so the rule can be broken by hand
@@ -1134,8 +1157,9 @@ body::after {
 }
 
 /* ---- the corner eye -------------------------------------------------------
-   The third plate: the London Eye rim-on, in the bottom-right corner of the
-   document, at --eye-opacity. Everything the corner-plate block says about why
+   The third plate: the London Eye rim-on, standing beside the photo strip in the
+   bottom-right of the document, at --eye-opacity. Everything the corner-plate
+   block says about why
    the grade is baked rather than filtered, and about starting at the top of the
    document and leaving at the fold, is true of this one too — same stock, same
    script, same piece of paper.
@@ -1145,9 +1169,13 @@ body::after {
    the alternatives are the same two bad ones. Two empty divs cost two lines of
    HTML and answer neither question.
 
-   What it takes from the CAR is its anchoring — one corner, one rule, and a size
-   measured against --fold rather than against a band — so --eye-fill behaves like
-   --car-fill and --eye-y moves the picture without resizing it. What it takes
+   What it takes from the CAR is its vertical anchoring — one edge, one rule, and a
+   size measured against --fold rather than against a band — so --eye-fill behaves
+   like --car-fill and --eye-y moves the picture without resizing it. Sideways it
+   takes neither of theirs: it is the only one of the three measured off --edge
+   rather than off a page edge, so it holds its distance from the strip instead of
+   from the window. That is --eye-x's block in :root, and the two lines of full
+   bleed below are what make the measurement exact. What it takes
    from the PLATE is its geometry at the bottom of the page: the box's own bottom
    edge is what the picture's foot stands on, so `height` carries --eye-y and the
    crop is a negative `bottom` offset that pushes the foot out through it. One
@@ -1167,20 +1195,35 @@ body::after {
 .eye {
   position: absolute;
   top: 0;
-  left: 0;
-  right: 0;
+  /* The carousel's own full-bleed frame, and it is the same two lines because it
+     has to be the same box. --edge is written in vw, so it only lands on the
+     column's edge when it is measured inside a box that is 100vw wide and centred
+     the way .carousel's margins make one; the body's box is 100vw LESS the
+     scrollbar, and measuring --edge from its right-hand edge would put the picture
+     half a scrollbar out — 7.5px on Windows, nothing where scrollbars are
+     overlaid, which is the kind of error that is invisible on the machine it is
+     tuned on. Here the strip's first photograph and this picture's left edge are
+     two offsets in one frame, so the gap between them is exact and the scrollbar
+     cancels out of it rather than being corrected for. */
+  left: calc(50% - 50vw);
+  right: calc(50% - 50vw);
   height: calc(var(--fold) - var(--eye-y));
   z-index: -1;
   pointer-events: none;
   background-image: var(--eye-src);
   background-repeat: no-repeat;
-  /* The four-value form, for --plate-x's reason: --eye-x is a distance out from
-     the corner the picture stands in and nothing else. The vertical offset is the
-     crop and only the crop — the height above has already put the box's bottom
-     edge where --eye-y asks for it — and it is negative so the foot is pushed
-     below that edge and clipped by it. */
+  /* The four-value form, for --plate-x's reason: an offset from a named edge is a
+     distance and nothing else, where a percentage would have been a share of the
+     difference between the box and the image and would have changed meaning every
+     time --eye-w did. LEFT is the named edge here, where the plate and the car
+     name the ones they stand in: this picture stands beside the photo strip rather
+     than in a corner, so it is measured from the strip's first photograph — --edge
+     — and --eye-x is the gap. The vertical offset is the crop and only the crop —
+     the height above has already put the box's bottom edge where --eye-y asks for
+     it — and it is negative so the foot is pushed below that edge and clipped
+     by it. */
   background-position:
-    right var(--eye-x)
+    left calc(var(--edge) + var(--eye-x))
     bottom calc(-1 * var(--eye-crop) * var(--eye-w));
   background-size: var(--eye-w) auto;
   opacity: var(--eye-opacity);
