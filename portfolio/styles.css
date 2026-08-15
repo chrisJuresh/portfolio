@@ -577,7 +577,7 @@
      the max() in the one-screen block below). The two are the same number on
      every ordinary display and part company only above ~1250px of height, where
      --rhyme keeps growing and --corner stops. Anything that wants "the page's
-     margin" as a fixed inset — the doorway title's corner — has to read --corner,
+     margin" as a fixed inset — the cut word's corner — has to read --corner,
      because a margin that tracks 100vh is a vertical idea and reads as an error
      the moment it is used horizontally: at 2160px tall --rhyme is 605px, which
      would put a left-hand title in the middle of the screen. */
@@ -659,8 +659,8 @@
      where Georgia's J sits on it. The cut box is the cap slab, cap top to
      baseline, so no value of --cue-show can reach the hook: cut, the J is a bare
      stem at 0.62 and at 1.0 alike, and the word reads PRO|ECTS. It comes back
-     whole in the doorway regime, where the clip comes off and the descender has
-     somewhere to hang. That is a property of the drawing, not a number to tune.
+     whole in the one-screen regime, where the clip comes off and the descender
+     has somewhere to hang. That is a property of the drawing, not a number to tune.
 
      The tracking that used to be here — --cue-track, 0.02em, positive because
      this face's caps are fitted tight and its wedge arms overhang their own
@@ -692,8 +692,8 @@
      the cut itself is taken from, and it replaces `1cap` exactly.
      --cue-fit and --cue-cap are its twin as a LENGTH, and the reason for a twin
      is that a container-query unit resolves against .cut-title and cannot be
-     spent by boxes that are not inside it — the height budget below, --slide-h,
-     .doorway. So the same arithmetic is written again against --col, which is
+     spent by boxes that are not inside it — the height budget below, --slide-h
+     and --rhyme. So the same arithmetic is written again against --col, which is
      what the container resolves to on every window wide enough to fill it:
      0.977592 x 27rem of ink, x 0.154521 of cap = 4.0786rem, which is the 4.079
      this replaces to within a hundredth of a pixel. Below --col the twin is a
@@ -702,7 +702,7 @@
      the clip, so a change to the cut word's height falls outside it.
      --cue-clip is then the visible slice: the part of the word that survives the
      cut. Both regimes hold the word's cap top exactly --cue-clip above the fold;
-     they differ only in what does the cutting (see the doorway block below).
+     they differ only in what does the cutting (see the turn block below).
      Like --cue-ink, these are the values for a word set to the COLUMN. In the
      one-screen band the word is fitted to the gutter instead and --cue-fit is
      re-pointed there; the two lines below are written once and hold in both. */
@@ -711,15 +711,18 @@
   --cue-cap:  calc(var(--cue-cap-share) * var(--cue-fit));
   --cue-clip: calc(var(--cue-show) * var(--cue-cap));
 
-  /* ---- where the word lands once it is a title -----------------------------
-     Scrolled home, the cut word stands in the top-left corner of the second
-     screen as a plain title. Both insets come off --corner, so the corner is one
-     measure square and the title's cap top lands on the same line the name's ink
-     starts on one screen above — the page's one margin, reused rather than
-     re-chosen. --title-top carries the half-leading because --corner is measured
-     to the name's INK, and a display word trimmed to its cap slab has no leading
-     of its own to stand the difference. */
-  --title-top:  calc(var(--corner) + var(--name-half-leading));
+  /* ---- where the word STARTS out in the gutter -----------------------------
+     At rest the cut word stands on the page's own margin in the bottom-left
+     corner, cut by the fold. --corner is that margin, reused rather than
+     re-chosen, and it is spent twice: once as the inset itself and once as the
+     white on the far side of the word, which is what --cue-measure below is
+     built out of.
+     There was a --title-top here as well, for the top-left corner the word used
+     to come to rest in on a blank second screen. That screen is gone and so is
+     the corner: the word now flies to the projects section's own masthead, and
+     where it lands is that h2's ink, measured at run time rather than declared.
+     See the turn block at the foot of this sheet and the travel in
+     cut-morph.js. */
   --title-left: var(--corner);
 
   /* Everything in the document that is NOT the photo strip and NOT one of the
@@ -870,14 +873,15 @@
    the profile-README capture in chrisJuresh/chrisJuresh probes at, 1000px and
    592px, whose hardcoded 592 divisor is derived from the photo width.
 
-   The same gate appears once more at the foot of this sheet, for the doorway —
-   the second screen the cut title opens onto. It has to be down there to win the
-   cascade; the two blocks are one idea and the gates must be kept in step. */
+   The same gate appears once more at the foot of this sheet, for the turn — the
+   page turn out of the CV and into the projects section, which is what the cut
+   title opens onto. It has to be down there to win the cascade; the two blocks
+   are one idea and the gates must be kept in step. */
 @media (min-width: 1100px) and (min-height: 983px) {
   :root {
     /* ---- the cut word's measure, out in the gutter -------------------------
        This is the band where the word leaves the column and stands in the
-       page's bottom-left corner instead (see the doorway block at the foot of
+       page's bottom-left corner instead (see the turn block at the foot of
        this sheet, which does the moving). Out there it has a measure of its
        own, and one rule sets it: the white to the LEFT of the word — page edge
        to the P — and the white to its RIGHT — the S to the line the resume
@@ -897,15 +901,15 @@
        centred in the width WITHOUT it, so --cue-measure runs half a scrollbar
        wide of the true gutter — 7.5px on Windows, nothing at all where
        scrollbars are overlaid, and this band always has a scrollbar because
-       the doorway gives it one. The word itself does not inherit that error.
+       the projects section gives it one. The word itself does not inherit
+       that error.
        Both of the things that have to be exact are held off something else:
        the two margins off percentages of the containing block, which do not
        count the scrollbar, and the CUT off the word's own `cap`, read from the
        face at the size it actually resolved to. What is left reading the vw
-       twin is the height BUDGET alone — .doorway's height, --slide-h,
-       --rhyme — where being 0.72px out (0.62 x 0.1545 x 7.5) puts the second
-       screen's title that far below --title-top and takes that much off the
-       photo strip. Constant at every window size, and not worth a script.
+       twin is the height BUDGET alone — --slide-h and --rhyme — where being
+       0.72px out (0.62 x 0.1545 x 7.5) takes that much off the photo strip.
+       Constant at every window size, and not worth a script.
        It is worth knowing WHY the cut is not allowed to spend it, because the
        number looks harmless: 0.72px is 0.9% of the cap at 1920 but 3.9% of it
        at the narrow end of this band, where the word is a quarter the size. Off
@@ -1156,7 +1160,7 @@ body::after {
    and is gone by the second screen. Its foot lands well above that line at every
    size the ceiling on --car-w allows, so in practice the clip never fires; it is
    there so that a hand-tuned --car-fill or --car-y cannot hang a photograph into
-   the doorway.
+   the projects section below.
 
    --car-crop cuts the TOP rather than the foot, which is the corner it is
    anchored to — same arithmetic as --plate-crop with the sign of the edge
@@ -1779,13 +1783,6 @@ body::after {
   max-width: var(--col);                 /* sized and centred exactly like .col */
   margin: var(--cue-gap) auto 0;
 }
-/* The second screen, and nothing else — it exists to give the document a length
-   to scroll and a second place to rest. It is empty on purpose: what arrives on
-   it is the cut word, which is not its child. Off in every regime but the one
-   that composes to a screen; a column that already scrolls has no page turn to
-   offer, and the profile-README capture probes at 1000px and 592px, where this
-   has to add exactly nothing to the document. */
-.doorway { display: none; }
 .cut-title > a {
   display: block;
   overflow: clip;
@@ -1799,7 +1796,7 @@ body::after {
 /* The word is clickable, and a display word gives nothing to underline — its
    baseline is below the cut. So the site's 1px link rule goes on the cut itself,
    drawn as an inset shadow rather than a border so it costs the clip box no
-   height and the geometry above stays exact. In the doorway regime the same
+   height and the geometry above stays exact. In the one-screen regime the same
    shadow lands on the baseline instead, because the box is then the cap slab and
    is not clipped — the one place the word is whole is the one place it can take
    an ordinary underline, and it is also the place you would click it. Cut, it
@@ -1818,7 +1815,7 @@ body::after {
    edge is the highest ink in the word, which is the O's overshoot, so the
    drawing is lifted by exactly that much and the cut is then taken from the cap.
    RELATIVE, not a negative margin, and this is not a preference — a margin is
-   wrong in the doorway regime and wrong silently. There the link runs
+   wrong in the one-screen regime and wrong silently. There the link runs
    `overflow: visible`, so it is no longer a block formatting context and its
    first child's top margin COLLAPSES into its own: the two negative margins
    would not add, the larger (the link's own lift) would simply win, and the
@@ -1855,29 +1852,41 @@ body::after {
   border: 0 !important;
 }
 
-/* ---- the doorway ----------------------------------------------------------
+/* ---- the turn ---------------------------------------------------------------
    The cut word is a promise that there is more below the page, and in this
    regime — the only one where the composition fits a screen exactly, so the same
-   gate as "composing to one screen" above — the page keeps it. One screen of
-   paper follows, and the document holds exactly two resting places: the CV, and
-   the word standing uncut in the top-left corner as the title of the screen it
-   opens onto. Mandatory snap with two snap ports and nothing between them means
-   one notch of the wheel travels the whole length of the document; there is
-   nowhere to come to rest half way, so it is a page turn rather than a scroll.
+   gate as "composing to one screen" above — the page keeps it. The projects
+   section follows, and the document holds exactly two resting places: the CV,
+   and the section. Mandatory snap with two snap ports and nothing between them
+   means one notch of the wheel travels the whole way; there is nowhere to come
+   to rest half way, so it is a page turn rather than a scroll.
 
-   The arithmetic is one line. Call the word's cap top Y = 100vh - --cue-clip —
-   that IS the cut, --cue-clip of the letters above the fold and the rest below —
-   and the title's landing T = --title-top. Scrolling to the end lifts everything
-   by exactly the document's overflow, so the overflow has to be Y - T, which is
-   what .doorway is tall. The document is then 100vh + (Y - T), and the word
-   arrives at T on the nose at every window height, with no script and no
-   scroll-driven animation.
-   One footnote on Y, since two things now measure it. The word is CUT off its
-   own `cap` and .doorway is tall off --cue-clip, which is the same line arrived
-   at twice — exactly, wherever scrollbars are overlaid, and 0.72px apart where
-   they are not, in the direction of resting the title that far under T. See the
-   scrollbar paragraph at --cue-measure for why the cut is the one that gets to
-   be exact.
+   WHAT USED TO BE HERE, AND WHY IT IS NOT. Between those two there was a
+   `.doorway` — one blank screen, sized `100vh - --cue-clip - --title-top`, whose
+   only job was to give the document exactly enough overflow that scrolling to
+   the end parked the cut word in the top-left corner as that screen's title. It
+   was written when the word opened onto nothing, and once the section arrived
+   underneath it the page had three resting places and the middle one was an
+   empty sheet with a half-turned word on it. The word never reached its own
+   landing either: it came to rest a whole screen above the fold, out of sight,
+   and the section below printed the SAME WORD again as its masthead in the very
+   face the morph resolves into.
+
+   So the landing moved to where it was always going. The word flies to the
+   section's masthead and lands on it — the .panel-masthead h2 goes
+   `visibility: hidden` under `.cue-fly` and the flying word is fitted to its
+   ink — which is the whole of the device the morph was built for: PROJECTS in
+   Friz Quadrata at the foot of the CV turns into PROJECTS in Host Grotesk at the
+   head of the section, once, over one page turn. The flight is measured and
+   drawn by cut-morph.js, off the same T that turns the letters; there is no
+   arithmetic left in this sheet for where the word ends up, because the end is
+   another element's ink and only layout knows how wide that is.
+
+   What this sheet still fixes is the START — the two insets below, the cut, and
+   the two snap ports — and that half is unchanged to the pixel. A browser that
+   never runs cut-morph.js gets exactly this block: the word cut at the fold, the
+   section's own masthead drawn as the section's own masthead, and one page turn
+   between them. Nothing here depends on the flight.
 
    Two consequences worth naming:
    * The cut becomes REAL. Everywhere else the word is clipped to --cue-clip by
@@ -1885,12 +1894,13 @@ body::after {
      second screen for the rest of the letters to stand on. Here they are all
      there and the bottom of the window does the cutting, which is what the
      device was always drawing. So the clip comes off: leave it on and the word
-     would arrive in the corner still guillotined.
+     would fly to the masthead still guillotined.
    * The word leaves the measure — both of them. It is no longer the last line of
-     the column but the title of its own screen, so it is set to the page's
-     margin instead of the text's — --title-left from the window's edge, the same
-     measure as the white above it, which is what makes the corner read as a
-     corner. And it is no longer the column's width either: it is fitted to the
+     the column but a word standing in the page's own corner, so it is set to the
+     page's margin instead of the text's — --title-left from the window's edge,
+     the same measure as the white above it, which is what makes the corner read
+     as a corner. And it is no longer the column's width either: it is fitted to
+     the
      gutter it now stands in, so that the white either side of it is that same
      --title-left twice over — page edge to the P, S to the line the resume
      starts on. See --cue-measure in the one-screen block for the whole of that
@@ -1916,14 +1926,20 @@ body::after {
      margin, and --cue-ink goes to a flat 100cqw with --cue-lead at zero.
 
    .cut-title is positioned rather than laid out for one reason: .page is exactly
-   one screen and the doorway is the next, so the title can be a flex item of
-   neither — as .page's it would be pushed down by the second screen, and as the
-   doorway's it could not stand above its own top edge. Pinned to the fold it is
-   in neither, which is also the truth of it. It lands in the same place the flow
-   put it: --slide-h is sized so the column plus --cue-gap reaches exactly Y, so
-   the two agree, and the gap under the contact block is what it always was.
-   `top`, not `bottom`, because the offset then holds the cap top at Y whatever
-   the box's own height turns out to be.
+   one screen and the panel is the next, so the word can be a flex item of
+   neither — as .page's it would be pushed down by the section below, and as the
+   panel's it could not stand above its own top edge. Pinned to the fold it is in
+   neither, which is also the truth of it. It lands in the same place the flow
+   put it: --slide-h is sized so the column plus --cue-gap reaches exactly the
+   cap top at 100vh - --cue-clip, so the two agree, and the gap under the contact
+   block is what it always was.
+   `top`, not `bottom`, because the offset then holds the cap top on that line
+   whatever the box's own height turns out to be.
+   IT IS ALSO THE ONLY THING THE FLIGHT HAS TO TRANSFORM. Absolutely positioned
+   in .page, the box has a document position that does not move with the scroll,
+   so cut-morph.js can express the whole travel as one transform on this element
+   against one measurement of the masthead's ink — no fixed positioning, no
+   sticky, and nothing here to undo at T = 0.
 
    These rules sit at the end of the sheet, not up in the :root block that shares
    their gate: every one of them overrides a base rule of the same specificity,
@@ -1947,11 +1963,6 @@ body::after {
      which would switch the snapping off rather than pin it. body itself is
      therefore no good either; it is the whole document tall. */
   body::before { content: ""; display: block; height: 0; scroll-snap-align: start; }
-  .doorway {
-    display: block;
-    height: calc(100vh - var(--cue-clip) - var(--title-top));
-    scroll-snap-align: end;
-  }
   .cut-title {
     position: absolute;
     top: 100vh;
@@ -1960,6 +1971,34 @@ body::after {
     width: auto;
     max-width: none;
     margin: 0;
+    /* The corner the flight's scale is taken about, and the only thing this
+       sheet says about the flight itself. cut-morph.js writes the transform
+       against this origin — see the flight block there — and writes nothing at
+       all at rest, so a page that never runs it never has a transform on this
+       element. `0 0` rather than the default centre because the word is placed
+       by its top-left in both compositions and a centre origin would put the
+       scale's own drift into the landing.
+       It costs nothing when unused: `transform-origin` on an untransformed box
+       has no effect and makes no stacking context. The transform does make one,
+       which is exactly why cut-morph.js also has to hand out a z-index — see
+       the note on `lift` there. */
+    transform-origin: 0 0;
+  }
+  /* The word crosses from the paper onto the near-black section during the turn,
+     so it cannot keep one colour. --cue-land is the crossing, 0 to 1, written by
+     cut-morph.js off where the DRAWING actually is against the section's top
+     edge; --cue-land-ink is the far end, read by that same script off the
+     masthead's own computed colour so that the section's palette stays declared
+     in one place — the .panel block — and is not copied up here as a literal.
+     --ink is the near end and is left to the cascade, so the theme toggle still
+     governs the word it leaves as.
+     Falls back to plain --ink wherever `color-mix` is not understood, which is
+     the same stance as the rest of this file: the flight still happens, the word
+     simply arrives the colour it started. #73 is the crossing proper. */
+  :root.cue-fly .cut-title > a {
+    color: color-mix(in oklab,
+                     var(--cue-land-ink, var(--ink)) calc(var(--cue-land, 0) * 100%),
+                     var(--ink));
   }
   .cut-title > a {
     /* The clip comes off — the bottom of the window does the cutting here, and
@@ -1984,20 +2023,39 @@ body::after {
        is not clipped. */
     margin-top: calc(-1 * var(--cue-show) * var(--cue-slab));
   }
-  /* The third resting place, and it is not optional. The two ports above are
-     `body::before` at the top and .doorway at the end, and `scroll-snap-type: y
-     mandatory` means the scroller must COME TO REST on a port — so a section
-     added past the last one is not merely un-snapped, it is unreachable: every
-     scroll into it is snapped straight back to the doorway. This is what makes
-     it reachable at all in this regime. Movement — what the Rail does, and what
-     the crossing into dark does — is #72 and #73; this is the floor under both.
-     `start`, so the panel arrives with its masthead against the top of the
-     window, the same edge the doorway's title stands on. When the composition is
-     taller than the window the area is larger than the scrollport, which relaxes
-     snapping inside it rather than switching it off — you can read to the bottom
-     of a tall panel without being pulled back up, which is the behaviour wanted
-     here anyway. */
+  /* The second resting place, and the far end of the turn. With .doorway gone
+     these are the only two ports in the document — `body::before` at the top and
+     this — which is what makes the turn a turn: `scroll-snap-type: y mandatory`
+     means the scroller must COME TO REST on a port, and with nothing between
+     them there is nowhere to stop half way.
+     `start`, so the section arrives with its masthead against the top of the
+     window; the flying word is aimed at that masthead's ink, so this is also
+     what fixes where the word comes down. When the composition is taller than
+     the window the area is larger than the scrollport, which relaxes snapping
+     inside it rather than switching it off — you can read to the bottom of a
+     tall panel without being pulled back up, and app.js hands the wheel back to
+     the browser past this port for exactly that stretch.
+     What the Rail does, and the crossing into dark, are still #72 and #73. */
   .panel { scroll-snap-align: start; }
+
+  /* ---- the landing ---------------------------------------------------------
+     Only while cut-morph.js is actually flying the word: it writes .cue-fly on
+     <html> when it has measured a flight it can draw, and takes it off when it
+     cannot — reduced motion, a regime with no turn in it, a masthead it could
+     not find. So the fallback is the plain page, with this h2 drawn.
+     `visibility`, NOT `display: none` and not `opacity`. The box has to stay
+     exactly where it is: it is what sets row one's height, what the subheading
+     hangs off, and — the point — the ink the flight is aimed at, which
+     cut-morph.js measures with a Range over this element's own text. A hidden
+     box still measures. `opacity: 0` would measure too and would also still be
+     hit-tested and still be read out; `visibility: hidden` takes it out of the
+     accessibility tree, which is right, because the section's name comes from
+     the `aria-labelledby` reference — and a directly-referenced hidden element
+     still supplies one.
+     Gated inside this media query with the rest of the turn, because outside it
+     there is no flight: on a page that scrolls as a column the word stays in the
+     column and this is the only PROJECTS the section has. */
+  :root.cue-fly .panel-masthead { visibility: hidden; }
 }
 
 /* ============================================================================
@@ -2005,8 +2063,8 @@ body::after {
    ============================================================================
    The dark composition at the foot of the document: one project shown rather
    than described. The markup is static and lives in index.html — the comment
-   above it says why it is there and why it stands after .doorway rather than
-   inside .page — and this block is the whole of the geometry.
+   above it says why it is there and why it stands outside .page rather than
+   inside it — and this block is the whole of the geometry.
 
    WHAT IS HERE AND WHAT IS NOT. This is the skeleton (#64): the masthead, the
    subheading, the Rail, the body copy, the four engineering points, and a
@@ -2031,7 +2089,7 @@ body::after {
    capture hides everything after the Work Experience listing by walking
    `nextElementSibling` from it — inside .col — so nothing here is hidden by
    that pass. It stays out of the shot by falling below cropHeight (852), a
-   whole screen and a doorway further down. design/tools/check-capture-contract.py
+   whole screen further down. design/tools/check-capture-contract.py
    is what proves it: 592 / 852 / 80 / 80 and a light mean luminance, unchanged.
 
    THE EFFECT STACK DOES NOT REACH IT. .fx is --fx-band tall — the fold — so the
@@ -2119,8 +2177,8 @@ body::after {
      exists to show stops filling the composition. #67 builds the real Frame and
      #70 does the reflow; between them is where a ceiling belongs, if one does. */
   min-height: var(--fold);
-  /* --corner is the page's own margin: the measure the doorway's title stands
-     off and the one the CV's gutters are cut to. The panel is a different
+  /* --corner is the page's own margin: the measure the cut word stands off in
+     its corner and the one the CV's gutters are cut to. The panel is a different
      composition but it is the same sheet of paper, so it keeps that inset
      rather than inventing one. */
   padding: var(--corner);
@@ -2391,8 +2449,9 @@ body::after {
    would be laid over blank paper and would read as a filter on a browser window
    rather than as a treatment of a print.
 
-   The doorway below the fold is therefore untouched, deliberately. It is the
-   clean sheet the cut title opens onto.
+   The projects section below the fold is therefore untouched, deliberately. It
+   is not a print — see the panel block — and the cut word, once it has flown
+   down onto it, is not being printed either.
 
    --fx-fade softens that ending over the last stretch of the band. It defaults
    to 0, because the pictures themselves stop dead there and an effect layer that
@@ -2730,7 +2789,7 @@ body::after {
      an element's own mask is applied before the blend and is harmless.
 
      Nothing is lost. .fx is the last positioned element in the body, so with
-     z-index auto it paints after .page and .doorway on DOM order alone, which is
+     z-index auto it paints after .page and .panel on DOM order alone, which is
      the whole of what the 2 was buying.
 
      If this stack ever looks like a flat grey wash again, measure a bare patch of
@@ -3325,12 +3384,8 @@ body::after {
   .carousel { display: none !important; }
   .site-footer { display: none !important; }
   .cut-title { display: none !important; }   /* a scroll cue means nothing on paper */
-  /* ...and the screen it opens onto is a blank sheet. The gate on the doorway is
-     min-width/min-height, which in print is measured against the PAGE box — a
-     large enough sheet matches it and prints one. */
-  .doorway { display: none !important; }
-  /* ...and so is the section past it. The panel is a screen composition all the
-     way down — a full-bleed near-black ground, a placeholder standing in for a
+  /* ...and so is the section it opens onto. The panel is a screen composition
+     all the way down — a full-bleed near-black ground, a placeholder standing in for a
      video, and type sized as a share of the WINDOW, which on paper is a share of
      the sheet. Printing it would cost a cartridge and say nothing the CV above
      does not. What it holds that a reader might want — the four figures and the

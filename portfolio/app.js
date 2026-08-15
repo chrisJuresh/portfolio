@@ -72,9 +72,10 @@
   // of the page. It sits OUTSIDE <main class="col">, as a sibling of it — .page
   // is a flex column and the title has to be .page's own child to be held
   // against the bottom edge. On a screen that composes to one page it is pinned
-  // to the fold instead and the word carries on onto a second screen, where the
-  // whole of it stands as that screen's title. All the geometry is CSS either
-  // way: see --cut-* and the doorway block in styles.css.
+  // to the fold instead, and one page turn later the whole of it has flown down
+  // onto the projects section and become that section's masthead. Where it
+  // STARTS is all CSS — see --cut-* and the turn block in styles.css; where it
+  // ends is measured, in cut-morph.js.
   //
   // THE WORD IS A PICTURE, not type. It is the outlines of PROJECTS set in Friz
   // Quadrata, baked to one SVG path by design/cut-title/build-cut-title.py, and
@@ -379,7 +380,7 @@
     }, { passive: false });
 
     // ---- the page turn -------------------------------------------------------
-    // In the doorway regime the document is two snap ports and nothing between,
+    // In the one-screen regime the document is two snap ports and nothing between,
     // so the browser turns the page with a snap fling of its own — and that fling
     // owns the scroller for as long as it flies. Wheel events that land while it
     // is in the air are filtered out, so the turn back cannot be taken until it
@@ -445,15 +446,34 @@
     // mind while a large force is on it — the page can be carried 26 px past a
     // port and clamped there by the browser for 109 ms, against the cubic's 13 px
     // and 247 ms. Further past, and a third of the time.
-    var doorway = document.querySelector(".doorway");
+    var panel = document.querySelector(".panel");
     var TURN = 800;                                     // ms for a whole page turn
     // turnV in px/ms and turnA in px/ms², both signed: the speed and the force
     // this turn is carrying, read by the next one if it interrupts.
     var turnRaf = null, turnTarget = null, turnV = 0, turnA = 0;
-    function inDoorway() {                              // the two-port regime, per CSS
-      return doorway && window.getComputedStyle(doorway).display !== "none";
+    // The two-port regime, read off the cascade rather than restated here. The
+    // panel takes `scroll-snap-align: start` inside the one-screen media query
+    // and nowhere else, so this IS that query without a second copy of it to
+    // drift. Deliberately not `scrollSnapType` on <html>, which would have been
+    // the obvious probe and is a trap: turnPage() sets it to "none" for the
+    // length of every ease, so a turn in the air would report the regime off and
+    // a reversal mid-flight would be handed back to the browser.
+    function inTurn() {
+      return !!panel && window.getComputedStyle(panel).scrollSnapAlign !== "none";
     }
     function pageMax() { return document.documentElement.scrollHeight - window.innerHeight; }
+    // The far port: the panel's own top edge, which is where `scroll-snap-align:
+    // start` rests. NOT pageMax(), and the difference is only visible on a wide
+    // window — the panel is min-height:--fold but the Frame grows with the width,
+    // so past about 1600px the composition stands a few per cent past the fold
+    // and the document is longer than the turn. Turning to pageMax() there would
+    // fly the page to the panel's FOOT, overshooting the port, the masthead, and
+    // the word's landing along with it.
+    function panelPort() {
+      if (!panel) return pageMax();
+      return Math.max(0, Math.min(pageMax(),
+        panel.getBoundingClientRect().top + window.scrollY));
+    }
     function turnPage(target) {
       var root = document.documentElement;
       var start = window.scrollY, dist = target - start;
@@ -503,10 +523,17 @@
     }
     document.addEventListener("wheel", function (e) {
       if (owner === "strip") return;                    // the roll has this gesture
-      if (!inDoorway()) return;
+      if (!inTurn()) return;
       var d = e.deltaY;                                 // the turn is vertical only:
       if (!d) return;                                   // a sideways swipe is the roll's
-      var target = d > 0 ? pageMax() : 0;
+      var port = panelPort();
+      // Past the port, inside a panel taller than the window, the wheel is the
+      // browser's again: there is a composition to read down there and the turn
+      // has already done its job. CSS agrees — a snap area larger than the
+      // scrollport relaxes snapping inside itself. Coming back up, the reader
+      // scrolls natively to the port and the next notch turns the page.
+      if (window.scrollY > port + 1) return;
+      var target = d > 0 ? port : 0;
       // nothing to turn: the page is already standing on that port and no turn is
       // in the air, so leave the event alone
       if (turnRaf === null && Math.abs(window.scrollY - target) < 1) return;
