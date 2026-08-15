@@ -6,7 +6,7 @@
 
      node render.mjs
      node render.mjs --variants cm,cmfix --themes dark
-     node render.mjs --viewports desktop,mobile --pages projects,portfolio,portal
+     node render.mjs --viewports desktop,mobile --pages panel,portfolio,portal
      node render.mjs --format jpeg --quality 90     # smaller files
 
    Variants come from design/variants.css — this script does not define any
@@ -26,18 +26,28 @@ const SHOTS = resolve(HERE, "..", "shots");
 
 /* ---- the matrix ---------------------------------------------------------- */
 const ALL_VARIANTS = ["asis", "cm", "cm-swap", "cmfix", "cm-all", "hybrid", "georgia-all", "sitka"];
-/* `projects` is a SECTION now, not a page. #71 retired /projects and the wall of
-   cards that was there; what the name means is the Panel at the foot of
-   /portfolio, so the entry points at the fragment and CLIP below cuts the shot
-   down to the section rather than handing back the whole portfolio page. */
+/* `panel`, and NOT `projects`, which is the key this replaces. #71 retired
+   /projects and the wall of cards that was there; what is worth shooting now is
+   the Panel at the foot of /portfolio, so the entry points at the fragment and
+   CLIP below cuts the shot down to the section.
+
+   THE RENAME IS THE POINT, not tidiness. Shot filenames are built from the page
+   key, so a repointed `projects` key would write `projects__<variant>__…` over
+   the sixteen committed card-wall shots — the only surviving picture of a page
+   this same change deletes, and the thing type-lab.html now tells you to go and
+   look at. It would overwrite them silently, one run at a time, and a
+   deterministic renderer gives no hint that the bytes underneath were a
+   different page. Under a new key the two sets sit side by side. */
 const PAGES = {
-  projects:  "/portfolio/#projects",
+  panel:     "/portfolio/#projects",
   portfolio: "/portfolio/",
   portal:    "/"
 };
-/* Pages whose shot is one element rather than the whole document. */
+/* Pages whose shot is one element rather than the whole document, and the
+   selector to probe inside it — the page-wide probe would otherwise measure type
+   that is not in the frame. */
 const CLIP = {
-  projects: "#projects"
+  panel: { shot: "#projects", probe: ".panel-copy p" }
 };
 const VIEWPORTS = {
   desktop: { width: 1280, height: 900 },
@@ -60,11 +70,15 @@ const opt = args(process.argv.slice(2));
 const list = (v, fallback) => (v ? v.split(",").map((s) => s.trim()).filter(Boolean) : fallback);
 
 const variants  = list(opt.variants, ALL_VARIANTS);
-/* `projects` is off the default list, and not because it is dead — it is the
-   Panel, and the Panel is set in Host Grotesk and painted from its own --panel-*
-   palette, so not one of the eight variants or two themes reaches it. Rendering
-   it by default would be sixteen copies of the same picture. Ask for it by name
-   when the section is what changed: --pages projects --viewports desktop,mobile */
+/* `panel` is off the default list, and not because it is dead — it is the one
+   thing here set in Host Grotesk and painted from its own --panel-* palette, so
+   not one of the eight variants or two themes reaches it and a default run would
+   write sixteen copies of one picture. The axis it DOES move on is the viewport,
+   which is what #57 wants reviewable, so ask for it with the variant and theme
+   pinned and the viewports opened up:
+
+     node render.mjs --pages panel --variants sitka --themes light \
+                     --viewports desktop,tablet,mobile                         */
 const pageKeys  = list(opt.pages, ["portfolio"]);
 const themes    = list(opt.themes, ["light", "dark"]);
 const viewKeys  = list(opt.viewports, ["desktop"]);
@@ -73,8 +87,8 @@ const format    = (opt.format || "auto").toLowerCase();
 const quality   = Number(opt.quality || 92);
 
 /* Pick the codec that actually wins for the content. The portal page and the
-   projects Panel are flat colour and type, where PNG beats JPEG outright (399 KB
-   vs 477 KB measured on the old card wall, and the Panel is flatter still — its
+   Panel are flat colour and type, where PNG beats JPEG outright (399 KB vs
+   477 KB measured on the old card wall, and the Panel is flatter still — its
    Frame is a placeholder, not a photograph). The portfolio page carries
    photographs, where JPEG wins by more than 3x (345 KB vs 1161 KB). "auto" is
    therefore the sane default. */
@@ -138,7 +152,7 @@ const DETERMINISTIC = `
   .veil { opacity: 1 !important; }
 `;
 
-async function capture(page, origin, pagePath, variant, theme) {
+async function capture(page, origin, pagePath, variant, theme, clipProbe) {
   await page.goto(origin + pagePath, { waitUntil: "load" });
 
   // activate the fonts and the variant on the real page
@@ -161,25 +175,28 @@ async function capture(page, origin, pagePath, variant, theme) {
   await page.waitForTimeout(150);
 
   // prove the variant actually took, rather than trusting it
-  return page.evaluate(() => {
+  return page.evaluate((clipProbe) => {
     const probe = document.createElement("canvas").getContext("2d");
     const w = (f) => { probe.font = "40px " + f; return probe.measureText("Handgloves 123").width; };
     const known = {
       "generic serif": w("serif"), Georgia: w("Georgia"),
       "Latin Modern Roman": w('"Latin Modern Roman"'),
       "LM Roman 9": w('"LM Roman 9"'), "LM Roman 8": w('"LM Roman 8"'),
-      "Sitka Text": w('"Sitka Text"')
+      "Sitka Text": w('"Sitka Text"'), "Host Grotesk": w('"Host Grotesk"')
     };
-    /* `.card__desc` was the projects wall's body copy and went with it in #71.
-       The fallback is what every remaining page probes. */
-    const sel = ".intro p + p, .intro .lead, body";
+    /* A clipped page probes inside its own clip. Measuring the default selector
+       would report the CV's lead — type that is not in the frame — and caption
+       the shot with a face it does not contain. `.card__desc` was the projects
+       wall's body copy and went with it in #71; the default is what every
+       unclipped page probes. */
+    const sel = clipProbe || ".intro p + p, .intro .lead, body";
     const el = document.querySelector(sel) || document.body;
     const cs = getComputedStyle(el);
     const width = w(cs.fontFamily);
     let hit = "unrecognised";
     for (const k in known) if (Math.abs(width - known[k]) < 0.01) { hit = k; break; }
     return { probe: sel, face: hit, size: Math.round(parseFloat(cs.fontSize) * 10) / 10 };
-  });
+  }, clipProbe);
 }
 
 /* ---- contact sheet ------------------------------------------------------ */
@@ -252,14 +269,15 @@ for (const viewport of viewKeys) {
       for (const variant of variants) {
         const ext = formatFor(pageKey);
         const name = `${pageKey}__${variant}__${theme}__${viewport}.${ext}`;
-        const info = await capture(page, origin, PAGES[pageKey], variant, theme);
+        const clip = CLIP[pageKey];
+        const info = await capture(page, origin, PAGES[pageKey], variant, theme, clip && clip.probe);
         const shot = {
           path: join(SHOTS, name),
           ...(ext === "jpeg" ? { type: "jpeg", quality } : { type: "png" })
         };
         /* A clipped key shoots the element; everything else shoots the document.
            `fullPage` is not a locator option and would be ignored if passed. */
-        if (CLIP[pageKey]) await page.locator(CLIP[pageKey]).screenshot(shot);
+        if (clip) await page.locator(clip.shot).screenshot(shot);
         else await page.screenshot({ ...shot, fullPage: true });
         const bytes = (await stat(join(SHOTS, name))).size;
         rows.push({ page: pageKey, variant, theme, viewport, file: name, ...info });

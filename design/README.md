@@ -553,7 +553,7 @@ Useful flags:
 
 ```bash
 node render.mjs --variants cm,cmfix --themes dark
-node render.mjs --viewports desktop,mobile --pages projects,portfolio,portal
+node render.mjs --viewports desktop,mobile --pages panel,portfolio,portal
 node render.mjs --scale 1.5              # ~44% smaller files
 node render.mjs --format jpeg --quality 85
 ```
@@ -561,13 +561,23 @@ node render.mjs --format jpeg --quality 85
 Defaults: all 8 variants x portfolio x light+dark x desktop = 16 shots
 at `deviceScaleFactor: 2`.
 
-`projects` is still a `--pages` key but is no longer a default. Since #71 it
-names the Projects **Panel** at the foot of `/portfolio` rather than a page of
-its own, and the shot is clipped to that section — but the Panel is set in Host
-Grotesk from its own palette, so no variant and no theme reaches it and rendering
-it by default would write sixteen copies of one picture. Ask for it by name when
-the section is what changed, and across viewports, which is the axis it does move
-on: `--pages projects --viewports desktop,tablet,mobile`.
+**The `projects` key is now `panel`.** Since #71 there is no `/projects` page;
+what is worth shooting is the Projects Panel at the foot of `/portfolio`, so the
+key points at the fragment and the shot is clipped to that section. It was
+renamed rather than repointed because shot filenames are built from the key: a
+repointed `projects` would have written over the sixteen committed card-wall
+shots — the only surviving picture of the page #71 deletes — silently, one run at
+a time. Under `panel` both sets coexist.
+
+It is not a default, either. The Panel is set in Host Grotesk from its own
+palette, so no variant and no theme reaches it and a default run would write
+sixteen copies of one picture. The axis it *does* move on is the viewport, so ask
+for it with the other two pinned:
+
+```bash
+node render.mjs --pages panel --variants sitka --themes light \
+                --viewports desktop,tablet,mobile
+```
 
 `--format auto` (the default) picks the codec per page, which is worth doing:
 the portal page and the projects Panel are flat colour and type where PNG wins
