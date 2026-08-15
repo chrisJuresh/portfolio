@@ -745,8 +745,8 @@ var GROUPS = [
       tip: "Bar centre, CSS px above the canvas centre.\n267 is where the bar sits ON the Frame's titlebar: the Frame is centred and 617 tall, the\nshape is twice the strip's height, so 617/2 − 41.5. It does not depend on the stage's size —\nresize the window and the bar stays on the chrome." },
     { k: "theme", type: "chips", def: "light", options: [["light", "light"], ["dark", "dark"]],
       tip: "The paper colour behind and around the photographs — #fff or #000, as on the real page." },
-    { k: "dpr", type: "num", min: 1, max: 3, step: 0.05, def: 0, label: "pixel ratio",
-      tip: "Device pixel ratio the canvas renders at. It is a shader input, not just a quality knob:\nthe refraction offset is scaled by it, so a 1x and a 2x screen do not look identical.\n0 means follow this display (capped at 2)." }
+    { k: "dpr", type: "num", min: 0, max: 3, step: 0.05, def: 0, label: "pixel ratio",
+      tip: "Device pixel ratio the canvas renders at. It is a shader input, not just a quality knob:\nthe refraction offset is scaled by it, so a 1x and a 2x screen do not look identical.\nANYTHING BELOW 1 MEANS FOLLOW THIS DISPLAY, capped at 2 — the row has to reach the sentinel\nfor the export to survive a round trip, because import clamps every number into its own\nrange and a minimum of 1 turned 'follow the display' into 'pinned at 1' on the way back in,\nsilently changing what the refraction does." }
   ] },
 
   { name: "Refraction", rows: [
@@ -766,7 +766,7 @@ var GROUPS = [
 
   { name: "Glare", rows: [
     { k: "glareRange", type: "num", min: 0, max: 100, step: 0.01, def: 34, studio: 30, label: "glare size",
-      tip: "How far the specular streak reaches in from the edge — same geometry as fresnel size,\nbut for the highlight rather than the rim." },
+      tip: "How far the specular streak reaches in from the edge — same geometry as fresnel size,\nbut for the highlight rather than the rim.\n34 for the same reason it is 34 there: the render's two side rims reach about as far in as\nits top one does, so the streak and the rim are given the same width rather than two\nnumbers that happen to be close." },
     { k: "glareHardness", type: "num", min: 0, max: 100, step: 0.01, def: 20, label: "glare hardness",
       tip: "Sharpens the inner boundary of the streak, as fresnel hardness does for the rim." },
     { k: "glareFactor", type: "num", min: 0, max: 120, step: 0.01, def: 26, studio: 90, label: "glare intensity",
@@ -809,8 +809,8 @@ var GROUPS = [
     { k: "shapeRadius", type: "num", min: 1, max: 100, step: 0.1, def: 47.2, studio: 80, label: "corner radius",
       tip: "Corner radius as a percentage of half the short side. 100 is a full pill.\n47.2% of 41.5 is 19.6 CSS px — the render's window corner, 30px at its own scale." },
     { k: "shapeRoundness", type: "num", min: 2, max: 7, step: 0.01, def: 2.2, studio: 5, label: "superellipse",
-      tip: "The exponent the corners are drawn with. 2 is a circular arc; higher is the squircle —\nthe corner meets the straight edge with no visible join.\n2.2 is what the render's top corners fit, to within half a pixel over 32 samples: all but\ncircular, and nowhere near the studio's 5." },
-    { k: "barCut", type: "num", min: 0, max: 400, step: 0.5, def: 41.5, label: "bottom cut",
+      tip: "The exponent the corners are drawn with. 2 is a circular arc; higher is the squircle —\nthe corner meets the straight edge with no visible join.\nThe render's right corner fits 2.20 and its left 2.10, each within half a pixel of rms over\n32 sampled columns: all but circular, and nowhere near the studio's 5." },
+    { k: "barCut", type: "num", min: 0, max: 400, step: 0.5, def: 41.5, local: true, label: "bottom cut",
       tip: "Throw away everything more than this many CSS px below the bar's TOP edge, so the shape\nends in a straight line instead of two more corners. 0 leaves the whole rounded rect.\nNot an upstream control — the shipping Frame will do the same thing by clipping a canvas\nthe height of the strip, and the scissor pass in draw() says why the seam is exact." },
     { k: "mergeRate", type: "num", min: 0, max: 0.3, step: 0.01, def: 0.05, label: "merge rate",
       tip: "How softly the bar blends into the second shape where they meet — a metaball join.\nOnly visible with the second shape on." },
@@ -907,9 +907,10 @@ function drawCover(src, x, y, w, h, anchorY) {
    What was measured, in the render's own 2568px-wide pixels: the Frame spans
    x 574 to 2411 — 1837 wide — and its top edge is at y 534.5. The titlebar ends
    at y 598, where the grid's own white background begins, so the strip is 63.5
-   tall. The top corners fit a superellipse of radius 30 and exponent 2.20 to
-   within half a pixel over 32 samples; the exponent is the surprise, because
-   the studio's default is 5 and this is all but a circle.
+   tall. Both top corners fit a superellipse of radius 30 — the right at an
+   exponent of 2.20 and the left at 2.10, each to within half a pixel of rms
+   over 32 sampled columns. The exponent is the surprise: the studio's default
+   is 5 and this is all but a circle.
 
    Restated against the Frame's width, which is the only form of any of it that
    survives being scaled: titlebar 3.457%, corner radius 1.633%. FRAME_W is
@@ -931,6 +932,38 @@ var FRAME_RATIO = 1.945;
 var FRAME_H = Math.round(FRAME_W / FRAME_RATIO);   /* 617 */
 var BAR_H = 41.5;                                  /* 3.457% of FRAME_W */
 var FRAME_R = 19.6;                                /* 1.633% of FRAME_W */
+
+/* ---- the drift banner -----------------------------------------------------
+   FIVE SLIDER DEFAULTS ARE SET BY HAND FROM THOSE FIVE NUMBERS. The shape is
+   the Frame's width by twice the strip, the cut is the strip again, the corner
+   is a share of half the shape, and the bar stands at half the Frame less the
+   strip. Retyped rather than computed, for the reason above — which means
+   moving FRAME_W or the ratio would silently leave five defaults describing a
+   Frame that is no longer the one being drawn.
+   So they are checked against the constants on load and any mismatch is named
+   in the banner: the same arrangement, and for the same reason, as
+   type-tuner.html's banner over its own declared defaults. If it fires, the
+   DEFAULTS are what to fix. */
+function frameDrift() {
+  var want = {
+    shapeWidth: FRAME_W,
+    shapeHeight: BAR_H * 2,
+    barCut: BAR_H,
+    barY: FRAME_H / 2 - BAR_H,
+    shapeRadius: FRAME_R / BAR_H * 100
+  };
+  return Object.keys(want).filter(function (k) {
+    return Math.abs(BY_KEY[k].def - want[k]) > 0.05;
+  }).map(function (k) {
+    return k + " is " + fmt(BY_KEY[k].def) + ", the Frame wants " + fmt(want[k]);
+  });
+}
+
+var drift = frameDrift();
+if (drift.length) {
+  warn.textContent = ("These defaults no longer describe the Frame this draws — " +
+    drift.join("; ") + ". " + warn.textContent).trim();
+}
 
 /* --panel-bg and --panel-frame-fill, copied for the same reason. */
 var PANEL_BG = "#08090a";
@@ -996,16 +1029,16 @@ function paintMarble(ctx, W, H, dpr) {
 
   /* Two passes over the same seeds: a blurred halo, then the core inside it.
      One stroke on its own reads as a drawn line rather than a vein. */
-  [[3.2, 0.45], [0, 1]].forEach(function (pass) {
+  [{ blur: 3.2, alpha: 0.45 }, { blur: 0, alpha: 1 }].forEach(function (pass) {
     var rnd = mulberry32(0x5eed01);
-    ctx.filter = pass[0] ? "blur(" + (pass[0] * dpr).toFixed(2) + "px)" : "none";
+    ctx.filter = pass.blur ? "blur(" + (pass.blur * dpr).toFixed(2) + "px)" : "none";
     ctx.lineCap = "round";
     for (var i = 0; i < 24; i++) {
       var y0 = (rnd() * 1.7 - 0.35) * H;
       var y1 = y0 + (rnd() - 0.5) * H * 0.9;
       var sag = (rnd() - 0.5) * H * 0.55;
       var hair = i % 3 === 0;
-      var alpha = (hair ? 0.07 + rnd() * 0.07 : 0.12 + rnd() * 0.16) * pass[1];
+      var alpha = (hair ? 0.07 + rnd() * 0.07 : 0.12 + rnd() * 0.16) * pass.alpha;
       ctx.strokeStyle = "rgba(238,236,232," + alpha.toFixed(3) + ")";
       ctx.lineWidth = (hair ? 0.6 + rnd() * 1.1 : 1.5 + rnd() * 3.2) * dpr;
       ctx.beginPath();
@@ -1308,7 +1341,7 @@ function draw(now) {
   requestAnimationFrame(draw);
 
   var rect = canvas.getBoundingClientRect();
-  var dpr = state.dpr > 0 ? state.dpr : Math.min(window.devicePixelRatio || 1, 2);
+  var dpr = state.dpr >= 1 ? state.dpr : Math.min(window.devicePixelRatio || 1, 2);
   var w = Math.max(1, Math.round(rect.width * dpr));
   var h = Math.max(1, Math.round(rect.height * dpr));
 
@@ -1437,10 +1470,19 @@ function draw(now) {
      the content starts; the SDF draws one rounded rect, which has four. So the
      shape is twice the strip's height and everything below the cut is put back
      to the background pass — the same pixels the main pass just wrote OUTSIDE
-     the shape, so the seam is exact rather than approximately dark, and the
-     shadow the bar casts down onto the content survives it. The scissor is in
-     device px from the BOTTOM, which is where gl_FragCoord and spring.y both
-     live, so the line stays glued to the shape through the drag morph. */
+     the shape, so the seam is exact rather than approximately dark. The scissor
+     is in device px from the BOTTOM, which is where gl_FragCoord and spring.y
+     both live, so the line stays glued to the shape through the drag morph.
+
+     THE SHADOW IS NOT CUT WITH IT, and whoever raises `intensity` off 0 for the
+     Frame needs to know why. FRAG_BG spreads the shadow symmetrically about the
+     shape's outline, and the shape here is the WHOLE doubled rect — so under the
+     cut there is no shadow where a titlebar would cast one, and a phantom band
+     around the discarded half's own bottom edge, one strip-height lower. On
+     white paper at intensity 40 it measures 240 just under the cut against 199
+     forty pixels further down, with the backdrop above the bar at 221. Settled
+     at 0 because the render has no shadow at all, so it costs nothing today;
+     cutting it properly means clipping inside FRAG_BG, which is ported code. */
   if (state.barCut > 0) {
     var cut = Math.round(spring.y + (sh / 2 - state.barCut) * DPR);
     if (cut > 0) {
@@ -1635,14 +1677,14 @@ function sync() {
    changes. Both are in one block on purpose — one copy, one paste. */
 function buildExport() {
   var lines = [];
-  lines.push("glass-tuner v1 — liquid-glass-studio settings, the Panel's titlebar");
+  lines.push("glass-tuner v2 — liquid-glass-studio settings, the Panel's titlebar");
   /* WITHOUT THESE TWO THE NUMBERS BELOW MEAN NOTHING. Every length is a CSS px
      against a Frame 1200 wide, and the refraction offset is multiplied by the
      device pixel ratio inside the shader — so the same settings on a 2x display
      bend twice as far. Both travel with the export rather than being remembered. */
   lines.push("reference: Frame " + FRAME_W + " CSS px wide, titlebar " + fmt(BAR_H) +
              " — scale every length with the Frame's width");
-  lines.push("rendering at dpr " + fmt(DPR) + (state.dpr > 0 ? " (pinned)" : " (this display)"));
+  lines.push("rendering at dpr " + fmt(DPR) + (state.dpr >= 1 ? " (pinned)" : " (this display)"));
 
   var moved = ROWS.filter(changed);
   if (!moved.length) {
@@ -1663,14 +1705,26 @@ function buildExport() {
   var deviates = ROWS.filter(function (r) { return "studio" in r; });
   if (deviates.length) {
     lines.push("");
-    lines.push("the defaults above are the settled titlebar, not upstream's. Where the two differ:");
+    lines.push("these defaults are the settled titlebar, not upstream's. Where the two differ:");
     deviates.forEach(function (r) {
       lines.push("  " + r.k + " — here " + fmt(r.def) + ", liquid-glass-studio " + fmt(r.studio));
     });
   }
 
+  /* The rows with no upstream counterpart at all. Without this they are settled
+     values that reach a reader only inside the JSON, because "changed from
+     default" cannot list a default and the line above has nothing to compare. */
+  var local = ROWS.filter(function (r) { return r.local; });
+  if (local.length) {
+    lines.push("");
+    lines.push("controls liquid-glass-studio does not have:");
+    local.forEach(function (r) {
+      lines.push("  " + r.k + " — " + fmt(state[r.k]) + (changed(r) ? ", default " + fmt(r.def) : ""));
+    });
+  }
+
   lines.push("");
-  lines.push("glass-state v1: " + JSON.stringify(state));
+  lines.push("glass-state v2: " + JSON.stringify(state));
   return lines.join("\n");
 }
 
@@ -1683,9 +1737,16 @@ document.getElementById("copy").addEventListener("click", function () {
   );
 });
 
+/* A v1 export still imports, and has to be told apart rather than merely
+   tolerated: it was taken when the defaults were upstream's and it carries no
+   `barCut`, so importing one leaves the cut where it is and lands a titlebar's
+   silhouette over whatever backdrop the old blob names. Same hazard the STORE
+   bump is for, and the only honest fix is to say which version arrived. */
 document.getElementById("import").addEventListener("click", function () {
   var text = document.getElementById("out").value;
-  var at = text.indexOf("glass-state v1:");
+  var at = text.indexOf("glass-state v2:");
+  var old = at < 0 && text.indexOf("glass-state v1:") >= 0;
+  if (old) at = text.indexOf("glass-state v1:");
   var json = at >= 0 ? text.slice(at + 15) : text.slice(text.indexOf("{"));
   var obj;
   try { obj = JSON.parse(json.trim()); } catch (e) { status("not a glass-tuner export"); return; }
@@ -1699,7 +1760,7 @@ document.getElementById("import").addEventListener("click", function () {
   sceneDirty = true;
   save();
   sync();
-  status("imported " + n + " settings");
+  status("imported " + n + " settings" + (old ? " from a v1 export — check the shape" : ""));
 });
 
 document.getElementById("reset").addEventListener("click", function () {
