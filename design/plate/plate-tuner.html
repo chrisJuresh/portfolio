@@ -323,15 +323,17 @@ var CAR = [
    with the plate's geometry at the bottom of the page and the plate's want of a
    dissolve, which is none: both its inner edges are empty sky in this frame. So it
    is the car's list with the fade row dropped and the two vertical rows pointing
-   the other way. `out from right` is the row that matters most here, because the
-   frame is not mirrored and it is what stands the subject in the corner. */
+   the other way. `in from the strip` is the row that matters most here, and it is
+   the one row on the sheet that is measured off the column rather than off an edge
+   of the page — the frame is not mirrored, so where the picture stands relative to
+   the photographs is the whole composition. */
 var EYE = [
   { k: "--eye-opacity", label: "opacity", unit: "", min: 0, max: 0.6, step: 0.005, dp: 3, dark: true,
     tip: "Its own, as the other two are their own, and holding the same number today.\nThis frame is a steel lattice with sky through it rather than a solid mass, so it carries less ink than either at the same setting — which is an argument for reading it against them here rather than assuming the shared value is still right." },
   { k: "--eye-fill", label: "width ÷ fold", unit: "", min: 0.1, max: 1.2, step: 0.001, dp: 3,
     tip: "Width as a share of the first screen, as --car-fill is.\nWhat it really sets is how tall the mast stands: the mast is 87.6% of the frame, so 1.167× this width. It has a ceiling the car sets rather than the file — much past 0.39 the top of the mast arrives under the gondola and the two read as one machine. Watch the gap between them, not the size." },
-  { k: "--eye-x", label: "out from right", unit: "px", min: -400, max: 400, step: 1, dp: 0,
-    tip: "Positive moves it left, in off the page's right edge.\nNegative today, and load-bearing rather than a nudge: the frame is not mirrored, so the subject sits in the left three-fifths of the file and the right two-fifths is sky. This is what pushes that dead margin off the page and puts the cable stays in the corner. Drag it toward 0 and the whole picture walks in off the edge, leaving white where the corner should be." },
+  { k: "--eye-x", label: "in from the strip", unit: "px", min: -200, max: 900, step: 1, dp: 0,
+    tip: "The gap between the photo strip's first photograph and this picture's left edge. Positive moves it right, away from the strip.\nThe one placement on the page that is measured off the column rather than off a page edge, and that is what keeps this gap the same on every screen — the strip is pinned to a centred column, so a corner offset would drift from it as the window widens. Watch the gap, not the distance to the edge: the right-hand two-fifths of the frame is sky, and how much of it stays on the page is whatever the window's height leaves over." },
   { k: "--eye-y", label: "up from the fold", unit: "px", min: -1200, max: 1200, step: 1, dp: 0,
     tip: "Positive lifts it off --fold, the bottom of the first screen; negative hangs it past that line.\nUnlike the plate's, this does not resize anything — --eye-fill is a share of the fold, not of what --eye-y leaves." },
   { k: "--eye-crop", label: "crop the foot", unit: "", min: 0, max: 0.9, step: 0.005, dp: 3,
