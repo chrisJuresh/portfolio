@@ -396,26 +396,62 @@
     // owns the turn again for the keyboard and for touch, which never came here.
     // This lives inside the carousel's block because it shares its reading of who
     // owns the gesture — the roll is the one thing that takes the wheel first.
+    //
+    // THE CURVE. The turn is one cubic Hermite in scroll position: it leaves
+    // where the page IS, at the speed the page is ALREADY MOVING, and arrives at
+    // the port with its speed back at zero. From a standstill the velocity term
+    // drops out and what is left is smoothstep, 3s² - 2s³ — so the sheet begins
+    // to move rather than being thrown. What this replaced was an ease-out cubic,
+    // which is fastest at its very first frame: right for something with a finger
+    // still on it, wrong for a page turn taken from rest by one notch of a wheel.
+    // Peak speed falls from three times the average to one and a half, and it now
+    // falls in the MIDDLE of the turn instead of at the edge.
+    //
+    // The word inherits all of that for nothing. cut-morph.js drives the morph
+    // off the scroll fraction this writes, so the hard start was the word's hard
+    // start too — eight letters given their whole stagger in the first few frames
+    // and then most of the turn to finish in. On a curve that is slowest at both
+    // ends the letters turn with the paper.
+    //
+    // The velocity term is what makes a reversal continuous. Restarting the old
+    // tween from the current position left the page travelling one way at full
+    // speed and the next frame travelling the other way at full speed, and there
+    // is no such thing in paper. Carried in, the sheet slows, stops, and comes
+    // back — and the word unwinds with it, because it is reading the same number.
     var doorway = document.querySelector(".doorway");
-    var TURN = 420;                                     // ms for a page turn
-    var turnRaf = null, turnTarget = null;
+    var TURN = 640;                                     // ms for a whole page turn
+    var turnRaf = null, turnTarget = null, turnV = 0;   // turnV in px/ms, signed
     function inDoorway() {                              // the two-port regime, per CSS
       return doorway && window.getComputedStyle(doorway).display !== "none";
     }
     function pageMax() { return document.documentElement.scrollHeight - window.innerHeight; }
     function turnPage(target) {
       var root = document.documentElement;
+      var start = window.scrollY, dist = target - start;
+      var v0 = turnRaf === null ? 0 : turnV;            // the speed already on the page
       if (turnRaf) cancelAnimationFrame(turnRaf);
       turnTarget = target;
-      function land() { turnRaf = null; turnTarget = null; root.style.scrollSnapType = ""; }
-      if (reduce) { window.scrollTo(0, target); land(); return; }
-      var start = window.scrollY, dist = target - start, t0 = null;
+      function land() { turnRaf = null; turnTarget = null; turnV = 0; root.style.scrollSnapType = ""; }
+      if (reduce || !dist) { window.scrollTo(0, target); land(); return; }
+      // TURN is written for the whole document; anything shorter takes the same
+      // top speed rather than the same time, which is the square root of the
+      // fraction. Floored so a reversal caught near its own port still has room
+      // to absorb the speed it came in with instead of being flung past it.
+      var full = Math.max(1, pageMax());
+      var dur = TURN * Math.max(0.45, Math.sqrt(Math.min(1, Math.abs(dist) / full)));
+      var t0 = null;
       root.style.scrollSnapType = "none";
       turnRaf = requestAnimationFrame(function frame(ts) {
         if (t0 === null) t0 = ts;
-        var p = Math.min(1, (ts - t0) / TURN);
-        window.scrollTo(0, start + dist * (1 - Math.pow(1 - p, 3)));   // ease-out cubic
-        if (p < 1) turnRaf = requestAnimationFrame(frame); else land();
+        var s = Math.min(1, (ts - t0) / dur);
+        // Hermite with the far end pinned at rest: s²(3 - 2s) carries the
+        // distance, s(s - 1)² carries the speed in and is zero at both ends. The
+        // second line is the same pair differentiated — the speed this turn would
+        // hand on to one that interrupts it.
+        var y = start + dist * (s * s * (3 - 2 * s)) + v0 * dur * (s * (s - 1) * (s - 1));
+        turnV = (dist * 6 * s * (1 - s) + v0 * dur * (3 * s - 1) * (s - 1)) / dur;
+        window.scrollTo(0, s < 1 ? y : target);
+        if (s < 1) turnRaf = requestAnimationFrame(frame); else land();
       });
     }
     document.addEventListener("wheel", function (e) {

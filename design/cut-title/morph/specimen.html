@@ -247,7 +247,7 @@ function tween(c,t){
   }
   return s;
 }
-const ease=t=>t<=0?0:t>=1?1:(t<.5?4*t*t*t:1-Math.pow(-2*t+2,3)/2);
+const ease=t=>t<=0?0:t>=1?1:t*t*(3-2*t);   /* smoothstep — same curve portfolio/cut-morph.js uses */
 
 /* a rig is one svg: eight letters, each with its own clock */
 function rig(svg,face){
