@@ -235,8 +235,17 @@ So an endpoint pair is the knob for WHERE the picture sits and a poor one for
 whether it can be seen at all. The measurements, in CIE L* because eight bits are
 not a perceptual unit:
 
-    light, 0.12 on #fff    picture spans dL* 3.88, sits dL* 10.7..6.8 off the paper
+    light, 0.12 on #fff    picture spans dL* 2.95, sits dL* 3.0..0.0 off the paper
     dark,  0.17 on #000    picture spans dL* 4.55, sits dL* 0..4.6 off the paper
+
+The light row is the CURRENT light endpoints and the dark row is the ones the next
+section replaces, which is why they are not a matched pair — each is the state its
+own section argues about. Before the light endpoints moved, that first row read
+
+    light, 0.12 on #fff    picture spans dL* 3.88, sits dL* 10.7..6.8 off the paper
+
+and the paragraph above, along with the whole of the section after next, was
+written against it. See WHAT THE LIGHT PAPER NOW COSTS.
 
 THE ARITHMETIC OF THE DARK PAPER
 --------------------------------
@@ -264,10 +273,43 @@ this is still an order of magnitude quieter than the words and the reason to sto
 here is not the type — there is room — it is that a floor much above this stops
 reading as ink on black paper and starts reading as a grey card laid on it.
 
-Note what this does NOT change: the light grades. On white the picture's SHADOW
-end is its most visible part (dL* 10.7 off the paper) and it is HIGHLIGHT that is
-being lost into the page. The two papers fail at opposite ends, which is the whole
-argument for a Grade per theme, arrived at from the arithmetic rather than by eye.
+This changed no light grade at the time, and the reason is the sentence the next
+section is named after: the two papers fail at OPPOSITE ends. On black it is SHADOW
+that lands on the page; on white it is HIGHLIGHT. That asymmetry is the whole
+argument for a Grade per theme, and it was arrived at from the arithmetic rather
+than by eye.
+
+WHAT THE LIGHT PAPER NOW COSTS
+------------------------------
+The light endpoints have since moved, and they moved the other way: SHADOW up to
+0xb8 (0xc7 on the eye) and HIGHLIGHT to 0xff. On white that is the dark paper's
+pathology chosen deliberately — 0xff composites onto a #fff page at exactly the
+page's own value, so the light picture's HIGHLIGHT end is now not dim, it is gone,
+and what is left runs from code 246 to code 255:
+
+    plate  SHADOW 0x00 -> 0xb8   composite 224.4 -> 246.5   dL* 10.68 -> 2.95
+           HIGHLIGHT 0x5c -> 0xff   composite 235.4 -> 255.0   dL*  6.80 -> 0.00
+
+which narrows what the picture spans from dL* 3.88 to 2.95 and brings its whole
+band to within 3 dL* of the paper. Composited and averaged over each picture's own
+subject — the mean, not the endpoints, and taken over alpha > 0.99 so the feathered
+roofline is not counted — the three land at
+
+    plate dL* 2.43    car dL* 1.79    eye dL* 2.03      (were 10.01, 10.02, 10.60)
+
+so all three are about a quarter as far off the page as they were. That is a
+watermark rather than a picture, and it is a judgement about how loud this page
+wants to be rather than anything the arithmetic asked for: everything above says
+the light side had dL* 10.7 of room and was using it.
+
+Two things follow that are worth having written down before the next person moves
+these. The band is now EIGHT to nine 8-bit codes wide on white, so the quantiser
+argument in WHAT THE ENDPOINTS CANNOT FIX now bites on the light theme too and did
+not before — the levers that widen a band, --*-opacity and --*-fill, are the only
+ones left with anything to give here. And the three pictures are no more equal to
+each other than they were: they spread 0.64 dL* either way, which was 6% of the
+old level and is 31% of this one. Equalising them is still --*-opacity's job, for
+the reason the next section gives, and it is now a larger job than it was.
 
 WHICH KNOB EACH PAPER ANSWERS TO
 ---------------------------------
@@ -283,12 +325,20 @@ the lift this whole section is about. The ceiling is free to move, so it moves.
 
 On WHITE, the knob is --*-opacity in styles.css, and the endpoints cannot be it.
 At 0.12 the furthest any ink can get from white paper is dL* 10.68, and the three
-pictures already sit at 9.89, 9.08 and 8.80 — inside the last dL* of the range.
-Solving for a HIGHLIGHT that equalises them there asks for 0x17 and 0x14, which is
-not a grade, it is crushing two of the pictures to a silhouette to buy a difference
-the paper has no room for. Raising a picture's opacity instead moves its whole band
-away from the paper and costs nothing, because on white nothing is being clipped
-into the page at the bottom.
+pictures sat at 9.89, 9.08 and 8.80 — inside the last dL* of the range. Solving for
+a HIGHLIGHT that equalises them there asks for 0x17 and 0x14, which is not a grade,
+it is crushing two of the pictures to a silhouette to buy a difference the paper has
+no room for. Raising a picture's opacity instead moves its whole band away from the
+paper and costs nothing, because on white nothing is being clipped into the page at
+the bottom.
+
+Those three figures are the endpoints this page had before WHAT THE LIGHT PAPER NOW
+COSTS, and they are left standing because the argument is about the RATIO and the
+ratio is what survived the move: at dL* 2.43, 1.79 and 2.03 the pictures are no
+closer together, and every reason below for reaching for opacity instead of a
+ceiling holds at the new level exactly as it did at the old one. What has changed is
+only that there is now less of the range in use, not that some other knob has become
+the right one.
 
 So: a picture's share of the light is set on black here, and on white in styles.css,
 and each is the only place its own paper leaves room for.
@@ -380,14 +430,28 @@ class Grade(NamedTuple):
 # the split and opens on the same numbers for the same reason from the other end:
 # a third picture off this pipeline is a third print of one paper stock until
 # somebody looks at it and says otherwise.
+#
+# The three lights then moved together, and a long way: SHADOW from the bottom of
+# the range to near the top of it, HIGHLIGHT onto the paper itself. That is a
+# judgement about how loud these pictures are on white — a watermark rather than a
+# grey picture — and not a correction of anything. It is also the one set of
+# endpoints in this file chosen AGAINST the arithmetic the docstring gives for
+# them: see WHAT THE LIGHT PAPER NOW COSTS.
+#
+# HIGHLIGHT is shared here and SHADOW is not, which is THE ARITHMETIC OF THE DARK
+# PAPER's rule with the papers swapped rather than a second rule. The end that
+# lands on the page is a property of the PAPER — 0xff composites to 255 on #fff for
+# the eye exactly as it does for the plate — so it is one value; the end that has
+# to carry the picture is a property of the FRAME, so it is three.
+LIGHT_HIGHLIGHT = (0xff, 0xff, 0xff)   # the paper itself: composites to 255 on #fff
 PLATE_LIGHT = Grade(
     EXPOSURE_PCT=99.0,
     EXPOSURE_TARGET=0.34,
     SAT_KEEP=1.00,
     CONTRAST=0.36,
     HIGHLIGHT_PUSH=1.34,
-    SHADOW=(0x00, 0x00, 0x00),      # pure black
-    HIGHLIGHT=(0x5c, 0x5c, 0x5c),   # mid grey
+    SHADOW=(0xb8, 0xb8, 0xb8),      # composites to code 246.5 on white at 0.12
+    HIGHLIGHT=LIGHT_HIGHLIGHT,
     GRAIN_SIGMA=0.0075,
 )
 
@@ -446,8 +510,8 @@ CAR_LIGHT = Grade(
     SAT_KEEP=1.00,
     CONTRAST=0.36,
     HIGHLIGHT_PUSH=1.34,
-    SHADOW=(0x00, 0x00, 0x00),      # pure black
-    HIGHLIGHT=(0x5c, 0x5c, 0x5c),   # mid grey
+    SHADOW=(0xb8, 0xb8, 0xb8),      # composites to code 245.4 on white at 0.135
+    HIGHLIGHT=LIGHT_HIGHLIGHT,
     GRAIN_SIGMA=0.0075,
 )
 
@@ -468,8 +532,8 @@ EYE_LIGHT = Grade(
     SAT_KEEP=1.00,
     CONTRAST=0.36,
     HIGHLIGHT_PUSH=1.34,
-    SHADOW=(0x05, 0x05, 0x05),      # off black
-    HIGHLIGHT=(0x61, 0x61, 0x61),   # mid grey
+    SHADOW=(0xc7, 0xc7, 0xc7),      # composites to code 247.7 on white at 0.131
+    HIGHLIGHT=LIGHT_HIGHLIGHT,
     GRAIN_SIGMA=0.0075,
 )
 
