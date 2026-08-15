@@ -2104,11 +2104,17 @@ body::after {
   --panel-ink-soft: #dcdad5;
   --panel-muted:    #8b8983;
   --panel-rule:     rgba(242, 241, 238, 0.16);
-  /* The Frame's fill and edge. The fill is now what shows behind the recording
-     before it decodes, and in a browser that plays neither format; the edge goes
-     when #67 builds the real chrome. */
+  /* The Frame's fill and edge. The fill is the window's body: what shows behind
+     the recording before it decodes, what the titlebar's glass is standing on,
+     and the band between the recording and the window's own edge.
+     THE EDGE IS THE RIM ROUND THE WHOLE WINDOW, and it is measured rather than
+     chosen: the render's outer edge peaks at 84 of 255 against a page backdrop
+     of 8, so 0.32 of #f2f1ee. It was 0.1 while the Frame was a placeholder,
+     which is a third of what the render has. The rim along the TOP is not this —
+     that edge is inside the glass and the shader draws it, and .frame-bar paints
+     over this ring where the two meet. */
   --panel-frame-fill: #131518;
-  --panel-frame-edge: rgba(242, 241, 238, 0.1);
+  --panel-frame-edge: rgba(242, 241, 238, 0.32);
 
   /* ---- the type scale ---------------------------------------------------- */
   /* THE DESIGN RENDER IS NOT IN THIS REPOSITORY, so these are constants of the
@@ -2157,8 +2163,10 @@ body::after {
   /* Also off the render, and also a constant here for the reason above: the
      Frame including its titlebar measured 1430 x 735.
      THE RECORDING IS 1.6 AND THIS IS 1.945, and they do not reconcile — see the
-     .panel-clip block, which is where the crop is decided and why. #67 builds
-     the Frame and is where a decision to move this belongs. */
+     .panel-clip block, which is where the crop is decided and why. #67 built the
+     Frame and left this where it found it: the render's Frame is what the
+     composition is measured against, and cropping the recording into it is a
+     smaller lie than reshaping the window the whole design is drawn around. */
   --panel-frame-ratio: 1.945;
 
   position: relative;
@@ -2279,33 +2287,343 @@ body::after {
   z-index: 1;
   margin-top: var(--panel-frame-drop);
   aspect-ratio: var(--panel-frame-ratio);
-  border-radius: clamp(0.5rem, 0.9vw, 1rem);
+  position: relative;
   background: var(--panel-frame-fill);
-  border: 1px solid var(--panel-frame-edge);
-  /* The clip's corners are the Frame's, and the crop below has to happen
-     somewhere. Both are this. */
+  border-radius: var(--frame-radius);
+  /* The rim, as a ring rather than a `border`. A border would take a pixel off
+     the inside of every child's box and put the window's own edge INSIDE the
+     titlebar, one pixel in from where the glass draws its own — two rims a pixel
+     apart down each end. An inset ring paints over the fill instead and costs
+     the layout nothing. */
+  box-shadow: inset 0 0 0 1px var(--panel-frame-edge);
+  /* EVERY LENGTH IN THE CHROME IS A SHARE OF THIS BOX'S WIDTH, in cqw, so the
+     window holds its proportions at any size the composition gives it — the
+     same device .cut-title already uses to draw a word at an exact width. It is
+     also the form the #66 export is stated in: a CSS px there is a px at a Frame
+     1200 wide, so 41.5px of titlebar is 3.4583% and stays 3.4583% when the Frame
+     is 1600. `inline-size` and not `size`: the height comes from aspect-ratio
+     above, and size containment would take it away. */
+  container-type: inline-size;
+
+  /* The chrome's own constants, declared on the Frame because the rules that
+     read them are the Frame's children and the container they resolve against is
+     this box. Where each number comes from is the table over the chrome section
+     below — that is the only place any of them is explained. */
+  --frame-bar:    3.4583cqw;
+  --frame-radius: 1.6333cqw;
+  --frame-inset:  0.816cqw;
+  --frame-ink:      rgba(242, 241, 238, 0.55);
+  --frame-ink-off:  rgba(242, 241, 238, 0.22);
+  --frame-light:    rgba(242, 241, 238, 0.45);
+  --frame-pill-bg:  rgba(242, 241, 238, 0.12);
+  --frame-pill-ink: rgba(242, 241, 238, 0.72);
+}
+
+/* ---- the browser Frame's chrome --------------------------------------------
+   MEASURED OFF THE DESIGN RENDER, which is not in this repository, so these are
+   constants of the composition for the reason the .panel block already gives.
+   Read off its 2568px-wide pixels with the Frame spanning x 574–2411 (1837 wide)
+   and its top edge at y 534.5, then restated as shares of the Frame's width —
+   the only form of any of it that survives being scaled — and written in cqw
+   below, which is that share made a length again. The first three are on the
+   Frame itself, in the block above, because more than one rule reads them; the
+   rest are written into the rule that uses them, once each.
+
+   Every glyph's position is its measured CENTRE and every size its measured ink,
+   taken as the full width at half maximum of a brightness profile down the bar.
+   The render is a blurred perspective still, so a stroke's peak is a FLOOR on
+   its real value, not the value: that is why the ink alphas below are one number
+   for every enabled glyph rather than the seven slightly different numbers the
+   profile hands back. The one that is genuinely apart is the forward chevron,
+   which reads at a third of the back chevron in a render where every other pair
+   of neighbours matches — a browser greying out a direction it cannot go, and
+   the truth here too.
+
+     titlebar     3.4583%   (41.5px at a Frame 1200 — the #66 reference width)
+     corner       1.6333%   (19.6px, superellipse n≈2.2, drawn by the shader)
+     inset        0.816%    (15px, the band between the recording and the edge)
+     lights       0.95% across, 1.52% apart, first centred 2.04% in
+     sidebar      1.41% wide, centred  8.00%
+     back / fwd   0.54% wide, centred 10.66% / 12.95%
+     pill        39.45% wide, 2.07% tall, centred 50.19% — so centred on the Frame
+     reload       0.87% wide, centred 69.15% — inside the pill, at its right end
+     share        1.20% wide, centred 92.22%
+     new tab      1.03% wide, centred 94.91%
+     tabs         1.36% wide, centred 97.52%
+
+   THE PILL IS EMPTY IN THE RENDER. `record` was run with `mockup=none` and the
+   address is authored here, so there is nothing to measure and the type size is
+   chosen: 0.95cqw is 11.4px at 1200, which is a browser's address type against a
+   field 24.8px tall. What it says is not a choice — see the markup.
+
+   THE INK IS ONE ALPHA FOR EVERY ENABLED GLYPH — --frame-ink, 0.55, which is
+   what the back chevron measures and it is the one stroke thick enough that the
+   render's blur does not eat it. --frame-light is its own, 0.45, because a
+   filled disc is not a stroke and can be measured honestly; --frame-ink-off is
+   the forward chevron's 0.22. */
+
+/* ---- the titlebar, and the three materials it can be made of ----------------
+   THE LADDER IS THE CASCADE, not a chain of `if`s, and it is built so that each
+   rung is what a browser gets when the one above it is genuinely unavailable
+   rather than when a script decided it was:
+
+     flat   this block. A translucent fill and nothing else. It is also what a
+            browser that never runs frame-glass.js gets, which is the whole
+            point of putting it in the base rule.
+     blur   the @supports block. Adds the backdrop blur and the two rings.
+            No script involved, so a reader with JS off still gets it.
+     webgl  frame-glass.js sets data-glass="webgl" once the shader has actually
+            drawn, and that turns the two rules above off in favour of the
+            canvas it inserted.
+
+   THE FILL IS NOT A CHOSEN COLOUR. The render's chrome body is (44,38,49) and
+   the Frame's fill behind it is #131518 — and #fab2ff at 0.108 over that fill
+   solves all three channels to the integer. That is not a coincidence: 0.108 is
+   the #66 tint, 0.135, times the 0.8 the shader multiplies it by, and #fab2ff is
+   the tint colour. So the flat rung is the shader's own tint term with the
+   refraction, the rims and the blur removed — the same material with everything
+   that needs a GPU taken out, rather than an imitation of it.
+
+   Standing above the recording because the glass is a lens and a lens is in
+   front of what it bends. z-index and not source order alone, because the
+   canvas frame-glass.js inserts is a child of this and the video is a sibling
+   of it. */
+.frame-bar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: var(--frame-bar);
+  z-index: 1;
+  /* The window's own top corners, and the only two the Frame has. The shader
+     draws a superellipse of the same radius and paints the page's backdrop
+     outside it; this is what rounds the flat and blurred rungs, and what keeps
+     the fill off the corners underneath the canvas. */
+  border-radius: var(--frame-radius) var(--frame-radius) 0 0;
+  background: rgba(250, 178, 255, 0.108);
+  /* NO RIM OF ITS OWN, AND THAT IS THE POINT OF THE FILL BEING TRANSLUCENT.
+     .panel-frame's ring already runs round the whole window, the bar is painted
+     over it, and at 0.108 the ring shows through — so the outline stays
+     continuous across the titlebar without this rung drawing anything. Adding a
+     second ring here would put TWO on the same pixel: the Frame's, then the tint
+     over it, then this one, which measures 150 of 255 along the top edge against
+     the render's 66. One rim, once. */
+}
+
+/* The blurred rung. THE BLUR DOES NOTHING TODAY and is here anyway: what sits
+   behind the titlebar is the Frame's own flat fill, and a blur of a flat colour
+   is that colour. It is what #68 changes — the Panel stands on marble there, and
+   whatever of it shows through the window is the first thing this has to soften.
+   Writing it now means #68 moves a backdrop and not a ladder.
+
+   THE TWO RINGS ARE THE TWO THINGS THE SHADER'S EDGE DOES, and they replace the
+   window's rim rather than joining it, so between them they have to reach the
+   render's own numbers. The first is the Fresnel: a closed ring round the whole
+   shape, and the render's TOP rim peaks at 66 of 255 over a body of 44, so 0.104
+   of white. The second is the angular glare, which #66 settled at 90° — an angle
+   the shader doubles, so it lights the two ENDS and not the top — and the
+   render's side rims peak at 85 and 90.
+   THEY COMPOSITE, WHICH IS WHY THE SECOND IS NOT 0.20. Both are painted on the
+   left and right edges, so what has to equal the render there is the pair:
+   0.104 + a(1 − 0.104) = (90 − 43)/(255 − 43) = 0.222, which puts a at 0.132.
+   Giving the second ring the render's own 0.20 would put the ends at 103 — the
+   mistake of reading a measured total as one layer's share of it.
+   What this rung cannot do is the third thing, the refraction, and there is no
+   honest CSS for it: the route the photos project ships bends its backdrop with
+   `url()` inside `backdrop-filter`, which is Chromium's alone, and a fallback
+   that only falls back on one engine is not one. So the bevel is a rim here and
+   a bend one rung up. */
+@supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .frame-bar {
+    -webkit-backdrop-filter: blur(0.5cqw);
+    backdrop-filter: blur(0.5cqw);
+    box-shadow:
+      inset  0    0 0 1px rgba(255, 255, 255, 0.104),
+      inset  1px  0 0 0   rgba(255, 255, 255, 0.132),
+      inset -1px  0 0 0   rgba(255, 255, 255, 0.132);
+  }
+}
+
+/* The shader rung. Everything the two below paint is turned off rather than
+   painted over: the canvas is opaque and would hide them, but a backdrop-filter
+   under an opaque child still costs a filter pass on every composite, which is
+   the per-frame cost this Frame exists without. */
+.frame-bar[data-glass="webgl"] {
+  background: none;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  box-shadow: none;
+}
+/* Sized in CSS and not by attribute, so a resize is a repaint of a canvas that
+   is already the right shape rather than a reflow waiting on script.
+   THE CLIP IS A CIRCLE AND THE SHADER'S CORNER IS NOT, which is a half-pixel
+   the change chooses to give up. The context is opaque — it has to be, there is
+   nothing worth compositing under it — so it paints the page's own backdrop
+   outside its superellipse, and against today's flat Panel that is invisible
+   whether it is clipped or not. It stops being invisible the moment something
+   else is behind the Frame, which is #68: without the clip the canvas would
+   paint --panel-bg over the marble in each top corner. `border-radius` cannot
+   describe a superellipse, so what it cuts instead is the ~3% the exponent 2.2
+   bulges past a circular arc at 45° — 0.48px at a Frame 1200 wide, and less
+   below that. The robust half-pixel is the better trade; #68 should extend the
+   backdrop rather than reach for this. */
+.frame-glass {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: inherit;
+  /* Inert like everything else in the window. The canvas answers to nothing, but
+     it covers the whole bar, and a decorative element that is what the pointer
+     finds there is a small lie about what the Frame is. */
+  pointer-events: none;
+}
+
+/* ---- the controls -----------------------------------------------------------
+   INERT, AND SAID TWICE. `pointer-events: none` here, and nothing in the markup
+   below is a button or a link — see the comment there. The Frame is not a link
+   because the photos site binds to loopback and there is nowhere to send anyone;
+   this is the arrangement that lets #72 or a later ticket switch that on by
+   changing the elements, without moving a single length in this block.
+
+   A flex row, not ten absolutely-positioned percentages, and the measured
+   centres are still what places everything: each gap below is the distance
+   between two measured centres less the two half-widths between them, so moving
+   one glyph moves it by its own number and not by re-deriving nine others. The
+   pill is the exception and is centred on the Frame, which is where the render
+   has it to within a fifth of a percent. */
+.frame-chrome {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  /* 2.04% to the first light's centre, less half its 0.95% width. */
+  padding-left: 1.565cqw;
+  /* 97.52% to the tabs' centre, plus half its 1.36% width, from the right. */
+  padding-right: 1.80cqw;
+  pointer-events: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.frame-lights {
+  display: flex;
+  /* 1.52% pitch less the 0.95% disc. */
+  gap: 0.57cqw;
+}
+.frame-lights i {
+  width: 0.95cqw;
+  height: 0.95cqw;
+  border-radius: 50%;
+  background: var(--frame-light);
+}
+/* Every glyph is drawn as SVG at its measured ink width, with the viewBox scaled
+   so the stroke lands on the box's edges — so the number in the rule is the
+   number in the table above, not a box with padding in it. */
+.frame-icon {
+  display: block;
+  flex: 0 0 auto;
+  color: var(--frame-ink);
+}
+.frame-icon svg { display: block; width: 100%; height: auto; }
+/* dot 3's right edge (5.505%) to the sidebar's left edge (7.295%) */
+.frame-sidebar { width: 1.41cqw; margin-left: 1.79cqw; }
+/* the sidebar's right edge (8.705%) to the back chevron's left (10.39%) */
+.frame-back    { width: 0.54cqw; margin-left: 1.685cqw; }
+/* 2.29% between the two chevrons' centres, less both half-widths */
+.frame-fwd     { width: 0.54cqw; margin-left: 1.75cqw; color: var(--frame-ink-off); }
+
+/* The address field. Absolutely placed rather than left to the flex row, because
+   it is centred on the FRAME and the row's two clusters are not the same width —
+   left to `auto` margins it would sit between them and drift with the longer
+   one. `left: 50%` is the render's 50.19% to a fifth of a percent, and the
+   difference is smaller than the edge of the pill it would move. */
+.frame-pill {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 39.45cqw;
+  height: 2.07cqw;
+  border-radius: 0.44cqw;
+  background: var(--frame-pill-bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.frame-url {
+  font-size: 0.95cqw;
+  line-height: 1;
+  letter-spacing: 0.01em;
+  color: var(--frame-pill-ink);
+  /* The one thing in the chrome set in figures, and the tabular set is what
+     stops the four groups of the address from shifting under each other if the
+     face is ever re-subsetted. */
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+/* Placed against the PILL'S right edge rather than at its own measured centre,
+   because it belongs to the field and travels with it: the render has the glyph
+   centred 69.15% across and the pill ending at 69.91%, so 0.325% of clearance
+   once its own half-width is taken off. Left as an absolute centre it would
+   disagree with the pill by the fifth of a percent the pill is already offset by
+   — see .frame-pill — and the reload would drift off the end of the field it
+   sits in rather than with it. */
+.frame-reload {
+  position: absolute;
+  right: 0.325cqw;
+  width: 0.87cqw;
+}
+/* The right-hand cluster. `auto` pushes it to the padding edge, which is where
+   the tabs glyph's measured centre puts it. */
+.frame-share { width: 1.20cqw; margin-left: auto; }
+/* 2.69% between share and new tab, less both half-widths */
+.frame-new   { width: 1.03cqw; margin-left: 1.575cqw; }
+/* 2.61% between new tab and tabs, less both half-widths */
+.frame-tabs  { width: 1.36cqw; margin-left: 1.415cqw; }
+
+/* ---- the window's content ---------------------------------------------------
+   THE RECORDING DOES NOT REACH THE WINDOW'S EDGE, and the render is explicit
+   about it: at every height sampled down the left side the outer rim is followed
+   by 15px of the Frame's own fill before the grid's white background starts, and
+   the right edge measures the same. Flush at the TOP, though — the grid begins
+   exactly where the titlebar ends, at y 598 — so the inset is three-sided and
+   the box is not concentric with the window.
+   Its corners are: 1.6333% of window radius less the 0.816% inset leaves 0.817%,
+   which is what a rounded rect inset inside another one gives, and it is why the
+   two top corners are rounded against a straight titlebar above them. The render
+   has that notch and it is not an artefact. */
+.frame-content {
+  position: absolute;
+  top: var(--frame-bar);
+  left: var(--frame-inset);
+  right: var(--frame-inset);
+  bottom: var(--frame-inset);
+  border-radius: var(--frame-inset);
+  /* The crop below has to happen somewhere, and the corners with it. */
   overflow: hidden;
 }
 
 /* ---- the recording ---------------------------------------------------------
-   THE CLIP AND THE FRAME ARE NOT THE SAME SHAPE, and this is where that is
+   THE CLIP AND THE CONTENT BOX ARE NOT THE SAME SHAPE, and this is where that is
    settled rather than hidden. The recording is 1440x900 — record's viewport, and
    the geometry design/censor/roll.json was assembled at, so it is not free to
-   move: change it and the clip passes over photographs nobody reviewed. The
-   Frame is --panel-frame-ratio, 1.945, measured off the design render.
+   move: change it and the clip passes over photographs nobody reviewed.
 
    They cannot be reconciled by choosing better numbers. The render's Frame is
    1430 wide by 735 including its titlebar, and 1430 of a 1.6 recording is 894
    tall before a titlebar is added at all — the picture alone is taller than the
-   whole window in the render. So something is cropped, and #65's job is to
-   supply the recording and its real ratio; #67 builds the Frame and is where a
-   decision to move --panel-frame-ratio belongs.
+   whole window in the render. So something is cropped.
 
-   `cover` from the TOP EDGE, not the middle. 1.6/1.945 of the recording's height
-   survives — 82%, so 18% is cropped, and taking all of it off the bottom keeps
-   the vault's own toolbar hard against the top of the Frame. That is the row
-   that says this is an application and not a wall of pictures, and it is where
-   a real window's content starts: directly under the chrome #67 puts above it.
+   IT IS CROPPED HARDER NOW THAN WHEN THE FRAME WAS A PLACEHOLDER, and by exactly
+   what the chrome takes: the box is the Frame less the titlebar's 3.4583%, less
+   the 0.816% inset on the two sides and the bottom, so 98.368 by 47.140 of the
+   Frame's width — a ratio of 2.087 against the 1.945 the whole box was. So
+   1.6/2.087 of the recording's height survives, 76.7%, and 23.3 is cut where it
+   was 18.
+
+   `cover` from the TOP EDGE, not the middle, and all of the cut comes off the
+   bottom. That keeps the vault's own toolbar hard against the top of the box,
+   which is the row that says this is an application and not a wall of pictures,
+   and it is where a real window's content starts: directly under the chrome.
    Cropping the bottom of the viewport can only ever REMOVE what the clip shows,
    which is the direction the censored list is safe in.
 
