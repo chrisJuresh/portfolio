@@ -5,7 +5,9 @@
    Vollkorn for reading text, Spectral for the small lettered labels, Source
    Serif 4 for the year column, and Georgia for the italic lead paragraph. All
    but the Georgia lead are self-hosted from /fonts — see the @font-face block
-   below and fonts/README.md for how they were built.
+   below and fonts/README.md for how they were built. The cut title at the foot
+   is set in no face at all: it is a picture of one, and the cut title section
+   says why.
    The whole page fades in on load; the photo strip is a horizontal carousel
    that bleeds off the right edge, faded into the paper until you hover it.
    ========================================================================== */
@@ -16,6 +18,11 @@
    in one of them, so a separate <link> would put a second blocking request in
    front of the first paint. /fonts holds the files; fonts/README.md holds the
    subset recipe, the licences and the measurements.
+
+   There was a sixth, declared at the foot of this sheet: the roman of Friz
+   Quadrata, which set the one word of the cut title. It is gone, and so is every
+   other trace of that face — no @font-face, no family name, no file in /fonts.
+   The word it set is now outlines rather than type. See the cut title section.
 
    Only the faces the page actually asks for are shipped — Vollkorn at 400 (body,
    role lines, contact), 700 (.listing > h2) and 400 italic (.item .sub);
@@ -224,7 +231,7 @@
                            ANSWERS TO in build-plate.py. The dark block near the
                            foot of this sheet restates all three at 0.17 and so is
                            unaffected by this line.                            */
-  --car-fill: 0.602;    /* the picture's width as a share of --fold, exactly as
+  --car-fill: 0.497;    /* the picture's width as a share of --fold, exactly as
                            --plate-fill is a share of the band.
                            It USED to have a floor at 0.751, and the floor used to
                            be the reason for the value: the file is 1.332 times as
@@ -235,7 +242,7 @@
                            that foot off the right-hand edge of the page instead of
                            relying on the fold to cut it — the two are tuned
                            together and moving either one alone puts the line back.
-                           0.602 makes the car 650px wide on a 1920×1080 frame
+                           0.497 makes the car 537px wide on a 1920×1080 frame
                            against the plate's 932, so the corner you read second
                            is now clearly the quieter of the two rather than only
                            slightly.                                            */
@@ -247,7 +254,7 @@
                            asks for 1300px. And no floor, as the plate has none:
                            a short window gets a small car, which is still the
                            same picture in the same corner.                     */
-  --car-fade: 0.22;     /* how much of the picture's own width its INNER edge —
+  --car-fade: 0;        /* how much of the picture's own width its INNER edge —
                            the left one, the only edge of it that ends anywhere
                            but a page edge — takes to dissolve into the paper.
                            Neither of the other two needs such a thing, and the
@@ -260,20 +267,23 @@
                            whatever x the width happens to end on, and at this
                            opacity a straight line is the one thing that reads as
                            a crop rather than as stock.
-                           0.22 of 650px is 143px on the 1920×1080 frame, which
-                           finishes well before the gondola — the subject is in
-                           the middle of the frame here, not spread across it,
-                           which is exactly why the ramp the plate could not have
-                           is available to this one. It is a share of the width, so
-                           it followed --car-fill down without re-tuning; that is
-                           the whole reason it is a share.                      */
-  --car-x: -75px;       /* out from the RIGHT edge of the page, positive → left.
+                           0 turns the ramp off: all three stops collapse onto
+                           --car-inner and the inner edge is a hard cut again,
+                           which is the straight line the paragraph above says to
+                           avoid. That is the trade being taken deliberately — at
+                           --car-fill 0.497 the picture is narrow enough, and
+                           --car-opacity low enough, that the line reads as the
+                           frame's own edge rather than as a crop. Put the ramp
+                           back before widening the car again; it is a share of
+                           the width, so any value follows --car-fill without
+                           re-tuning, which is the whole reason it is a share. */
+  --car-x: -60px;       /* out from the RIGHT edge of the page, positive → left.
                            Negative, which no other placement value here is, and
                            it is doing a job rather than nudging: at the foot of
                            the frame the pylon is the rightmost 10.7% of the width
-                           and nothing else is left, so 75px carries the whole of
+                           and nothing else is left, so 60px carries the whole of
                            that slab off the 1920×1080 frame this was tuned
-                           on (0.107 × 650px = 70px). Pushing it that far off the
+                           on (0.107 × 537px = 57px). Pushing it that far off the
                            right edge takes the picture's own cut bottom off the
                            page with it, which is what lets --car-fill sit under
                            the 0.751 floor its comment used to describe.
@@ -282,7 +292,7 @@
                            window a sliver of that edge comes back into the corner,
                            at 12% opacity and a few tens of pixels wide. Re-tune
                            the pair, not this one, if it ever reads.            */
-  --car-y: -54px;       /* down from the top of the page, positive → down, so this
+  --car-y: -78px;       /* down from the top of the page, positive → down, so this
                            lifts the picture off the top edge rather than pushing
                            it down — the same trick --car-x plays on the right    */
   --car-crop: 0;        /* how much of the picture's TOP to cut off, as a share of
@@ -295,23 +305,32 @@
   /* Picked by index.html, like --plate-src, and unset for the same reason. */
   --car-src: none;
 
-  /* The corner eye — the third plate, in the page's BOTTOM-RIGHT corner: the
+  /* The corner eye — the third plate, in the page's BOTTOM-RIGHT quarter: the
      London Eye seen rim-on, so the wheel reads as a mast of capsules rather than
      as a circle. The block near the foot of this sheet has the rest.
 
-     It is the car's shape of control and not the plate's, because it is anchored
-     the car's way: one corner, one rule — its own bottom-right corner stands in
-     the page's, and its foot lands on --fold, the same line the plate's foot and
-     the cut title land on. There is no second rule and nothing to pin at the top:
-     as shot there is a tenth of a frame of empty sky above the mast, so the top
-     of the picture is not an edge and has nothing to stand in.
+     VERTICALLY it is the car's shape of control and not the plate's, because it is
+     anchored the car's way: one edge, one rule — its foot lands on --fold, the same
+     line the plate's foot and the cut title land on. There is no second rule and
+     nothing to pin at the top: as shot there is a tenth of a frame of empty sky
+     above the mast, so the top of the picture is not an edge and has nothing to
+     stand in.
+
+     HORIZONTALLY it is neither of them, and this is the one picture of the three
+     that is not measured off a page edge at all. It hangs off --edge — the line the
+     text column starts on, which is also where the photo strip's first photograph
+     stands — so the distance from the strip to the wheel is a constant and the
+     window's right-hand edge is nothing to it. See --eye-x for why: the strip is
+     pinned to a CENTRED column and a corner is pinned to the window, so the two
+     used to travel at different speeds and the gap between them was whatever the
+     width happened to make it.
 
      The frame is NOT mirrored — see the eye paragraph in build-plate.py, where the
      plate's flip-it argument is set out for this frame and declined. What that
-     leaves for this end is --eye-x, which does the job the flip would have: the
-     subject occupies the left three-fifths of the file and the right two-fifths is
-     empty sky, so the dead margin is pushed off the page rather than folded to the
-     other side of the picture.
+     leaves for this end is the choice of which edge --eye-x pins: the subject
+     occupies the left three-fifths of the file and the right two-fifths is empty
+     sky, so it is the picture's LEFT edge that is held and the dead margin that is
+     allowed to run off the page.
 
      What it costs is nothing the car did not already cost. The picture's two inner
      edges are its left and its top, and in this frame both are empty sky — 4.5% of
@@ -370,29 +389,43 @@
                         /* the ceiling on --plate-w and --car-w, for the third
                            time and the same reason: 2800px is the top rung
                            index.html will fetch.                              */
-  --eye-x: 247px;       /* out from the RIGHT edge of the page, positive → left.
-                           POSITIVE, which reverses what this value was doing, and
-                           the reversal is the whole of the change — read the sign
-                           before reading the number.
-                           The job it used to do: the subject ends at 59.9% of the
-                           file's width and the remaining 40.1% is sky, so a negative
-                           offset of 0.401 × --eye-w carries that dead margin off the
-                           right-hand edge and stands the cable stays on it. That is
-                           what the frame not being mirrored is paid for in — see the
-                           eye paragraph in build-plate.py. At 629px wide the same
-                           rule asks for -252px.
-                           +247px does the opposite: it pulls the file 247px INBOARD,
-                           so the 252px of dead sky stays on the page and the stays
-                           finish ~499px short of the edge. The picture is no longer
-                           anchored in the bottom-right corner — it stands in the
-                           right-hand third with paper on both sides of it, which is
-                           the one arrangement the corner geometry above was built to
-                           avoid. It is here because it was asked for by name; -252px
-                           is the value that restores the corner.
-                           A length against a share, and at this sign the drift is no
-                           longer the gentle one: a taller window widens the dead
-                           margin the offset is no longer cancelling, so the gap to
-                           the edge grows with the fold.                        */
+  --eye-x: 292.94px;    /* INBOARD from the photo strip, positive → right: the gap
+                           between the strip's first photograph and the picture's
+                           own left edge. Not a page edge, and that is the whole of
+                           what changed — read what it is measured FROM before
+                           reading the number.
+                           It used to be 247px out from the window's right edge, and
+                           the trouble with that was not the number. The strip is
+                           pinned to a centred column, so its first photograph moves
+                           half a pixel for every pixel of window; a corner offset
+                           moves a whole one. Widen the window by 200px and the two
+                           part company by 100px. The picture was placed by eye on a
+                           1920×1080 screen, so that placement was right on exactly
+                           one display and drifted on every other.
+                           292.94px is that same placement, re-measured against the
+                           strip instead: at 1920×1080 the first photograph stands at
+                           736.5px and the picture's left edge at 1029.44px, and the
+                           difference is this. So the display it was tuned on looks
+                           the way it did, and every other one now looks the way that
+                           one does — no breakpoint, because --edge is a function of
+                           the width and this is a constant added to it.
+                           The LEFT edge is what is pinned, not the right, and that
+                           is a choice the file's own asymmetry makes: the subject
+                           ends at 59.9% of the width and the remaining 40.1% is sky
+                           (see build-plate.py's eye paragraph for why it was not
+                           simply flipped). --eye-w is a share of --fold, so a taller
+                           window hands the picture more width — and holding the left
+                           edge spends all of it on the right, pushing dead sky
+                           towards the page's edge, where holding the right edge
+                           would have walked the mast in over the column instead.
+                           What that costs is at the far end, and it is cheap twice
+                           over. Sky begins to leave the page above roughly
+                           0.86 × width − 130px of height — 1517px on a 1920-wide
+                           window — and that is what the sky is FOR. The stays only
+                           reach the box's right edge past about 1.43 × width − 220px,
+                           which is 2532px at 1920: a window half again as tall as it
+                           is wide. Nothing scrolls sideways when they do (html and
+                           body see to that), and the mast is nowhere near it.  */
   --eye-y: 0px;         /* up from --fold, positive → up; negative hangs it past
                            the fold. 0 IS the rule, and it is a variable for the
                            reason --plate-y is: so the rule can be broken by hand
@@ -450,37 +483,10 @@
      whose italic is a true italic rather than Georgia's. */
   --serif-lead:  Georgia, "Iowan Old Style", "Palatino Linotype", serif;
 
-  /* Friz Quadrata — Ernst Friz, 1973; a glyphic serif with flared, wedge-cut
-     stems. Used at one size and one place only: the cut title at the foot of the
-     page. Like the Ogg it replaces it is named rather than served — there is a
-     woff2 in /fonts, but it is a commercial Adobe cut with no webfont licence
-     behind it, and serving a font from chrisj.uk is redistribution. So NOTHING
-     here fetches it: naming the family picks up a copy installed on the reader's
-     machine and nothing else. See fonts/README.md before that changes, and note
-     that /fonts/fonts.css is linked by no page for the same reason.
-     Three names because one design ships under three: the /fonts webfont calls
-     itself "Friz Quadrata Std", a desktop install may be either of the others.
-     Fallbacks after them: Sitka Banner — Sitka's display cut, the one Windows
-     always has and the one that reads as deliberate here, since the rest of the
-     page is already Sitka — then Constantia and Georgia. The Didones that used
-     to sit at the head of this tail went with Ogg; they were chosen for nearness
-     to a high-contrast Didone and are nothing like this face.
-
-     ONE CAVEAT, and it is the reason --cue-* below is tuned the way it is. The
-     cut is measured in `cap`, read from whichever face resolves, and that is
-     face-independent only while a face tells the truth about itself. The /fonts
-     webfont does not: its `sCapHeight` was left at the 1000-unit scale of the
-     CFF original when the outlines were scaled to 2048, so `1cap` resolves to
-     0.322em against 0.658em of drawn capital. Every fallback below was checked
-     and is truthful, so the numbers here are set for a face that tells the truth.
-     A real desktop install is EXPECTED to be truthful, since the stale field is
-     exactly the CFF original's own value at its own em, but that is inference:
-     no copy was installed here to measure, and it is worth checking on one that
-     has it. The webfont no longer has to be inferred about — the -fixedmetrics
-     pair carries 1348/2048 and was measured resolving `1cap` at 0.658em, which
-     is what both the localhost preview and design/type-tuner.html now load. */
-  --serif-display: "Friz Quadrata", "Friz Quadrata Std", "ITC Friz Quadrata",
-                   "Sitka Banner", Constantia, Georgia, serif;
+  /* There is no display slot. The one word that needed one — the cut title — is
+     a picture now and carries its own letterforms, so a family here would name a
+     face nothing on the page asks for. The four --cue-* constants below are what
+     replaced it. */
 
   /* ---- the vertical ladder ------------------------------------------------
      Every gap down the column is one rung of φ. The rungs are the powers of the
@@ -534,91 +540,92 @@
   /* ---- the cut title -------------------------------------------------------
      A display word dropped into the bottom corner and cut off by the end of the
      page: the "there is more below this" device, which here also happens to be
-     the way through to /projects. Three numbers describe it.
-       --cue-show   how much of the word survives the cut, as a fraction of the
-                    CAP HEIGHT — not of the em box, and not a pixel height. It
-                    is `1cap`, read from whichever face actually resolved, so
-                    the same fraction of letter is shown in Friz, in Sitka Banner
-                    and in Georgia, at every size, with no per-face tuning. That
-                    is the whole reason the setup is built this way — and see the
-                    caveat on --serif-display for the one kind of face that
-                    breaks it, which is a face that misreports its own cap.
-                    0.62 is set by the letters that die first, not by taste: R
-                    stops reading as P only once its bowl has closed (~0.55 in a
-                    Didone, 0.49 in Georgia). Above ~0.75 it stops reading as cut
-                    and starts reading as a word with an odd baseline; below
-                    ~0.55 PROJECTS goes.
-                    The other half of that rule is now moot and worth saying so:
-                    it used to read "J is a bare stem until its hook starts
-                    (~0.6)". In Friz the J DESCENDS — its hook bottoms out 0.349
-                    cap BELOW the baseline, where Georgia's J sits on it. The cut
-                    box is the cap slab, cap top to baseline, so no value of this
-                    number can reach the hook: cut, Friz's J is a bare stem at
-                    0.62 and at 1.0 alike, and the word reads PRO|ECTS. It comes
-                    back whole in the doorway regime, where the clip comes off
-                    and the descender has somewhere to hang. That is a property
-                    of the face, not a number to tune — it is the one real cost
-                    of setting this word in Friz.
-       --cue-size   the word's size as a fraction of the text column's own
-                    width, in cqw against .cut-title. So it is one proportion at
-                    every window size instead of a size that suits one of them,
-                    and it stays that proportion when the column starts
-                    narrowing on small screens. It is the one number that IS
-                    face-specific, because fitting a word to a measure depends on
-                    that face's advance widths — and on --cue-track, since the
-                    tracking is part of what has to fit.
-                    Not eyeballed: it is 100 / (the advance of PROJECTS in em at
-                    the tracking below), which is the size at which the word's
-                    box is exactly the measure. Friz sets PROJECTS in 4.1973em
-                    plus 8 tracking steps = 4.3573em, so 100/4.3573 = 22.95. The
-                    same arithmetic returns 25.33 for Sitka Banner at -0.012em,
-                    which is the 25.32 this replaces — so the rule is the rule
-                    the old number was already following. Re-derive it, do not
-                    nudge it, if the face or the tracking changes.
-                    This value is the COLUMN's, and it is the one the word is set
-                    at wherever the word is the last line of the column. In the
-                    one-screen band the word leaves the column for the gutter
-                    beside it and the measure changes, so the same rule is
-                    re-derived against that measure — see --cue-measure in the
-                    one-screen block, which also says why it fits the word's INK
-                    there and its BOX here.
-       --cue-track  tracking. Positive, which is not what the size alone would
-                    suggest, and the reason is the face rather than the size.
-                    Two forces pull opposite ways here: display caps this large
-                    want the tracking drawn in, and a string of capitals wants it
-                    opened out, caps being fitted for use as initials inside
-                    lower case. Which force wins is a question about the face. It
-                    was a Didone here before, loosely fitted with hairline serifs
-                    leaving optical holes, so the display force won and the value
-                    was -0.012em. Friz is the opposite: its caps are fitted tight
-                    and its wedge arms overhang their own advance — T measures
-                    negative sidebearings on BOTH sides. Set solid, the ink gaps
-                    in the visible band run 0.011 cap at CT and 0.000 at TS, so
-                    the last two letters of the word touch before any tracking is
-                    applied at all, and the old negative value drove them into
-                    each other.
-                    0.02em is derived the same way the size is: it puts Friz's
-                    tightest pair at 0.030 cap, which is where -0.012em put
-                    Sitka's tightest pair. Same optical tightness, measured on
-                    the pair that governs rather than on the average.
-                    What it cannot fix: Friz's gaps are UNEVEN in this word — EC
-                    opens to 0.216 cap while TS holds 0.030, a 7x spread against
-                    Sitka's 3.7x — and tracking is additive, so no single value
-                    evens them out. The word reads a little gappy at EC and that
-                    is the face, not the number.
-     --cue-cap-drop is not a knob — it is only read by browsers without
-     text-box-trim (Firefox, as of writing). See the @supports block below. */
+     the way through to /projects.
+
+     THE WORD IS A PICTURE. It is PROJECTS in Friz Quadrata — Ernst Friz, 1973; a
+     glyphic serif with flared, wedge-cut stems — but the face is not here and is
+     not fetched. design/cut-title/build-cut-title.py set the word once, at the
+     tracking it had always been set at, and baked the eight glyphs to a single
+     SVG path that app.js puts inline in the markup. Nothing of the typeface is
+     on the wire: no @font-face, no family name, no file in /fonts.
+     It is vector, so this costs no quality at any size or on any display — the
+     outlines are what a rasteriser would have been handed anyway. What it costs
+     is that the word is no longer selectable, which is why the link carries the
+     text beside it in a .visually-hidden span for readers and crawlers.
+
+     What changes here is only WHERE THE MEASUREMENTS COME FROM. The word used to
+     be measured through the font: `1cap` read off whichever face resolved, and a
+     `--cue-size` derived from that face's advance widths. A picture has no
+     metrics to ask for, so the same three facts are baked as ratios of the
+     picture's own WIDTH — width being the one dimension CSS sets, since the word
+     is always fitted to a measure and everything else follows from that.
+     All three are printed by the build script. Re-bake and re-paste; do not
+     nudge. They are properties of the outlines, not tuning.
+       --cue-ratio      the picture's aspect ratio, straight off its viewBox.
+                        Stated here as well as there so the box has a height
+                        before the SVG is parsed and the word cannot reflow the
+                        page as it arrives.
+       --cue-cap-share  cap height per unit of picture width: 1348 units of cap
+                        over 8723.7 of ink. This is what `1cap` used to return,
+                        and it is exact where that was only as honest as the
+                        face's own OS/2 table — which, for the file this was
+                        baked from, was wrong by half a capital until it was
+                        repaired.
+       --cue-overshoot  ink standing ABOVE the cap line, same units. The round
+                        letters overshoot: O tops out 34.25 units over the cap
+                        of P and R, and C, S, E and T by less. The picture's box
+                        is its ink, so its top edge is the O's, and this is how
+                        far the cap line — the line the cut is measured from —
+                        sits below it. Small, and load-bearing: drop it and
+                        every letter is cut 2.5% of a cap too high.
+
+     Two numbers then fit the picture to the measure, and they are the only ones
+     that differ between the two regimes (see --cue-ink in the one-screen block):
+       --cue-ink        how wide the picture is drawn, in cqw against .cut-title
+                        — so it is one proportion at every window size, and it
+                        holds that proportion when the column narrows on a small
+                        screen.
+                        97.7592cqw, not 100, and the 2.24% is not slack. The word
+                        is the last line of the column here, and a line of type
+                        fills the measure with its ADVANCE box, whose ends are
+                        white: the P's left sidebearing, and the S's right plus
+                        the trailing tracking step. The picture's box is its INK,
+                        so it has to be inset by exactly the white the old text
+                        box carried, or the word would grow into the margins and
+                        sit wider than every line above it. 0.977592 is ink over
+                        advance box, from the build script.
+       --cue-lead       and the left share of that white — the P's sidebearing,
+                        1.0086cqw — so the ink starts where the glyph's ink used
+                        to. The right share is simply what is left over, as it
+                        was. The two are unequal, and were before.
+
+     --cue-show is the one number here that is still a judgement, and it is
+     unchanged: how much of the word survives the cut, as a fraction of the CAP
+     HEIGHT — not of the picture, and not a pixel height. 0.62 is set by the
+     letters that die first, not by taste: R stops reading as P only once its
+     bowl has closed (~0.55 in a Didone, 0.49 in Georgia). Above ~0.75 it stops
+     reading as cut and starts reading as a word with an odd baseline; below
+     ~0.55 PROJECTS goes.
+     The J is worth restating, because it survived the change of medium. In this
+     face the J DESCENDS — its hook bottoms out 0.349 cap BELOW the baseline,
+     where Georgia's J sits on it. The cut box is the cap slab, cap top to
+     baseline, so no value of --cue-show can reach the hook: cut, the J is a bare
+     stem at 0.62 and at 1.0 alike, and the word reads PRO|ECTS. It comes back
+     whole in the doorway regime, where the clip comes off and the descender has
+     somewhere to hang. That is a property of the drawing, not a number to tune.
+
+     The tracking that used to be here — --cue-track, 0.02em, positive because
+     this face's caps are fitted tight and its wedge arms overhang their own
+     advance, so set solid the T and S touched — is baked into the picture and is
+     no longer a knob. It lives in the build script as TRACK_EM, which is the one
+     place it can still be changed, and changing it moves --cue-ink and
+     --cue-lead with it. */
   --cue-show:  0.62;
-  --cue-size:  22.95cqw;
-  --cue-track: 0.02em;
-  /* NOT re-derived for Friz, and the one number here that is still Sitka's. The
-     formula written at the @supports block returns ~0.13em for Sitka Banner, not
-     the 0.075em standing here, so it does not reproduce its own value and cannot
-     be trusted to produce Friz's. Applied consistently it would say 0.016em —
-     Friz's ascent clears its cap by almost nothing — but that is a derivation
-     from a formula already known to be wrong by a factor of two. It only bites
-     in Firefox; measure it there against the real face before changing it. */
-  --cue-cap-drop: 0.075em;
+  --cue-ratio:     8723.7 / 1853.2;
+  --cue-cap-share: 0.154521;
+  --cue-overshoot: 0.003926;
+  --cue-ink:  97.7592cqw;
+  --cue-lead: 1.0086cqw;
 
   /* The white between the last contact line and the top of the cut word. The
      margin runs from the bottom of the contact BLOCK, but the ink it has to sit
@@ -630,24 +637,30 @@
   --contact-tail: 0.4075rem;
   --cue-gap: calc(var(--rhyme) + var(--name-half-leading) - var(--contact-tail));
 
-  /* The cap slab of the cut word, as a length: --cue-size x the face's cap
-     ratio. 22.95cqw of --col's 27rem is 6.1965rem, and Friz's cap is 1348 of its
-     2048 units = 0.6582, so 6.1965 x 0.6582 = 4.079. (It was 6.836 x 0.6123 for
-     Sitka Banner, which is the 4.187 this replaces.) The `cap` unit says the same
-     thing exactly and is what the element itself is measured in, but a unit that
-     resolves against one element's own font cannot be spent by the height budget
-     below or by a box that is not set in that font — so the same measure is also
-     written here in rem. MEASURED from the face; re-measure if the display face
-     changes. --cv-static is NOT affected: it is defined as the document minus
+  /* THE CAP SLAB, TWICE, and the two are the same measure said two ways.
+     --cue-slab is the live one: --cue-cap-share of however wide the picture is
+     actually drawn, in cqw, so it is exact at every container width — including
+     a phone narrower than --col, where the column stops being 27rem. It is what
+     the cut itself is taken from, and it replaces `1cap` exactly.
+     --cue-fit and --cue-cap are its twin as a LENGTH, and the reason for a twin
+     is that a container-query unit resolves against .cut-title and cannot be
+     spent by boxes that are not inside it — the height budget below, --slide-h,
+     .doorway. So the same arithmetic is written again against --col, which is
+     what the container resolves to on every window wide enough to fill it:
+     0.977592 x 27rem of ink, x 0.154521 of cap = 4.0786rem, which is the 4.079
+     this replaces to within a hundredth of a pixel. Below --col the twin is a
+     slight over-estimate, exactly as it always was — the budget notices, the cut
+     does not. --cv-static is NOT affected: it is defined as the document minus
      the clip, so a change to the cut word's height falls outside it.
      --cue-clip is then the visible slice: the part of the word that survives the
      cut. Both regimes hold the word's cap top exactly --cue-clip above the fold;
      they differ only in what does the cutting (see the doorway block below).
-     Like --cue-size, this is the value for a word set to the COLUMN. In the
-     one-screen band it is re-derived against the gutter — the same cap ratio
-     times the same kind of size ratio, but against a measure that is no longer
-     a constant, so it is a calc() there and a length here. */
-  --cue-cap:  4.079rem;
+     Like --cue-ink, these are the values for a word set to the COLUMN. In the
+     one-screen band the word is fitted to the gutter instead and --cue-fit is
+     re-pointed there; the two lines below are written once and hold in both. */
+  --cue-slab: calc(var(--cue-cap-share) * var(--cue-ink));
+  --cue-fit:  calc(0.977592 * var(--col));
+  --cue-cap:  calc(var(--cue-cap-share) * var(--cue-fit));
   --cue-clip: calc(var(--cue-show) * var(--cue-cap));
 
   /* ---- where the word lands once it is a title -----------------------------
@@ -853,25 +866,27 @@
        as legible, but drifting, and "the same fraction of letter at every size"
        is the whole of what that number is for.
 
-       --cue-size is the same derivation as the base block's and re-derived
-       rather than reused, for two reasons. The measure is no longer --col, so
-       the cqw the base value is a percentage OF means something different; and
-       out here the fit is to the word's INK rather than to its box. The box has
-       a bearing at each end — the P's 90 units of left sidebearing, the S's 69
-       of right, and the trailing tracking step, all of it white — and fitting
-       the box would leave the two margins unequal by their difference, 0.0098
-       of the font size, which is the one thing this measure exists to make
-       equal. So: the ink of PROJECTS spans 4.1973em of advances, plus the 7
-       tracking steps BETWEEN the letters, less those two bearings —
-       4.1973 + 0.14 - 0.0439 - 0.0337 = 4.2596em — and 100/4.2596 = 23.48.
-       (There is no kerning to carry: the face has GPOS, and not one of this
-       word's seven pairs is in it.) Re-derive it, do not nudge it, if the face
-       or --cue-track changes; --cue-bearing is measured from the same face and
-       is what puts the P's ink, rather than its box, on the margin.
+       --cue-ink is 100cqw here, against 97.7592 in the base block, and that
+       difference is the whole of what the two regimes disagree about. Out here
+       the fit is to the word's INK rather than to its advance box: fitting the
+       box would leave the two margins unequal by the difference between its two
+       bearings — the P's 90 units of left sidebearing against the S's 69 of
+       right plus the trailing tracking step, 0.0098 of the font size — and equal
+       margins are the one thing this measure exists to produce. Since the
+       picture's box IS its ink, "fit the ink to the measure" is now simply
+       `width: 100cqw`, and --cue-lead goes to zero with it.
+       That also retires --cue-bearing, which used to be here: with type, the P's
+       ink started 0.0439em inside its own box, so the box had to be pushed that
+       much further left for the ink to land on the margin. The picture starts at
+       the P's ink, so there is nothing to correct.
+       (There was never any kerning to carry: the face has GPOS, and not one of
+       this word's seven pairs was in it. The build script checks rather than
+       assumes, and would have baked it in if there had been.)
 
-       --cue-cap then follows as it does in the base block — the face's cap
-       ratio times the size — except that the size is now a proportion of a
-       measure rather than a length: 0.6582 x 0.2348 = 0.1545 of it.
+       --cue-fit then re-points at the gutter and --cue-cap follows from it as it
+       does in the base block, except that the measure is no longer a constant:
+       --cue-cap-share of --cue-measure, 0.1545 of it, where the base block takes
+       0.1545 of 0.977592 x --col.
        Which makes every height on the page that was spending a constant here
        spend a function of the window's WIDTH instead, and that is new. The word
        is 4.079rem of cap at every window today; it is 1.52rem of it at
@@ -893,9 +908,9 @@
          width is still nothing to them, and the comment there saying "width
          still asks for nothing" is still about them and still true. */
     --cue-measure: calc(var(--edge) - 2 * var(--title-left));
-    --cue-size:    23.48cqw;
-    --cue-bearing: 0.0439em;
-    --cue-cap:     calc(0.1545 * var(--cue-measure));
+    --cue-ink:     100cqw;
+    --cue-lead:    0px;
+    --cue-fit:     var(--cue-measure);
 
     --slide-h: clamp(15rem,
                      calc(100vh - var(--rhyme) - var(--cue-gap)
@@ -1145,8 +1160,9 @@ body::after {
 }
 
 /* ---- the corner eye -------------------------------------------------------
-   The third plate: the London Eye rim-on, in the bottom-right corner of the
-   document, at --eye-opacity. Everything the corner-plate block says about why
+   The third plate: the London Eye rim-on, standing beside the photo strip in the
+   bottom-right of the document, at --eye-opacity. Everything the corner-plate
+   block says about why
    the grade is baked rather than filtered, and about starting at the top of the
    document and leaving at the fold, is true of this one too — same stock, same
    script, same piece of paper.
@@ -1156,9 +1172,13 @@ body::after {
    the alternatives are the same two bad ones. Two empty divs cost two lines of
    HTML and answer neither question.
 
-   What it takes from the CAR is its anchoring — one corner, one rule, and a size
-   measured against --fold rather than against a band — so --eye-fill behaves like
-   --car-fill and --eye-y moves the picture without resizing it. What it takes
+   What it takes from the CAR is its vertical anchoring — one edge, one rule, and a
+   size measured against --fold rather than against a band — so --eye-fill behaves
+   like --car-fill and --eye-y moves the picture without resizing it. Sideways it
+   takes neither of theirs: it is the only one of the three measured off --edge
+   rather than off a page edge, so it holds its distance from the strip instead of
+   from the window. That is --eye-x's block in :root, and the two lines of full
+   bleed below are what make the measurement exact. What it takes
    from the PLATE is its geometry at the bottom of the page: the box's own bottom
    edge is what the picture's foot stands on, so `height` carries --eye-y and the
    crop is a negative `bottom` offset that pushes the foot out through it. One
@@ -1178,20 +1198,35 @@ body::after {
 .eye {
   position: absolute;
   top: 0;
-  left: 0;
-  right: 0;
+  /* The carousel's own full-bleed frame, and it is the same two lines because it
+     has to be the same box. --edge is written in vw, so it only lands on the
+     column's edge when it is measured inside a box that is 100vw wide and centred
+     the way .carousel's margins make one; the body's box is 100vw LESS the
+     scrollbar, and measuring --edge from its right-hand edge would put the picture
+     half a scrollbar out — 7.5px on Windows, nothing where scrollbars are
+     overlaid, which is the kind of error that is invisible on the machine it is
+     tuned on. Here the strip's first photograph and this picture's left edge are
+     two offsets in one frame, so the gap between them is exact and the scrollbar
+     cancels out of it rather than being corrected for. */
+  left: calc(50% - 50vw);
+  right: calc(50% - 50vw);
   height: calc(var(--fold) - var(--eye-y));
   z-index: -1;
   pointer-events: none;
   background-image: var(--eye-src);
   background-repeat: no-repeat;
-  /* The four-value form, for --plate-x's reason: --eye-x is a distance out from
-     the corner the picture stands in and nothing else. The vertical offset is the
-     crop and only the crop — the height above has already put the box's bottom
-     edge where --eye-y asks for it — and it is negative so the foot is pushed
-     below that edge and clipped by it. */
+  /* The four-value form, for --plate-x's reason: an offset from a named edge is a
+     distance and nothing else, where a percentage would have been a share of the
+     difference between the box and the image and would have changed meaning every
+     time --eye-w did. LEFT is the named edge here, where the plate and the car
+     name the ones they stand in: this picture stands beside the photo strip rather
+     than in a corner, so it is measured from the strip's first photograph — --edge
+     — and --eye-x is the gap. The vertical offset is the crop and only the crop —
+     the height above has already put the box's bottom edge where --eye-y asks for
+     it — and it is negative so the foot is pushed below that edge and clipped
+     by it. */
   background-position:
-    right var(--eye-x)
+    left calc(var(--edge) + var(--eye-x))
     bottom calc(-1 * var(--eye-crop) * var(--eye-w));
   background-size: var(--eye-w) auto;
   opacity: var(--eye-opacity);
@@ -1224,8 +1259,25 @@ body::after {
 }
 /* fade the whole page in on load. A CSS animation (not a JS-toggled class) so
    it can't get stuck invisible if a rAF never fires; if animations are off or
-   unsupported the page simply shows at full opacity. */
-.js .page { animation: page-in 0.9s cubic-bezier(0.22, 1, 0.36, 1) both; }
+   unsupported the page simply shows at full opacity.
+
+   `backwards` and not `both`, and the difference is not cosmetic. `forwards`
+   keeps the last keyframe applied for ever, and the last keyframe says
+   `transform: none` — which does not compute to the keyword afterwards but to
+   the identity MATRIX, and any transform other than none makes an element a
+   stacking context. So .page was one, permanently, from the moment the fade
+   ended, and everything inside it was sealed into its own z ordering: KEEPING A
+   LAYER OFF THE TYPE further down cannot lift a paragraph over .fx-film across
+   a stacking context, and the exclusions silently did nothing.
+
+   Nothing is lost by dropping it. The last keyframe of both animations below is
+   the element's own base style — opacity 1, no transform — so forward fill was
+   holding a value identical to the one underneath it, and `backwards` still
+   covers the case the `both` was written for: the page is invisible before and
+   during the fade and up afterwards, whether or not any script ran. If anything
+   it is safer, since the state the page rests in is now the sheet's rather than
+   a keyframe's. */
+.js .page { animation: page-in 0.9s cubic-bezier(0.22, 1, 0.36, 1) backwards; }
 @keyframes page-in {
   from { opacity: 0; transform: translateY(8px); }
   to   { opacity: 1; transform: none; }
@@ -1245,7 +1297,7 @@ body::after {
    (It also keeps the profile-README screenshot honest: Playwright fast-forwards
    finite animations to their end state, which a JS-toggled class would not.) */
 .js.plate-wait .page {
-  animation: page-held-in 2.4s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation: page-held-in 2.4s cubic-bezier(0.22, 1, 0.36, 1) backwards;
 }
 @keyframes page-held-in {
   /* 62.5% of 2.4s is 1.5s: hold, then the same 0.9s fade as above. */
@@ -1588,65 +1640,37 @@ body::after {
 }
 
 /* ---- the cut title ------------------------------------------------------- */
-/* THE SWITCH THAT IS NOT THROWN, and why the numbers above are for a face this
-   sheet cannot currently reach.
+/* NO @font-face HERE, AND THAT IS THE POINT. This sheet used to declare Friz
+   Quadrata's roman and fetch it from /fonts to set this one word. The word is
+   now a picture of that face — one SVG path, inline in the markup, baked by
+   design/cut-title/build-cut-title.py — so there is no family to name, no file
+   to fetch and no cut of the typeface anywhere in what this site serves.
 
-   Nothing here fetches Friz. The family is named in --serif-display, so on any
-   origin it renders for a reader who happens to have it installed and for
-   nobody else — measured on this machine, where all three Friz names resolved
-   to the default serif and the page fell through to Sitka Banner, which is what
-   prompted the localhost preview described at the foot of this comment. That
-   preview is a <script> in index.html, not this sheet: served, this sheet still
-   fetches nothing. Every --cue-* value above is
-   nevertheless set for Friz, per the tuning session that chose the face; the
-   cost, until this block is uncommented, is that Sitka Banner is being set at
-   Friz's measurements — the word makes 96.5% of the measure instead of 100%,
-   and carries +0.02em where Sitka wants -0.012em. If the face is abandoned,
-   revert the four values rather than patching around them: --cue-size 25.32cqw,
-   --cue-track -0.012em, --cue-cap 4.187rem, and Sitka Banner back to the head of
-   the stack.
+   WHAT THAT BOUGHT, beyond having nothing of the face on the wire:
+   * 17 KB less to download, and one fewer request on the critical path. The
+     picture rides inside app.js, which was already being fetched.
+   * The measurements stopped depending on the file being honest about itself.
+     The cut is a fraction of the CAP HEIGHT, and with type that meant `1cap`,
+     read from the face's OS/2 table — which in this face's shipped webfont was
+     wrong by half a capital (sCapHeight left at the 1000-unit scale of the CFF
+     original after the outlines were scaled to 2048) and had to be repaired in
+     a patched copy before the word could be set at all. --cue-cap-share is
+     measured off the outlines themselves and cannot drift from them.
+   * The fallback stack went with it, and with it the whole question of a word
+     tuned for one face being set in another. There is no fallback now; there is
+     one drawing.
 
-   TWO THINGS HAD TO HAPPEN BEFORE THIS COULD BE UNCOMMENTED. One is done; the
-   one that remains is the one this repository cannot settle on its own.
-
-   1. THE LICENCE — STILL OPEN, AND STILL THE GATE. Friz Quadrata Std is a
-      commercial Adobe/ITC cut and the woff2 in /fonts is a conversion of a
-      desktop release with no webfont licence behind it. Serving it from
-      chrisj.uk is redistribution; a desktop or Creative Cloud licence does not
-      grant it, and the fsType bit being 0 is a technical flag, not a grant.
-      This is why /fonts/fonts.css is linked by no page. See fonts/README.md.
-      Settle it first. Nothing below this line is blocked on anything else.
-   2. THE FILE'S CAP METRIC WAS WRONG — FIXED, in a new pair of files. Its
-      `sCapHeight` was 659 and its `sxHeight` 460: correct for the 1000-unit em
-      of the CFF original, left behind when the outlines were scaled to 2048. So
-      `1cap` resolved to 0.322em against 0.658em of drawn capital, and this cut
-      is measured in `cap` — uncommenting as-was would have put the clip box top
-      half a capital BELOW the tops of the letters and shown a band through
-      their middles rather than the top 0.62 of them. `size-adjust` does not fix
-      it: it scales the outlines and the stale field together.
-      frizquadrata-{regular,bold}-fixedmetrics.woff2 are that same third-party
-      binary with exactly those two integers rewritten to the drawn tops of `x`
-      and `H` (942 and 1348); all 263 outlines, the name table and the GPOS
-      kerning were verified unchanged. New filenames because vercel.json caches
-      /fonts/(.*).woff2 immutable for a year. The originals are kept beside them
-      untouched, as the record of what arrived.
-
-   MEANWHILE, SO THE FACE CAN BE LOOKED AT: portfolio/index.html attaches
-   /fonts/friz-local.css on localhost and 127.0.0.1 only, which declares the
-   -fixedmetrics pair. That is the only reason this face renders anywhere today,
-   it renders on no origin, and it is deliberately NOT this block — designing
-   against a licensed desktop font is not the same act as serving it. When the
-   licence is settled, uncomment here and delete fonts/friz-local.css and the
-   script in index.html that loads it, in the same change.
-
-@font-face {
-  font-family: "Friz Quadrata Std";
-  src: url("/fonts/frizquadrata-regular-fixedmetrics.woff2") format("woff2");
-  font-weight: 500;
-  font-style: normal;
-  font-display: swap;
-}
-*/
+   WHAT IT COST:
+   * The word is not selectable and not searchable in the page. The link carries
+     it as real text in a .visually-hidden span, so it is still announced and
+     still indexed — but you cannot drag-select the letters you can see.
+   * Re-setting it is now a build step rather than an edit. Change the word, the
+     tracking or the face in build-cut-title.py, re-run it, and paste the three
+     constants it prints back into the block above.
+   What it did NOT cost is rendering quality. The picture is vector — the same
+   outlines the rasteriser would have been handed — so it is exact at every size
+   and every pixel density; the one thing genuinely lost with the font file is
+   hinting, which does nothing at 60-90px of cap height. */
 
 /* Three nested boxes, each doing exactly one job:
      .cut-title   the container the word's size is a proportion OF. It is a
@@ -1654,15 +1678,36 @@ body::after {
                   and `cqw` inside it therefore means "per cent of the column".
                   It has to be a separate element: container query units resolve
                   against an ANCESTOR container, so an element cannot set its own
-                  font-size from its own width.
-     > a          the cut. A fixed height in `cap` plus `overflow: clip` — clip
-                  rather than hidden, so it never becomes a scroll container and
-                  can never be scrolled into view by a stray focus.
-     > > span     the word, with its box trimmed to the cap slab so that the cut
-                  is a known fraction of the letters rather than a known fraction
-                  of the em box, which would move with every change of face. */
+                  width from its own width.
+     > a          the cut. A fixed height — the cap slab, times --cue-show —
+                  plus `overflow: clip`, clip rather than hidden so it never
+                  becomes a scroll container and can never be scrolled into view
+                  by a stray focus.
+     > > svg      the word. Its box is its ink, so it is placed by two numbers
+                  and no font metrics: --cue-ink wide, and lifted --cue-overshoot
+                  so that its CAP LINE, not its top edge, lands on the cut box's
+                  top. Everything below the cut, the J's descender included,
+                  hangs out of the box and is clipped.
+     > > span    .visually-hidden, and the only text in here. */
 .cut-title {
   container-type: inline-size;
+  /* POSITIONED HERE, WITH NO OFFSETS, AND ONLY SO THAT NOTHING ELSE HAS TO
+     POSITION IT. `relative` with all four insets auto lays this out exactly
+     where `static` would; what it buys is that the element already takes a
+     z-index, so the effect stack's exclusion lift can give it one without
+     writing `position` of its own. That matters because .cut-title is the one
+     lifted block that IS positioned in a regime — `absolute`, pinned to the
+     fold, in the one-screen block at the end of this sheet — and the lift's
+     selector outweighs that rule three classes to one. It once wrote
+     `position: relative` for all four blocks together and won: the word came
+     out of its corner, took `top: 100vh` as a RELATIVE offset (a screen down
+     the page, on top of where the flow had already put it), took its width
+     from the flow instead of from the two insets — 1382px of picture where 316
+     was wanted — and, being back in .page's flow, added its height to the
+     document and broke the two-screen snap.
+     The one-screen rule stays authoritative because it is later in the sheet at
+     equal specificity; see the note above that media query. */
+  position: relative;
   width: 100%;
   max-width: var(--col);                 /* sized and centred exactly like .col */
   margin: var(--cue-gap) auto 0;
@@ -1677,23 +1722,14 @@ body::after {
 .cut-title > a {
   display: block;
   overflow: clip;
-  height: calc(var(--cue-show) * 1cap);
+  /* The cut. --cue-slab is the cap slab as a live length, so this is the top
+     --cue-show of the capitals exactly, at every container width — what
+     `calc(var(--cue-show) * 1cap)` used to say, without a font to say it to. */
+  height: calc(var(--cue-show) * var(--cue-slab));
   color: var(--ink);
-  font-family: var(--serif-display);
-  font-size: var(--cue-size);
-  font-weight: 400;
-  line-height: 1;
-  letter-spacing: var(--cue-track);
-  text-decoration: none;
-  text-transform: uppercase;
-  /* Display size, so ask for the kerning and the tight-fitting figures/caps
-     forms the face keeps for it, and turn off the optical-size axis guessing. */
-  font-kerning: normal;
-  font-variant-ligatures: common-ligatures discretionary-ligatures;
-  font-optical-sizing: auto;
   transition: box-shadow 0.15s ease;
 }
-/* The word is clickable, and a display face gives nothing to underline — its
+/* The word is clickable, and a display word gives nothing to underline — its
    baseline is below the cut. So the site's 1px link rule goes on the cut itself,
    drawn as an inset shadow rather than a border so it costs the clip box no
    height and the geometry above stays exact. In the doorway regime the same
@@ -1704,20 +1740,52 @@ body::after {
 .cut-title > a:hover,
 .cut-title > a:focus-visible { box-shadow: inset 0 -1px 0 currentColor; }
 .cut-title > a:focus-visible { outline: 1px solid currentColor; outline-offset: 3px; }
-.cut-title > a > span {
+
+/* The picture. Three declarations do the placing and the fourth is the theming.
+   `aspect-ratio` restates the viewBox rather than leaving the height to `auto`:
+   the box then has its full height from the first layout, before the SVG is
+   parsed, so the word cannot reflow anything as it arrives. The two must agree —
+   they come out of the same run of the build script, and if they ever disagree
+   the picture letterboxes inside its box rather than distorting.
+   `top` is what puts the CAP LINE on the box's top edge. The picture's own top
+   edge is the highest ink in the word, which is the O's overshoot, so the
+   drawing is lifted by exactly that much and the cut is then taken from the cap.
+   RELATIVE, not a negative margin, and this is not a preference — a margin is
+   wrong in the doorway regime and wrong silently. There the link runs
+   `overflow: visible`, so it is no longer a block formatting context and its
+   first child's top margin COLLAPSES into its own: the two negative margins
+   would not add, the larger (the link's own lift) would simply win, and the
+   overshoot correction would vanish leaving every letter cut 2.5% of a cap too
+   high. A relative offset cannot collapse with anything and does not disturb
+   the box it moves, which is what is wanted here anyway — the layout height is
+   fixed by the two rules above and only the drawing needs to shift.
+   `currentColor` on the path (see the SVG in app.js) is the whole of the
+   theming and of the hover state: the drawing takes the ink colour off this
+   link, so light, dark and hover are one file and no rule here mentions colour
+   at all. */
+.cut-title__word {
   display: block;
-  /* The box becomes exactly cap-height to baseline, so the `cap` height above
-     clips the letters at --cue-show of their own height in any face. */
-  text-box: trim-both cap alphabetic;
+  width: var(--cue-ink);
+  aspect-ratio: var(--cue-ratio);
+  margin-left: var(--cue-lead);
+  position: relative;
+  top: calc(-1 * var(--cue-overshoot) * var(--cue-ink));
 }
-/* Without text-box-trim the span's box is the em box, and `line-height: 1`
-   centres the font's content area on it — so the cap top sits --cue-cap-drop
-   below the box top, and the clip would eat that much extra off the letters.
-   Pull it back. The number is (1 - ascent - descent) / 2 + ascent - capHeight,
-   all per em, for the face that resolves; 0.075em is Sitka Banner's, and the
-   Didones listed before it are within a hair of it. */
-@supports not (text-box-trim: trim-both) {
-  .cut-title > a > span { margin-top: calc(-1 * var(--cue-cap-drop)); }
+
+/* The word as text — never drawn, and the reason the picture is allowed to be a
+   picture. It is what a screen reader announces for this link and what a crawler
+   indexes. Same rule as /projects uses; kept here rather than shared because the
+   two pages do not share a stylesheet. */
+.visually-hidden {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
 }
 
 /* ---- the doorway ----------------------------------------------------------
@@ -1769,16 +1837,16 @@ body::after {
      window that has one. --cue-measure, which does count it, is spent only on
      the height budget and says so.
      `width: auto` between the two insets is what makes the fit happen at all —
-     .cut-title is the container --cue-size is a percentage of, so the word takes
+     .cut-title is the container --cue-ink is a percentage of, so the word takes
      its size from whatever the two insets leave. Inline-size containment cannot
      make that circular: the used width comes from the insets, never from the
      word inside.
-     --cue-bearing is the last of it, and it is the difference between fitting
-     the word's box and fitting its ink. The P's outline starts 0.0439em inside
-     its own advance, so the box goes that much further left than the margin and
-     the INK lands on it. Relative, not a negative margin: a negative margin
-     would widen the box rather than move it, and the word would be fitted to
-     the wrong measure by exactly the bearing.
+     There used to be one more term, --cue-bearing, and it is worth saying why it
+     is gone: with type the P's outline started 0.0439em inside its own advance,
+     so the box had to be shifted that much further left than the margin for the
+     INK to land on it. The picture's box IS the ink — it starts at the P's
+     outline and ends at the S's — so the box on the margin is the ink on the
+     margin, and --cue-ink goes to a flat 100cqw with --cue-lead at zero.
 
    .cut-title is positioned rather than laid out for one reason: .page is exactly
    one screen and the doorway is the next, so the title can be a flex item of
@@ -1788,8 +1856,7 @@ body::after {
    put it: --slide-h is sized so the column plus --cue-gap reaches exactly Y, so
    the two agree, and the gap under the contact block is what it always was.
    `top`, not `bottom`, because the offset then holds the cap top at Y whatever
-   the box's own height turns out to be — and that height differs by a whole
-   descender between browsers with text-box-trim and browsers without.
+   the box's own height turns out to be.
 
    These rules sit at the end of the sheet, not up in the :root block that shares
    their gate: every one of them overrides a base rule of the same specificity,
@@ -1828,27 +1895,934 @@ body::after {
     margin: 0;
   }
   .cut-title > a {
+    /* The clip comes off — the bottom of the window does the cutting here, and
+       the J's hook and the baseline are meant to be seen on the screen below. */
     overflow: visible;
-    height: auto;
+    /* But the BOX stays the cap slab, and is not left to `auto`. Two things
+       depend on it: the hover underline, which lands on the box's bottom edge
+       and so on the baseline, where a descender's worth of extra box would put
+       it under the J instead; and the lift below, which is stated as a fraction
+       of this same slab. `auto` would be the picture's full height, descender
+       and overshoot included, which is neither. */
+    height: var(--cue-slab);
     /* The cut, and the same expression the flow regime cuts with — the box is
        pinned to the fold and the word is lifted --cue-show of its own cap back
-       above it. `1cap` is read from the face that resolved at the size that
-       resolved, so it is exact where --cue-clip is a budget estimate, and the
-       two regimes now say the cut the same way instead of one saying it in
-       `cap` and the other in a rem twin. A negative margin rather than an
-       offset on `top`, because the unit only means anything on the element
-       whose font it is read from: on .cut-title, `1cap` would be the body
-       serif at 15px. It cannot collapse through .cut-title either — a
-       container establishes an independent formatting context — and .cut-title
-       carries no paint containment, so the lifted word is not clipped. */
-    margin-top: calc(-1 * var(--cue-show) * 1cap);
-    position: relative;
-    left: calc(-1 * var(--cue-bearing));
+       above it, so the cap top lands at Y. --cue-slab is exact at whatever
+       width the two insets above resolved to, where --cue-clip is the budget's
+       estimate of the same line; the two regimes say the cut the same way.
+       A negative margin rather than an offset on `top`, so that the box's own
+       top edge stays the thing being positioned. It cannot collapse through
+       .cut-title either — a container establishes an independent formatting
+       context — and .cut-title carries no paint containment, so the lifted word
+       is not clipped. */
+    margin-top: calc(-1 * var(--cue-show) * var(--cue-slab));
   }
+}
+
+/* ============================================================================
+   THE EFFECT STACK
+   ============================================================================
+   Ten optical treatments laid over the finished page, each one a token in
+   `<html data-fx="...">` and each one off unless the token is there. Three ship
+   on — film, paper, chroma — and the rest are built, wired and dormant. portfolio/
+   effects.js owns the attribute; design/effects/effects-tuner.html is where the
+   numbers below were arrived at and is the only sane way to move them.
+
+   WHY AN ATTRIBUTE AND NOT SEVEN CLASSES
+   `[data-fx~="film"]` matches a space-separated token, which is the same test a
+   class does, with one difference that decides it: the whole state is ONE
+   attribute, so the tuner sets it in one write, the export is one line, and there
+   is no way to end up in a half-applied state between two classList calls. It
+   also keeps the page's class attribute for what it already means there — `js`
+   and `plate-wait`, which are load states rather than settings.
+
+   WHERE THE STACK ENDS, AND WHY THAT IS THE FOLD
+   Every layer is `--fx-band` tall, which is --fold less --fx-y: the bottom of
+   the screen you open, before any scrolling. That is not an arbitrary stopping
+   place, it is the line all three corner pictures already stop on — see
+   --plate-band, and .car and .eye, all measured off the same --fold. The
+   pictures are the page's stock and the effects are what has happened TO that
+   stock, so the two have to end together; a wash that carried on past the fold
+   would be laid over blank paper and would read as a filter on a browser window
+   rather than as a treatment of a print.
+
+   The doorway below the fold is therefore untouched, deliberately. It is the
+   clean sheet the cut title opens onto.
+
+   --fx-fade softens that ending over the last stretch of the band. It defaults
+   to 0, because the pictures themselves stop dead there and an effect layer that
+   dissolved out above a photograph that does not would draw attention to exactly
+   the line it was trying to hide.
+
+   BLENDING, AND THE ONE THING THAT WOULD BREAK IT
+   Every layer blends with what is under it rather than painting over it, and
+   what is under it has to include the page's own background for that to mean
+   anything. body's background propagates to the canvas — see the corner plate
+   block, which depends on that too — and the canvas is part of the root
+   stacking context, so a blended layer here sees the paper. What would break
+   that is `isolation: isolate` or a `filter` on body or on .fx: either makes a
+   new blending group whose backdrop starts transparent, and every `overlay` and
+   `soft-light` below would silently become a no-op. Filters here go on the
+   LAYERS, never on their container.
+
+   Both texture assets leave design/effects/build-textures.py centred on mid-grey
+   for this reason: `overlay` and `soft-light` are exact no-ops at 128, so the
+   flat field of each texture costs the page nothing and only the marks land.
+   That is also what makes opacity an honest strength control — it mixes toward
+   128, which is toward nothing, rather than toward grey paint — and it is why
+   neither asset needs a second, inverted cut for the dark theme.
+
+   WHAT THIS COSTS
+   Each live layer is one composited quad. The two that ship as pictures are a
+   single decode each and no per-frame work; --fx-grain, --fx-roll and the CRT
+   flicker are the only things here that animate, and all three are off by
+   default. The stack is `pointer-events: none` throughout and carries no text,
+   so nothing here is selectable, focusable or in the accessibility tree. */
+
+:root {
+  /* Where the stack stops. --fx-y is the twin of --plate-y and moves the foot of
+     every layer at once; --fx-fade is how far above that foot the dissolve
+     starts, as a share of the band. */
+  --fx-y: -55px;
+  --fx-band: calc(var(--fold) - var(--fx-y));
+  --fx-fade: 0;
+
+  /* ---- film: Texturelabs 185XL, one frame over the whole band --------------
+     Scratches, dust and halation blooms, band-passed to mid-grey. Never tiled —
+     see the film section of build-textures.py for why a frame of singular marks
+     must not repeat.
+
+     image-set() rather than a rung picked in script, and the difference from
+     index.html's corner pictures is real rather than laziness: those are drawn
+     at a size that varies with the window, so only measurement can say which
+     rung they need, while this one is always exactly the viewport and density is
+     the whole question. CSS can answer that on its own.
+
+     ?v= is the digest build-textures.py prints. Same job as index.html's
+     IMG_VERSION and the same reason — the filename does not change when the
+     bytes do, and vercel.json caches this directory for a day. */
+  --fx-film-src: image-set(url("img/tex/film-1600.webp?v=3311dec2") 1x,
+                           url("img/tex/film-2600.webp?v=3311dec2") 2x);
+  --fx-film-strength: 0.14;
+  --fx-film-blend: multiply;
+  /* ---- HOW BIG THE MARKS ARE, WHICH IS THE ONLY LEVER THERE IS -------------
+     1 is the frame drawn exactly `cover`: one whole 35mm frame across the whole
+     page, which is what this shipped as and what makes a scratch read at forty
+     or fifty pixels. Above 1 it draws bigger and crops in. Below 1 it draws
+     smaller, and REPEATS — which is the part to know before dragging it.
+     The default here is 0.25, which is a sixteen-up tile and well past the point
+     the repeat is visible. That is affordable only because `film` is not in the
+     shipped stack: this is where the control is parked, not a value being shown
+     to anyone. Put the film back on and this is the first number to look at.
+
+     There is no way around that repeat, and it is worth writing down so nobody
+     goes looking for one. The size of a mark on screen is the source area shown
+     divided by the screen area, so halving it means showing four times as much
+     film; the asset is one scan, so four times as much film is the same scan
+     four times. Every dodge tried came back to that. Tiling at 0.6 puts the same
+     bloom on screen twice and you find it immediately. Mirroring the tile trades
+     the grid for a kaleidoscope, which is worse, because film has directional
+     scratches and reflected scratches make chevrons. Packing four different
+     crops of the scan into one frame is arithmetic that cancels: four quarters
+     at quarter size is the picture you started with.
+
+     So below about 0.8 this is a visible repeat, and the fix if that is not
+     acceptable is more film — a second Texturelabs sheet composited into the
+     bake would genuinely halve the marks, and it is the only thing that would.
+
+     `background-size` and not the `scale` property it used to be. Same range and
+     one more decade of it, without the layer's own box shrinking and pulling its
+     edges into view below 1, and it leaves the transform free for --fx-weave —
+     which was the whole reason `scale` was chosen over `transform` originally. */
+  --fx-film-scale: 0.25;
+  /* 1600 / 1190, the baked frame. `cover` is max(100%, height x this), and the
+     scale above multiplies it; CSS cannot ask an image how big it is, so this
+     is the one number here that has to be kept in step with FILM_RUNGS and the
+     source's aspect in build-textures.py. Wrong, and the frame stops covering at
+     scale 1 and shows a seam. */
+  --fx-film-aspect: 1.3445;
+  /* The levels stage — see THE LEVELS STAGE below. --fx-film-invert is the one
+     of the three that is not shared with the paper, and it is what makes a
+     scratch read: the marks on this plate are BRIGHT, white lines on a nearly
+     black emulsion, and on white paper the bright half of a multiply layer is
+     clipped away to nothing. Inverted, they print as dark lines on white — which
+     is not a trick to get them visible but what actually happens when a
+     scratched negative is printed. On black the plate is left the way it was
+     shot, because there the negative is what you are looking at. */
+  --fx-film-invert: 1;
+  --fx-film-lift: 1.5;
+  --fx-film-contrast: 2;
+
+  /* ---- paper: Texturelabs 349XL, high-passed and tiled ---------------------
+     A 512px square that wraps in both axes, drawn at --fx-paper-size CSS pixels.
+     Below 512 it scales the fibre DOWN, which is the direction that matters: the
+     source sheet's grain is about 4px across at 1:1 and reads as a wall rather
+     than as paper next to 15px type. The bake already took a 2048px crop down to
+     512; this takes it the rest of the way by eye.
+
+     Anything is a valid size — the tile wraps, so there is no rung to land on —
+     but sizes near a whole fraction of 512 resample most cleanly. */
+  --fx-paper-src: image-set(url("img/tex/paper-512.webp?v=3311dec2") 1x,
+                            url("img/tex/paper-1024.webp?v=3311dec2") 2x);
+  --fx-paper-size: 384px;
+  --fx-paper-strength: 0.18;
+  --fx-paper-blend: multiply;
+  --fx-paper-invert: 0;
+  --fx-paper-lift: 1.5;
+  /* 1.25 and not the 2 that solves the relation below — the deliberate break,
+     see the last paragraph of THE LEVELS STAGE. */
+  --fx-paper-contrast: 1.25;
+
+  /* ---- THE LEVELS STAGE ----------------------------------------------------
+     Both textures go through `filter: invert(i) brightness(B) contrast(C)`
+     before they blend, and those three are the whole of the levels dialog the
+     texture would otherwise have needed baking into it. Written in this order
+     because CSS applies a filter list left to right, so the affine part is
+
+         out = C * (B * in - 0.5) + 0.5
+
+     which is a gain of B*C on the detail and a pivot that MOVES — and the moving
+     pivot is the point. `contrast()` alone can only stretch about mid-grey, and
+     mid-grey is exactly where this page cannot use it.
+
+     WHY NOT `overlay`, WHICH IS WHAT A TEXTURE OVERLAY USUALLY IS
+     Because this page's two papers are #fff and #000, and those are the two
+     fixed points of `overlay` and `soft-light` alike: both are exact no-ops at
+     either end. A mid-grey-centred texture blended that way over pure white
+     leaves pure white — correctly, and uselessly. The texture would have shown
+     up on the photographs and the type and nowhere else, which is the opposite
+     of a treatment of the page.
+
+     So the field is moved to the endpoint instead, and the blend is chosen to
+     clip the half that cannot show:
+
+       * light theme — the flat field is lifted onto WHITE and blended
+         `multiply`. White multiplies to nothing, so the field is invisible and
+         the paper stays paper; only the detail below it prints. Nothing can be
+         brighter than the paper, so the half of the texture that would have
+         tried is clipped, which is also true of ink.
+       * dark theme — the field is pushed onto BLACK and blended `screen`, and
+         everything above reads in the mirror.
+
+     Solve `out = 0` or `1` at `in = 0.5` and both come out as one relation:
+
+         C * (B - 1) = +1   puts the field on white
+         C * (B - 1) = -1   puts the field on black
+
+     which is why the FILM's numbers are (1.5, 2) on light and (0.75, 4) on dark.
+     Both satisfy it, and both have the same detail gain B*C = 3, so the two
+     themes carry the same amount of texture rather than merely both having some.
+     Move B and C together along that relation to change how hard the detail
+     bites; break the relation deliberately and the flat field stops being
+     invisible and starts tinting the page, which is a legitimate thing to want
+     and is how you get stock that is not quite white.
+
+     The film sits exactly on the relation in both themes. THE PAPER NOW BREAKS
+     IT IN BOTH, in the same direction and for the same reason — it is the paper
+     that is being asked to be paper rather than to disappear:
+
+       * light — (1.5, 1.25) puts the field at 0.81 instead of 1. Multiplied
+         onto white at strength 0.18 that is about a 3% knock off the page, a
+         warm-grey stock rather than #fff, with the fibre riding on top of it.
+       * dark — (0.8, 8) with `normal` rather than `screen`, which is the older
+         and larger break of the two and is written out in the dark block below.
+
+     So the relation is the thing to solve when a texture must vanish into the
+     paper, and the thing to leave when the paper itself is the effect.
+
+     --fx-*-strength is then the honest amount control on top. On a layer that
+     satisfies the relation it fades the detail toward the paper and the field
+     stays where it was, having nowhere to go; on one that breaks it the same
+     control scales the departure, field and detail together, and is how the
+     paper's tint is set to 3% rather than the 19% the levels alone would give. */
+
+  /* ---- chroma: lateral chromatic aberration -------------------------------
+     A red/cyan split, on the pictures through an SVG filter and on the type
+     through a pair of text-shadows. Two mechanisms because the two want
+     different things: a filter rasterises whatever it is given, and rasterising
+     the CV's type to offset it costs a compositing layer over the one part of
+     the page that scrolls and re-renders. A text-shadow costs nothing, inherits,
+     and at these offsets is indistinguishable from the filter.
+
+     LATERAL, not radial. Real lens aberration grows from the optical centre
+     outward, and doing that needs a per-channel scale that SVG filters have no
+     primitive for — feDisplacementMap with a baked radial map is the usual
+     dodge, and it costs an asset, a second decode and a filter region the size
+     of the page to buy a gradient nobody looks for at a pixel or two. What is
+     here is one offset at one angle, which is what a prism does and what the
+     effect is recognised as.
+
+     Only the pictures' half ships, and only on dark — see AN EFFECT THAT BELONGS
+     TO ONE THEME below. The type's three are parked: `chroma` is off in both
+     themes, and they are kept and kept apart because the separation is what
+     makes either half tunable at all.
+
+     The three below are the TYPE's half and only the type's, and are the parked
+     ones. The angle is what moved when they were last judged: x and y together
+     are a diagonal split rather than the purely horizontal one this started
+     as. */
+  --fx-chroma-x: 1.45px;
+  --fx-chroma-y: 1.4px;
+  --fx-chroma-alpha: 0.5;
+
+  /* ...and these are the PICTURES' half, which is `chroma-pictures`. They were
+     the same three numbers until the two halves were separated, and sharing them
+     was wrong for a reason that only shows once you try to tune either: a split
+     is measured against what it is splitting. A pixel and a half either side of
+     a 15px glyph is a fringe you read as a fringe; the same pixel and a half
+     across a photograph 600px wide is a rounding error, and the offset that
+     reads on the pictures washes the type out. One number could serve both only
+     if they were the same size — and they have since drifted so far apart that
+     the pictures' split is now almost purely vertical while the type's is
+     diagonal, which is two different effects wearing one name.
+
+     effects.js writes them onto the filter's primitives, because SVG filter
+     primitives take ATTRIBUTES and no amount of custom property can drive one.
+     That is also why the pictures get a third control the type cannot have:
+     `blur` is an feGaussianBlur on the two offset channels — the red and the
+     blue go soft while the green stays where it is, which is what a lens does
+     and what stops a hard-edged fringe on a photograph reading as a bug. A
+     text-shadow has no equivalent, so the type's third number is alpha instead.
+
+     Separated at the type's values with the blur off, so the separation itself
+     changed no pixel; everything they have diverged by since was a decision made
+     after, one side at a time, which was the point of separating them.
+
+     x is stated twice per theme, which is the only one of the six that is. The
+     0.2px here is what the light pass asked for and nothing on light renders it,
+     the token being dark-only; dark's 2.6px is in the dark block and is the one
+     that is actually drawn. Kept rather than collapsed to the live value so that
+     turning the token on for light is reading a number back rather than
+     inventing one. */
+  --fx-chroma-pic-x: 0.2px;
+  --fx-chroma-pic-y: 2.6px;
+  --fx-chroma-pic-blur: 0px;
+
+  /* ---- everything below here is off unless its token is in data-fx --------- */
+
+  --fx-grain-opacity: 0.09;     /* animated grain, over the static film        */
+  --fx-grain-size: 600px;       /* the noise tile, drawn small                 */
+  --fx-grain-fps: 2;
+
+  --fx-halftone-pitch: 3.7px;   /* dot to dot                                  */
+  --fx-halftone-dot: 0.27;      /* the dot's radius as a share of the pitch    */
+  --fx-halftone-angle: 11deg;   /* the screen angle a printer would use        */
+  --fx-halftone-opacity: 1;
+  --fx-halftone-blend: soft-light;
+
+  --fx-vignette-start: 55%;     /* where the corner darkening begins           */
+  --fx-vignette-strength: 0.3;
+
+  --fx-halation-radius: 16.5px; /* the glow around type and pictures           */
+  --fx-halation-alpha: 0.9;
+
+  --fx-scan-pitch: 3px;         /* CRT: scanline to scanline                   */
+  --fx-scan-alpha: 0.28;
+  --fx-grille-pitch: 3px;       /* CRT: the RGB aperture grille                */
+  --fx-grille-alpha: 0.16;
+  --fx-tube-curve: 1.4rem;      /* the radius of the tube's own corners        */
+  --fx-tube-alpha: 0.5;
+  --fx-flicker: 0.03;           /* how far the whole tube's brightness wanders */
+  --fx-roll-height: 14%;        /* the bar that rolls up the screen            */
+  --fx-roll-alpha: 0.05;
+  --fx-roll-period: 7s;
+
+  --fx-ascii-cell: 7.5px;       /* the character cell, in CSS pixels           */
+  --fx-ascii-contrast: 0.8;
+  --fx-ascii-opacity: 0.18;
+  --fx-ascii-invert: 0;
+
+  --fx-weave-amount: 20px;      /* gate weave: how far the film wanders        */
+  --fx-weave-period: 4s;
+}
+
+/* The stack itself. Absolute in body's coordinates, as the corner pictures are,
+   and above the type rather than under it: this is a treatment laid ON the
+   printed page. It is the one thing on the page with a positive z-index and it
+   is inert — no pointer events, nothing focusable, aria-hidden in the markup. */
+.fx {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: var(--fx-band);
+  pointer-events: none;
+  overflow: hidden;
+  /* NO z-index, and this is the load-bearing line in the block rather than an
+     omission. `z-index: 2` was here first and it broke the entire stack in a way
+     that looks exactly like the strengths being too high: an element with a
+     z-index makes a stacking context, Chrome treats a stacking context as an
+     ISOLATED group, and an isolated group hands every blending child a
+     transparent backdrop instead of the page. `overlay` and `soft-light` are
+     no-ops over white, so correctly blended these layers leave #fff paper at
+     exactly #fff — and with the z-index in, a bare patch of paper measured
+     182 of 255 under the film alone. The layers had stopped blending and started
+     painting, and every number below would have been tuned around that.
+     `isolation: isolate` and a `mask` on this element do the same thing for the
+     same reason. None of the three belongs here — masks go on the layers, where
+     an element's own mask is applied before the blend and is harmless.
+
+     Nothing is lost. .fx is the last positioned element in the body, so with
+     z-index auto it paints after .page and .doorway on DOM order alone, which is
+     the whole of what the 2 was buying.
+
+     If this stack ever looks like a flat grey wash again, measure a bare patch of
+     paper before touching a strength. */
+}
+/* Every layer fills the stack and every one is off until its token appears.
+   `display: none` rather than zero opacity, so a layer that is off costs no
+   decode, no composited quad and no paint. */
+.fx > * {
+  display: none;
+  position: absolute;
+  inset: 0;
+}
+/* The dissolve at the foot, when --fx-fade is not 0. On each LAYER and not on
+   .fx, which is where it was first written and where it silently broke the whole
+   stack: a mask makes its element an isolated group, and an isolated group hands
+   every blending child a transparent backdrop instead of the page. `overlay` and
+   `soft-light` are no-ops over white, so with the mask on the container the two
+   texture layers stopped blending and started PAINTING — the page came out
+   uniformly grey in proportion to their opacity, which reads as "the strength is
+   too high" rather than as "the blend is not happening", and is the reason this
+   comment is longer than the rule.
+   A mask on the blending element itself is fine and is what this is: the layer
+   is rendered through its own mask, and the result is then blended with the
+   backdrop. Only a mask BETWEEN the blenders and the backdrop isolates.
+
+   Every layer is the same box, so one declaration inherited through .fx > *
+   cannot let them disagree about where the stack ends — which was the only thing
+   the container version was buying. */
+.fx > * {
+  mask-image: linear-gradient(to bottom,
+    #000 calc(100% - var(--fx-fade) * var(--fx-band)),
+    transparent 100%);
+}
+
+/* ---- KEEPING A LAYER OFF THE TYPE OR OFF THE PHOTO STRIP -------------------
+   Each effect can be told, in the tuner, not to lie over the type or not to lie
+   over the carousel. The way that is done is paint order and not a hole: the
+   excluded content is lifted ABOVE the layer, so the glyphs and the photographs
+   come out untouched while the paper around them still takes the texture. A
+   mask would have been independent per layer and would have cut a rectangle
+   across the page, which is not what either of these effects is for.
+
+   Every layer therefore needs a z of its own, in the order it already paints
+   in. EVEN numbers, so the content has an odd one to stand on between any two
+   of them — --fx-text-z and --fx-gallery-z are (the highest excluded layer) + 1,
+   written by effects.js, which reads these numbers back off the elements rather
+   than keeping a copy. Renumber here and nothing else has to know.
+
+   A z-index on a LAYER is safe, and the warning at the top of .fx is about a
+   z-index on the CONTAINER: an element's own stacking context does not change
+   what its blending sees, because mix-blend-mode blends with the backdrop of the
+   PARENT group, and .fx is still not one. Measured with a bare patch of paper
+   before and after, as that comment asks for.
+
+   WHAT THIS CANNOT DO. There is one paint order, so the layers a piece of
+   content is lifted over are always the lowest ones. Ask for the film to be off
+   the type while the paper — which paints below the film — is not, and the paper
+   comes off it too; there is no order in which the type is above the film and
+   below the paper. The tuner names any layer that gets excluded this way rather
+   than letting it pass as what you asked for. */
+.fx-paper    { z-index: 2; }
+.fx-halftone { z-index: 4; }
+.fx-film     { z-index: 6; }
+.fx-grain    { z-index: 8; }
+.fx-grille   { z-index: 10; }
+.fx-scan     { z-index: 12; }
+.fx-roll     { z-index: 14; }
+.fx-tube     { z-index: 16; }
+.fx-vignette { z-index: 18; }
+
+/* The type, in its four blocks rather than as .col, because .col CONTAINS the
+   carousel — lifting the column would carry the strip with it and the two would
+   stop being separable, which is the whole of what these two toggles are.
+   .cbar goes with the carousel: it is the strip's scrollbar, not a paragraph.
+
+   `var(--fx-text-z)` with no fallback is deliberate. effects.js writes the word
+   `auto` when nothing STACKED is excluded — chroma and halation are excluded by
+   their declaration simply not being written, a few rules below, and need no
+   lift — and `z-index: auto` leaves these in tree order under the whole stack,
+   which is where they started. An invalid value here would instead make the
+   whole declaration unset and take `position: relative` with it.
+
+   THE LIFT NEVER WRITES `position` ON .cut-title, and that is why it is on the
+   second selector rather than the first. Three of these four are static and
+   need positioning before a z-index means anything; the fourth is `absolute` in
+   the one-screen regime, and this selector — two attributes and a class against
+   that rule's bare class — outweighs it. Writing `relative` here therefore did
+   not add a stacking context to the cut title, it MOVED it: out of the corner,
+   with `top: 100vh` re-read as a relative offset and the width taken from the
+   flow rather than from the two insets. So .cut-title positions itself instead,
+   in its own block above, and all this has left to do is the number. */
+:root[data-fx-no-text] .masthead,
+:root[data-fx-no-text] .intro,
+:root[data-fx-no-text] .listing {
+  position: relative;
+  z-index: var(--fx-text-z);
+}
+:root[data-fx-no-text] .cut-title { z-index: var(--fx-text-z); }
+:root[data-fx-no-gallery] .carousel,
+:root[data-fx-no-gallery] .cbar {
+  position: relative;
+  z-index: var(--fx-gallery-z);
+}
+
+:root[data-fx~="film"] .fx-film {
+  display: block;
+  background-image: var(--fx-film-src);
+  /* `cover`, written out, so --fx-film-scale can multiply it — see HOW BIG THE
+     MARKS ARE above. max(100%, height x aspect) is exactly what `cover` picks:
+     whichever of the two constraints binds. The height is `auto`, so the frame
+     keeps its shape whatever the scale does.
+     The +1px is not a fudge factor for the arithmetic, it is for the rounding
+     underneath it: at scale 1 the frame covers by construction, and a subpixel
+     short after the browser has rounded is a hairline of the wrapped edge down
+     one side. A pixel of overdraw is invisible at every scale and cannot be. */
+  background-size: calc(1px + var(--fx-film-scale) *
+                        max(100%, var(--fx-band) * var(--fx-film-aspect))) auto;
+  background-position: center;
+  /* Only reachable below scale 1, where it is the point rather than an accident;
+     at 1 and above the frame covers and there is nothing to repeat. */
+  background-repeat: repeat;
+  filter: invert(var(--fx-film-invert))
+          brightness(var(--fx-film-lift))
+          contrast(var(--fx-film-contrast));
+  mix-blend-mode: var(--fx-film-blend);
+  opacity: var(--fx-film-strength);
+}
+
+:root[data-fx~="paper"] .fx-paper {
+  display: block;
+  background-image: var(--fx-paper-src);
+  background-size: var(--fx-paper-size) var(--fx-paper-size);
+  background-repeat: repeat;
+  filter: invert(var(--fx-paper-invert))
+          brightness(var(--fx-paper-lift))
+          contrast(var(--fx-paper-contrast));
+  mix-blend-mode: var(--fx-paper-blend);
+  opacity: var(--fx-paper-strength);
+}
+
+/* The other end of the relation — for the film. Declared here rather than in the
+   palette block at the top of the sheet for the same reason the whole stack is
+   in one place — and this is the third thing in the file that is stated twice
+   per theme, after --plate-opacity and the baked grade itself. */
+:root[data-theme="dark"] {
+  --fx-film-invert: 0;
+  --fx-film-lift: 0.75;
+  --fx-film-contrast: 4;
+  --fx-film-blend: screen;
+  --fx-film-strength: 0.18;
+
+  /* The paper leaves the relation on this side, deliberately. `normal` rather
+     than `screen` composites the flat field instead of clipping it, so there is
+     no endpoint to solve C*(B-1) for and the two numbers are free: 8 is a
+     harder bite on the fibre than the relation would have allowed, and 0.06 is
+     what keeps the field it drags along with it from washing the black out. */
+  --fx-paper-lift: 0.8;
+  --fx-paper-contrast: 8;
+  --fx-paper-blend: normal;
+  --fx-paper-strength: 0.06;
+
+  /* The halftone is stated twice as well, and the blend is why. `multiply`
+     returns the SOURCE over white and black over black, so on light it lays the
+     dot grid across the whole page and on this side it is an exact no-op on the
+     flat field — which is the same thing `soft-light` does on both. So dark can
+     have the blend that only darkens and light cannot, and the choice made for
+     light in #51 is not one this side ever needed.
+     Keeping it: on black, multiply is the dot biting out of the photograph and
+     nothing at all happening in the gaps, which is a screen. soft-light shades
+     both ways and reads here as a wash over the picture instead. The plate goes
+     with the blend — 3.9px pitch against 3.7, and a dot of 0.2 of it against
+     0.27, so 0.78px of dot where light has 1.0px and more of the photograph
+     survives between them. */
+  --fx-halftone-pitch: 3.9px;
+  --fx-halftone-dot: 0.2;
+  --fx-halftone-blend: multiply;
+
+  /* The pictures' split is dark-only, so this is the value that is drawn; the
+     0.2px in :root is light's parked one. See the note beside it. */
+  --fx-chroma-pic-x: 2.6px;
+}
+
+/* ---- AN EFFECT THAT BELONGS TO ONE THEME ----------------------------------
+   The nine properties above are one theme wanting different NUMBERS, which is
+   what this sheet has always done. Two effects go further and are wanted in one
+   theme and not the other at all — `weave` on light, `chroma-pictures` on dark —
+   and that is a different shape, so it is worth saying once where it lives and
+   why it is not in data-fx.
+
+   It is not in data-fx because data-fx cannot hold it. The attribute is a single
+   global stack, deliberately: index.html's comment calls it one place, no drift,
+   and it is written in the markup so the page opens already treated instead of
+   flashing untreated a script-load later. Both of those break if the stack has
+   to vary by theme — the theme is not known until the boot script has read
+   localStorage, so a per-theme stack in the markup is either two attributes the
+   sheet cannot choose between or a stack written by script after first paint.
+
+   So the theme goes in the SELECTOR of the effect that is theme-specific, next
+   to the rule it qualifies, and data-fx keeps naming every effect the page uses.
+   That is flash-free by construction: data-theme is set by a blocking script in
+   the head, so the right rules match at first paint with no work from us.
+
+   The two rules are `chroma-pictures` above and `weave` below, each carrying its
+   own note. What this costs, and it is a real cost rather than a tidy one: the
+   tuner drives data-fx and has no idea a token can be theme-specific, so it
+   shows both as on in both themes and toggling one in the theme it does not
+   apply to does nothing visible. A third theme-specific effect, or a session
+   spent tuning one of these two, is the point at which the tuner should learn
+   about this rather than this comment getting longer. */
+
+/* ---- the film, on a small screen ------------------------------------------
+   The film is one frame under `cover`, so a narrow window does not see a
+   smaller picture — it sees LESS of the same one. At 1440x900 the frame is
+   drawn 1440 wide and every mark on the plate is somewhere on the page; at
+   390x844 it is drawn 1134 wide and cropped to a third of that, so four or five
+   scratches and one halation bloom are sharing the whole screen with the CV.
+   The marks have not grown; the page has shrunk under them, and the same 0.14
+   that reads as a print at desktop width reads as a dirty scan on a phone.
+
+   So this is a strength correction and not a scale one. Scaling the frame down
+   to fit more of it in would make the marks smaller than they are anywhere else
+   and stop it being a photograph of a piece of film.
+
+   The paper is untouched, and the difference is the point: it is a tile at a
+   fixed size in CSS pixels, so it looks the same on every screen and needs no
+   correction. Two textures, two behaviours, one of which needed this and one of
+   which did not.
+
+   700px rather than the 1100px gate the rest of the sheet uses — that one is
+   about whether the composition fits a screen, which is a different question
+   from how much of a photograph is on it. */
+@media (max-width: 700px) {
+  :root { --fx-film-strength: 0.07; }
+  :root[data-theme="dark"] { --fx-film-strength: 0.09; }
+}
+
+/* ---- chroma ---------------------------------------------------------------
+   The type half. It inherits, so it is set once on the two roots that between
+   them carry every word on the page, and the shadows land behind glyphs that are
+   opaque — so all that shows is the sliver either side, which is the fringe.
+
+   Pure red and pure cyan because they are complements: where the two shadows
+   overlap behind a glyph's own body they sum to neutral, so the effect is
+   confined to the edges by construction rather than by choosing a small enough
+   alpha. */
+/* `exclude text` for this one is not a lift — there is nothing to lift over,
+   because the effect IS on the type. It is the declaration not being written,
+   which is the cheapest exclusion in the sheet and the only exact one. */
+:root[data-fx~="chroma"]:not([data-fx-no-text~="chroma"]) .col,
+:root[data-fx~="chroma"]:not([data-fx-no-text~="chroma"]) .cut-title {
+  text-shadow:
+    calc(-1 * var(--fx-chroma-x)) calc(-1 * var(--fx-chroma-y)) 0
+      rgba(255, 0, 0, var(--fx-chroma-alpha)),
+    var(--fx-chroma-x) var(--fx-chroma-y) 0
+      rgba(0, 255, 255, var(--fx-chroma-alpha));
+}
+/* The picture half. The filter is defined inline in index.html; effects.js
+   writes both its feOffset attributes and --fx-chroma-url, and the URL is not
+   busywork — this page carries `<base href="/portfolio/">`, and a filter
+   reference is resolved against the base like any other URL, so a bare
+   `url(#fx-chroma)` becomes `/portfolio/#fx-chroma`. That names the current
+   document only when the page was reached WITH the trailing slash. Reached as
+   `/portfolio` it names a different document, the lookup fails, and the three
+   corner pictures lose their filter — silently, and only on one of the two URLs
+   the site answers on. effects.js builds the reference off `location` instead,
+   so it is right on both.
+
+   It is a token of its own rather than a number, because it is a different
+   decision from the split's size: at --plate-opacity of 0.12 a 0.6px fringe on a
+   photograph is close to unmeasurable, and paying a compositing layer per
+   picture for it is worth being able to decline while the type keeps the
+   split. Its own three numbers are --fx-chroma-pic-* above; the --fx-chroma-*
+   ones next to them drive the type and reach nothing here.
+
+   DARK ONLY — see AN EFFECT THAT BELONGS TO ONE THEME below. The fringe is
+   worth the layer against the dark page's photographs and is not against the
+   light one's, so the theme is part of the rule rather than something the stack
+   has to remember. */
+:root[data-theme="dark"][data-fx~="chroma-pictures"] body::after,
+:root[data-theme="dark"][data-fx~="chroma-pictures"] .car,
+:root[data-theme="dark"][data-fx~="chroma-pictures"] .eye {
+  filter: var(--fx-chroma-url, none);
+}
+
+/* ---- grain ----------------------------------------------------------------
+   Moving grain over the still film. effects.js draws one square of white noise
+   to a canvas at boot and hands it here as a data URI, so there is no asset:
+   the tile is procedural, and an asset would be a request and a cache entry for
+   something a browser can make in half a millisecond.
+
+   It moves by jumping its own background-position on a steps() timeline rather
+   than by redrawing — twelve positions a second off one static tile, which is
+   what film grain looks like and costs one composited quad instead of a canvas
+   repaint per frame. */
+:root[data-fx~="grain"] .fx-grain {
+  display: block;
+  background-image: var(--fx-grain-src, none);
+  background-size: var(--fx-grain-size) var(--fx-grain-size);
+  background-repeat: repeat;
+  mix-blend-mode: overlay;
+  opacity: var(--fx-grain-opacity);
+  /* Eight positions in the keyframes below, so a cycle of 8/fps seconds spends
+     exactly 1/fps on each. --fx-grain-fps is therefore the real frame rate and
+     not a scaling factor with a name. */
+  animation: fx-grain-shift calc(8s / var(--fx-grain-fps)) steps(1, end) infinite;
+}
+@keyframes fx-grain-shift {
+  0%    { background-position:   0     0   }
+  12.5% { background-position: -13px  27px }
+  25%   { background-position:  31px -19px }
+  37.5% { background-position: -41px -37px }
+  50%   { background-position:  23px  43px }
+  62.5% { background-position: -29px  11px }
+  75%   { background-position:  47px -31px }
+  87.5% { background-position: -17px -43px }
+}
+
+/* ---- halftone -------------------------------------------------------------
+   A dot screen at a printer's angle. The dots are one size rather than growing
+   and shrinking with the tone under them — a true amplitude-modulated screen
+   needs to know what it is sitting on, which nothing in CSS does — but the blend
+   is doing the reading for us and gets most of the way there for nothing. How
+   far depends on which blend, and the two this ships with are not the same
+   animal: one shades in both directions by an amount taken from the tone
+   underneath, the other only ever darkens. What they have in common is the part
+   that matters, which is that each is a no-op on the flat field of the theme it
+   is used in.
+
+   What the dots land on is the same in both themes and worth stating once. The
+   type and the carousel are lifted over this layer, so what is left underneath
+   is the corner photographs and the paper's own fibre — and if the blend is one
+   the flat field is a fixed point of, the screen prints where there is tone and
+   the page between stays clean. That is what a duotone plate does, and it is not
+   achievable with a mask, because a mask would have to know where the
+   photographs are and this does not.
+
+   The BLEND is the one thing here that is not the same in both, because the two
+   fields are #fff and #000 and the candidates are not symmetric about them:
+
+     * `soft-light` is a fixed point at both ends — it works either side, and is
+       what light uses.
+     * `multiply` returns the source over white and black over black, so it is a
+       no-op on the dark field and a dot grid across the whole light page. Dark
+       only, and dark's choice; see the dark block above for the pitch and dot
+       that go with it.
+     * `overlay` is a fixed point at both ends too, but it decides multiply or
+       screen from the BACKDROP and takes its strength from the dot — which at a
+       solid black-and-white screen is full-strength multiply or screen wherever
+       there is any tone at all. `soft-light` decides from the DOT and takes its
+       strength from the backdrop, so the same screen lands as a shading of what
+       is there. That is the gentler of the two, and is what lets the dot carry
+       the effect at full opacity rather than the layer being faded to keep the
+       photographs off poster. */
+:root[data-fx~="halftone"] .fx-halftone {
+  display: block;
+  background-image: radial-gradient(circle at 50% 50%,
+    #000 0 calc(var(--fx-halftone-dot) * var(--fx-halftone-pitch)),
+    #fff calc(var(--fx-halftone-dot) * var(--fx-halftone-pitch) + 0.5px));
+  background-size: var(--fx-halftone-pitch) var(--fx-halftone-pitch);
+  /* Rotated about the centre and oversized to 150% so the corners of the band
+     stay covered at any angle — sqrt(2) is 1.415, and 1.5 leaves a margin. */
+  width: 150%;
+  height: 150%;
+  inset: -25%;
+  rotate: var(--fx-halftone-angle);
+  mix-blend-mode: var(--fx-halftone-blend);
+  opacity: var(--fx-halftone-opacity);
+}
+
+/* ---- vignette -------------------------------------------------------------
+   Corner falloff. `multiply` rather than a black wash at low alpha, so it darkens
+   the paper toward its own colour instead of greying it toward the same neutral
+   in both themes. */
+:root[data-fx~="vignette"] .fx-vignette {
+  display: block;
+  background-image: radial-gradient(ellipse at 50% 45%,
+    #fff var(--fx-vignette-start),
+    hsl(0 0% calc(100% - var(--fx-vignette-strength) * 100%)) 130%);
+  mix-blend-mode: multiply;
+}
+
+/* ---- halation -------------------------------------------------------------
+   The glow bright edges leave on film. Type gets it through a third text-shadow
+   in its own ink, pictures through drop-shadow in the same. Both are `currentColor`,
+   so it follows the theme without a second declaration: on white paper it is a
+   dark bloom that thickens the type, on black it is the light spill that makes a
+   negative look lit.
+
+   It restates the chroma shadows when both are on rather than appending to them,
+   because text-shadow is one property and the last declaration wins outright.
+
+   color-mix() rather than the relative-colour `rgb(from currentColor …)`, which
+   says the same thing more directly and shipped two years later in every engine.
+   This is decoration on a CV; it should degrade by not appearing, and it does —
+   an engine without color-mix drops the declaration and gets the page it would
+   have had anyway. */
+:root[data-fx~="halation"]:not([data-fx-no-text~="halation"]) .col,
+:root[data-fx~="halation"]:not([data-fx-no-text~="halation"]) .cut-title {
+  text-shadow: 0 0 var(--fx-halation-radius)
+    color-mix(in srgb, currentColor calc(var(--fx-halation-alpha) * 100%), transparent);
+}
+/* Both, in one declaration, because text-shadow does not accumulate across
+   rules. The two guards are what make that composable again: exclude either one
+   and this stops matching, leaving the other's own rule above to apply alone —
+   which it does, and correctly, because this selector outweighs both of them
+   only while both effects are actually wanted on the type. */
+:root[data-fx~="halation"]:not([data-fx-no-text~="halation"])[data-fx~="chroma"]:not([data-fx-no-text~="chroma"]) .col,
+:root[data-fx~="halation"]:not([data-fx-no-text~="halation"])[data-fx~="chroma"]:not([data-fx-no-text~="chroma"]) .cut-title {
+  text-shadow:
+    calc(-1 * var(--fx-chroma-x)) calc(-1 * var(--fx-chroma-y)) 0
+      rgba(255, 0, 0, var(--fx-chroma-alpha)),
+    var(--fx-chroma-x) var(--fx-chroma-y) 0
+      rgba(0, 255, 255, var(--fx-chroma-alpha)),
+    0 0 var(--fx-halation-radius)
+      color-mix(in srgb, currentColor calc(var(--fx-halation-alpha) * 100%), transparent);
+}
+
+/* ---- crt ------------------------------------------------------------------
+   Four things, because a tube is four things: the line structure, the shadow
+   mask behind it, the curvature of the glass, and the fact that none of it is
+   ever quite still.
+
+   The curve is the one that is a lie, and knowingly. A real tube bows the image
+   outward, which would mean warping the page — an SVG displacement map over the
+   whole document, a full-page filter region, and type resampled through it. What
+   is here instead is the tube's own FACE: rounded corners and a hard inner
+   shadow, drawn on the layer rather than on the content. At the strengths this
+   is used at, the corner and the falloff are what the eye reads as curvature
+   anyway; the geometry underneath stays sharp, selectable and straight. */
+:root[data-fx~="crt"] .fx-scan {
+  display: block;
+  background-image: repeating-linear-gradient(to bottom,
+    rgba(0, 0, 0, var(--fx-scan-alpha)) 0 1px,
+    transparent 1px var(--fx-scan-pitch));
+  mix-blend-mode: multiply;
+  animation: fx-flicker 0.14s steps(2, end) infinite;
+}
+:root[data-fx~="crt"] .fx-grille {
+  display: block;
+  /* Three phosphor stripes to a triad — the pitch is the triad, so each stripe
+     is a third of it. */
+  background-image: repeating-linear-gradient(to right,
+    rgba(255, 0, 0, var(--fx-grille-alpha)) 0 calc(var(--fx-grille-pitch) / 3),
+    rgba(0, 255, 0, var(--fx-grille-alpha)) calc(var(--fx-grille-pitch) / 3)
+                                            calc(var(--fx-grille-pitch) / 3 * 2),
+    rgba(0, 0, 255, var(--fx-grille-alpha)) calc(var(--fx-grille-pitch) / 3 * 2)
+                                            var(--fx-grille-pitch));
+  mix-blend-mode: screen;
+}
+:root[data-fx~="crt"] .fx-tube {
+  display: block;
+  border-radius: var(--fx-tube-curve);
+  box-shadow: inset 0 0 calc(var(--fx-tube-curve) * 4)
+                    calc(var(--fx-tube-curve) / 2)
+                    rgba(0, 0, 0, var(--fx-tube-alpha));
+  mix-blend-mode: multiply;
+}
+:root[data-fx~="crt"] .fx-roll {
+  display: block;
+  height: var(--fx-roll-height);
+  inset: auto 0 0 0;
+  background-image: linear-gradient(to bottom,
+    transparent, rgba(255, 255, 255, var(--fx-roll-alpha)) 50%, transparent);
+  mix-blend-mode: screen;
+  animation: fx-roll var(--fx-roll-period) linear infinite;
+}
+@keyframes fx-flicker {
+  0%   { opacity: 1 }
+  50%  { opacity: calc(1 - var(--fx-flicker)) }
+}
+@keyframes fx-roll {
+  from { transform: translateY(0) }
+  to   { transform: translateY(calc(-100vh - var(--fx-roll-height))) }
+}
+
+/* ---- weave ----------------------------------------------------------------
+   Gate weave: the film wandering in the gate. It moves the two texture layers
+   and nothing else — the type is printed, not projected, and sliding it would
+   be a different and much worse effect. steps(), because a gate jumps between
+   frames rather than easing between them.
+
+   This ships on, and with the film off the stack it is the PAPER that weaves,
+   which is why the numbers are not the pixel-or-two a gate would give: 20px is
+   a twentieth of the 384px tile, and at a five-step 4s period it reads as the
+   sheet settling rather than as a projector. Both were tuned against the paper.
+   Put the film back on and both want re-judging — a scratch is a singular mark
+   and jumps far more visibly than a wrapping fibre does.
+
+   LIGHT ONLY — see AN EFFECT THAT BELONGS TO ONE THEME below. The dark page's
+   paper carries a much harder bite at a much lower strength (0.06 through a
+   contrast of 8), and moving that field is the whole page appearing to breathe
+   rather than a sheet settling. `:not()` in the selector rather than an
+   `animation: none` override in the dark block, so there is one rule saying when
+   this runs instead of two that have to agree — and it is written as an
+   exception to the default because bare `:root` in this sheet IS light. */
+:root[data-fx~="weave"]:not([data-theme="dark"]) .fx-film,
+:root[data-fx~="weave"]:not([data-theme="dark"]) .fx-paper {
+  animation: fx-weave var(--fx-weave-period) steps(1, end) infinite;
+}
+@keyframes fx-weave {
+  0%   { transform: translate(0, 0) }
+  20%  { transform: translate(calc(var(--fx-weave-amount) * -0.6),
+                              calc(var(--fx-weave-amount) * 0.35)) }
+  40%  { transform: translate(calc(var(--fx-weave-amount) * 0.45),
+                              calc(var(--fx-weave-amount) * -0.5)) }
+  60%  { transform: translate(calc(var(--fx-weave-amount) * -0.25),
+                              calc(var(--fx-weave-amount) * -0.2)) }
+  80%  { transform: translate(calc(var(--fx-weave-amount) * 0.5),
+                              calc(var(--fx-weave-amount) * 0.45)) }
+}
+
+/* ---- ascii ----------------------------------------------------------------
+   The three corner pictures, redrawn as a field of characters by effects.js.
+   The canvas stands exactly where they do — same band, same z-index under the
+   type — and they are hidden while it is up, so this REPLACES the photographs
+   rather than sitting over them. That is the whole point: on a page whose one
+   ornament is a photograph and whose everything else is type, an ASCII pass
+   turns the ornament into type too.
+
+   It is the corner pictures and not the page. Rendering live text as ASCII means
+   rasterising the DOM, which means a library, a snapshot, and a page that is an
+   image — nothing selectable, no links, no carousel. The photographs are already
+   pixels, so this costs one canvas and leaves every word on the page a word. */
+.fx-ascii { display: none; }
+:root[data-fx~="ascii"] .fx-ascii {
+  display: block;
+  position: absolute;
+  top: 0;
+  left: 0;
+  /* `width: 100%`, and NOT `right: 0` like every other box in this sheet. A
+     canvas is a replaced element, so `width: auto` resolves to its own intrinsic
+     width — the `width` ATTRIBUTE — and the right offset is then dropped as
+     over-constrained. Which makes it a feedback loop rather than merely wrong,
+     because effects.js sets that attribute from the box it measures: the canvas
+     opens at its default 300px, is measured at 300, is set to 300, and each
+     redraw feeds its own last answer back in. On a 1440px page it had settled at
+     1800. */
+  width: 100%;
+  height: var(--fx-band);
+  z-index: -1;
+  pointer-events: none;
+  opacity: var(--fx-ascii-opacity);
+}
+/* The photographs stand down while their letters are up. */
+:root[data-fx~="ascii"] {
+  --plate-opacity: 0;
+  --car-opacity: 0;
+  --eye-opacity: 0;
 }
 
 /* ---- respect reduced-motion preferences ---------------------------------- */
 @media (prefers-reduced-motion: reduce) {
+  /* Every moving part of the stack, stopped. The still layers stay: a texture is
+     not motion, and turning the page's whole treatment off because someone is
+     sensitive to movement would be answering a question nobody asked. What goes
+     is the four things that actually travel — the grain, the gate weave, the
+     rolling bar and the tube's flicker. */
+  .fx-grain, .fx-film, .fx-paper, .fx-roll, .fx-scan { animation: none !important; }
   .js .page { animation: none; }
   /* The hold survives — waiting for the plate is not movement, and dropping it
      here would trade one animation for the picture appearing underneath the type
@@ -1892,5 +2866,10 @@ body::after {
      this page that would cost a print visibly more than it is worth. */
   body::after { display: none !important; }
   .loading { display: none !important; }     /* nor does a wait, once it is paper */
+  /* The whole effect stack, and for the same reason twice over: paper has its own
+     grain, and a scanline is a statement about a screen. The text-shadow halves —
+     chroma and halation — go with it; a printer would render them as a smear. */
+  .fx, .fx-ascii { display: none !important; }
+  .col, .cut-title { text-shadow: none !important; }
   .contact a { border: 0 !important; color: #000; }
 }

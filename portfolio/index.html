@@ -1,5 +1,40 @@
 <!doctype html>
-<html lang="en">
+<!-- data-fx is the effect stack, and it is written HERE rather than by
+     effects.js so the page opens already treated instead of flashing untreated
+     and then being decorated a script-load later. effects.js reads this as the
+     default and overrides it from ?fx= or from localStorage; THE EFFECT STACK in
+     styles.css is what each token does, and design/effects/effects-tuner.html is
+     where they are judged.
+     Four of the eleven ship on, and only two of them are layers: the halftone
+     screen and the paper. Those two are on in both themes.
+
+     THE OTHER TWO ARE THEME-SPECIFIC, and this attribute cannot say so — it is
+     one global stack by design, and it is in the markup precisely so the page
+     does not wait for a script, while the theme is not known until the boot
+     script below has read localStorage. So the stack names every effect the page
+     uses anywhere and the SHEET carries the theme, in the selector of the two
+     rules concerned: `weave` applies on light only, `chroma-pictures` on dark
+     only. AN EFFECT THAT BELONGS TO ONE THEME in styles.css is the whole of that
+     reasoning and the place to read before adding a third.
+
+     `weave` is not a layer of its own — it is the wander applied TO the film and
+     the paper, and with the film off the stack it is the paper alone that
+     drifts. `chroma-pictures` splits the three corner photographs red and cyan;
+     `chroma`, the half that splits the type, is off in both themes.
+
+     data-fx-no-text and data-fx-no-gallery go here too, and both are set to the
+     same three: they name the effects that are to be kept off the type and off
+     the carousel. `crt` is named in both while being off the stack, which is
+     deliberate rather than stale — the exclusion is a standing property of the
+     effect, so switching the tube on is a one-token change that does not also
+     have to remember these. They are attributes rather than another token
+     because they are a property OF an effect and not a twelfth one, and they
+     are read here for the same reason data-fx is — one place, no drift. What
+     they do is KEEPING A LAYER OFF THE TYPE in styles.css; the tuner writes
+     them. -->
+<html lang="en" data-fx="halftone paper weave chroma-pictures"
+      data-fx-no-text="halftone paper crt"
+      data-fx-no-gallery="halftone paper crt">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -69,7 +104,7 @@
          URL — see rungUrl below for what it is for. design/plate/build-plate.py
          prints the current value at the end of every run; paste it here whenever
          it differs from this one, in the same commit as the re-baked files. */
-      var IMG_VERSION = "87ec7077";
+      var IMG_VERSION = "cd5a41c7";
 
       /* One entry per picture, and `fill` is the only thing that separates them:
          the width it is drawn at as a share of the first screen. All three are
@@ -253,30 +288,13 @@
       }
     })();
   </script>
-  <link rel="stylesheet" href="styles.css?v=22">
-  <script>
-    /* ---- the cut title's real face, on this machine only --------------------
-       --serif-display leads with Friz Quadrata and every --cue-* number in the
-       stylesheet is derived for it, but nothing on the shipped page fetches it:
-       it is a commercial Adobe/ITC cut with no webfont licence, so serving it
-       from chrisj.uk would be redistribution. A reader without it installed
-       falls through to Sitka Banner and always has.
-       That also means the one face the title is tuned for is the one face the
-       author cannot see while tuning it. So on localhost — and only there — the
-       @font-face blocks in /fonts/friz-local.css are attached, which point at
-       the -fixedmetrics pair whose cap height is not a lie. Everywhere else
-       this does nothing at all, which is the point; see fonts/friz-local.css.
-       Appended after styles.css rather than written as a <link> above it so it
-       cannot delay the first paint of a page it is absent from in production. */
-    (function () {
-      var h = location.hostname;
-      if (h !== "localhost" && h !== "127.0.0.1" && h !== "[::1]") return;
-      var l = document.createElement("link");
-      l.rel = "stylesheet";
-      l.href = "/fonts/friz-local.css";
-      document.head.appendChild(l);
-    })();
-  </script>
+  <!-- The cut title has no face to fetch: the word is a picture of one, drawn
+       inline in the markup by app.js. So there is no second stylesheet here and
+       no display font anywhere in what this page loads — which is also why the
+       two things that used to sit at this line, an @font-face at the foot of
+       styles.css and a script that attached /fonts/friz-local.css on localhost
+       only, are both gone. See the cut title block in styles.css. -->
+  <link rel="stylesheet" href="styles.css?v=28">
 </head>
 <body>
   <!-- Only ever on screen while a corner picture is genuinely outstanding: it is
@@ -291,12 +309,95 @@
        and .eye blocks in styles.css, which say why the alternatives were worse. -->
   <div class="car"></div>
   <div class="eye"></div>
+  <!-- The three corner pictures redrawn as characters, when data-fx carries
+       `ascii`. It stands where they do — same band, same z-index under the type —
+       and they stand down while it is up. Empty until effects.js draws it; see
+       the ascii block in styles.css and drawAscii() in effects.js. -->
+  <canvas class="fx-ascii" aria-hidden="true"></canvas>
   <div class="page" id="page"></div>
   <!-- The second screen the cut title opens onto. Empty, and sized entirely in
        CSS: see the doorway block in styles.css. -->
   <div class="doorway"></div>
+  <!-- The effect stack: eight empty layers over the finished page, each one off
+       until its token appears in <html data-fx="...">. Order is paint order, and
+       it is the order the marks would really have arrived in — the sheet's own
+       tooth first, then what was printed on it, then what happened to the film,
+       then the screen it is being looked at through. THE EFFECT STACK in
+       styles.css has the whole of it. -->
+  <div class="fx" aria-hidden="true">
+    <div class="fx-paper"></div>
+    <div class="fx-halftone"></div>
+    <div class="fx-film"></div>
+    <div class="fx-grain"></div>
+    <div class="fx-grille"></div>
+    <div class="fx-scan"></div>
+    <div class="fx-roll"></div>
+    <div class="fx-tube"></div>
+    <div class="fx-vignette"></div>
+  </div>
+  <!-- The chromatic aberration, as an SVG filter, because CSS has no primitive
+       that splits a channel. It is inert until something references it, and only
+       the three corner pictures ever do — the type gets the same split from a
+       pair of text-shadows instead, which costs no compositing layer. See the
+       chroma block in styles.css for why, and effects.js for who writes the two
+       feOffset primitives' dx/dy and the two feGaussianBlur stdDeviations:
+       filter primitives take ATTRIBUTES, so no amount of custom property can
+       drive them. The numbers come from --fx-chroma-pic-*, which is the
+       pictures' own set — the type's --fx-chroma-* reach nothing in here.
+
+       The two channels are pulled apart in opposite directions and the green is
+       left where it is, which is what a prism does to a white edge. They are
+       recombined by adding, not by alpha-compositing, so a pixel that was
+       neutral before the split is neutral after it and only the edges — where
+       one channel has moved off the other — carry colour. -->
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+    <filter id="fx-chroma" color-interpolation-filters="sRGB"
+            x="-2%" y="-2%" width="104%" height="104%">
+      <feColorMatrix type="matrix" in="SourceGraphic" result="fx-r"
+        values="1 0 0 0 0
+                0 0 0 0 0
+                0 0 0 0 0
+                0 0 0 1 0"/>
+      <feColorMatrix type="matrix" in="SourceGraphic" result="fx-g"
+        values="0 0 0 0 0
+                0 1 0 0 0
+                0 0 0 0 0
+                0 0 0 1 0"/>
+      <feColorMatrix type="matrix" in="SourceGraphic" result="fx-b"
+        values="0 0 0 0 0
+                0 0 0 0 0
+                0 0 1 0 0
+                0 0 0 1 0"/>
+      <feOffset in="fx-r" dx="0" dy="0" result="fx-r-off" id="fx-chroma-r"/>
+      <feOffset in="fx-b" dx="0" dy="0" result="fx-b-off" id="fx-chroma-b"/>
+      <!-- The moved channels go soft and the green does not, which is the half
+           of chromatic aberration a text-shadow cannot imitate: a lens that
+           cannot focus three wavelengths on one plane also cannot focus them to
+           one sharpness. stdDeviation 0 is an exact no-op, and it is what ships
+           — this is a control the tuner can reach, not a change to the page. -->
+      <feGaussianBlur in="fx-r-off" stdDeviation="0" result="fx-r-soft" id="fx-chroma-r-blur"/>
+      <feGaussianBlur in="fx-b-off" stdDeviation="0" result="fx-b-soft" id="fx-chroma-b-blur"/>
+      <feComposite in="fx-r-soft" in2="fx-g" operator="arithmetic"
+                   k1="0" k2="1" k3="1" k4="0" result="fx-rg"/>
+      <feComposite in="fx-rg" in2="fx-b-soft" operator="arithmetic"
+                   k1="0" k2="1" k3="1" k4="0"/>
+    </filter>
+  </svg>
   <noscript><p style="text-align:center;font-family:'Sitka Text',Charter,'Iowan Old Style',Georgia,serif;padding:2rem">This site needs JavaScript enabled.</p></noscript>
   <script src="content.js?v=3"></script>
-  <script src="app.js?v=19"></script>
+  <script src="app.js?v=22"></script>
+  <!-- Last, and after app.js rather than beside it: the effect stack is a
+       treatment of a finished page, and drawAscii() measures the corner pictures
+       against a layout that has to exist first. It is also the one script here
+       the page is whole without — nothing below depends on it, and a browser
+       that never runs it gets the CV, the photographs and the cut title exactly
+       as they were before any of this. -->
+  <script src="effects.js?v=3"></script>
+  <!-- The cut title's morph, and last for the same reason: it needs the word
+       app.js has already put on the page, and the page is whole without it. It
+       only ever replaces one <svg>'s contents, so a browser that skips it —
+       blocked, errored, or asking for reduced motion — keeps the baked Friz
+       path exactly as it is inline. -->
+  <script src="cut-morph.js?v=3"></script>
 </body>
 </html>

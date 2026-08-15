@@ -346,12 +346,17 @@ var GOOGLE = HOSTED.concat(DHOSTED);
 /* The faces /fonts serves, which the export must NOT flag as borrowed: picking
    one of these is picking something already hosted. Two sources behind them —
    the three serifs come with the portfolio page's own stylesheet, the Latin
-   Modern cuts and Friz Quadrata from /fonts/fonts.css — but the frame ends up
-   with all eight and the distinction stops mattering here. They are preloaded
-   for the same reason GOOGLE is: see loadFace. */
+   Modern cuts from /fonts/fonts.css — but the frame ends up with all seven and
+   the distinction stops mattering here. They are preloaded for the same reason
+   GOOGLE is: see loadFace.
+   Friz Quadrata Std was an eighth and is deliberately NOT here any more: the
+   files were deleted from /fonts when the cut title stopped being type (see
+   fonts/README.md). It survives in the DISPLAY list below as a candidate like
+   any other retail face — a machine with a desktop copy will still render it —
+   but picking it is now picking something this site does not host, and the
+   export is right to say so. */
 var SELF = ["Vollkorn", "Spectral", "Source Serif 4",
-            "Latin Modern Roman", "LM Roman 8", "LM Roman 9", "LM Roman 12",
-            "Friz Quadrata Std"];
+            "Latin Modern Roman", "LM Roman 8", "LM Roman 9", "LM Roman 12"];
 
 var STACKS = [
   ["Vollkorn (body, ships)",        'Vollkorn, "Sitka Text", Charter, "Iowan Old Style", Georgia, serif'],
@@ -411,19 +416,30 @@ var LEAD  = STACKS[3][1];
    long alphabet, because the choice being made here is which REGISTER the word
    belongs to; the faces inside a band are variations on one answer.
 
-   The first entry is what styles.css declares today, character for character —
-   the sheet wraps it across two lines, this is the same value on one. */
+   NOTHING IN THIS GROUP DRIVES THE SHIPPED PAGE ANY MORE. The cut title is no
+   longer type: styles.css declares no --serif-display, no --cue-size and no
+   --cue-track, because the word is a baked SVG path — see the cut title section
+   of portfolio/styles.css and design/cut-title/build-cut-title.py. What this
+   group is still good for is the question it was built to answer, which is
+   which FACE the word should be set in; the answer is now handed to the build
+   script rather than to the stylesheet. Read the sliders below as "what would
+   I bake", not as "what is live".
+
+   The first entry is what styles.css declared when the word was still type,
+   character for character — the sheet wrapped it across two lines, this is the
+   same value on one. It is also the face the picture is baked from. */
 var FRIZ = '"Friz Quadrata", "Friz Quadrata Std", "ITC Friz Quadrata", "Sitka Banner", Constantia, Georgia, serif';
 
 /* What styles.css declared BEFORE Friz, kept as a row because it is the state
-   every --cue-* number would be reverted to if the face were abandoned, and
-   because a tool that can only show the current answer cannot show it is an
-   answer. Reverting means this stack AND --cue-size 25.32, --cue-track -0.012,
-   --cue-cap 4.187rem together — the three are one decision, not three knobs. */
+   every --cue-* number would have been reverted to if the face had been
+   abandoned as type, and because a tool that can only show the current answer
+   cannot show it is an answer. Reverting meant this stack AND --cue-size 25.32,
+   --cue-track -0.012, --cue-cap 4.187rem together — one decision, not three
+   knobs. */
 var OGG = '"Ogg Roman", "Ogg", Didot, "Bodoni MT", "Big Caslon", "Sitka Banner", Constantia, Georgia, serif';
 
 var DISPLAY = [
-  ["Friz → Sitka Banner (ships)", FRIZ],
+  ["Friz → Sitka Banner (baked)", FRIZ],
   ["Ogg → Sitka Banner (was)",    OGG],
 
   /* The two retail faces, asked for on their own rather than at the head of a
@@ -680,7 +696,7 @@ var GROUPS = [
   { name: "PROJECTS — the cut title", rows: [
     { sel: ":root", prop: "--serif-display", kind: "font", stacks: DISPLAY, def: FRIZ,
       label: "display face", hi: ".cut-title > a", hiLine: true,
-      tip: "Its own list, not the body one: fifty-odd faces judged on eight capitals with two thirds of each one cut away, which is a different question from what reads well at 15px.\nFriz Quadrata is what the stylesheet names and what every number below is derived for. It is a commercial Adobe/ITC cut with no webfont licence, so it is NOT served: a reader without it installed gets the tail of the stack, which ends at Sitka Banner. This tool sees it because /fonts/fonts.css declares it locally." },
+      tip: "Its own list, not the body one: fifty-odd faces judged on eight capitals with two thirds of each one cut away, which is a different question from what reads well at 15px.\nFriz Quadrata is what the stylesheet names and what every number below is derived for. It is served: portfolio/styles.css declares the regular itself, and this tool sees the same file because /fonts/fonts.css declares it too." },
 
     { sel: ":root", prop: "--cue-size", unit: "cqw", def: 22.95, min: 6, max: 60, step: 0.01,
       label: "word size", hi: ".cut-title > a", hiLine: true,
@@ -1317,8 +1333,9 @@ var FACES = [
   /* One design under three names — the /fonts webfont calls itself "Friz Quadrata
      Std", a desktop install may be either of the others. Identical outlines measure
      identically, so this test cannot tell them apart and will report whichever
-     comes first here; "Std" leads because that is the one this repo actually
-     serves, and the other two only appear on a machine that already had the font.
+     comes first here; "Std" leads because that was the name this repo served
+     back when it served the face at all. It no longer does — all three now only
+     appear on a machine that already had the font installed.
      Std and the ITC name both precede the bare one, per the prefix rule above. */
   "Friz Quadrata Std", "ITC Friz Quadrata", "Friz Quadrata",
   "EB Garamond",
