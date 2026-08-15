@@ -26,10 +26,18 @@ const SHOTS = resolve(HERE, "..", "shots");
 
 /* ---- the matrix ---------------------------------------------------------- */
 const ALL_VARIANTS = ["asis", "cm", "cm-swap", "cmfix", "cm-all", "hybrid", "georgia-all", "sitka"];
+/* `projects` is a SECTION now, not a page. #71 retired /projects and the wall of
+   cards that was there; what the name means is the Panel at the foot of
+   /portfolio, so the entry points at the fragment and CLIP below cuts the shot
+   down to the section rather than handing back the whole portfolio page. */
 const PAGES = {
-  projects:  "/projects/",
+  projects:  "/portfolio/#projects",
   portfolio: "/portfolio/",
   portal:    "/"
+};
+/* Pages whose shot is one element rather than the whole document. */
+const CLIP = {
+  projects: "#projects"
 };
 const VIEWPORTS = {
   desktop: { width: 1280, height: 900 },
@@ -52,17 +60,24 @@ const opt = args(process.argv.slice(2));
 const list = (v, fallback) => (v ? v.split(",").map((s) => s.trim()).filter(Boolean) : fallback);
 
 const variants  = list(opt.variants, ALL_VARIANTS);
-const pageKeys  = list(opt.pages, ["projects", "portfolio"]);
+/* `projects` is off the default list, and not because it is dead — it is the
+   Panel, and the Panel is set in Host Grotesk and painted from its own --panel-*
+   palette, so not one of the eight variants or two themes reaches it. Rendering
+   it by default would be sixteen copies of the same picture. Ask for it by name
+   when the section is what changed: --pages projects --viewports desktop,mobile */
+const pageKeys  = list(opt.pages, ["portfolio"]);
 const themes    = list(opt.themes, ["light", "dark"]);
 const viewKeys  = list(opt.viewports, ["desktop"]);
 const scale     = Number(opt.scale || 2);
 const format    = (opt.format || "auto").toLowerCase();
 const quality   = Number(opt.quality || 92);
 
-/* Pick the codec that actually wins for the content. The projects and portal
-   pages are flat colour and line art, where PNG beats JPEG outright (399 KB vs
-   477 KB measured). The portfolio page carries photographs, where JPEG wins by
-   more than 3x (345 KB vs 1161 KB). "auto" is therefore the sane default. */
+/* Pick the codec that actually wins for the content. The portal page and the
+   projects Panel are flat colour and type, where PNG beats JPEG outright (399 KB
+   vs 477 KB measured on the old card wall, and the Panel is flatter still — its
+   Frame is a placeholder, not a photograph). The portfolio page carries
+   photographs, where JPEG wins by more than 3x (345 KB vs 1161 KB). "auto" is
+   therefore the sane default. */
 const PHOTO_PAGES = new Set(["portfolio"]);
 const formatFor = (pageKey) =>
   format === "auto" ? (PHOTO_PAGES.has(pageKey) ? "jpeg" : "png") : format;
@@ -155,7 +170,9 @@ async function capture(page, origin, pagePath, variant, theme) {
       "LM Roman 9": w('"LM Roman 9"'), "LM Roman 8": w('"LM Roman 8"'),
       "Sitka Text": w('"Sitka Text"')
     };
-    const sel = document.querySelector(".card__desc") ? ".card__desc" : ".intro p + p, .intro .lead, body";
+    /* `.card__desc` was the projects wall's body copy and went with it in #71.
+       The fallback is what every remaining page probes. */
+    const sel = ".intro p + p, .intro .lead, body";
     const el = document.querySelector(sel) || document.body;
     const cs = getComputedStyle(el);
     const width = w(cs.fontFamily);
@@ -236,11 +253,14 @@ for (const viewport of viewKeys) {
         const ext = formatFor(pageKey);
         const name = `${pageKey}__${variant}__${theme}__${viewport}.${ext}`;
         const info = await capture(page, origin, PAGES[pageKey], variant, theme);
-        await page.screenshot({
+        const shot = {
           path: join(SHOTS, name),
-          fullPage: true,
           ...(ext === "jpeg" ? { type: "jpeg", quality } : { type: "png" })
-        });
+        };
+        /* A clipped key shoots the element; everything else shoots the document.
+           `fullPage` is not a locator option and would be ignored if passed. */
+        if (CLIP[pageKey]) await page.locator(CLIP[pageKey]).screenshot(shot);
+        else await page.screenshot({ ...shot, fullPage: true });
         const bytes = (await stat(join(SHOTS, name))).size;
         rows.push({ page: pageKey, variant, theme, viewport, file: name, ...info });
         console.log(`  [${String(++n).padStart(String(total).length)}/${total}] ${name}` +

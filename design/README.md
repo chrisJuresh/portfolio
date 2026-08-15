@@ -16,8 +16,10 @@ year column is **Source Serif 4**, and all three are self-hosted from
 [`/fonts`](../fonts/README.md) rather than named and hoped for. The italic lead is
 still Georgia. The Sitka chain survives as the tail every one of those stacks
 falls back to, so a blocked font request lands on a screen serif instead of on
-Times. `/projects` is still Sitka. Sizes did not move: Vollkorn's x-height is 4%
-under Sitka's and Spectral's 6%, and the faces were chosen at these sizes.
+Times. `/projects` was still Sitka until #71 retired the page altogether; that
+half of the comparison now has no live subject. Sizes did not move: Vollkorn's
+x-height is 4% under Sitka's and Spectral's 6%, and the faces were chosen at
+these sizes.
 
 Nothing here re-runs that decision — the variants and the shots are the
 Sitka-era comparison, kept as it was judged. What follows says where each of them
@@ -74,7 +76,9 @@ Worth knowing before judging any variant, because the answer is "less than you'd
 think" — which is why shipping the fonts changes the portfolio page so little.
 
 **`projects/styles.css`** — `--serif` is set on `body`, so **every** word on the
-page is meant to be Computer Modern. Nothing on that page is Georgia.
+page is meant to be Computer Modern. Nothing on that page is Georgia. (That file
+and that page are gone since #71 — this row is left as written because the whole
+of this section is the record of a comparison that was run against them.)
 
 **`portfolio/styles.css`** — only these, via `--serif-label` / `--serif-body`
 (the year column has had `--serif-num` of its own since, and is Source Serif 4
@@ -131,7 +135,7 @@ old-style too.
 | `cm-all` | Real CM everywhere, including the slots that hard-code Georgia. |
 | `hybrid` | CM for titles, names and labels; Georgia for prose. |
 | `georgia-all` | Georgia everywhere; Computer Modern abandoned. |
-| `sitka` | Sitka Text / Charter, with years and lead in Georgia. Most legible, least portable (Windows-only). **Won the comparison; still what `/projects` ships.** |
+| `sitka` | Sitka Text / Charter, with years and lead in Georgia. Most legible, least portable (Windows-only). **Won the comparison, and shipped on `/projects` until #71 retired that page.** |
 
 Every variant pins all four font variables, including `--serif-num` and
 `--serif-lead`. That is not decoration: those two did not exist when most of these
@@ -158,7 +162,7 @@ Serve the **repo root** (`run.bat`), then open:
 http://localhost:8000/design/type-lab.html
 ```
 
-It loads the real `/projects/`, `/portfolio/` or `/` in an iframe and injects
+It loads the real `/portfolio/` or `/` in an iframe and injects
 `variants.css` — so it works even though the portfolio page builds its entire DOM
 from `content.js` at runtime, and it can never drift from the live pages.
 
@@ -554,13 +558,21 @@ node render.mjs --scale 1.5              # ~44% smaller files
 node render.mjs --format jpeg --quality 85
 ```
 
-Defaults: all 8 variants x projects+portfolio x light+dark x desktop = 32 shots
-at `deviceScaleFactor: 2`, about 11 MB.
+Defaults: all 8 variants x portfolio x light+dark x desktop = 16 shots
+at `deviceScaleFactor: 2`.
+
+`projects` is still a `--pages` key but is no longer a default. Since #71 it
+names the Projects **Panel** at the foot of `/portfolio` rather than a page of
+its own, and the shot is clipped to that section — but the Panel is set in Host
+Grotesk from its own palette, so no variant and no theme reaches it and rendering
+it by default would write sixteen copies of one picture. Ask for it by name when
+the section is what changed, and across viewports, which is the axis it does move
+on: `--pages projects --viewports desktop,tablet,mobile`.
 
 `--format auto` (the default) picks the codec per page, which is worth doing:
-the projects page is flat colour and line art where PNG wins (399 KB vs 477 KB),
-the portfolio page carries photographs where JPEG wins by more than 3x (345 KB
-vs 1161 KB).
+the portal page and the projects Panel are flat colour and type where PNG wins
+(399 KB vs 477 KB, measured on the old card wall), the portfolio page carries
+photographs where JPEG wins by more than 3x (345 KB vs 1161 KB).
 
 Shots are deterministic — animations and transitions are disabled, the carousel
 fades are pinned, `reducedMotion` is on and lazy images are scrolled in — so
@@ -572,8 +584,9 @@ than on every tweak.
 
 `variants.css` is a lab artifact, not a patch. To adopt one:
 
-1. Point `--serif` (projects) and `--serif-label` / `--serif-body` /
-   `--serif-num` / `--serif-lead` (portfolio) at the variant's stacks.
+1. Point `--serif-label` / `--serif-body` / `--serif-num` / `--serif-lead` at the
+   variant's stacks. (There was a `--serif` on `/projects` too; that page went in
+   #71, so `portfolio/styles.css` is the only target left.)
 2. **If the face is not a system face, host it first.** A variant renders in the
    lab off `/fonts/fonts.css` or off a Google request the tuner makes; neither is
    true of the deployed site, so promoting one without hosting it sets the whole
@@ -581,9 +594,10 @@ than on every tweak.
    following the recipe in [`../fonts/README.md`](../fonts/README.md), declare
    only the cuts the CSS actually asks for, and add the long-cache header for
    `/fonts/` — `vercel.json` already carries it.
-3. Copy that variant's per-element rules into `projects/styles.css` and
-   `portfolio/styles.css`, dropping the `:root[data-variant="…"]` prefixes.
-4. Bump the `?v=` on both `styles.css` links so cached copies don't survive.
+3. Copy that variant's per-element rules into `portfolio/styles.css`, dropping
+   the `:root[data-variant="…"]` prefixes. Its `.card__*` rules have no subject
+   any more and are not copied anywhere.
+4. Bump the `?v=` on the `styles.css` link so cached copies don't survive.
 5. Update the `(ships)` entries and the four font-row defaults in
    `type-tuner.html` — the tuner's drift banner will tell you if you forget.
 6. Re-run the renderer to confirm the live pages now match the chosen shot.

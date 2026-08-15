@@ -1,6 +1,10 @@
 #!/usr/bin/env python3
 """Rebuild projects/og.jpg — the social preview card for /projects.
 
+NOTHING LINKS IT SINCE #71, which retired /projects to a redirect. The card and
+this builder both still work; there is simply no page naming them. See
+design/og/README.md.
+
     python design/og/build-og.py
 
 Reads design/og/og-source.png (never deployed; .vercelignore excludes design/)
@@ -385,7 +389,8 @@ def main() -> int:
     print(f"wrote {os.path.relpath(OUTPUT, REPO)}  "
           f"{OUT_SIZE[0]}x{OUT_SIZE[1]}  {os.path.getsize(OUTPUT) / 1024:.1f} KB  "
           f"progressive JPEG q{JPEG_QUALITY} 4:4:4")
-    print("\nIf the text changed, update og:image:alt in projects/index.html to match.")
+    print("\nNo page references this card since #71 retired /projects — there is no "
+          "og:image:alt left to keep in step with it.")
     return 0
 
 

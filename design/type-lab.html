@@ -66,29 +66,36 @@
     ["cm-all",      "real CM everywhere, including the slots that hard-code Georgia"],
     ["hybrid",      "CM for titles, names and labels; Georgia for prose"],
     ["georgia-all", "Georgia everywhere, Computer Modern abandoned"],
-    ["sitka",       "WON, and still on /projects — Sitka Text, years and lead in Georgia; screen-cut, but Windows-only"]
+    ["sitka",       "WON, and shipped on /projects until that page was retired — Sitka Text, years and lead in Georgia; screen-cut, but Windows-only"]
   ];
   /* /portfolio has moved past every variant here: it is Vollkorn, Spectral and
      Source Serif 4, self-hosted, arrived at in the tuner rather than the lab.
      Flipping to `sitka` on that page is a comparison against the face it used to
      be set in, at the sizes it still uses — not a mirror of it. See README.md. */
-  var PAGES  = [["/projects/", "projects"], ["/portfolio/", "portfolio"], ["/", "portal"]];
+  /* Two pages, and there used to be three: /projects was retired in #71 and the
+     route now redirects, which an iframe would follow straight back to
+     /portfolio — so the entry is gone rather than repointed. The variants still
+     carry that page's rules; they simply match nothing now. Its shots are in
+     shots/ if the comparison is ever wanted again. */
+  var PAGES  = [["/portfolio/", "portfolio"], ["/", "portal"]];
   var WIDTHS = [[1280, "desktop"], [820, "tablet"], [390, "mobile"]];
 
   /* Which selectors are worth reporting on differs per page. */
   var PROBES = {
-    "/projects/":  [".card__title", ".card__desc", ".card__tags li"],
     "/portfolio/": [".name", ".intro p + p", ".item .line", ".item .when"],
     "/":           ["a", "body"]
   };
 
   var q = new URLSearchParams(location.search);
   var state = {
-    page:    q.get("page")  || "/projects/",
+    page:    q.get("page")  || "/portfolio/",
     variant: q.get("v")     || "asis",
     theme:   q.get("theme") === "dark" ? "dark" : "light",
     width:   parseInt(q.get("w"), 10) || 1280
   };
+  /* Every view here is linkable, so links to ?page=/projects/ exist and outlive
+     the page they name. Fall back rather than frame a 404. */
+  if (!PAGES.some(function (p) { return p[0] === state.page; })) state.page = PAGES[0][0];
 
   var frame = document.getElementById("frame");
 
