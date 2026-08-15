@@ -237,6 +237,20 @@ const server = http.createServer(async (req, res) => {
   }
 });
 
+/* A review left running in another terminal is the likely cause, and the review
+   is the one thing here that holds unsaved work — so this says so rather than
+   throwing a listen stack, and above all does not suggest killing the process
+   that may be holding a half-finished pass. */
+server.on("error", (error) => {
+  if (error.code === "EADDRINUSE") {
+    console.error(`error: something is already listening on 127.0.0.1:${port}.`);
+    console.error("       if it is another review, use that tab — its decisions are only in the page");
+    console.error(`       and are lost if it is closed. Otherwise: --port ${port + 1}`);
+    process.exit(1);
+  }
+  throw error;
+});
+
 await resolveIds();
 server.listen(port, "127.0.0.1", () => {
   console.log(`review surface   http://127.0.0.1:${port}/`);
