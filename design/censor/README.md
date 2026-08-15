@@ -75,11 +75,21 @@ python design/censor/mosaic.py
 ```
 
 Fetches each confirmed photograph's renditions from the vault and writes an
-obscured copy of each into `mosaic/`, reduced to six blocks across the shorter
-side and blown back up — so a 153px grid tile is roughly four blocks by six.
-Gitignored: it is a derivative of the photographs the list is about, and what
-ships is the finished clip. `--check` says whether what is on disk still covers
-the list as signed.
+obscured copy of each into `mosaic/`, reduced to **four blocks across the shorter
+side** and blown back up — so a 153px grid tile is four blocks by five, each
+about 38px. That is the coarseness the shipped clip was signed off at, arrived at
+by looking: the first cut was baked at six and re-baked coarser after the contact
+sheet. Gitignored, because it is a derivative of the photographs the list is
+about and what ships is the finished clip. `--check` says whether what is on disk
+still covers the list as signed.
+
+`--blocks` moves it, and **only downwards without an argument**: `mosaic.py`
+refuses to bake finer than eight and `capture-origin.mjs` refuses to serve a bake
+that came in above it. That ceiling is there because coarseness is the one
+property nothing downstream can check — every other guard here compares a digest,
+and a digest agrees with whatever it was taken over however fine. Coarser is
+always allowed; there is no floor, and an empty rectangle would satisfy every
+automated check in this folder.
 
 **5. Serve the capture origin, and check it.**
 
@@ -93,7 +103,8 @@ The origin stands in front of the vault and serves the baked mosaic wherever the
 vault would serve a confirmed photograph, so nothing downstream of it — the
 browser included — is ever sent an unobscured one. It also seeds stacking, which
 is the other half of what it exists for; see below. It refuses to start against
-an unsigned list, a list signed against a different roll, or a stale bake.
+an unsigned list, a list signed against a different roll, a stale bake, or one
+baked finer than the ceiling above.
 
 The two checks are both needed and neither implies the other. `collect-roll
 --check` asks whether the roll still describes the live grid; `check-capture-origin`
