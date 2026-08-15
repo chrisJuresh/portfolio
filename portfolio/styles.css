@@ -1691,6 +1691,23 @@ body::after {
      > > span    .visually-hidden, and the only text in here. */
 .cut-title {
   container-type: inline-size;
+  /* POSITIONED HERE, WITH NO OFFSETS, AND ONLY SO THAT NOTHING ELSE HAS TO
+     POSITION IT. `relative` with all four insets auto lays this out exactly
+     where `static` would; what it buys is that the element already takes a
+     z-index, so the effect stack's exclusion lift can give it one without
+     writing `position` of its own. That matters because .cut-title is the one
+     lifted block that IS positioned in a regime — `absolute`, pinned to the
+     fold, in the one-screen block at the end of this sheet — and the lift's
+     selector outweighs that rule three classes to one. It once wrote
+     `position: relative` for all four blocks together and won: the word came
+     out of its corner, took `top: 100vh` as a RELATIVE offset (a screen down
+     the page, on top of where the flow had already put it), took its width
+     from the flow instead of from the two insets — 1382px of picture where 316
+     was wanted — and, being back in .page's flow, added its height to the
+     document and broke the two-screen snap.
+     The one-screen rule stays authoritative because it is later in the sheet at
+     equal specificity; see the note above that media query. */
+  position: relative;
   width: 100%;
   max-width: var(--col);                 /* sized and centred exactly like .col */
   margin: var(--cue-gap) auto 0;
@@ -2291,14 +2308,24 @@ body::after {
    their declaration simply not being written, a few rules below, and need no
    lift — and `z-index: auto` leaves these in tree order under the whole stack,
    which is where they started. An invalid value here would instead make the
-   whole declaration unset and take `position: relative` with it. */
+   whole declaration unset and take `position: relative` with it.
+
+   THE LIFT NEVER WRITES `position` ON .cut-title, and that is why it is on the
+   second selector rather than the first. Three of these four are static and
+   need positioning before a z-index means anything; the fourth is `absolute` in
+   the one-screen regime, and this selector — two attributes and a class against
+   that rule's bare class — outweighs it. Writing `relative` here therefore did
+   not add a stacking context to the cut title, it MOVED it: out of the corner,
+   with `top: 100vh` re-read as a relative offset and the width taken from the
+   flow rather than from the two insets. So .cut-title positions itself instead,
+   in its own block above, and all this has left to do is the number. */
 :root[data-fx-no-text] .masthead,
 :root[data-fx-no-text] .intro,
-:root[data-fx-no-text] .listing,
-:root[data-fx-no-text] .cut-title {
+:root[data-fx-no-text] .listing {
   position: relative;
   z-index: var(--fx-text-z);
 }
+:root[data-fx-no-text] .cut-title { z-index: var(--fx-text-z); }
 :root[data-fx-no-gallery] .carousel,
 :root[data-fx-no-gallery] .cbar {
   position: relative;
