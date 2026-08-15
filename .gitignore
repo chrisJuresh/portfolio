@@ -41,6 +41,20 @@ photos/
 # blanket *.png would take those with it.
 /*.png
 
+# the two Texturelabs plates the effect stack is baked from — 9MB and 12MB, and
+# handed to design/effects/build-textures.py by path from the repo root, so they
+# land here the way an RW2 does. What ships is portfolio/img/tex/, which IS
+# committed. There is a licence reason as well as a size one: texturelabs.org
+# asks that the source files not be redistributed as textures, and a baked,
+# cut-down, blended derivative is a different thing from the original asset.
+# Attribution is in portfolio/img/tex/README.md.
+/Texturelabs_*.jpg
+
+# ...and the 2x2 lay-up build-textures.py writes beside the paper tile so its
+# seams can be looked at rather than taken on trust. A diagnostic, rebuilt on
+# every run, and nothing serves it.
+portfolio/img/tex/paper-seam-proof.png
+
 # secrets — never commit
 .env
 .env.*

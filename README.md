@@ -44,6 +44,17 @@ statically from Vercel.
   whichever state you're tuning.
   The fades lift on hover or keyboard focus, and switch off entirely on
   narrow viewports where they would obscure the photos.
+- **An effect stack, on a switch.** Ten optical treatments over the finished
+  page — two baked textures, chromatic aberration, moving grain, a halftone
+  screen, vignette, halation, gate weave, a CRT tube, and an ASCII pass that
+  redraws the three corner photographs as a field of characters. Each is a token
+  in `<html data-fx="…">` and each is off unless its token is there; three ship
+  on. Add `?fx=film paper` to the URL to see any combination, or `?fx=` for the
+  page underneath. Almost all of it is CSS — the layers are composited quads, and
+  the only things that animate are off by default. The textures are baked by
+  `design/effects/build-textures.py` and tuned in `design/effects/effects-tuner.html`.
+  The trick that makes one asset serve both themes is in **THE LEVELS STAGE** in
+  `portfolio/styles.css`.
 - **Flash-free dark mode.** An inline script applies the saved or OS theme
   before first paint. The site follows OS theme changes until you make an
   explicit choice with the toggle, which is then remembered in
@@ -71,8 +82,10 @@ statically from Vercel.
 │   ├── index.html      # page shell: meta tags, pre-paint theme bootstrap
 │   ├── content.js      # ALL portfolio content — the only file you edit
 │   ├── app.js          # renders content.js and runs the carousel + theme
+│   ├── effects.js      # the effect stack's runtime half — optional, loaded last
 │   ├── styles.css      # layout, warm light/dark palettes, fades, print CV
 │   └── img/            # web-optimised photographs
+│       └── tex/        # the two baked textures — see its README
 ├── projects/           # the project wall at /projects
 │   ├── index.html      # the cards themselves, written by hand
 │   ├── app.js          # theme bootstrap only — no rendering

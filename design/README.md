@@ -38,6 +38,10 @@ design/
     car-source.json    top-right corner
     eye-source.webp    and for the third, in the bottom-right. One pipeline over
     eye-source.json    all three; a Grade per picture per theme.
+  effects/
+    build-textures.py    bakes the two Texturelabs plates into portfolio/img/tex/
+    effects-tuner.html   interactive: every effect on chips, every number on a
+                         slider, over the real page — CSS export, per theme
   tools/
     render.mjs       Playwright: serves the repo, walks the matrix, writes shots/
     package.json     dev dependency (playwright) — not the site's
@@ -447,6 +451,70 @@ at the roofline is subject-to-page and not subject-to-sky. It matters far more
 for a supplied matte than a computed one — a hand-cut edge can be a quarter of
 the frame of soft alpha, every pixel of it still wearing the sky, against the
 pixel or two a computed matte leaves.
+
+## Effects tuner
+
+For the ten treatments laid over the finished page — the two Texturelabs
+textures, the chromatic aberration, the grain, the halftone screen, the vignette,
+the halation, the gate weave, the CRT tube and the ASCII pass. Serve the repo
+root (`run.bat`) and open:
+
+```
+http://localhost:8000/design/effects/effects-tuner.html
+```
+
+The same trick as the type tuner — the real `/portfolio` in an iframe, driven
+through the seam `portfolio/effects.js` exposes as `window.portfolioFx`, so
+nothing is cloned and it cannot drift from the page. Chips at the top turn
+effects on and off, and the four that ship on are marked with a dot so "what a
+visitor sees" stays legible after an hour of dragging. Groups for effects that
+are off are dimmed rather than hidden, so the panel does not jump every time a
+chip is pressed.
+
+Two things separate it from the other two tuners:
+
+- **No defaults table, and so no drift banner.** The type tuner has to declare
+  its defaults because computed style only reports pixels and can never say the
+  source wrote `0.78rem`. This one gets them free: a custom property comes back
+  from `getComputedStyle` as the tokens it was DECLARED with, and every row here
+  is declared in `styles.css` as a plain literal — `0.14`, `9px`, `multiply`,
+  never a calc or a var. So the defaults are read off the sheet on load. What
+  keeps that honest is a check rather than a table: anything that fails to parse
+  as a literal is named in a banner, which is what would happen if a row were
+  ever rewritten as an expression.
+- **Eight rows are held per theme.** The film's and the paper's levels stages —
+  strength, blend, lift, contrast, and the film's invert — are declared once in
+  `:root` and again in `:root[data-theme="dark"]`, because this page's two papers
+  are `#fff` and `#000` and one set cannot serve both. They are marked `*`,
+  probed per theme, and the export puts each half in the right block. Everything
+  else is shared and exports once. Flipping the theme clears every inline
+  override first, or a number set while looking at light would follow you into
+  dark and hide what dark actually ships.
+
+**The levels stage is the thing to understand before moving anything.** Both
+textures are baked centred on mid-grey, and `overlay` and `soft-light` — what a
+texture overlay usually is — are exact no-ops at both `#fff` and `#000`. Blended
+that way the textures would have shown up on the photographs and the type and
+nowhere else. So the flat field is moved onto the endpoint instead, with
+`filter: brightness(B) contrast(C)`, and the blend is chosen to clip the half
+that cannot show: `multiply` on white, `screen` on black. `C × (B − 1) = ±1` is
+the relation that lands the field exactly on the endpoint, and the shipped
+numbers satisfy it on both themes with the same detail gain. Move `lift` and
+`contrast` together along it; break it deliberately and the field starts tinting
+the page, which is how you get stock that is not quite white. Full reasoning is
+in THE LEVELS STAGE in `portfolio/styles.css`.
+
+Changing a texture itself — not how it is blended, but what it contains — means
+re-running the bake, which is the same division as the plate tuner's:
+
+```bash
+python design/effects/build-textures.py all
+```
+
+It needs the two XL JPEGs at the repo root; they are gitignored, and
+`portfolio/img/tex/README.md` says where they come from and how they are
+attributed. Paste the `TEX_VERSION` it prints over the `?v=` on `--fx-film-src`
+and `--fx-paper-src` in the same commit as the re-baked files.
 
 ## Regenerating the shots
 

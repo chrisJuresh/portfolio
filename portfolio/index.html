@@ -1,5 +1,14 @@
 <!doctype html>
-<html lang="en">
+<!-- data-fx is the effect stack, and it is written HERE rather than by
+     effects.js so the page opens already treated instead of flashing untreated
+     and then being decorated a script-load later. effects.js reads this as the
+     default and overrides it from ?fx= or from localStorage; THE EFFECT STACK in
+     styles.css is what each token does, and design/effects/effects-tuner.html is
+     where they are judged.
+     Three of the eleven ship on. `chroma` splits the type and `chroma-pictures`
+     splits the three corner photographs — two tokens because they are two
+     decisions, one of which costs a compositing layer per picture. -->
+<html lang="en" data-fx="film paper chroma chroma-pictures">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -259,7 +268,7 @@
        two things that used to sit at this line, an @font-face at the foot of
        styles.css and a script that attached /fonts/friz-local.css on localhost
        only, are both gone. See the cut title block in styles.css. -->
-  <link rel="stylesheet" href="styles.css?v=24">
+  <link rel="stylesheet" href="styles.css?v=25">
 </head>
 <body>
   <!-- Only ever on screen while a corner picture is genuinely outstanding: it is
@@ -274,12 +283,80 @@
        and .eye blocks in styles.css, which say why the alternatives were worse. -->
   <div class="car"></div>
   <div class="eye"></div>
+  <!-- The three corner pictures redrawn as characters, when data-fx carries
+       `ascii`. It stands where they do — same band, same z-index under the type —
+       and they stand down while it is up. Empty until effects.js draws it; see
+       the ascii block in styles.css and drawAscii() in effects.js. -->
+  <canvas class="fx-ascii" aria-hidden="true"></canvas>
   <div class="page" id="page"></div>
   <!-- The second screen the cut title opens onto. Empty, and sized entirely in
        CSS: see the doorway block in styles.css. -->
   <div class="doorway"></div>
+  <!-- The effect stack: eight empty layers over the finished page, each one off
+       until its token appears in <html data-fx="...">. Order is paint order, and
+       it is the order the marks would really have arrived in — the sheet's own
+       tooth first, then what was printed on it, then what happened to the film,
+       then the screen it is being looked at through. THE EFFECT STACK in
+       styles.css has the whole of it. -->
+  <div class="fx" aria-hidden="true">
+    <div class="fx-paper"></div>
+    <div class="fx-halftone"></div>
+    <div class="fx-film"></div>
+    <div class="fx-grain"></div>
+    <div class="fx-grille"></div>
+    <div class="fx-scan"></div>
+    <div class="fx-roll"></div>
+    <div class="fx-tube"></div>
+    <div class="fx-vignette"></div>
+  </div>
+  <!-- The chromatic aberration, as an SVG filter, because CSS has no primitive
+       that splits a channel. It is inert until something references it, and only
+       the three corner pictures ever do — the type gets the same split from a
+       pair of text-shadows instead, which costs no compositing layer. See the
+       chroma block in styles.css for why, and effects.js for who writes the two
+       feOffset primitives' dx/dy: filter primitives take ATTRIBUTES, so no
+       amount of custom property can drive them.
+
+       The two channels are pulled apart in opposite directions and the green is
+       left where it is, which is what a prism does to a white edge. They are
+       recombined by adding, not by alpha-compositing, so a pixel that was
+       neutral before the split is neutral after it and only the edges — where
+       one channel has moved off the other — carry colour. -->
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+    <filter id="fx-chroma" color-interpolation-filters="sRGB"
+            x="-2%" y="-2%" width="104%" height="104%">
+      <feColorMatrix type="matrix" in="SourceGraphic" result="fx-r"
+        values="1 0 0 0 0
+                0 0 0 0 0
+                0 0 0 0 0
+                0 0 0 1 0"/>
+      <feColorMatrix type="matrix" in="SourceGraphic" result="fx-g"
+        values="0 0 0 0 0
+                0 1 0 0 0
+                0 0 0 0 0
+                0 0 0 1 0"/>
+      <feColorMatrix type="matrix" in="SourceGraphic" result="fx-b"
+        values="0 0 0 0 0
+                0 0 0 0 0
+                0 0 1 0 0
+                0 0 0 1 0"/>
+      <feOffset in="fx-r" dx="0" dy="0" result="fx-r-off" id="fx-chroma-r"/>
+      <feOffset in="fx-b" dx="0" dy="0" result="fx-b-off" id="fx-chroma-b"/>
+      <feComposite in="fx-r-off" in2="fx-g" operator="arithmetic"
+                   k1="0" k2="1" k3="1" k4="0" result="fx-rg"/>
+      <feComposite in="fx-rg" in2="fx-b-off" operator="arithmetic"
+                   k1="0" k2="1" k3="1" k4="0"/>
+    </filter>
+  </svg>
   <noscript><p style="text-align:center;font-family:'Sitka Text',Charter,'Iowan Old Style',Georgia,serif;padding:2rem">This site needs JavaScript enabled.</p></noscript>
   <script src="content.js?v=3"></script>
   <script src="app.js?v=20"></script>
+  <!-- Last, and after app.js rather than beside it: the effect stack is a
+       treatment of a finished page, and drawAscii() measures the corner pictures
+       against a layout that has to exist first. It is also the one script here
+       the page is whole without — nothing below depends on it, and a browser
+       that never runs it gets the CV, the photographs and the cut title exactly
+       as they were before any of this. -->
+  <script src="effects.js?v=1"></script>
 </body>
 </html>
