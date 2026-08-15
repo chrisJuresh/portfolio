@@ -1839,8 +1839,630 @@ body::after {
   }
 }
 
+/* ============================================================================
+   THE EFFECT STACK
+   ============================================================================
+   Ten optical treatments laid over the finished page, each one a token in
+   `<html data-fx="...">` and each one off unless the token is there. Three ship
+   on — film, paper, chroma — and the rest are built, wired and dormant. portfolio/
+   effects.js owns the attribute; design/effects/effects-tuner.html is where the
+   numbers below were arrived at and is the only sane way to move them.
+
+   WHY AN ATTRIBUTE AND NOT SEVEN CLASSES
+   `[data-fx~="film"]` matches a space-separated token, which is the same test a
+   class does, with one difference that decides it: the whole state is ONE
+   attribute, so the tuner sets it in one write, the export is one line, and there
+   is no way to end up in a half-applied state between two classList calls. It
+   also keeps the page's class attribute for what it already means there — `js`
+   and `plate-wait`, which are load states rather than settings.
+
+   WHERE THE STACK ENDS, AND WHY THAT IS THE FOLD
+   Every layer is `--fx-band` tall, which is --fold less --fx-y: the bottom of
+   the screen you open, before any scrolling. That is not an arbitrary stopping
+   place, it is the line all three corner pictures already stop on — see
+   --plate-band, and .car and .eye, all measured off the same --fold. The
+   pictures are the page's stock and the effects are what has happened TO that
+   stock, so the two have to end together; a wash that carried on past the fold
+   would be laid over blank paper and would read as a filter on a browser window
+   rather than as a treatment of a print.
+
+   The doorway below the fold is therefore untouched, deliberately. It is the
+   clean sheet the cut title opens onto.
+
+   --fx-fade softens that ending over the last stretch of the band. It defaults
+   to 0, because the pictures themselves stop dead there and an effect layer that
+   dissolved out above a photograph that does not would draw attention to exactly
+   the line it was trying to hide.
+
+   BLENDING, AND THE ONE THING THAT WOULD BREAK IT
+   Every layer blends with what is under it rather than painting over it, and
+   what is under it has to include the page's own background for that to mean
+   anything. body's background propagates to the canvas — see the corner plate
+   block, which depends on that too — and the canvas is part of the root
+   stacking context, so a blended layer here sees the paper. What would break
+   that is `isolation: isolate` or a `filter` on body or on .fx: either makes a
+   new blending group whose backdrop starts transparent, and every `overlay` and
+   `soft-light` below would silently become a no-op. Filters here go on the
+   LAYERS, never on their container.
+
+   Both texture assets leave design/effects/build-textures.py centred on mid-grey
+   for this reason: `overlay` and `soft-light` are exact no-ops at 128, so the
+   flat field of each texture costs the page nothing and only the marks land.
+   That is also what makes opacity an honest strength control — it mixes toward
+   128, which is toward nothing, rather than toward grey paint — and it is why
+   neither asset needs a second, inverted cut for the dark theme.
+
+   WHAT THIS COSTS
+   Each live layer is one composited quad. The two that ship as pictures are a
+   single decode each and no per-frame work; --fx-grain, --fx-roll and the CRT
+   flicker are the only things here that animate, and all three are off by
+   default. The stack is `pointer-events: none` throughout and carries no text,
+   so nothing here is selectable, focusable or in the accessibility tree. */
+
+:root {
+  /* Where the stack stops. --fx-y is the twin of --plate-y and moves the foot of
+     every layer at once; --fx-fade is how far above that foot the dissolve
+     starts, as a share of the band. */
+  --fx-y: 0px;
+  --fx-band: calc(var(--fold) - var(--fx-y));
+  --fx-fade: 0;
+
+  /* ---- film: Texturelabs 185XL, one frame over the whole band --------------
+     Scratches, dust and halation blooms, band-passed to mid-grey. Never tiled —
+     see the film section of build-textures.py for why a frame of singular marks
+     must not repeat.
+
+     image-set() rather than a rung picked in script, and the difference from
+     index.html's corner pictures is real rather than laziness: those are drawn
+     at a size that varies with the window, so only measurement can say which
+     rung they need, while this one is always exactly the viewport and density is
+     the whole question. CSS can answer that on its own.
+
+     ?v= is the digest build-textures.py prints. Same job as index.html's
+     IMG_VERSION and the same reason — the filename does not change when the
+     bytes do, and vercel.json caches this directory for a day. */
+  --fx-film-src: image-set(url("img/tex/film-1600.webp?v=7202d31c") 1x,
+                           url("img/tex/film-2600.webp?v=7202d31c") 2x);
+  --fx-film-strength: 0.14;
+  --fx-film-blend: multiply;
+  --fx-film-zoom: 1;      /* about the centre; >1 crops in on the frame       */
+  /* The levels stage — see THE LEVELS STAGE below. --fx-film-invert is the one
+     of the three that is not shared with the paper, and it is what makes a
+     scratch read: the marks on this plate are BRIGHT, white lines on a nearly
+     black emulsion, and on white paper the bright half of a multiply layer is
+     clipped away to nothing. Inverted, they print as dark lines on white — which
+     is not a trick to get them visible but what actually happens when a
+     scratched negative is printed. On black the plate is left the way it was
+     shot, because there the negative is what you are looking at. */
+  --fx-film-invert: 1;
+  --fx-film-lift: 1.5;
+  --fx-film-contrast: 2;
+
+  /* ---- paper: Texturelabs 349XL, high-passed and tiled ---------------------
+     A 512px square that wraps in both axes, drawn at --fx-paper-size CSS pixels.
+     Below 512 it scales the fibre DOWN, which is the direction that matters: the
+     source sheet's grain is about 4px across at 1:1 and reads as a wall rather
+     than as paper next to 15px type. The bake already took a 2048px crop down to
+     512; this takes it the rest of the way by eye.
+
+     Anything is a valid size — the tile wraps, so there is no rung to land on —
+     but sizes near a whole fraction of 512 resample most cleanly. */
+  --fx-paper-src: image-set(url("img/tex/paper-512.webp?v=7202d31c") 1x,
+                            url("img/tex/paper-1024.webp?v=7202d31c") 2x);
+  --fx-paper-size: 320px;
+  --fx-paper-strength: 0.22;
+  --fx-paper-blend: multiply;
+  --fx-paper-invert: 0;
+  --fx-paper-lift: 1.5;
+  --fx-paper-contrast: 2;
+
+  /* ---- THE LEVELS STAGE ----------------------------------------------------
+     Both textures go through `filter: invert(i) brightness(B) contrast(C)`
+     before they blend, and those three are the whole of the levels dialog the
+     texture would otherwise have needed baking into it. Written in this order
+     because CSS applies a filter list left to right, so the affine part is
+
+         out = C * (B * in - 0.5) + 0.5
+
+     which is a gain of B*C on the detail and a pivot that MOVES — and the moving
+     pivot is the point. `contrast()` alone can only stretch about mid-grey, and
+     mid-grey is exactly where this page cannot use it.
+
+     WHY NOT `overlay`, WHICH IS WHAT A TEXTURE OVERLAY USUALLY IS
+     Because this page's two papers are #fff and #000, and those are the two
+     fixed points of `overlay` and `soft-light` alike: both are exact no-ops at
+     either end. A mid-grey-centred texture blended that way over pure white
+     leaves pure white — correctly, and uselessly. The texture would have shown
+     up on the photographs and the type and nowhere else, which is the opposite
+     of a treatment of the page.
+
+     So the field is moved to the endpoint instead, and the blend is chosen to
+     clip the half that cannot show:
+
+       * light theme — the flat field is lifted onto WHITE and blended
+         `multiply`. White multiplies to nothing, so the field is invisible and
+         the paper stays paper; only the detail below it prints. Nothing can be
+         brighter than the paper, so the half of the texture that would have
+         tried is clipped, which is also true of ink.
+       * dark theme — the field is pushed onto BLACK and blended `screen`, and
+         everything above reads in the mirror.
+
+     Solve `out = 0` or `1` at `in = 0.5` and both come out as one relation:
+
+         C * (B - 1) = +1   puts the field on white
+         C * (B - 1) = -1   puts the field on black
+
+     which is why the shipped numbers are (1.5, 2) on light and (0.75, 4) on
+     dark. Both satisfy it, and both have the same detail gain B*C = 3, so the
+     two themes carry the same amount of texture rather than merely both having
+     some. Move B and C together along that relation to change how hard the
+     detail bites; break the relation deliberately and the flat field starts
+     tinting the page, which is a legitimate thing to want and is how you get
+     stock that is not quite white.
+
+     --fx-*-strength is then the honest amount control on top: it fades the
+     detail toward the paper without moving the field off its endpoint. */
+
+  /* ---- chroma: lateral chromatic aberration -------------------------------
+     A red/cyan split, on the pictures through an SVG filter and on the type
+     through a pair of text-shadows. Two mechanisms because the two want
+     different things: a filter rasterises whatever it is given, and rasterising
+     the CV's type to offset it costs a compositing layer over the one part of
+     the page that scrolls and re-renders. A text-shadow costs nothing, inherits,
+     and at these offsets is indistinguishable from the filter.
+
+     LATERAL, not radial. Real lens aberration grows from the optical centre
+     outward, and doing that needs a per-channel scale that SVG filters have no
+     primitive for — feDisplacementMap with a baked radial map is the usual
+     dodge, and it costs an asset, a second decode and a filter region the size
+     of the page to buy a gradient nobody looks for at 0.6px. What is here is one
+     offset at one angle, which is what a prism does and what the effect is
+     recognised as.
+
+     effects.js writes --fx-chroma-x/-y onto the filter's feOffset primitives:
+     SVG filter primitives take attributes, not CSS properties, so nothing else
+     can make the two halves move together. */
+  --fx-chroma-x: 0.6px;
+  --fx-chroma-y: 0px;
+  --fx-chroma-alpha: 0.5;
+
+  /* ---- everything below here is off unless its token is in data-fx --------- */
+
+  --fx-grain-opacity: 0.055;    /* animated grain, over the static film        */
+  --fx-grain-size: 180px;       /* the noise tile, drawn small                 */
+  --fx-grain-fps: 12;
+
+  --fx-halftone-pitch: 3.4px;   /* dot to dot                                  */
+  --fx-halftone-dot: 0.34;      /* the dot's radius as a share of the pitch    */
+  --fx-halftone-angle: 45deg;   /* the screen angle a printer would use        */
+  --fx-halftone-opacity: 0.5;
+  --fx-halftone-blend: overlay;
+
+  --fx-vignette-start: 55%;     /* where the corner darkening begins           */
+  --fx-vignette-strength: 0.3;
+
+  --fx-halation-radius: 6px;    /* the glow around type and pictures           */
+  --fx-halation-alpha: 0.22;
+
+  --fx-scan-pitch: 3px;         /* CRT: scanline to scanline                   */
+  --fx-scan-alpha: 0.28;
+  --fx-grille-pitch: 3px;       /* CRT: the RGB aperture grille                */
+  --fx-grille-alpha: 0.16;
+  --fx-tube-curve: 1.4rem;      /* the radius of the tube's own corners        */
+  --fx-tube-alpha: 0.5;
+  --fx-flicker: 0.03;           /* how far the whole tube's brightness wanders */
+  --fx-roll-height: 14%;        /* the bar that rolls up the screen            */
+  --fx-roll-alpha: 0.05;
+  --fx-roll-period: 7s;
+
+  --fx-ascii-cell: 9px;         /* the character cell, in CSS pixels           */
+  --fx-ascii-contrast: 1.25;
+  --fx-ascii-opacity: 0.4;
+  --fx-ascii-invert: 0;
+
+  --fx-weave-amount: 3px;       /* gate weave: how far the film wanders        */
+  --fx-weave-period: 0.9s;
+}
+
+/* The stack itself. Absolute in body's coordinates, as the corner pictures are,
+   and above the type rather than under it: this is a treatment laid ON the
+   printed page. It is the one thing on the page with a positive z-index and it
+   is inert — no pointer events, nothing focusable, aria-hidden in the markup. */
+.fx {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: var(--fx-band);
+  pointer-events: none;
+  overflow: hidden;
+  /* NO z-index, and this is the load-bearing line in the block rather than an
+     omission. `z-index: 2` was here first and it broke the entire stack in a way
+     that looks exactly like the strengths being too high: an element with a
+     z-index makes a stacking context, Chrome treats a stacking context as an
+     ISOLATED group, and an isolated group hands every blending child a
+     transparent backdrop instead of the page. `overlay` and `soft-light` are
+     no-ops over white, so correctly blended these layers leave #fff paper at
+     exactly #fff — and with the z-index in, a bare patch of paper measured
+     182 of 255 under the film alone. The layers had stopped blending and started
+     painting, and every number below would have been tuned around that.
+     `isolation: isolate` and a `mask` on this element do the same thing for the
+     same reason. None of the three belongs here — masks go on the layers, where
+     an element's own mask is applied before the blend and is harmless.
+
+     Nothing is lost. .fx is the last positioned element in the body, so with
+     z-index auto it paints after .page and .doorway on DOM order alone, which is
+     the whole of what the 2 was buying.
+
+     If this stack ever looks like a flat grey wash again, measure a bare patch of
+     paper before touching a strength. */
+}
+/* Every layer fills the stack and every one is off until its token appears.
+   `display: none` rather than zero opacity, so a layer that is off costs no
+   decode, no composited quad and no paint. */
+.fx > * {
+  display: none;
+  position: absolute;
+  inset: 0;
+}
+/* The dissolve at the foot, when --fx-fade is not 0. On each LAYER and not on
+   .fx, which is where it was first written and where it silently broke the whole
+   stack: a mask makes its element an isolated group, and an isolated group hands
+   every blending child a transparent backdrop instead of the page. `overlay` and
+   `soft-light` are no-ops over white, so with the mask on the container the two
+   texture layers stopped blending and started PAINTING — the page came out
+   uniformly grey in proportion to their opacity, which reads as "the strength is
+   too high" rather than as "the blend is not happening", and is the reason this
+   comment is longer than the rule.
+   A mask on the blending element itself is fine and is what this is: the layer
+   is rendered through its own mask, and the result is then blended with the
+   backdrop. Only a mask BETWEEN the blenders and the backdrop isolates.
+
+   Every layer is the same box, so one declaration inherited through .fx > *
+   cannot let them disagree about where the stack ends — which was the only thing
+   the container version was buying. */
+.fx > * {
+  mask-image: linear-gradient(to bottom,
+    #000 calc(100% - var(--fx-fade) * var(--fx-band)),
+    transparent 100%);
+}
+
+:root[data-fx~="film"] .fx-film {
+  display: block;
+  background-image: var(--fx-film-src);
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  /* `scale` and not `transform`, so --fx-weave below can have the transform to
+     itself and the two do not have to be written as one value. */
+  scale: var(--fx-film-zoom);
+  filter: invert(var(--fx-film-invert))
+          brightness(var(--fx-film-lift))
+          contrast(var(--fx-film-contrast));
+  mix-blend-mode: var(--fx-film-blend);
+  opacity: var(--fx-film-strength);
+}
+
+:root[data-fx~="paper"] .fx-paper {
+  display: block;
+  background-image: var(--fx-paper-src);
+  background-size: var(--fx-paper-size) var(--fx-paper-size);
+  background-repeat: repeat;
+  filter: invert(var(--fx-paper-invert))
+          brightness(var(--fx-paper-lift))
+          contrast(var(--fx-paper-contrast));
+  mix-blend-mode: var(--fx-paper-blend);
+  opacity: var(--fx-paper-strength);
+}
+
+/* The other end of the relation. Declared here rather than in the palette block
+   at the top of the sheet for the same reason the whole stack is in one place —
+   and this is the third thing in the file that is stated twice per theme, after
+   --plate-opacity and the baked grade itself. */
+:root[data-theme="dark"] {
+  --fx-film-invert: 0;
+  --fx-film-lift: 0.75;
+  --fx-film-contrast: 4;
+  --fx-film-blend: screen;
+  --fx-film-strength: 0.18;
+
+  --fx-paper-lift: 0.75;
+  --fx-paper-contrast: 4;
+  --fx-paper-blend: screen;
+  --fx-paper-strength: 0.4;
+}
+
+/* ---- the film, on a small screen ------------------------------------------
+   The film is one frame under `cover`, so a narrow window does not see a
+   smaller picture — it sees LESS of the same one. At 1440x900 the frame is
+   drawn 1440 wide and every mark on the plate is somewhere on the page; at
+   390x844 it is drawn 1134 wide and cropped to a third of that, so four or five
+   scratches and one halation bloom are sharing the whole screen with the CV.
+   The marks have not grown; the page has shrunk under them, and the same 0.14
+   that reads as a print at desktop width reads as a dirty scan on a phone.
+
+   So this is a strength correction and not a scale one. Scaling the frame down
+   to fit more of it in would make the marks smaller than they are anywhere else
+   and stop it being a photograph of a piece of film.
+
+   The paper is untouched, and the difference is the point: it is a tile at a
+   fixed size in CSS pixels, so it looks the same on every screen and needs no
+   correction. Two textures, two behaviours, one of which needed this and one of
+   which did not.
+
+   700px rather than the 1100px gate the rest of the sheet uses — that one is
+   about whether the composition fits a screen, which is a different question
+   from how much of a photograph is on it. */
+@media (max-width: 700px) {
+  :root { --fx-film-strength: 0.07; }
+  :root[data-theme="dark"] { --fx-film-strength: 0.09; }
+}
+
+/* ---- chroma ---------------------------------------------------------------
+   The type half. It inherits, so it is set once on the two roots that between
+   them carry every word on the page, and the shadows land behind glyphs that are
+   opaque — so all that shows is the sliver either side, which is the fringe.
+
+   Pure red and pure cyan because they are complements: where the two shadows
+   overlap behind a glyph's own body they sum to neutral, so the effect is
+   confined to the edges by construction rather than by choosing a small enough
+   alpha. */
+:root[data-fx~="chroma"] .col,
+:root[data-fx~="chroma"] .cut-title {
+  text-shadow:
+    calc(-1 * var(--fx-chroma-x)) calc(-1 * var(--fx-chroma-y)) 0
+      rgba(255, 0, 0, var(--fx-chroma-alpha)),
+    var(--fx-chroma-x) var(--fx-chroma-y) 0
+      rgba(0, 255, 255, var(--fx-chroma-alpha));
+}
+/* The picture half. The filter is defined inline in index.html; effects.js
+   writes both its feOffset attributes and --fx-chroma-url, and the URL is not
+   busywork — this page carries `<base href="/portfolio/">`, and a filter
+   reference is resolved against the base like any other URL, so a bare
+   `url(#fx-chroma)` becomes `/portfolio/#fx-chroma`. That names the current
+   document only when the page was reached WITH the trailing slash. Reached as
+   `/portfolio` it names a different document, the lookup fails, and the three
+   corner pictures lose their filter — silently, and only on one of the two URLs
+   the site answers on. effects.js builds the reference off `location` instead,
+   so it is right on both.
+
+   It is a token of its own rather than a number, because it is a different
+   decision from the split's size: at --plate-opacity of 0.12 a 0.6px fringe on a
+   photograph is close to unmeasurable, and paying a compositing layer per
+   picture for it is worth being able to decline while the type keeps the
+   split. */
+:root[data-fx~="chroma-pictures"] body::after,
+:root[data-fx~="chroma-pictures"] .car,
+:root[data-fx~="chroma-pictures"] .eye {
+  filter: var(--fx-chroma-url, none);
+}
+
+/* ---- grain ----------------------------------------------------------------
+   Moving grain over the still film. effects.js draws one square of white noise
+   to a canvas at boot and hands it here as a data URI, so there is no asset:
+   the tile is procedural, and an asset would be a request and a cache entry for
+   something a browser can make in half a millisecond.
+
+   It moves by jumping its own background-position on a steps() timeline rather
+   than by redrawing — twelve positions a second off one static tile, which is
+   what film grain looks like and costs one composited quad instead of a canvas
+   repaint per frame. */
+:root[data-fx~="grain"] .fx-grain {
+  display: block;
+  background-image: var(--fx-grain-src, none);
+  background-size: var(--fx-grain-size) var(--fx-grain-size);
+  background-repeat: repeat;
+  mix-blend-mode: overlay;
+  opacity: var(--fx-grain-opacity);
+  /* Eight positions in the keyframes below, so a cycle of 8/fps seconds spends
+     exactly 1/fps on each. --fx-grain-fps is therefore the real frame rate and
+     not a scaling factor with a name. */
+  animation: fx-grain-shift calc(8s / var(--fx-grain-fps)) steps(1, end) infinite;
+}
+@keyframes fx-grain-shift {
+  0%    { background-position:   0     0   }
+  12.5% { background-position: -13px  27px }
+  25%   { background-position:  31px -19px }
+  37.5% { background-position: -41px -37px }
+  50%   { background-position:  23px  43px }
+  62.5% { background-position: -29px  11px }
+  75%   { background-position:  47px -31px }
+  87.5% { background-position: -17px -43px }
+}
+
+/* ---- halftone -------------------------------------------------------------
+   A dot screen at a printer's angle. The dots are one size rather than growing
+   and shrinking with the tone under them — a true amplitude-modulated screen
+   needs to know what it is sitting on, which nothing in CSS does — but `overlay`
+   gets most of the way there for nothing: it multiplies in the dark half of the
+   page and screens in the light half, so the dots bite in the ink and all but
+   vanish in the paper, which is the behaviour that reads as a screen. */
+:root[data-fx~="halftone"] .fx-halftone {
+  display: block;
+  background-image: radial-gradient(circle at 50% 50%,
+    #000 0 calc(var(--fx-halftone-dot) * var(--fx-halftone-pitch)),
+    #fff calc(var(--fx-halftone-dot) * var(--fx-halftone-pitch) + 0.5px));
+  background-size: var(--fx-halftone-pitch) var(--fx-halftone-pitch);
+  /* Rotated about the centre and oversized to 150% so the corners of the band
+     stay covered at any angle — sqrt(2) is 1.415, and 1.5 leaves a margin. */
+  width: 150%;
+  height: 150%;
+  inset: -25%;
+  rotate: var(--fx-halftone-angle);
+  mix-blend-mode: var(--fx-halftone-blend);
+  opacity: var(--fx-halftone-opacity);
+}
+
+/* ---- vignette -------------------------------------------------------------
+   Corner falloff. `multiply` rather than a black wash at low alpha, so it darkens
+   the paper toward its own colour instead of greying it toward the same neutral
+   in both themes. */
+:root[data-fx~="vignette"] .fx-vignette {
+  display: block;
+  background-image: radial-gradient(ellipse at 50% 45%,
+    #fff var(--fx-vignette-start),
+    hsl(0 0% calc(100% - var(--fx-vignette-strength) * 100%)) 130%);
+  mix-blend-mode: multiply;
+}
+
+/* ---- halation -------------------------------------------------------------
+   The glow bright edges leave on film. Type gets it through a third text-shadow
+   in its own ink, pictures through drop-shadow in the same. Both are `currentColor`,
+   so it follows the theme without a second declaration: on white paper it is a
+   dark bloom that thickens the type, on black it is the light spill that makes a
+   negative look lit.
+
+   It restates the chroma shadows when both are on rather than appending to them,
+   because text-shadow is one property and the last declaration wins outright.
+
+   color-mix() rather than the relative-colour `rgb(from currentColor …)`, which
+   says the same thing more directly and shipped two years later in every engine.
+   This is decoration on a CV; it should degrade by not appearing, and it does —
+   an engine without color-mix drops the declaration and gets the page it would
+   have had anyway. */
+:root[data-fx~="halation"] .col,
+:root[data-fx~="halation"] .cut-title {
+  text-shadow: 0 0 var(--fx-halation-radius)
+    color-mix(in srgb, currentColor calc(var(--fx-halation-alpha) * 100%), transparent);
+}
+:root[data-fx~="halation"][data-fx~="chroma"] .col,
+:root[data-fx~="halation"][data-fx~="chroma"] .cut-title {
+  text-shadow:
+    calc(-1 * var(--fx-chroma-x)) calc(-1 * var(--fx-chroma-y)) 0
+      rgba(255, 0, 0, var(--fx-chroma-alpha)),
+    var(--fx-chroma-x) var(--fx-chroma-y) 0
+      rgba(0, 255, 255, var(--fx-chroma-alpha)),
+    0 0 var(--fx-halation-radius)
+      color-mix(in srgb, currentColor calc(var(--fx-halation-alpha) * 100%), transparent);
+}
+
+/* ---- crt ------------------------------------------------------------------
+   Four things, because a tube is four things: the line structure, the shadow
+   mask behind it, the curvature of the glass, and the fact that none of it is
+   ever quite still.
+
+   The curve is the one that is a lie, and knowingly. A real tube bows the image
+   outward, which would mean warping the page — an SVG displacement map over the
+   whole document, a full-page filter region, and type resampled through it. What
+   is here instead is the tube's own FACE: rounded corners and a hard inner
+   shadow, drawn on the layer rather than on the content. At the strengths this
+   is used at, the corner and the falloff are what the eye reads as curvature
+   anyway; the geometry underneath stays sharp, selectable and straight. */
+:root[data-fx~="crt"] .fx-scan {
+  display: block;
+  background-image: repeating-linear-gradient(to bottom,
+    rgba(0, 0, 0, var(--fx-scan-alpha)) 0 1px,
+    transparent 1px var(--fx-scan-pitch));
+  mix-blend-mode: multiply;
+  animation: fx-flicker 0.14s steps(2, end) infinite;
+}
+:root[data-fx~="crt"] .fx-grille {
+  display: block;
+  /* Three phosphor stripes to a triad — the pitch is the triad, so each stripe
+     is a third of it. */
+  background-image: repeating-linear-gradient(to right,
+    rgba(255, 0, 0, var(--fx-grille-alpha)) 0 calc(var(--fx-grille-pitch) / 3),
+    rgba(0, 255, 0, var(--fx-grille-alpha)) calc(var(--fx-grille-pitch) / 3)
+                                            calc(var(--fx-grille-pitch) / 3 * 2),
+    rgba(0, 0, 255, var(--fx-grille-alpha)) calc(var(--fx-grille-pitch) / 3 * 2)
+                                            var(--fx-grille-pitch));
+  mix-blend-mode: screen;
+}
+:root[data-fx~="crt"] .fx-tube {
+  display: block;
+  border-radius: var(--fx-tube-curve);
+  box-shadow: inset 0 0 calc(var(--fx-tube-curve) * 4)
+                    calc(var(--fx-tube-curve) / 2)
+                    rgba(0, 0, 0, var(--fx-tube-alpha));
+  mix-blend-mode: multiply;
+}
+:root[data-fx~="crt"] .fx-roll {
+  display: block;
+  height: var(--fx-roll-height);
+  inset: auto 0 0 0;
+  background-image: linear-gradient(to bottom,
+    transparent, rgba(255, 255, 255, var(--fx-roll-alpha)) 50%, transparent);
+  mix-blend-mode: screen;
+  animation: fx-roll var(--fx-roll-period) linear infinite;
+}
+@keyframes fx-flicker {
+  0%   { opacity: 1 }
+  50%  { opacity: calc(1 - var(--fx-flicker)) }
+}
+@keyframes fx-roll {
+  from { transform: translateY(0) }
+  to   { transform: translateY(calc(-100vh - var(--fx-roll-height))) }
+}
+
+/* ---- weave ----------------------------------------------------------------
+   Gate weave: the film wandering in the gate, a pixel or two, several times a
+   second. It moves the two texture layers and nothing else — the type is
+   printed, not projected, and sliding it would be a different and much worse
+   effect. steps(), because a gate jumps between frames rather than easing
+   between them. */
+:root[data-fx~="weave"] .fx-film,
+:root[data-fx~="weave"] .fx-paper {
+  animation: fx-weave var(--fx-weave-period) steps(1, end) infinite;
+}
+@keyframes fx-weave {
+  0%   { transform: translate(0, 0) }
+  20%  { transform: translate(calc(var(--fx-weave-amount) * -0.6),
+                              calc(var(--fx-weave-amount) * 0.35)) }
+  40%  { transform: translate(calc(var(--fx-weave-amount) * 0.45),
+                              calc(var(--fx-weave-amount) * -0.5)) }
+  60%  { transform: translate(calc(var(--fx-weave-amount) * -0.25),
+                              calc(var(--fx-weave-amount) * -0.2)) }
+  80%  { transform: translate(calc(var(--fx-weave-amount) * 0.5),
+                              calc(var(--fx-weave-amount) * 0.45)) }
+}
+
+/* ---- ascii ----------------------------------------------------------------
+   The three corner pictures, redrawn as a field of characters by effects.js.
+   The canvas stands exactly where they do — same band, same z-index under the
+   type — and they are hidden while it is up, so this REPLACES the photographs
+   rather than sitting over them. That is the whole point: on a page whose one
+   ornament is a photograph and whose everything else is type, an ASCII pass
+   turns the ornament into type too.
+
+   It is the corner pictures and not the page. Rendering live text as ASCII means
+   rasterising the DOM, which means a library, a snapshot, and a page that is an
+   image — nothing selectable, no links, no carousel. The photographs are already
+   pixels, so this costs one canvas and leaves every word on the page a word. */
+.fx-ascii { display: none; }
+:root[data-fx~="ascii"] .fx-ascii {
+  display: block;
+  position: absolute;
+  top: 0;
+  left: 0;
+  /* `width: 100%`, and NOT `right: 0` like every other box in this sheet. A
+     canvas is a replaced element, so `width: auto` resolves to its own intrinsic
+     width — the `width` ATTRIBUTE — and the right offset is then dropped as
+     over-constrained. Which makes it a feedback loop rather than merely wrong,
+     because effects.js sets that attribute from the box it measures: the canvas
+     opens at its default 300px, is measured at 300, is set to 300, and each
+     redraw feeds its own last answer back in. On a 1440px page it had settled at
+     1800. */
+  width: 100%;
+  height: var(--fx-band);
+  z-index: -1;
+  pointer-events: none;
+  opacity: var(--fx-ascii-opacity);
+}
+/* The photographs stand down while their letters are up. */
+:root[data-fx~="ascii"] {
+  --plate-opacity: 0;
+  --car-opacity: 0;
+  --eye-opacity: 0;
+}
+
 /* ---- respect reduced-motion preferences ---------------------------------- */
 @media (prefers-reduced-motion: reduce) {
+  /* Every moving part of the stack, stopped. The still layers stay: a texture is
+     not motion, and turning the page's whole treatment off because someone is
+     sensitive to movement would be answering a question nobody asked. What goes
+     is the four things that actually travel — the grain, the gate weave, the
+     rolling bar and the tube's flicker. */
+  .fx-grain, .fx-film, .fx-paper, .fx-roll, .fx-scan { animation: none !important; }
   .js .page { animation: none; }
   /* The hold survives — waiting for the plate is not movement, and dropping it
      here would trade one animation for the picture appearing underneath the type
@@ -1884,5 +2506,10 @@ body::after {
      this page that would cost a print visibly more than it is worth. */
   body::after { display: none !important; }
   .loading { display: none !important; }     /* nor does a wait, once it is paper */
+  /* The whole effect stack, and for the same reason twice over: paper has its own
+     grain, and a scanline is a statement about a screen. The text-shadow halves —
+     chroma and halation — go with it; a printer would render them as a smear. */
+  .fx, .fx-ascii { display: none !important; }
+  .col, .cut-title { text-shadow: none !important; }
   .contact a { border: 0 !important; color: #000; }
 }
