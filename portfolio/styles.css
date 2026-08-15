@@ -1259,8 +1259,25 @@ body::after {
 }
 /* fade the whole page in on load. A CSS animation (not a JS-toggled class) so
    it can't get stuck invisible if a rAF never fires; if animations are off or
-   unsupported the page simply shows at full opacity. */
-.js .page { animation: page-in 0.9s cubic-bezier(0.22, 1, 0.36, 1) both; }
+   unsupported the page simply shows at full opacity.
+
+   `backwards` and not `both`, and the difference is not cosmetic. `forwards`
+   keeps the last keyframe applied for ever, and the last keyframe says
+   `transform: none` — which does not compute to the keyword afterwards but to
+   the identity MATRIX, and any transform other than none makes an element a
+   stacking context. So .page was one, permanently, from the moment the fade
+   ended, and everything inside it was sealed into its own z ordering: KEEPING A
+   LAYER OFF THE TYPE further down cannot lift a paragraph over .fx-film across
+   a stacking context, and the exclusions silently did nothing.
+
+   Nothing is lost by dropping it. The last keyframe of both animations below is
+   the element's own base style — opacity 1, no transform — so forward fill was
+   holding a value identical to the one underneath it, and `backwards` still
+   covers the case the `both` was written for: the page is invisible before and
+   during the fade and up afterwards, whether or not any script ran. If anything
+   it is safer, since the state the page rests in is now the sheet's rather than
+   a keyframe's. */
+.js .page { animation: page-in 0.9s cubic-bezier(0.22, 1, 0.36, 1) backwards; }
 @keyframes page-in {
   from { opacity: 0; transform: translateY(8px); }
   to   { opacity: 1; transform: none; }
@@ -1280,7 +1297,7 @@ body::after {
    (It also keeps the profile-README screenshot honest: Playwright fast-forwards
    finite animations to their end state, which a JS-toggled class would not.) */
 .js.plate-wait .page {
-  animation: page-held-in 2.4s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation: page-held-in 2.4s cubic-bezier(0.22, 1, 0.36, 1) backwards;
 }
 @keyframes page-held-in {
   /* 62.5% of 2.4s is 1.5s: hold, then the same 0.9s fade as above. */
@@ -2193,6 +2210,66 @@ body::after {
     transparent 100%);
 }
 
+/* ---- KEEPING A LAYER OFF THE TYPE OR OFF THE PHOTO STRIP -------------------
+   Each effect can be told, in the tuner, not to lie over the type or not to lie
+   over the carousel. The way that is done is paint order and not a hole: the
+   excluded content is lifted ABOVE the layer, so the glyphs and the photographs
+   come out untouched while the paper around them still takes the texture. A
+   mask would have been independent per layer and would have cut a rectangle
+   across the page, which is not what either of these effects is for.
+
+   Every layer therefore needs a z of its own, in the order it already paints
+   in. EVEN numbers, so the content has an odd one to stand on between any two
+   of them — --fx-text-z and --fx-gallery-z are (the highest excluded layer) + 1,
+   written by effects.js, which reads these numbers back off the elements rather
+   than keeping a copy. Renumber here and nothing else has to know.
+
+   A z-index on a LAYER is safe, and the warning at the top of .fx is about a
+   z-index on the CONTAINER: an element's own stacking context does not change
+   what its blending sees, because mix-blend-mode blends with the backdrop of the
+   PARENT group, and .fx is still not one. Measured with a bare patch of paper
+   before and after, as that comment asks for.
+
+   WHAT THIS CANNOT DO. There is one paint order, so the layers a piece of
+   content is lifted over are always the lowest ones. Ask for the film to be off
+   the type while the paper — which paints below the film — is not, and the paper
+   comes off it too; there is no order in which the type is above the film and
+   below the paper. The tuner names any layer that gets excluded this way rather
+   than letting it pass as what you asked for. */
+.fx-paper    { z-index: 2; }
+.fx-halftone { z-index: 4; }
+.fx-film     { z-index: 6; }
+.fx-grain    { z-index: 8; }
+.fx-grille   { z-index: 10; }
+.fx-scan     { z-index: 12; }
+.fx-roll     { z-index: 14; }
+.fx-tube     { z-index: 16; }
+.fx-vignette { z-index: 18; }
+
+/* The type, in its four blocks rather than as .col, because .col CONTAINS the
+   carousel — lifting the column would carry the strip with it and the two would
+   stop being separable, which is the whole of what these two toggles are.
+   .cbar goes with the carousel: it is the strip's scrollbar, not a paragraph.
+
+   `var(--fx-text-z)` with no fallback is deliberate. effects.js writes the word
+   `auto` when nothing STACKED is excluded — chroma and halation are excluded by
+   their declaration simply not being written, a few rules below, and need no
+   lift — and `z-index: auto` leaves these in tree order under the whole stack,
+   which is where they started. An invalid value here would instead make the
+   whole declaration unset and take `position: relative` with it. */
+:root[data-fx-no-text] .masthead,
+:root[data-fx-no-text] .intro,
+:root[data-fx-no-text] .listing,
+:root[data-fx-no-text] .cut-title {
+  position: relative;
+  z-index: var(--fx-text-z);
+}
+:root[data-fx-no-gallery] .carousel,
+:root[data-fx-no-gallery] .cbar {
+  position: relative;
+  z-index: var(--fx-gallery-z);
+}
+
 :root[data-fx~="film"] .fx-film {
   display: block;
   background-image: var(--fx-film-src);
@@ -2273,8 +2350,11 @@ body::after {
    overlap behind a glyph's own body they sum to neutral, so the effect is
    confined to the edges by construction rather than by choosing a small enough
    alpha. */
-:root[data-fx~="chroma"] .col,
-:root[data-fx~="chroma"] .cut-title {
+/* `exclude text` for this one is not a lift — there is nothing to lift over,
+   because the effect IS on the type. It is the declaration not being written,
+   which is the cheapest exclusion in the sheet and the only exact one. */
+:root[data-fx~="chroma"]:not([data-fx-no-text~="chroma"]) .col,
+:root[data-fx~="chroma"]:not([data-fx-no-text~="chroma"]) .cut-title {
   text-shadow:
     calc(-1 * var(--fx-chroma-x)) calc(-1 * var(--fx-chroma-y)) 0
       rgba(255, 0, 0, var(--fx-chroma-alpha)),
@@ -2387,13 +2467,18 @@ body::after {
    This is decoration on a CV; it should degrade by not appearing, and it does —
    an engine without color-mix drops the declaration and gets the page it would
    have had anyway. */
-:root[data-fx~="halation"] .col,
-:root[data-fx~="halation"] .cut-title {
+:root[data-fx~="halation"]:not([data-fx-no-text~="halation"]) .col,
+:root[data-fx~="halation"]:not([data-fx-no-text~="halation"]) .cut-title {
   text-shadow: 0 0 var(--fx-halation-radius)
     color-mix(in srgb, currentColor calc(var(--fx-halation-alpha) * 100%), transparent);
 }
-:root[data-fx~="halation"][data-fx~="chroma"] .col,
-:root[data-fx~="halation"][data-fx~="chroma"] .cut-title {
+/* Both, in one declaration, because text-shadow does not accumulate across
+   rules. The two guards are what make that composable again: exclude either one
+   and this stops matching, leaving the other's own rule above to apply alone —
+   which it does, and correctly, because this selector outweighs both of them
+   only while both effects are actually wanted on the type. */
+:root[data-fx~="halation"]:not([data-fx-no-text~="halation"])[data-fx~="chroma"]:not([data-fx-no-text~="chroma"]) .col,
+:root[data-fx~="halation"]:not([data-fx-no-text~="halation"])[data-fx~="chroma"]:not([data-fx-no-text~="chroma"]) .cut-title {
   text-shadow:
     calc(-1 * var(--fx-chroma-x)) calc(-1 * var(--fx-chroma-y)) 0
       rgba(255, 0, 0, var(--fx-chroma-alpha)),

@@ -41,6 +41,62 @@
 
   var STORE = "portfolio-fx";
 
+  /* ---- what an effect can be kept OFF ------------------------------------
+     Two exclusions — the type, and the carousel — and the three ways a token
+     can answer them, because the eleven effects are not all the same shape.
+
+     STACKED is the tokens that paint as a layer in .fx. Those are excluded by
+     paint order: the content is lifted above the layer, so both exclusions are
+     available and neither is exact when several layers disagree (see KEEPING A
+     LAYER OFF THE TYPE in styles.css). The selector is the layer or layers the
+     token turns on, and the z comes off the element rather than being repeated
+     here, so renumbering the sheet is not a change to this file.
+
+     SHADOWED is the two that are a text-shadow ON the type. They have nothing to
+     lift over and no presence on the strip: `no text` is the sheet not writing
+     the declaration, which it does on its own from data-fx-no-text, and there is
+     no gallery question to ask.
+
+     Everything else — chroma-pictures, ascii, weave — reaches neither the type
+     nor the strip, and gets neither toggle rather than an inert pair of them. */
+  var STACKED = {
+    paper: ".fx-paper",
+    halftone: ".fx-halftone",
+    film: ".fx-film",
+    grain: ".fx-grain",
+    crt: ".fx-grille, .fx-scan, .fx-roll, .fx-tube",
+    vignette: ".fx-vignette"
+  };
+  var SHADOWED = ["chroma", "halation"];
+
+  /* token -> which of the two exclusions it can answer. The tuner draws its
+     toggles off this rather than knowing the three shapes above. */
+  var EXCLUDABLE = {};
+  EFFECTS.forEach(function (name) {
+    EXCLUDABLE[name] = STACKED[name] ? ["text", "gallery"]
+                     : SHADOWED.indexOf(name) >= 0 ? ["text"]
+                     : [];
+  });
+
+  /* What the markup ships, read the same way and for the same reason `data-fx`
+     is: index.html is the one place the default is written and this file cannot
+     drift from it. Filtered through EXCLUDABLE, so an attribute naming a token
+     that has no answer to that question is dropped rather than half-applied.
+
+     Not persisted the way `on` is, and no ?fx= equivalent. An exclusion is a
+     decision about how the site is composed rather than something a visitor
+     chooses, so it lives in the markup this exports to and nowhere else. */
+  function excluded(attr, what) {
+    return tokens(root.getAttribute(attr)).filter(function (name) {
+      return EXCLUDABLE[name].indexOf(what) >= 0;
+    });
+  }
+  var off = {
+    text: excluded("data-fx-no-text", "text"),
+    gallery: excluded("data-fx-no-gallery", "gallery")
+  };
+  var SHIPPED_OFF = { text: off.text.slice(), gallery: off.gallery.slice() };
+
   function tokens(s) {
     return String(s || "").trim().split(/\s+/).filter(function (t) {
       return EFFECTS.indexOf(t) >= 0;
@@ -78,6 +134,67 @@
     /* The ASCII pass is the one effect with work to do at the moment it is
        switched on, and nothing to do while it is off. */
     if (on.indexOf("ascii") >= 0) scheduleAscii(); else clearAscii();
+  }
+
+  /* ---- the exclusions, applied -------------------------------------------
+     Two attributes and two numbers, rebuilt whole every time. The attribute is
+     what was ASKED for and is what the export writes into index.html; the number
+     is derived from it, and is the odd z the lifted content stands on — one
+     above the highest layer being excluded, since the sheet numbers the layers
+     even.
+
+     `auto` and not 0 when nothing stacked is excluded. That is the case where
+     only chroma or halation is listed, which the sheet handles by not writing a
+     declaration and which wants no lift at all; `z-index: auto` leaves the four
+     text blocks in tree order under the whole stack, where they started, while
+     0 would have made each of them a stacking context for nothing. */
+  function zOf(token) {
+    var sel = STACKED[token];
+    if (!sel) return null;
+    var top = null;
+    Array.prototype.forEach.call(document.querySelectorAll(sel), function (el) {
+      var z = parseInt(getComputedStyle(el).zIndex, 10);
+      if (!isNaN(z) && (top === null || z > top)) top = z;
+    });
+    return top;
+  }
+
+  function applyExclusions() {
+    ["text", "gallery"].forEach(function (what) {
+      var list = off[what];
+      var top = null;
+      list.forEach(function (t) {
+        var z = zOf(t);
+        if (z !== null && (top === null || z > top)) top = z;
+      });
+      if (!list.length) {
+        /* Nothing asked for: the attribute and the number both go, so a page
+           with no exclusions carries no trace of the machinery. */
+        root.removeAttribute("data-fx-no-" + what);
+        root.style.removeProperty("--fx-" + what + "-z");
+        return;
+      }
+      root.setAttribute("data-fx-no-" + what, list.join(" "));
+      root.style.setProperty("--fx-" + what + "-z", top === null ? "auto" : String(top + 1));
+    });
+  }
+
+  /* The cost of there being one paint order: a layer nobody asked to exclude,
+     which the lift went over anyway because it sits below one that was asked
+     for. Reported rather than hidden — it is the difference between what the
+     page is doing and what the tuner was told to do. */
+  function overExcluded(what) {
+    var top = null;
+    off[what].forEach(function (t) {
+      var z = zOf(t);
+      if (z !== null && (top === null || z > top)) top = z;
+    });
+    if (top === null) return [];
+    return Object.keys(STACKED).filter(function (t) {
+      if (off[what].indexOf(t) >= 0) return false;
+      var z = zOf(t);
+      return z !== null && z < top;
+    });
   }
 
   /* ---- chromatic aberration ---------------------------------------------
@@ -410,6 +527,7 @@
   var tile = grainTile();
   if (tile) root.style.setProperty("--fx-grain-src", tile);
   syncChroma();
+  applyExclusions();
   apply(false);
 
   /* Both of the things the ASCII pass is measured against can move under it: the
@@ -481,9 +599,39 @@
       style.setProperty("--fx-chroma-url", chromaUrl());
       if (tile) style.setProperty("--fx-grain-src", tile);
       syncChroma();
+      /* --fx-text-z and --fx-gallery-z are --fx- names too, so the sweep above
+         took them. They are derived, like the two put back on the lines above,
+         and are re-derived here rather than exempted. */
+      applyExclusions();
       scheduleAscii();
     },
+    /* The exclusions, whole, every time — the same clean-slate contract `set`
+       has and for the same reason: two lists and two derived numbers are cheaper
+       to rebuild than an incremental path is to keep honest.
+       Returns what the page is ACTUALLY doing, which is not always what was
+       asked: `alsoOff` names the layers the lift went over on the way. */
+    setExclusions: function (next) {
+      ["text", "gallery"].forEach(function (what) {
+        off[what] = ((next && next[what]) || []).filter(function (name) {
+          return (EXCLUDABLE[name] || []).indexOf(what) >= 0;
+        });
+      });
+      applyExclusions();
+      return window.portfolioFx.exclusions();
+    },
+    exclusions: function () {
+      return {
+        text: { off: off.text.slice(), alsoOff: overExcluded("text") },
+        gallery: { off: off.gallery.slice(), alsoOff: overExcluded("gallery") }
+      };
+    },
+    /* Which of the two questions each token can answer at all — the tuner draws
+       its toggles from this rather than repeating the three shapes. */
+    excludable: EXCLUDABLE,
+    shippedExclusions: { text: SHIPPED_OFF.text.slice(), gallery: SHIPPED_OFF.gallery.slice() },
     reset: function () {
+      off.text = SHIPPED_OFF.text.slice();
+      off.gallery = SHIPPED_OFF.gallery.slice();
       window.portfolioFx.clearVars();
       on = tokens(SHIPPED);
       apply(true);

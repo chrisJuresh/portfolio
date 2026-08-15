@@ -25,6 +25,18 @@
     somebody rewriting a row's declaration as an expression; then it would show
     here as a default of NaN rather than as a wrong number quietly shipped.
 
+    THE TWO EXCLUSIONS. Under each group head, `exclude text` and `exclude
+    gallery` — keep this effect off the type, keep it off the carousel. They are
+    paint order and not a mask: the excluded content is lifted ABOVE the layer,
+    so the glyphs and the photographs come out clean and the paper around them
+    still takes the texture. There is one paint order, so a lift clears every
+    layer below the one it was asked for as well; those are drawn dashed on the
+    toggle nobody pressed, and named in the banner and in the export. See
+    KEEPING A LAYER OFF THE TYPE in styles.css.
+
+    Only the toggles a token can answer are drawn. api.excludable is where that
+    is decided, in effects.js, and a group that reaches neither says so.
+
     PER-THEME ROWS. Eight of them — the film's and the paper's levels stages —
     are declared once in :root and again in :root[data-theme="dark"], because
     this page's two papers are #fff and #000 and one set of numbers cannot serve
@@ -106,6 +118,19 @@
     .row.moved .undo { visibility: visible; }
     .undo:hover { color: var(--ui-hit); }
 
+    /* ---- the two exclusions, per group ------------------------------------ */
+    .keep { display: flex; flex-wrap: wrap; gap: 0.3rem; padding: 0 0.7rem 0.35rem; }
+    .keep button {
+      padding: 0.08rem 0.4rem; border-radius: 99px; font-size: 11px;
+      color: var(--ui-mut); border-color: var(--ui-line);
+    }
+    .keep button[aria-pressed="true"] { background: var(--ui-hit); color: var(--ui-bg); border-color: var(--ui-hit); }
+    /* A layer the lift went over on its way to one that was asked for. Marked on
+       the toggle it was not pressed on, because that is where somebody would
+       look to find out why the effect is missing from the type anyway. */
+    .keep button[data-implied="1"] { border-style: dashed; border-color: var(--ui-hit); color: var(--ui-hit); }
+    .keep .none { font-size: 10.5px; color: var(--ui-mut); padding: 0.1rem 0; }
+
     .out { flex: 0 0 auto; border-top: 1px solid var(--ui-line); }
     .out textarea { width: 100%; height: 11rem; border: 0; border-radius: 0; padding: 0.5rem 0.7rem; resize: vertical; font: 11.5px/1.5 ui-monospace, Consolas, monospace; }
     .warn { margin: 0; padding: 0.45rem 0.7rem; background: rgba(216, 167, 106, 0.16); font-size: 11.5px; }
@@ -128,6 +153,9 @@
     <button id="copy" type="button">copy CSS</button>
   </div>
   <p class="warn" id="warn"></p>
+  <!-- Separate from the one above, which is about the SHEET being unreadable and
+       stays up for the session. This one comes and goes with the exclusions. -->
+  <p class="warn" id="keepwarn"></p>
   <div class="wrap">
     <div class="side">
       <div class="chips" id="chips"></div>
@@ -254,6 +282,7 @@
   var exportEl = document.getElementById("export");
   var countEl = document.getElementById("count");
   var warnEl = document.getElementById("warn");
+  var keepWarnEl = document.getElementById("keepwarn");
   var themeBtn = document.getElementById("theme");
   var fwEl = document.getElementById("fw");
   var fhEl = document.getElementById("fh");
@@ -263,9 +292,14 @@
   /* Defaults as the sheet declares them, per theme. Probed once per load. */
   var base = { light: {}, dark: {} };
   /* What has been moved away from those. Rows marked `theme` live under their
-     theme's key; everything else under `any`, which is applied in both. */
-  var state = { light: {}, dark: {}, any: {}, fx: null };
+     theme's key; everything else under `any`, which is applied in both.
+     `keep` is the two exclusion lists — which effects have been told to stay off
+     the type and off the carousel — held here rather than in the frame for the
+     same reason every number is: the frame is reloaded and re-driven, and the
+     tuner is the thing that remembers. */
+  var state = { light: {}, dark: {}, any: {}, keep: { text: [], gallery: [] }, fx: null };
   var rowEls = {};
+  var keepEls = [];
 
   function allRows() {
     var out = [];
@@ -347,6 +381,7 @@
 
     /* groups */
     controlsEl.textContent = "";
+    keepEls = [];
     GROUPS.forEach(function (g) {
       var wrap = document.createElement("div");
       wrap.className = "group";
@@ -355,6 +390,7 @@
       head.className = "ghead";
       head.textContent = g.name;
       wrap.appendChild(head);
+      if (g.token) wrap.appendChild(makeKeep(g.token));
       var rows = document.createElement("div");
       rows.className = "rows";
       g.rows.forEach(function (row) { rows.appendChild(makeRow(row)); });
@@ -362,6 +398,47 @@
       controlsEl.appendChild(wrap);
     });
     syncChips();
+  }
+
+  /* ---- exclude text / exclude gallery ------------------------------------
+     Two toggles per effect, and only the ones that token can actually answer:
+     effects.js decides that in EXCLUDABLE and hands it over as api.excludable,
+     so a group that reaches neither the type nor the strip — chroma-pictures,
+     ascii, weave — says so rather than offering a pair of buttons that would do
+     nothing when pressed. The band group has no token and gets nothing.
+
+     `gallery` is the carousel and its scrollbar, not the three corner
+     photographs. Those are the pictures the ascii and chroma-pictures groups act
+     on, which is why they are named separately in this panel. */
+  var KEEP_LABEL = { text: "exclude text", gallery: "exclude gallery" };
+
+  function makeKeep(token) {
+    var el = document.createElement("div");
+    el.className = "keep";
+    var can = (api.excludable && api.excludable[token]) || [];
+    if (!can.length) {
+      var note = document.createElement("span");
+      note.className = "none";
+      note.textContent = "reaches neither the type nor the carousel";
+      el.appendChild(note);
+      return el;
+    }
+    can.forEach(function (what) {
+      var b = document.createElement("button");
+      b.type = "button";
+      b.textContent = KEEP_LABEL[what];
+      b.dataset.what = what;
+      b.dataset.token = token;
+      b.addEventListener("click", function () {
+        var list = state.keep[what];
+        var at = list.indexOf(token);
+        if (at < 0) list.push(token); else list.splice(at, 1);
+        applyAll();
+      });
+      el.appendChild(b);
+      keepEls.push(b);
+    });
+    return el;
   }
 
   function makeRow(row) {
@@ -444,6 +521,8 @@
      an incremental path that can disagree with the state it is meant to mirror —
      and the theme rows make an incremental path genuinely awkward, since
      switching theme has to UNSET whatever the other theme's inline value was. */
+  var live = null;    /* what the frame says the exclusions actually came out as */
+
   function applyAll() {
     api.clearVars();
     allRows().forEach(function (row) {
@@ -451,6 +530,11 @@
       if (b[row.prop] === undefined) return;
       api.set(row.prop, b[row.prop] + (row.unit || ""));
     });
+    /* After clearVars, which takes --fx-text-z and --fx-gallery-z with it. The
+       return value is what the page IS doing rather than what it was told to,
+       and the two differ whenever a lift had to go over a layer nobody asked to
+       exclude — see KEEPING A LAYER OFF THE TYPE in styles.css. */
+    live = api.setExclusions(state.keep);
     sync();
     save();
     writeExport();
@@ -466,8 +550,39 @@
       ui.el.classList.toggle("moved", bucket(row)[row.prop] !== undefined);
     });
     syncChips();
+    syncKeep();
     countEl.textContent = changeCount();
     countEl.dataset.n = changeCount();
+  }
+
+  /* Pressed for what was asked, dashed for what the paint order took with it.
+     The second is the honest half of this panel: a toggle nobody pressed that is
+     nevertheless in force reads as a bug in the effect otherwise. */
+  function syncKeep() {
+    keepEls.forEach(function (b) {
+      var what = b.dataset.what, token = b.dataset.token;
+      var asked = state.keep[what].indexOf(token) >= 0;
+      var implied = !asked && live && live[what] &&
+                    live[what].alsoOff.indexOf(token) >= 0;
+      b.setAttribute("aria-pressed", asked ? "true" : "false");
+      b.dataset.implied = implied ? "1" : "0";
+      b.title = implied
+        ? "not asked for — it is under a layer that was, and there is only one " +
+          "paint order, so it comes off the " +
+          (what === "text" ? "type" : "carousel") + " too"
+        : KEEP_LABEL[what];
+    });
+    var over = [];
+    ["text", "gallery"].forEach(function (what) {
+      if (live && live[what] && live[what].alsoOff.length) {
+        over.push((what === "text" ? "off the type" : "off the carousel") +
+                  " as well: " + live[what].alsoOff.join(", "));
+      }
+    });
+    keepWarnEl.textContent = over.length
+      ? "One paint order, so a lift clears every layer below the one it was " +
+        "asked for — " + over.join("; ") + "."
+      : "";
   }
 
   function syncChips() {
@@ -486,11 +601,24 @@
     return Object.keys(state.any).length +
            Object.keys(state.light).length +
            Object.keys(state.dark).length +
-           (fxChanged() ? 1 : 0);
+           (fxChanged() ? 1 : 0) +
+           (keepChanged() ? 1 : 0);
   }
   function fxChanged() {
     if (!api) return false;
     return api.list().slice().sort().join(" ") !== api.shipped.slice().sort().join(" ");
+  }
+  /* Both lists against what the markup ships, as one change rather than two —
+     the same accounting fxChanged does, and for the same reason: the badge
+     counts things that would have to be pasted somewhere, and these two are one
+     line of index.html between them. */
+  function keepChanged() {
+    if (!api) return false;
+    var was = api.shippedExclusions || { text: [], gallery: [] };
+    return ["text", "gallery"].some(function (what) {
+      return state.keep[what].slice().sort().join(" ") !==
+             (was[what] || []).slice().sort().join(" ");
+    });
   }
 
   /* ---- theme, frame ------------------------------------------------------ */
@@ -522,6 +650,11 @@
 
   document.getElementById("reset").addEventListener("click", function () {
     state.light = {}; state.dark = {}; state.any = {};
+    /* api.reset() puts the frame's own copy back to what the markup ships; this
+       is the tuner's copy of the same thing, and applyAll below writes it back
+       over the top, so it has to be the shipped lists and not empty ones. */
+    var was = (api && api.shippedExclusions) || { text: [], gallery: [] };
+    state.keep = { text: (was.text || []).slice(), gallery: (was.gallery || []).slice() };
     if (api) api.reset();
     applyAll();
   });
@@ -560,10 +693,30 @@
     var out = "/* design/effects/effects-tuner.html — paste into portfolio/styles.css.\n" +
               "   Only what moved, with the shipped value alongside. The two blocks are\n" +
               "   the two halves of THE LEVELS STAGE; keep each in the right one. */\n\n";
-    if (fxChanged()) {
-      out += "<!-- portfolio/index.html -->\n" +
-             '<html lang="en" data-fx="' + api.list().join(" ") + '">\n' +
-             "     /* ships: " + api.shipped.join(" ") + " */\n\n";
+    /* One <html> line, because that is what it is in the file — the effects and
+       the two exclusions are three attributes on one tag, and exporting them as
+       three snippets would invite pasting one and losing the others. Omitted
+       attributes are omitted, so an unchanged one is not restated as noise. */
+    if (fxChanged() || keepChanged()) {
+      var was = api.shippedExclusions || { text: [], gallery: [] };
+      var attrs = ' lang="en" data-fx="' + api.list().join(" ") + '"';
+      if (state.keep.text.length) attrs += '\n      data-fx-no-text="' + state.keep.text.join(" ") + '"';
+      if (state.keep.gallery.length) attrs += '\n      data-fx-no-gallery="' + state.keep.gallery.join(" ") + '"';
+      out += "<!-- portfolio/index.html -->\n<html" + attrs + ">\n" +
+             "     /* ships: data-fx=\"" + api.shipped.join(" ") + "\"" +
+             (was.text.length ? " no-text=\"" + was.text.join(" ") + "\"" : "") +
+             (was.gallery.length ? " no-gallery=\"" + was.gallery.join(" ") + "\"" : "") +
+             " */\n";
+      /* Named here as well as in the banner, because the export is the thing
+         that gets pasted and read back weeks later without the panel next to it. */
+      ["text", "gallery"].forEach(function (what) {
+        if (live && live[what] && live[what].alsoOff.length) {
+          out += "     /* and, from the paint order alone, off the " +
+                 (what === "text" ? "type" : "carousel") + ": " +
+                 live[what].alsoOff.join(" ") + " */\n";
+        }
+      });
+      out += "\n";
     }
     var light = block("light", ":root");
     var dark = block("dark", ':root[data-theme="dark"]');
@@ -578,6 +731,7 @@
     try {
       localStorage.setItem(STORE, JSON.stringify({
         state: { light: state.light, dark: state.dark, any: state.any },
+        keep: state.keep,
         theme: theme, w: fwEl.value, h: fhEl.value
       }));
     } catch (_) {}
@@ -585,12 +739,21 @@
   function restore() {
     var raw = null;
     try { raw = localStorage.getItem(STORE); } catch (_) {}
+    /* The frame's own attributes are the starting point, not an empty pair —
+       what index.html ships is a real state and reopening the tuner should show
+       it. A stored session then replaces it, as it does for every number. */
+    var was = (api && api.shippedExclusions) || { text: [], gallery: [] };
+    state.keep = { text: (was.text || []).slice(), gallery: (was.gallery || []).slice() };
     if (raw) {
       try {
         var s = JSON.parse(raw);
         state.light = s.state.light || {};
         state.dark = s.state.dark || {};
         state.any = s.state.any || {};
+        if (s.keep) {
+          state.keep.text = s.keep.text || [];
+          state.keep.gallery = s.keep.gallery || [];
+        }
         if (s.w) fwEl.value = s.w;
         if (s.h) fhEl.value = s.h;
       } catch (_) {}
