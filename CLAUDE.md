@@ -44,6 +44,18 @@ open a PR into `main`.
    gh pr merge --squash --delete-branch
    ```
 
+   That last command **ends in a git error on every change here**, after the merge
+   has already landed: `fatal: 'development' is already used by worktree at ...`.
+   It is `gh` checking the base branch out locally once the forge is done, and the
+   main checkout is standing on it. The merge is not what failed. Ask the forge
+   rather than the exit code — `gh pr view <n> --json state --jq .state` — and
+   carry on.
+
+   **Then close the ticket by hand.** `Closes #n` in a PR body does nothing here:
+   GitHub only auto-closes on merge into the *default* branch, which is `main`,
+   and nothing merges there from here. `docs/agents/issue-tracker.md` has the rest
+   of it, and the comment to leave when closing.
+
 4. One worktree, one branch, one PR, one change. A second, unrelated fix means a
    second worktree and a second PR — the hook denies further edits in a worktree
    whose PR has already merged.
@@ -100,6 +112,15 @@ your reply and stop.
 [chrisJuresh/skills](https://github.com/chrisJuresh/skills). **Do not edit it in
 this repo** — a fix made here is lost at the next resync and leaves the copy
 undatable. Fix it upstream and resync.
+
+One known false positive, so a session that hits it does not spend a turn
+deciding the guard is right: the spent-worktree mark is written whenever `gh pr
+merge` appears **anywhere in a shell command string**, matched by regex rather
+than by what ran. So `grep "gh pr merge" CLAUDE.md` marks the worktree it was run
+in as merged, and the next edit in that tree is denied. The check the denial
+names settles it — `gh pr list --head <branch> --state all` returning `[]` means
+there is no PR to have merged — and the fix is to delete the marker it names.
+Report it upstream; do not patch it here.
 
 `.claude/worktree-per-change.json` records which upstream commit the copy came
 from and the sha256 of its LF-normalised bytes, so "is this current" is a
