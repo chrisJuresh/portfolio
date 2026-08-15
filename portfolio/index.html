@@ -268,7 +268,7 @@
        two things that used to sit at this line, an @font-face at the foot of
        styles.css and a script that attached /fonts/friz-local.css on localhost
        only, are both gone. See the cut title block in styles.css. -->
-  <link rel="stylesheet" href="styles.css?v=25">
+  <link rel="stylesheet" href="styles.css?v=26">
 </head>
 <body>
   <!-- Only ever on screen while a corner picture is genuinely outstanding: it is
@@ -314,8 +314,10 @@
        the three corner pictures ever do — the type gets the same split from a
        pair of text-shadows instead, which costs no compositing layer. See the
        chroma block in styles.css for why, and effects.js for who writes the two
-       feOffset primitives' dx/dy: filter primitives take ATTRIBUTES, so no
-       amount of custom property can drive them.
+       feOffset primitives' dx/dy and the two feGaussianBlur stdDeviations:
+       filter primitives take ATTRIBUTES, so no amount of custom property can
+       drive them. The numbers come from --fx-chroma-pic-*, which is the
+       pictures' own set — the type's --fx-chroma-* reach nothing in here.
 
        The two channels are pulled apart in opposite directions and the green is
        left where it is, which is what a prism does to a white edge. They are
@@ -342,9 +344,16 @@
                 0 0 0 1 0"/>
       <feOffset in="fx-r" dx="0" dy="0" result="fx-r-off" id="fx-chroma-r"/>
       <feOffset in="fx-b" dx="0" dy="0" result="fx-b-off" id="fx-chroma-b"/>
-      <feComposite in="fx-r-off" in2="fx-g" operator="arithmetic"
+      <!-- The moved channels go soft and the green does not, which is the half
+           of chromatic aberration a text-shadow cannot imitate: a lens that
+           cannot focus three wavelengths on one plane also cannot focus them to
+           one sharpness. stdDeviation 0 is an exact no-op, and it is what ships
+           — this is a control the tuner can reach, not a change to the page. -->
+      <feGaussianBlur in="fx-r-off" stdDeviation="0" result="fx-r-soft" id="fx-chroma-r-blur"/>
+      <feGaussianBlur in="fx-b-off" stdDeviation="0" result="fx-b-soft" id="fx-chroma-b-blur"/>
+      <feComposite in="fx-r-soft" in2="fx-g" operator="arithmetic"
                    k1="0" k2="1" k3="1" k4="0" result="fx-rg"/>
-      <feComposite in="fx-rg" in2="fx-b-off" operator="arithmetic"
+      <feComposite in="fx-rg" in2="fx-b-soft" operator="arithmetic"
                    k1="0" k2="1" k3="1" k4="0"/>
     </filter>
   </svg>
@@ -357,6 +366,6 @@
        the page is whole without — nothing below depends on it, and a browser
        that never runs it gets the CV, the photographs and the cut title exactly
        as they were before any of this. -->
-  <script src="effects.js?v=1"></script>
+  <script src="effects.js?v=2"></script>
 </body>
 </html>
