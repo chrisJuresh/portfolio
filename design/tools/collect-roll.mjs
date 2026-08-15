@@ -41,6 +41,30 @@
    written into roll.json, and --check reports a roll assembled at a geometry
    that no longer matches. If record's viewport or distance changes, re-run.
 
+   STACKING, AND WHY IT HAS TO BE SEEDED
+   --------------------------------------
+   The clip shows the grid **stacked** — frames verified to be the same
+   photograph drawn as one tile, which is the view the Panel is meant to show
+   off. That is not a default and not a URL parameter. The vault keeps it in
+   localStorage under `photos.stack`, read once at mount (photos
+   ui/src/lib/stack.js), and its default is `{on: false}`.
+
+   So it has to be seeded into the browser profile BEFORE the page's script
+   runs, which is what addInitScript below does. Any fresh browser that merely
+   navigates to the URL gets the unstacked grid, however the operator's own
+   browser is set — the setting lives in a profile, not in the server.
+
+   Stacked and unstacked are genuinely different rolls, not the same
+   photographs regrouped: 84 tiles against 73, at 153x216 against 162x216,
+   because the justified rows lay out over a different set of aspect ratios.
+   A roll collected one way does not cover a clip captured the other, so
+   `stacking` is written into roll.json and --check compares it like geometry.
+
+   **record cannot do this yet.** Its only page hook is the timeline's
+   `evaluate`, which runs after navigation — too late, since the grid has
+   already mounted unstacked. See design/censor/README.md; this is the thing
+   most likely to produce a correct-looking clip of the wrong view.
+
    WHAT COUNTS AS "PASSED OVER"
    -----------------------------
    The band of the document the camera ever sees is [0, distance + height] —
@@ -69,6 +93,12 @@ const GRID_URL = "http://127.0.0.1:8770/";
 const VIEWPORT = { width: 1440, height: 900 };
 const DISTANCE = 1200;
 
+/* The vault's own key and its own shape — the two knobs stay null, meaning
+   "whichever assignment the server is pointed at", which is what the grid opens
+   at when the reader has never moved them. */
+const STACK_KEY = "photos.stack";
+const STACK_ON = JSON.stringify({ on: true, strictness: null, linkage: null });
+
 /* How far apart the stops are. Only has to be fine enough that the sheet mounts
    every tile in the band on the way past — the band test itself is exact — so
    this is well under a viewport rather than near one. */
@@ -94,7 +124,7 @@ const opt = args(process.argv.slice(2));
    the roll. So a mistyped drift check would replace the roll a confirmed list
    was signed against and report success, which is the one thing this file must
    not do quietly. Fail on anything unrecognised rather than fall through. */
-const KNOWN = new Set(["url", "width", "height", "distance", "out", "check"]);
+const KNOWN = new Set(["url", "width", "height", "distance", "out", "check", "stack"]);
 const unknown = Object.keys(opt).filter((key) => !KNOWN.has(key));
 if (unknown.length) {
   console.error(`error: unknown flag${unknown.length > 1 ? "s" : ""} ${unknown.map((k) => `--${k}`).join(", ")}`);
@@ -108,6 +138,14 @@ const height = Number(opt.height || VIEWPORT.height);
 const distance = Number(opt.distance || DISTANCE);
 const out = resolve(opt.out ? opt.out : resolve(HERE, "..", "censor", "roll.json"));
 const checking = opt.check === "true";
+
+/* Stacked is the default because stacked is what the clip shows. `--stack off`
+   is here so the two views can be compared, not because either is a toss-up. */
+if (opt.stack !== undefined && opt.stack !== "on" && opt.stack !== "off") {
+  console.error(`error: --stack takes "on" or "off", not "${opt.stack}"`);
+  process.exit(2);
+}
+const stacking = opt.stack !== "off";
 
 const band = distance + height;
 
@@ -152,7 +190,16 @@ const COLLECT = `
       const src = img && img.getAttribute("src");
       const match = src && src.match(/([0-9a-f]{64})\\.webp$/);
       if (!match) continue;
-      const box = tile.getBoundingClientRect();
+      /* The photograph's box, not the tile element's. A stacked tile is taller
+         than its picture — the deck draws a sliver of each extra member above
+         it — while the tile-photo child frames the picture exactly where an
+         unstacked tile in the same row frames its own. So the element's top
+         varies within a row by how many members a stack has, and the
+         photograph's does not. This is the box that answers both questions
+         asked of it: what the reader actually sees, and which tiles share a
+         row. (No backticks in here — this whole expression is a template
+         literal, and one would end it.) */
+      const box = (tile.querySelector(".tile-photo") ?? tile).getBoundingClientRect();
       found.push({
         sha: match[1],
         index: Number(tile.dataset.index),
@@ -168,13 +215,25 @@ const COLLECT = `
 
 async function collect() {
   const browser = await chromium.launch();
-  const page = await browser.newPage({
+  /* A context rather than a bare page, because the stacking setting has to be in
+     localStorage before the app's module runs and addInitScript is the only hook
+     that early. */
+  const context = await browser.newContext({
     viewport: { width, height },
     deviceScaleFactor: 1,
   });
+  if (stacking) {
+    await context.addInitScript(`localStorage.setItem(${JSON.stringify(STACK_KEY)}, ${JSON.stringify(STACK_ON)})`);
+  }
+  const page = await context.newPage();
   try {
     await page.goto(url, { waitUntil: "domcontentloaded" });
     await page.waitForSelector(".tile", { timeout: 30_000 });
+    /* Stacked rows are laid out from an assignment the client asks for after
+       mount, so the first tiles on screen can be the unstacked ones for a beat.
+       Collecting those would put photographs in the roll that the clip never
+       shows, and — worse — miss the covers that replace them. */
+    await page.waitForTimeout(1500);
     await page.evaluate(STOP_SMOOTH_SCROLLING);
     await page.evaluate(FIND_SCROLLER);
 
@@ -208,7 +267,16 @@ async function collect() {
       .filter((t) => t.top < band && t.top + t.height > 0)
       .sort((a, b) => a.top - b.top || a.left - b.left);
 
-    return { tiles: inBand, mounted: seen.size };
+    /* Whether stacking actually engaged, asked of the DOM rather than assumed
+       from having set the key — the same instinct render.mjs applies to fonts.
+       A tile draws a card per extra member, so a visible card is the grid
+       saying it is stacked. Without this a renamed key upstream would seed
+       nothing, collect a perfectly good unstacked roll, and say nothing. */
+    const decks = await page.evaluate(
+      `document.querySelectorAll(".tile .card:not([hidden])").length`,
+    );
+
+    return { tiles: inBand, mounted: seen.size, decks };
   } finally {
     await browser.close();
   }
@@ -221,8 +289,16 @@ async function collect() {
 const digestOf = (tiles) =>
   createHash("sha256").update(tiles.map((t) => t.sha).join("\n")).digest("hex");
 
-const { tiles, mounted } = await collect();
+const { tiles, mounted, decks } = await collect();
 const digest = digestOf(tiles);
+
+if (stacking && decks === 0) {
+  console.error("error: asked for the stacked grid and got an unstacked one — no tile drew a card.");
+  console.error(`       the vault keeps this in localStorage under "${STACK_KEY}"; if that key or its`);
+  console.error("       shape has moved, check photos ui/src/lib/stack.js and update STACK_ON here.");
+  console.error("       refusing to write a roll that does not match the clip.");
+  process.exit(1);
+}
 
 if (checking) {
   let previous;
@@ -241,13 +317,15 @@ if (checking) {
   const geometry =
     previous.viewport?.width === width &&
     previous.viewport?.height === height &&
-    previous.distance === distance;
+    previous.distance === distance &&
+    previous.stacking === stacking;
   console.log(`roll on disk   ${previous.tiles.length} tiles  ${previous.roll_digest}`);
   console.log(`roll now       ${tiles.length} tiles  ${digest}`);
   if (!geometry) {
     console.log(
       `geometry       DRIFTED — on disk ${previous.viewport?.width}x${previous.viewport?.height} ` +
-        `distance ${previous.distance}, asked for ${width}x${height} distance ${distance}`,
+        `distance ${previous.distance} stacking ${previous.stacking}, ` +
+        `asked for ${width}x${height} distance ${distance} stacking ${stacking}`,
     );
   }
   if (same && geometry) {
@@ -298,6 +376,7 @@ await writeFile(
       viewport: { width, height },
       distance,
       band,
+      stacking,
       roll_digest: digest,
       tiles,
     },
@@ -307,6 +386,9 @@ await writeFile(
   "utf8",
 );
 
-console.log(`${tiles.length} photographs in the band [0, ${band}] (${mounted} tiles mounted in all)`);
+console.log(
+  `${tiles.length} photographs in the band [0, ${band}] ` +
+    `(${mounted} tiles mounted in all, grid ${stacking ? "stacked" : "unstacked"})`,
+);
 console.log(`roll_digest ${digest}`);
 console.log(`written ${out}`);
