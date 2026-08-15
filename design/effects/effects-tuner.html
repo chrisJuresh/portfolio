@@ -91,13 +91,20 @@
        the numbers, and hiding them would make the panel jump every time a chip
        is pressed. Dimmed, because dragging one changes nothing you can see. */
     .group[data-live="0"] .rows { opacity: 0.4; }
-    .row { display: grid; grid-template-columns: 8.5rem 1fr 4.2rem; gap: 0.4rem; align-items: center; padding: 0.15rem 0.7rem; }
+    .row { display: grid; grid-template-columns: 8.5rem 1fr 4.2rem 1rem; gap: 0.4rem; align-items: center; padding: 0.15rem 0.7rem; }
     .row label { color: var(--ui-mut); font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .row.moved label { color: var(--ui-hit); }
     .row input[type="range"] { width: 100%; }
     .row .val { width: 100%; padding: 0.1rem 0.2rem; font-size: 11.5px; text-align: right; }
     .row select { width: 100%; grid-column: 2 / 4; padding: 0.1rem 0.2rem; font-size: 11.5px; }
-    .row .theme-note { grid-column: 1 / 4; font-size: 10.5px; color: var(--ui-mut); padding-left: 0.1rem; }
+    .row .theme-note { grid-column: 1 / 5; font-size: 10.5px; color: var(--ui-mut); padding-left: 0.1rem; }
+    /* One per row, in the same fourth column and the same ↺ the plate, glass and
+       type tuners use — hidden rather than removed while the row is at its
+       default, so a drag does not shift every control 1rem to the left. It is
+       laid out whether or not it is visible, which is the point. */
+    .undo { border: 0; padding: 0; width: 1rem; color: var(--ui-mut); visibility: hidden; line-height: 1; }
+    .row.moved .undo { visibility: visible; }
+    .undo:hover { color: var(--ui-hit); }
 
     .out { flex: 0 0 auto; border-top: 1px solid var(--ui-line); }
     .out textarea { width: 100%; height: 11rem; border: 0; border-radius: 0; padding: 0.5rem 0.7rem; resize: vertical; font: 11.5px/1.5 ui-monospace, Consolas, monospace; }
@@ -360,6 +367,7 @@
       });
       sel.addEventListener("change", function () { setRow(row, sel.value); });
       el.appendChild(sel);
+      el.appendChild(undoFor(row));
       rowEls[row.prop] = { el: el, input: sel };
       return el;
     }
@@ -375,8 +383,23 @@
     num.addEventListener("change", function () { setRow(row, num.value); });
     el.appendChild(range);
     el.appendChild(num);
+    el.appendChild(undoFor(row));
     rowEls[row.prop] = { el: el, input: range, num: num };
     return el;
+  }
+
+  /* Back to what styles.css declares — for a `theme` row that is the value the
+     block for the theme you are LOOKING at declares, which is not the same
+     number as the other theme's and is why this goes through setRow's bucket
+     rather than clearing the property on both. */
+  function undoFor(row) {
+    var b = document.createElement("button");
+    b.type = "button";
+    b.className = "undo";
+    b.textContent = "↺";
+    b.title = "back to what the sheet says";
+    b.addEventListener("click", function () { setRow(row, null); });
+    return b;
   }
 
   /* ---- applying ---------------------------------------------------------- */
@@ -386,9 +409,13 @@
     return b[row.prop] !== undefined ? b[row.prop] : defaultOf(row);
   }
 
+  /* `null` is the undo button: put the row back to the sheet's value, which is
+     the same thing as having no override at all and so is the same delete a
+     drag that lands back on the default already did. */
   function setRow(row, raw) {
-    var v = row.options ? String(raw) : String(parseFloat(raw));
     var b = bucket(row);
+    if (raw === null) { delete b[row.prop]; applyAll(); return; }
+    var v = row.options ? String(raw) : String(parseFloat(raw));
     if (v === defaultOf(row) || (!row.options && parseFloat(v) === parseFloat(defaultOf(row)))) {
       delete b[row.prop];
     } else {
