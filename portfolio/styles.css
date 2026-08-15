@@ -1966,7 +1966,7 @@ body::after {
   /* Where the stack stops. --fx-y is the twin of --plate-y and moves the foot of
      every layer at once; --fx-fade is how far above that foot the dissolve
      starts, as a share of the band. */
-  --fx-y: 0px;
+  --fx-y: -55px;
   --fx-band: calc(var(--fold) - var(--fx-y));
   --fx-fade: 0;
 
@@ -2043,7 +2043,7 @@ body::after {
      but sizes near a whole fraction of 512 resample most cleanly. */
   --fx-paper-src: image-set(url("img/tex/paper-512.webp?v=3311dec2") 1x,
                             url("img/tex/paper-1024.webp?v=3311dec2") 2x);
-  --fx-paper-size: 320px;
+  --fx-paper-size: 384px;
   --fx-paper-strength: 0.22;
   --fx-paper-blend: multiply;
   --fx-paper-invert: 0;
@@ -2086,13 +2086,17 @@ body::after {
          C * (B - 1) = +1   puts the field on white
          C * (B - 1) = -1   puts the field on black
 
-     which is why the shipped numbers are (1.5, 2) on light and (0.75, 4) on
-     dark. Both satisfy it, and both have the same detail gain B*C = 3, so the
-     two themes carry the same amount of texture rather than merely both having
-     some. Move B and C together along that relation to change how hard the
-     detail bites; break the relation deliberately and the flat field starts
-     tinting the page, which is a legitimate thing to want and is how you get
-     stock that is not quite white.
+     which is why the numbers are (1.5, 2) on light and (0.75, 4) on dark. Both
+     satisfy it, and both have the same detail gain B*C = 3, so the two themes
+     carry the same amount of texture rather than merely both having some. Move
+     B and C together along that relation to change how hard the detail bites;
+     break the relation deliberately and the flat field starts tinting the page,
+     which is a legitimate thing to want and is how you get stock that is not
+     quite white.
+
+     The film still sits on it in both themes. The paper does on light and no
+     longer does on dark, which is that deliberate break — see the dark block
+     below.
 
      --fx-*-strength is then the honest amount control on top: it fades the
      detail toward the paper without moving the field off its endpoint. */
@@ -2136,27 +2140,27 @@ body::after {
 
      Shipped at the type's old values with the blur off, so this separation
      changed no pixel by itself. */
-  --fx-chroma-pic-x: 0.6px;
-  --fx-chroma-pic-y: 0px;
+  --fx-chroma-pic-x: 2.6px;
+  --fx-chroma-pic-y: 2.6px;
   --fx-chroma-pic-blur: 0px;
 
   /* ---- everything below here is off unless its token is in data-fx --------- */
 
-  --fx-grain-opacity: 0.055;    /* animated grain, over the static film        */
-  --fx-grain-size: 180px;       /* the noise tile, drawn small                 */
-  --fx-grain-fps: 12;
+  --fx-grain-opacity: 0.09;     /* animated grain, over the static film        */
+  --fx-grain-size: 600px;       /* the noise tile, drawn small                 */
+  --fx-grain-fps: 2;
 
-  --fx-halftone-pitch: 3.4px;   /* dot to dot                                  */
-  --fx-halftone-dot: 0.34;      /* the dot's radius as a share of the pitch    */
-  --fx-halftone-angle: 45deg;   /* the screen angle a printer would use        */
-  --fx-halftone-opacity: 0.5;
-  --fx-halftone-blend: overlay;
+  --fx-halftone-pitch: 3.9px;   /* dot to dot                                  */
+  --fx-halftone-dot: 0.2;       /* the dot's radius as a share of the pitch    */
+  --fx-halftone-angle: 11deg;   /* the screen angle a printer would use        */
+  --fx-halftone-opacity: 1;
+  --fx-halftone-blend: multiply;
 
   --fx-vignette-start: 55%;     /* where the corner darkening begins           */
   --fx-vignette-strength: 0.3;
 
-  --fx-halation-radius: 6px;    /* the glow around type and pictures           */
-  --fx-halation-alpha: 0.22;
+  --fx-halation-radius: 16.5px; /* the glow around type and pictures           */
+  --fx-halation-alpha: 0.9;
 
   --fx-scan-pitch: 3px;         /* CRT: scanline to scanline                   */
   --fx-scan-alpha: 0.28;
@@ -2169,13 +2173,13 @@ body::after {
   --fx-roll-alpha: 0.05;
   --fx-roll-period: 7s;
 
-  --fx-ascii-cell: 9px;         /* the character cell, in CSS pixels           */
-  --fx-ascii-contrast: 1.25;
-  --fx-ascii-opacity: 0.4;
+  --fx-ascii-cell: 7.5px;       /* the character cell, in CSS pixels           */
+  --fx-ascii-contrast: 0.8;
+  --fx-ascii-opacity: 0.18;
   --fx-ascii-invert: 0;
 
-  --fx-weave-amount: 3px;       /* gate weave: how far the film wanders        */
-  --fx-weave-period: 0.9s;
+  --fx-weave-amount: 15px;      /* gate weave: how far the film wanders        */
+  --fx-weave-period: 3.25s;
 }
 
 /* The stack itself. Absolute in body's coordinates, as the corner pictures are,
@@ -2337,10 +2341,10 @@ body::after {
   opacity: var(--fx-paper-strength);
 }
 
-/* The other end of the relation. Declared here rather than in the palette block
-   at the top of the sheet for the same reason the whole stack is in one place —
-   and this is the third thing in the file that is stated twice per theme, after
-   --plate-opacity and the baked grade itself. */
+/* The other end of the relation — for the film. Declared here rather than in the
+   palette block at the top of the sheet for the same reason the whole stack is
+   in one place — and this is the third thing in the file that is stated twice
+   per theme, after --plate-opacity and the baked grade itself. */
 :root[data-theme="dark"] {
   --fx-film-invert: 0;
   --fx-film-lift: 0.75;
@@ -2348,10 +2352,15 @@ body::after {
   --fx-film-blend: screen;
   --fx-film-strength: 0.18;
 
-  --fx-paper-lift: 0.75;
-  --fx-paper-contrast: 4;
-  --fx-paper-blend: screen;
-  --fx-paper-strength: 0.4;
+  /* The paper leaves the relation on this side, deliberately. `normal` rather
+     than `screen` composites the flat field instead of clipping it, so there is
+     no endpoint to solve C*(B-1) for and the two numbers are free: 8 is a
+     harder bite on the fibre than the relation would have allowed, and 0.06 is
+     what keeps the field it drags along with it from washing the black out. */
+  --fx-paper-lift: 0.8;
+  --fx-paper-contrast: 8;
+  --fx-paper-blend: normal;
+  --fx-paper-strength: 0.06;
 }
 
 /* ---- the film, on a small screen ------------------------------------------
