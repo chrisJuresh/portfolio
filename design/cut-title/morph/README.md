@@ -5,11 +5,13 @@ a baked SVG path of Friz Quadrata — turns into a sans-serif as the page scroll
 This directory is where the outlines and the correspondence between them are
 worked out; `portfolio/cut-morph.js` is the runtime that moves them.
 
-**This is on the site.** `design/cut-title/morph-tuner.html` previews all
-twenty-four faces against the real page so a choice can be made by eye, and
-`build-site.py --face <slug>` makes one of them permanent. Licensing is still
-open — several of these are free-for-commercial-use rather than OFL — so treat
-whatever is baked in as provisional until that is settled.
+**This is on the site, and the face it turns into is Host Grotesk.**
+`design/cut-title/morph-tuner.html` previews all twenty-four faces against the
+real page so a choice can be made by eye, and `build-site.py --face <slug>` makes
+one of them permanent. Host Grotesk is OFL, the same footing as Vollkorn and
+Spectral in `/fonts`; the twelve Fontshare faces in the shortlist are free for
+commercial use but are **not** OFL, so choosing one of those reopens a licensing
+question this one does not.
 
 - [How it is wired in](#how-it-is-wired-in)
 - [What was measured](#what-was-measured)
@@ -203,10 +205,11 @@ additive, and removing `cut-morph.js` restores the previous behaviour exactly.
 
 ## Before any of this ships
 
-- **Licensing is not settled.** The Fontshare faces are free for commercial use
-  but are **not** OFL — read the terms. The rest are OFL, the same footing as
-  Vollkorn and Spectral in `/fonts`. Whatever is baked into `cut-morph.js` today
-  was chosen to look at, not to ship.
+- **Licensing.** Settled for what ships: Host Grotesk is OFL. It stays settled
+  only while the baked face is one of the OFL ones — the Fontshare faces are free
+  for commercial use but are **not** OFL, so read the terms before baking one in.
+  Either way no font binary reaches the wire; the word is geometry, and the
+  licence question is about redistributing the outlines it was traced from.
 - **The J changes meaning.** Friz's J drops 0.349 cap below the baseline and dies
   in the cut, so the word reads PRO|ECTS — `portfolio/styles.css` calls that a
   property of the drawing rather than a number to tune. Every sans here sits the
