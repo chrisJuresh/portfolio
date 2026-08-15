@@ -727,7 +727,18 @@
 
   /* ---- persistence ------------------------------------------------------- */
 
+  /* Nothing is written before restore() has read, and that one line is the whole
+     of this file's persistence working at all. save() is reached from sizeFrame(),
+     sizeFrame() is called once at the bottom of this script to give the iframe a
+     width before it loads, and restore() cannot run until the frame's load event
+     — which is later, because the script is synchronous and the load is not. So
+     every session opened the tuner, wrote `{}` over whatever the last one left,
+     and then restored the blank it had just written. Nothing had ever survived a
+     reload; it looked like a tuner that deliberately started clean. */
+  var ready = false;
+
   function save() {
+    if (!ready) return;
     try {
       localStorage.setItem(STORE, JSON.stringify({
         state: { light: state.light, dark: state.dark, any: state.any },
@@ -760,9 +771,13 @@
     }
     theme = doc.documentElement.getAttribute("data-theme") === "dark" ? "dark" : "light";
     themeBtn.textContent = "theme: " + theme;
+    /* Everything above has been read; from here writing is safe, and the
+       sizeFrame below is the first write — it puts back what was just read. */
+    ready = true;
     sizeFrame();
   }
 
+  /* Before the frame has loaded, so this one only sizes it. See save(). */
   sizeFrame();
 })();
 </script>
