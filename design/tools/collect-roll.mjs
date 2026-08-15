@@ -86,6 +86,22 @@ function args(argv) {
   return out;
 }
 const opt = args(process.argv.slice(2));
+
+/* An unknown flag is fatal here, which it is not in render.mjs, and the reason
+   is that the two have different worst cases. This parser only understands
+   `--check`, not `--check=true`; render.mjs mistaking that for an unknown
+   variant costs a re-render, whereas this script's non-checking path OVERWRITES
+   the roll. So a mistyped drift check would replace the roll a confirmed list
+   was signed against and report success, which is the one thing this file must
+   not do quietly. Fail on anything unrecognised rather than fall through. */
+const KNOWN = new Set(["url", "width", "height", "distance", "out", "check"]);
+const unknown = Object.keys(opt).filter((key) => !KNOWN.has(key));
+if (unknown.length) {
+  console.error(`error: unknown flag${unknown.length > 1 ? "s" : ""} ${unknown.map((k) => `--${k}`).join(", ")}`);
+  console.error(`       have: ${[...KNOWN].map((k) => `--${k}`).join(", ")} — and --check takes no value`);
+  process.exit(2);
+}
+
 const url = opt.url || GRID_URL;
 const width = Number(opt.width || VIEWPORT.width);
 const height = Number(opt.height || VIEWPORT.height);
@@ -163,7 +179,16 @@ async function collect() {
     await page.evaluate(FIND_SCROLLER);
 
     /* Keyed by hash, not by index: a recycled tile comes back under a new index
-       and the same photograph must not enter the roll twice. */
+       and the same photograph must not enter the roll twice.
+
+       The first sighting of a tile is the one kept, which is only sound if a
+       tile's document box does not move after it is first mounted — otherwise
+       the band test below runs on stale geometry and can drop a photograph the
+       clip does show. It holds, and not by luck: the vault returns each file's
+       width and height with the page, so rows are laid out before any image is
+       requested and there is no load-time reflow to wait out (grid.py says so
+       in as many words). Measured rather than taken from the comment — over the
+       whole scroll range, 0 of 153 mounted tiles moved between stops. */
     const seen = new Map();
     for (let at = 0; at <= distance; at += STEP) {
       await page.evaluate(`window.__recordScroller.scrollTop = ${at}`);
@@ -207,6 +232,11 @@ if (checking) {
     console.error(`error: no roll at ${out} to check against — run without --check first`);
     process.exit(1);
   }
+  if (!Array.isArray(previous.tiles)) {
+    console.error(`error: ${out} parses but carries no tiles — an interrupted write, or hand-edited`);
+    console.error("       re-collect it: run without --check");
+    process.exit(1);
+  }
   const same = previous.roll_digest === digest;
   const geometry =
     previous.viewport?.width === width &&
@@ -226,6 +256,34 @@ if (checking) {
   }
   console.log("DRIFTED — the confirmed list no longer covers the clip; re-collect and re-review");
   process.exit(1);
+}
+
+/* Replacing the roll orphans any review signed against it, and the review is 73
+   photographs of someone's afternoon. The downstream guards do catch the
+   mismatch — review.mjs refuses a stale digest, --check reports DRIFTED — but
+   they catch it later, and by then the roll it was signed against is gone. So
+   this refuses rather than warns, and says which of the two situations it is:
+   a roll that genuinely drifted needs a re-review either way, while an
+   unchanged one means the re-run was a habit and there is nothing to do. */
+const confirmed = resolve(dirname(out), "censored.json");
+if (!checking) {
+  let signed;
+  try {
+    signed = JSON.parse(await readFile(confirmed, "utf8"));
+  } catch {
+    signed = null;
+  }
+  if (signed && signed.roll_digest !== digest) {
+    console.error(`error: ${confirmed} was signed against a roll this run does not reproduce.`);
+    console.error(`       signed  ${signed.roll_digest}  (${signed.censored}/${signed.reviewed} obscured, by ${signed.confirmed_by})`);
+    console.error(`       now     ${digest}  (${tiles.length} photographs)`);
+    console.error("       the library or the geometry moved, so that review no longer covers the clip.");
+    console.error("       delete both files and review again — there is no partial re-review.");
+    process.exit(1);
+  }
+  if (signed) {
+    console.log(`censored.json is signed against this roll and still stands (${signed.censored}/${signed.reviewed} obscured)`);
+  }
 }
 
 await mkdir(dirname(out), { recursive: true });

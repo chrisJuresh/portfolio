@@ -95,6 +95,17 @@ at. A drifted roll means collect and review again — there is no partial re-rev
 because the photographs a shifted roll brings in are exactly the ones nobody has
 looked at.
 
+Two habits are guarded against rather than documented away, because both end in a
+signed review quietly not covering the clip:
+
+- The collector **refuses to overwrite** a roll that `censored.json` is signed
+  against, if re-collecting would not reproduce it. Delete both and start over —
+  that is the only honest response, and it should be a decision rather than a
+  side effect of running a command twice.
+- An **unrecognised flag is fatal**. `--check` takes no value, so `--check=true`
+  is not the check; without this it would parse as an unknown key, fall through
+  to the collecting path, and replace the roll while looking like it verified it.
+
 ## What the page targets
 
 The vault addresses thumbnails by content: a tile's image is `/t/<sha256>.webp`.
