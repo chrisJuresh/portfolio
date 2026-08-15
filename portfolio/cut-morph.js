@@ -123,8 +123,17 @@
      the letters caught by both whipped through their transition at six times
      their own rate. Smoothstep is the gentlest curve that still leaves and
      arrives at rest, which is all this end needs: the turn is where the drama
-     belongs, and the letter only has to not start and stop with a jolt. The two
-     together now peak at 2.25×, where they used to reach 6×.
+     belongs, and the letter only has to not start and stop with a jolt.
+
+     THE TURN HAS SINCE GONE UP AN ORDER, from a cubic to a quintic, and this line
+     did not have to move with it. The quintic peaks at 1.875× where the cubic
+     peaked at 1.5×, so the product of the two ratios went 2.25× to 2.8125× — but
+     a ratio is against an average, and the turn was lengthened by the same 1.25
+     in the same commit precisely so the average would fall by it. What a letter
+     is actually drawn at is the product against the CLOCK, and swept frame by
+     frame all eight peak within 1% of where they peaked before, every one of them
+     fractionally under. So the drama stayed in the paper: the page's ends got
+     quieter and the letters kept their rate.
 
      Both ends still land exactly on 0 and 1, so at either resting place every
      letter is the real Bézier outline of a real typeface and not a polygon. */
