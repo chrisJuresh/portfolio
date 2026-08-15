@@ -171,10 +171,19 @@
       { prop: "--fx-paper-invert",   label: "invert", min: 0, max: 1, step: 1 },
       { prop: "--fx-paper-size",     label: "tile size", min: 48, max: 1024, step: 4, unit: "px" }
     ]},
-    { token: "chroma", name: "chromatic aberration", rows: [
+    { token: "chroma", name: "chromatic aberration — the type", rows: [
       { prop: "--fx-chroma-x",     label: "split x", min: -4, max: 4, step: 0.05, unit: "px" },
       { prop: "--fx-chroma-y",     label: "split y", min: -4, max: 4, step: 0.05, unit: "px" },
       { prop: "--fx-chroma-alpha", label: "fringe alpha", min: 0, max: 1, step: 0.01 }
+    ]},
+    /* The other half, and its ranges are wider than the type's on purpose: these
+       numbers are read against a photograph a few hundred pixels across rather
+       than against a 15px glyph, so the split that reads at all starts about
+       where the type's tops out. */
+    { token: "chroma-pictures", name: "chromatic aberration — the pictures", rows: [
+      { prop: "--fx-chroma-pic-x",    label: "split x", min: -12, max: 12, step: 0.1, unit: "px" },
+      { prop: "--fx-chroma-pic-y",    label: "split y", min: -12, max: 12, step: 0.1, unit: "px" },
+      { prop: "--fx-chroma-pic-blur", label: "fringe blur", min: 0, max: 8, step: 0.1, unit: "px" }
     ]},
     { token: "grain", name: "grain", rows: [
       { prop: "--fx-grain-opacity", label: "opacity", min: 0, max: 0.4, step: 0.005 },
@@ -226,10 +235,16 @@
             "exclusion", "luminosity"];
   }
 
-  /* chroma-pictures has no numbers of its own — it is a second decision about
-     the same split — so it is a chip with no group, and this is where that is
-     written down rather than being an omission in GROUPS. */
-  var CHIP_ONLY = ["chroma-pictures"];
+  /* Every token in api.effects now has a group above. There was a CHIP_ONLY list
+     here naming chroma-pictures as the exception — a chip with nothing to drag,
+     because it shared the type's split — and it is gone rather than emptied:
+     it named one token and was read by nothing, so as a list of none it would
+     have been a comment pretending to be code. A token that is a decision and
+     not a number simply has no entry in GROUPS, which the chips already show.
+
+     The chips are built from api.effects and the groups from GROUPS, and neither
+     checks the other. A token added to effects.js and not to GROUPS gets a chip
+     and no rows, which is exactly what chroma-pictures used to be. */
 
   var STORE = "portfolio-effects-tuner";
 

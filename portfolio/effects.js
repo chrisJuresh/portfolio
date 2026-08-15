@@ -97,10 +97,16 @@
     return 'url("' + here + '#fx-chroma")';
   }
 
-  /* The split itself. dx/dy are attributes on the two feOffset primitives, so
+  /* The split itself, and the softness of it. dx/dy are attributes on the two
+     feOffset primitives and stdDeviation is one on the two feGaussianBlurs, so
      they are set here and not in the sheet; the values come FROM the sheet, so
-     --fx-chroma-x stays the one place the number is written and the tuner can
-     move it like any other.
+     --fx-chroma-pic-* stays the one place each number is written and the tuner
+     can move them like any others.
+
+     --fx-chroma-pic-* and not --fx-chroma-*: this filter is the PICTURES' half
+     of the effect and the type's shadows are the other, and the two carry their
+     own numbers because a split only means anything against the size of what it
+     is splitting. See the chroma block in styles.css.
 
      Through measure(), for the reason under `resolving a length` below: a custom
      property is not resolved by getComputedStyle, so a value written in rem, or
@@ -108,8 +114,9 @@
      wrong number out of it. Measuring costs one layout on a drag and is right
      whatever unit the sheet or the tuner ends up expressing the split in. */
   function syncChroma() {
-    var dx = len("--fx-chroma-x");
-    var dy = len("--fx-chroma-y");
+    var dx = len("--fx-chroma-pic-x");
+    var dy = len("--fx-chroma-pic-y");
+    var soft = len("--fx-chroma-pic-blur");
     var r = document.getElementById("fx-chroma-r");
     var b = document.getElementById("fx-chroma-b");
     if (!r || !b) return;
@@ -117,6 +124,10 @@
     r.setAttribute("dy", -dy);
     b.setAttribute("dx", dx);
     b.setAttribute("dy", dy);
+    var rs = document.getElementById("fx-chroma-r-blur");
+    var bs = document.getElementById("fx-chroma-b-blur");
+    if (rs) rs.setAttribute("stdDeviation", soft);
+    if (bs) bs.setAttribute("stdDeviation", soft);
   }
 
   /* ---- the grain tile ----------------------------------------------------
@@ -445,7 +456,7 @@
        explicitly rather than re-syncing everything on every drag. */
     set: function (name, value) {
       root.style.setProperty(name, value);
-      if (name === "--fx-chroma-x" || name === "--fx-chroma-y") syncChroma();
+      if (name.indexOf("--fx-chroma-pic-") === 0) syncChroma();
       if (name.indexOf("--fx-ascii") === 0 || name === "--fx-y") scheduleAscii();
     },
     /* Every --fx- override off the root, back to what the sheet declares, with

@@ -2065,12 +2065,32 @@ body::after {
      offset at one angle, which is what a prism does and what the effect is
      recognised as.
 
-     effects.js writes --fx-chroma-x/-y onto the filter's feOffset primitives:
-     SVG filter primitives take attributes, not CSS properties, so nothing else
-     can make the two halves move together. */
+     The three below are the TYPE's half and only the type's. */
   --fx-chroma-x: 0.6px;
   --fx-chroma-y: 0px;
   --fx-chroma-alpha: 0.5;
+
+  /* ...and these are the PICTURES' half, which is `chroma-pictures`. They were
+     the same three numbers until the two halves were separated, and sharing them
+     was wrong for a reason that only shows once you try to tune either: a split
+     is measured against what it is splitting. 0.6px either side of a 15px glyph
+     is a fringe you read as a fringe; the same 0.6px across a photograph 600px
+     wide is a rounding error, and the offset that reads on the pictures washes
+     the type out. One number could serve both only if they were the same size.
+
+     effects.js writes them onto the filter's primitives, because SVG filter
+     primitives take ATTRIBUTES and no amount of custom property can drive one.
+     That is also why the pictures get a third control the type cannot have:
+     `blur` is an feGaussianBlur on the two offset channels — the red and the
+     blue go soft while the green stays where it is, which is what a lens does
+     and what stops a hard-edged fringe on a photograph reading as a bug. A
+     text-shadow has no equivalent, so the type's third number is alpha instead.
+
+     Shipped at the type's old values with the blur off, so this separation
+     changed no pixel by itself. */
+  --fx-chroma-pic-x: 0.6px;
+  --fx-chroma-pic-y: 0px;
+  --fx-chroma-pic-blur: 0px;
 
   /* ---- everything below here is off unless its token is in data-fx --------- */
 
@@ -2276,7 +2296,8 @@ body::after {
    decision from the split's size: at --plate-opacity of 0.12 a 0.6px fringe on a
    photograph is close to unmeasurable, and paying a compositing layer per
    picture for it is worth being able to decline while the type keeps the
-   split. */
+   split. Its own three numbers are --fx-chroma-pic-* above; the --fx-chroma-*
+   ones next to them drive the type and reach nothing here. */
 :root[data-fx~="chroma-pictures"] body::after,
 :root[data-fx~="chroma-pictures"] .car,
 :root[data-fx~="chroma-pictures"] .eye {
