@@ -1982,8 +1982,30 @@ body::after {
 :root {
   /* Where the stack stops. --fx-y is the twin of --plate-y and moves the foot of
      every layer at once; --fx-fade is how far above that foot the dissolve
-     starts, as a share of the band. */
-  --fx-y: -55px;
+     starts, as a share of the band.
+
+     0, and it has to stay 0 while --plate-y is: the block above says the band
+     ends on the line the three corner pictures end on, and that is only true
+     while these two agree. #50 exported this at -55px along with the levels the
+     tuner had settled on, and the overhang it bought is the one thing on the
+     page whose FOOT is visible in one theme and not the other — which is what
+     made it look like a light-mode bug rather than a geometry one.
+
+     Both themes have always drawn the same box. What differs is whether the
+     flat field survives the layer's own levels: dark's paper is brightness 0.8
+     then contrast 8, which takes mid-grey to (0.4 - 0.5) * 8 + 0.5, i.e. past
+     black, and `normal` at 0.06 over a black page then composites nothing —
+     dark's halftone `multiply` is the same no-op — so on that side only the
+     photographs carry the treatment and it stops where they stop. Light's paper
+     is 1.5 then 1.25, which leaves the field at 0.81, and `multiply` prints it:
+     the whole band is washed 255 down to 246, the halftone finds tone to shade
+     now that the page is off pure white, and the foot of the box is a hard edge
+     across bare paper. Fifty-five pixels of it, below a fold the pictures had
+     already stopped at.
+
+     So this is not a number to retune. A tuner export that drags it again puts
+     the same edge back on light and nothing at all on dark. */
+  --fx-y: 0px;
   --fx-band: calc(var(--fold) - var(--fx-y));
   --fx-fade: 0;
 
