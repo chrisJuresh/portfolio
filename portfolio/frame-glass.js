@@ -651,6 +651,13 @@
 
   /* ---- render --------------------------------------------------------------- */
   var W = 0, H = 0;
+  /* What is already on the canvas. RENDERING ONCE IS THE POINT OF THIS FILE, and
+     without this it renders twice on every visit: ResizeObserver delivers a
+     callback for the element's initial size the moment observe() is called, so
+     the four passes run again immediately for the box attempt() has just drawn.
+     Nothing about the result changes, which is exactly why it would never have
+     been noticed. */
+  var drawn = { w: 0, h: 0, ok: false };
 
   function render() {
     var m = metrics();
@@ -664,6 +671,12 @@
     var dpr = Math.min(window.devicePixelRatio || 1, 2);
     var w = Math.max(1, Math.round(m.w * dpr));
     var h = Math.max(1, Math.round(m.h * dpr));
+
+    /* Same pixels as last time, so the canvas already holds the right picture.
+       Device px and not CSS px, because that is what actually decides whether a
+       redraw would differ — a fractional CSS width that rounds to the same
+       device size is the same canvas. */
+    if (drawn.ok && drawn.w === w && drawn.h === h) return true;
 
     /* THE EXPORT'S LENGTHS ARE PX AT A FRAME 1200 WIDE. This is the ratio that
        makes them px at the Frame that is actually on screen. */
@@ -788,10 +801,20 @@
     /* A GL error means some part of the four passes did not happen, and a
        half-drawn titlebar is exactly the "broken chrome" #57's user story 9 is
        about. Better to hand the reader the rung below, which cannot fail. */
-    return gl.getError() === gl.NO_ERROR;
+    drawn.w = w;
+    drawn.h = h;
+    drawn.ok = gl.getError() === gl.NO_ERROR;
+    return drawn.ok;
   }
 
+  /* Set once the context has gone for good — see the handler at the foot of the
+     file. Without it the ResizeObserver goes on calling render() for the rest of
+     the session, driving programs and textures that no longer exist, once per
+     resize, to reach a conclusion that cannot change. */
+  var dead = false;
+
   function attempt() {
+    if (dead) return false;
     var ok = false;
     try { ok = render(); } catch (e) { ok = false; }
     if (ok) {
@@ -838,6 +861,7 @@
      the same reason: without it the browser does not offer a restore, and there
      is nothing here that wants one. */
   canvas.addEventListener("webglcontextlost", function () {
+    dead = true;
     if (canvas.parentNode) canvas.parentNode.removeChild(canvas);
     setTier(false);
   });

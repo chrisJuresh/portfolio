@@ -2110,9 +2110,14 @@ body::after {
      THE EDGE IS THE RIM ROUND THE WHOLE WINDOW, and it is measured rather than
      chosen: the render's outer edge peaks at 84 of 255 against a page backdrop
      of 8, so 0.32 of #f2f1ee. It was 0.1 while the Frame was a placeholder,
-     which is a third of what the render has. The rim along the TOP is not this —
-     that edge is inside the glass and the shader draws it, and .frame-bar paints
-     over this ring where the two meet. */
+     which is a third of what the render has.
+     WHAT HAPPENS TO IT ALONG THE TITLEBAR DEPENDS ON THE RUNG, and .frame-bar
+     depends on that in turn, so it is worth being exact. Only the shader's
+     canvas is opaque, so only there is this ring covered — and covered by an
+     edge the shader draws itself, at the same place. On the other two rungs the
+     bar's fill is translucent and this ring shows THROUGH it, which is what
+     keeps the window's outline continuous without the bar drawing a rim of its
+     own. Adding one there would put two on the same pixel. */
   --panel-frame-fill: #131518;
   --panel-frame-edge: rgba(242, 241, 238, 0.32);
 
