@@ -374,5 +374,11 @@
        that never runs it gets the CV, the photographs and the cut title exactly
        as they were before any of this. -->
   <script src="effects.js?v=3"></script>
+  <!-- The cut title's morph, and last for the same reason: it needs the word
+       app.js has already put on the page, and the page is whole without it. It
+       only ever replaces one <svg>'s contents, so a browser that skips it —
+       blocked, errored, or asking for reduced motion — keeps the baked Friz
+       path exactly as it is inline. -->
+  <script src="cut-morph.js?v=1"></script>
 </body>
 </html>

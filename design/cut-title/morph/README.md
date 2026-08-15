@@ -1,13 +1,17 @@
 # Morphing the cut title
 
-Tooling for a scroll-driven animation on `/portfolio` where the cut title — the
-word PROJECTS, currently one baked SVG path of Friz Quadrata — turns into a
-sans-serif as the page scrolls.
+The scroll-driven morph on `/portfolio`, where the cut title — the word PROJECTS,
+a baked SVG path of Friz Quadrata — turns into a sans-serif as the page scrolls.
+This directory is where the outlines and the correspondence between them are
+worked out; `portfolio/cut-morph.js` is the runtime that moves them.
 
-**Nothing here is wired into the site.** It is a study: measurements, a tween
-algorithm, and a specimen page to choose a face from. `specimen.html` is the
-deliverable — open it in a browser, scroll, and pick.
+**This is on the site.** `design/cut-title/morph-tuner.html` previews all
+twenty-four faces against the real page so a choice can be made by eye, and
+`build-site.py --face <slug>` makes one of them permanent. Licensing is still
+open — several of these are free-for-commercial-use rather than OFL — so treat
+whatever is baked in as provisional until that is settled.
 
+- [How it is wired in](#how-it-is-wired-in)
 - [What was measured](#what-was-measured)
 - [Two facts about this face](#two-facts-about-this-face)
 - [The tween](#the-tween)
@@ -15,6 +19,40 @@ deliverable — open it in a browser, scroll, and pick.
 - [Running it](#running-it)
 - [What is deliberately not here](#what-is-deliberately-not-here)
 - [Before any of this ships](#before-any-of-this-ships)
+
+## How it is wired in
+
+Three pieces, and the split between them is about weight on the wire:
+
+| | |
+|---|---|
+| `portfolio/cut-morph.js` | the runtime, plus **one** face's outlines — ~40 KB |
+| `faces.json` | **all** of them — ~700 KB, fetched by the tuner and nothing else |
+| `morph-tuner.html` | iframes the real page and drives it through `window.__cutMorph` |
+
+`build-site.py --face <slug> --repo <worktree>` writes both of the first two from
+the same run, so they cannot disagree about geometry.
+
+The runtime takes effects.js's stance: **nothing on the page depends on it.** It
+is loaded last, and all it does is swap the single inline Friz path for the same
+outlines split into eight and then move them. A browser that never runs it — a
+parse error, a blocked script, `prefers-reduced-motion` — gets the cut title
+exactly as it was. Verified rather than assumed: at rest the eight paths measure
+0.007/255 mean pixel difference against the single baked path that ships today.
+
+**The morph is driven by scroll fraction, not by where the word is on screen.**
+That looks like the wrong choice and isn't. The cut title is held against the
+*end* of the document — that is the entire device — so it never travels up the
+viewport the way a section does, and on a composition that does not fit one
+screen it sits a few pixels above the fold at full scroll and no
+viewport-relative measure ever leaves zero. Scroll fraction has no such regime to
+get wrong: in the doorway, where the document is deliberately two screens, it is
+the second screen that turns the word.
+
+Nothing about the geometry moves during the morph. Every face is scaled to Friz's
+cap height and its tracking solved so the ink spans the same width, so `--cue-ratio`,
+`--cue-ink`, `--cue-overshoot` and the viewBox are all still Friz's, and the cap
+line the cut is taken from stays exactly where it is.
 
 ## What was measured
 
@@ -125,13 +163,18 @@ than punching holes through every overlap.
 |---|---|
 | `lib.py` | sets PROJECTS in a face and measures it, in units of its own cap |
 | `morph.py` | correspondence and the tween — the algorithm above |
+| `curated.py` | the shortlist, its blurbs, and the weight-fit. Both builds read it |
+| `build-site.py` | → `portfolio/cut-morph.js` (one face) and `faces.json` (all) |
+| `build-specimen.py` | → `specimen.html` |
+| `faces.json` | all 24, for the tuner. Generated; not hand-edited |
 | `rank.py` | the whole-pool sweep → `ranking.csv` |
 | `kerncheck.py` | diffs the layout against HarfBuzz, pair by pair |
-| `build-specimen.py` | the curated 24 → `page2.json` |
 | `specimen.tpl.html` | the page, with `__DATA__` / `__DISP__` / `__BODY__` slots |
 | `specimen.html` | the built page. Self-contained; just open it |
 | `raster.py` | nonzero-winding rasteriser, for checking frames by eye |
 | `candidates-google*.txt` | the `google/fonts` slugs the sweep pulled |
+
+`../morph-tuner.html` sits one level up, beside the other tuners.
 
 ## Running it
 
@@ -150,17 +193,20 @@ Fontshare ones from `api.fontshare.com/v2/fonts/download/<slug>`, taking
 ## What is deliberately not here
 
 **No font binaries.** Not Friz Quadrata, which was removed from this repository
-on purpose and supplied locally for this work, and not the ~110 candidates. The
-word is geometry, exactly as it already is on the live site.
+on purpose and supplied locally for this work, and not the ~130 candidates. The
+word is geometry on the wire, exactly as it already was — the morph adds outlines
+and no `@font-face`, and nothing in `/fonts` changed.
 
-**No change to `/portfolio`.** `portfolio/app.js` and `portfolio/styles.css` are
-untouched. Choosing a face is a separate decision from making it.
+**No change to the cut title's geometry.** `portfolio/styles.css` is untouched
+and so is the block in `portfolio/app.js` that puts the word inline; the morph is
+additive, and removing `cut-morph.js` restores the previous behaviour exactly.
 
 ## Before any of this ships
 
-- **Licensing splits the shortlist.** The Fontshare faces are free for commercial
-  use but are **not** OFL — read the terms. The rest are OFL, the same footing as
-  Vollkorn and Spectral in `/fonts`.
+- **Licensing is not settled.** The Fontshare faces are free for commercial use
+  but are **not** OFL — read the terms. The rest are OFL, the same footing as
+  Vollkorn and Spectral in `/fonts`. Whatever is baked into `cut-morph.js` today
+  was chosen to look at, not to ship.
 - **The J changes meaning.** Friz's J drops 0.349 cap below the baseline and dies
   in the cut, so the word reads PRO|ECTS — `portfolio/styles.css` calls that a
   property of the drawing rather than a number to tune. Every sans here sits the
