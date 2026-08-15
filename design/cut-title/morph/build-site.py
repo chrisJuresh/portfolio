@@ -9,7 +9,7 @@ Two artifacts, one run, because they have to agree:
   design/cut-title/morph/faces.json   all of them, for the tuner, which is the
                                   only thing that ever fetches it.
 
-    python build-site.py --face satoshi
+    python build-site.py --face hostgrotesk
 
 The fonts are not in this repository. Run it beside `friz/`, `gf/` and `fsf/` as
 design/cut-title/morph/README.md describes; without them there is nothing to
@@ -27,7 +27,9 @@ END = "/* cut-morph:data end */"
 def main():
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--face", default="satoshi", help="slug of the face the site uses")
+    ap.add_argument("--face", default="hostgrotesk",
+                    help="slug of the face the site uses; the default is the one "
+                         "baked into cut-morph.js today, so a bare re-run keeps it")
     ap.add_argument("--repo", type=pathlib.Path, required=True,
                     help="the worktree to write into")
     ap.add_argument("--faces-only", action="store_true",
