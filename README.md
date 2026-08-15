@@ -89,6 +89,7 @@ of images, served statically from Vercel.
 │   ├── effects.js      # the effect stack's runtime half — optional, loaded last
 │   ├── cut-morph.js    # the cut title turning into a sans — optional, loaded last
 │   ├── panel-clip.js   # gives the Panel's <video> its sources — optional, loaded last
+│   ├── frame-glass.js  # the browser Frame's glass titlebar — optional, loaded last
 │   ├── styles.css      # layout, warm light/dark palettes, fades, print CV
 │   ├── img/            # web-optimised photographs
 │   │   └── tex/        # the two baked textures — see its README

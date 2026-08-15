@@ -294,7 +294,7 @@
        two things that used to sit at this line, an @font-face at the foot of
        styles.css and a script that attached /fonts/friz-local.css on localhost
        only, are both gone. See the cut title block in styles.css. -->
-  <link rel="stylesheet" href="styles.css?v=31">
+  <link rel="stylesheet" href="styles.css?v=32">
 </head>
 <body>
   <!-- Only ever on screen while a corner picture is genuinely outstanding: it is
@@ -431,19 +431,20 @@
           <p>1,374,328 paths re-costed in 220 ms</p>
         </li>
       </ol>
-      <!-- The space the browser Frame stands in, holding the recording and
-           nothing else yet: no chrome, no titlebar, no glass. #66 builds the
-           material the titlebar is made of, #67 the Frame around this, and #68
-           stands the whole thing on the marble. It is a grid item in its own
-           right because the Frame is what occludes the subheading's second
-           line — see the .panel-frame block in styles.css, which is the whole
-           of that arithmetic — and #67 hangs its chrome inside this box rather
-           than around it, so none of it moves.
+      <!-- The browser Frame: a window with a glass titlebar, holding the
+           recording. It is a grid item in its own right because the Frame is
+           what occludes the subheading's second line — see the .panel-frame
+           block in styles.css, which is the whole of that arithmetic — and the
+           chrome hangs INSIDE this box rather than around it, so nothing in the
+           composition moved when it arrived. #68 stands the whole thing on the
+           marble.
 
            Decorative, so the box and everything in it is out of the
            accessibility tree. A silent looping recording of a scrolling grid is
-           not something a screen reader has any use for, and the paragraph
-           beside it says what the project is in the author's own words.
+           not something a screen reader has any use for, the paragraph beside it
+           says what the project is in the author's own words, and a window's
+           chrome is furniture — announcing three traffic lights and a back
+           button that go nowhere would be worse than silence.
 
            THE CLIP: the photo vault's grid, stacked, recorded by `record`
            against design/censor/capture-origin.mjs — which serves each of the
@@ -460,9 +461,110 @@
            `muted` is not decoration either: it is what lets `autoplay` run at
            all, and #57 asks for a page that never makes noise. -->
       <div class="panel-frame" aria-hidden="true">
-        <video class="panel-clip" poster="video/photos-grid.webp?v=21f8d5ea"
-               width="1440" height="900"
-               autoplay loop muted playsinline preload="none"></video>
+        <!-- The titlebar. EMPTY OF EVERYTHING BUT THE CONTROLS, because the
+             material it is made of is not markup: the flat and blurred rungs of
+             the ladder are this element's own background, and the shader rung is
+             a <canvas> frame-glass.js inserts here as the chrome's first sibling.
+             The three rungs and what picks between them are the .frame-bar block
+             in styles.css. -->
+        <div class="frame-bar">
+          <!-- NOT ONE OF THESE IS A CONTROL, and that is deliberate rather than
+               unfinished. Every one is a <span> or an <i> — no <button>, no <a>,
+               no `tabindex`, no handler — and .frame-chrome takes pointer events
+               out on top of that. The Frame is not a link because the photos site
+               binds to loopback and there is nowhere to send anyone; making any
+               of this live later is a change of element and of nothing else,
+               because every length is measured from the glyph's centre and no
+               rule here depends on what kind of element carries it.
+
+               The icons are drawn at the render's own scale: each viewBox is the
+               glyph's measured ink in the render's pixels, so a stroke-width of
+               1.5 lands within a hundredth of a pixel of 1 at a Frame 1200 wide,
+               and the aspect ratio in the file is the measured one — which is
+               what lets styles.css set a width and leave the height alone. -->
+          <div class="frame-chrome">
+            <span class="frame-lights"><i></i><i></i><i></i></span>
+            <!-- Sidebar toggle: a window with its left pane filled. -->
+            <span class="frame-icon frame-sidebar">
+              <svg viewBox="0 0 26 16" fill="none" stroke="currentColor" stroke-width="1.5">
+                <rect x="0.75" y="0.75" width="24.5" height="14.5" rx="2.5"/>
+                <path d="M9.5 0.75V15.25"/>
+                <rect x="3.4" y="3.6" width="3.2" height="8.8" rx="1" fill="currentColor" stroke="none"/>
+              </svg>
+            </span>
+            <!-- Back, and forward greyed out beside it: the render draws the
+                 second at a third of the first's ink, which is a browser saying
+                 there is nowhere forward to go. See --frame-ink-off. -->
+            <span class="frame-icon frame-back">
+              <svg viewBox="0 0 10 18" fill="none" stroke="currentColor"
+                   stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M8.5 1.5 1.5 9l7 7.5"/>
+              </svg>
+            </span>
+            <span class="frame-icon frame-fwd">
+              <svg viewBox="0 0 10 18" fill="none" stroke="currentColor"
+                   stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M1.5 1.5 8.5 9l-7 7.5"/>
+              </svg>
+            </span>
+            <!-- THE ADDRESS IS THE TRUTH AND NOT A DECORATION. The photos site
+                 binds to loopback on 8770 and is never deployed, so there is no
+                 hostname to put here that would not be an invention — #57's user
+                 story 20 asks for a pill a reader is not misled by, and the only
+                 honest reading of that is the address the thing in the recording
+                 was actually served from. design/censor/capture-origin.mjs is the
+                 origin `record` was pointed at, and it is this one.
+                 The render's pill is EMPTY — `record` was run with `mockup=none`,
+                 so it composited no chrome of its own and there is nothing here
+                 to have measured. The type size is chosen; styles.css says how. -->
+            <span class="frame-pill">
+              <span class="frame-url">127.0.0.1:8770</span>
+              <span class="frame-icon frame-reload">
+                <svg viewBox="0 0 16 18" fill="none" stroke="currentColor"
+                     stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M13.5 9a5.5 5.5 0 1 1-1.9-4.2"/>
+                  <path d="M13.9 1.4v3.6h-3.6"/>
+                </svg>
+              </span>
+            </span>
+            <!-- Share, new tab, tabs. -->
+            <span class="frame-icon frame-share">
+              <svg viewBox="0 0 22 21" fill="none" stroke="currentColor"
+                   stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M6 8.2H2.75v11.05h16.5V8.2H16"/>
+                <path d="M11 1v11.4M11 1 7.3 4.8M11 1l3.7 3.8"/>
+              </svg>
+            </span>
+            <span class="frame-icon frame-new">
+              <svg viewBox="0 0 20 20" fill="none" stroke="currentColor"
+                   stroke-width="1.5" stroke-linecap="round">
+                <path d="M10 1.5v17M1.5 10h17"/>
+              </svg>
+            </span>
+            <!-- Two tabs, the back one offset down and right by the same amount
+                 in both directions. Its path is the part of an identical rounded
+                 rect that the front one does not cover, so it begins and ends ON
+                 the front tab's outline — drawn as a bare corner instead it
+                 reads as a hook coming off the side rather than as a second
+                 rectangle behind the first. -->
+            <span class="frame-icon frame-tabs">
+              <svg viewBox="0 0 25 17" fill="none" stroke="currentColor" stroke-width="1.5">
+                <rect x="0.75" y="0.75" width="17" height="11.5" rx="2.5"/>
+                <path d="M17.75 4.75h3.5a2.5 2.5 0 0 1 2.5 2.5v6.5a2.5 2.5 0 0 1-2.5 2.5H9.25a2.5 2.5 0 0 1-2.5-2.5v-1.5"/>
+              </svg>
+            </span>
+          </div>
+        </div>
+        <!-- The window's content, and it is inset from the window's edge on
+             three sides — the render is explicit about it and the .frame-content
+             block has the measurement. The clip's crop happens here now rather
+             than on the Frame, because this box is the shape the recording has to
+             fill and it is not the Frame's shape. -->
+        <div class="frame-content">
+          <video class="panel-clip" poster="video/photos-grid.webp?v=21f8d5ea"
+                 width="1440" height="900"
+                 autoplay loop muted playsinline preload="none"></video>
+        </div>
       </div>
     </div>
   </section>
@@ -552,5 +654,15 @@
        browser that skips it keeps the poster that is already on screen — which
        is exactly what a reader asking for reduced motion is shown. -->
   <script src="panel-clip.js?v=1"></script>
+  <!-- The titlebar's glass, and last for the fourth time for the fourth version
+       of the same reason: the Frame is already drawn by the time this runs, and
+       a browser that skips it — blocked, errored, or without the WebGL2 the
+       whole thing is built on — keeps the titlebar the stylesheet has already
+       painted. That one is a fill and a pair of rings rather than a hole where a
+       titlebar should be, which is what #57's user story 9 asks for.
+       It does not depend on panel-clip.js and does not wait on the video: what
+       the glass refracts is the Frame's own fill, decided once. The file says
+       why that and not the recording. -->
+  <script src="frame-glass.js?v=1"></script>
 </body>
 </html>

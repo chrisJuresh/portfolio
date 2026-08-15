@@ -339,6 +339,7 @@ uniform float u_glareHardness;
 uniform float u_glareAngle;
 uniform int u_blurEdge;
 uniform int u_showShape1;
+uniform float u_rimReference;
 uniform int STEP;
 
 out vec4 fragColor;
@@ -638,6 +639,25 @@ void main() {
       } else {
         float edgeH = nmerged / u_refThickness;
         vec2 normal = getNormal(p1, p2, gl_FragCoord.xy);
+        /* THE ONE LINE IN THIS SHADER THAT IS NOT UPSTREAM'S, added by #67 and
+           the only change the material has taken since #66 settled it.
+           getNormal returns the SDF's gradient, and the SDF is normalised by
+           u_resolution.y — so |normal| is 1414.2/u_resolution.y rather than 1,
+           and the two mixes below use it as their GAIN. That quietly made the
+           material a function of THE SIZE OF THIS WINDOW: the stage is whatever
+           is left beside the control panel, so the same settings gave a gain of
+           1.366 at 1552x1035 and 2.16 at 656x655, and an export judged in one
+           window did not reproduce in another.
+           #67 is where it stopped being survivable, because the shipping canvas
+           is the titlebar itself — 63px tall, gain 22 — and mix() past 1 does
+           not saturate, it extrapolates: white rims, and a glare whose LCh lands
+           so far out of gamut that the corners come back black.
+           Dividing by the height the material was settled at pins the gain at
+           the 1.366 it had there, at every stage size and on the page. This file
+           at 1552x1035 therefore renders exactly what it rendered before —
+           body (43,37,47), top rim 68, side rims 87, which is #92's table — and
+           at every other size it now renders that too. */
+        float rim = length(normal) * u_resolution.y / u_rimReference;
         vec4 blurredPixel = getTextureDispersion(
           u_bg,
           u_blurredBg,
@@ -672,7 +692,7 @@ void main() {
         outColor = mix(
           outColor,
           vec4(LCH_TO_SRGB(fresnelTintLCH), 1.0),
-          fresnelFactor * u_refFresnelFactor * 0.7 * length(normal)
+          fresnelFactor * u_refFresnelFactor * 0.7 * rim
         );
 
         float glareGeoFactor = clamp(
@@ -710,7 +730,7 @@ void main() {
         outColor = mix(
           outColor,
           vec4(LCH_TO_SRGB(glareTintLCH), 1.0),
-          glareAngleFactor * glareGeoFactor * length(normal)
+          glareAngleFactor * glareGeoFactor * rim
         );
       }
     } else {
@@ -927,6 +947,21 @@ function drawCover(src, x, y, w, h, anchorY) {
    half the Frame minus it, and `corner radius` is a percentage of half the
    shape — and a constant that disagrees with a slider by a hundredth of a
    pixel is a discrepancy someone has to spend a minute disproving. */
+/* THE STAGE HEIGHT THE RIMS WERE SETTLED AT, in device px, and the one constant
+   here that is about this tool rather than about the Frame. The `rim` line in
+   FRAG_MAIN says why it is needed; this says where the number came from.
+   It is a measurement of this file's own canvas, not a chosen round number: at a
+   1920x1080 window with one device pixel per CSS pixel the stage is 1552x1035,
+   and reading the canvas back there gives a body of (43,37,47), a top rim
+   peaking at 68 and both side rims at 87 — #92's recorded table to the integer.
+   So 1035 is the height that table is true at, and pinning it is what stops
+   every other number in the export drifting with the window.
+   portfolio/frame-glass.js carries the same constant, and has to: it is the
+   material's second reference, beside the Frame 1200 wide that the lengths are
+   stated at. Moving one without the other is how the page and this tool would
+   start showing different glass. */
+var RIM_REFERENCE = 1035;
+
 var FRAME_W = 1200;
 var FRAME_RATIO = 1.945;
 var FRAME_H = Math.round(FRAME_W / FRAME_RATIO);   /* 617 */
@@ -1456,6 +1491,11 @@ function draw(now) {
   u1f(progMain, "u_glareFactor", state.glareFactor / 100);
   u1f(progMain, "u_glareAngle", state.glareAngle * Math.PI / 180);
   u1i(progMain, "u_blurEdge", state.blurEdge ? 1 : 0);
+  /* The stage height the material was settled at — see the `rim` line in
+     FRAG_MAIN, which is the whole of why this exists. Not a control: it is the
+     datum every other number in the export is true against, and moving it would
+     silently rescale all of them. */
+  u1f(progMain, "u_rimReference", RIM_REFERENCE);
   u1i(progMain, "STEP", Math.round(state.step));
   gl.activeTexture(gl.TEXTURE0);
   gl.bindTexture(gl.TEXTURE_2D, tH.tex);
