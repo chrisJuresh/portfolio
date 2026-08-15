@@ -364,16 +364,26 @@
   <section class="panel" id="projects" aria-labelledby="panel-masthead">
     <!-- The Rail. Three projects, one Panel: Photo Vault is the selected one and
          the other two are grey and inert until they have compositions of their
-         own. `aria-current` rather than a class alone, so the selection is
-         announced and not only drawn. They are not links yet — there is nowhere
-         to send anyone — and #72 is where they start navigating. -->
-    <nav class="panel-rail" aria-label="Projects">
-      <ul>
-        <li class="is-selected" aria-current="true">Photo Vault</li>
-        <li>Eater Map</li>
-        <li>Record Engine</li>
-      </ul>
-    </nav>
+         own. They are not links yet — there is nowhere to send anyone — and #72
+         is where they start navigating.
+
+         A PLAIN LABELLED LIST, NOT A <nav>, AND NOT `aria-current`, because
+         neither would be telling the truth yet. A nav landmark announces a set
+         of links to somewhere; this is three words, two of which lead nowhere,
+         and a landmark that offers nothing to navigate is worse than no landmark
+         at all. `aria-current` has the same problem one level down — it is
+         defined against the element a user has moved to, and on a plain <li>
+         screen readers are not obliged to say anything about it, so the
+         selection would be drawn and not announced while looking as though it
+         had been. So the qualifier is words: .visually-hidden, the same device
+         the cut title uses for the word it draws as a picture. #72 turns these
+         into links, and that is the change that earns the <nav> and the
+         `aria-current` back. -->
+    <ul class="panel-rail" aria-label="Projects">
+      <li class="is-selected">Photo Vault<span class="visually-hidden"> — shown below</span></li>
+      <li>Eater Map</li>
+      <li>Record Engine</li>
+    </ul>
     <div class="panel-inner">
       <header class="panel-head">
         <h2 class="panel-masthead" id="panel-masthead">Projects</h2>

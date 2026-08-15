@@ -2050,14 +2050,21 @@ body::after {
   --panel-frame-edge: rgba(242, 241, 238, 0.1);
 
   /* ---- the type scale ---------------------------------------------------- */
-  /* Measured off the design render (IMG_20260815_153956.jpg, 2568px wide) as a
-     share of its width, then written as vw so the composition holds its
-     proportions instead of its pixels: the masthead's cap is 5.1% of the render's
-     width and Host Grotesk's cap is 0.700 em, so 7.3vw; the subheading's is 3.2%,
-     so 4.6vw. The ratio between them, 1.59, is the number to preserve if either
-     is ever re-chosen — it is what makes the two lines read as one masthead.
-     Both are clamped at the ends, where a share of the window stops being a
-     sensible size for a word. */
+  /* THE DESIGN RENDER IS NOT IN THIS REPOSITORY, so these are constants of the
+     composition rather than derivations anyone can re-run, and that is the
+     honest way to read them. The render is a 2568px-wide still the author holds
+     locally; it is a screenshot of the real photo grid and shows uncensored
+     photographs of real people, which is precisely what #63 exists to decide and
+     #65 to re-shoot. Committing it here to make an arithmetic step checkable
+     would publish the thing those two tickets are careful about, so it stays out
+     and the numbers below stand on their own.
+     What was measured, for whoever wants to move one: the masthead's cap is 5.1%
+     of the render's width, and Host Grotesk's cap is 0.700 em, so 7.3vw; the
+     subheading's is 3.2%, so 4.6vw. Written as vw so the composition holds its
+     proportions rather than its pixels. The RATIO between them — 1.59 — is the
+     number to preserve if either is re-chosen by eye: it is what makes the two
+     lines read as one masthead. Both are clamped at the ends, where a share of
+     the window stops being a sensible size for a word. */
   --panel-masthead-size: clamp(2.75rem, 7.3vw, 8.5rem);
   --panel-sub-size:      clamp(1.75rem, 4.6vw, 5.4rem);
   /* The body copy is NOT the render's size. The render's paragraph is 55 words
@@ -2086,9 +2093,10 @@ body::after {
      covers the bottom quarter of the letters, which is what the design render
      does to its own second line. */
   --panel-frame-drop: calc(0.66 * var(--panel-sub-line));
-  /* Read off the render: the Frame including its titlebar is 1430 x 735. The
-     recording's own ratio is #65's to supply and #67's to frame; until then this
-     is what holds the right amount of space. */
+  /* Also off the render, and also a constant here for the reason above: the
+     Frame including its titlebar measured 1430 x 735. The recording's own ratio
+     is #65's to supply and #67's to frame; until then this is what holds the
+     right amount of space. */
   --panel-frame-ratio: 1.945;
 
   position: relative;
@@ -2097,7 +2105,20 @@ body::after {
      composition takes the rest. */
   grid-template-columns: auto minmax(0, 1fr);
   column-gap: clamp(1rem, 2.4vw, 2.75rem);
-  min-height: 100svh;
+  /* --fold, not a re-typed `100svh`. They are the same length today and the
+     variable is the one with the backstop: the @supports above gives --fold back
+     as 100vh where svh is not understood, and a literal here would opt out of
+     that silently. It is also the datum the three corner pictures and the whole
+     effect stack are measured off, so "one screen" means one thing on this page.
+     A FLOOR AND NOT A CEILING, and on a wide window it is genuinely exceeded:
+     the Frame is nine of twelve columns and grows with the width while the
+     window's height does not, so at 1920x1080 the composition stands about 6%
+     past the fold. Left rather than fought, because every way of capping it here
+     is worse than the overflow — clamping the Frame's height breaks the ratio it
+     is holding space at, and clamping its width means the one thing this section
+     exists to show stops filling the composition. #67 builds the real Frame and
+     #70 does the reflow; between them is where a ceiling belongs, if one does. */
+  min-height: var(--fold);
   /* --corner is the page's own margin: the measure the doorway's title stands
      off and the one the CV's gutters are cut to. The panel is a different
      composition but it is the same sheet of paper, so it keeps that inset
@@ -2119,13 +2140,13 @@ body::after {
    the list would rotate the order with it and put Record Engine at the top, and
    rotating each item turns only its own glyphs. Each then measures as a tall
    narrow box in an ordinary column, so `space-between` still means what it says.
-   Exactly one is selected, and it is said twice — `aria-current` in the markup
-   for anything listening, .is-selected here for anything looking. */
-.panel-rail ul {
+   Exactly one is selected, and it is said twice: .is-selected here for anything
+   looking, and a .visually-hidden qualifier in the markup for anything
+   listening — the comment there says why that rather than `aria-current`. */
+.panel-rail {
   list-style: none;
   margin: 0;
   padding: 0;
-  height: 100%;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
@@ -2136,7 +2157,6 @@ body::after {
   transform: rotate(180deg);
   white-space: nowrap;
   font-size: var(--panel-rail-size);
-  text-transform: uppercase;
   letter-spacing: 0.22em;
   color: var(--panel-muted);
 }
@@ -2186,14 +2206,6 @@ body::after {
   align-self: end;
   margin-bottom: calc(-1 * var(--panel-sub-line));
 }
-.panel-copy { grid-area: 1 / 7 / 2 / 13; align-self: start; }
-/* Beside the Frame rather than under it, and clear of the hanging second line
-   by one of its own lines plus air. */
-.panel-points {
-  grid-area: 2 / 1 / 3 / 4;
-  align-self: start;
-  margin-top: calc(var(--panel-sub-line) + clamp(1rem, 3vh, 2.25rem));
-}
 /* From a quarter of the way across to the right-hand edge, which is what puts
    its left edge under the second line rather than clear of it — the horizontal
    half of the occlusion, where --panel-frame-drop is the vertical one. z-index
@@ -2210,6 +2222,28 @@ body::after {
   border: 1px solid var(--panel-frame-edge);
 }
 
+/* ---- everything set in capitals -------------------------------------------
+   Which is everything but the paragraph: the masthead, the subheading, the Rail
+   and both lines of each engineering point. Stated once rather than five times,
+   because the pair of declarations always travels together and splitting them is
+   how one of the five ends up uppercase without `case` and nobody notices.
+
+   IT IS NOT ON .panel, and that is the reason this rule lists its subjects. Both
+   properties inherit, so hoisting them would be shorter — and would also apply
+   `case` to the body copy, which is lowercase running text whose hyphens and
+   parentheses are meant to sit where a lowercase face puts them. `case` is for
+   punctuation standing among capitals: the hyphen in SELF-STACKING, the comma
+   and the em dash in the figures. On the paragraph it would quietly raise every
+   hyphen in "content-addressed" and "re-verified" off its own baseline. */
+.panel-masthead,
+.panel-sub,
+.panel-rail li,
+.panel-points h3,
+.panel-points p {
+  text-transform: uppercase;
+  font-feature-settings: "case" 1;
+}
+
 /* ---- the masthead and the subheading -------------------------------------- */
 .panel-masthead {
   margin: 0;
@@ -2217,13 +2251,6 @@ body::after {
   font-weight: 500;                      /* the wght 514 cut — see @font-face */
   line-height: 0.86;
   letter-spacing: -0.005em;
-  text-transform: uppercase;
-  /* `case` moves punctuation up to suit capitals. None of these three words
-     carries any today, and it is asked for anyway: the wording of the
-     subheading is #69's to choose from five candidates, one of which is
-     hyphenated, and a hyphen sitting at lowercase height under a 100px capital
-     is exactly the kind of thing that ships unnoticed. */
-  font-feature-settings: "case" 1;
   color: var(--panel-ink);
 }
 .panel-sub {
@@ -2231,8 +2258,6 @@ body::after {
   font-size: var(--panel-sub-size);
   font-weight: 400;
   line-height: 1;
-  text-transform: uppercase;
-  font-feature-settings: "case" 1;
   color: var(--panel-muted);
 }
 /* The two authored lines. `block` on the spans rather than a <br>, so the break
@@ -2244,9 +2269,11 @@ body::after {
    career-record's Page intro, verbatim, behind the same hairline rule the render
    puts between the heading area and the text. The rule is a border rather than a
    pseudo-element so it is exactly as tall as the paragraph — which is why the
-   copy is `align-self: start` above: stretched, the rule would run the height of
-   the composition and read as a column divider instead. */
+   copy is `align-self: start`: stretched, the rule would run the height of the
+   composition and read as a column divider instead. */
 .panel-copy {
+  grid-area: 1 / 7 / 2 / 13;
+  align-self: start;
   border-left: 1px solid var(--panel-rule);
   padding-left: clamp(1rem, 1.8vw, 2rem);
   font-size: var(--panel-copy-size);
@@ -2258,16 +2285,18 @@ body::after {
 /* ---- the four engineering points -------------------------------------------
    career-record's ranked talking points, in its order, each with the figure that
    makes it checkable. An <ol>, because the order IS the ranking; the numbers are
-   off, because the figures are the numbers this column is about. */
-/* No `margin` shorthand here, and that is not tidiness. The top margin is what
-   clears the subheading's hanging second line, it is set with the rest of the
-   composition above, and a shorthand at this point in the sheet would silently
-   reset it — which is exactly what it did the first time, dropping the points
-   back onto the line they are meant to sit under. */
+   off, because the figures are the numbers this column is about.
+   Beside the Frame rather than under it, and clear of the hanging second line by
+   one of its own lines plus air. ONE RULE, and the top margin is why: it belongs
+   with the placement, `margin` shorthand would reset it, and this list also
+   wants `list-style` and a row gap. Split across two rules — the placement here
+   and the list styling seventy lines on — the shorthand went in and dropped the
+   points back onto the line they are meant to sit under. */
 .panel-points {
+  grid-area: 2 / 1 / 3 / 4;
+  align-self: start;
+  margin: calc(var(--panel-sub-line) + clamp(1rem, 3vh, 2.25rem)) 0 0;
   list-style: none;
-  margin-inline: 0;
-  margin-bottom: 0;
   padding: 0;
   display: grid;
   row-gap: clamp(1rem, 2.4vh, 1.9rem);
@@ -2277,18 +2306,14 @@ body::after {
   font-size: var(--panel-small-size);
   font-weight: 500;
   line-height: 1.25;
-  text-transform: uppercase;
   letter-spacing: 0.045em;
-  font-feature-settings: "case" 1;
   color: var(--panel-ink);
 }
 .panel-points p {
   margin: 0.35em 0 0;
   font-size: var(--panel-small-size);
   line-height: 1.3;
-  text-transform: uppercase;
   letter-spacing: 0.03em;
-  font-feature-settings: "case" 1;
   color: var(--panel-muted);
 }
 
@@ -2296,21 +2321,28 @@ body::after {
    The responsive reflow is its own change: the Rail becomes a horizontal row,
    the Frame and its reflection survive at phone width, and the headline stops
    being a scaled-down desktop. None of that is here. What IS here is the floor
-   under it — below the width where twelve columns stop being twelve columns,
-   everything stacks in source order and the frame keeps its space. A narrow
-   window gets a plain page rather than a broken composition, and the occlusion
-   is deliberately dropped rather than approximated: overlapping a line of type
-   at 380px wide hides the word instead of layering it. */
+   under it — below this width everything stacks in source order and the frame
+   keeps its space, so a narrow window gets a plain page rather than a broken
+   composition. The occlusion is deliberately dropped rather than approximated:
+   overlapping a line of type at 380px wide hides the word instead of layering it.
+
+   900px IS A CHOICE AND NOT A MEASUREMENT, unlike the two gates this sheet
+   already carries. 1100/983 asks whether the CV composes to one screen and 700
+   asks how much of a photograph is on screen; neither is the question here,
+   which is when the twelve-column composition stops being able to hold a
+   masthead beside a paragraph beside a Frame. The three do not fail at one
+   width — the copy column gets unreadably narrow before the masthead stops
+   fitting — so this is the widest round number at which all three still hold,
+   and #70 is where it gets replaced by something derived. */
 @media (max-width: 900px) {
   .panel {
     grid-template-columns: minmax(0, 1fr);
     row-gap: clamp(1.5rem, 4vh, 2.5rem);
   }
-  .panel-rail ul {
+  .panel-rail {
     flex-direction: row;
     justify-content: flex-start;
     gap: clamp(1rem, 5vw, 2rem);
-    height: auto;
   }
   .panel-rail li { writing-mode: horizontal-tb; transform: none; }
   .panel-inner { grid-template-columns: minmax(0, 1fr); grid-template-rows: none; }

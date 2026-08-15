@@ -159,10 +159,11 @@ Colours, the column width (`--col`), the carousel image height
 
 ## Typography
 
-The two pages no longer agree. `/portfolio` is set in three self-hosted faces;
-`/projects` is still on the Sitka stack described further down.
+The two pages no longer agree. `/portfolio` is set in four self-hosted families —
+three book serifs for the CV and a grotesk for the Projects Panel at its foot —
+and `/projects` is still on the Sitka stack described further down.
 
-**`/portfolio`** — **Vollkorn** for anything meant to be read (`--serif-body`:
+**`/portfolio`, the CV** — **Vollkorn** for anything meant to be read (`--serif-body`:
 body text, role lines, headings, contact), **Spectral** for the small lettered
 labels (`--serif-label`: name, tagline, projects link, theme toggle), and
 **Source Serif 4** for the year column (`--serif-num`). All three are OFL,
