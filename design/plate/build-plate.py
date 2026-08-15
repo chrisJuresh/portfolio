@@ -160,9 +160,21 @@ disagree about. The pipeline itself is shared by all six; only its numbers are n
    wherever that happened to put it.
 3. Desaturate to SAT_KEEP of the original chroma. The tint in step 6 is applied
    *to* what survives here, so this is the knob that decides whether the result
-   reads as a tinted photograph or as a duotone. At 0.24 the lead of the roofs
-   and the brick of the tower still part company, and neither competes with the
-   tint. The sky is not a consideration: it is matted out before this is seen.
+   reads as a tinted photograph or as a duotone. At 1.00 it is off — the frames
+   keep their own colour, and it is step 6 that keeps them quiet rather than this.
+   It ran at 0.24 for a long time on the reasoning that full chroma would compete
+   with the tint, and the measurement says it cannot: the endpoints below compress
+   every channel into the SHADOW..HIGHLIGHT span, so the ~10 codes of chroma these
+   hazy London frames carry arrive as about 4, and --plate-opacity then divides
+   that again. Composited, the whole page moves by at most 3 codes of any channel
+   between 0.24 and 1.00, at a mean page luma identical to two decimal places.
+   Which is also the honest reading of this stage: it costs nothing either way,
+   and the colour is in the file for whatever the endpoints are later asked to do
+   with it. The desaturation is a lerp toward linear luma, so it is exactly
+   luma-preserving — moving it moves no pixel's brightness, and the drift the
+   measurement does see (under one code, per pixel) is step 5's curve acting on
+   channels that are now further apart.
+   The sky is not a consideration: it is matted out before this is seen.
 4. Encode to sRGB gamma. Everything after this is a tone curve, and tone curves
    want perceptual space — the same S-curve applied in linear crushes shadows.
 5. Contrast S-curve at CONTRAST strength, then the highlight shoulder
@@ -371,7 +383,7 @@ class Grade(NamedTuple):
 PLATE_LIGHT = Grade(
     EXPOSURE_PCT=99.0,
     EXPOSURE_TARGET=0.34,
-    SAT_KEEP=0.24,
+    SAT_KEEP=1.00,
     CONTRAST=0.36,
     HIGHLIGHT_PUSH=1.34,
     SHADOW=(0x00, 0x00, 0x00),      # pure black
@@ -420,7 +432,7 @@ EYE_DARK_HIGHLIGHT = (0x90, 0x90, 0x90)     # was 0x8a, at dL* 2.86
 PLATE_DARK = Grade(
     EXPOSURE_PCT=99.0,
     EXPOSURE_TARGET=0.34,
-    SAT_KEEP=0.24,
+    SAT_KEEP=1.00,
     CONTRAST=0.36,
     HIGHLIGHT_PUSH=1.34,
     SHADOW=DARK_SHADOW,
@@ -431,7 +443,7 @@ PLATE_DARK = Grade(
 CAR_LIGHT = Grade(
     EXPOSURE_PCT=99.0,
     EXPOSURE_TARGET=0.34,
-    SAT_KEEP=0.24,
+    SAT_KEEP=1.00,
     CONTRAST=0.36,
     HIGHLIGHT_PUSH=1.34,
     SHADOW=(0x00, 0x00, 0x00),      # pure black
@@ -442,7 +454,7 @@ CAR_LIGHT = Grade(
 CAR_DARK = Grade(
     EXPOSURE_PCT=99.0,
     EXPOSURE_TARGET=0.34,
-    SAT_KEEP=0.24,
+    SAT_KEEP=1.00,
     CONTRAST=0.36,
     HIGHLIGHT_PUSH=1.34,
     SHADOW=DARK_SHADOW,
@@ -453,7 +465,7 @@ CAR_DARK = Grade(
 EYE_LIGHT = Grade(
     EXPOSURE_PCT=99.0,
     EXPOSURE_TARGET=0.34,
-    SAT_KEEP=0.24,
+    SAT_KEEP=1.00,
     CONTRAST=0.36,
     HIGHLIGHT_PUSH=1.34,
     SHADOW=(0x05, 0x05, 0x05),      # off black
@@ -467,7 +479,7 @@ EYE_LIGHT = Grade(
 EYE_DARK = Grade(
     EXPOSURE_PCT=99.0,
     EXPOSURE_TARGET=0.34,
-    SAT_KEEP=0.24,
+    SAT_KEEP=1.00,
     CONTRAST=0.36,
     HIGHLIGHT_PUSH=1.34,
     SHADOW=DARK_SHADOW,
