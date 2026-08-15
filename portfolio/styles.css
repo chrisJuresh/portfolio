@@ -1967,8 +1967,8 @@ body::after {
      ?v= is the digest build-textures.py prints. Same job as index.html's
      IMG_VERSION and the same reason — the filename does not change when the
      bytes do, and vercel.json caches this directory for a day. */
-  --fx-film-src: image-set(url("img/tex/film-1600.webp?v=7202d31c") 1x,
-                           url("img/tex/film-2600.webp?v=7202d31c") 2x);
+  --fx-film-src: image-set(url("img/tex/film-1600.webp?v=3311dec2") 1x,
+                           url("img/tex/film-2600.webp?v=3311dec2") 2x);
   --fx-film-strength: 0.14;
   --fx-film-blend: multiply;
   --fx-film-zoom: 1;      /* about the centre; >1 crops in on the frame       */
@@ -1993,8 +1993,8 @@ body::after {
 
      Anything is a valid size — the tile wraps, so there is no rung to land on —
      but sizes near a whole fraction of 512 resample most cleanly. */
-  --fx-paper-src: image-set(url("img/tex/paper-512.webp?v=7202d31c") 1x,
-                            url("img/tex/paper-1024.webp?v=7202d31c") 2x);
+  --fx-paper-src: image-set(url("img/tex/paper-512.webp?v=3311dec2") 1x,
+                            url("img/tex/paper-1024.webp?v=3311dec2") 2x);
   --fx-paper-size: 320px;
   --fx-paper-strength: 0.22;
   --fx-paper-blend: multiply;
