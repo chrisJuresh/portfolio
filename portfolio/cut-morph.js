@@ -112,15 +112,28 @@
   }
 
   /* Quantised to 240 steps, which is finer than the eye can follow at this size
-     and stops a one-pixel scroll from rebuilding eight path strings. */
+     and stops a one-pixel scroll from rebuilding eight path strings.
+
+     Each letter's own share of the scroll is eased with SMOOTHSTEP, s²(3 - 2s),
+     and the choice of curve matters more here than it looks. Two easings are
+     multiplied together on the way to a shape: the page turn in app.js shapes T
+     against time, and this shapes the letter against T. Peak rates multiply with
+     them — so the ease-in-out cubic that used to be on this line, twice as fast
+     at its middle as its average, met a turn three times as fast at its start and
+     the letters caught by both whipped through their transition at six times
+     their own rate. Smoothstep is the gentlest curve that still leaves and
+     arrives at rest, which is all this end needs: the turn is where the drama
+     belongs, and the letter only has to not start and stop with a jolt. The two
+     together now peak at 2.25×, where they used to reach 6×.
+
+     Both ends still land exactly on 0 and 1, so at either resting place every
+     letter is the real Bézier outline of a real typeface and not a polygon. */
   function draw(T) {
     var span = 1 - STAGGER * (WORD.length - 1), i, L, t, q;
     for (i = 0; i < letters.length; i++) {
       L = letters[i];
       t = (T - i * STAGGER) / span;
-      t = t <= 0 ? 0 : t >= 1 ? 1 : t < 0.5
-        ? 4 * t * t * t
-        : 1 - Math.pow(-2 * t + 2, 3) / 2;
+      t = t <= 0 ? 0 : t >= 1 ? 1 : t * t * (3 - 2 * t);
       q = Math.round(t * 240);
       if (q === L.last) continue;
       L.last = q;
