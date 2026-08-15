@@ -18,9 +18,9 @@ deliverable — open it in a browser, scroll, and pick.
 
 ## What was measured
 
-108 faces — 94 from `google/fonts`, 14 already installed on the machine this was
-built on — set as PROJECTS and compared to Friz Quadrata. `ranking-108.csv` is
-the full result.
+117 faces — 103 from `google/fonts`, 14 already installed on the machine this was
+built on — set as PROJECTS and compared to Friz Quadrata. `ranking.csv` is the
+full result.
 
 The cut title fixes two things (see the cut-title block in
 `portfolio/styles.css`): the word fills the measure, and it is cut at 0.62 of a
@@ -41,7 +41,26 @@ none is penalised for shipping a default lighter or bolder than the word wants.
 `rank.py` does this by probing `getGlyphSet(location=...)` at three weights and
 solving, which is far cheaper than building an instance per probe.
 
-Two measurement traps, both hit and both fixed:
+**Spacing comes from HarfBuzz, not from reading GPOS.** Kerning was originally
+pulled out of GPOS by hand, and that was wrong for six faces in three different
+ways — each one a thing a shaper knows and a reader does not:
+
+- **Subtable precedence.** Switzer's `kern` lookup carries a Format 1 list of
+  specific pairs *and* a Format 2 class table. In OpenType the first matching
+  subtable wins; reading them all and keeping the last let a class default of
+  −1 clobber the real −10, −19 and −9 on OJ, CT and TS.
+- **Which feature a lookup belongs to.** Scanning every PairPos lookup in the
+  font applies kerning that the `kern` feature never asked for. Geologica came
+  out with 7 kerned pairs where it has 2.
+- **The legacy `kern` table.** Franklin Gothic Medium and Tahoma do their
+  kerning in the old TrueType `kern` table and have none in GPOS, so a
+  GPOS-only reader found nothing and spaced both of them wrong.
+
+`kerncheck.py` is the check: it shapes the word with HarfBuzz and diffs every
+pair against what the layout produces. `lib.kern_pairs` survives only as a
+fallback for when `uharfbuzz` is not installed, with exactly the limits above.
+
+Two more measurement traps, both hit and both fixed:
 
 - **The stem is not the ink width of `I`.** Verdana's and Tahoma's capital I is
   serifed, so its ink box is the serif — three times the stem — and both faces
@@ -106,7 +125,8 @@ than punching holes through every overlap.
 |---|---|
 | `lib.py` | sets PROJECTS in a face and measures it, in units of its own cap |
 | `morph.py` | correspondence and the tween — the algorithm above |
-| `rank.py` | the 108-face sweep → `ranking-108.csv` |
+| `rank.py` | the whole-pool sweep → `ranking.csv` |
+| `kerncheck.py` | diffs the layout against HarfBuzz, pair by pair |
 | `build-specimen.py` | the curated 24 → `page2.json` |
 | `specimen.tpl.html` | the page, with `__DATA__` / `__DISP__` / `__BODY__` slots |
 | `specimen.html` | the built page. Self-contained; just open it |
@@ -115,11 +135,11 @@ than punching holes through every overlap.
 
 ## Running it
 
-Needs `fontTools`, `brotli`, `skia-pathops`, `Pillow` — and font files, none of
+Needs `fontTools`, `brotli`, `skia-pathops`, `uharfbuzz`, `Pillow` — and font files, none of
 which are in this repository:
 
 ```bash
-pip install fonttools brotli skia-pathops Pillow
+pip install fonttools brotli skia-pathops uharfbuzz Pillow
 ```
 
 Both scripts expect `friz/FrizQuadrataStd.ttf` plus `gf/` and `fsf/` directories

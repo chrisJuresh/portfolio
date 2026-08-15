@@ -106,6 +106,35 @@ def instance(f, wght=None):
     return instancer.instantiateVariableFont(f, loc, inplace=False, updateFontNames=False)
 
 
+def shaped(font, upem):
+    """Per-glyph advances for PROJECTS as HarfBuzz lays it out, in font units.
+
+    This replaces reading GPOS by hand, which got Switzer wrong. Its `kern`
+    lookup carries two subtables -- a Format 1 list of specific pairs and a
+    Format 2 class table -- and in OpenType the FIRST matching subtable wins.
+    Reading them all and keeping the last let a class default of -1 clobber the
+    real -10, -19 and -9. Subtable precedence is one of several things a shaper
+    knows and a reader does not; the others are which feature a lookup belongs
+    to, which script and language it is reachable under, and kerning applied
+    contextually rather than as a pair.
+
+    Returns None if uharfbuzz is not installed, so kern_pairs below stays as a
+    fallback -- with its own limits, which are the ones just listed."""
+    try:
+        import uharfbuzz as hb
+    except ImportError:
+        return None
+    import io
+    buf = io.BytesIO(); font.save(buf)
+    face = hb.Face(buf.getvalue()); f = hb.Font(face)
+    f.scale = (upem, upem)
+    b = hb.Buffer(); b.add_str(WORD); b.guess_segment_properties()
+    hb.shape(f, b)
+    if len(b.glyph_positions) != len(WORD):        # a ligature fired; not this word
+        return None
+    return [p.x_advance for p in b.glyph_positions]
+
+
 def kern_pairs(font, glyphs):
     if "GPOS" not in font: return {}
     gpos = font["GPOS"].table
@@ -160,8 +189,20 @@ def setword(path, wght=None, track_em=None, total=None, cap_units=1348.0):
         L[c] = dict(lsb=x0*k, rsb=(hmtx[n][0]-x1)*k, w=(x1-x0)*k, adv=hmtx[n][0]*k,
                     top=y1*k, bot=y0*k)
 
-    kern = {p: v*k for p, v in kern_pairs(f, names).items()}
-    base = sum(L[c]["adv"] for c in WORD) + sum(kern.values()) - L["P"]["lsb"] - L["S"]["rsb"]
+    # Advances come from the shaper where it is available, kerning included, and
+    # from hmtx plus a hand read of GPOS where it is not.
+    hb_adv = shaped(f, upem)
+    if hb_adv:
+        adv = [a*k for a in hb_adv]
+        kern = {}
+        nkern = sum(1 for i, c in enumerate(WORD[:-1])
+                    if abs(hb_adv[i] - hmtx[names[i]][0]) > 0.5)
+    else:
+        kern = {p: v*k for p, v in kern_pairs(f, names).items()}
+        adv = [L[c]["adv"] + kern.get((names[i], names[i+1]), 0) if i < 7 else L[c]["adv"]
+               for i, c in enumerate(WORD)]
+        nkern = len(kern)
+    base = sum(adv) - adv[-1] + L["S"]["adv"] - L["P"]["lsb"] - L["S"]["rsb"]
     if total is not None:
         track = (total - base) / 7.0
     else:
@@ -172,8 +213,8 @@ def setword(path, wght=None, track_em=None, total=None, cap_units=1348.0):
     for i, c in enumerate(WORD):
         origin[c] = x
         box[c] = (x + L[c]["lsb"], x + L[c]["lsb"] + L[c]["w"])
-        x += L[c]["adv"]
-        if i < 7: x += track + kern.get((names[i], names[i+1]), 0)
+        x += adv[i]
+        if i < 7: x += track
 
     # stroke weight: a scanline across I (or H) at half a cap. Not the ink width
     # of I -- Verdana's and Tahoma's capital I is serifed, and its ink box is the
@@ -187,7 +228,8 @@ def setword(path, wght=None, track_em=None, total=None, cap_units=1348.0):
 
     fam = f["name"].getDebugName(16) or f["name"].getDebugName(1) or os.path.basename(path)
     return dict(name=fam, upem=upem, cap_em=cap/upem, k=k, scale=k, span=span,
-                track=track, track_em=track/k/upem, stem=stem, kerned=len(kern),
+                track=track, track_em=track/k/upem, stem=stem, kerned=nkern,
+                shaper="harfbuzz" if hb_adv else "gpos-read",
                 box=box, origin=origin, polys=polys, L=L, wght=wght,
                 cmap={c: cmap[ord(c)] for c in WORD}, path=path,
                 ncontour={c: len(polys[c]) for c in WORD})
