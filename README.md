@@ -7,9 +7,11 @@ JavaScript. No framework, no build step, no dependencies.
 
 A single phone-width column presents a short CV — bio, work experience,
 education, contact — threaded through a full-bleed carousel of 53 of my own
-photographs of London. Alongside it, a wall of tinted cards for the projects.
-Both are a handful of hand-written source files and a folder of images, served
-statically from Vercel.
+photographs of London. Scroll past the cut title at its foot and the page turns
+dark for the Projects Panel, where one project is shown as a composition rather
+than described. Alongside all of it, a wall of tinted cards for the projects.
+All of it is a handful of hand-written source files and a folder of images,
+served statically from Vercel.
 
 <!-- screenshot: full-page desktop view, light theme, carousel mid-strip -->
 
@@ -94,14 +96,15 @@ statically from Vercel.
 │   ├── app.js          # theme bootstrap only — no rendering
 │   ├── styles.css      # card grid, per-card tints, print styles
 │   └── og.jpg          # social preview, 1200×630 — generated, see design/og/
-├── fonts/              # self-hosted Latin Modern Roman — deployed, unlinked
+├── fonts/              # the self-hosted faces — see its README
 └── design/             # dev-only: typography lab + OG builder — never deployed
 ```
 
-`fonts/` and `design/` are both leftovers of settling the typeface, and neither
-affects a visitor. `fonts/` holds Latin Modern Roman as woff2 subsets; no page
-links it, but it stays deployable so `/fonts/*.woff2` is there if that decision is
-ever revisited. `design/` is excluded from deploys entirely — see **Typography**.
+`fonts/` holds every face the site is actually set in, as woff2 subsets — plus
+Latin Modern Roman, which no page links and which is kept as the record of a
+decision made and reversed. Its own README says which is which. `design/` is the
+dev-only lab those decisions were made in and is excluded from deploys entirely —
+see **Typography**.
 
 One of those leftovers is load-bearing after all. The `/projects` social card was
 made before the move to Sitka and is set in Latin Modern, so
@@ -178,6 +181,15 @@ Each stack still ends in the old Sitka chain. That tail is unreachable unless a
 font request fails, and it is kept for exactly that case: every word on the page
 now depends on a webfont, and the failure should land on a screen serif rather
 than on Times New Roman.
+
+**...and one grotesk, at the foot.** Past the cut title and the blank screen it
+opens onto, `/portfolio` ends in the Projects Panel — a dark composition showing
+one project rather than describing it — and that is set in **Host Grotesk**
+(`--sans-panel`), OFL, two cuts, 32 KB. It is not a sixth reading face: the cut
+title *morphs into* Host Grotesk as the page scrolls, so the section is set in
+what the animation above it turns into, and its masthead uses the exact weight
+that morph solved for. `fonts/README.md` has the whole of that, including why
+one of the two cuts is at a weight nobody names.
 
 **`/projects`** — still **Sitka**, Matthew Carter's serif, cut for reading on
 screen and bundled with Windows:

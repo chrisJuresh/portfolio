@@ -74,6 +74,41 @@
   font-style: normal;
   font-display: swap;
 }
+/* Host Grotesk, and the one face on this page that is not a book serif. It sets
+   the Projects Panel at the foot of the document and nothing above it — see
+   --sans-panel and the panel block at the end of this sheet.
+   Two static instances off the variable source, ~32 KB together, built by the
+   recipe in fonts/README.md. Both are fetched only because the Panel's text is
+   in the document; nothing in the first screen names this family, so the CV
+   still paints in the same five faces it did before.
+
+   THE SECOND CUT IS AT wght 514, WHICH IS NOT A ROUND NUMBER AND IS NOT A
+   MISTAKE. 514 is the instance design/cut-title/morph solved for — the weight at
+   which Host Grotesk's stem matches Friz Quadrata's, so the cut title can turn
+   into it without the word changing colour on the page (faces.json records it,
+   and cut-morph.js carries those outlines inline). The Panel's masthead is the
+   same word again, so it is set in the same instance: at the foot of the scroll
+   the morphed title and the masthead below it are one drawing at two sizes, not
+   two weights of one family that nearly agree.
+   It is DECLARED as font-weight 500 because CSS has to be told a rung and 514
+   is not one. The @font-face descriptor is what selection uses, so the file's
+   own usWeightClass — left at 514, truthfully — never enters into it. Do not
+   "tidy" this to 500 in the build: that would be a different drawing from the
+   one the title arrives at. */
+@font-face {
+  font-family: "Host Grotesk";
+  src: url("/fonts/hostgrotesk-regular.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Host Grotesk";
+  src: url("/fonts/hostgrotesk-medium.woff2") format("woff2");
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
 
 :root {
   --ink:        #1a1917;
@@ -487,6 +522,19 @@
      a picture now and carries its own letterforms, so a family here would name a
      face nothing on the page asks for. The four --cue-* constants below are what
      replaced it. */
+
+  /* The Projects Panel, and nothing above it. Host Grotesk is not an alternative
+     to the serifs — it is the other end of the page: the CV is set in a book
+     face and the Panel is set in the interface face the cut title MORPHS INTO,
+     so the section is typographically the thing the animation above it arrives
+     at. cut-morph.js carries the same outlines inline; see the @font-face pair
+     at the top of this sheet for which cuts ship and why one of them is at a
+     weight nobody names.
+     The tail is the system grotesk chain rather than the Sitka one: a blocked
+     font request here should land on the nearest interface sans, not on a book
+     serif that would read as the CV having leaked downstairs. */
+  --sans-panel: "Host Grotesk", "Segoe UI Variable Text", "Segoe UI",
+                -apple-system, "Helvetica Neue", Arial, sans-serif;
 
   /* ---- the vertical ladder ------------------------------------------------
      Every gap down the column is one rung of φ. The rungs are the powers of the
@@ -1936,6 +1984,352 @@ body::after {
        is not clipped. */
     margin-top: calc(-1 * var(--cue-show) * var(--cue-slab));
   }
+  /* The third resting place, and it is not optional. The two ports above are
+     `body::before` at the top and .doorway at the end, and `scroll-snap-type: y
+     mandatory` means the scroller must COME TO REST on a port — so a section
+     added past the last one is not merely un-snapped, it is unreachable: every
+     scroll into it is snapped straight back to the doorway. This is what makes
+     it reachable at all in this regime. Movement — what the Rail does, and what
+     the crossing into dark does — is #72 and #73; this is the floor under both.
+     `start`, so the panel arrives with its masthead against the top of the
+     window, the same edge the doorway's title stands on. When the composition is
+     taller than the window the area is larger than the scrollport, which relaxes
+     snapping inside it rather than switching it off — you can read to the bottom
+     of a tall panel without being pulled back up, which is the behaviour wanted
+     here anyway. */
+  .panel { scroll-snap-align: start; }
+}
+
+/* ============================================================================
+   THE PROJECTS PANEL
+   ============================================================================
+   The dark composition at the foot of the document: one project shown rather
+   than described. The markup is static and lives in index.html — the comment
+   above it says why it is there and why it stands after .doorway rather than
+   inside .page — and this block is the whole of the geometry.
+
+   WHAT IS HERE AND WHAT IS NOT. This is the skeleton (#64): the masthead, the
+   subheading, the Rail, the body copy, the four engineering points, and a
+   placeholder holding the space the browser Frame will occupy. The Frame itself
+   (#67), the glass its titlebar is made of (#66), the recording inside it (#65)
+   and the marble it stands on (#68) are each their own change and each replaces
+   part of what is drawn here. The one thing the placeholder is load-bearing for
+   is the OCCLUSION: the subheading's second line passes behind it, which is
+   where the composition gets its depth, and that has to be true from the first
+   change rather than three later.
+
+   DARK IN BOTH THEMES. Every colour in here comes from a --panel-* property
+   declared on the section itself. None of the eight properties the profile
+   README's capture overrides by name (--ink, --ink-soft, --muted, --bg,
+   --bg-rgb, --bg-0, --rule-soft, --link-line) is read below, and the theme
+   toggle reaches none of them either. That is deliberate twice over: the design
+   is a dark composition regardless of what the page above it is set to, and the
+   capture's overrides are appended last and marked !important, so a panel that
+   DID read them would have its palette rewritten by a script in another repo.
+
+   IT IS BELOW THE CROP, WHICH IS THE ONLY REASON IT IS ALLOWED TO BE DARK. The
+   capture hides everything after the Work Experience listing by walking
+   `nextElementSibling` from it — inside .col — so nothing here is hidden by
+   that pass. It stays out of the shot by falling below cropHeight (852), a
+   whole screen and a doorway further down. design/tools/check-capture-contract.py
+   is what proves it: 592 / 852 / 80 / 80 and a light mean luminance, unchanged.
+
+   THE EFFECT STACK DOES NOT REACH IT. .fx is --fx-band tall — the fold — so the
+   paper, the halftone and the film all stop a screen and a half above this. The
+   panel is the one part of the document that is not a print. */
+.panel {
+  /* ---- the palette, and it answers to nothing above ---------------------- */
+  --panel-bg:       #08090a;
+  --panel-ink:      #f2f1ee;
+  --panel-ink-soft: #dcdad5;
+  --panel-muted:    #8b8983;
+  --panel-rule:     rgba(242, 241, 238, 0.16);
+  /* The placeholder's fill and edge. Both go when #67 builds the real Frame;
+     they are here so the box reads as reserved space rather than as a hole. */
+  --panel-frame-fill: #131518;
+  --panel-frame-edge: rgba(242, 241, 238, 0.1);
+
+  /* ---- the type scale ---------------------------------------------------- */
+  /* Measured off the design render (IMG_20260815_153956.jpg, 2568px wide) as a
+     share of its width, then written as vw so the composition holds its
+     proportions instead of its pixels: the masthead's cap is 5.1% of the render's
+     width and Host Grotesk's cap is 0.700 em, so 7.3vw; the subheading's is 3.2%,
+     so 4.6vw. The ratio between them, 1.59, is the number to preserve if either
+     is ever re-chosen — it is what makes the two lines read as one masthead.
+     Both are clamped at the ends, where a share of the window stops being a
+     sensible size for a word. */
+  --panel-masthead-size: clamp(2.75rem, 7.3vw, 8.5rem);
+  --panel-sub-size:      clamp(1.75rem, 4.6vw, 5.4rem);
+  /* The body copy is NOT the render's size. The render's paragraph is 55 words
+     of filler; the real one is career-record's Page intro at 145, and set at the
+     render's 1.6vw it would be twice the height of the frame beside it. */
+  --panel-copy-size:     clamp(0.8rem, 0.88vw, 1.1rem);
+  --panel-small-size:    clamp(0.76rem, 0.98vw, 0.95rem);
+  --panel-rail-size:     clamp(0.62rem, 0.72vw, 0.78rem);
+
+  /* One line of the subheading, as a length. Its line-height is 1, so a line is
+     exactly its font-size — and three things measure off it: how far the head's
+     box stops short of its own ink, how far down the second line the Frame bites,
+     and where the engineering points start. Change the sub's line-height and this
+     stops being --panel-sub-size. */
+  --panel-sub-line: var(--panel-sub-size);
+  /* HOW FAR DOWN THE SECOND LINE THE FRAME'S TOP EDGE FALLS, and the one number
+     in this block that is an assertion rather than a taste. Stated as a share of
+     the line it is biting into, so the overlap is the same fraction of a letter
+     at every window width.
+     The arithmetic, in ems of --panel-sub-size. The second line hangs into row
+     two, so its line box starts at the row's top. Host Grotesk's ascent and
+     descent span 1.330 em against a line-height of 1, so the half-leading is
+     (1 − 1.330)/2 = −0.165 and the baseline lands at −0.165 + 1.015 = 0.850 from
+     the row's top; the cap top is 0.700 above that, at 0.150. Pushing the frame
+     down 0.66 puts its edge 0.19 above the baseline — 0.27 of the cap — so it
+     covers the bottom quarter of the letters, which is what the design render
+     does to its own second line. */
+  --panel-frame-drop: calc(0.66 * var(--panel-sub-line));
+  /* Read off the render: the Frame including its titlebar is 1430 x 735. The
+     recording's own ratio is #65's to supply and #67's to frame; until then this
+     is what holds the right amount of space. */
+  --panel-frame-ratio: 1.945;
+
+  position: relative;
+  display: grid;
+  /* The Rail takes what it needs — one line of vertical type — and the
+     composition takes the rest. */
+  grid-template-columns: auto minmax(0, 1fr);
+  column-gap: clamp(1rem, 2.4vw, 2.75rem);
+  min-height: 100svh;
+  /* --corner is the page's own margin: the measure the doorway's title stands
+     off and the one the CV's gutters are cut to. The panel is a different
+     composition but it is the same sheet of paper, so it keeps that inset
+     rather than inventing one. */
+  padding: var(--corner);
+  background: var(--panel-bg);
+  color: var(--panel-ink);
+  font-family: var(--sans-panel);
+  font-weight: 400;
+  /* Nothing in here is a book face, and nothing in here should be read as one:
+     the CV above is set for reading and this is set for looking at. */
+  line-height: 1.5;
+}
+
+/* ---- the Rail --------------------------------------------------------------
+   Three project names down the left edge, reading bottom to top, spread over
+   the full height of the composition the way the render spreads them.
+   `writing-mode` plus a half turn on each ITEM rather than on the list: rotating
+   the list would rotate the order with it and put Record Engine at the top, and
+   rotating each item turns only its own glyphs. Each then measures as a tall
+   narrow box in an ordinary column, so `space-between` still means what it says.
+   Exactly one is selected, and it is said twice — `aria-current` in the markup
+   for anything listening, .is-selected here for anything looking. */
+.panel-rail ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+}
+.panel-rail li {
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  white-space: nowrap;
+  font-size: var(--panel-rail-size);
+  text-transform: uppercase;
+  letter-spacing: 0.22em;
+  color: var(--panel-muted);
+}
+/* The whole of the selection, and the whole of what #72 will have to move. */
+.panel-rail li.is-selected { color: var(--panel-ink); }
+
+/* ---- the composition -------------------------------------------------------
+   Twelve columns, two rows, and the placements below are the design render read
+   off as fractions: the head and the copy share the top half against a hairline
+   at the middle, the points run down the left of the lower half, and the Frame
+   fills the rest from a quarter of the way across.
+
+   THE SUBHEADING'S SECOND LINE HANGS OUT OF THE HEAD'S OWN BOX, and that one
+   trick is what makes the occlusion exact rather than lucky. The head is bottom
+   aligned in row one and carries a negative bottom margin of exactly one
+   subheading line, so its box ends after the FIRST line and the second hangs
+   below it — into row two, whose top edge is therefore the second line's top
+   edge, at every window width and whatever set row one's height. The Frame then
+   takes a positive --panel-frame-drop from that same edge and lands a fixed
+   fraction of the way down the letters. Nothing in the arithmetic goes through
+   the head's total height, the copy's height, or the row's.
+
+   THE COPY CAN NEVER BE PAINTED OVER, WHICH IS THE OTHER HALF OF THE SAME MOVE.
+   career-record's Page intro is 145 words against the design render's 55 of
+   filler, so the paragraph is much the taller block, and left to set its own row
+   it would run down behind a Frame that is nine columns wide. Here it cannot:
+   its row ENDS where the second line begins, and the Frame starts 0.66 of a line
+   below that. If the paragraph is taller than the head — which it is on a narrow
+   desktop — row one grows and the head sinks with it, bottom aligned; the
+   masthead sits a little lower and every word stays legible. That is the
+   degradation this composition chooses, and it is chosen: the alternative
+   (top-aligning the head) keeps the masthead pinned and silently slides the
+   second line out from under the Frame, losing the depth the render is built on. */
+.panel-inner {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  grid-template-rows: auto 1fr;
+  column-gap: clamp(0.75rem, 1.6vw, 1.75rem);
+  /* No row gap. The seam between the two rows IS the second line's top edge —
+     see above — so a gap here would open under the first line and push the
+     subheading apart. Everything that wants air below the head asks by margin. */
+  row-gap: 0;
+}
+
+.panel-head {
+  grid-area: 1 / 1 / 2 / 7;
+  align-self: end;
+  margin-bottom: calc(-1 * var(--panel-sub-line));
+}
+.panel-copy { grid-area: 1 / 7 / 2 / 13; align-self: start; }
+/* Beside the Frame rather than under it, and clear of the hanging second line
+   by one of its own lines plus air. */
+.panel-points {
+  grid-area: 2 / 1 / 3 / 4;
+  align-self: start;
+  margin-top: calc(var(--panel-sub-line) + clamp(1rem, 3vh, 2.25rem));
+}
+/* From a quarter of the way across to the right-hand edge, which is what puts
+   its left edge under the second line rather than clear of it — the horizontal
+   half of the occlusion, where --panel-frame-drop is the vertical one. z-index
+   and no `position`: a grid item takes z-index on its own, and this is the only
+   thing in the composition that paints over anything. */
+.panel-frame {
+  grid-area: 2 / 4 / 3 / 13;
+  align-self: start;
+  z-index: 1;
+  margin-top: var(--panel-frame-drop);
+  aspect-ratio: var(--panel-frame-ratio);
+  border-radius: clamp(0.5rem, 0.9vw, 1rem);
+  background: var(--panel-frame-fill);
+  border: 1px solid var(--panel-frame-edge);
+}
+
+/* ---- the masthead and the subheading -------------------------------------- */
+.panel-masthead {
+  margin: 0;
+  font-size: var(--panel-masthead-size);
+  font-weight: 500;                      /* the wght 514 cut — see @font-face */
+  line-height: 0.86;
+  letter-spacing: -0.005em;
+  text-transform: uppercase;
+  /* `case` moves punctuation up to suit capitals. None of these three words
+     carries any today, and it is asked for anyway: the wording of the
+     subheading is #69's to choose from five candidates, one of which is
+     hyphenated, and a hyphen sitting at lowercase height under a 100px capital
+     is exactly the kind of thing that ships unnoticed. */
+  font-feature-settings: "case" 1;
+  color: var(--panel-ink);
+}
+.panel-sub {
+  margin: 0;
+  font-size: var(--panel-sub-size);
+  font-weight: 400;
+  line-height: 1;
+  text-transform: uppercase;
+  font-feature-settings: "case" 1;
+  color: var(--panel-muted);
+}
+/* The two authored lines. `block` on the spans rather than a <br>, so the break
+   is a property of the composition and not a character in the sentence a screen
+   reader has to read around. */
+.panel-sub span { display: block; }
+
+/* ---- the body copy ---------------------------------------------------------
+   career-record's Page intro, verbatim, behind the same hairline rule the render
+   puts between the heading area and the text. The rule is a border rather than a
+   pseudo-element so it is exactly as tall as the paragraph — which is why the
+   copy is `align-self: start` above: stretched, the rule would run the height of
+   the composition and read as a column divider instead. */
+.panel-copy {
+  border-left: 1px solid var(--panel-rule);
+  padding-left: clamp(1rem, 1.8vw, 2rem);
+  font-size: var(--panel-copy-size);
+  line-height: 1.5;
+  color: var(--panel-ink-soft);
+}
+.panel-copy p { margin: 0; }
+
+/* ---- the four engineering points -------------------------------------------
+   career-record's ranked talking points, in its order, each with the figure that
+   makes it checkable. An <ol>, because the order IS the ranking; the numbers are
+   off, because the figures are the numbers this column is about. */
+/* No `margin` shorthand here, and that is not tidiness. The top margin is what
+   clears the subheading's hanging second line, it is set with the rest of the
+   composition above, and a shorthand at this point in the sheet would silently
+   reset it — which is exactly what it did the first time, dropping the points
+   back onto the line they are meant to sit under. */
+.panel-points {
+  list-style: none;
+  margin-inline: 0;
+  margin-bottom: 0;
+  padding: 0;
+  display: grid;
+  row-gap: clamp(1rem, 2.4vh, 1.9rem);
+}
+.panel-points h3 {
+  margin: 0;
+  font-size: var(--panel-small-size);
+  font-weight: 500;
+  line-height: 1.25;
+  text-transform: uppercase;
+  letter-spacing: 0.045em;
+  font-feature-settings: "case" 1;
+  color: var(--panel-ink);
+}
+.panel-points p {
+  margin: 0.35em 0 0;
+  font-size: var(--panel-small-size);
+  line-height: 1.3;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  font-feature-settings: "case" 1;
+  color: var(--panel-muted);
+}
+
+/* ---- one column, until #70 does this properly ------------------------------
+   The responsive reflow is its own change: the Rail becomes a horizontal row,
+   the Frame and its reflection survive at phone width, and the headline stops
+   being a scaled-down desktop. None of that is here. What IS here is the floor
+   under it — below the width where twelve columns stop being twelve columns,
+   everything stacks in source order and the frame keeps its space. A narrow
+   window gets a plain page rather than a broken composition, and the occlusion
+   is deliberately dropped rather than approximated: overlapping a line of type
+   at 380px wide hides the word instead of layering it. */
+@media (max-width: 900px) {
+  .panel {
+    grid-template-columns: minmax(0, 1fr);
+    row-gap: clamp(1.5rem, 4vh, 2.5rem);
+  }
+  .panel-rail ul {
+    flex-direction: row;
+    justify-content: flex-start;
+    gap: clamp(1rem, 5vw, 2rem);
+    height: auto;
+  }
+  .panel-rail li { writing-mode: horizontal-tb; transform: none; }
+  .panel-inner { grid-template-columns: minmax(0, 1fr); grid-template-rows: none; }
+  .panel-head, .panel-copy, .panel-points, .panel-frame {
+    grid-area: auto;
+    align-self: auto;
+  }
+  /* The hanging second line goes back into its own box: with nothing beside it
+     and nothing over it, a head that stopped short of its own ink would just
+     collide with the paragraph below. */
+  .panel-head { margin-bottom: 0; }
+  .panel-points { margin-top: clamp(1.5rem, 4vh, 2.5rem); }
+  .panel-copy {
+    border-left: 0;
+    border-top: 1px solid var(--panel-rule);
+    padding: clamp(1rem, 3vh, 1.5rem) 0 0;
+    margin-top: clamp(1rem, 3vh, 1.5rem);
+  }
+  .panel-frame { margin-top: clamp(1.5rem, 4vh, 2.5rem); }
 }
 
 /* ============================================================================
@@ -2903,6 +3297,14 @@ body::after {
      min-width/min-height, which in print is measured against the PAGE box — a
      large enough sheet matches it and prints one. */
   .doorway { display: none !important; }
+  /* ...and so is the section past it. The panel is a screen composition all the
+     way down — a full-bleed near-black ground, a placeholder standing in for a
+     video, and type sized as a share of the WINDOW, which on paper is a share of
+     the sheet. Printing it would cost a cartridge and say nothing the CV above
+     does not. What it holds that a reader might want — the four figures and the
+     project's own paragraph — belongs in a print sheet of its own if it is ever
+     wanted, not in an inverted screenshot of this one. */
+  .panel { display: none !important; }
   /* Paper has its own stock. A 12%-opacity photograph is also the one thing on
      this page that would cost a print visibly more than it is worth. */
   body::after { display: none !important; }

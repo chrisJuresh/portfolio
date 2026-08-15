@@ -4,8 +4,14 @@ Two things live here: the families `/portfolio` is actually set in, and the Lati
 Modern Roman files that record a decision made and reversed.
 
 - [In use — Vollkorn, Spectral, Source Serif 4](#in-use--vollkorn-spectral-source-serif-4)
+- [In use — Host Grotesk](#in-use--host-grotesk)
 - [Not in use — Latin Modern Roman](#not-in-use--latin-modern-roman)
 - [Removed — Friz Quadrata Std](#removed--friz-quadrata-std)
+
+The page is set in two kinds of face and the split is by section, not by taste:
+the CV at the top is set in book serifs, and the Projects Panel at the foot is
+set in a grotesk. See [In use — Host Grotesk](#in-use--host-grotesk) for why that
+is not an inconsistency.
 
 ## In use — Vollkorn, Spectral, Source Serif 4
 
@@ -150,6 +156,128 @@ Spectral loaded that constant is wrong by about 3.5px (3.67px assumed against
 0.17px actual), and it feeds `--cue-gap`, which positions the cut title. Whoever
 merges the two should re-derive it from Spectral, or decide the title's gap is a
 design number rather than a measured one and say so in the comment.
+
+## In use — Host Grotesk
+
+The Projects Panel at the foot of `/portfolio` is set in this, and nothing above
+it is. Its `@font-face` pair sits with the other five at the top of
+`portfolio/styles.css`, and `--sans-panel` is the slot.
+
+**It is not a sixth reading face and it is not an inconsistency.** The page is two
+compositions: a CV set as a printed page, and — past the cut title and the
+doorway — one project shown as an interface. The cut title is the hinge between
+them, and it *morphs into Host Grotesk* as the page scrolls
+(`design/cut-title/morph`, `portfolio/cut-morph.js`). Setting the Panel in
+anything else would mean the word arrives in one face and the section it titles is
+set in another.
+
+| File | Size | wght | Used for |
+|---|---|---|---|
+| `hostgrotesk-regular.woff2` | 16 KB | 400 | body copy, subheading, the points' figures, the Rail |
+| `hostgrotesk-medium.woff2` | 16 KB | **514** | the `PROJECTS` masthead, the points' titles |
+
+32 KB for the pair. Neither is on the critical path in the way the serifs are —
+nothing in the first screen names this family — but both are fetched on load,
+because the Panel's text is in the document from first paint.
+
+**Source.** `google/fonts`, `main` branch: `ofl/hostgrotesk/HostGrotesk[wght].ttf`
+— variable, wght 300–800, default 300. Upstream is
+[Element-Type/HostGrotesk](https://github.com/Element-Type/HostGrotesk).
+
+**Licence.** SIL Open Font License 1.1 — `OFL-HostGrotesk.txt`, copied from the
+same directory. As with the others, name IDs 0 and 13 are retained by the subset,
+so the copyright and licence records travel inside each `.woff2`. Being OFL is
+why this face is on the site at all: the cut-title morph shortlisted twelve
+Fontshare faces that are free for commercial use but are *not* OFL, and choosing
+one of those would have reopened the licensing question that removing Friz
+Quadrata closed.
+
+### Why the second cut is at wght 514
+
+Because that is the instance the cut title turns into, and it was solved for
+rather than chosen: `design/cut-title/morph` scales every candidate to Friz
+Quadrata's cap height and searches its weight axis for the stem that matches
+Friz's, so the word does not change colour as it morphs. For Host Grotesk that
+landed on **514** — recorded in `faces.json`, and the weight `cut-morph.js`
+carries inline. The Panel's masthead is the same word again, so it is set in the
+same instance; at the foot of the scroll the morphed title and the masthead below
+it are one drawing at two sizes.
+
+Two consequences, both deliberate:
+
+- **It is declared `font-weight: 500` in the CSS**, because CSS needs a rung and
+  514 is not one. The `@font-face` descriptor is what font selection reads, so the
+  file's own `usWeightClass` — left at 514, truthfully — never enters into it.
+- **`updateFontNames` is off for that cut.** 514 is not a named instance, so STAT
+  cannot name it and the file would otherwise inherit the variable default's
+  "Light". The build sets name IDs 1/2/4/6 to `Host Grotesk Medium` by hand
+  instead. Same situation as the `opsz` pin on Source Serif 4 above.
+
+If the morph is ever re-solved against a different face or a different cap
+reference, **re-instance this cut at whatever weight it lands on** — or the
+masthead and the word above it quietly stop being the same drawing.
+
+### Building them
+
+Same recipe as the serifs — Latin-1 + Latin Extended-A + General Punctuation +
+arrows + f-ligatures, `--no-hinting`, woff2, name IDs `0,1,2,3,4,5,6,13,14` — with
+one change to the kept features. `onum`/`lnum` are dropped (Host Grotesk has no
+old-style figures and nothing here asks for them) and **`case` is added**, which
+the uppercase blocks turn on with `font-feature-settings: "case" 1`. The masthead,
+the subheading, the Rail and the points are all set in capitals by CSS, and
+`case` is what lifts the punctuation among them to suit — the hyphen in
+`SELF-STACKING`, the comma and the em dash in the figures. Drop it from the subset
+and those sit at lowercase height under 100px capitals, with nothing in the CSS to
+explain why.
+
+```bash
+python - <<'PY'
+from fontTools.ttLib import TTFont
+from fontTools.varLib import instancer
+# 400 has a named instance, so STAT can name it.
+instancer.instantiateVariableFont(
+    TTFont("HostGrotesk[wght].ttf"), {"wght": 400},
+    inplace=False, updateFontNames=True).save("_hg400.ttf")
+# 514 does not — see above. Name it by hand instead.
+f = instancer.instantiateVariableFont(
+    TTFont("HostGrotesk[wght].ttf"), {"wght": 514},
+    inplace=False, updateFontNames=False)
+for nid, value in ((1, "Host Grotesk Medium"), (2, "Regular"),
+                   (4, "Host Grotesk Medium"), (6, "HostGrotesk-Medium")):
+    f["name"].setName(value, nid, 3, 1, 0x409)
+    f["name"].setName(value, nid, 1, 0, 0)
+f.save("_hg514.ttf")
+PY
+
+python -m fontTools.subset _hg400.ttf \
+  --unicodes="U+0000-00FF,U+0100-017F,U+0131,U+0152-0153,U+02C6,U+02DA,U+02DC,U+2000-206F,U+2074,U+20AC,U+2122,U+2190-2193,U+2212,U+FB00-FB04" \
+  --layout-features='kern,liga,clig,calt,ccmp,locl,case,frac' \
+  --flavor=woff2 --no-hinting \
+  --name-IDs='0,1,2,3,4,5,6,13,14' \
+  --output-file=hostgrotesk-regular.woff2
+```
+
+`_hg514.ttf` takes the same subset call, out to `hostgrotesk-medium.woff2`. Both
+land at 380 glyphs and 16 KB.
+
+### Metrics, measured from the files
+
+| Face | x-height | cap-height | x/cap | stem (1/1000 em) |
+|---|---|---|---|---|
+| Host Grotesk 400 | 0.496 | 0.700 | 0.709 | 90 |
+| Host Grotesk 514 | 0.496 | 0.700 | 0.709 | 112 |
+| Vollkorn *(the CV's body)* | 0.458 | 0.676 | 0.678 | — |
+
+Its x-height is the largest of any face here — 8% over Vollkorn's — so it sets
+noticeably larger at the same `font-size`. That is why the Panel's own sizes are
+derived from the design render as a share of the viewport rather than borrowed
+from the column above.
+
+Ascender minus descender is **1.330 em** (1015 / −315 at 1000 upem), and that
+number is load-bearing in `portfolio/styles.css`: `--panel-frame-drop` derives
+the Frame's overlap of the subheading's second line from the half-leading it
+implies at `line-height: 1`. **Re-derive it if this face is ever replaced** — the
+comment on that property has the whole arithmetic.
 
 ## Not in use — Latin Modern Roman
 
