@@ -342,10 +342,10 @@
 
        There used to be a `.doorway` between this and .page — one blank screen
        for the cut word to arrive on as its title, from when the word opened
-       onto nothing. It is gone. The word arrives HERE now, and lands on this
-       section's own masthead: see the turn block in styles.css for the two
-       snap ports it leaves, and the travel block in cut-morph.js for the flight
-       between them. The reason the panel still cannot be a child of .page is
+       onto nothing. It is gone: this section stands directly under the fold, one
+       page turn below the CV, and the cut word stays where it is cut rather than
+       travelling. See the turn block in styles.css for the two snap ports that
+       leaves. The reason the panel still cannot be a child of .page is
        the one the doorway was written for in the first place — in the
        one-screen regime .page is exactly one screen and .cut-title is pinned
        out of flow at `top: 100vh`, so a panel inside .page would land
@@ -382,17 +382,14 @@
     </ul>
     <div class="panel-inner">
       <header class="panel-head">
-        <!-- WHAT THE CUT WORD LANDS ON, and usually not what is drawn. When
-             cut-morph.js takes the flight it puts `.cue-fly` on <html> and this
-             h2 goes `visibility: hidden` — it keeps its box, so it is still what
-             sets row one's height and where the subheading starts, and the
-             flying word is fitted to its ink. Drawn twice would be drawn twice.
-             It stays in the markup rather than becoming a CSS-only slot for two
-             reasons: it is the section's accessible name, referenced by the
-             `aria-labelledby` above, which a hidden-but-referenced element still
-             supplies; and without the script it is simply the masthead, drawn,
-             which is the whole of what a browser that never runs cut-morph.js
-             gets. See the landing block in styles.css. -->
+        <!-- THE SECTION'S OWN MASTHEAD, always drawn. It is the same word as the
+             one cut off the foot of the page above, in the face that word turns
+             into over the scroll, and the two are deliberately left as two: #83
+             flew the cut word down onto this h2 and hid it under `.cue-fly`, and
+             the flight is out again because it had to scale the cut word by half
+             to fit — see the morph block in cut-morph.js. This sets row one's
+             height and is where the subheading starts. It is also the section's
+             accessible name, referenced by the `aria-labelledby` above. -->
         <h2 class="panel-masthead" id="panel-masthead">Projects</h2>
         <!-- Two authored lines, not one string left to wrap. The second line is
              the one the Frame passes in front of, so where it breaks is part of
