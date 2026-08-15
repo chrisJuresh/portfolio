@@ -540,8 +540,28 @@
     clearTimeout(t);
     t = setTimeout(scheduleAscii, 200);
   });
+  /* syncChroma goes with it, and this is the one --fx- property that needs
+     saying. Every other one is read live by the sheet, so a theme that
+     re-declares it is right the instant data-theme changes and nothing has to
+     be told. The pictures' split is not: it lives on the filter's feOffset
+     ATTRIBUTES, which are a COPY of --fx-chroma-pic-*, and a copy taken at boot
+     is a copy of whichever theme booted. `chroma-pictures` is now a dark-only
+     token with its x stated per theme, so without this a visitor who opens the
+     page on light and then switches to dark gets the filter built from light's
+     number until they reload — visible as a split at the wrong size, on the one
+     effect the theme was switched to see.
+
+     Gated on data-theme rather than run for both attributes: `style` fires on
+     every drag at the tuner, `set` already re-syncs the two names that need it
+     there, and this costs a layout to measure. */
+  function onRootAttr(records) {
+    for (var i = 0; i < records.length; i++) {
+      if (records[i].attributeName === "data-theme") { syncChroma(); break; }
+    }
+    scheduleAscii();
+  }
   if (window.MutationObserver) {
-    new MutationObserver(scheduleAscii)
+    new MutationObserver(onRootAttr)
       .observe(root, { attributes: true, attributeFilter: ["data-theme", "style"] });
   }
 

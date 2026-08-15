@@ -5,12 +5,22 @@
      default and overrides it from ?fx= or from localStorage; THE EFFECT STACK in
      styles.css is what each token does, and design/effects/effects-tuner.html is
      where they are judged.
-     Three of the eleven ship on, and only two of them are layers: the halftone
-     screen and the paper. `weave` is the third and is not a layer of its own —
-     it is the wander applied TO the film and the paper, and with the film off
-     the stack it is the paper alone that drifts. Neither half of the chromatic
-     aberration ships: the type is left unsplit and so are the three corner
-     photographs.
+     Four of the eleven ship on, and only two of them are layers: the halftone
+     screen and the paper. Those two are on in both themes.
+
+     THE OTHER TWO ARE THEME-SPECIFIC, and this attribute cannot say so — it is
+     one global stack by design, and it is in the markup precisely so the page
+     does not wait for a script, while the theme is not known until the boot
+     script below has read localStorage. So the stack names every effect the page
+     uses anywhere and the SHEET carries the theme, in the selector of the two
+     rules concerned: `weave` applies on light only, `chroma-pictures` on dark
+     only. AN EFFECT THAT BELONGS TO ONE THEME in styles.css is the whole of that
+     reasoning and the place to read before adding a third.
+
+     `weave` is not a layer of its own — it is the wander applied TO the film and
+     the paper, and with the film off the stack it is the paper alone that
+     drifts. `chroma-pictures` splits the three corner photographs red and cyan;
+     `chroma`, the half that splits the type, is off in both themes.
 
      data-fx-no-text and data-fx-no-gallery go here too, and both are set to the
      same three: they name the effects that are to be kept off the type and off
@@ -22,7 +32,7 @@
      are read here for the same reason data-fx is — one place, no drift. What
      they do is KEEPING A LAYER OFF THE TYPE in styles.css; the tuner writes
      them. -->
-<html lang="en" data-fx="halftone paper weave"
+<html lang="en" data-fx="halftone paper weave chroma-pictures"
       data-fx-no-text="halftone paper crt"
       data-fx-no-gallery="halftone paper crt">
 <head>

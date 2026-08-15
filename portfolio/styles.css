@@ -2152,13 +2152,15 @@ body::after {
      here is one offset at one angle, which is what a prism does and what the
      effect is recognised as.
 
-     Neither half is in the shipped stack, so the six numbers below are parked
-     rather than on show. They are still kept apart, and still tuned, because
-     the separation is what makes either of them tunable at all.
+     Only the pictures' half ships, and only on dark — see AN EFFECT THAT BELONGS
+     TO ONE THEME below. The type's three are parked: `chroma` is off in both
+     themes, and they are kept and kept apart because the separation is what
+     makes either half tunable at all.
 
-     The three below are the TYPE's half and only the type's. The angle is what
-     moved when they were last judged: x and y together are a diagonal split
-     rather than the purely horizontal one this started as. */
+     The three below are the TYPE's half and only the type's, and are the parked
+     ones. The angle is what moved when they were last judged: x and y together
+     are a diagonal split rather than the purely horizontal one this started
+     as. */
   --fx-chroma-x: 1.45px;
   --fx-chroma-y: 1.4px;
   --fx-chroma-alpha: 0.5;
@@ -2184,7 +2186,14 @@ body::after {
 
      Separated at the type's values with the blur off, so the separation itself
      changed no pixel; everything they have diverged by since was a decision made
-     after, one side at a time, which was the point of separating them. */
+     after, one side at a time, which was the point of separating them.
+
+     x is stated twice per theme, which is the only one of the six that is. The
+     0.2px here is what the light pass asked for and nothing on light renders it,
+     the token being dark-only; dark's 2.6px is in the dark block and is the one
+     that is actually drawn. Kept rather than collapsed to the live value so that
+     turning the token on for light is reading a number back rather than
+     inventing one. */
   --fx-chroma-pic-x: 0.2px;
   --fx-chroma-pic-y: 2.6px;
   --fx-chroma-pic-blur: 0px;
@@ -2416,7 +2425,55 @@ body::after {
   --fx-paper-contrast: 8;
   --fx-paper-blend: normal;
   --fx-paper-strength: 0.06;
+
+  /* The halftone is stated twice as well, and the blend is why. `multiply`
+     returns the SOURCE over white and black over black, so on light it lays the
+     dot grid across the whole page and on this side it is an exact no-op on the
+     flat field — which is the same thing `soft-light` does on both. So dark can
+     have the blend that only darkens and light cannot, and the choice made for
+     light in #51 is not one this side ever needed.
+     Keeping it: on black, multiply is the dot biting out of the photograph and
+     nothing at all happening in the gaps, which is a screen. soft-light shades
+     both ways and reads here as a wash over the picture instead. The plate goes
+     with the blend — 3.9px pitch against 3.7, and a dot of 0.2 of it against
+     0.27, so 0.78px of dot where light has 1.0px and more of the photograph
+     survives between them. */
+  --fx-halftone-pitch: 3.9px;
+  --fx-halftone-dot: 0.2;
+  --fx-halftone-blend: multiply;
+
+  /* The pictures' split is dark-only, so this is the value that is drawn; the
+     0.2px in :root is light's parked one. See the note beside it. */
+  --fx-chroma-pic-x: 2.6px;
 }
+
+/* ---- AN EFFECT THAT BELONGS TO ONE THEME ----------------------------------
+   The nine properties above are one theme wanting different NUMBERS, which is
+   what this sheet has always done. Two effects go further and are wanted in one
+   theme and not the other at all — `weave` on light, `chroma-pictures` on dark —
+   and that is a different shape, so it is worth saying once where it lives and
+   why it is not in data-fx.
+
+   It is not in data-fx because data-fx cannot hold it. The attribute is a single
+   global stack, deliberately: index.html's comment calls it one place, no drift,
+   and it is written in the markup so the page opens already treated instead of
+   flashing untreated a script-load later. Both of those break if the stack has
+   to vary by theme — the theme is not known until the boot script has read
+   localStorage, so a per-theme stack in the markup is either two attributes the
+   sheet cannot choose between or a stack written by script after first paint.
+
+   So the theme goes in the SELECTOR of the effect that is theme-specific, next
+   to the rule it qualifies, and data-fx keeps naming every effect the page uses.
+   That is flash-free by construction: data-theme is set by a blocking script in
+   the head, so the right rules match at first paint with no work from us.
+
+   The two rules are `chroma-pictures` above and `weave` below, each carrying its
+   own note. What this costs, and it is a real cost rather than a tidy one: the
+   tuner drives data-fx and has no idea a token can be theme-specific, so it
+   shows both as on in both themes and toggling one in the theme it does not
+   apply to does nothing visible. A third theme-specific effect, or a session
+   spent tuning one of these two, is the point at which the tuner should learn
+   about this rather than this comment getting longer. */
 
 /* ---- the film, on a small screen ------------------------------------------
    The film is one frame under `cover`, so a narrow window does not see a
@@ -2480,10 +2537,15 @@ body::after {
    photograph is close to unmeasurable, and paying a compositing layer per
    picture for it is worth being able to decline while the type keeps the
    split. Its own three numbers are --fx-chroma-pic-* above; the --fx-chroma-*
-   ones next to them drive the type and reach nothing here. */
-:root[data-fx~="chroma-pictures"] body::after,
-:root[data-fx~="chroma-pictures"] .car,
-:root[data-fx~="chroma-pictures"] .eye {
+   ones next to them drive the type and reach nothing here.
+
+   DARK ONLY — see AN EFFECT THAT BELONGS TO ONE THEME below. The fringe is
+   worth the layer against the dark page's photographs and is not against the
+   light one's, so the theme is part of the rule rather than something the stack
+   has to remember. */
+:root[data-theme="dark"][data-fx~="chroma-pictures"] body::after,
+:root[data-theme="dark"][data-fx~="chroma-pictures"] .car,
+:root[data-theme="dark"][data-fx~="chroma-pictures"] .eye {
   filter: var(--fx-chroma-url, none);
 }
 
@@ -2523,31 +2585,39 @@ body::after {
 /* ---- halftone -------------------------------------------------------------
    A dot screen at a printer's angle. The dots are one size rather than growing
    and shrinking with the tone under them — a true amplitude-modulated screen
-   needs to know what it is sitting on, which nothing in CSS does — but a
-   tone-aware blend gets most of the way there for nothing: the dot darkens and
-   the gap between dots lightens, by an amount that the blend scales with the
-   tone underneath, so the screen bites in the midtones and fades out at both
-   ends, which is the behaviour that reads as a screen.
+   needs to know what it is sitting on, which nothing in CSS does — but the blend
+   is doing the reading for us and gets most of the way there for nothing. How
+   far depends on which blend, and the two this ships with are not the same
+   animal: one shades in both directions by an amount taken from the tone
+   underneath, the other only ever darkens. What they have in common is the part
+   that matters, which is that each is a no-op on the flat field of the theme it
+   is used in.
 
-   `soft-light`, and the choice is the whole of what the effect now is. THE
-   LEVELS STAGE above says this blend and `overlay` alike are exact no-ops on
-   #fff and #000, and treats that as the thing to design around; here it is the
-   thing being used. The type and the carousel are lifted over this layer and the
-   two themes' flat fields are the blend's two fixed points, so what is left
-   under the dots is the corner photographs, and the paper's own fibre riding on
-   the field. The screen prints where there is tone and the page between stays
-   clean paper — which is what a duotone plate does, and is not achievable with a
-   mask, because a mask would have to know where the photographs are and this
-   does not.
+   What the dots land on is the same in both themes and worth stating once. The
+   type and the carousel are lifted over this layer, so what is left underneath
+   is the corner photographs and the paper's own fibre — and if the blend is one
+   the flat field is a fixed point of, the screen prints where there is tone and
+   the page between stays clean. That is what a duotone plate does, and it is not
+   achievable with a mask, because a mask would have to know where the
+   photographs are and this does not.
 
-   Of the two, `soft-light` is the gentler curve. Both branch on one input and
-   scale by the other, but the other way round: `overlay` decides multiply or
-   screen from the BACKDROP and takes its strength from the dot, which at a solid
-   black-and-white screen means full-strength multiply or screen everywhere there
-   is any tone at all. `soft-light` decides from the DOT and takes its strength
-   from the backdrop, so the same screen lands as a shading of what is there.
-   That is what lets the dot carry the effect at full opacity rather than the
-   layer being faded to keep the photographs off poster. */
+   The BLEND is the one thing here that is not the same in both, because the two
+   fields are #fff and #000 and the candidates are not symmetric about them:
+
+     * `soft-light` is a fixed point at both ends — it works either side, and is
+       what light uses.
+     * `multiply` returns the source over white and black over black, so it is a
+       no-op on the dark field and a dot grid across the whole light page. Dark
+       only, and dark's choice; see the dark block above for the pitch and dot
+       that go with it.
+     * `overlay` is a fixed point at both ends too, but it decides multiply or
+       screen from the BACKDROP and takes its strength from the dot — which at a
+       solid black-and-white screen is full-strength multiply or screen wherever
+       there is any tone at all. `soft-light` decides from the DOT and takes its
+       strength from the backdrop, so the same screen lands as a shading of what
+       is there. That is the gentler of the two, and is what lets the dot carry
+       the effect at full opacity rather than the layer being faded to keep the
+       photographs off poster. */
 :root[data-fx~="halftone"] .fx-halftone {
   display: block;
   background-image: radial-gradient(circle at 50% 50%,
@@ -2681,9 +2751,17 @@ body::after {
    a twentieth of the 384px tile, and at a five-step 4s period it reads as the
    sheet settling rather than as a projector. Both were tuned against the paper.
    Put the film back on and both want re-judging — a scratch is a singular mark
-   and jumps far more visibly than a wrapping fibre does. */
-:root[data-fx~="weave"] .fx-film,
-:root[data-fx~="weave"] .fx-paper {
+   and jumps far more visibly than a wrapping fibre does.
+
+   LIGHT ONLY — see AN EFFECT THAT BELONGS TO ONE THEME below. The dark page's
+   paper carries a much harder bite at a much lower strength (0.06 through a
+   contrast of 8), and moving that field is the whole page appearing to breathe
+   rather than a sheet settling. `:not()` in the selector rather than an
+   `animation: none` override in the dark block, so there is one rule saying when
+   this runs instead of two that have to agree — and it is written as an
+   exception to the default because bare `:root` in this sheet IS light. */
+:root[data-fx~="weave"]:not([data-theme="dark"]) .fx-film,
+:root[data-fx~="weave"]:not([data-theme="dark"]) .fx-paper {
   animation: fx-weave var(--fx-weave-period) steps(1, end) infinite;
 }
 @keyframes fx-weave {
