@@ -1,0 +1,303 @@
+{
+  "note": "The eleven entries the /projects card wall carried, kept as data when the page was retired in favour of the Projects Panel at the foot of /portfolio (#71). Nothing renders this file yet. `art` names the line-art symbol each card used; the symbols themselves, the stylesheet and the tints are in git history at the commit that removed projects/index.html.",
+  "intro": "My collection of coded projects: backend, platform and frontend, usually where software meets awkward data, hardware limits or human workflows.",
+  "entries": [
+    {
+      "title": "Eater Restaurant Map",
+      "year": "2026",
+      "tags": [
+        "SvelteKit",
+        "MapLibre",
+        "PMTiles",
+        "Python"
+      ],
+      "description": "2,336 London restaurants, merged out of 296 scattered Eater guides. Installable, and self-hosted down to the vector tiles, so it still works offline on the Tube.",
+      "links": [
+        {
+          "label": "Live",
+          "href": "https://eater.chrisj.uk"
+        },
+        {
+          "label": "Code",
+          "href": "https://github.com/chrisJuresh/eater-map-site"
+        }
+      ],
+      "notes": [],
+      "art": "art-map",
+      "card": {
+        "kind": "feature",
+        "modifiers": [
+          "eater"
+        ],
+        "wide": false
+      }
+    },
+    {
+      "title": "Consultant Recruitment",
+      "year": "2024",
+      "tags": [
+        "Django",
+        "SvelteKit",
+        "TypeScript",
+        "Zod"
+      ],
+      "description": "The NHS consultant-appointment process I used to run by hand, rebuilt as a typed seven-state workflow. 92.7% — EECS Final Year Project Prize.",
+      "links": [
+        {
+          "label": "Demo",
+          "href": "https://rcr.chrisj.uk"
+        },
+        {
+          "label": "Code",
+          "href": "https://github.com/chrisJuresh/uni-rcr"
+        }
+      ],
+      "notes": [],
+      "art": "art-workflow",
+      "card": {
+        "kind": "feature",
+        "modifiers": [
+          "rcr"
+        ],
+        "wide": false
+      }
+    },
+    {
+      "title": "a3watch",
+      "year": "2026",
+      "tags": [
+        "Python",
+        "Linux /proc",
+        "SQLite",
+        "systemd"
+      ],
+      "description": "Home-server monitoring that never wakes a sleeping disk, names the process behind every spin-up, and meters its own electricity in pennies per year.",
+      "links": [
+        {
+          "label": "Code",
+          "href": "https://github.com/chrisJuresh/dashboard"
+        }
+      ],
+      "notes": [
+        "Private deploy"
+      ],
+      "art": "art-watch",
+      "card": {
+        "kind": "feature",
+        "modifiers": [
+          "watch"
+        ],
+        "wide": false
+      }
+    },
+    {
+      "title": "Film Index",
+      "year": "2026",
+      "tags": [
+        "Svelte 5",
+        "Rust/Tauri",
+        "ffmpeg"
+      ],
+      "description": "A self-hosted cinema for the ~26,500 films of the TSPDT canon: catalogue, acquisition, and hardware-transcoded playback, on no runtime npm dependencies.",
+      "links": [
+        {
+          "label": "Code",
+          "href": "https://github.com/chrisJuresh/films"
+        },
+        {
+          "label": "Desktop app",
+          "href": "https://github.com/chrisJuresh/films/releases"
+        }
+      ],
+      "notes": [],
+      "art": "art-film",
+      "card": {
+        "kind": "compact",
+        "modifiers": [
+          "films"
+        ],
+        "wide": false
+      }
+    },
+    {
+      "title": "Which? Archive",
+      "year": "2026",
+      "tags": [
+        "Playwright",
+        "Python",
+        "SvelteKit"
+      ],
+      "description": "8,543 pages captured at a 100% rate, link-rewritten into a mirror that stands alone. A private archive of my own subscription; nothing republished.",
+      "links": [
+        {
+          "label": "Code",
+          "href": "https://github.com/chrisJuresh/which"
+        }
+      ],
+      "notes": [
+        "Private deploy"
+      ],
+      "art": "art-archive",
+      "card": {
+        "kind": "compact",
+        "modifiers": [
+          "which"
+        ],
+        "wide": false
+      }
+    },
+    {
+      "title": "Immutable Media Vault",
+      "year": "2026",
+      "tags": [
+        "Python",
+        "BLAKE3",
+        "SQLite",
+        "FastAPI"
+      ],
+      "description": "A content-addressed archive built around one hard rule: never mutate the source. It refuses to run if Windows would update an access timestamp.",
+      "links": [],
+      "notes": [
+        "Private · current work"
+      ],
+      "art": "art-vault",
+      "card": {
+        "kind": "compact",
+        "modifiers": [
+          "vault"
+        ],
+        "wide": false
+      }
+    },
+    {
+      "title": "Computer Science Work",
+      "year": "2024",
+      "tags": [
+        "PyTorch",
+        "PySpark",
+        "XQuery"
+      ],
+      "description": "Seven assessed projects, history intact: 95.03% on CIFAR-10, 22.7M taxi trips on Spark, an XQuery corpus pipeline. Three graded 100%; the degree, 82.4%.",
+      "links": [
+        {
+          "label": "Code",
+          "href": "https://github.com/chrisJuresh/qmul-coursework"
+        }
+      ],
+      "notes": [],
+      "art": "art-curve",
+      "card": {
+        "kind": "compact",
+        "modifiers": [
+          "course"
+        ],
+        "wide": false
+      }
+    },
+    {
+      "title": "paperWiz",
+      "year": "2021–2026",
+      "tags": [
+        "C#",
+        ".NET 8",
+        "WPF",
+        "COM"
+      ],
+      "description": "Per-monitor wallpapers colour-matched from one image — its own pywal palette engine, a hand-written COM projection, three languages in five years.",
+      "links": [
+        {
+          "label": "Code",
+          "href": "https://github.com/chrisJuresh/paperWiz"
+        }
+      ],
+      "notes": [],
+      "art": "art-monitors",
+      "card": {
+        "kind": "compact",
+        "modifiers": [
+          "paper"
+        ],
+        "wide": false
+      }
+    },
+    {
+      "title": "cs-stats",
+      "year": "2026",
+      "tags": [
+        "JavaScript",
+        "pandas",
+        "Streamlit"
+      ],
+      "description": "A browser-to-Streamlit pipeline that settled a friend-group CS2 leaderboard — normalised per round, so playing twice as much doesn't read as playing twice as well.",
+      "links": [
+        {
+          "label": "Code",
+          "href": "https://github.com/chrisJuresh/cs-stats"
+        }
+      ],
+      "notes": [],
+      "art": "art-bars",
+      "card": {
+        "kind": "compact",
+        "modifiers": [
+          "stats"
+        ],
+        "wide": false
+      }
+    },
+    {
+      "title": "Homelab Platform",
+      "year": "2026",
+      "tags": [
+        "Docker Compose",
+        "Cloudflare Tunnel"
+      ],
+      "description": "One outbound tunnel and one label-gated updater behind every private app. Push to main, live in two minutes, no open inbound ports.",
+      "links": [
+        {
+          "label": "Code",
+          "href": "https://github.com/chrisJuresh/infra"
+        }
+      ],
+      "notes": [],
+      "art": "art-tunnel",
+      "card": {
+        "kind": "compact",
+        "modifiers": [
+          "infra"
+        ],
+        "wide": false
+      }
+    },
+    {
+      "title": "This Site",
+      "year": "2026",
+      "tags": [
+        "HTML",
+        "CSS",
+        "Vanilla JS",
+        "Vercel"
+      ],
+      "description": "Hand-written, dependency-free and designed to print as a CV. Carousel physics, theming and lazy loading, all implemented rather than imported — with 53 photographs brought down from 250 MB of originals to 5.7 MB served.",
+      "links": [
+        {
+          "label": "Live",
+          "href": "/portfolio"
+        },
+        {
+          "label": "Code",
+          "href": "https://github.com/chrisJuresh/portfolio"
+        }
+      ],
+      "notes": [],
+      "art": "art-window",
+      "card": {
+        "kind": "compact",
+        "modifiers": [
+          "site"
+        ],
+        "wide": true
+      }
+    }
+  ]
+}

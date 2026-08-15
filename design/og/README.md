@@ -3,6 +3,13 @@
 `projects/og.jpg` — the Open Graph / Twitter image for `/projects`. Not
 hand-edited: it is built from the files here.
 
+**Nothing links it any more.** #71 retired `/projects`; the URL now 308s to
+`/portfolio#projects`, and a crawler following it reads `/portfolio`'s own
+tags. This builder, its source and the JPEG are all still here and still
+work — the card just has no page pointing at it. Repointing it at the
+Projects Panel, or removing the three of them, is a decision nobody has
+made yet.
+
 ```bash
 python design/og/build-og.py
 ```
@@ -50,9 +57,10 @@ prints the line's extent and warns if it would run into the arc and grid at
 x991; if it does, shorten the line or reduce `WORD_GAP`.
 
 You will also need to deal with `BLOCK_SHIFT` (see below) — the build refuses
-to run with both set, and tells you what to change. Then **update
-`og:image:alt` in `projects/index.html`** so the alt text still describes the
-picture.
+to run with both set, and tells you what to change. There used to be a third
+step here — update `og:image:alt` in `projects/index.html` so the alt text still
+describes the picture — and there is no longer a page to update. If this card is
+ever repointed at a live page, that step comes back with it.
 
 **`BLOCK_SHIFT` moves the name, rule and "Projects" down** by 86px from where
 the plate has them. Without a supporting line the block ended at y566 with

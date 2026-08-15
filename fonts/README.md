@@ -430,9 +430,10 @@ nearly closes. On a 1080p monitor it does not.
 - Larger sizes, modestly: 0.56 to 0.61 from 13.6px to 15.2px on the 9pt cut.
 - The 8pt/9pt optical cuts, whose stems are thicker (225 vs 215 units).
 - **Darker ink.** Since CM deposits ~27% less ink, drawing it at reduced opacity
-  compounds the problem. `projects/styles.css` sets card descriptions in
-  `--card-soft`, which is 78% opacity; at full `--card-ink` they would hold up
-  noticeably better. Untested as of writing, but it is the cheapest lever left.
+  compounds the problem. The worked example was `projects/styles.css`, which set
+  card descriptions in `--card-soft` at 78% opacity where full `--card-ink` would
+  have held up noticeably better. That page went in #71, but the lever is general
+  and is still the cheapest one left wherever CM is drawn soft.
 - Not using CM for the smallest text at all — what the `hybrid` variant does.
 
 ### Regenerating

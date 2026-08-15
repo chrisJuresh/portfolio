@@ -22,8 +22,11 @@
    WHAT THE BASE IS NOW, because every variant here is a delta against it, and
    the base has since moved — differently on each of the two pages.
 
-   `sitka` won the comparison these variants were built for and shipped. It is
-   still what /projects is set in. /portfolio has since moved off it: --serif-body
+   `sitka` won the comparison these variants were built for and shipped. It was
+   what /projects was set in until #71 retired that page, so the rules below that
+   name .card__* now match nothing anywhere — they are kept because this file is
+   the comparison as it was judged, not a patch against the current site.
+   /portfolio has since moved off it as well: --serif-body
    is Vollkorn, --serif-label is Spectral and --serif-num is Source Serif 4, all
    three self-hosted out of /fonts by portfolio/styles.css itself, with the Sitka
    chain kept only as the tail each stack falls back to. --serif-lead stayed
@@ -253,7 +256,7 @@
    Windows-only, so macOS and iOS fall to Charter or Iowan Old Style, Android
    to Georgia. Visitors would not all see the same face.
 
-   ** This is the variant that won, and it still ships on /projects. **
+   ** This is the variant that won, and it shipped on /projects until #71. **
    On /portfolio it no longer does: that page's reading text is Vollkorn and its
    labels are Spectral, both self-hosted, with this Sitka chain demoted to the
    tail each of those stacks falls back to. So on the portfolio page this variant
