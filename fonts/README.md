@@ -1,12 +1,11 @@
 # Fonts
 
-Three things live here: the families `/portfolio` is actually set in, the Latin
-Modern Roman files that record a decision made and reversed, and Friz Quadrata,
-which sets one word.
+Two things live here: the families `/portfolio` is actually set in, and the Latin
+Modern Roman files that record a decision made and reversed.
 
 - [In use — Vollkorn, Spectral, Source Serif 4](#in-use--vollkorn-spectral-source-serif-4)
 - [Not in use — Latin Modern Roman](#not-in-use--latin-modern-roman)
-- [In use — Friz Quadrata Std](#in-use--friz-quadrata-std)
+- [Removed — Friz Quadrata Std](#removed--friz-quadrata-std)
 
 ## In use — Vollkorn, Spectral, Source Serif 4
 
@@ -354,109 +353,54 @@ Spectral and Vollkorn — and re-applying the size compensation above, which the
 current sizes still do not carry (they were set for Sitka's larger x-height, and
 Vollkorn's is only 4% below it, not the 11.6% Latin Modern needs).
 
-## In use — Friz Quadrata Std
+## Removed — Friz Quadrata Std
 
-Ernst Friz's 1973 face, in Adobe's Std cut. It sets exactly one word — the cut
-title at the foot of `/portfolio` — and nothing else on the site.
+Ernst Friz's 1973 face, in Adobe's Std cut. It set exactly one word — the cut
+title at the foot of `/portfolio` — and **it is no longer here.** Four files were
+deleted (`frizquadrata-{regular,bold}.woff2` and the `-fixedmetrics` pair built
+from them), along with the `@font-face` blocks in `portfolio/styles.css` and in
+`fonts.css`, and the `--serif-display` family name. Nothing on this site names,
+serves or falls back to the face.
 
-| File | Size | Weight | Slot |
-|---|---|---|---|
-| `frizquadrata-regular.woff2` | 17 KB | 500 | — as supplied, kept as the record |
-| `frizquadrata-bold.woff2` | 17 KB | 700 | — as supplied, kept as the record |
-| `frizquadrata-regular-fixedmetrics.woff2` | 17 KB | 500 | `--serif-display`, **served** |
-| `frizquadrata-bold-fixedmetrics.woff2` | 17 KB | 700 | not served — no page asks for it |
+### Why, and what took its place
 
-### Where these came from
+Serving it meant redistributing a commercial Adobe/ITC cut from `chrisj.uk`, and
+a file sitting in `/fonts` is served whether or not a page links it. So the word
+stopped being type and became a picture of type: `design/cut-title/build-cut-title.py`
+sets PROJECTS once, at the tracking it was always set at, and bakes the eight
+glyphs to a single SVG path that `portfolio/app.js` carries inline. The result is
+vector, so it is exact at any size and any pixel density — and it was checked
+rather than assumed, by rasterising the baked path and the live font side by side
+and comparing them: the outlines coincide at scale 1.000 with the residual
+confined to antialiasing along the letters' edges.
 
-Supplied as a pre-built webfont kit — `.eot`, `.ttf`, `.woff`, `.woff2` per face,
-plus a generated `stylesheet.css` and demo page. That shape is the signature of a
-webfont-generator run over a desktop release, and the files bear it out: the
-version string is Adobe's own `hotconv` / `makeotf` PostScript toolchain, but the
-outlines arrive as TrueType `glyf` rather than the CFF the Std release ships.
-Something converted them in between.
+Everything the page needed the font's metrics for is now derived from the
+outlines and printed by the build script. See the cut title section of
+`portfolio/styles.css`.
 
-The two `.woff2` faces are committed **exactly as they arrived**. They are not
-re-subset with the recipe the rest of this folder uses, deliberately — this is a
-third-party binary and rebuilding it would blur whose work is whose. The other
-four formats and the generated CSS were dropped; `.eot` serves IE 8-11 and
-`.ttf`/`.woff` serve browsers that predate 2014, none of which this site
-supports.
+### To re-bake it
 
-### Its declared x-height was wrong — and is now fixed, in a second pair of files
-
-Measured from the supplied files, the OS/2 metric fields disagree with the
-outlines they describe — in both faces, by the same factor:
-
-| Field | Declared | Drawn | Ratio |
-|---|---|---|---|
-| x-height | 460 units = **0.225 em** | 942 units = **0.460 em** | 2.048x |
-| cap-height | 659 units = **0.322 em** | 1348 units = **0.658 em** | 2.046x |
-
-`unitsPerEm` is 2048. Those declared values are correct for an em of **1000** —
-which is what the CFF original had. The conversion scaled the outlines to 2048
-and left `sxHeight` and `sCapHeight` behind at their old scale.
-
-What it breaks: `font-size-adjust` reads `sxHeight`, and so do the CSS `ex` and
-`cap` units and the metric-matching browsers do when sizing a fallback. All of
-them will size this face against an x-height less than half its real one.
-
-Confirmed in Chromium rather than inferred from the tables — with the face set at
-`100px`:
-
-| Unit | Resolves to | Should be | |
-|---|---|---|---|
-| `1ex` | **22.45px** | 46.0px | tracks the stale field |
-| `1cap` | **32.17px** | 65.8px | same |
-
-This **stopped** being unused, and so stopped being a note. `portfolio/styles.css`
-sets the cut title's clip box in `cap` — deliberately, so the same fraction of
-letter shows in any face at any size — and against the supplied file that box
-came out half the height it should, showing a band through the middles of the
-letters instead of their top 0.62.
-
-So the two integer writes were made, into a **new pair of files**:
+The face is not in this repository and cannot be recovered from it. Point the
+build script at a local copy:
 
 ```bash
-python - <<'PY'
-from fontTools.ttLib import TTFont
-for src, dst in (("frizquadrata-regular.woff2", "frizquadrata-regular-fixedmetrics.woff2"),
-                 ("frizquadrata-bold.woff2",    "frizquadrata-bold-fixedmetrics.woff2")):
-    f = TTFont(src)
-    f["OS/2"].sxHeight   = 942    # drawn top of 'x'
-    f["OS/2"].sCapHeight = 1348   # drawn top of 'H'
-    f.flavor = "woff2"
-    f.save(dst)
-PY
+python design/cut-title/build-cut-title.py --font /path/to/frizquadrata-regular.woff2
 ```
 
-Nothing else is touched, and that was checked rather than assumed: all 263 glyph
-outlines compare bounds-identical, the name table is unchanged, and the GPOS
-kerning is intact. `size-adjust` is not an alternative — it scales the outlines
-and the stale field together, so the ratio it is meant to correct survives.
+One thing to know before you do, because it cost a day the first time. **The
+supplied file's declared metrics were wrong**: `unitsPerEm` is 2048, but
+`sxHeight` (460) and `sCapHeight` (659) were left at the 1000-unit scale of the
+CFF original after the outlines were scaled up — so `1cap` resolved to 0.322 em
+against 0.658 em of drawn capital, and every CSS `cap`/`ex` measurement came out
+at less than half. The fix was two integer writes into a copy:
 
-Confirmed in Chromium against the fixed file, at `100px`: `1cap` resolves to
-**65.81px** and `1ex` to **45.98px**, against the 32.17 and 22.45 the supplied
-file gave. Drawn cap is 0.6582 em, so that is exact.
+```python
+f["OS/2"].sxHeight   = 942    # drawn top of 'x'
+f["OS/2"].sCapHeight = 1348   # drawn top of 'H'
+```
 
-**New filenames, not new contents under the old ones**, because `vercel.json`
-puts a year-long `immutable` cache on `/fonts/(.*).woff2`. The originals stay in
-the folder untouched: they are the record of what was supplied, and the reason
-the faces are unsubset applies to them just as much.
-
-### If it is ever adopted
-
-- **The roman is a 500, and is declared as one.** `usWeightClass` is 500 and
-  `fonts.css` matches it. This does *not* put it out of reach of a normal body
-  stack: when `font-weight: 400` is asked for and no 400 is declared, CSS font
-  matching checks 500 before anything else, so 400 and `normal` both land on
-  this face with no synthesis. Measured — 400 and 500 render identically.
-- **Check the coverage.** 253 codepoints, 263 glyphs — Latin-1 plus a little
-  Latin Extended-A. The other faces here carry 358-glyph subsets covering
-  General Punctuation, arrows and f-ligatures. This one has no f-ligatures, and
-  its punctuation is thinner. `portfolio/content.js` is hand-edited prose, so a
-  gap shows up as a missing glyph on the next content edit.
-- Kerning is present, in GPOS, along with `liga`, `frac`, `sups` and `ordn`.
-- Its x/cap ratio is 0.698 — close to Georgia's 0.695 and above Vollkorn's 0.678,
-  so at a given `font-size` it reads slightly larger than the current body face.
-  Its `typoAscender − typoDescender` is exactly 1.000 em, the same as Sitka's, so
-  the half-leading arithmetic in the table above would need redoing for it.
+The build script reads `sCapHeight` for `--cue-cap-share`, so a re-bake from an
+**unrepaired** copy will produce a correct-looking picture with a cap ratio that
+is wrong by 2.046x, and the cut will slice through the middles of the letters
+rather than the top 0.62 of them. Repair the copy first, or take the cap height
+from the drawn top of `H` instead of the field.
