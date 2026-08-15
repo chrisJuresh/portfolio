@@ -1993,6 +1993,10 @@ body::after {
      page, which is what this shipped as and what makes a scratch read at forty
      or fifty pixels. Above 1 it draws bigger and crops in. Below 1 it draws
      smaller, and REPEATS — which is the part to know before dragging it.
+     The default here is 0.25, which is a sixteen-up tile and well past the point
+     the repeat is visible. That is affordable only because `film` is not in the
+     shipped stack: this is where the control is parked, not a value being shown
+     to anyone. Put the film back on and this is the first number to look at.
 
      There is no way around that repeat, and it is worth writing down so nobody
      goes looking for one. The size of a mark on screen is the source area shown
@@ -2013,7 +2017,7 @@ body::after {
      one more decade of it, without the layer's own box shrinking and pulling its
      edges into view below 1, and it leaves the transform free for --fx-weave —
      which was the whole reason `scale` was chosen over `transform` originally. */
-  --fx-film-scale: 1;
+  --fx-film-scale: 0.25;
   /* 1600 / 1190, the baked frame. `cover` is max(100%, height x this), and the
      scale above multiplies it; CSS cannot ask an image how big it is, so this
      is the one number here that has to be kept in step with FILM_RUNGS and the
@@ -2044,11 +2048,13 @@ body::after {
   --fx-paper-src: image-set(url("img/tex/paper-512.webp?v=3311dec2") 1x,
                             url("img/tex/paper-1024.webp?v=3311dec2") 2x);
   --fx-paper-size: 384px;
-  --fx-paper-strength: 0.22;
+  --fx-paper-strength: 0.18;
   --fx-paper-blend: multiply;
   --fx-paper-invert: 0;
   --fx-paper-lift: 1.5;
-  --fx-paper-contrast: 2;
+  /* 1.25 and not the 2 that solves the relation below — the deliberate break,
+     see the last paragraph of THE LEVELS STAGE. */
+  --fx-paper-contrast: 1.25;
 
   /* ---- THE LEVELS STAGE ----------------------------------------------------
      Both textures go through `filter: invert(i) brightness(B) contrast(C)`
@@ -2086,20 +2092,32 @@ body::after {
          C * (B - 1) = +1   puts the field on white
          C * (B - 1) = -1   puts the field on black
 
-     which is why the numbers are (1.5, 2) on light and (0.75, 4) on dark. Both
-     satisfy it, and both have the same detail gain B*C = 3, so the two themes
-     carry the same amount of texture rather than merely both having some. Move
-     B and C together along that relation to change how hard the detail bites;
-     break the relation deliberately and the flat field starts tinting the page,
-     which is a legitimate thing to want and is how you get stock that is not
-     quite white.
+     which is why the FILM's numbers are (1.5, 2) on light and (0.75, 4) on dark.
+     Both satisfy it, and both have the same detail gain B*C = 3, so the two
+     themes carry the same amount of texture rather than merely both having some.
+     Move B and C together along that relation to change how hard the detail
+     bites; break the relation deliberately and the flat field stops being
+     invisible and starts tinting the page, which is a legitimate thing to want
+     and is how you get stock that is not quite white.
 
-     The film still sits on it in both themes. The paper does on light and no
-     longer does on dark, which is that deliberate break — see the dark block
-     below.
+     The film sits exactly on the relation in both themes. THE PAPER NOW BREAKS
+     IT IN BOTH, in the same direction and for the same reason — it is the paper
+     that is being asked to be paper rather than to disappear:
 
-     --fx-*-strength is then the honest amount control on top: it fades the
-     detail toward the paper without moving the field off its endpoint. */
+       * light — (1.5, 1.25) puts the field at 0.81 instead of 1. Multiplied
+         onto white at strength 0.18 that is about a 3% knock off the page, a
+         warm-grey stock rather than #fff, with the fibre riding on top of it.
+       * dark — (0.8, 8) with `normal` rather than `screen`, which is the older
+         and larger break of the two and is written out in the dark block below.
+
+     So the relation is the thing to solve when a texture must vanish into the
+     paper, and the thing to leave when the paper itself is the effect.
+
+     --fx-*-strength is then the honest amount control on top. On a layer that
+     satisfies the relation it fades the detail toward the paper and the field
+     stays where it was, having nowhere to go; on one that breaks it the same
+     control scales the departure, field and detail together, and is how the
+     paper's tint is set to 3% rather than the 19% the levels alone would give. */
 
   /* ---- chroma: lateral chromatic aberration -------------------------------
      A red/cyan split, on the pictures through an SVG filter and on the type
@@ -2113,22 +2131,31 @@ body::after {
      outward, and doing that needs a per-channel scale that SVG filters have no
      primitive for — feDisplacementMap with a baked radial map is the usual
      dodge, and it costs an asset, a second decode and a filter region the size
-     of the page to buy a gradient nobody looks for at 0.6px. What is here is one
-     offset at one angle, which is what a prism does and what the effect is
-     recognised as.
+     of the page to buy a gradient nobody looks for at a pixel or two. What is
+     here is one offset at one angle, which is what a prism does and what the
+     effect is recognised as.
 
-     The three below are the TYPE's half and only the type's. */
-  --fx-chroma-x: 0.6px;
-  --fx-chroma-y: 0px;
+     Neither half is in the shipped stack, so the six numbers below are parked
+     rather than on show. They are still kept apart, and still tuned, because
+     the separation is what makes either of them tunable at all.
+
+     The three below are the TYPE's half and only the type's. The angle is what
+     moved when they were last judged: x and y together are a diagonal split
+     rather than the purely horizontal one this started as. */
+  --fx-chroma-x: 1.45px;
+  --fx-chroma-y: 1.4px;
   --fx-chroma-alpha: 0.5;
 
   /* ...and these are the PICTURES' half, which is `chroma-pictures`. They were
      the same three numbers until the two halves were separated, and sharing them
      was wrong for a reason that only shows once you try to tune either: a split
-     is measured against what it is splitting. 0.6px either side of a 15px glyph
-     is a fringe you read as a fringe; the same 0.6px across a photograph 600px
-     wide is a rounding error, and the offset that reads on the pictures washes
-     the type out. One number could serve both only if they were the same size.
+     is measured against what it is splitting. A pixel and a half either side of
+     a 15px glyph is a fringe you read as a fringe; the same pixel and a half
+     across a photograph 600px wide is a rounding error, and the offset that
+     reads on the pictures washes the type out. One number could serve both only
+     if they were the same size — and they have since drifted so far apart that
+     the pictures' split is now almost purely vertical while the type's is
+     diagonal, which is two different effects wearing one name.
 
      effects.js writes them onto the filter's primitives, because SVG filter
      primitives take ATTRIBUTES and no amount of custom property can drive one.
@@ -2138,9 +2165,10 @@ body::after {
      and what stops a hard-edged fringe on a photograph reading as a bug. A
      text-shadow has no equivalent, so the type's third number is alpha instead.
 
-     Shipped at the type's old values with the blur off, so this separation
-     changed no pixel by itself. */
-  --fx-chroma-pic-x: 2.6px;
+     Separated at the type's values with the blur off, so the separation itself
+     changed no pixel; everything they have diverged by since was a decision made
+     after, one side at a time, which was the point of separating them. */
+  --fx-chroma-pic-x: 0.2px;
   --fx-chroma-pic-y: 2.6px;
   --fx-chroma-pic-blur: 0px;
 
@@ -2150,11 +2178,11 @@ body::after {
   --fx-grain-size: 600px;       /* the noise tile, drawn small                 */
   --fx-grain-fps: 2;
 
-  --fx-halftone-pitch: 3.9px;   /* dot to dot                                  */
-  --fx-halftone-dot: 0.2;       /* the dot's radius as a share of the pitch    */
+  --fx-halftone-pitch: 3.7px;   /* dot to dot                                  */
+  --fx-halftone-dot: 0.27;      /* the dot's radius as a share of the pitch    */
   --fx-halftone-angle: 11deg;   /* the screen angle a printer would use        */
   --fx-halftone-opacity: 1;
-  --fx-halftone-blend: multiply;
+  --fx-halftone-blend: soft-light;
 
   --fx-vignette-start: 55%;     /* where the corner darkening begins           */
   --fx-vignette-strength: 0.3;
@@ -2178,8 +2206,8 @@ body::after {
   --fx-ascii-opacity: 0.18;
   --fx-ascii-invert: 0;
 
-  --fx-weave-amount: 15px;      /* gate weave: how far the film wanders        */
-  --fx-weave-period: 3.25s;
+  --fx-weave-amount: 20px;      /* gate weave: how far the film wanders        */
+  --fx-weave-period: 4s;
 }
 
 /* The stack itself. Absolute in body's coordinates, as the corner pictures are,
@@ -2468,10 +2496,31 @@ body::after {
 /* ---- halftone -------------------------------------------------------------
    A dot screen at a printer's angle. The dots are one size rather than growing
    and shrinking with the tone under them — a true amplitude-modulated screen
-   needs to know what it is sitting on, which nothing in CSS does — but `overlay`
-   gets most of the way there for nothing: it multiplies in the dark half of the
-   page and screens in the light half, so the dots bite in the ink and all but
-   vanish in the paper, which is the behaviour that reads as a screen. */
+   needs to know what it is sitting on, which nothing in CSS does — but a
+   tone-aware blend gets most of the way there for nothing: the dot darkens and
+   the gap between dots lightens, by an amount that the blend scales with the
+   tone underneath, so the screen bites in the midtones and fades out at both
+   ends, which is the behaviour that reads as a screen.
+
+   `soft-light`, and the choice is the whole of what the effect now is. THE
+   LEVELS STAGE above says this blend and `overlay` alike are exact no-ops on
+   #fff and #000, and treats that as the thing to design around; here it is the
+   thing being used. The type and the carousel are lifted over this layer and the
+   two themes' flat fields are the blend's two fixed points, so what is left
+   under the dots is the corner photographs, and the paper's own fibre riding on
+   the field. The screen prints where there is tone and the page between stays
+   clean paper — which is what a duotone plate does, and is not achievable with a
+   mask, because a mask would have to know where the photographs are and this
+   does not.
+
+   Of the two, `soft-light` is the gentler curve. Both branch on one input and
+   scale by the other, but the other way round: `overlay` decides multiply or
+   screen from the BACKDROP and takes its strength from the dot, which at a solid
+   black-and-white screen means full-strength multiply or screen everywhere there
+   is any tone at all. `soft-light` decides from the DOT and takes its strength
+   from the backdrop, so the same screen lands as a shading of what is there.
+   That is what lets the dot carry the effect at full opacity rather than the
+   layer being faded to keep the photographs off poster. */
 :root[data-fx~="halftone"] .fx-halftone {
   display: block;
   background-image: radial-gradient(circle at 50% 50%,
@@ -2595,11 +2644,17 @@ body::after {
 }
 
 /* ---- weave ----------------------------------------------------------------
-   Gate weave: the film wandering in the gate, a pixel or two, several times a
-   second. It moves the two texture layers and nothing else — the type is
-   printed, not projected, and sliding it would be a different and much worse
-   effect. steps(), because a gate jumps between frames rather than easing
-   between them. */
+   Gate weave: the film wandering in the gate. It moves the two texture layers
+   and nothing else — the type is printed, not projected, and sliding it would
+   be a different and much worse effect. steps(), because a gate jumps between
+   frames rather than easing between them.
+
+   This ships on, and with the film off the stack it is the PAPER that weaves,
+   which is why the numbers are not the pixel-or-two a gate would give: 20px is
+   a twentieth of the 384px tile, and at a five-step 4s period it reads as the
+   sheet settling rather than as a projector. Both were tuned against the paper.
+   Put the film back on and both want re-judging — a scratch is a singular mark
+   and jumps far more visibly than a wrapping fibre does. */
 :root[data-fx~="weave"] .fx-film,
 :root[data-fx~="weave"] .fx-paper {
   animation: fx-weave var(--fx-weave-period) steps(1, end) infinite;
