@@ -1,0 +1,374 @@
+<title>Unserifing PROJECTS</title>
+
+<style>
+@font-face{font-family:"Disp";src:url(data:font/woff2;base64,__DISP__) format("woff2");font-weight:400;font-display:block}
+@font-face{font-family:"Body";src:url(data:font/woff2;base64,__BODY__) format("woff2");font-weight:400;font-display:block}
+
+:root{
+  --paper:#EEF1F1; --card:#F7F9F8; --ink:#12191A; --mid:#4C5A5B; --dim:#778688;
+  --rule:#D2DAD9; --line:#C0CBCA; --accent:#00707C; --accent-soft:#00707C1f;
+  --serif:"Disp",Georgia,serif; --sans:"Body",system-ui,sans-serif;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --paper:#0D1314; --card:#141C1D; --ink:#E4EBEA; --mid:#9DACAC; --dim:#7A8A8A;
+  --rule:#25302F; --line:#33403F; --accent:#57D2D6; --accent-soft:#57d2d626;}}
+:root[data-theme="dark"]{
+  --paper:#0D1314; --card:#141C1D; --ink:#E4EBEA; --mid:#9DACAC; --dim:#7A8A8A;
+  --rule:#25302F; --line:#33403F; --accent:#57D2D6; --accent-soft:#57d2d626;}
+
+*{box-sizing:border-box}
+body{background:var(--paper);color:var(--ink);font-family:var(--sans);
+  font-size:16px;line-height:1.6;margin:0;-webkit-font-smoothing:antialiased}
+.wrap{max-width:34rem;margin:0 auto;padding:0 1.5rem}
+.wide{max-width:66rem;margin:0 auto;padding:0 1.5rem}
+h1,h2,h3{font-family:var(--serif);font-weight:400;text-wrap:balance;line-height:1.2;margin:0}
+h1{font-size:clamp(2.1rem,6vw,3.4rem);letter-spacing:-.01em}
+h2{font-size:clamp(1.5rem,3.4vw,2rem)}
+p{margin:0}
+a{color:var(--accent)}
+.lede{font-size:1.1rem;color:var(--mid)}
+.eyebrow{font-size:.72rem;letter-spacing:.13em;text-transform:uppercase;color:var(--dim);font-weight:500}
+.note{font-size:.86rem;color:var(--mid)}
+strong{font-weight:600}
+code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.86em;
+  background:var(--accent-soft);padding:.1em .35em;border-radius:2px}
+section{padding:3.5rem 0}
+section+section{border-top:1px solid var(--rule)}
+.stack{display:flex;flex-direction:column;gap:1rem}
+.stack-l{display:flex;flex-direction:column;gap:2.5rem}
+
+.bar{position:sticky;top:0;z-index:10;background:color-mix(in srgb,var(--paper) 88%,transparent);
+  backdrop-filter:blur(8px);border-bottom:1px solid var(--rule)}
+.bar-in{display:flex;align-items:center;gap:1rem;padding:.7rem 1.5rem;max-width:66rem;margin:0 auto}
+.bar label{font-size:.72rem;letter-spacing:.13em;text-transform:uppercase;color:var(--dim);white-space:nowrap}
+input[type=range]{flex:1;accent-color:var(--accent);min-width:0}
+button{font:inherit;font-size:.82rem;background:none;color:var(--accent);
+  border:1px solid var(--line);border-radius:3px;padding:.25rem .7rem;cursor:pointer}
+button:hover{background:var(--accent-soft)}
+button[aria-pressed=true]{background:var(--accent);color:var(--paper);border-color:var(--accent)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+.word{display:block;width:100%;height:auto;fill:var(--ink)}
+.hero-word{margin:2.5rem 0 1rem}
+.plates{display:flex;flex-direction:column;gap:2.5rem}
+.plate{background:var(--card);border:1px solid var(--rule);border-radius:4px;
+  padding:1.4rem 1.5rem 1.2rem;display:flex;flex-direction:column;gap:.9rem;
+  scroll-margin-top:5rem}
+.plate.pinned{border-color:var(--accent)}
+.plate-head{display:flex;align-items:baseline;justify-content:space-between;gap:1rem;flex-wrap:wrap}
+.plate-head h3{font-family:var(--sans);font-size:1.02rem;font-weight:600;letter-spacing:-.01em}
+.plate-head .who{font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;color:var(--dim)}
+.blurb{font-size:.88rem;color:var(--mid);max-width:44rem}
+.metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(5rem,1fr));gap:.7rem;
+  border-top:1px solid var(--rule);padding-top:.8rem}
+.metric{display:flex;flex-direction:column;gap:.1rem}
+.metric b{font-size:.92rem;font-weight:500;font-variant-numeric:tabular-nums}
+.metric span{font-size:.64rem;letter-spacing:.09em;text-transform:uppercase;color:var(--dim)}
+.pin{align-self:flex-start}
+
+.tablewrap{overflow-x:auto;border:1px solid var(--rule);border-radius:4px;background:var(--card)}
+table{border-collapse:collapse;width:100%;font-size:.82rem;font-variant-numeric:tabular-nums}
+th,td{padding:.4rem .7rem;text-align:right;white-space:nowrap}
+th{position:sticky;top:0;background:var(--card);border-bottom:1px solid var(--line);
+  font-weight:500;font-size:.68rem;letter-spacing:.08em;text-transform:uppercase;
+  color:var(--dim);cursor:pointer;user-select:none}
+th:hover{color:var(--accent)}
+th.name,td.name{text-align:left}
+tbody tr:nth-child(2n){background:var(--accent-soft)}
+tr.friz{background:var(--accent);color:var(--paper)}
+tr.friz td{font-weight:600}
+ul{margin:0;padding-left:1.1rem}
+li{margin-bottom:.45rem}
+li::marker{color:var(--accent)}
+footer{padding:3rem 0 4rem;color:var(--dim);font-size:.82rem}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+
+<div class="bar">
+  <div class="bar-in">
+    <label for="scrub">Morph</label>
+    <input type="range" id="scrub" min="0" max="1000" value="0" aria-label="Morph amount">
+    <button id="follow" aria-pressed="true">Follow scroll</button>
+  </div>
+</div>
+
+<div class="wrap">
+  <section style="border:0">
+    <div class="stack">
+      <p class="eyebrow">Cut title &middot; /portfolio</p>
+      <h1>Pick the sans</h1>
+      <p class="lede">Twenty-four modern faces, each one shown becoming
+        PROJECTS as you scroll. Both ends are the real typeface &mdash; only
+        what happens in between is geometry.</p>
+    </div>
+  </section>
+</div>
+
+<div class="wide hero-word">
+  <svg class="word" id="hero" viewBox="__VB__" aria-label="PROJECTS morphing from Friz Quadrata into a sans-serif"></svg>
+  <p class="note" id="herocap"></p>
+</div>
+
+<div class="wrap">
+  <section>
+    <div class="stack">
+      <h2>What changed in the tween</h2>
+      <p>The first version sampled both outlines at equal arc length and joined
+        mismatched contours with a slit. That is why it looked wrong, and it
+        looked wrong in three specific ways.</p>
+      <ul>
+        <li><strong>Corners now match corners.</strong> Equal-arc sampling lands
+          the corner of an E's arm against the middle of a curve, so every corner
+          rounds off on the way across and the straight edges wobble. Corners are
+          now found on both outlines, matched by cyclic dynamic programming, and
+          points distributed <em>between</em> matched corners. A stem stays
+          straight because both its ends are pinned.</li>
+        <li><strong>The bowl closes instead of unzipping.</strong> Friz Quadrata's
+          P and R have no counter &mdash; the bowl tapers to a point and never
+          reaches the stem. The old version slit the sans counter open and joined
+          it to its outer, which read as a zip being pulled. Now the bay is closed
+          off with a chord across its mouth: the outer swallows the bay and the
+          bay becomes a hole bounded by the same chord. The two chords coincide,
+          so at rest it is Friz's own shape &mdash; and the tween's job becomes
+          closing the mouth, which is what someone would draw.</li>
+        <li><strong>Both ends are the typeface.</strong> At rest the page shows
+          the real Bézier outlines, not a polygon of them. The tween runs only in
+          between, and the handover is measured at about 0.2% of a pixel's worth
+          of difference, so nothing jumps.</li>
+      </ul>
+      <p class="note">Finding that chord needs one more thing to be told to it:
+        a letter has several places where its outline nearly touches itself across
+        white, and the notch under a P's foot is a <em>narrower</em> gap than the
+        mouth of its bowl. Picking the closest pair finds the serif every time.
+        Picking the closest pair whose bay contains the counter finds the bowl.</p>
+    </div>
+  </section>
+</div>
+
+<div class="wide">
+  <section>
+    <div class="stack-l">
+      <div class="stack">
+        <h2>The set</h2>
+        <p class="note">Scroll to morph, drag the slider to scrub, or pin a plate
+          to hold it at the sans. Grouped by what the face is like, not by score
+          &mdash; the numbers are underneath each one if you want them, but they
+          rank proximity to Friz, which is not the same as being right.</p>
+      </div>
+      <div class="plates" id="plates"></div>
+    </div>
+  </section>
+
+  <section>
+    <div class="stack">
+      <h2>Side by side</h2>
+      <p class="note">Click a column to sort. <strong>Score</strong> is mean ink-width
+        error plus mean ink-centre error, in cap units &mdash; how far the tween
+        travels. <strong>Weight</strong> is the axis position that matches Friz's
+        0.155-cap stem; <strong>Track</strong> is what each face needs to span the
+        measure.</p>
+      <div class="tablewrap">
+        <table id="tbl">
+          <thead><tr>
+            <th data-k="name" class="name">Face</th><th data-k="src">Source</th>
+            <th data-k="score">Score</th><th data-k="dW">&Delta;W</th><th data-k="dC">&Delta;C</th>
+            <th data-k="wght">Weight</th><th data-k="stem">Stem</th>
+            <th data-k="track_em">Track/em</th><th data-k="Ocap">O/cap</th>
+            <th data-k="EO">E/O</th><th data-k="kerned">Krn</th>
+          </tr></thead><tbody></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+</div>
+
+<div class="wrap">
+  <section>
+    <div class="stack">
+      <h2>If you pick one</h2>
+      <ul>
+        <li><strong>Licensing splits the list.</strong> The Fontshare faces
+          (Satoshi, Switzer, General Sans, Cabinet Grotesk, Clash Display,
+          Supreme, Ranade, Nippo, Chillax, Technor, Bespoke Sans, Pally) are free
+          for commercial use but are <em>not</em> OFL &mdash; check the terms
+          before anything ships. The rest are OFL from <code>google/fonts</code>,
+          same footing as Vollkorn and Spectral already in <code>/fonts</code>.</li>
+        <li><strong>Nothing goes on the wire either way.</strong> Both ends bake
+          to paths, exactly as Friz already does, so no <code>@font-face</code>
+          and no file in <code>/fonts</code>. Cost is about 25&nbsp;KB of path
+          data for the chosen face, against the ~6&nbsp;KB single path today.</li>
+        <li><strong>The J will come up.</strong> Friz's J drops 0.349 cap below
+          the baseline and dies in the cut, so the word reads PRO|ECTS. Every sans
+          here sits it on the baseline, so the morph raises the J into view. That
+          changes the cut title's whole conceit and is worth deciding on purpose.</li>
+        <li><strong>Tracking is per face.</strong> Each needs its own to span the
+          measure &mdash; the table's Track column. That number replaces
+          <code>--cue-track</code>'s 0.02em at the sans end, so it has to be
+          animated too, or baked into the target outlines as it is here.</li>
+      </ul>
+    </div>
+  </section>
+  <footer>
+    Measured and tweened with fontTools and skia-pathops. Friz Quadrata Std was
+    supplied locally and is not redistributed here &mdash; the word is geometry,
+    as it already is on the site. Check the numbers against the source before any
+    of this lands in the repo.
+  </footer>
+</div>
+
+<script>
+const D = __DATA__;
+const WORD = "PROJECTS";
+const STAGGER = 0.05;
+
+function parse(d){
+  const cs=[]; let cur=null;
+  for(const tok of d.split(/(?=[MLZ])/)){
+    const c=tok[0];
+    if(c==="Z"){cur=null;continue}
+    const [x,y]=tok.slice(1).split(" ").map(Number);
+    if(c==="M"){cur=[x,y];cs.push(cur)}else{cur.push(x,y)}
+  }
+  return cs;
+}
+function compile(from,to){
+  const A=parse(from),B=parse(to),a=[],b=[],lens=[];
+  for(let i=0;i<A.length;i++){lens.push(A[i].length);a.push(...A[i]);b.push(...B[i])}
+  return {a:Float64Array.from(a),b:Float64Array.from(b),lens};
+}
+const R=v=>Math.round(v*10)/10;
+function tween(c,t){
+  const {a,b,lens}=c; let s="",k=0;
+  for(const n of lens){
+    for(let i=0;i<n;i+=2){
+      s+=(i?"L":"M")+R(a[k]+(b[k]-a[k])*t)+" "+R(a[k+1]+(b[k+1]-a[k+1])*t); k+=2;
+    }
+    s+="Z";
+  }
+  return s;
+}
+const ease=t=>t<=0?0:t>=1?1:(t<.5?4*t*t*t:1-Math.pow(-2*t+2,3)/2);
+
+/* a rig is one svg: eight letters, each with its own clock */
+function rig(svg,face){
+  const letters=face.letters.map((l,i)=>{
+    const p=document.createElementNS("http://www.w3.org/2000/svg","path");
+    svg.appendChild(p);
+    return {p,c:compile(l.a,l.b),from:D.friz[l.ch],to:l.t,last:-2};
+  });
+  return {svg,letters};
+}
+function drawRig(r,T){
+  const span=1-STAGGER*(WORD.length-1);
+  r.letters.forEach((L,i)=>{
+    const t=ease(Math.max(0,Math.min(1,(T-i*STAGGER)/span)));
+    const q=Math.round(t*240);
+    if(q===L.last)return;
+    L.last=q;
+    L.p.setAttribute("d", q<=0?L.from : q>=240?L.to : tween(L.c,q/240));
+  });
+}
+
+const box=document.getElementById("plates");
+const GROUP={grotesk:"Grotesks",display:"Display",soft:"Soft",geometric:"Geometric"};
+const order=["grotesk","display","soft","geometric"];
+const rigs=[];
+for(const kind of order){
+  const set=D.faces.filter(f=>f.kind===kind);
+  if(!set.length)continue;
+  const h=document.createElement("p");
+  h.className="eyebrow"; h.textContent=GROUP[kind];
+  box.appendChild(h);
+  for(const f of set){
+    const el=document.createElement("div");
+    el.className="plate";
+    el.innerHTML=`<div class="plate-head"><h3>${f.name.replace(" Variable","")}</h3>
+        <span class="who">${f.src}</span></div>
+      <p class="blurb">${f.blurb}</p>
+      <svg class="word" viewBox="${D.viewBox}" aria-label="PROJECTS morphing into ${f.name}"></svg>
+      <div class="metrics">
+        <div class="metric"><b>${f.score.toFixed(3)}</b><span>Score</span></div>
+        <div class="metric"><b>${f.dW.toFixed(3)}</b><span>&Delta;W</span></div>
+        <div class="metric"><b>${f.dC.toFixed(3)}</b><span>&Delta;C</span></div>
+        <div class="metric"><b>${f.wght??"static"}</b><span>Weight</span></div>
+        <div class="metric"><b>${f.track_em>=0?"+":""}${f.track_em.toFixed(4)}</b><span>Track/em</span></div>
+        <div class="metric"><b>${f.Ocap.toFixed(3)}</b><span>O/cap</span></div>
+        <div class="metric"><b>${f.EO.toFixed(3)}</b><span>E/O</span></div>
+        <div class="metric"><b>${f.kerned}/7</b><span>Kerned</span></div>
+      </div>
+      <button class="pin" aria-pressed="false">Pin at the sans</button>`;
+    box.appendChild(el);
+    const r=rig(el.querySelector("svg"),f);
+    r.el=el; r.pinned=false;
+    const btn=el.querySelector(".pin");
+    btn.addEventListener("click",()=>{
+      r.pinned=!r.pinned;
+      btn.setAttribute("aria-pressed",String(r.pinned));
+      btn.textContent=r.pinned?"Following scroll":"Pin at the sans";
+      el.classList.toggle("pinned",r.pinned);
+      kick();
+    });
+    rigs.push(r);
+  }
+}
+
+const heroSvg=document.getElementById("hero");
+const hero=rig(heroSvg,D.faces[0]); hero.el=heroSvg; hero.pinned=false;
+document.getElementById("herocap").textContent =
+  `Friz Quadrata to ${D.faces[0].name.replace(" Variable","")} — the letters are staggered, so the word turns rather than switches.`;
+
+const scrub=document.getElementById("scrub"), follow=document.getElementById("follow");
+const reduced=matchMedia("(prefers-reduced-motion: reduce)").matches;
+let mode=reduced?"scrub":"scroll";
+if(reduced)scrub.value=1000;
+follow.setAttribute("aria-pressed",String(mode==="scroll"));
+
+function progress(el){
+  const r=el.getBoundingClientRect(), vh=innerHeight;
+  return Math.max(0,Math.min(1,(vh*.9-r.top)/(vh*.55)));
+}
+let queued=false;
+function frame(){
+  queued=false;
+  const s=scrub.value/1000;
+  for(const r of [hero,...rigs]){
+    const b=r.el.getBoundingClientRect();
+    if(b.bottom<-300||b.top>innerHeight+300)continue;
+    drawRig(r, r.pinned?1: mode==="scroll"?progress(r.el):s);
+  }
+}
+function kick(){if(!queued){queued=true;requestAnimationFrame(frame)}}
+addEventListener("scroll",kick,{passive:true});
+addEventListener("resize",kick);
+scrub.addEventListener("input",()=>{mode="scrub";follow.setAttribute("aria-pressed","false");kick()});
+follow.addEventListener("click",()=>{
+  mode=mode==="scroll"?"scrub":"scroll";
+  follow.setAttribute("aria-pressed",String(mode==="scroll"));kick();
+});
+kick();
+
+const tb=document.querySelector("#tbl tbody");
+let key="score",asc=true;
+function render(){
+  const rows=[...D.faces].sort((x,y)=>{
+    const a=x[key],b=y[key];
+    const v=typeof a==="string"?a.localeCompare(b):(a??0)-(b??0);
+    return asc?v:-v;
+  });
+  const F=D.frizmeta;
+  tb.innerHTML=`<tr class="friz"><td class="name">Friz Quadrata Std</td><td>local</td>
+      <td>—</td><td>—</td><td>—</td><td>—</td><td>${F.stem.toFixed(3)}</td>
+      <td>+0.0200</td><td>${F.O.toFixed(3)}</td><td>${F.EO.toFixed(3)}</td><td>0</td></tr>`
+    + rows.map(f=>`<tr><td class="name">${f.name.replace(" Variable","")}</td>
+      <td>${f.src}</td><td>${f.score.toFixed(3)}</td><td>${f.dW.toFixed(3)}</td>
+      <td>${f.dC.toFixed(3)}</td><td>${f.wght??"—"}</td><td>${f.stem.toFixed(3)}</td>
+      <td>${f.track_em>=0?"+":""}${f.track_em.toFixed(4)}</td>
+      <td>${f.Ocap.toFixed(3)}</td><td>${f.EO.toFixed(3)}</td><td>${f.kerned}</td></tr>`).join("");
+}
+document.querySelectorAll("#tbl th").forEach(th=>th.addEventListener("click",()=>{
+  const k=th.dataset.k;
+  if(k===key)asc=!asc;else{key=k;asc=true}
+  render();
+}));
+render();
+</script>
