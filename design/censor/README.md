@@ -11,7 +11,7 @@ who signed that decision.
 ```
 design/censor/
   roll.json          every photograph the clip passes over — mechanical
-  review.html        the review surface — one photograph at a time, at 1536px
+  review.html        the review surface — the whole roll, click to obscure
   review.mjs         serves it, proxies the vault, writes the confirmed list
   censored.json      the confirmed list — written by review.mjs, signed
 ../tools/
@@ -38,12 +38,18 @@ boxes and thumbnail URLs and nothing else — it does not look at any photograph
 node design/censor/review.mjs
 ```
 
-Then open the URL it prints. One photograph at a time at 1536px: `1` contains an
-identifiable person, `2` unsure, `0` does not. There is no skip — the list cannot
-be confirmed until all 73 have been classified — and `2` censors, so an
-ambiguous photograph is obscured with its ambiguity on the record rather than
-rounded to a clean answer. `reveal original` opens the file in Explorer for the
-ones 1536px cannot settle.
+Then open the URL it prints. The whole roll is laid out in the clip's own rows,
+at the size and in the order the recording shows it. **Click a tile to obscure
+it.** Nothing is obscured until you do, and an empty list is a valid answer.
+
+Hovering or arrowing onto a tile shows it at **1536px** in the preview — eight
+times the 162px it gets in the clip, which is the size the judgement actually
+needs. Looking is not a step you have to take; it happens as the pointer moves.
+`1:1` shows the preview at its own pixels, and `reveal original` opens the file
+in Explorer for the ones 1536px cannot settle. Space toggles, arrows walk.
+
+A chosen tile is pixelated in place at roughly the coarseness the capture will
+use, so the sheet is a preview of the clip rather than a list of ticks.
 
 Sign it, press **Confirm the list**, and `censored.json` is written.
 

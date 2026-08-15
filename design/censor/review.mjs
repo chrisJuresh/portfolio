@@ -20,12 +20,12 @@
 
    THE THREE VAULT ROUTES IT FORWARDS
    -----------------------------------
-     /d/<sha>.webp   the 1536px substrate — the review surface. Eight times the
+     /d/<sha>.webp   the 1536px substrate — the preview panel. Eight times the
                      grid tile in each dimension, which is the whole point: the
                      judgement this ticket wants cannot be made from a thumbnail.
-     /t/<sha>.webp   the grid thumbnail — the filmstrip, and it is also exactly
-                     what the clip shows, so seeing it beside the substrate is
-                     how the reviewer sees what the reader would.
+     /t/<sha>.webp   the grid thumbnail — the sheet you click on, and also
+                     exactly what the clip shows, so choosing happens against
+                     what the reader would actually see.
      /api/reveal     opens the original file in Explorer. The escape hatch for a
                      photograph 1536px cannot settle. Needs the vault's numeric
                      id, which the roll does not carry, so the sha is resolved
@@ -173,9 +173,22 @@ async function confirm(req, res) {
     return send(res, 409, "that review was made against a different roll — reload and start over");
   }
 
-  const decisions = new Map(Object.entries(submitted.decisions ?? {}));
-  const missing = roll.tiles.filter((tile) => !decisions.has(tile.sha));
-  if (missing.length) return send(res, 400, `${missing.length} photographs were never looked at`);
+  /* The page sends the chosen ones, and an empty list is a valid answer rather
+     than an unfinished one. There is no "every photograph was decided" gate any
+     more: the sheet shows the whole roll at once, so looking at it is one act
+     and not 73, and a gate counting keypresses would have measured typing. */
+  const picked = new Set(submitted.censored ?? []);
+
+  /* A hash the roll does not contain means the page and the file disagree about
+     what is being reviewed, which the digest should already have caught. Refuse
+     rather than drop it silently — a selector written for a tile that is not in
+     the clip is a sign something is wrong, not something to tidy away. */
+  const known = new Set(roll.tiles.map((tile) => tile.sha));
+  const strays = [...picked].filter((sha) => !known.has(sha));
+  if (strays.length) {
+    const n = strays.length;
+    return send(res, 400, `${n} chosen tile${n > 1 ? "s are" : " is"} not in the roll`);
+  }
 
   /* Checked here as well as in the page, because the acceptance criterion is
      that the author confirmed the list — so a file that does not say who
@@ -184,14 +197,10 @@ async function confirm(req, res) {
   const by = (submitted.confirmed_by ?? "").trim();
   if (!by) return send(res, 400, "unsigned — the list records who confirmed it");
 
-  /* Anything not decided "clear" is censored. Written this way round on purpose:
-     the failure mode of a bug here is a photograph obscured that need not have
-     been, not a face published. */
   const tiles = roll.tiles.map((tile) => ({
     sha: tile.sha,
     index: tile.index,
-    decision: decisions.get(tile.sha),
-    censor: decisions.get(tile.sha) !== "clear",
+    censor: picked.has(tile.sha),
     selector: `img[src$="${tile.sha}.webp"]`,
   }));
   const censored = tiles.filter((tile) => tile.censor);
