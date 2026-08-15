@@ -1988,7 +1988,38 @@ body::after {
                            url("img/tex/film-2600.webp?v=3311dec2") 2x);
   --fx-film-strength: 0.14;
   --fx-film-blend: multiply;
-  --fx-film-zoom: 1;      /* about the centre; >1 crops in on the frame       */
+  /* ---- HOW BIG THE MARKS ARE, WHICH IS THE ONLY LEVER THERE IS -------------
+     1 is the frame drawn exactly `cover`: one whole 35mm frame across the whole
+     page, which is what this shipped as and what makes a scratch read at forty
+     or fifty pixels. Above 1 it draws bigger and crops in. Below 1 it draws
+     smaller, and REPEATS — which is the part to know before dragging it.
+
+     There is no way around that repeat, and it is worth writing down so nobody
+     goes looking for one. The size of a mark on screen is the source area shown
+     divided by the screen area, so halving it means showing four times as much
+     film; the asset is one scan, so four times as much film is the same scan
+     four times. Every dodge tried came back to that. Tiling at 0.6 puts the same
+     bloom on screen twice and you find it immediately. Mirroring the tile trades
+     the grid for a kaleidoscope, which is worse, because film has directional
+     scratches and reflected scratches make chevrons. Packing four different
+     crops of the scan into one frame is arithmetic that cancels: four quarters
+     at quarter size is the picture you started with.
+
+     So below about 0.8 this is a visible repeat, and the fix if that is not
+     acceptable is more film — a second Texturelabs sheet composited into the
+     bake would genuinely halve the marks, and it is the only thing that would.
+
+     `background-size` and not the `scale` property it used to be. Same range and
+     one more decade of it, without the layer's own box shrinking and pulling its
+     edges into view below 1, and it leaves the transform free for --fx-weave —
+     which was the whole reason `scale` was chosen over `transform` originally. */
+  --fx-film-scale: 1;
+  /* 1600 / 1190, the baked frame. `cover` is max(100%, height x this), and the
+     scale above multiplies it; CSS cannot ask an image how big it is, so this
+     is the one number here that has to be kept in step with FILM_RUNGS and the
+     source's aspect in build-textures.py. Wrong, and the frame stops covering at
+     scale 1 and shows a seam. */
+  --fx-film-aspect: 1.3445;
   /* The levels stage — see THE LEVELS STAGE below. --fx-film-invert is the one
      of the three that is not shared with the paper, and it is what makes a
      scratch read: the marks on this plate are BRIGHT, white lines on a nearly
@@ -2273,12 +2304,20 @@ body::after {
 :root[data-fx~="film"] .fx-film {
   display: block;
   background-image: var(--fx-film-src);
-  background-size: cover;
+  /* `cover`, written out, so --fx-film-scale can multiply it — see HOW BIG THE
+     MARKS ARE above. max(100%, height x aspect) is exactly what `cover` picks:
+     whichever of the two constraints binds. The height is `auto`, so the frame
+     keeps its shape whatever the scale does.
+     The +1px is not a fudge factor for the arithmetic, it is for the rounding
+     underneath it: at scale 1 the frame covers by construction, and a subpixel
+     short after the browser has rounded is a hairline of the wrapped edge down
+     one side. A pixel of overdraw is invisible at every scale and cannot be. */
+  background-size: calc(1px + var(--fx-film-scale) *
+                        max(100%, var(--fx-band) * var(--fx-film-aspect))) auto;
   background-position: center;
-  background-repeat: no-repeat;
-  /* `scale` and not `transform`, so --fx-weave below can have the transform to
-     itself and the two do not have to be written as one value. */
-  scale: var(--fx-film-zoom);
+  /* Only reachable below scale 1, where it is the point rather than an accident;
+     at 1 and above the frame covers and there is nothing to repeat. */
+  background-repeat: repeat;
   filter: invert(var(--fx-film-invert))
           brightness(var(--fx-film-lift))
           contrast(var(--fx-film-contrast));

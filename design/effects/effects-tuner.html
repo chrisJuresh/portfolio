@@ -189,7 +189,9 @@
       { prop: "--fx-film-lift",     label: "lift (field)", min: 0, max: 3, step: 0.01, theme: true },
       { prop: "--fx-film-contrast", label: "contrast (bite)", min: 0, max: 8, step: 0.05, theme: true },
       { prop: "--fx-film-invert",   label: "invert", min: 0, max: 1, step: 1, theme: true },
-      { prop: "--fx-film-zoom",     label: "zoom", min: 1, max: 2.5, step: 0.01 }
+      /* Below 0.8 the frame repeats and you will see it — the note in styles.css
+         says why there is no version of this that does not. */
+      { prop: "--fx-film-scale",    label: "mark size", min: 0.25, max: 2.5, step: 0.01 }
     ]},
     { token: "paper", name: "paper — 349XL, tiled", rows: [
       { prop: "--fx-paper-strength", label: "strength", min: 0, max: 1, step: 0.01, theme: true },
