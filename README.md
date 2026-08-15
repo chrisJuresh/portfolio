@@ -50,8 +50,11 @@ statically from Vercel.
   redraws the three corner photographs as a field of characters. Each is a token
   in `<html data-fx="…">` and each is off unless its token is there; three ship
   on. Add `?fx=film paper` to the URL to see any combination, or `?fx=` for the
-  page underneath. Almost all of it is CSS — the layers are composited quads, and
-  the only things that animate are off by default. The textures are baked by
+  page underneath — which is also how my GitHub profile README screenshots this
+  page, since a texture meant to be felt at full size only reads as noise once
+  it has been resampled into a README. Almost all of it is CSS — the layers are
+  composited quads, and the only things that animate are off by default. The
+  textures are baked by
   `design/effects/build-textures.py` and tuned in `design/effects/effects-tuner.html`.
   The trick that makes one asset serve both themes is in **THE LEVELS STAGE** in
   `portfolio/styles.css`.

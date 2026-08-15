@@ -111,7 +111,18 @@
      `?fx=` with an empty value is meaningful and is not the same as no `?fx=` at
      all — it is "none of them", and it is the way to see the page underneath
      without clearing anything. Hence the `has` test rather than a truthiness
-     one. */
+     one.
+
+     THAT EMPTY VALUE IS SOMEBODY ELSE'S API. chrisJuresh/chrisJuresh — the
+     GitHub profile repo — screenshots this page with `?fx=` on the URL to get
+     the untreated version for its README, because the textures are meant to be
+     felt at full size and the README shows them resampled to a fraction of the
+     captured width. So the meaning of an empty `?fx=` is not ours alone to
+     change: renaming the parameter, or making an empty value mean "no
+     preference" and fall through to the default, would put the stack back into
+     that preview. Its capture script reads `data-fx` back after load and throws
+     if anything is still on, so a change here fails there loudly rather than
+     shipping a textured preview — but it fails in a repo nobody is looking at. */
   function initial() {
     try {
       var q = new URLSearchParams(location.search);
