@@ -148,8 +148,8 @@ def match_energy(a: np.ndarray, target_std: float) -> np.ndarray:
     coarser and just as strong, which is what the same paper looks like through a
     coarser screen.
 
-    It applies to the film too and does almost nothing there — 29.70 against
-    29.64 — which is worth keeping as a check rather than skipping: the film is
+    It applies to the film too and does almost nothing there — 28.82 against
+    28.89 — which is worth keeping as a check rather than skipping: the film is
     band-passed, so it has no energy near its own Nyquist to lose, and this
     reporting nothing is that band-pass being confirmed at the other end of the
     pipeline.
@@ -199,30 +199,45 @@ FILM_INSET = 0.035
 # it. Everything below is therefore measured in pixels of the top rung.
 FILM_RUNGS = [1600, 2600]
 
-# A tenth of the short side. Chosen as the largest radius that still flattens the
-# frame's corner falloff: the marks are all far finer than this — the widest
-# bloom on the plate is about a fortieth of the frame — so every one of them
-# passes through with its own contrast intact, which a tighter radius would start
-# to eat into.
-FILM_SIGMA_FRAC = 0.10
-
-# ...and the OTHER end of the pass, which is the constant that pays for itself
-# most and is the least obvious. A plain high-pass leaves the emulsion's
-# per-pixel grain in, and per-pixel grain is, by construction, the single least
-# compressible thing an image can contain: the first cut of this asset came out
-# at 590 KB and 1.74 MB for the two rungs, against 118 KB and 296 KB with this
-# line in. Nothing visible is lost, because nothing visible was there —
-# at 2600px across a 1920px window the removed band is finer than a device pixel,
-# and the band-passed frame's own standard deviation is 29.8 against 33.5, which
-# is 89% of the tooth for 41% of the bytes.
+# The coarse end of the band. It was a tenth of the short side — the largest
+# radius that flattens the frame's corner falloff without eating into the widest
+# bloom, which is about a fortieth of the frame — and that turned out to be the
+# wrong thing to optimise. A tenth of the short side is 190px of a 2600px frame,
+# and the emulsion base's slow mottle lives in the 60-190px band that leaves in.
+# Under the levels stage that band is amplified 3x along with everything else,
+# and a soft grey cloud with no edge in it, amplified, is exactly what a picture
+# that has been scaled up from something small looks like. It read as a low-res
+# asset rather than as film.
 #
-# It is also the right division of labour rather than merely the cheap one. Fine
-# tooth is the paper tile's job, and the paper tile can do it in 56 KB because it
-# is 512px square and repeats. Asking the film to carry the same frequencies
-# means paying for them once per pixel of a full-frame picture AND getting them
-# twice on the page. So the film is band-passed down to what only it can supply:
-# the scratches, the dust, the blooms and the plate's slow mottle.
-FILM_FINE = 2.0
+# A fortieth is 65px, so this is still above every mark the plate carries, and
+# the falloff it no longer flattens was never visible at these opacities anyway.
+FILM_SIGMA_FRAC = 0.035
+
+# ...and the OTHER end of the pass, which is the constant that costs the most
+# bytes and is the one to move if this asset ever has to get smaller. A plain
+# high-pass leaves the emulsion's per-pixel grain in, and per-pixel grain is, by
+# construction, the single least compressible thing an image can contain: the
+# first cut of this asset came out at 590 KB and 1.74 MB for the two rungs.
+#
+# It was 2.0, on the argument that fine tooth is the paper tile's job and the
+# paper tile can do it in 56 KB because it is 512px square and repeats. The
+# argument is sound and the number was still too high. The film is drawn with
+# `cover` over a box that is always the viewport, so a radius stated in pixels of
+# the 2600px frame lands on screen scaled by (viewport / 2600): at 1440 a sigma
+# of 2.0 arrives as 1.1 device pixels, which is a blur across the whole frame
+# rather than a band nobody can resolve. Every scratch on the plate came out
+# without an edge, and the page under it looked soft.
+#
+# 1.2 lands at about 0.66 device pixels at the same width — under what the
+# display resolves, which is what this constant was always meant to be — and the
+# scratches come back with their edges on. It is not free: the two rungs go from
+# 171/283 KB to 276/477 KB, of which a visitor fetches exactly one. Paid
+# knowingly, because the softness was the thing being complained about.
+#
+# The division of labour still holds and is why this is 1.2 rather than 0.8: the
+# per-pixel band under it is the paper's, it costs 1.2 MB across the two rungs to
+# carry it here, and it would then be on the page twice.
+FILM_FINE = 1.2
 
 FILM_GAIN = 4.6         # the band's own std is ~7 levels once the grain is out
                         # of it; x4.6 puts it near 32, a legible tooth at the
@@ -231,9 +246,16 @@ FILM_GAMMA = 0.8        # open, and more open than the paper's: what is left in
                         # this band after FILM_FINE is mostly faint — the loud
                         # marks are a few dozen scratches — so the curve is doing
                         # real work here rather than trimming
-FILM_QUALITY = 74       # lossy: a soft full-frame wash at <=14% opacity, where
-                        # lossless costs about 6x the bytes for a difference
-                        # nothing at that opacity could show
+FILM_QUALITY = 68       # lossy: a full-frame wash at <=18% opacity, where
+                        # lossless costs about 3x the bytes for a difference
+                        # nothing at that opacity could show. Measured against a
+                        # re-bake with no webp step at all and the two are hard
+                        # to tell apart under the levels stage, so the quality
+                        # was lowered rather than raised when FILM_FINE came
+                        # down: it is buying back some of what the finer band
+                        # cost, and the artefact it trades for — webp's 4px
+                        # transform grid, which the 3x detail gain does amplify —
+                        # is the smaller of the two by a long way.
 
 
 def build_film() -> None:
