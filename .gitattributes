@@ -14,3 +14,15 @@
 *.png   binary
 *.webp  binary
 *.rw2   binary
+
+# The Projects Panel's recording, and the reason it is worth spelling out: until
+# this repository carried a video these two extensions were governed by nothing
+# but the `text=auto eol=lf` at the top, which would have run every CRLF-looking
+# byte pair in a VP9 or H.264 stream through line-ending normalisation on a
+# Windows checkout and produced a file no browser will decode.
+#
+# THEY ARE COMMITTED RAW, NEVER LFS. Vercel serves an LFS-tracked file as its
+# pointer stub, so the clip would deploy as 130 bytes of text and the Panel would
+# hold a black rectangle — a lesson already recorded against eater-map-site.
+*.webm  binary
+*.mp4   binary

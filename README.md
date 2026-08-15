@@ -81,16 +81,19 @@ served statically from Vercel.
 ```
 .
 ├── index.html          # portal at / — links into /portfolio and /projects
-├── vercel.json         # clean URLs + cache headers for /portfolio/img/*
+├── vercel.json         # clean URLs + cache headers for /portfolio/img/* and video/
 ├── run.bat             # double-click to preview locally (Windows)
 ├── portfolio/          # the CV + photo carousel at /portfolio
 │   ├── index.html      # page shell: meta tags, pre-paint theme bootstrap
 │   ├── content.js      # ALL portfolio content — the only file you edit
 │   ├── app.js          # renders content.js and runs the carousel + theme
 │   ├── effects.js      # the effect stack's runtime half — optional, loaded last
+│   ├── cut-morph.js    # the cut title turning into a sans — optional, loaded last
+│   ├── panel-clip.js   # gives the Panel's <video> its sources — optional, loaded last
 │   ├── styles.css      # layout, warm light/dark palettes, fades, print CV
-│   └── img/            # web-optimised photographs
-│       └── tex/        # the two baked textures — see its README
+│   ├── img/            # web-optimised photographs
+│   │   └── tex/        # the two baked textures — see its README
+│   └── video/          # the Projects Panel's recording — see design/censor/README.md
 ├── projects/           # the project wall at /projects
 │   ├── index.html      # the cards themselves, written by hand
 │   ├── app.js          # theme bootstrap only — no rendering
@@ -222,8 +225,19 @@ Modern lost, measured rather than asserted. Neither folder affects a visitor; se
 The site deploys to Vercel as a plain static site — no framework preset,
 no build command. `vercel.json` enables clean URLs and sets a
 day-long `Cache-Control` (with a week of `stale-while-revalidate`) on the
-image directory, plus a year-long `immutable` one on `/fonts` — so a rebuilt
-face needs a new filename, never a new file under an old one.
+image directory, plus a year-long `immutable` one on `/fonts` and another on
+`/portfolio/video` — so a rebuilt face needs a new filename, never a new file
+under an old one.
+
+The Projects Panel's recording is the one thing under an immutable rule that
+does **not** get a new filename, and it is a deliberate exception rather than an
+oversight: it is named by the page in two places and referred to by a third
+repository's documentation, so it carries a content stamp in its query string
+instead — `video/photos-grid.webm?v=<stamp>`, the same device `styles.css`
+already uses for the baked textures. A re-cut clip changes the stamp. It is
+written down in `design/censor/README.md` beside the command that produces the
+clip, because that is where somebody about to make the mistake will be standing.
+
 `.vercelignore` keeps `design/` out, so the lab and its
 renders never reach the deployment.
 

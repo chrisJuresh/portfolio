@@ -294,7 +294,7 @@
        two things that used to sit at this line, an @font-face at the foot of
        styles.css and a script that attached /fonts/friz-local.css on localhost
        only, are both gone. See the cut title block in styles.css. -->
-  <link rel="stylesheet" href="styles.css?v=30">
+  <link rel="stylesheet" href="styles.css?v=31">
 </head>
 <body>
   <!-- Only ever on screen while a corner picture is genuinely outstanding: it is
@@ -422,16 +422,39 @@
           <p>1,374,328 paths re-costed in 220 ms</p>
         </li>
       </ol>
-      <!-- The space the browser Frame will stand in, and nothing else: no
-           chrome, no titlebar, no glass, no recording. #67 builds the Frame,
-           #66 the material its titlebar is made of, #65 puts the clip inside it
-           and #68 stands the whole thing on the marble. It is here now because
-           the Frame is what occludes the subheading's second line, and a
-           composition that only acquires its depth three tickets later is not
-           the composition. Decorative, so it is out of the accessibility tree —
-           what it will eventually hold is a silent looping recording, which is
-           not something a screen reader has any use for either. -->
-      <div class="panel-frame" aria-hidden="true"></div>
+      <!-- The space the browser Frame stands in, holding the recording and
+           nothing else yet: no chrome, no titlebar, no glass. #66 builds the
+           material the titlebar is made of, #67 the Frame around this, and #68
+           stands the whole thing on the marble. It is a grid item in its own
+           right because the Frame is what occludes the subheading's second
+           line — see the .panel-frame block in styles.css, which is the whole
+           of that arithmetic — and #67 hangs its chrome inside this box rather
+           than around it, so none of it moves.
+
+           Decorative, so the box and everything in it is out of the
+           accessibility tree. A silent looping recording of a scrolling grid is
+           not something a screen reader has any use for, and the paragraph
+           beside it says what the project is in the author's own words.
+
+           THE CLIP: the photo vault's grid, stacked, recorded by `record`
+           against design/censor/capture-origin.mjs — which serves each of the
+           14 photographs on design/censor/censored.json as a mosaic of a handful
+           of blocks, so no unobscured frame of one exists anywhere in the
+           pipeline. design/censor/README.md is the whole procedure.
+
+           NO `src` AND NO `<source>` HERE, WHICH IS THE POINT. The sources are
+           given by panel-clip.js and only when the reader has not asked for
+           reduced motion, so under that setting the poster is the whole of it
+           and the video files are never requested. `preload="none"` would not
+           have done it and neither would a CSS rule; see panel-clip.js.
+
+           `muted` is not decoration either: it is what lets `autoplay` run at
+           all, and #57 asks for a page that never makes noise. -->
+      <div class="panel-frame" aria-hidden="true">
+        <video class="panel-clip" poster="video/photos-grid.webp?v=21f8d5ea"
+               width="1440" height="900"
+               autoplay loop muted playsinline preload="none"></video>
+      </div>
     </div>
   </section>
   <!-- The effect stack: eight empty layers over the finished page, each one off
@@ -515,5 +538,10 @@
        blocked, errored, or asking for reduced motion — keeps the baked Friz
        path exactly as it is inline. -->
   <script src="cut-morph.js?v=3"></script>
+  <!-- The Panel's recording, and last for the third time for the third version
+       of the same reason: all it does is hand the <video> its sources, and a
+       browser that skips it keeps the poster that is already on screen — which
+       is exactly what a reader asking for reduced motion is shown. -->
+  <script src="panel-clip.js?v=1"></script>
 </body>
 </html>

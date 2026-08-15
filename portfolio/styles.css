@@ -2044,8 +2044,9 @@ body::after {
   --panel-ink-soft: #dcdad5;
   --panel-muted:    #8b8983;
   --panel-rule:     rgba(242, 241, 238, 0.16);
-  /* The placeholder's fill and edge. Both go when #67 builds the real Frame;
-     they are here so the box reads as reserved space rather than as a hole. */
+  /* The Frame's fill and edge. The fill is now what shows behind the recording
+     before it decodes, and in a browser that plays neither format; the edge goes
+     when #67 builds the real chrome. */
   --panel-frame-fill: #131518;
   --panel-frame-edge: rgba(242, 241, 238, 0.1);
 
@@ -2094,9 +2095,10 @@ body::after {
      does to its own second line. */
   --panel-frame-drop: calc(0.66 * var(--panel-sub-line));
   /* Also off the render, and also a constant here for the reason above: the
-     Frame including its titlebar measured 1430 x 735. The recording's own ratio
-     is #65's to supply and #67's to frame; until then this is what holds the
-     right amount of space. */
+     Frame including its titlebar measured 1430 x 735.
+     THE RECORDING IS 1.6 AND THIS IS 1.945, and they do not reconcile — see the
+     .panel-clip block, which is where the crop is decided and why. #67 builds
+     the Frame and is where a decision to move this belongs. */
   --panel-frame-ratio: 1.945;
 
   position: relative;
@@ -2220,6 +2222,42 @@ body::after {
   border-radius: clamp(0.5rem, 0.9vw, 1rem);
   background: var(--panel-frame-fill);
   border: 1px solid var(--panel-frame-edge);
+  /* The clip's corners are the Frame's, and the crop below has to happen
+     somewhere. Both are this. */
+  overflow: hidden;
+}
+
+/* ---- the recording ---------------------------------------------------------
+   THE CLIP AND THE FRAME ARE NOT THE SAME SHAPE, and this is where that is
+   settled rather than hidden. The recording is 1440x900 — record's viewport, and
+   the geometry design/censor/roll.json was assembled at, so it is not free to
+   move: change it and the clip passes over photographs nobody reviewed. The
+   Frame is --panel-frame-ratio, 1.945, measured off the design render.
+
+   They cannot be reconciled by choosing better numbers. The render's Frame is
+   1430 wide by 735 including its titlebar, and 1430 of a 1.6 recording is 894
+   tall before a titlebar is added at all — the picture alone is taller than the
+   whole window in the render. So something is cropped, and #65's job is to
+   supply the recording and its real ratio; #67 builds the Frame and is where a
+   decision to move --panel-frame-ratio belongs.
+
+   `cover` from the TOP EDGE, not the middle. 1.6/1.945 of the recording's height
+   survives — 82%, so 18% is cropped, and taking all of it off the bottom keeps
+   the vault's own toolbar hard against the top of the Frame. That is the row
+   that says this is an application and not a wall of pictures, and it is where
+   a real window's content starts: directly under the chrome #67 puts above it.
+   Cropping the bottom of the viewport can only ever REMOVE what the clip shows,
+   which is the direction the censored list is safe in.
+
+   NO `background` OF ITS OWN. The Frame's fill is behind it, and it is what
+   shows in the moment between the poster arriving and the first decoded frame —
+   and all that shows in a browser that plays neither. */
+.panel-clip {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 50% 0;
 }
 
 /* ---- everything set in capitals -------------------------------------------
@@ -3290,6 +3328,11 @@ body::after {
      is the four things that actually travel — the grain, the gate weave, the
      rolling bar and the tube's flicker. */
   .fx-grain, .fx-film, .fx-paper, .fx-roll, .fx-scan { animation: none !important; }
+  /* THE PANEL'S RECORDING IS NOT STOPPED HERE, and looking for it in this block
+     is the obvious mistake. #57 asks for the video files not to be downloaded at
+     all under this setting, and no stylesheet can decline a fetch — the element
+     ships with a poster and no source, and panel-clip.js is what hands it one.
+     A rule here would freeze a clip that had already been paid for. */
   .js .page { animation: none; }
   /* The hold survives — waiting for the plate is not movement, and dropping it
      here would trade one animation for the picture appearing underneath the type
