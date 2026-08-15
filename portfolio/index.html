@@ -315,6 +315,9 @@
        the ascii block in styles.css and drawAscii() in effects.js. -->
   <canvas class="fx-ascii" aria-hidden="true"></canvas>
   <div class="page" id="page"></div>
+  <!-- The second screen the cut title opens onto. Empty, and sized entirely in
+       CSS: see the doorway block in styles.css. -->
+  <div class="doorway"></div>
   <!-- ====================================================================
        THE PROJECTS PANEL
        ====================================================================
@@ -324,9 +327,9 @@
        and — for now — a placeholder standing where the browser Frame will.
        The panel block in styles.css is the whole of the geometry.
 
-       STATIC MARKUP, NOT BUILT BY app.js, for two reasons. It is one
-       composition with no repetition in it, so there is nothing for a template
-       to earn; and it is
+       STATIC MARKUP, NOT BUILT BY app.js, and the two reasons are the same
+       two the doorway above is static for. It is one composition with no
+       repetition in it, so there is nothing for a template to earn; and it is
        on screen at first paint, which is what the rest of this page spends so
        much of its <head> buying. app.js owns the CV because the CV is data.
 
@@ -340,19 +343,19 @@
        exactly as it would one level in: the panel is below the fold, far below
        the 852px crop, and the capture never reaches it.
 
-       There used to be a `.doorway` between this and .page — one blank screen
-       for the cut word to arrive on as its title, from when the word opened
-       onto nothing. It is gone: this section stands directly under the fold, one
-       page turn below the CV, and the cut word does not arrive anywhere. It is
-       fixed to the fold and holds that corner of the screen while this section
-       comes up behind it, turning as it goes. See the turn block in styles.css.
-       The reason the panel still cannot be a child of .page is
-       the one the doorway was written for in the first place — in the
-       one-screen regime .page is exactly one screen and .cut-title is pinned
-       out of flow at the fold, so a panel inside .page would land
-       underneath that pinned word and push nothing out of the way. Outside it,
-       the reading order is the one the design asks for in every regime: the CV,
-       and then the section the cut word turns into the title of.
+       What does not survive the letter of it is the doorway. In the regime
+       where the composition fits one screen — see the doorway block — .page is
+       exactly one screen, .cut-title is pinned out of flow at `top: 100vh`,
+       and .doorway is the blank screen the word arrives on as its title. A
+       panel inside .page lands underneath that pinned word and pushes nothing
+       out of the way, so the word would be printed across the top of this
+       section and the blank screen would follow it. After .doorway the reading
+       order is the one the design asks for in every regime: the CV, the word
+       standing whole as a title, and then the section it is the title of.
+       The doorway's own arithmetic is untouched by anything that follows it —
+       it snaps on `scroll-snap-align: end`, which measures its own box and not
+       the end of the document. See the panel block in styles.css for the third
+       snap port this adds so mandatory snapping still has somewhere to rest.
 
        DARK IN BOTH THEMES, and nothing in here reads --ink, --bg or any of the
        six other properties the capture overrides by name. The palette is
@@ -383,19 +386,6 @@
     </ul>
     <div class="panel-inner">
       <header class="panel-head">
-        <!-- THE SECTION'S OWN MASTHEAD, always drawn. It is the same word as the
-             one cut off the foot of the page above, in the face that word turns
-             into over the scroll, and the two are deliberately left as two: #83
-             flew the cut word down onto this h2 and hid it under `.cue-fly`, and
-             that is out again because it had to scale the cut word by half to
-             fit — see the morph block in cut-morph.js. The cut word holds the
-             fold instead, so on this screen it is standing in the bottom-left
-             corner while this h2 is at the top. cut-morph.js reads this
-             element's computed colour, and only that: it is the far end of the
-             crossing the word makes onto this section's ground, which keeps the
-             palette declared once, in the .panel block. This also sets row one's
-             height and is where the subheading starts, and it is the section's
-             accessible name, referenced by the `aria-labelledby` above. -->
         <h2 class="panel-masthead" id="panel-masthead">Projects</h2>
         <!-- Two authored lines, not one string left to wrap. The second line is
              the one the Frame passes in front of, so where it breaks is part of
@@ -524,6 +514,6 @@
        only ever replaces one <svg>'s contents, so a browser that skips it —
        blocked, errored, or asking for reduced motion — keeps the baked Friz
        path exactly as it is inline. -->
-  <script src="cut-morph.js?v=4"></script>
+  <script src="cut-morph.js?v=3"></script>
 </body>
 </html>
