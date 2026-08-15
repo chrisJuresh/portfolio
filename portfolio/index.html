@@ -7,15 +7,19 @@
      where they are judged.
      Three of the eleven ship on. `chroma` splits the type and `chroma-pictures`
      splits the three corner photographs — two tokens because they are two
-     decisions, one of which costs a compositing layer per picture.
+     decisions, one of which costs a compositing layer per picture, and only the
+     pictures' half is on, so the type is left unsplit.
 
-     data-fx-no-text and data-fx-no-gallery go here too, and neither is set: they
-     name the effects that are to be kept off the type and off the carousel, and
-     nothing is at the moment. They are attributes rather than another token
-     because they are a property OF an effect and not a twelfth one, and they are
-     read here for the same reason data-fx is — one place, no drift. What they do
-     is KEEPING A LAYER OFF THE TYPE in styles.css; the tuner writes them. -->
-<html lang="en" data-fx="film paper chroma chroma-pictures">
+     data-fx-no-text and data-fx-no-gallery go here too, and both are set: they
+     name the effects that are to be kept off the type and off the carousel —
+     the halftone off both, the paper off the carousel. They are attributes
+     rather than another token because they are a property OF an effect and not
+     a twelfth one, and they are read here for the same reason data-fx is — one
+     place, no drift. What they do is KEEPING A LAYER OFF THE TYPE in
+     styles.css; the tuner writes them. -->
+<html lang="en" data-fx="halftone paper chroma-pictures"
+      data-fx-no-text="halftone"
+      data-fx-no-gallery="paper halftone">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
