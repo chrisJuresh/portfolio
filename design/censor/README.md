@@ -3,7 +3,7 @@
 Dev-only. Nothing here is served: `.vercelignore` excludes `design/` entirely.
 
 The Projects Panel plays a recording of the photo vault's grid ([#57]). The grid
-holds a real personal library, and the clip passes over 73 photographs of it,
+holds a real personal library, and the clip passes over 84 photographs of it,
 some of which contain identifiable members of the public. This folder is the
 record of which of those are obscured before a single frame is captured, and of
 who signed that decision.
@@ -43,7 +43,7 @@ at the size and in the order the recording shows it. **Click a tile to obscure
 it.** Nothing is obscured until you do, and an empty list is a valid answer.
 
 Hovering or arrowing onto a tile shows it at **1536px** in the preview — eight
-times the 162px it gets in the clip, which is the size the judgement actually
+times the 153px it gets in the clip, which is the size the judgement actually
 needs. Looking is not a step you have to take; it happens as the pointer moves.
 `1:1` shows the preview at its own pixels, and `reveal original` opens the file
 in Explorer for the ones 1536px cannot settle. Space toggles, arrows walk.
@@ -62,7 +62,7 @@ list without the roll it decided about says nothing.
 Automated detection is rejected on measured grounds, not on principle. Intel's
 model card for `face-detection-adas-0001` reports average precision falling from
 94.1% at head heights over 100px to **37.4%** over 10px, against a stated
-operating floor of 90×90 on 1080p. The tiles here are 162×216 and a face inside
+operating floor of 90×90 on 1080p. The tiles here are 153×216 and a face inside
 one is a fraction of that, so a detector would be run squarely in the band where
 its own vendor reports it failing roughly two times in three.
 
@@ -86,6 +86,7 @@ the mosaic is weakened, this list stops being a defence.
 | viewport | 1440×900 | `record/projects/photos/project.toml` |
 | scroll | 0 → 1200 | `record/projects/photos/actions/scroll-peek.overrides.toml` |
 | band | document y ∈ [0, 2100] | scroll range plus one viewport |
+| stacking | **on** | the view the Panel is meant to show off |
 
 The vault sorts newest-first, so importing a single photograph shifts the whole
 roll and the confirmed list silently stops covering the clip. Same if record's
@@ -128,12 +129,45 @@ capture-time stylesheet in [#65] hangs its mosaic on. That stylesheet is [#65]'s
 to write; this folder decides only which tiles it applies to.
 
 The selectors were checked against the live grid rather than assumed: across the
-clip's scroll range they match all 73 tiles in the roll, no tile in the band goes
+clip's scroll range they match every tile in the roll, no tile in the band goes
 unmatched, and nothing outside the roll is hit.
 
-### Two things [#65] will hit applying them
+### The clip must be stacked, and nothing makes that happen by itself
 
-Both were found while checking the above, and both are cheap to design around
+The recording shows the grid **stacked** — frames verified to be the same
+photograph drawn as one tile, each carrying the count it stands for. That is the
+view the Panel exists to show off, and the roll is collected against it.
+
+It is not the default and there is no URL for it. The vault keeps the setting in
+**localStorage** under `photos.stack`, read once at mount, defaulting to
+`{on: false}` (photos `ui/src/lib/stack.js`). It has to be seeded into the
+browser profile before the page's script runs; `collect-roll.mjs` does that with
+Playwright's `addInitScript` and then **checks the DOM that it worked**, refusing
+to write a roll if no tile drew a card.
+
+**record cannot do this today.** Its only page hook is the timeline's
+`evaluate`, which runs after navigation — by then the grid has mounted
+unstacked. Navigating a fresh browser at the URL gets the unstacked grid no
+matter how the operator's own browser is set, because the setting lives in a
+profile and not in the server. Left alone, [#65] will produce a clip that looks
+entirely correct and shows the wrong view — and a roll reviewed against the
+stacked grid does not cover it.
+
+The two are genuinely different rolls, not the same photographs regrouped:
+
+| | stacked | unstacked |
+|---|---|---|
+| photographs in the band | **84** | 73 |
+| tile | 153×216 | 162×216 |
+| drawn as a stack | 35 (42%) | — |
+
+So `stacking` is written into `roll.json` and `--check` compares it like
+geometry. `--stack off` collects the other view for comparison; it is not a
+toss-up between them.
+
+### Two more things [#65] will hit applying them
+
+Both were found while checking the selectors, and both are cheap to design around
 and expensive to discover during a capture.
 
 **A `<style>` element is refused.** The vault serves
