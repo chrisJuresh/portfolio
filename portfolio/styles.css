@@ -1873,47 +1873,42 @@ body::after {
    screen above the fold, out of sight, while the section below printed the SAME
    WORD again as its masthead in the very face the morph resolves into.
 
-   So the blank screen went and the section came up to the fold. The word itself
-   does not move. It stays cut in the page's bottom-left corner at the size the
-   two insets below give it, turns face over the page turn, and the section
-   prints its own masthead in the face it turned into — the two of them one page
-   turn apart, which is what the device is: the word cut off the foot of the CV,
-   and then the section it is the title of.
+   So the blank screen went and the section came up to the fold. THE WORD HOLDS
+   ITS PLACE. It is cut at the fold, in the page's bottom-left corner, and it
+   stays exactly there on the SCREEN for the whole turn — same corner, same size,
+   same cut — while the CV scrolls out from under it and the section arrives
+   behind it. The one thing that happens to it is the one thing it is for: it
+   turns from Friz Quadrata into the sans. `position: fixed` below is the whole
+   of that, and the note on it is where the reasoning sits.
 
-   IT DID FLY, BRIEFLY. #83 carried the word down onto that masthead and scaled
-   it to the masthead's cap, so that the two PROJECTS were one; the h2 went
-   `visibility: hidden` under `.cue-fly` and the flying word was fitted to its
-   ink. The scale is why that is gone. The cut word's cap is 49px at 1440 against
-   the masthead's 75, so the word grew by half on the way down — and the word at
-   the fold had been the size the composition wanted since before the section
-   existed. A device that resizes it is paying for the meeting with the one thing
-   that was already right. The morph block in cut-morph.js has the rest of that
-   account.
+   TWO THINGS HAVE BEEN TRIED HERE AND ARE NOT COMING BACK, both of which moved
+   the word instead of the page. The doorway parked it in a top-left corner a
+   screen down; #83 flew it onto the section's masthead and scaled it to that
+   h2's cap, which grew the word by half on the way — 49px of cap against 75 at
+   1440 — when the word at the fold had been the size the composition wanted
+   since before the section existed. The word was right where it was and at the
+   size it was; what the scroll is for is the turn.
 
    What this sheet fixes is therefore the whole of the word: the two insets
    below, the cut, and the two snap ports. Every browser gets the same page, with
-   or without cut-morph.js — the word cut at the fold, the section's own masthead
-   drawn as the section's own masthead, and one page turn between them.
+   or without cut-morph.js — the word held at the fold, the section's own
+   masthead drawn as the section's own masthead, and one page turn between them.
 
    Two consequences worth naming:
-   * The cut moves off the box and onto the fold. Everywhere else the word is
+   * The cut becomes REAL, and the window makes it. Everywhere else the word is
      clipped to --cue-clip by its own overflow, because the document ends beneath
      it and there is no second screen for the rest of the letters to stand on.
-     Here the letters are all there, so the overflow clip comes off — what it
-     cuts is the BOX, at the cap line, and it would take the O's overshoot with
-     it — and the clip-path below cuts at the fold instead, which is where the
-     design has always drawn the cut.
-     It has to be a clip and cannot be left to paint order, which is the part
-     worth writing down. The section paints after .page and would cover the tail
-     of the letters on its own — but the effect stack lifts the type to
-     --fx-text-z (17) so that it stands above the layers it is excluded from, and
-     the section takes no z-index of its own, so the lifted word is drawn ON the
-     section instead. Below the fold that costs nothing at rest, which is the
-     trap: it is only during the turn, as the section rises past it, that the
-     bottom of PROJECTS is dragged up the dark composition — bright on near-black
-     in dark mode. Giving .panel a z-index instead would fix the word and break
-     the stack, since the numbers it would have to beat are the film, the grain
-     and the CRT, all of which belong over this section.
+     Here the letters are all there and the box is fixed to the fold, so what is
+     under the cut is under the WINDOW: the bottom of the screen does the cutting
+     at every scroll position, and it is the same line at every one of them. So
+     the overflow clip comes off — what it cuts is the BOX, at the cap line, and
+     it would take the O's overshoot with it.
+     It also settles what the word is drawn over. The effect stack lifts the type
+     to --fx-text-z (17) so that it stands above the layers it is excluded from,
+     and the section takes no z-index of its own, so the word is drawn ON the
+     section rather than under it — which is what a word that holds its place
+     while a composition slides in behind it has to be. What that costs is the
+     colour, and the ramp below is the answer to it.
    * The word leaves the measure — both of them. It is no longer the last line of
      the column but a word standing in the page's own corner, so it is set to the
      page's margin instead of the text's — --title-left from the window's edge,
@@ -1977,27 +1972,50 @@ body::after {
      therefore no good either; it is the whole document tall. */
   body::before { content: ""; display: block; height: 0; scroll-snap-align: start; }
   .cut-title {
-    position: absolute;
+    /* FIXED, AND THAT IS THE DEVICE. The word is cut by the fold and it holds
+       that spot on the SCREEN for the whole turn: the CV scrolls out from under
+       it, the section arrives beneath it, and the only thing that happens to the
+       word is that it turns from Friz into the sans. It does not travel, it does
+       not resize, and the cut never moves off the line it was made on.
+       `absolute` was the old spelling of this and cannot say it. Absolutely
+       positioned in .page the box has a fixed DOCUMENT position, which is a
+       different claim: the word is then part of the page above and rides up the
+       window with it, so what the reader sees is the cut word leaving and the
+       section's own masthead arriving where it was.
+       Everything else here is the same declaration it was when the box was
+       absolute — `top: 100vh` is still the fold, since a fixed box's containing
+       block is the viewport and the viewport's own top edge is where 100vh is
+       measured from.
+       THE CUT COMES FREE. What is below the fold is below the WINDOW now, so the
+       bottom of the screen does the cutting; there is nothing to clip and no
+       edge to keep the word above. */
+    position: fixed;
     top: 100vh;
     left: var(--title-left);
     right: calc(50% + var(--col) / 2 + var(--title-left));
     width: auto;
     max-width: none;
     margin: 0;
-    /* THE CUT, and see the second bullet above for why it is a clip rather than
-       the section simply painting over the word. This box's own top edge IS the
-       fold — `top: 100vh`, with the word lifted back above it by the negative
-       margin below — so the cut is the box's top edge and needs no arithmetic of
-       its own. The other three sides are opened well past the window instead of
-       being left at 0: the chroma and halation effects put a shadow on this
-       element that spills outside its box, and a clip tight to the sides would
-       trim that rather than the section. */
-    clip-path: inset(-100vh -100vw 100% -100vw);
   }
+  /* The word holds its place while a near-black composition slides in behind it,
+     so it cannot hold one colour: --ink on the paper is the section's own ground
+     once the section is there, and in the light theme it would simply go out.
+     --cue-land is that crossing, 0 to 1, written by cut-morph.js off where the
+     section's top edge actually is against the word's ink; --cue-land-ink is the
+     far end, read by that same script off the masthead's own computed colour, so
+     the section's palette stays declared in one place — the .panel block — and is
+     not copied up here as a literal. --ink is the near end and is left to the
+     cascade, so the theme toggle still governs the word on the paper.
+     Both ends of the ramp are ordinary CSS, so a browser that never runs the
+     script, or one without `color-mix`, keeps the word at --ink and loses nothing
+     but the crossing. #73 is the ticket that owns that crossing properly. */
   .cut-title > a {
-    /* The clip comes off — the fold does the cutting here, and the O's overshoot
-       above the cap line is meant to be drawn, not sliced off a few pixels
-       short of it. */
+    color: color-mix(in oklab,
+                     var(--cue-land-ink, var(--ink)) calc(var(--cue-land, 0) * 100%),
+                     var(--ink));
+    /* The clip comes off — the bottom of the window does the cutting here, and
+       the O's overshoot above the cap line is meant to be drawn, not sliced off
+       a few pixels short of it. */
     overflow: visible;
     /* But the BOX stays the cap slab, and is not left to `auto`. Two things
        depend on it: the hover underline, which lands on the box's bottom edge

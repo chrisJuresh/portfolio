@@ -343,12 +343,13 @@
        There used to be a `.doorway` between this and .page — one blank screen
        for the cut word to arrive on as its title, from when the word opened
        onto nothing. It is gone: this section stands directly under the fold, one
-       page turn below the CV, and the cut word stays where it is cut rather than
-       travelling. See the turn block in styles.css for the two snap ports that
-       leaves. The reason the panel still cannot be a child of .page is
+       page turn below the CV, and the cut word does not arrive anywhere. It is
+       fixed to the fold and holds that corner of the screen while this section
+       comes up behind it, turning as it goes. See the turn block in styles.css.
+       The reason the panel still cannot be a child of .page is
        the one the doorway was written for in the first place — in the
        one-screen regime .page is exactly one screen and .cut-title is pinned
-       out of flow at `top: 100vh`, so a panel inside .page would land
+       out of flow at the fold, so a panel inside .page would land
        underneath that pinned word and push nothing out of the way. Outside it,
        the reading order is the one the design asks for in every regime: the CV,
        and then the section the cut word turns into the title of.
@@ -386,9 +387,14 @@
              one cut off the foot of the page above, in the face that word turns
              into over the scroll, and the two are deliberately left as two: #83
              flew the cut word down onto this h2 and hid it under `.cue-fly`, and
-             the flight is out again because it had to scale the cut word by half
-             to fit — see the morph block in cut-morph.js. This sets row one's
-             height and is where the subheading starts. It is also the section's
+             that is out again because it had to scale the cut word by half to
+             fit — see the morph block in cut-morph.js. The cut word holds the
+             fold instead, so on this screen it is standing in the bottom-left
+             corner while this h2 is at the top. cut-morph.js reads this
+             element's computed colour, and only that: it is the far end of the
+             crossing the word makes onto this section's ground, which keeps the
+             palette declared once, in the .panel block. This also sets row one's
+             height and is where the subheading starts, and it is the section's
              accessible name, referenced by the `aria-labelledby` above. -->
         <h2 class="panel-masthead" id="panel-masthead">Projects</h2>
         <!-- Two authored lines, not one string left to wrap. The second line is

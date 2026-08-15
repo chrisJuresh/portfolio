@@ -1,28 +1,29 @@
 /* The cut title's morph — PROJECTS turning from Friz Quadrata into a sans as
- * the page scrolls, and NOTHING ELSE. The word stands in the page's bottom-left
- * corner at the size CSS gives it, turns face over the one page turn, and never
- * moves or changes size. The section below prints its own masthead, in the face
- * the word turned into, at its own size.
+ * the page scrolls, and NOTHING ELSE MOVES. The word is held at the fold by CSS
+ * — `position: fixed` in the turn block of styles.css — so it keeps its corner
+ * of the screen, its size and its cut for the whole page turn while the CV
+ * scrolls out from under it and the section arrives behind it. All this file
+ * does is turn the letterforms, and ramp the word's colour where the section's
+ * top edge passes it, because past that edge the ground is near-black and one
+ * colour cannot serve both. The section prints its own masthead.
  *
- * IT USED TO FLY, and the note is here because the flight is the obvious idea
- * and it has already been tried. #83 carried the word out of that corner onto
- * the masthead's ink, scaled to the masthead's cap, so that the two PROJECTS
- * were one; the masthead went `visibility: hidden` under `.cue-fly` so it was
- * not drawn twice. The scale is what it cost. At 1440 the cut word's cap is 49px
- * and the masthead's is about 75, so the word grew by half on the way down —
- * and the word at the fold had been right at its own size since before the
- * section existed. So the flight came back out and only the turn is left. Gone
- * with it: the transform and its z-index lift, the colour ramp across the
- * section's top edge (`--cue-land`, `--cue-land-ink`, `.cue-fly`), and every
- * measurement that fed them. NOT gone with it: the two snap ports and the
- * absence of the doorway, which are the page turn and are #83's other half.
+ * TWO WAYS OF MOVING THE WORD HAVE BEEN TRIED AND ARE NOT COMING BACK, which is
+ * worth knowing before writing a third. The doorway parked it in the top-left
+ * corner of a blank screen; #83 flew it out of its corner onto the masthead's
+ * ink, scaled to that h2's cap, and hid the masthead under `.cue-fly` so the
+ * word was not drawn twice. The scale is what the second cost: at 1440 the cut
+ * word's cap is 49px and the masthead's is about 75, so the word grew by half on
+ * the way down, and the word at the fold had been right at its own size since
+ * before the section existed. What the scroll is for is the turn.
  *
  * NOTHING ON THE PAGE DEPENDS ON THIS FILE, the same stance effects.js takes. It
  * is loaded last, and a browser that never runs it — parse error, blocked
- * script, reduced motion — gets the cut title exactly as it was before any of
- * this: the one baked Friz path that app.js puts inline, on screen at first
- * paint. All this does is swap that single path for the same outlines split into
- * eight, and then turn them.
+ * script — gets the cut title exactly as it was before any of this: the one
+ * baked Friz path that app.js puts inline, held at the fold by the sheet, on
+ * screen at first paint. All this does is swap that single path for the same
+ * outlines split into eight, and then turn them. Reduced motion is the one case
+ * that is not all-or-nothing; see the note further down for why the colour is
+ * still written there.
  *
  * WHAT THE TWEEN IS. Both ends are the real typeface: at rest each letter is its
  * own Bezier outline, Friz's at the start and the sans's at the end, and the
@@ -200,8 +201,73 @@
     return t < 0 ? 0 : t > 1 ? 1 : t;
   }
 
+  /* ---- the crossing --------------------------------------------------------
+     The word is fixed to the fold — see the turn block in styles.css — so it
+     holds its corner of the SCREEN while the section slides up behind it. That
+     is one word on two grounds: paper until the section's top edge passes it,
+     near-black after, and in the light theme --ink on --panel-bg is a word that
+     goes out. So the colour crosses with the ground.
+
+     WHAT IS RAMPED AGAINST WHAT. The band that matters is the word's VISIBLE
+     ink: from the top of the drawing down to the bottom of the window, since
+     what is under the fold is under the window and there is nothing there to be
+     over. The section's edge sweeps that band — about 32px of it at 1440, so
+     about 3% of the turn, right at the end — and the ramp is where the edge is
+     inside it. Both are read per frame, and deliberately: the word is fixed and
+     the section's top is a constant of the layout, but the page-in reveal
+     translates .page for its first 0.9s and this file runs during exactly that,
+     so a cached rect is a rect measured 8px out. Two rects a frame is what the
+     flight cost too.
+
+     Smoothstep on top, the same curve the letters are eased with. It does not
+     fix the straddle — nothing one colour can do fixes the straddle, and in the
+     middle of that band the word genuinely is half on each — it only keeps the
+     word committed to a ground for most of the crossing. #73 owns it properly.
+
+     The COLOUR it crosses to is the masthead's own, read off the cascade so the
+     section's palette stays declared in one place: the .panel block. --ink is
+     the near end and is left to the cascade too, so the theme toggle still
+     governs the word on the paper. */
+  var masthead = document.querySelector(".panel-masthead");
+  var crossing = false;
+
+  /* Whether there is a crossing here at all, and the colour of its far end.
+     Taken once per layout rather than per frame: `position` and a computed
+     colour both cost a style recalc, and neither moves while the page sits
+     still. Outside the turn — a window below the gate, where the word is still
+     a block in the column — this stays false, nothing is written, and the word
+     keeps --ink through the cascade alone. */
+  function measure() {
+    crossing = false;
+    host.style.removeProperty("--cue-land");
+    host.style.removeProperty("--cue-land-ink");
+    if (!panel || !masthead) return;
+    if (window.getComputedStyle(host).position !== "fixed") return;
+    host.style.setProperty("--cue-land-ink", window.getComputedStyle(masthead).color);
+    crossing = true;
+  }
+
+  function land() {
+    if (!crossing) return;
+    var pic = svg.getBoundingClientRect();
+    var hi = Math.min(pic.bottom, window.innerHeight || 0);
+    var span = hi - pic.top;
+    var c = span > 0 ? (hi - panel.getBoundingClientRect().top) / span : 0;
+    c = c < 0 ? 0 : c > 1 ? 1 : c;
+    host.style.setProperty("--cue-land", (c * c * (3 - 2 * c)).toFixed(3));
+  }
+
   var pinned = null;                 // a number while the tuner is holding it
   var queued = false;
+
+  /* REDUCED MOTION STOPS THE LETTERS AND NOT THE COLOUR, and the split is the
+     point. Turning eight letterforms as the page scrolls is motion and is what
+     the setting is asking about; a word going out against the ground it is
+     standing on is legibility, and it is exactly as wrong for a reader who asked
+     for less movement. So the word stays in Friz for them, held at the fold by
+     CSS as it is for everyone, and still crosses. */
+  var still = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)");
+  var motion = !still || !still.matches;
 
   /* The letters take the pinned T when the tuner is holding one, and the real
      scroll otherwise: design/cut-title/morph-tuner.html scrubs T without moving
@@ -209,7 +275,8 @@
      the composition gets judged. */
   function frame() {
     queued = false;
-    draw(pinned === null ? progress() : pinned);
+    if (motion) draw(pinned === null ? progress() : pinned);
+    land();
   }
 
   /* Scrolling goes through a frame — it fires far faster than the display and
@@ -222,18 +289,21 @@
 
   build(FACE);
 
-  var still = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)");
-  if (!still || !still.matches) {
-    /* Scroll is the input. `resize` and `load` are here because the LANDING can
-       move without a scroll and T is a fraction of it: a resized window is the
-       obvious one, and `load` is for the corner pictures, which arrive late and
-       settle the CV's height. Neither reads anything but landing(), so neither
-       costs a measurement of its own. */
-    window.addEventListener("scroll", kick, { passive: true });
-    window.addEventListener("resize", kick);
-    window.addEventListener("load", kick);
-    kick();
+  /* Scroll is the input. `resize` and `load` are here because both the LANDING
+     and the crossing can move without one: a resized window is the obvious case,
+     and `load` is for the corner pictures, which arrive late and settle the CV's
+     height. The theme carries the colour the word crosses FROM, and the one it
+     crosses to is read at measure time, so a toggle mid-turn re-reads rather
+     than stranding the word part-way to a colour the page has stopped using. */
+  window.addEventListener("scroll", kick, { passive: true });
+  window.addEventListener("resize", function () { measure(); kick(); });
+  window.addEventListener("load", function () { measure(); kick(); });
+  if (window.MutationObserver) {
+    new window.MutationObserver(function () { measure(); kick(); })
+      .observe(root, { attributes: true, attributeFilter: ["data-theme"] });
   }
+  measure();
+  kick();
 
   /* The tuner's handle on this, and the only reason any of it is exposed.
      design/cut-title/morph-tuner.html iframes the real page and reaches in. */
