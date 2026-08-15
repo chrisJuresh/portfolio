@@ -722,10 +722,8 @@
      built out of.
      There was a --title-top here as well, for the top-left corner the word used
      to come to rest in on a blank second screen. That screen is gone and so is
-     the corner: the word now flies to the projects section's own masthead, and
-     where it lands is that h2's ink, measured at run time rather than declared.
-     See the turn block at the foot of this sheet and the travel in
-     cut-morph.js. */
+     the corner: the projects section stands directly under the fold now, and the
+     word stays where it is cut. See the turn block at the foot of this sheet. */
   --title-left: var(--corner);
 
   /* Everything in the document that is NOT the photo strip and NOT one of the
@@ -1871,41 +1869,57 @@ body::after {
    the end parked the cut word in the top-left corner as that screen's title. It
    was written when the word opened onto nothing, and once the section arrived
    underneath it the page had three resting places and the middle one was an
-   empty sheet with a half-turned word on it. The word never reached its own
-   landing either: it came to rest a whole screen above the fold, out of sight,
-   and the section below printed the SAME WORD again as its masthead in the very
-   face the morph resolves into.
+   empty sheet with a half-turned word on it. The word also came to rest a whole
+   screen above the fold, out of sight, while the section below printed the SAME
+   WORD again as its masthead in the very face the morph resolves into.
 
-   So the landing moved to where it was always going. The word flies to the
-   section's masthead and lands on it — the .panel-masthead h2 goes
-   `visibility: hidden` under `.cue-fly` and the flying word is fitted to its
-   ink — which is the whole of the device the morph was built for: PROJECTS in
-   Friz Quadrata at the foot of the CV turns into PROJECTS in Host Grotesk at the
-   head of the section, once, over one page turn. The flight is measured and
-   drawn by cut-morph.js, off the same T that turns the letters; there is no
-   arithmetic left in this sheet for where the word ends up, because the end is
-   another element's ink and only layout knows how wide that is.
+   So the blank screen went and the section came up to the fold. The word itself
+   does not move. It stays cut in the page's bottom-left corner at the size the
+   two insets below give it, turns face over the page turn, and the section
+   prints its own masthead in the face it turned into — the two of them one page
+   turn apart, which is what the device is: the word cut off the foot of the CV,
+   and then the section it is the title of.
 
-   What this sheet still fixes is the START — the two insets below, the cut, and
-   the two snap ports — and that half is unchanged to the pixel. A browser that
-   never runs cut-morph.js gets exactly this block: the word cut at the fold, the
-   section's own masthead drawn as the section's own masthead, and one page turn
-   between them. Nothing here depends on the flight.
+   IT DID FLY, BRIEFLY. #83 carried the word down onto that masthead and scaled
+   it to the masthead's cap, so that the two PROJECTS were one; the h2 went
+   `visibility: hidden` under `.cue-fly` and the flying word was fitted to its
+   ink. The scale is why that is gone. The cut word's cap is 49px at 1440 against
+   the masthead's 75, so the word grew by half on the way down — and the word at
+   the fold had been the size the composition wanted since before the section
+   existed. A device that resizes it is paying for the meeting with the one thing
+   that was already right. The morph block in cut-morph.js has the rest of that
+   account.
+
+   What this sheet fixes is therefore the whole of the word: the two insets
+   below, the cut, and the two snap ports. Every browser gets the same page, with
+   or without cut-morph.js — the word cut at the fold, the section's own masthead
+   drawn as the section's own masthead, and one page turn between them.
 
    Two consequences worth naming:
-   * The cut becomes REAL. Everywhere else the word is clipped to --cue-clip by
-     its own overflow, because the document ends beneath it and there is no
-     second screen for the rest of the letters to stand on. Here they are all
-     there and the bottom of the window does the cutting, which is what the
-     device was always drawing. So the clip comes off: leave it on and the word
-     would fly to the masthead still guillotined.
+   * The cut moves off the box and onto the fold. Everywhere else the word is
+     clipped to --cue-clip by its own overflow, because the document ends beneath
+     it and there is no second screen for the rest of the letters to stand on.
+     Here the letters are all there, so the overflow clip comes off — what it
+     cuts is the BOX, at the cap line, and it would take the O's overshoot with
+     it — and the clip-path below cuts at the fold instead, which is where the
+     design has always drawn the cut.
+     It has to be a clip and cannot be left to paint order, which is the part
+     worth writing down. The section paints after .page and would cover the tail
+     of the letters on its own — but the effect stack lifts the type to
+     --fx-text-z (17) so that it stands above the layers it is excluded from, and
+     the section takes no z-index of its own, so the lifted word is drawn ON the
+     section instead. Below the fold that costs nothing at rest, which is the
+     trap: it is only during the turn, as the section rises past it, that the
+     bottom of PROJECTS is dragged up the dark composition — bright on near-black
+     in dark mode. Giving .panel a z-index instead would fix the word and break
+     the stack, since the numbers it would have to beat are the film, the grain
+     and the CRT, all of which belong over this section.
    * The word leaves the measure — both of them. It is no longer the last line of
      the column but a word standing in the page's own corner, so it is set to the
      page's margin instead of the text's — --title-left from the window's edge,
      the same measure as the white above it, which is what makes the corner read
      as a corner. And it is no longer the column's width either: it is fitted to
-     the
-     gutter it now stands in, so that the white either side of it is that same
+     the gutter it now stands in, so that the white either side of it is that same
      --title-left twice over — page edge to the P, S to the line the resume
      starts on. See --cue-measure in the one-screen block for the whole of that
      derivation; here it is only placed.
@@ -1939,11 +1953,6 @@ body::after {
    block is what it always was.
    `top`, not `bottom`, because the offset then holds the cap top on that line
    whatever the box's own height turns out to be.
-   IT IS ALSO THE ONLY THING THE FLIGHT HAS TO TRANSFORM. Absolutely positioned
-   in .page, the box has a document position that does not move with the scroll,
-   so cut-morph.js can express the whole travel as one transform on this element
-   against one measurement of the masthead's ink — no fixed positioning, no
-   sticky, and nothing here to undo at T = 0.
 
    These rules sit at the end of the sheet, not up in the :root block that shares
    their gate: every one of them overrides a base rule of the same specificity,
@@ -1975,38 +1984,20 @@ body::after {
     width: auto;
     max-width: none;
     margin: 0;
-    /* The corner the flight's scale is taken about, and the only thing this
-       sheet says about the flight itself. cut-morph.js writes the transform
-       against this origin — see the flight block there — and writes nothing at
-       all at rest, so a page that never runs it never has a transform on this
-       element. `0 0` rather than the default centre because the word is placed
-       by its top-left in both compositions and a centre origin would put the
-       scale's own drift into the landing.
-       It costs nothing when unused: `transform-origin` on an untransformed box
-       has no effect and makes no stacking context. The transform does make one,
-       which is exactly why cut-morph.js also has to hand out a z-index — see
-       the note on `lift` there. */
-    transform-origin: 0 0;
-  }
-  /* The word crosses from the paper onto the near-black section during the turn,
-     so it cannot keep one colour. --cue-land is the crossing, 0 to 1, written by
-     cut-morph.js off where the DRAWING actually is against the section's top
-     edge; --cue-land-ink is the far end, read by that same script off the
-     masthead's own computed colour so that the section's palette stays declared
-     in one place — the .panel block — and is not copied up here as a literal.
-     --ink is the near end and is left to the cascade, so the theme toggle still
-     governs the word it leaves as.
-     Falls back to plain --ink wherever `color-mix` is not understood, which is
-     the same stance as the rest of this file: the flight still happens, the word
-     simply arrives the colour it started. #73 is the crossing proper. */
-  :root.cue-fly .cut-title > a {
-    color: color-mix(in oklab,
-                     var(--cue-land-ink, var(--ink)) calc(var(--cue-land, 0) * 100%),
-                     var(--ink));
+    /* THE CUT, and see the second bullet above for why it is a clip rather than
+       the section simply painting over the word. This box's own top edge IS the
+       fold — `top: 100vh`, with the word lifted back above it by the negative
+       margin below — so the cut is the box's top edge and needs no arithmetic of
+       its own. The other three sides are opened well past the window instead of
+       being left at 0: the chroma and halation effects put a shadow on this
+       element that spills outside its box, and a clip tight to the sides would
+       trim that rather than the section. */
+    clip-path: inset(-100vh -100vw 100% -100vw);
   }
   .cut-title > a {
-    /* The clip comes off — the bottom of the window does the cutting here, and
-       the J's hook and the baseline are meant to be seen on the screen below. */
+    /* The clip comes off — the fold does the cutting here, and the O's overshoot
+       above the cap line is meant to be drawn, not sliced off a few pixels
+       short of it. */
     overflow: visible;
     /* But the BOX stays the cap slab, and is not left to `auto`. Two things
        depend on it: the hover underline, which lands on the box's bottom edge
@@ -2033,33 +2024,15 @@ body::after {
      means the scroller must COME TO REST on a port, and with nothing between
      them there is nowhere to stop half way.
      `start`, so the section arrives with its masthead against the top of the
-     window; the flying word is aimed at that masthead's ink, so this is also
-     what fixes where the word comes down. When the composition is taller than
-     the window the area is larger than the scrollport, which relaxes snapping
-     inside it rather than switching it off — you can read to the bottom of a
-     tall panel without being pulled back up, and app.js hands the wheel back to
-     the browser past this port for exactly that stretch.
+     window — and the masthead is drawn, in every regime and whatever the script
+     does, because the word above no longer comes down onto it. When the
+     composition is taller than the window the area is larger than the
+     scrollport, which relaxes snapping inside it rather than switching it off —
+     you can read to the bottom of a tall panel without being pulled back up, and
+     app.js hands the wheel back to the browser past this port for exactly that
+     stretch.
      What the Rail does, and the crossing into dark, are still #72 and #73. */
   .panel { scroll-snap-align: start; }
-
-  /* ---- the landing ---------------------------------------------------------
-     Only while cut-morph.js is actually flying the word: it writes .cue-fly on
-     <html> when it has measured a flight it can draw, and takes it off when it
-     cannot — reduced motion, a regime with no turn in it, a masthead it could
-     not find. So the fallback is the plain page, with this h2 drawn.
-     `visibility`, NOT `display: none` and not `opacity`. The box has to stay
-     exactly where it is: it is what sets row one's height, what the subheading
-     hangs off, and — the point — the ink the flight is aimed at, which
-     cut-morph.js measures with a Range over this element's own text. A hidden
-     box still measures. `opacity: 0` would measure too and would also still be
-     hit-tested and still be read out; `visibility: hidden` takes it out of the
-     accessibility tree, which is right, because the section's name comes from
-     the `aria-labelledby` reference — and a directly-referenced hidden element
-     still supplies one.
-     Gated inside this media query with the rest of the turn, because outside it
-     there is no flight: on a page that scrolls as a column the word stays in the
-     column and this is the only PROJECTS the section has. */
-  :root.cue-fly .panel-masthead { visibility: hidden; }
 }
 
 /* ============================================================================
