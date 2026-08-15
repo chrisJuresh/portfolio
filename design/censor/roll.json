@@ -1,0 +1,597 @@
+{
+  "note": "Every photograph the recording passes over. Assembled by collect-roll.mjs; not a decision about any of them. See README.md.",
+  "grid_url": "http://127.0.0.1:8770/",
+  "viewport": {
+    "width": 1440,
+    "height": 900
+  },
+  "distance": 1200,
+  "band": 2100,
+  "roll_digest": "3b968f3ea171e148fb2d82196a5a590e37315a359a09a99a67013290026e2115",
+  "tiles": [
+    {
+      "sha": "0d66290eeef2929f556afcd04eb914b66608dde5e65daf8c700f6d1215ead6d8",
+      "index": 0,
+      "top": 96,
+      "left": 14,
+      "width": 162,
+      "height": 216
+    },
+    {
+      "sha": "b5d377028d775dfc2be40cca2d65ada4d4f3c5b21755d81b1b0a51f534122cdd",
+      "index": 1,
+      "top": 96,
+      "left": 180,
+      "width": 162,
+      "height": 216
+    },
+    {
+      "sha": "bbd61b9120d8e6a9d633dc15e8c4df7eaa3fee5f87519ac4ea0cfdb5c0c26cce",
+      "index": 2,
+      "top": 96,
+      "left": 346,
+      "width": 162,
+      "height": 216
+    },
+    {
+      "sha": "89536239359ee01e831d7d62e508e50a23f35d14f1ed2a4f2259a56df4238d9f",
+      "index": 3,
+      "top": 96,
+      "left": 512,
+      "width": 162,
+      "height": 216
+    },
+    {
+      "sha": "2128157cac21f1caee8815c00776a2f8175d7be1a4dfd7af8a6b8ec45279cba7",
+      "index": 4,
+      "top": 96,
+      "left": 678,
+      "width": 162,
+      "height": 216
+    },
+    {
+      "sha": "774832865eb6a8aaaad68c397b73005aac6896c62a7167b2d077fa981bbc6ae3",
+      "index": 5,
+      "top": 96,
+      "left": 844,
+      "width": 288,
+      "height": 216
+    },
+    {
+      "sha": "0a1429266cdc213cdc6c5a039f887c8312e8ff6cf111681f1882585affcb469d",
+      "index": 6,
+      "top": 96,
+      "left": 1136,
+      "width": 290,
+      "height": 216
+    },
+    {
+      "sha": "23c34f99af74284413fedc8a2773052533fc512b765399008ca3c7b6c516fcc0",
+      "index": 7,
+      "top": 328,
+      "left": 14,
+      "width": 280,
+      "height": 210
+    },
+    {
+      "sha": "39cd43e47cc10c73c4042ccc040de6bb1793fb05c9b8f198a8eb91df9f3d6cfb",
+      "index": 8,
+      "top": 328,
+      "left": 298,
+      "width": 280,
+      "height": 210
+    },
+    {
+      "sha": "886e7d6848e88f27520ef4e3eec436953059c618bf538e9f6655bcc1738f03a5",
+      "index": 9,
+      "top": 328,
+      "left": 582,
+      "width": 280,
+      "height": 210
+    },
+    {
+      "sha": "0db0c95eb8e268a4094d52e419491903da75f724bdf503f3307c642a7ecfece9",
+      "index": 10,
+      "top": 328,
+      "left": 866,
+      "width": 280,
+      "height": 210
+    },
+    {
+      "sha": "ebf79cd7d69613cf3c289359067efd5d08057178fbfe140c1987791e2e048f20",
+      "index": 11,
+      "top": 328,
+      "left": 1150,
+      "width": 276,
+      "height": 210
+    },
+    {
+      "sha": "cbf8472b07784401e19d5dbbb77a2afd2deec782d30ab2be61169cf4664da730",
+      "index": 12,
+      "top": 554,
+      "left": 14,
+      "width": 288,
+      "height": 216
+    },
+    {
+      "sha": "a68b3d983ccc4d7d3c04cbb1e39544dd4d3c6a3ec258d4de550470c13180141f",
+      "index": 13,
+      "top": 554,
+      "left": 306,
+      "width": 288,
+      "height": 216
+    },
+    {
+      "sha": "2b12312e60abab65be7d4f87dad29c233ae342777b440653a8e80ac78df093f2",
+      "index": 14,
+      "top": 554,
+      "left": 598,
+      "width": 162,
+      "height": 216
+    },
+    {
+      "sha": "c4daabdbe0a1cb25af5c9e143a5561ad2c06b006b82b929ad856763268c38eac",
+      "index": 15,
+      "top": 554,
+      "left": 764,
+      "width": 162,
+      "height": 216
+    },
+    {
+      "sha": "60c3f14a957b19c43df4f00404cf0008b859a787ca07c4e59c18ad61c8433833",
+      "index": 16,
+      "top": 554,
+      "left": 930,
+      "width": 162,
+      "height": 216
+    },
+    {
+      "sha": "20ebfe85ab950530eb95a7876540c2183f65dc5b051cb4fb23af1d8b72d5ee48",
+      "index": 17,
+      "top": 554,
+      "left": 1096,
+      "width": 162,
+      "height": 216
+    },
+    {
+      "sha": "c05add34ea277ae19c09e38680a3dd8a91288ec55238b3ef060f7902c685fd5d",
+      "index": 18,
+      "top": 554,
+      "left": 1262,
+      "width": 164,
+      "height": 216
+    },
+    {
+      "sha": "8428637a361801b6324ed14bf3266cf8d78d49d06e2a3a63c1623cd74ff5246a",
+      "index": 19,
+      "top": 786,
+      "left": 14,
+      "width": 153,
+      "height": 204
+    },
+    {
+      "sha": "92aaf8e274fe68801e9dba76fd1e0f33dff9841b7ec87820533ccb1f7932d6bc",
+      "index": 20,
+      "top": 786,
+      "left": 171,
+      "width": 153,
+      "height": 204
+    },
+    {
+      "sha": "8bcb4a802a33ce7eed0e0d70e58b9528dcf4a50dd253187168802a883349db6c",
+      "index": 21,
+      "top": 786,
+      "left": 328,
+      "width": 153,
+      "height": 204
+    },
+    {
+      "sha": "93ad723c921c2863b18de88932ea26a7e1ec829764a81cab17ca9efbfb8cf2ad",
+      "index": 22,
+      "top": 786,
+      "left": 485,
+      "width": 153,
+      "height": 204
+    },
+    {
+      "sha": "9affc9fbea6ad456364c5820ff3db1e119010d3a768da3d92c556f151e026e2b",
+      "index": 23,
+      "top": 786,
+      "left": 642,
+      "width": 153,
+      "height": 204
+    },
+    {
+      "sha": "970124a5fad48ba2a86fa380d9796660c6d25902c34afd5f2871fa08b40994c4",
+      "index": 24,
+      "top": 786,
+      "left": 799,
+      "width": 153,
+      "height": 204
+    },
+    {
+      "sha": "902818fd5c18a088721ae4a4e80ef2d9156ad7a4eb5708e73cec64218617a4df",
+      "index": 25,
+      "top": 786,
+      "left": 956,
+      "width": 153,
+      "height": 204
+    },
+    {
+      "sha": "6cadd29949b20cd5d5bdc6455befeb2025cb330f173510ff71c4ad2b2b198b65",
+      "index": 26,
+      "top": 786,
+      "left": 1113,
+      "width": 153,
+      "height": 204
+    },
+    {
+      "sha": "b50866ee82e1503ec6f1ed3558a5fcae27e6ee9f47e50db46fd7be2d5bc672f2",
+      "index": 27,
+      "top": 786,
+      "left": 1270,
+      "width": 156,
+      "height": 204
+    },
+    {
+      "sha": "147d346fd1b32e66675cc483d19d667a17546639bcb4e3418e07d9e23139f2b9",
+      "index": 28,
+      "top": 1006,
+      "left": 14,
+      "width": 153,
+      "height": 204
+    },
+    {
+      "sha": "ed9128f59a7fc7e9e3a8521e281961edd9badc58d6a3a1bcabcb2185ec88be81",
+      "index": 29,
+      "top": 1006,
+      "left": 171,
+      "width": 153,
+      "height": 204
+    },
+    {
+      "sha": "2ea18be79348c466d8d6d9822c0702fd37e120bf0449cb167d89a41df860ef49",
+      "index": 30,
+      "top": 1006,
+      "left": 328,
+      "width": 153,
+      "height": 204
+    },
+    {
+      "sha": "cbc4a29a6464613d29daf3aa334fd8660ba4e9a60d90f377c54cc40830ff63d1",
+      "index": 31,
+      "top": 1006,
+      "left": 485,
+      "width": 153,
+      "height": 204
+    },
+    {
+      "sha": "79b24413c88c08335aa291afde900f6925ad6a6b1cdf6a56137401e41521cd14",
+      "index": 32,
+      "top": 1006,
+      "left": 642,
+      "width": 153,
+      "height": 204
+    },
+    {
+      "sha": "b3949f164181d8c39b4e3900d2ec04e8d7bdbbce71702aeb4905150a1ef20cc6",
+      "index": 33,
+      "top": 1006,
+      "left": 799,
+      "width": 153,
+      "height": 204
+    },
+    {
+      "sha": "8834826bfa74672c777a9074cb5f9f3b401ce368cc8347148ddbc8fcc8f1a4a7",
+      "index": 34,
+      "top": 1006,
+      "left": 956,
+      "width": 153,
+      "height": 204
+    },
+    {
+      "sha": "dea7f09083c8597c5487eebb196bfa75d3af5e8a4165ebd5c6eea9184e1d0d00",
+      "index": 35,
+      "top": 1006,
+      "left": 1113,
+      "width": 153,
+      "height": 204
+    },
+    {
+      "sha": "b520d9128e90f813fd31f26d0ce82ad01499214e50af0bc2d3cf7a50e3536721",
+      "index": 36,
+      "top": 1006,
+      "left": 1270,
+      "width": 156,
+      "height": 204
+    },
+    {
+      "sha": "c1a4146771f2c0741b09857855966f17ce526a010978ac0d3312acaa81cae0cc",
+      "index": 37,
+      "top": 1226,
+      "left": 14,
+      "width": 153,
+      "height": 204
+    },
+    {
+      "sha": "2f6e5844a933addb06c1b4e9fbde21457a896cc9d51016c1a07988d527f8abcb",
+      "index": 38,
+      "top": 1226,
+      "left": 171,
+      "width": 153,
+      "height": 204
+    },
+    {
+      "sha": "5c536cdb47f84d53e62718778a501654305d8befc96a2e37bc412f1e11a52fbc",
+      "index": 39,
+      "top": 1226,
+      "left": 328,
+      "width": 153,
+      "height": 204
+    },
+    {
+      "sha": "2c0607f1732c48809cfed512c20be13494a0ee8bb84308bc1bcefd72886dd30a",
+      "index": 40,
+      "top": 1226,
+      "left": 485,
+      "width": 153,
+      "height": 204
+    },
+    {
+      "sha": "c8b9a0b4da8bc4306091a4b5d13828697322ac0e696594adf252e5f72ea72778",
+      "index": 41,
+      "top": 1226,
+      "left": 642,
+      "width": 153,
+      "height": 204
+    },
+    {
+      "sha": "6ec9f56869cbdfb319f1ee4e94380331837de2918548b7e7eb8737b49fb354e1",
+      "index": 42,
+      "top": 1226,
+      "left": 799,
+      "width": 153,
+      "height": 204
+    },
+    {
+      "sha": "1301709ef701bf29898ce7d505c2be5e53a0fff4cc08bcfb52f69017dc6a0587",
+      "index": 43,
+      "top": 1226,
+      "left": 956,
+      "width": 153,
+      "height": 204
+    },
+    {
+      "sha": "98d4700e11e602a71cdd784ab7cda7167fa83e17f26979e39b198c7da7c1db4d",
+      "index": 44,
+      "top": 1226,
+      "left": 1113,
+      "width": 153,
+      "height": 204
+    },
+    {
+      "sha": "89d6235574f651fdd96e949c83e5910ed8313ca3cf9d1680382cff66100345cf",
+      "index": 45,
+      "top": 1226,
+      "left": 1270,
+      "width": 156,
+      "height": 204
+    },
+    {
+      "sha": "e9c1faa35128f63479963f96ad4cc5f6cf2a23b1c0aba06646136df9f33983c8",
+      "index": 46,
+      "top": 1446,
+      "left": 14,
+      "width": 153,
+      "height": 204
+    },
+    {
+      "sha": "898cf5d314f51257e0884fcb77723cbc2a12bbbeceb7526f4f5588435d1f50a4",
+      "index": 47,
+      "top": 1446,
+      "left": 171,
+      "width": 153,
+      "height": 204
+    },
+    {
+      "sha": "b3b5ec51deaad446c1414f2dacf28265ed6e5f4ddfc997d02e4fec20a2d03082",
+      "index": 48,
+      "top": 1446,
+      "left": 328,
+      "width": 153,
+      "height": 204
+    },
+    {
+      "sha": "f6314d9332a2d196cb0dc89667086dae6be81dc39b4880e0b662538e99220224",
+      "index": 49,
+      "top": 1446,
+      "left": 485,
+      "width": 153,
+      "height": 204
+    },
+    {
+      "sha": "081380a4d44f8f390b716b8bb4a7e1f2370add7f689597a38a0872907559486b",
+      "index": 50,
+      "top": 1446,
+      "left": 642,
+      "width": 153,
+      "height": 204
+    },
+    {
+      "sha": "f9537208acf976baac7d61f8c0a8eabed09bcb39a8e164735ba995fe7f1c07c0",
+      "index": 51,
+      "top": 1446,
+      "left": 799,
+      "width": 153,
+      "height": 204
+    },
+    {
+      "sha": "4944f0019e720c7af46191d4e1f4e0b98eec2855dcc5280f5ffb1cf05e9f0f92",
+      "index": 52,
+      "top": 1446,
+      "left": 956,
+      "width": 153,
+      "height": 204
+    },
+    {
+      "sha": "502a51b07c59c4cf4256529d00d07bbfb8b6f6ed56cde44c77ae6d5c4cbca0de",
+      "index": 53,
+      "top": 1446,
+      "left": 1113,
+      "width": 153,
+      "height": 204
+    },
+    {
+      "sha": "58229acfa2efb0690c3dc50d382b1b58793b7516cd11bbf4a712fc42cdf37c72",
+      "index": 54,
+      "top": 1446,
+      "left": 1270,
+      "width": 156,
+      "height": 204
+    },
+    {
+      "sha": "e59dc5f324dc5d749275a001131ee86c90e1b3e2599a18920ab74749272c5656",
+      "index": 55,
+      "top": 1666,
+      "left": 14,
+      "width": 153,
+      "height": 204
+    },
+    {
+      "sha": "6d21dc8e83ca3fe5cc4229e16e59531b1e8aaf5203053dd29467e708205c79b4",
+      "index": 56,
+      "top": 1666,
+      "left": 171,
+      "width": 153,
+      "height": 204
+    },
+    {
+      "sha": "5ab82a1e59a712431c1dcbc0018f0d8e66370f2cc1a4cebc48788d106c891679",
+      "index": 57,
+      "top": 1666,
+      "left": 328,
+      "width": 153,
+      "height": 204
+    },
+    {
+      "sha": "8660e1cfcf16102b34352f181a5ef0d9c6034e5cd8b89701ef70cdeeebdd567f",
+      "index": 58,
+      "top": 1666,
+      "left": 485,
+      "width": 153,
+      "height": 204
+    },
+    {
+      "sha": "b78f3ed214a35ecab2d5878783013850603bf820d10609801213ef283e8c11aa",
+      "index": 59,
+      "top": 1666,
+      "left": 642,
+      "width": 153,
+      "height": 204
+    },
+    {
+      "sha": "ccbe1494b63d4b8d20fd03b4aa2af43679ee51bc122aeef263a2063706c31bac",
+      "index": 60,
+      "top": 1666,
+      "left": 799,
+      "width": 153,
+      "height": 204
+    },
+    {
+      "sha": "d787a5892e6318a40db2874a99966a21aab5638fc48107b9ee618baf7c833672",
+      "index": 61,
+      "top": 1666,
+      "left": 956,
+      "width": 153,
+      "height": 204
+    },
+    {
+      "sha": "273262739caa093cbeb3df8e12283efa9b1576b575e662a966462e7eb3b3aa9b",
+      "index": 62,
+      "top": 1666,
+      "left": 1113,
+      "width": 153,
+      "height": 204
+    },
+    {
+      "sha": "e4ff5867baa423f3416b1250dbc0fda5fa66e339a389e64000c2bc329970abba",
+      "index": 63,
+      "top": 1666,
+      "left": 1270,
+      "width": 156,
+      "height": 204
+    },
+    {
+      "sha": "5c7abd5baa3bd07fff251a2c45266b09ca2c661687cf78c5f48a6cbd6c9597b8",
+      "index": 64,
+      "top": 1886,
+      "left": 14,
+      "width": 153,
+      "height": 204
+    },
+    {
+      "sha": "407a21d9a12077f3d24832ed676cd698a1515d0f03692442109058357ebefc0b",
+      "index": 65,
+      "top": 1886,
+      "left": 171,
+      "width": 153,
+      "height": 204
+    },
+    {
+      "sha": "6baa3c35457ce6cb3d6cf883db6af33342997b392b7445fe4b4869fc1bc12ade",
+      "index": 66,
+      "top": 1886,
+      "left": 328,
+      "width": 153,
+      "height": 204
+    },
+    {
+      "sha": "18fabd232494fda5b1432db3f0ab829593b256573bb5533741245c404cbbf4b0",
+      "index": 67,
+      "top": 1886,
+      "left": 485,
+      "width": 153,
+      "height": 204
+    },
+    {
+      "sha": "26c1dbb0cbfb5952c352c04c623d183bc6b0f0f59fb50f7c3105ff4ac0b6deac",
+      "index": 68,
+      "top": 1886,
+      "left": 642,
+      "width": 153,
+      "height": 204
+    },
+    {
+      "sha": "5dc0e7232671a7147bfadeafb38523b6be46c504bc1f60bf03cefc9a3fc8da74",
+      "index": 69,
+      "top": 1886,
+      "left": 799,
+      "width": 153,
+      "height": 204
+    },
+    {
+      "sha": "cdd3b16f1a8d41dcf4d86ca4a884cd3a26284d619b918e01eabaa1d72e3eaedf",
+      "index": 70,
+      "top": 1886,
+      "left": 956,
+      "width": 153,
+      "height": 204
+    },
+    {
+      "sha": "bda2d29776363db0e2941ce2423de190ec04c6768c122ef4bcc683cc29314518",
+      "index": 71,
+      "top": 1886,
+      "left": 1113,
+      "width": 153,
+      "height": 204
+    },
+    {
+      "sha": "5d7a8bdb5fbeea322b67117d4f587f9f222ce731437a18f5e83abf3fd1b36ee1",
+      "index": 72,
+      "top": 1886,
+      "left": 1270,
+      "width": 156,
+      "height": 204
+    }
+  ]
+}
