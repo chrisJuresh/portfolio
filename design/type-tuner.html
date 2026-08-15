@@ -680,7 +680,7 @@ var GROUPS = [
   { name: "PROJECTS — the cut title", rows: [
     { sel: ":root", prop: "--serif-display", kind: "font", stacks: DISPLAY, def: FRIZ,
       label: "display face", hi: ".cut-title > a", hiLine: true,
-      tip: "Its own list, not the body one: fifty-odd faces judged on eight capitals with two thirds of each one cut away, which is a different question from what reads well at 15px.\nFriz Quadrata is what the stylesheet names and what every number below is derived for. It is a commercial Adobe/ITC cut with no webfont licence, so it is NOT served: a reader without it installed gets the tail of the stack, which ends at Sitka Banner. This tool sees it because /fonts/fonts.css declares it locally." },
+      tip: "Its own list, not the body one: fifty-odd faces judged on eight capitals with two thirds of each one cut away, which is a different question from what reads well at 15px.\nFriz Quadrata is what the stylesheet names and what every number below is derived for. It is served: portfolio/styles.css declares the regular itself, and this tool sees the same file because /fonts/fonts.css declares it too." },
 
     { sel: ":root", prop: "--cue-size", unit: "cqw", def: 22.95, min: 6, max: 60, step: 0.01,
       label: "word size", hi: ".cut-title > a", hiLine: true,
