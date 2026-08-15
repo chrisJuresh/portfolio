@@ -231,7 +231,7 @@
                            ANSWERS TO in build-plate.py. The dark block near the
                            foot of this sheet restates all three at 0.17 and so is
                            unaffected by this line.                            */
-  --car-fill: 0.602;    /* the picture's width as a share of --fold, exactly as
+  --car-fill: 0.497;    /* the picture's width as a share of --fold, exactly as
                            --plate-fill is a share of the band.
                            It USED to have a floor at 0.751, and the floor used to
                            be the reason for the value: the file is 1.332 times as
@@ -242,7 +242,7 @@
                            that foot off the right-hand edge of the page instead of
                            relying on the fold to cut it — the two are tuned
                            together and moving either one alone puts the line back.
-                           0.602 makes the car 650px wide on a 1920×1080 frame
+                           0.497 makes the car 537px wide on a 1920×1080 frame
                            against the plate's 932, so the corner you read second
                            is now clearly the quieter of the two rather than only
                            slightly.                                            */
@@ -254,7 +254,7 @@
                            asks for 1300px. And no floor, as the plate has none:
                            a short window gets a small car, which is still the
                            same picture in the same corner.                     */
-  --car-fade: 0.22;     /* how much of the picture's own width its INNER edge —
+  --car-fade: 0;        /* how much of the picture's own width its INNER edge —
                            the left one, the only edge of it that ends anywhere
                            but a page edge — takes to dissolve into the paper.
                            Neither of the other two needs such a thing, and the
@@ -267,20 +267,23 @@
                            whatever x the width happens to end on, and at this
                            opacity a straight line is the one thing that reads as
                            a crop rather than as stock.
-                           0.22 of 650px is 143px on the 1920×1080 frame, which
-                           finishes well before the gondola — the subject is in
-                           the middle of the frame here, not spread across it,
-                           which is exactly why the ramp the plate could not have
-                           is available to this one. It is a share of the width, so
-                           it followed --car-fill down without re-tuning; that is
-                           the whole reason it is a share.                      */
-  --car-x: -75px;       /* out from the RIGHT edge of the page, positive → left.
+                           0 turns the ramp off: all three stops collapse onto
+                           --car-inner and the inner edge is a hard cut again,
+                           which is the straight line the paragraph above says to
+                           avoid. That is the trade being taken deliberately — at
+                           --car-fill 0.497 the picture is narrow enough, and
+                           --car-opacity low enough, that the line reads as the
+                           frame's own edge rather than as a crop. Put the ramp
+                           back before widening the car again; it is a share of
+                           the width, so any value follows --car-fill without
+                           re-tuning, which is the whole reason it is a share. */
+  --car-x: -60px;       /* out from the RIGHT edge of the page, positive → left.
                            Negative, which no other placement value here is, and
                            it is doing a job rather than nudging: at the foot of
                            the frame the pylon is the rightmost 10.7% of the width
-                           and nothing else is left, so 75px carries the whole of
+                           and nothing else is left, so 60px carries the whole of
                            that slab off the 1920×1080 frame this was tuned
-                           on (0.107 × 650px = 70px). Pushing it that far off the
+                           on (0.107 × 537px = 57px). Pushing it that far off the
                            right edge takes the picture's own cut bottom off the
                            page with it, which is what lets --car-fill sit under
                            the 0.751 floor its comment used to describe.
@@ -289,7 +292,7 @@
                            window a sliver of that edge comes back into the corner,
                            at 12% opacity and a few tens of pixels wide. Re-tune
                            the pair, not this one, if it ever reads.            */
-  --car-y: -54px;       /* down from the top of the page, positive → down, so this
+  --car-y: -78px;       /* down from the top of the page, positive → down, so this
                            lifts the picture off the top edge rather than pushing
                            it down — the same trick --car-x plays on the right    */
   --car-crop: 0;        /* how much of the picture's TOP to cut off, as a share of
