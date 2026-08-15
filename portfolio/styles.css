@@ -1607,9 +1607,27 @@ body::after {
 .theme-toggle:hover, .theme-toggle:focus-visible { color: var(--ink); }
 .theme-toggle:focus-visible { outline: 1px solid currentColor; outline-offset: 3px; }
 /* A box with no text baselines is aligned by its bottom edge, which drops the
-   pill's midline a full half-height below the label's. Lifting it back by half
-   the x-height puts the two midlines on one horizontal — measured from the font
-   itself (`ex`), so it stays true in Sitka and in every fallback face. */
+   pill's midline a full half-height below the label's. It has to be lifted back,
+   and the only question is how far — WHICH MIDLINE IS THE LABEL'S.
+
+   Half the x-height (`0.5ex`) is the arithmetic answer and it reads low, because
+   the label is never a word of x-height letters. It is `dark` or `light`, and
+   both are half ascenders: at 0.9rem Spectral the ink of `dark` runs to 10.9px
+   over the baseline and stops dead on it, so its silhouette centres 5.4px up
+   while the x-height centres 3.2px up. The pill sat on the second number and the
+   word sits on the first, which is the two-pixel drop on a twelve-pixel pill.
+
+   No single lift can be right for both words, because `light` has a descender
+   and `dark` has none — the g pulls its silhouette back down to 3.7px and its
+   ink mass with it. Their optical centres are genuinely ~1.6px apart, so this
+   splits the difference: halfway between the x-height midline and the cap-height
+   midline, which lands between the two words instead of under both of them.
+   (Lifting per theme would put each word exactly right, and make the pill hop
+   as it slides. Not worth it for the pixel it buys.)
+
+   Still measured from the font rather than nudged in px, so it survives the
+   fallback faces: `cap` is the cap height as the face declares it, and browsers
+   without it keep the old x-height lift from the line above. */
 .theme-toggle__track {
   --track-w: 1.55rem;
   --track-h: 0.78rem;
@@ -1621,6 +1639,7 @@ body::after {
   border: 1px solid currentColor;
   border-radius: 1rem;
   transform: translateY(calc(var(--track-h) / 2 - 0.5ex));
+  transform: translateY(calc(var(--track-h) / 2 - 0.25ex - 0.25cap));
 }
 /* Centred on the pill's midline, and travelling exactly the gap left over, so
    the end margins match in both states. */
