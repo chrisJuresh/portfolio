@@ -13,6 +13,38 @@ Issues and specs for this repo live as GitHub issues. Use the `gh` CLI for all o
 
 Infer the repo from `git remote -v` — `gh` does this automatically when run inside a clone.
 
+## `Closes #n` never fires here, so closing is a step
+
+GitHub auto-closes a referenced issue only when the PR merges into the repository's
+**default branch**. This repo's default branch is `main` and every PR merges into
+`development` (CLAUDE.md, and `gh pr create --base main` is refused), so a `Closes #65`
+in a PR body is read, linked, displayed — and does nothing. The issue is still open
+after the merge, and looks merged-and-closed to anyone reading the PR.
+
+So write the `Closes #n` line, because it makes the link the tracker shows, and then
+close the issue yourself once the PR reports `MERGED`:
+
+```bash
+gh pr view <n> --json state --jq .state      # expect MERGED
+gh issue close <issue> --comment "Merged as #<pr>. ..."
+```
+
+The comment is where the acceptance criteria get ticked off against what actually
+shipped — that is the record a closed issue is worth having, and it is the thing
+auto-closing would never have written.
+
+The same root cause has a second symptom worth recognising, because it looks like a
+failed merge and is not: `gh pr merge --squash --delete-branch` ends with
+
+```
+failed to run git: fatal: 'development' is already used by worktree at '...'
+```
+
+That is `gh` trying to check the base branch out locally after the merge has already
+happened on the forge, and failing because the main checkout is standing on it. Ask
+the forge, not the exit code — `gh pr view <n> --json state --jq .state` — and carry
+on with the teardown.
+
 ## Pull requests as a triage surface
 
 **PRs as a request surface: no.** _(Set to `yes` if this repo treats external PRs as feature requests; `/triage` reads this flag.)_
