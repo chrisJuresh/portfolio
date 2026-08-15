@@ -45,6 +45,10 @@ design/
   tools/
     render.mjs       Playwright: serves the repo, walks the matrix, writes shots/
     package.json     dev dependency (playwright) — not the site's
+    check-capture-contract.py
+                     replays the GitHub profile README's hourly screenshot of
+                     /portfolio against a local tree, so a change can be shown
+                     not to have broken it. See docs/agents/capture-contract.md
 ```
 
 The **lab** compares finished candidates; the **tuner** is for arriving at one.
