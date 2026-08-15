@@ -294,7 +294,7 @@
        two things that used to sit at this line, an @font-face at the foot of
        styles.css and a script that attached /fonts/friz-local.css on localhost
        only, are both gone. See the cut title block in styles.css. -->
-  <link rel="stylesheet" href="styles.css?v=29">
+  <link rel="stylesheet" href="styles.css?v=30">
 </head>
 <body>
   <!-- Only ever on screen while a corner picture is genuinely outstanding: it is
@@ -318,6 +318,122 @@
   <!-- The second screen the cut title opens onto. Empty, and sized entirely in
        CSS: see the doorway block in styles.css. -->
   <div class="doorway"></div>
+  <!-- ====================================================================
+       THE PROJECTS PANEL
+       ====================================================================
+       One project shown as a composition rather than as a card: a masthead,
+       a per-project subheading whose second line passes behind the Frame, a
+       Rail naming the three projects, the body copy, four engineering points,
+       and — for now — a placeholder standing where the browser Frame will.
+       The panel block in styles.css is the whole of the geometry.
+
+       STATIC MARKUP, NOT BUILT BY app.js, and the two reasons are the same
+       two the doorway above is static for. It is one composition with no
+       repetition in it, so there is nothing for a template to earn; and it is
+       on screen at first paint, which is what the rest of this page spends so
+       much of its <head> buying. app.js owns the CV because the CV is data.
+
+       WHERE IT STANDS, AND WHY IT IS NOT INSIDE .page.
+       Ticket #57 asks for a sibling of `.col` — the position the cut title
+       occupies — and gives one reason: `chrisJuresh/chrisJuresh`'s hourly
+       capture of this page hides everything after the Work Experience listing
+       by walking `nextElementSibling` from it, so anything outside `.col`
+       survives that pass and stays out of the shot only by falling below the
+       crop. That reason is about not being INSIDE `.col`, and it holds here
+       exactly as it would one level in: the panel is below the fold, far below
+       the 852px crop, and the capture never reaches it.
+
+       What does not survive the letter of it is the doorway. In the regime
+       where the composition fits one screen — see the doorway block — .page is
+       exactly one screen, .cut-title is pinned out of flow at `top: 100vh`,
+       and .doorway is the blank screen the word arrives on as its title. A
+       panel inside .page lands underneath that pinned word and pushes nothing
+       out of the way, so the word would be printed across the top of this
+       section and the blank screen would follow it. After .doorway the reading
+       order is the one the design asks for in every regime: the CV, the word
+       standing whole as a title, and then the section it is the title of.
+       The doorway's own arithmetic is untouched by anything that follows it —
+       it snaps on `scroll-snap-align: end`, which measures its own box and not
+       the end of the document. See the panel block in styles.css for the third
+       snap port this adds so mandatory snapping still has somewhere to rest.
+
+       DARK IN BOTH THEMES, and nothing in here reads --ink, --bg or any of the
+       six other properties the capture overrides by name. The palette is
+       --panel-*, declared on the section itself, so the theme toggle governs
+       the page above and this composition is the same one either way. -->
+  <section class="panel" id="projects" aria-labelledby="panel-masthead">
+    <!-- The Rail. Three projects, one Panel: Photo Vault is the selected one and
+         the other two are grey and inert until they have compositions of their
+         own. They are not links yet — there is nowhere to send anyone — and #72
+         is where they start navigating.
+
+         A PLAIN LABELLED LIST, NOT A <nav>, AND NOT `aria-current`, because
+         neither would be telling the truth yet. A nav landmark announces a set
+         of links to somewhere; this is three words, two of which lead nowhere,
+         and a landmark that offers nothing to navigate is worse than no landmark
+         at all. `aria-current` has the same problem one level down — it is
+         defined against the element a user has moved to, and on a plain <li>
+         screen readers are not obliged to say anything about it, so the
+         selection would be drawn and not announced while looking as though it
+         had been. So the qualifier is words: .visually-hidden, the same device
+         the cut title uses for the word it draws as a picture. #72 turns these
+         into links, and that is the change that earns the <nav> and the
+         `aria-current` back. -->
+    <ul class="panel-rail" aria-label="Projects">
+      <li class="is-selected">Photo Vault<span class="visually-hidden"> — shown below</span></li>
+      <li>Eater Map</li>
+      <li>Record Engine</li>
+    </ul>
+    <div class="panel-inner">
+      <header class="panel-head">
+        <h2 class="panel-masthead" id="panel-masthead">Projects</h2>
+        <!-- Two authored lines, not one string left to wrap. The second line is
+             the one the Frame passes in front of, so where it breaks is part of
+             the composition rather than a consequence of the column's width.
+             The wording is one of the five #57 lists; choosing between them by
+             eye is #69's tuner, and this is the one that puts the distinguishing
+             word on the line you can still read. -->
+        <p class="panel-sub"><span>Self-stacking</span> <span>photo gallery</span></p>
+      </header>
+      <!-- career-record's `projects/photos.md`, "Page intro", verbatim. The
+           design render's own copy is generated filler and appears nowhere in
+           the record; #57 discards it. -->
+      <div class="panel-copy">
+        <p>Twenty years of photographs had turned into 1,374,328 file paths across overlapping backups. This is the system that turned them into one immutable content-addressed vault and a website that browses it — a triage engine that re-costs a rule set over the whole corpus in 220 ms, a build pipeline whose only destructive step is resumable, log-backed and independently re-verified byte for byte, and a stacking rule that decides whether two frames are the same photograph by fitting matched keypoints to a single transform. The threshold behind that rule was not chosen; it was measured, from a few hundred of my own judgements, through a report that keeps precision and recall apart and refuses to score a round against the setting it produced. When the shipped result disagreed with what I actually wanted, the objective moved and the reasoning that produced the old one stayed on the page.</p>
+      </div>
+      <!-- The four talking points career-record ranks as strongest, in its own
+           order, each carrying the figure that makes it checkable rather than
+           atmospheric. An ordered list because the order is the ranking. -->
+      <ol class="panel-points">
+        <li>
+          <h3>Label-driven calibration</h3>
+          <p>96.5% precision, 85.6% recall — measured, not chosen</p>
+        </li>
+        <li>
+          <h3>Screen-then-verify matcher</h3>
+          <p>3,632,211 candidate pairs, screened to 566,522</p>
+        </li>
+        <li>
+          <h3>Ledger-backed delete gate</h3>
+          <p>435.6 GB re-hashed and reconciled both ways</p>
+        </li>
+        <li>
+          <h3>Triage rule engine</h3>
+          <p>1,374,328 paths re-costed in 220 ms</p>
+        </li>
+      </ol>
+      <!-- The space the browser Frame will stand in, and nothing else: no
+           chrome, no titlebar, no glass, no recording. #67 builds the Frame,
+           #66 the material its titlebar is made of, #65 puts the clip inside it
+           and #68 stands the whole thing on the marble. It is here now because
+           the Frame is what occludes the subheading's second line, and a
+           composition that only acquires its depth three tickets later is not
+           the composition. Decorative, so it is out of the accessibility tree —
+           what it will eventually hold is a silent looping recording, which is
+           not something a screen reader has any use for either. -->
+      <div class="panel-frame" aria-hidden="true"></div>
+    </div>
+  </section>
   <!-- The effect stack: eight empty layers over the finished page, each one off
        until its token appears in <html data-fx="...">. Order is paint order, and
        it is the order the marks would really have arrived in — the sheet's own
