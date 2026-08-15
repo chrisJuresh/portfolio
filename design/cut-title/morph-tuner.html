@@ -1,0 +1,213 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Cut-title morph tuner — /portfolio</title>
+  <style>
+    :root { color-scheme: light dark; --ui: #1a1917; --ui-bg: #fcfbf8; --ui-panel: #f5f2ea; --ui-line: #d6d0c4; --ui-mut: #6f6a5d; --ui-hit: #8a5a2b; }
+    @media (prefers-color-scheme: dark) {
+      :root { --ui: #eaeaea; --ui-bg: #161616; --ui-panel: #1e1e1e; --ui-line: #3a3a3a; --ui-mut: #9a9a9a; --ui-hit: #d8a76a; }
+    }
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+    body {
+      margin: 0; display: flex; flex-direction: column;
+      background: var(--ui-bg); color: var(--ui);
+      font: 13px/1.45 "Segoe UI", system-ui, sans-serif;
+    }
+    .top {
+      flex: 0 0 auto; display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem;
+      padding: 0.5rem 0.8rem; border-bottom: 1px solid var(--ui-line);
+    }
+    .top strong { font-size: 11px; letter-spacing: 0.09em; text-transform: uppercase; color: var(--ui-mut); }
+    .grow { flex: 1 1 auto; }
+    button { font: inherit; color: var(--ui); background: transparent; border: 1px solid var(--ui-line); border-radius: 5px; padding: 0.24rem 0.55rem; cursor: pointer; }
+    button:hover { border-color: var(--ui-mut); }
+    button[aria-pressed="true"] { background: var(--ui); color: var(--ui-bg); border-color: var(--ui); }
+    input[type="range"] { accent-color: var(--ui-hit); width: 15rem; }
+    code { font-family: ui-monospace, Consolas, monospace; background: var(--ui-panel); padding: 0.08rem 0.3rem; border-radius: 3px; }
+
+    .body { flex: 1 1 auto; display: flex; min-height: 0; }
+    .panel {
+      flex: 0 0 21rem; overflow-y: auto; border-right: 1px solid var(--ui-line);
+      background: var(--ui-panel); padding: 0.6rem;
+    }
+    .stage { flex: 1 1 auto; min-width: 0; display: flex; }
+    iframe { flex: 1 1 auto; display: block; border: 0; background: #fff; }
+
+    .group { font-size: 11px; letter-spacing: 0.09em; text-transform: uppercase; color: var(--ui-mut); margin: 0.8rem 0 0.3rem; }
+    .face {
+      display: block; width: 100%; text-align: left; margin-bottom: 0.25rem;
+      padding: 0.4rem 0.5rem; line-height: 1.3;
+    }
+    .face b { font-weight: 600; }
+    .face .m { display: block; color: var(--ui-mut); font-size: 11px; font-variant-numeric: tabular-nums; }
+    .face[aria-pressed="true"] .m { color: inherit; opacity: 0.75; }
+    .face .why { display: block; font-size: 11px; color: var(--ui-mut); margin-top: 0.15rem; }
+    .face[aria-pressed="true"] .why { color: inherit; opacity: 0.8; }
+    .note { color: var(--ui-mut); font-size: 11px; padding: 0.4rem 0.5rem 0; }
+    .cmd { margin: 0.5rem 0 0; padding: 0.4rem 0.5rem; border: 1px dashed var(--ui-line); border-radius: 5px; font-size: 11px; }
+  </style>
+</head>
+<body>
+
+<div class="top">
+  <strong>Cut title</strong>
+  <button id="follow" aria-pressed="false">Follow scroll</button>
+  <input type="range" id="scrub" min="0" max="1000" value="1000" aria-label="Morph amount">
+  <span id="readout" style="font-variant-numeric:tabular-nums;color:var(--ui-mut)">t 0.000</span>
+  <span class="grow"></span>
+  <button id="reload">Reload page</button>
+</div>
+
+<div class="body">
+  <div class="panel" id="panel"><p class="note">Loading faces…</p></div>
+  <div class="stage"><iframe id="frame" title="portfolio preview"></iframe></div>
+</div>
+
+<!--
+  Previews the REAL page in an iframe and drives its own morph, the same way
+  plate-tuner.html and type-tuner.html work: nothing here is a copy of the
+  cut title, so what is on the right is what ships.
+
+  portfolio/cut-morph.js exposes window.__cutMorph for exactly this. Picking a
+  face calls setFace() with that face's outlines straight out of faces.json, so
+  every one of the twenty-four is previewable without a rebuild — but only the
+  face baked into cut-morph.js is what a visitor gets. To make a choice
+  permanent, run the command this panel prints and commit the result.
+
+  faces.json is ~700 KB and is fetched by this file and nothing else. It is the
+  reason the page ships one face rather than all of them.
+-->
+<script>
+(function () {
+  "use strict";
+  var frame = document.getElementById("frame");
+  var panel = document.getElementById("panel");
+  var scrub = document.getElementById("scrub");
+  var follow = document.getElementById("follow");
+  var readout = document.getElementById("readout");
+  /* Held at the sans end rather than following scroll, and that is the whole
+     point of the default: this panel exists to CHOOSE a face, and at t = 0 every
+     one of the twenty-four is identical — they are all Friz. Picking one while
+     the page sits at the top of its scroll would show nothing at all. Follow
+     scroll is the other question, and it is one button away. */
+  var DATA = null, current = null, following = false;
+
+  frame.src = "/portfolio/?morph=" + Date.now();
+
+  function api() {
+    try { return frame.contentWindow && frame.contentWindow.__cutMorph; }
+    catch (e) { return null; }                       // not loaded yet
+  }
+
+  /* The page rebuilds itself on every load, so the chosen face has to be
+     re-applied each time rather than set once. */
+  function apply() {
+    var m = api();
+    if (!m) return;
+    if (current) m.setFace(current);
+    m.setT(following ? null : scrub.value / 1000);
+  }
+
+  frame.addEventListener("load", function () {
+    apply();
+    // keep the readout honest while the iframe is scrolled by hand
+    try {
+      frame.contentWindow.addEventListener("scroll", tick, { passive: true });
+    } catch (e) {}
+    tick();
+  });
+
+  function tick() {
+    var m = api();
+    if (m) readout.textContent = "t " + m.at().toFixed(3);
+  }
+
+  function pick(face, btn) {
+    current = face;
+    [].forEach.call(panel.querySelectorAll(".face"), function (b) {
+      b.setAttribute("aria-pressed", String(b === btn));
+    });
+    document.getElementById("cmd").innerHTML =
+      "To ship this one:<br><code>python build-site.py --face " + face.slug +
+      " --repo &lt;worktree&gt;</code>";
+    apply();
+  }
+
+  var GROUPS = { grotesk: "Grotesks", display: "Display", soft: "Soft", geometric: "Geometric" };
+
+  fetch("morph/faces.json").then(function (r) {
+    if (!r.ok) throw new Error("faces.json " + r.status);
+    return r.json();
+  }).then(function (d) {
+    DATA = d;
+    panel.innerHTML = "";
+    var order = ["grotesk", "display", "soft", "geometric"], first = null;
+    order.forEach(function (kind) {
+      var set = d.faces.filter(function (f) { return f.kind === kind; });
+      if (!set.length) return;
+      var h = document.createElement("p");
+      h.className = "group"; h.textContent = GROUPS[kind];
+      panel.appendChild(h);
+      set.forEach(function (f) {
+        var b = document.createElement("button");
+        b.className = "face"; b.setAttribute("aria-pressed", "false");
+        b.innerHTML = "<b>" + f.name + "</b>" +
+          "<span class='m'>" + f.src + " · score " + f.score.toFixed(3) +
+          " · wght " + (f.wght || "static") +
+          " · track " + (f.track_em >= 0 ? "+" : "") + f.track_em.toFixed(4) + "em</span>" +
+          "<span class='why'>" + f.blurb + "</span>";
+        b.addEventListener("click", function () { pick(f, b); });
+        panel.appendChild(b);
+        if (!first) first = { f: f, b: b };
+      });
+    });
+    var cmd = document.createElement("p");
+    cmd.className = "cmd"; cmd.id = "cmd";
+    cmd.textContent = "Pick a face to see the command that ships it.";
+    panel.appendChild(cmd);
+    var n = document.createElement("p");
+    n.className = "note";
+    n.textContent = "Previewing only — the page still ships whichever face is " +
+      "baked into portfolio/cut-morph.js.";
+    panel.appendChild(n);
+
+    // start on whatever the page actually ships, so the panel is not lying
+    var m = api();
+    var shipped = m && m.face && m.face.slug;
+    var start = d.faces.filter(function (f) { return f.slug === shipped; })[0];
+    if (start) {
+      var btn = [].filter.call(panel.querySelectorAll(".face"), function (b) {
+        return b.querySelector("b").textContent === start.name;
+      })[0];
+      if (btn) pick(start, btn);
+    } else if (first) {
+      pick(first.f, first.b);
+    }
+  }).catch(function (e) {
+    panel.innerHTML = "<p class='note'>Could not load <code>morph/faces.json</code> — " +
+      e.message + ".<br><br>It is generated by <code>build-site.py</code> and needs " +
+      "the font files, which are not in this repository. See " +
+      "<code>design/cut-title/morph/README.md</code>.</p>";
+  });
+
+  follow.addEventListener("click", function () {
+    following = !following;
+    follow.setAttribute("aria-pressed", String(following));
+    scrub.disabled = following;
+    apply(); tick();
+  });
+  scrub.addEventListener("input", function () {
+    if (following) { following = false; follow.setAttribute("aria-pressed", "false"); scrub.disabled = false; }
+    var m = api();
+    if (m) { m.setT(scrub.value / 1000); tick(); }
+  });
+  document.getElementById("reload").addEventListener("click", function () {
+    frame.src = "/portfolio/?morph=" + Date.now();
+  });
+})();
+</script>
+</body>
+</html>
