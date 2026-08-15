@@ -3,10 +3,11 @@
    A single narrow column, centered at every width, so desktop reads like a
    phone screen floated in the middle of the page. Minimal editorial type:
    Vollkorn for reading text, Spectral for the small lettered labels, Source
-   Serif 4 for the year column, Friz Quadrata for the cut title at the foot, and
-   Georgia for the italic lead paragraph. All but the Georgia lead are
-   self-hosted from /fonts — see the @font-face block below (and, for Friz, the
-   one in the cut title section) and fonts/README.md for how they were built.
+   Serif 4 for the year column, and Georgia for the italic lead paragraph. All
+   but the Georgia lead are self-hosted from /fonts — see the @font-face block
+   below and fonts/README.md for how they were built. The cut title at the foot
+   is set in no face at all: it is a picture of one, and the cut title section
+   says why.
    The whole page fades in on load; the photo strip is a horizontal carousel
    that bleeds off the right edge, faded into the paper until you hover it.
    ========================================================================== */
@@ -18,10 +19,10 @@
    front of the first paint. /fonts holds the files; fonts/README.md holds the
    subset recipe, the licences and the measurements.
 
-   A sixth face, Friz Quadrata's roman, is declared at the foot of this sheet
-   instead — it sets one word, and keeping its block beside the tuning that word
-   depends on is worth more than the tidiness of one list. Same folder and the
-   same `swap`.
+   There was a sixth, declared at the foot of this sheet: the roman of Friz
+   Quadrata, which set the one word of the cut title. It is gone, and so is every
+   other trace of that face — no @font-face, no family name, no file in /fonts.
+   The word it set is now outlines rather than type. See the cut title section.
 
    Only the faces the page actually asks for are shipped — Vollkorn at 400 (body,
    role lines, contact), 700 (.listing > h2) and 400 italic (.item .sub);
@@ -456,37 +457,10 @@
      whose italic is a true italic rather than Georgia's. */
   --serif-lead:  Georgia, "Iowan Old Style", "Palatino Linotype", serif;
 
-  /* Friz Quadrata — Ernst Friz, 1973; a glyphic serif with flared, wedge-cut
-     stems. Used at one size and one place only: the cut title at the foot of the
-     page. It is now SERVED as well as named — the @font-face at the foot of this
-     sheet fetches the regular from /fonts, so every reader gets the face, not
-     just one who happens to have it installed.
-     Three names because one design ships under three: the /fonts webfont calls
-     itself "Friz Quadrata Std", a desktop install may be either of the others.
-     The webfont is second, so a reader with a desktop copy under the first name
-     renders from disk and never fetches — which is the order that was already
-     here and is worth keeping.
-     Fallbacks after them: Sitka Banner — Sitka's display cut, the one Windows
-     always has and the one that reads as deliberate here, since the rest of the
-     page is already Sitka — then Constantia and Georgia. The Didones that used
-     to sit at the head of this tail went with Ogg; they were chosen for nearness
-     to a high-contrast Didone and are nothing like this face.
-
-     ONE CAVEAT, and it is the reason --cue-* below is tuned the way it is. The
-     cut is measured in `cap`, read from whichever face resolves, and that is
-     face-independent only while a face tells the truth about itself. The /fonts
-     webfont does not: its `sCapHeight` was left at the 1000-unit scale of the
-     CFF original when the outlines were scaled to 2048, so `1cap` resolves to
-     0.322em against 0.658em of drawn capital. Every fallback below was checked
-     and is truthful, so the numbers here are set for a face that tells the truth.
-     A real desktop install is EXPECTED to be truthful, since the stale field is
-     exactly the CFF original's own value at its own em, but that is inference:
-     no copy was installed here to measure, and it is worth checking on one that
-     has it. The webfont no longer has to be inferred about — the -fixedmetrics
-     pair carries 1348/2048 and was measured resolving `1cap` at 0.658em, which
-     is what both the localhost preview and design/type-tuner.html now load. */
-  --serif-display: "Friz Quadrata", "Friz Quadrata Std", "ITC Friz Quadrata",
-                   "Sitka Banner", Constantia, Georgia, serif;
+  /* There is no display slot. The one word that needed one — the cut title — is
+     a picture now and carries its own letterforms, so a family here would name a
+     face nothing on the page asks for. The four --cue-* constants below are what
+     replaced it. */
 
   /* ---- the vertical ladder ------------------------------------------------
      Every gap down the column is one rung of φ. The rungs are the powers of the
@@ -540,91 +514,92 @@
   /* ---- the cut title -------------------------------------------------------
      A display word dropped into the bottom corner and cut off by the end of the
      page: the "there is more below this" device, which here also happens to be
-     the way through to /projects. Three numbers describe it.
-       --cue-show   how much of the word survives the cut, as a fraction of the
-                    CAP HEIGHT — not of the em box, and not a pixel height. It
-                    is `1cap`, read from whichever face actually resolved, so
-                    the same fraction of letter is shown in Friz, in Sitka Banner
-                    and in Georgia, at every size, with no per-face tuning. That
-                    is the whole reason the setup is built this way — and see the
-                    caveat on --serif-display for the one kind of face that
-                    breaks it, which is a face that misreports its own cap.
-                    0.62 is set by the letters that die first, not by taste: R
-                    stops reading as P only once its bowl has closed (~0.55 in a
-                    Didone, 0.49 in Georgia). Above ~0.75 it stops reading as cut
-                    and starts reading as a word with an odd baseline; below
-                    ~0.55 PROJECTS goes.
-                    The other half of that rule is now moot and worth saying so:
-                    it used to read "J is a bare stem until its hook starts
-                    (~0.6)". In Friz the J DESCENDS — its hook bottoms out 0.349
-                    cap BELOW the baseline, where Georgia's J sits on it. The cut
-                    box is the cap slab, cap top to baseline, so no value of this
-                    number can reach the hook: cut, Friz's J is a bare stem at
-                    0.62 and at 1.0 alike, and the word reads PRO|ECTS. It comes
-                    back whole in the doorway regime, where the clip comes off
-                    and the descender has somewhere to hang. That is a property
-                    of the face, not a number to tune — it is the one real cost
-                    of setting this word in Friz.
-       --cue-size   the word's size as a fraction of the text column's own
-                    width, in cqw against .cut-title. So it is one proportion at
-                    every window size instead of a size that suits one of them,
-                    and it stays that proportion when the column starts
-                    narrowing on small screens. It is the one number that IS
-                    face-specific, because fitting a word to a measure depends on
-                    that face's advance widths — and on --cue-track, since the
-                    tracking is part of what has to fit.
-                    Not eyeballed: it is 100 / (the advance of PROJECTS in em at
-                    the tracking below), which is the size at which the word's
-                    box is exactly the measure. Friz sets PROJECTS in 4.1973em
-                    plus 8 tracking steps = 4.3573em, so 100/4.3573 = 22.95. The
-                    same arithmetic returns 25.33 for Sitka Banner at -0.012em,
-                    which is the 25.32 this replaces — so the rule is the rule
-                    the old number was already following. Re-derive it, do not
-                    nudge it, if the face or the tracking changes.
-                    This value is the COLUMN's, and it is the one the word is set
-                    at wherever the word is the last line of the column. In the
-                    one-screen band the word leaves the column for the gutter
-                    beside it and the measure changes, so the same rule is
-                    re-derived against that measure — see --cue-measure in the
-                    one-screen block, which also says why it fits the word's INK
-                    there and its BOX here.
-       --cue-track  tracking. Positive, which is not what the size alone would
-                    suggest, and the reason is the face rather than the size.
-                    Two forces pull opposite ways here: display caps this large
-                    want the tracking drawn in, and a string of capitals wants it
-                    opened out, caps being fitted for use as initials inside
-                    lower case. Which force wins is a question about the face. It
-                    was a Didone here before, loosely fitted with hairline serifs
-                    leaving optical holes, so the display force won and the value
-                    was -0.012em. Friz is the opposite: its caps are fitted tight
-                    and its wedge arms overhang their own advance — T measures
-                    negative sidebearings on BOTH sides. Set solid, the ink gaps
-                    in the visible band run 0.011 cap at CT and 0.000 at TS, so
-                    the last two letters of the word touch before any tracking is
-                    applied at all, and the old negative value drove them into
-                    each other.
-                    0.02em is derived the same way the size is: it puts Friz's
-                    tightest pair at 0.030 cap, which is where -0.012em put
-                    Sitka's tightest pair. Same optical tightness, measured on
-                    the pair that governs rather than on the average.
-                    What it cannot fix: Friz's gaps are UNEVEN in this word — EC
-                    opens to 0.216 cap while TS holds 0.030, a 7x spread against
-                    Sitka's 3.7x — and tracking is additive, so no single value
-                    evens them out. The word reads a little gappy at EC and that
-                    is the face, not the number.
-     --cue-cap-drop is not a knob — it is only read by browsers without
-     text-box-trim (Firefox, as of writing). See the @supports block below. */
+     the way through to /projects.
+
+     THE WORD IS A PICTURE. It is PROJECTS in Friz Quadrata — Ernst Friz, 1973; a
+     glyphic serif with flared, wedge-cut stems — but the face is not here and is
+     not fetched. design/cut-title/build-cut-title.py set the word once, at the
+     tracking it had always been set at, and baked the eight glyphs to a single
+     SVG path that app.js puts inline in the markup. Nothing of the typeface is
+     on the wire: no @font-face, no family name, no file in /fonts.
+     It is vector, so this costs no quality at any size or on any display — the
+     outlines are what a rasteriser would have been handed anyway. What it costs
+     is that the word is no longer selectable, which is why the link carries the
+     text beside it in a .visually-hidden span for readers and crawlers.
+
+     What changes here is only WHERE THE MEASUREMENTS COME FROM. The word used to
+     be measured through the font: `1cap` read off whichever face resolved, and a
+     `--cue-size` derived from that face's advance widths. A picture has no
+     metrics to ask for, so the same three facts are baked as ratios of the
+     picture's own WIDTH — width being the one dimension CSS sets, since the word
+     is always fitted to a measure and everything else follows from that.
+     All three are printed by the build script. Re-bake and re-paste; do not
+     nudge. They are properties of the outlines, not tuning.
+       --cue-ratio      the picture's aspect ratio, straight off its viewBox.
+                        Stated here as well as there so the box has a height
+                        before the SVG is parsed and the word cannot reflow the
+                        page as it arrives.
+       --cue-cap-share  cap height per unit of picture width: 1348 units of cap
+                        over 8723.7 of ink. This is what `1cap` used to return,
+                        and it is exact where that was only as honest as the
+                        face's own OS/2 table — which, for the file this was
+                        baked from, was wrong by half a capital until it was
+                        repaired.
+       --cue-overshoot  ink standing ABOVE the cap line, same units. The round
+                        letters overshoot: O tops out 34.25 units over the cap
+                        of P and R, and C, S, E and T by less. The picture's box
+                        is its ink, so its top edge is the O's, and this is how
+                        far the cap line — the line the cut is measured from —
+                        sits below it. Small, and load-bearing: drop it and
+                        every letter is cut 2.5% of a cap too high.
+
+     Two numbers then fit the picture to the measure, and they are the only ones
+     that differ between the two regimes (see --cue-ink in the one-screen block):
+       --cue-ink        how wide the picture is drawn, in cqw against .cut-title
+                        — so it is one proportion at every window size, and it
+                        holds that proportion when the column narrows on a small
+                        screen.
+                        97.7592cqw, not 100, and the 2.24% is not slack. The word
+                        is the last line of the column here, and a line of type
+                        fills the measure with its ADVANCE box, whose ends are
+                        white: the P's left sidebearing, and the S's right plus
+                        the trailing tracking step. The picture's box is its INK,
+                        so it has to be inset by exactly the white the old text
+                        box carried, or the word would grow into the margins and
+                        sit wider than every line above it. 0.977592 is ink over
+                        advance box, from the build script.
+       --cue-lead       and the left share of that white — the P's sidebearing,
+                        1.0086cqw — so the ink starts where the glyph's ink used
+                        to. The right share is simply what is left over, as it
+                        was. The two are unequal, and were before.
+
+     --cue-show is the one number here that is still a judgement, and it is
+     unchanged: how much of the word survives the cut, as a fraction of the CAP
+     HEIGHT — not of the picture, and not a pixel height. 0.62 is set by the
+     letters that die first, not by taste: R stops reading as P only once its
+     bowl has closed (~0.55 in a Didone, 0.49 in Georgia). Above ~0.75 it stops
+     reading as cut and starts reading as a word with an odd baseline; below
+     ~0.55 PROJECTS goes.
+     The J is worth restating, because it survived the change of medium. In this
+     face the J DESCENDS — its hook bottoms out 0.349 cap BELOW the baseline,
+     where Georgia's J sits on it. The cut box is the cap slab, cap top to
+     baseline, so no value of --cue-show can reach the hook: cut, the J is a bare
+     stem at 0.62 and at 1.0 alike, and the word reads PRO|ECTS. It comes back
+     whole in the doorway regime, where the clip comes off and the descender has
+     somewhere to hang. That is a property of the drawing, not a number to tune.
+
+     The tracking that used to be here — --cue-track, 0.02em, positive because
+     this face's caps are fitted tight and its wedge arms overhang their own
+     advance, so set solid the T and S touched — is baked into the picture and is
+     no longer a knob. It lives in the build script as TRACK_EM, which is the one
+     place it can still be changed, and changing it moves --cue-ink and
+     --cue-lead with it. */
   --cue-show:  0.62;
-  --cue-size:  22.95cqw;
-  --cue-track: 0.02em;
-  /* NOT re-derived for Friz, and the one number here that is still Sitka's. The
-     formula written at the @supports block returns ~0.13em for Sitka Banner, not
-     the 0.075em standing here, so it does not reproduce its own value and cannot
-     be trusted to produce Friz's. Applied consistently it would say 0.016em —
-     Friz's ascent clears its cap by almost nothing — but that is a derivation
-     from a formula already known to be wrong by a factor of two. It only bites
-     in Firefox; measure it there against the real face before changing it. */
-  --cue-cap-drop: 0.075em;
+  --cue-ratio:     8723.7 / 1853.2;
+  --cue-cap-share: 0.154521;
+  --cue-overshoot: 0.003926;
+  --cue-ink:  97.7592cqw;
+  --cue-lead: 1.0086cqw;
 
   /* The white between the last contact line and the top of the cut word. The
      margin runs from the bottom of the contact BLOCK, but the ink it has to sit
@@ -636,24 +611,30 @@
   --contact-tail: 0.4075rem;
   --cue-gap: calc(var(--rhyme) + var(--name-half-leading) - var(--contact-tail));
 
-  /* The cap slab of the cut word, as a length: --cue-size x the face's cap
-     ratio. 22.95cqw of --col's 27rem is 6.1965rem, and Friz's cap is 1348 of its
-     2048 units = 0.6582, so 6.1965 x 0.6582 = 4.079. (It was 6.836 x 0.6123 for
-     Sitka Banner, which is the 4.187 this replaces.) The `cap` unit says the same
-     thing exactly and is what the element itself is measured in, but a unit that
-     resolves against one element's own font cannot be spent by the height budget
-     below or by a box that is not set in that font — so the same measure is also
-     written here in rem. MEASURED from the face; re-measure if the display face
-     changes. --cv-static is NOT affected: it is defined as the document minus
+  /* THE CAP SLAB, TWICE, and the two are the same measure said two ways.
+     --cue-slab is the live one: --cue-cap-share of however wide the picture is
+     actually drawn, in cqw, so it is exact at every container width — including
+     a phone narrower than --col, where the column stops being 27rem. It is what
+     the cut itself is taken from, and it replaces `1cap` exactly.
+     --cue-fit and --cue-cap are its twin as a LENGTH, and the reason for a twin
+     is that a container-query unit resolves against .cut-title and cannot be
+     spent by boxes that are not inside it — the height budget below, --slide-h,
+     .doorway. So the same arithmetic is written again against --col, which is
+     what the container resolves to on every window wide enough to fill it:
+     0.977592 x 27rem of ink, x 0.154521 of cap = 4.0786rem, which is the 4.079
+     this replaces to within a hundredth of a pixel. Below --col the twin is a
+     slight over-estimate, exactly as it always was — the budget notices, the cut
+     does not. --cv-static is NOT affected: it is defined as the document minus
      the clip, so a change to the cut word's height falls outside it.
      --cue-clip is then the visible slice: the part of the word that survives the
      cut. Both regimes hold the word's cap top exactly --cue-clip above the fold;
      they differ only in what does the cutting (see the doorway block below).
-     Like --cue-size, this is the value for a word set to the COLUMN. In the
-     one-screen band it is re-derived against the gutter — the same cap ratio
-     times the same kind of size ratio, but against a measure that is no longer
-     a constant, so it is a calc() there and a length here. */
-  --cue-cap:  4.079rem;
+     Like --cue-ink, these are the values for a word set to the COLUMN. In the
+     one-screen band the word is fitted to the gutter instead and --cue-fit is
+     re-pointed there; the two lines below are written once and hold in both. */
+  --cue-slab: calc(var(--cue-cap-share) * var(--cue-ink));
+  --cue-fit:  calc(0.977592 * var(--col));
+  --cue-cap:  calc(var(--cue-cap-share) * var(--cue-fit));
   --cue-clip: calc(var(--cue-show) * var(--cue-cap));
 
   /* ---- where the word lands once it is a title -----------------------------
@@ -859,25 +840,27 @@
        as legible, but drifting, and "the same fraction of letter at every size"
        is the whole of what that number is for.
 
-       --cue-size is the same derivation as the base block's and re-derived
-       rather than reused, for two reasons. The measure is no longer --col, so
-       the cqw the base value is a percentage OF means something different; and
-       out here the fit is to the word's INK rather than to its box. The box has
-       a bearing at each end — the P's 90 units of left sidebearing, the S's 69
-       of right, and the trailing tracking step, all of it white — and fitting
-       the box would leave the two margins unequal by their difference, 0.0098
-       of the font size, which is the one thing this measure exists to make
-       equal. So: the ink of PROJECTS spans 4.1973em of advances, plus the 7
-       tracking steps BETWEEN the letters, less those two bearings —
-       4.1973 + 0.14 - 0.0439 - 0.0337 = 4.2596em — and 100/4.2596 = 23.48.
-       (There is no kerning to carry: the face has GPOS, and not one of this
-       word's seven pairs is in it.) Re-derive it, do not nudge it, if the face
-       or --cue-track changes; --cue-bearing is measured from the same face and
-       is what puts the P's ink, rather than its box, on the margin.
+       --cue-ink is 100cqw here, against 97.7592 in the base block, and that
+       difference is the whole of what the two regimes disagree about. Out here
+       the fit is to the word's INK rather than to its advance box: fitting the
+       box would leave the two margins unequal by the difference between its two
+       bearings — the P's 90 units of left sidebearing against the S's 69 of
+       right plus the trailing tracking step, 0.0098 of the font size — and equal
+       margins are the one thing this measure exists to produce. Since the
+       picture's box IS its ink, "fit the ink to the measure" is now simply
+       `width: 100cqw`, and --cue-lead goes to zero with it.
+       That also retires --cue-bearing, which used to be here: with type, the P's
+       ink started 0.0439em inside its own box, so the box had to be pushed that
+       much further left for the ink to land on the margin. The picture starts at
+       the P's ink, so there is nothing to correct.
+       (There was never any kerning to carry: the face has GPOS, and not one of
+       this word's seven pairs was in it. The build script checks rather than
+       assumes, and would have baked it in if there had been.)
 
-       --cue-cap then follows as it does in the base block — the face's cap
-       ratio times the size — except that the size is now a proportion of a
-       measure rather than a length: 0.6582 x 0.2348 = 0.1545 of it.
+       --cue-fit then re-points at the gutter and --cue-cap follows from it as it
+       does in the base block, except that the measure is no longer a constant:
+       --cue-cap-share of --cue-measure, 0.1545 of it, where the base block takes
+       0.1545 of 0.977592 x --col.
        Which makes every height on the page that was spending a constant here
        spend a function of the window's WIDTH instead, and that is new. The word
        is 4.079rem of cap at every window today; it is 1.52rem of it at
@@ -899,9 +882,9 @@
          width is still nothing to them, and the comment there saying "width
          still asks for nothing" is still about them and still true. */
     --cue-measure: calc(var(--edge) - 2 * var(--title-left));
-    --cue-size:    23.48cqw;
-    --cue-bearing: 0.0439em;
-    --cue-cap:     calc(0.1545 * var(--cue-measure));
+    --cue-ink:     100cqw;
+    --cue-lead:    0px;
+    --cue-fit:     var(--cue-measure);
 
     --slide-h: clamp(15rem,
                      calc(100vh - var(--rhyme) - var(--cue-gap)
@@ -1594,56 +1577,37 @@ body::after {
 }
 
 /* ---- the cut title ------------------------------------------------------- */
-/* THE SWITCH, NOW THROWN. This sheet fetches Friz, and the --cue-* numbers above
-   are finally set for the face the page actually renders.
+/* NO @font-face HERE, AND THAT IS THE POINT. This sheet used to declare Friz
+   Quadrata's roman and fetch it from /fonts to set this one word. The word is
+   now a picture of that face — one SVG path, inline in the markup, baked by
+   design/cut-title/build-cut-title.py — so there is no family to name, no file
+   to fetch and no cut of the typeface anywhere in what this site serves.
 
-   Until this block was uncommented the family was named in --serif-display and
-   nothing more, so it rendered for a reader who happened to have it installed
-   and for nobody else — which on this machine was nobody: all three Friz names
-   resolved to the default serif and the page fell through to Sitka Banner. The
-   cost was that Sitka Banner was being set at Friz's measurements, making 96.5%
-   of the measure instead of 100% and carrying +0.02em where Sitka wants
-   -0.012em. That is what this block fixes; it does not change a number, it makes
-   the numbers true. If the face is ever abandoned, revert the four values rather
-   than patching around them: --cue-size 25.32cqw, --cue-track -0.012em,
-   --cue-cap 4.187rem, and Sitka Banner back to the head of the stack.
+   WHAT THAT BOUGHT, beyond having nothing of the face on the wire:
+   * 17 KB less to download, and one fewer request on the critical path. The
+     picture rides inside app.js, which was already being fetched.
+   * The measurements stopped depending on the file being honest about itself.
+     The cut is a fraction of the CAP HEIGHT, and with type that meant `1cap`,
+     read from the face's OS/2 table — which in this face's shipped webfont was
+     wrong by half a capital (sCapHeight left at the 1000-unit scale of the CFF
+     original after the outlines were scaled to 2048) and had to be repaired in
+     a patched copy before the word could be set at all. --cue-cap-share is
+     measured off the outlines themselves and cannot drift from them.
+   * The fallback stack went with it, and with it the whole question of a word
+     tuned for one face being set in another. There is no fallback now; there is
+     one drawing.
 
-   ONE THING HAD TO HAPPEN FIRST, AND IS DONE.
-
-   THE FILE'S CAP METRIC WAS WRONG — FIXED, in a new pair of files. Its
-   `sCapHeight` was 659 and its `sxHeight` 460: correct for the 1000-unit em
-   of the CFF original, left behind when the outlines were scaled to 2048. So
-   `1cap` resolved to 0.322em against 0.658em of drawn capital, and this cut
-   is measured in `cap` — uncommenting as-was would have put the clip box top
-   half a capital BELOW the tops of the letters and shown a band through
-   their middles rather than the top 0.62 of them. `size-adjust` does not fix
-   it: it scales the outlines and the stale field together.
-   frizquadrata-{regular,bold}-fixedmetrics.woff2 are that same third-party
-   binary with exactly those two integers rewritten to the drawn tops of `x`
-   and `H` (942 and 1348); all 263 outlines, the name table and the GPOS
-   kerning were verified unchanged. New filenames because vercel.json caches
-   /fonts/(.*).woff2 immutable for a year. The originals are kept beside them
-   untouched, as the record of what arrived.
-
-   ONLY THE REGULAR IS FETCHED. --serif-display is used in exactly one rule, the
-   cut title below, at `font-weight: 400` — which lands on this 500 with no
-   synthesis, because CSS font matching checks 500 first when 400 is asked for
-   and absent. The bold exists in /fonts and is declared in /fonts/fonts.css, but
-   nothing on this page asks for it, so putting it here would be a second 17 KB
-   download for no glyph on screen. Add it when something needs it.
-
-   The localhost-only preview this replaces — /fonts/friz-local.css, attached by
-   a script in index.html on localhost and 127.0.0.1 — is deleted in the same
-   change, as its own header asked. Everyone now sees what the author sees. */
-@font-face {
-  font-family: "Friz Quadrata Std";
-  src: url("/fonts/frizquadrata-regular-fixedmetrics.woff2") format("woff2");
-  /* Declared 500 because usWeightClass IS 500 — this is the Std roman, not a
-     medium. See the matching note above on how `font-weight: 400` reaches it. */
-  font-weight: 500;
-  font-style: normal;
-  font-display: swap;
-}
+   WHAT IT COST:
+   * The word is not selectable and not searchable in the page. The link carries
+     it as real text in a .visually-hidden span, so it is still announced and
+     still indexed — but you cannot drag-select the letters you can see.
+   * Re-setting it is now a build step rather than an edit. Change the word, the
+     tracking or the face in build-cut-title.py, re-run it, and paste the three
+     constants it prints back into the block above.
+   What it did NOT cost is rendering quality. The picture is vector — the same
+   outlines the rasteriser would have been handed — so it is exact at every size
+   and every pixel density; the one thing genuinely lost with the font file is
+   hinting, which does nothing at 60-90px of cap height. */
 
 /* Three nested boxes, each doing exactly one job:
      .cut-title   the container the word's size is a proportion OF. It is a
@@ -1651,13 +1615,17 @@ body::after {
                   and `cqw` inside it therefore means "per cent of the column".
                   It has to be a separate element: container query units resolve
                   against an ANCESTOR container, so an element cannot set its own
-                  font-size from its own width.
-     > a          the cut. A fixed height in `cap` plus `overflow: clip` — clip
-                  rather than hidden, so it never becomes a scroll container and
-                  can never be scrolled into view by a stray focus.
-     > > span     the word, with its box trimmed to the cap slab so that the cut
-                  is a known fraction of the letters rather than a known fraction
-                  of the em box, which would move with every change of face. */
+                  width from its own width.
+     > a          the cut. A fixed height — the cap slab, times --cue-show —
+                  plus `overflow: clip`, clip rather than hidden so it never
+                  becomes a scroll container and can never be scrolled into view
+                  by a stray focus.
+     > > svg      the word. Its box is its ink, so it is placed by two numbers
+                  and no font metrics: --cue-ink wide, and lifted --cue-overshoot
+                  so that its CAP LINE, not its top edge, lands on the cut box's
+                  top. Everything below the cut, the J's descender included,
+                  hangs out of the box and is clipped.
+     > > span    .visually-hidden, and the only text in here. */
 .cut-title {
   container-type: inline-size;
   width: 100%;
@@ -1674,23 +1642,14 @@ body::after {
 .cut-title > a {
   display: block;
   overflow: clip;
-  height: calc(var(--cue-show) * 1cap);
+  /* The cut. --cue-slab is the cap slab as a live length, so this is the top
+     --cue-show of the capitals exactly, at every container width — what
+     `calc(var(--cue-show) * 1cap)` used to say, without a font to say it to. */
+  height: calc(var(--cue-show) * var(--cue-slab));
   color: var(--ink);
-  font-family: var(--serif-display);
-  font-size: var(--cue-size);
-  font-weight: 400;
-  line-height: 1;
-  letter-spacing: var(--cue-track);
-  text-decoration: none;
-  text-transform: uppercase;
-  /* Display size, so ask for the kerning and the tight-fitting figures/caps
-     forms the face keeps for it, and turn off the optical-size axis guessing. */
-  font-kerning: normal;
-  font-variant-ligatures: common-ligatures discretionary-ligatures;
-  font-optical-sizing: auto;
   transition: box-shadow 0.15s ease;
 }
-/* The word is clickable, and a display face gives nothing to underline — its
+/* The word is clickable, and a display word gives nothing to underline — its
    baseline is below the cut. So the site's 1px link rule goes on the cut itself,
    drawn as an inset shadow rather than a border so it costs the clip box no
    height and the geometry above stays exact. In the doorway regime the same
@@ -1701,20 +1660,52 @@ body::after {
 .cut-title > a:hover,
 .cut-title > a:focus-visible { box-shadow: inset 0 -1px 0 currentColor; }
 .cut-title > a:focus-visible { outline: 1px solid currentColor; outline-offset: 3px; }
-.cut-title > a > span {
+
+/* The picture. Three declarations do the placing and the fourth is the theming.
+   `aspect-ratio` restates the viewBox rather than leaving the height to `auto`:
+   the box then has its full height from the first layout, before the SVG is
+   parsed, so the word cannot reflow anything as it arrives. The two must agree —
+   they come out of the same run of the build script, and if they ever disagree
+   the picture letterboxes inside its box rather than distorting.
+   `top` is what puts the CAP LINE on the box's top edge. The picture's own top
+   edge is the highest ink in the word, which is the O's overshoot, so the
+   drawing is lifted by exactly that much and the cut is then taken from the cap.
+   RELATIVE, not a negative margin, and this is not a preference — a margin is
+   wrong in the doorway regime and wrong silently. There the link runs
+   `overflow: visible`, so it is no longer a block formatting context and its
+   first child's top margin COLLAPSES into its own: the two negative margins
+   would not add, the larger (the link's own lift) would simply win, and the
+   overshoot correction would vanish leaving every letter cut 2.5% of a cap too
+   high. A relative offset cannot collapse with anything and does not disturb
+   the box it moves, which is what is wanted here anyway — the layout height is
+   fixed by the two rules above and only the drawing needs to shift.
+   `currentColor` on the path (see the SVG in app.js) is the whole of the
+   theming and of the hover state: the drawing takes the ink colour off this
+   link, so light, dark and hover are one file and no rule here mentions colour
+   at all. */
+.cut-title__word {
   display: block;
-  /* The box becomes exactly cap-height to baseline, so the `cap` height above
-     clips the letters at --cue-show of their own height in any face. */
-  text-box: trim-both cap alphabetic;
+  width: var(--cue-ink);
+  aspect-ratio: var(--cue-ratio);
+  margin-left: var(--cue-lead);
+  position: relative;
+  top: calc(-1 * var(--cue-overshoot) * var(--cue-ink));
 }
-/* Without text-box-trim the span's box is the em box, and `line-height: 1`
-   centres the font's content area on it — so the cap top sits --cue-cap-drop
-   below the box top, and the clip would eat that much extra off the letters.
-   Pull it back. The number is (1 - ascent - descent) / 2 + ascent - capHeight,
-   all per em, for the face that resolves; 0.075em is Sitka Banner's, and the
-   Didones listed before it are within a hair of it. */
-@supports not (text-box-trim: trim-both) {
-  .cut-title > a > span { margin-top: calc(-1 * var(--cue-cap-drop)); }
+
+/* The word as text — never drawn, and the reason the picture is allowed to be a
+   picture. It is what a screen reader announces for this link and what a crawler
+   indexes. Same rule as /projects uses; kept here rather than shared because the
+   two pages do not share a stylesheet. */
+.visually-hidden {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
 }
 
 /* ---- the doorway ----------------------------------------------------------
@@ -1766,16 +1757,16 @@ body::after {
      window that has one. --cue-measure, which does count it, is spent only on
      the height budget and says so.
      `width: auto` between the two insets is what makes the fit happen at all —
-     .cut-title is the container --cue-size is a percentage of, so the word takes
+     .cut-title is the container --cue-ink is a percentage of, so the word takes
      its size from whatever the two insets leave. Inline-size containment cannot
      make that circular: the used width comes from the insets, never from the
      word inside.
-     --cue-bearing is the last of it, and it is the difference between fitting
-     the word's box and fitting its ink. The P's outline starts 0.0439em inside
-     its own advance, so the box goes that much further left than the margin and
-     the INK lands on it. Relative, not a negative margin: a negative margin
-     would widen the box rather than move it, and the word would be fitted to
-     the wrong measure by exactly the bearing.
+     There used to be one more term, --cue-bearing, and it is worth saying why it
+     is gone: with type the P's outline started 0.0439em inside its own advance,
+     so the box had to be shifted that much further left than the margin for the
+     INK to land on it. The picture's box IS the ink — it starts at the P's
+     outline and ends at the S's — so the box on the margin is the ink on the
+     margin, and --cue-ink goes to a flat 100cqw with --cue-lead at zero.
 
    .cut-title is positioned rather than laid out for one reason: .page is exactly
    one screen and the doorway is the next, so the title can be a flex item of
@@ -1785,8 +1776,7 @@ body::after {
    put it: --slide-h is sized so the column plus --cue-gap reaches exactly Y, so
    the two agree, and the gap under the contact block is what it always was.
    `top`, not `bottom`, because the offset then holds the cap top at Y whatever
-   the box's own height turns out to be — and that height differs by a whole
-   descender between browsers with text-box-trim and browsers without.
+   the box's own height turns out to be.
 
    These rules sit at the end of the sheet, not up in the :root block that shares
    their gate: every one of them overrides a base rule of the same specificity,
@@ -1825,22 +1815,27 @@ body::after {
     margin: 0;
   }
   .cut-title > a {
+    /* The clip comes off — the bottom of the window does the cutting here, and
+       the J's hook and the baseline are meant to be seen on the screen below. */
     overflow: visible;
-    height: auto;
+    /* But the BOX stays the cap slab, and is not left to `auto`. Two things
+       depend on it: the hover underline, which lands on the box's bottom edge
+       and so on the baseline, where a descender's worth of extra box would put
+       it under the J instead; and the lift below, which is stated as a fraction
+       of this same slab. `auto` would be the picture's full height, descender
+       and overshoot included, which is neither. */
+    height: var(--cue-slab);
     /* The cut, and the same expression the flow regime cuts with — the box is
        pinned to the fold and the word is lifted --cue-show of its own cap back
-       above it. `1cap` is read from the face that resolved at the size that
-       resolved, so it is exact where --cue-clip is a budget estimate, and the
-       two regimes now say the cut the same way instead of one saying it in
-       `cap` and the other in a rem twin. A negative margin rather than an
-       offset on `top`, because the unit only means anything on the element
-       whose font it is read from: on .cut-title, `1cap` would be the body
-       serif at 15px. It cannot collapse through .cut-title either — a
-       container establishes an independent formatting context — and .cut-title
-       carries no paint containment, so the lifted word is not clipped. */
-    margin-top: calc(-1 * var(--cue-show) * 1cap);
-    position: relative;
-    left: calc(-1 * var(--cue-bearing));
+       above it, so the cap top lands at Y. --cue-slab is exact at whatever
+       width the two insets above resolved to, where --cue-clip is the budget's
+       estimate of the same line; the two regimes say the cut the same way.
+       A negative margin rather than an offset on `top`, so that the box's own
+       top edge stays the thing being positioned. It cannot collapse through
+       .cut-title either — a container establishes an independent formatting
+       context — and .cut-title carries no paint containment, so the lifted word
+       is not clipped. */
+    margin-top: calc(-1 * var(--cue-show) * var(--cue-slab));
   }
 }
 
