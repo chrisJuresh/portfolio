@@ -588,7 +588,10 @@
   /* ---- the cut title -------------------------------------------------------
      A display word dropped into the bottom corner and cut off by the end of the
      page: the "there is more below this" device, which here also happens to be
-     the way through to /projects.
+     the way down to the projects section — the panel past .doorway. It used to
+     be a link off this page to /projects; #71 retired that page and the word
+     became the title of the thing directly beneath it, which is what it always
+     looked like it was.
 
      THE WORD IS A PICTURE. It is PROJECTS in Friz Quadrata — Ernst Friz, 1973; a
      glyphic serif with flared, wedge-cut stems — but the face is not here and is
@@ -1841,8 +1844,9 @@ body::after {
 
 /* The word as text — never drawn, and the reason the picture is allowed to be a
    picture. It is what a screen reader announces for this link and what a crawler
-   indexes. Same rule as /projects uses; kept here rather than shared because the
-   two pages do not share a stylesheet. */
+   indexes. It was a copy of the rule /projects carried, kept separate because
+   the two pages did not share a stylesheet; since #71 retired that page this is
+   the only copy, and the panel's Rail is its second caller. */
 .visually-hidden {
   position: absolute !important;
   width: 1px !important;

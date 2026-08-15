@@ -8,8 +8,9 @@
   <link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2032%2032'%3E%3Ctext%20x='16'%20y='23'%20font-family='Sitka%20Text,Charter,Iowan%20Old%20Style,Georgia,serif'%20font-size='19'%20text-anchor='middle'%20fill='%23000'%3Ecj%3C/text%3E%3C/svg%3E">
   <script>
     /* Settle the theme before first paint, so there is no flash of the wrong
-       one. Same storage key as /portfolio and /projects, so a choice made on
-       any page holds across all three. */
+       one. Same storage key as /portfolio, so a choice made on either page
+       holds across both. (It used to be three pages; /projects is a redirect
+       since #71 and no longer reads or writes it.) */
     (function () {
       var theme = "light";
       var savedTheme = null;
@@ -102,9 +103,14 @@
 </head>
 <body>
   <div class="shell">
+    <!-- Two links, still two destinations: the projects section is at the foot
+         of /portfolio since #71, not at /projects. Named directly rather than
+         left to the redirect, so the portal costs one request per link and not
+         two. /projects itself still 308s to the same place — see the redirects
+         block in vercel.json — for the links this repo does not own. -->
     <nav class="links" aria-label="Site sections">
       <a href="/portfolio">portfolio</a>
-      <a href="/projects">projects</a>
+      <a href="/portfolio#projects">projects</a>
     </nav>
     <footer class="site-footer">
       <button class="theme-toggle" type="button" role="switch" aria-checked="false" aria-label="Dark mode">

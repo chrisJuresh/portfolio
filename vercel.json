@@ -1,6 +1,11 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "cleanUrls": true,
+  "redirects": [
+    { "source": "/projects", "destination": "/portfolio#projects", "permanent": true },
+    { "source": "/projects/", "destination": "/portfolio#projects", "permanent": true },
+    { "source": "/projects/index.html", "destination": "/portfolio#projects", "permanent": true }
+  ],
   "headers": [
     {
       "source": "/portfolio/img/(.*)",

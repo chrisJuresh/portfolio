@@ -152,22 +152,47 @@
 
   // ---- what drives it ------------------------------------------------------
 
-  /* HOW FAR DOWN THE PAGE YOU ARE, and not where the word is on the screen.
+  /* WHERE THE TURN ENDS, in document pixels: the scroll at which the word is
+     home, standing whole in the top-left corner as the doorway's title. That is
+     the doorway's own `scroll-snap-align: end` — its bottom edge on the bottom
+     of the window — and the doorway block in styles.css sizes it precisely so
+     the cap lands on --title-top there.
+     NOT THE END OF THE DOCUMENT, which is what this was when the doorway was the
+     last thing in it. #57's section stands below the doorway now, so the
+     document runs a screen further than the word's landing, and dividing by the
+     whole of it would leave the word a third short of Host Grotesk at the moment
+     it arrives — the turn finishing somewhere down inside the section, where the
+     word is not even on screen.
+     Without a doorway — every regime below the gate, where the word is still the
+     last line of the column — it is the document again, and the whole descent
+     turns the word. */
+  var doorway = document.querySelector(".doorway");
+
+  function landing() {
+    var doc = document.documentElement;
+    var max = (doc.scrollHeight || 0) - (window.innerHeight || 0);
+    if (max <= 1) return 0;
+    // `display: none` outside the gate, and a box with no height has no rect to
+    // read either — one layout read rather than a computed style per frame.
+    if (!doorway || !doorway.offsetHeight) return max;
+    var y = window.pageYOffset || doc.scrollTop || 0;
+    var end = doorway.getBoundingClientRect().bottom + y - (window.innerHeight || 0);
+    return Math.max(1, Math.min(max, end));
+  }
+
+  /* HOW FAR THROUGH THE TURN YOU ARE, and not where the word is on the screen.
      Tying it to the word's own position looks like the obvious thing and does
-     not work: the cut title is held against the END of the document — that is
-     the whole device — so it never travels up the viewport the way a section
-     does. On a composition that does not fit one screen it sits a few pixels
-     above the fold at full scroll and no viewport-relative measure ever leaves
-     zero. Scroll fraction has no such regime to get wrong: in the doorway, where
-     the document is deliberately two screens, it is the second screen that
-     turns the word; on a long column it is the whole descent.
+     not work: the cut title is held against the fold — that is the whole
+     device — so on a composition that does not fit one screen it sits a few
+     pixels above the fold at full scroll and no viewport-relative measure ever
+     leaves zero. Scroll fraction against the landing has no such regime to get
+     wrong: in the doorway, where the word has a screen to travel, it is that
+     screen that turns it; on a long column it is the whole descent.
 
      A page too short to scroll stays at Friz rather than dividing by nothing. */
   function progress() {
     var doc = document.documentElement;
-    var max = (doc.scrollHeight || 0) - (window.innerHeight || 0);
-    if (max <= 1) return 0;
-    var t = (window.pageYOffset || doc.scrollTop || 0) / max;
+    var t = (window.pageYOffset || doc.scrollTop || 0) / landing();
     return t < 0 ? 0 : t > 1 ? 1 : t;
   }
 
