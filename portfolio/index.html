@@ -5,21 +5,26 @@
      default and overrides it from ?fx= or from localStorage; THE EFFECT STACK in
      styles.css is what each token does, and design/effects/effects-tuner.html is
      where they are judged.
-     Three of the eleven ship on. `chroma` splits the type and `chroma-pictures`
-     splits the three corner photographs — two tokens because they are two
-     decisions, one of which costs a compositing layer per picture, and only the
-     pictures' half is on, so the type is left unsplit.
+     Three of the eleven ship on, and only two of them are layers: the halftone
+     screen and the paper. `weave` is the third and is not a layer of its own —
+     it is the wander applied TO the film and the paper, and with the film off
+     the stack it is the paper alone that drifts. Neither half of the chromatic
+     aberration ships: the type is left unsplit and so are the three corner
+     photographs.
 
-     data-fx-no-text and data-fx-no-gallery go here too, and both are set: they
-     name the effects that are to be kept off the type and off the carousel —
-     the halftone off both, the paper off the carousel. They are attributes
-     rather than another token because they are a property OF an effect and not
-     a twelfth one, and they are read here for the same reason data-fx is — one
-     place, no drift. What they do is KEEPING A LAYER OFF THE TYPE in
-     styles.css; the tuner writes them. -->
-<html lang="en" data-fx="halftone paper chroma-pictures"
-      data-fx-no-text="halftone"
-      data-fx-no-gallery="paper halftone">
+     data-fx-no-text and data-fx-no-gallery go here too, and both are set to the
+     same three: they name the effects that are to be kept off the type and off
+     the carousel. `crt` is named in both while being off the stack, which is
+     deliberate rather than stale — the exclusion is a standing property of the
+     effect, so switching the tube on is a one-token change that does not also
+     have to remember these. They are attributes rather than another token
+     because they are a property OF an effect and not a twelfth one, and they
+     are read here for the same reason data-fx is — one place, no drift. What
+     they do is KEEPING A LAYER OFF THE TYPE in styles.css; the tuner writes
+     them. -->
+<html lang="en" data-fx="halftone paper weave"
+      data-fx-no-text="halftone paper crt"
+      data-fx-no-gallery="halftone paper crt">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
