@@ -397,30 +397,59 @@
     // This lives inside the carousel's block because it shares its reading of who
     // owns the gesture — the roll is the one thing that takes the wheel first.
     //
-    // THE CURVE. The turn is one cubic Hermite in scroll position: it leaves
-    // where the page IS, at the speed the page is ALREADY MOVING, and arrives at
-    // the port with its speed back at zero. From a standstill the velocity term
-    // drops out and what is left is smoothstep, 3s² - 2s³ — so the sheet begins
-    // to move rather than being thrown. What this replaced was an ease-out cubic,
-    // which is fastest at its very first frame: right for something with a finger
-    // still on it, wrong for a page turn taken from rest by one notch of a wheel.
-    // Peak speed falls from three times the average to one and a half, and it now
-    // falls in the MIDDLE of the turn instead of at the edge.
+    // THE CURVE. The turn is one QUINTIC Hermite in scroll position: it leaves
+    // where the page IS, at the speed the page is ALREADY MOVING and under the
+    // acceleration already ON it, and arrives at the port with both back at zero.
+    // From a standstill the two carried terms drop out and what is left is
+    // smootherstep, 10s³ - 15s⁴ + 6s⁵.
     //
-    // The word inherits all of that for nothing. cut-morph.js drives the morph
-    // off the scroll fraction this writes, so the hard start was the word's hard
-    // start too — eight letters given their whole stagger in the first few frames
-    // and then most of the turn to finish in. On a curve that is slowest at both
-    // ends the letters turn with the paper.
+    // What it replaced was the cubic, which from rest is smoothstep. Smoothstep
+    // leaves and arrives at rest, but its ACCELERATION steps from nothing to full
+    // in one frame at each end and holds a straight ramp in between — the page was
+    // put under a constant force, carried across at a nearly steady 1.5× the
+    // average, and had the force taken off it just as abruptly. That is a motor,
+    // not a sheet of paper, and it is what read as linear. A curve is only as
+    // smooth as its roughest derivative, and the cubic's second one is a step at
+    // both ends. The quintic has three boundary conditions per end instead of two,
+    // so acceleration starts and finishes at zero as well: the force swells into
+    // the paper and ebbs out of it, nothing is ever switched on, and the middle is
+    // a genuine peak at 1.875× rather than a plateau.
     //
-    // The velocity term is what makes a reversal continuous. Restarting the old
-    // tween from the current position left the page travelling one way at full
+    // NOTHING MOVES FASTER FOR IT. TURN went 640 → 800 ms in the same breath,
+    // because 1.875 / 1.5 is exactly 800 / 640: peak speed on a 1440×1000 window
+    // is 2051 px/s either way, to the pixel. The whole of the extra 160 ms is
+    // spent in the leaving and the arriving — the stretch of the turn that
+    // actually carries the distance is 405 ms where it was 389. The turn is not
+    // slower; its ends are quieter.
+    //
+    // The word inherits all of that for nothing. cut-morph.js drives the morph off
+    // the scroll fraction this writes, so this is also the first of the two
+    // easings that reach a letter's shape, and stretching the turn by the same
+    // factor the peak rose by leaves the second one exactly where it was: every
+    // one of the eight letters peaks within 1% of the rate it peaked at before,
+    // fractionally under it. See the note on SMOOTHSTEP in cut-morph.js.
+    //
+    // The two carried terms are what make a reversal continuous. Restarting the
+    // old tween from the current position left the page travelling one way at full
     // speed and the next frame travelling the other way at full speed, and there
-    // is no such thing in paper. Carried in, the sheet slows, stops, and comes
-    // back — and the word unwinds with it, because it is reading the same number.
+    // is no such thing in paper. The speed went in first; the acceleration is the
+    // same argument one derivative up, and it is the one that matters at exactly
+    // the moment a reversal happens, because that is when the force is largest.
+    // Carried in, the sheet slows, stops, and comes back — and the word unwinds
+    // with it, because it is reading the same number.
+    //
+    // Both carried terms are zero at BOTH ends of their basis, so whatever a turn
+    // is handed, it still lands on the far port at a standstill. Swept at every
+    // hundredth of a reversal it leaves the two ports untouched; swept again for a
+    // reversal of a reversal — the one case where a turn is asked to change its
+    // mind while a large force is on it — the page can be carried 26 px past a
+    // port and clamped there by the browser for 109 ms, against the cubic's 13 px
+    // and 247 ms. Further past, and a third of the time.
     var doorway = document.querySelector(".doorway");
-    var TURN = 640;                                     // ms for a whole page turn
-    var turnRaf = null, turnTarget = null, turnV = 0;   // turnV in px/ms, signed
+    var TURN = 800;                                     // ms for a whole page turn
+    // turnV in px/ms and turnA in px/ms², both signed: the speed and the force
+    // this turn is carrying, read by the next one if it interrupts.
+    var turnRaf = null, turnTarget = null, turnV = 0, turnA = 0;
     function inDoorway() {                              // the two-port regime, per CSS
       return doorway && window.getComputedStyle(doorway).display !== "none";
     }
@@ -429,9 +458,13 @@
       var root = document.documentElement;
       var start = window.scrollY, dist = target - start;
       var v0 = turnRaf === null ? 0 : turnV;            // the speed already on the page
+      var a0 = turnRaf === null ? 0 : turnA;            // and the force already on it
       if (turnRaf) cancelAnimationFrame(turnRaf);
       turnTarget = target;
-      function land() { turnRaf = null; turnTarget = null; turnV = 0; root.style.scrollSnapType = ""; }
+      function land() {
+        turnRaf = null; turnTarget = null; turnV = 0; turnA = 0;
+        root.style.scrollSnapType = "";
+      }
       if (reduce || !dist) { window.scrollTo(0, target); land(); return; }
       // TURN is written for the whole document; anything shorter takes the same
       // top speed rather than the same time, which is the square root of the
@@ -441,15 +474,29 @@
       var dur = TURN * Math.max(0.45, Math.sqrt(Math.min(1, Math.abs(dist) / full)));
       var t0 = null;
       root.style.scrollSnapType = "none";
+      // the carried speed and force expressed per unit of s, which is what the
+      // basis below is written in
+      var m0 = v0 * dur, c0 = a0 * dur * dur;
       turnRaf = requestAnimationFrame(function frame(ts) {
         if (t0 === null) t0 = ts;
-        var s = Math.min(1, (ts - t0) / dur);
-        // Hermite with the far end pinned at rest: s²(3 - 2s) carries the
-        // distance, s(s - 1)² carries the speed in and is zero at both ends. The
-        // second line is the same pair differentiated — the speed this turn would
-        // hand on to one that interrupts it.
-        var y = start + dist * (s * s * (3 - 2 * s)) + v0 * dur * (s * (s - 1) * (s - 1));
-        turnV = (dist * 6 * s * (1 - s) + v0 * dur * (3 * s - 1) * (s - 1)) / dur;
+        var s = Math.min(1, (ts - t0) / dur), u = 1 - s;
+        // Three terms, one per thing the turn has to honour. s³(10 - 15s + 6s²)
+        // carries the DISTANCE and is smootherstep. s(1 - s)³(3s + 1) carries the
+        // SPEED in, ½s²(1 - s)³ the FORCE; both are zero at s = 0 and s = 1 in
+        // value, slope and curvature, so neither can move where the turn lands or
+        // disturb the standstill it lands at.
+        var y = start
+              + dist * (s * s * s * (10 - 15 * s + 6 * s * s))
+              + m0 * (s * u * u * u * (3 * s + 1))
+              + c0 * (0.5 * s * s * u * u * u);
+        // the same three differentiated once and twice: what this turn hands on to
+        // one that interrupts it
+        turnV = (dist * 30 * s * s * u * u
+               + m0 * (1 + s * s * (-18 + s * (32 - 15 * s)))
+               + c0 * (s * (1 + s * (-4.5 + s * (6 - 2.5 * s))))) / dur;
+        turnA = (dist * 60 * s * (1 + s * (-3 + 2 * s))
+               + m0 * (s * (-36 + s * (96 - 60 * s)))
+               + c0 * (1 + s * (-9 + s * (18 - 10 * s)))) / (dur * dur);
         window.scrollTo(0, s < 1 ? y : target);
         if (s < 1) turnRaf = requestAnimationFrame(frame); else land();
       });
