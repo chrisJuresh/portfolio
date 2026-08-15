@@ -10,12 +10,18 @@ who signed that decision.
 
 ```
 design/censor/
-  roll.json          every photograph the clip passes over — mechanical
-  review.html        the review surface — the whole roll, click to obscure
-  review.mjs         serves it, proxies the vault, writes the confirmed list
-  censored.json      the confirmed list — written by review.mjs, signed
+  roll.json                every photograph the clip passes over — mechanical
+  review.html              the review surface — the whole roll, click to obscure
+  review.mjs               serves it, proxies the vault, writes the confirmed list
+  censored.json            the confirmed list — written by review.mjs, signed
+  mosaic.py                bakes the confirmed ones down to a handful of blocks
+  mosaic/                  where it puts them — gitignored, a derivative
+  capture-origin.mjs       the origin the clip is recorded against
+../record/
+  projects/photos-censored the settings the clip is made with — a record workspace
 ../tools/
-  collect-roll.mjs   writes roll.json; lives there because Playwright does
+  collect-roll.mjs         writes roll.json; lives there because Playwright does
+  check-capture-origin.mjs  and so does the check that the origin is the signed one
 ```
 
 ## The procedure
@@ -48,14 +54,91 @@ needs. Looking is not a step you have to take; it happens as the pointer moves.
 `1:1` shows the preview at its own pixels, and `reveal original` opens the file
 in Explorer for the ones 1536px cannot settle. Space toggles, arrows walk.
 
-A chosen tile is pixelated in place at roughly the coarseness the capture will
-use, so the sheet is a preview of the clip rather than a list of ticks.
+A chosen tile is obscured in place, so the sheet is a preview of the clip rather
+than a list of ticks. It is a **blur**, and the capture applies a mosaic — the
+sheet stands in for the result rather than reproducing it, and it stands in on
+the conservative side: the mosaic that ships is the coarser of the two by a wide
+margin, so nothing the reviewer judged obscured enough comes out less obscured
+than they saw it. Blur is what CSS has, which is exactly the limitation that put
+the real mosaic in `mosaic.py`.
 
 Sign it, press **Confirm the list**, and `censored.json` is written.
 
 **3. Commit `roll.json` and `censored.json` together.** They are one artefact:
 `censored.json` carries the `roll_digest` it was signed against, and a decision
 list without the roll it decided about says nothing.
+
+**4. Bake the mosaics.**
+
+```bash
+python design/censor/mosaic.py
+```
+
+Fetches each confirmed photograph's renditions from the vault and writes an
+obscured copy of each into `mosaic/`, reduced to six blocks across the shorter
+side and blown back up — so a 153px grid tile is roughly four blocks by six.
+Gitignored: it is a derivative of the photographs the list is about, and what
+ships is the finished clip. `--check` says whether what is on disk still covers
+the list as signed.
+
+**5. Serve the capture origin, and check it.**
+
+```bash
+node design/censor/capture-origin.mjs
+node design/tools/collect-roll.mjs --check      # has the library moved?
+node design/tools/check-capture-origin.mjs      # is this the signed origin?
+```
+
+The origin stands in front of the vault and serves the baked mosaic wherever the
+vault would serve a confirmed photograph, so nothing downstream of it — the
+browser included — is ever sent an unobscured one. It also seeds stacking, which
+is the other half of what it exists for; see below. It refuses to start against
+an unsigned list, a list signed against a different roll, or a stale bake.
+
+The two checks are both needed and neither implies the other. `collect-roll
+--check` asks whether the roll still describes the live grid; `check-capture-origin`
+asks whether the origin serves what was signed and whether the grid mounts
+stacked, by driving the origin the way the clip does and reading the bytes off
+the network.
+
+**6. Record.**
+
+```bash
+RECORD_WORKSPACE=$PWD/design/record \
+  pnpm --dir <record checkout> record run photos-censored scroll-peek
+```
+
+`photos-censored` is a Project of this repository, handed to `record` through
+`$RECORD_WORKSPACE` rather than added to record's own checkout — the geometry the
+roll was assembled at belongs beside the roll. It points at the capture origin,
+sets `mockup = "none"` so record composites no chrome of its own, and has no
+`start_command`: the origin is started by hand, and a Run against a dead one
+fails at the health check rather than starting a vault the origin is meant to
+stand in front of.
+
+**7. Look at the clip before it is committed**, at the size it will play at, and
+then ship it:
+
+```bash
+ffmpeg -i <run>/scroll-peek.webm \
+  -vf "select='not(mod(n\,11))',scale=480:300,tile=4x4" -frames:v 1 sheet.png
+```
+
+The WebM, the MP4 and a poster extracted from the first frame go to
+`portfolio/video/`, committed raw. **Re-cutting the clip means changing the
+`?v=` stamp**, which lives in exactly two places — the `poster` attribute in
+`portfolio/index.html` and `VERSION` in `portfolio/panel-clip.js`. `grep` the old
+one to be sure. `vercel.json` caches that directory as immutable, so a re-cut
+clip under an unchanged URL is served from cache for a year.
+
+```bash
+python -c "import hashlib;h=hashlib.sha256();[h.update(open(f,'rb').read()) for f in ['portfolio/video/photos-grid.webm','portfolio/video/photos-grid.mp4','portfolio/video/photos-grid.webp']];print(h.hexdigest()[:8])"
+```
+
+```bash
+node design/tools/check-panel-clip.mjs        # does it behave the way #65 asks?
+python design/tools/check-capture-contract.py # is the profile README still safe?
+```
 
 ## Why the decision is a person's
 
@@ -124,13 +207,19 @@ survives. Each entry in `censored.json` carries its selector ready to use:
 img[src$="0d66290e….webp"]
 ```
 
-`selector_list` is all the censored ones joined, which is the selector the
-capture-time stylesheet in [#65] hangs its mosaic on. That stylesheet is [#65]'s
-to write; this folder decides only which tiles it applies to.
+`selector_list` is all the censored ones joined. The selectors were checked
+against the live grid rather than assumed: across the clip's scroll range they
+match every tile in the roll, no tile in the band goes unmatched, and nothing
+outside the roll is hit.
 
-The selectors were checked against the live grid rather than assumed: across the
-clip's scroll range they match every tile in the roll, no tile in the band goes
-unmatched, and nothing outside the roll is hit.
+**They are not what the capture uses**, and that is [#65]'s finding rather than a
+change of mind here. [#57] describes a capture-time stylesheet hung on this
+selector list, and four separate things stop a stylesheet doing the job — the two
+below, plus "CSS has no mosaic" and "the Timeline is too late", both in
+`capture-origin.mjs`'s own header. What obscures a tile is the bytes it is served
+as, keyed by the same content hash these selectors are built from. The list is
+unchanged and so is what it decides; only the mechanism that applies it moved,
+one layer earlier.
 
 ### The clip must be stacked, and nothing makes that happen by itself
 
@@ -145,13 +234,22 @@ browser profile before the page's script runs; `collect-roll.mjs` does that with
 Playwright's `addInitScript` and then **checks the DOM that it worked**, refusing
 to write a roll if no tile drew a card.
 
-**record cannot do this today.** Its only page hook is the timeline's
+**record cannot do this on its own.** Its only page hook is the timeline's
 `evaluate`, which runs after navigation — by then the grid has mounted
 unstacked. Navigating a fresh browser at the URL gets the unstacked grid no
 matter how the operator's own browser is set, because the setting lives in a
-profile and not in the server. Left alone, [#65] will produce a clip that looks
+profile and not in the server. Left alone, [#65] would produce a clip that looks
 entirely correct and shows the wrong view — and a roll reviewed against the
 stacked grid does not cover it.
+
+This is what `capture-origin.mjs` answers, by putting the seed somewhere earlier
+than any hook a recorder could offer: the document itself. It serves the vault's
+own HTML with one classic `<script src>` added at the top of `<head>` — classic,
+so it runs before the deferred module the app mounts from, and same-origin, so it
+passes `script-src 'self'` without the page's CSP being weakened to allow it.
+`check-capture-origin.mjs` then asks the DOM whether a tile actually drew a card,
+and deliberately seeds nothing itself: a check that seeded the setting would pass
+against an origin that had stopped doing so.
 
 The two are genuinely different rolls, not the same photographs regrouped:
 
@@ -165,10 +263,12 @@ So `stacking` is written into `roll.json` and `--check` compares it like
 geometry. `--stack off` collects the other view for comparison; it is not a
 toss-up between them.
 
-### Two more things [#65] will hit applying them
+### Two more things [#65] hit, and why neither is worked around any more
 
-Both were found while checking the selectors, and both are cheap to design around
-and expensive to discover during a capture.
+Both were found while checking the selectors. They are kept here because they are
+the first two of the four reasons the censoring is applied to the bytes rather
+than to the page — and because both are still live for anyone who reaches for a
+stylesheet against this vault for some other purpose.
 
 **A `<style>` element is refused.** The vault serves
 `default-src 'none'; …; style-src 'self'`, so a stylesheet built the usual way —
@@ -201,6 +301,10 @@ scrolling in, and takes the blur off the one that needed it. A stylesheet rule
 re-matches on the new `src` and cannot desynchronise. The roll's `index` and box
 are reporting for the same reason: they describe where a photograph was when it
 was collected, and only the content hash is safe to target.
+
+Serving obscured bytes sidesteps this entirely rather than solving it: a
+substitution keyed by content hash cannot be handed to the wrong photograph by a
+recycled element, because it is not attached to an element at all.
 
 [#57]: https://github.com/chrisJuresh/portfolio/issues/57
 [#65]: https://github.com/chrisJuresh/portfolio/issues/65
