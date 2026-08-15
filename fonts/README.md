@@ -2,7 +2,7 @@
 
 Three things live here: the families `/portfolio` is actually set in, the Latin
 Modern Roman files that record a decision made and reversed, and Friz Quadrata,
-which sets one word and is the only face here on a bought licence.
+which sets one word.
 
 - [In use — Vollkorn, Spectral, Source Serif 4](#in-use--vollkorn-spectral-source-serif-4)
 - [Not in use — Latin Modern Roman](#not-in-use--latin-modern-roman)
@@ -366,37 +366,6 @@ title at the foot of `/portfolio` — and nothing else on the site.
 | `frizquadrata-regular-fixedmetrics.woff2` | 17 KB | 500 | `--serif-display`, **served** |
 | `frizquadrata-bold-fixedmetrics.woff2` | 17 KB | 700 | not served — no page asks for it |
 
-### The licence
-
-**This is the only face here that is not free, and the only one whose use is
-bounded by something other than an OFL file in this folder.** The other five ship
-under the OFL and the GUST licence, both of which are in this folder and both of
-which permit web use outright. Friz Quadrata Std does not: it is a commercial
-Adobe/ITC cut, the woff2 is a conversion of a desktop release, and serving it
-from an origin is redistribution that a desktop or Creative Cloud licence does
-not grant. The zeroed `fsType` bit is a technical flag, not a grant.
-
-A webfont licence covering `chrisj.uk` is now in place, which is what allows the
-`@font-face` in the cut title section of `portfolio/styles.css`. Until it was,
-this face was gated to `localhost` through a `friz-local.css` that no longer
-exists.
-
-> **TODO — record the grant.** Fill in the issuer (Adobe Fonts web project /
-> Fontspring / MyFonts / ITC direct), the licence or order id, the domains it
-> covers, and any monthly pageview ceiling. Everything below assumes only that
-> *some* grant covers the regular on `chrisj.uk`, which is the narrowest reading.
-
-Three things are therefore **not** covered by anything written down yet, and each
-needs the licence checked before it is done:
-
-1. **Serving the bold.** No page asks for it, so it is declared in `fonts.css`
-   (which is linked by nothing) and deliberately not in `portfolio/styles.css`.
-   A per-face licence covers the face it was bought for.
-2. **Serving from another origin** — a preview deployment on a `*.vercel.app`
-   hostname is a different domain to most webfont licences.
-3. **Linking `fonts.css` from a page.** It declares both faces, so linking it
-   ships the bold as well.
-
 ### Where these came from
 
 Supplied as a pre-built webfont kit — `.eot`, `.ttf`, `.woff`, `.woff2` per face,
@@ -473,9 +442,6 @@ file gave. Drawn cap is 0.6582 em, so that is exact.
 puts a year-long `immutable` cache on `/fonts/(.*).woff2`. The originals stay in
 the folder untouched: they are the record of what was supplied, and the reason
 the faces are unsubset applies to them just as much.
-
-Fixing what the file says about itself does not change what may be done with it
-— the licence position below is unaffected.
 
 ### If it is ever adopted
 

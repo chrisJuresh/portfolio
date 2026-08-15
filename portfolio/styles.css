@@ -20,8 +20,8 @@
 
    A sixth face, Friz Quadrata's roman, is declared at the foot of this sheet
    instead — it sets one word, and keeping its block beside the tuning that word
-   depends on is worth more than the tidiness of one list. Same folder, same
-   licence file, and the same `swap`.
+   depends on is worth more than the tidiness of one list. Same folder and the
+   same `swap`.
 
    Only the faces the page actually asks for are shipped — Vollkorn at 400 (body,
    role lines, contact), 700 (.listing > h2) and 400 italic (.item .sub);
@@ -458,10 +458,9 @@
 
   /* Friz Quadrata — Ernst Friz, 1973; a glyphic serif with flared, wedge-cut
      stems. Used at one size and one place only: the cut title at the foot of the
-     page. It is now SERVED as well as named — the webfont licence that used to
-     block it is settled, so the @font-face at the foot of this sheet fetches the
-     regular from /fonts and every reader gets the face, not just one who happens
-     to have it installed. See fonts/README.md for what the licence covers.
+     page. It is now SERVED as well as named — the @font-face at the foot of this
+     sheet fetches the regular from /fonts, so every reader gets the face, not
+     just one who happens to have it installed.
      Three names because one design ships under three: the /fonts webfont calls
      itself "Friz Quadrata Std", a desktop install may be either of the others.
      The webfont is second, so a reader with a desktop copy under the first name
@@ -1609,29 +1608,22 @@ body::after {
    than patching around them: --cue-size 25.32cqw, --cue-track -0.012em,
    --cue-cap 4.187rem, and Sitka Banner back to the head of the stack.
 
-   TWO THINGS HAD TO HAPPEN FIRST. Both are done.
+   ONE THING HAD TO HAPPEN FIRST, AND IS DONE.
 
-   1. THE LICENCE — SETTLED. Friz Quadrata Std is a commercial Adobe/ITC cut and
-      the woff2 in /fonts is a conversion of a desktop release, so serving it
-      from chrisj.uk is redistribution and a desktop or Creative Cloud licence
-      never granted that (the fsType bit being 0 is a technical flag, not a
-      grant). A webfont licence covering this origin is now in place — see
-      fonts/README.md for what it covers, which is the file to check before this
-      face is served from anywhere else or at any other weight.
-   2. THE FILE'S CAP METRIC WAS WRONG — FIXED, in a new pair of files. Its
-      `sCapHeight` was 659 and its `sxHeight` 460: correct for the 1000-unit em
-      of the CFF original, left behind when the outlines were scaled to 2048. So
-      `1cap` resolved to 0.322em against 0.658em of drawn capital, and this cut
-      is measured in `cap` — uncommenting as-was would have put the clip box top
-      half a capital BELOW the tops of the letters and shown a band through
-      their middles rather than the top 0.62 of them. `size-adjust` does not fix
-      it: it scales the outlines and the stale field together.
-      frizquadrata-{regular,bold}-fixedmetrics.woff2 are that same third-party
-      binary with exactly those two integers rewritten to the drawn tops of `x`
-      and `H` (942 and 1348); all 263 outlines, the name table and the GPOS
-      kerning were verified unchanged. New filenames because vercel.json caches
-      /fonts/(.*).woff2 immutable for a year. The originals are kept beside them
-      untouched, as the record of what arrived.
+   THE FILE'S CAP METRIC WAS WRONG — FIXED, in a new pair of files. Its
+   `sCapHeight` was 659 and its `sxHeight` 460: correct for the 1000-unit em
+   of the CFF original, left behind when the outlines were scaled to 2048. So
+   `1cap` resolved to 0.322em against 0.658em of drawn capital, and this cut
+   is measured in `cap` — uncommenting as-was would have put the clip box top
+   half a capital BELOW the tops of the letters and shown a band through
+   their middles rather than the top 0.62 of them. `size-adjust` does not fix
+   it: it scales the outlines and the stale field together.
+   frizquadrata-{regular,bold}-fixedmetrics.woff2 are that same third-party
+   binary with exactly those two integers rewritten to the drawn tops of `x`
+   and `H` (942 and 1348); all 263 outlines, the name table and the GPOS
+   kerning were verified unchanged. New filenames because vercel.json caches
+   /fonts/(.*).woff2 immutable for a year. The originals are kept beside them
+   untouched, as the record of what arrived.
 
    ONLY THE REGULAR IS FETCHED. --serif-display is used in exactly one rule, the
    cut title below, at `font-weight: 400` — which lands on this 500 with no
