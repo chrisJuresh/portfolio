@@ -22,16 +22,18 @@ render rather than an approximation of one.
 
 WHAT MAKES A GOOD SOURCE, in the order the mistakes actually happen:
 
-  SQUARE. build-slab.py projects the maps with a BOX projection and a uniform
-  mapping scale, so one tile of the image covers a square of model space whatever
-  the image's own aspect is - a 3:2 photograph is squashed to two thirds of its
-  height on the stone. So this crops the centre square out by default, and what
-  you see in the picture is what lands on the plinth. `--keep-aspect` turns that
-  off if the stretch is what you want.
+  ANY SHAPE. build-slab.py used to project the maps with a BOX projection and a
+  uniform mapping scale, which laid one tile of the image over a square of model
+  space whatever the image's own aspect was and squashed a 3:2 photograph to two
+  thirds of its height on the stone; this script cropped the centre square out to
+  hide it. It scales its two V axes by the source's aspect now, so the whole
+  picture lands on the plinth undistorted and no crop is wanted. `--square` still
+  cuts the centre out if you want the composition rather than the correction.
 
-  BIG. The front face is 0.07 model units of texture stretched over 177 rows of a
-  3000px plate, so it MAGNIFIES the source about twice over. Under ~2000px on the
-  cropped square the hairlines go soft; ~3000px is where more stops helping.
+  WIDE. Once the aspect is honoured the texel density on both faces is the
+  source's WIDTH times the stone's `scale`, and the height only decides how much
+  slab there is before the pattern repeats. At the scale these stones use, 3000px
+  of width lands one tile on 3000px of plate; under ~2000 the hairlines go soft.
 
   FLAT-LIT AND SQUARE-ON. What this pipeline knows how to remove is a constant
   veiling (`degloss`) - not a gradient, not a vignette, and not the shape of a
@@ -147,9 +149,11 @@ STYLES = {
     },
 }
 
-# Under this, on the cropped square, the front face is interpolating rather than
-# resolving - see WHAT MAKES A GOOD SOURCE. A warning and not an error: a soft
-# stone is a look, and it is not this script's business to refuse one.
+# Under this much source WIDTH the front face is interpolating rather than
+# resolving - see WHAT MAKES A GOOD SOURCE, and note that it is the width alone,
+# because the aspect correction makes both axes carry width-times-scale texels
+# per model unit. A warning and not an error: a soft stone is a look, and it is
+# not this script's business to refuse one.
 SOFT_PX = 2000
 # ...and over this there is nothing left to resolve, so the pixels are only cost:
 # one tile of the source lands on 3000px of plate at the scale these stones use,
@@ -240,8 +244,9 @@ def main():
     ap.add_argument("--size", type=int, default=CAP_PX,
                     help="cap the longest edge at this (default: %d); 0 keeps "
                          "the source. Never upscales." % CAP_PX)
-    ap.add_argument("--keep-aspect", action="store_true",
-                    help="do not crop to a square first - see the header")
+    ap.add_argument("--square", action="store_true",
+                    help="centre-crop to a square first - a composition choice "
+                         "now, not a correction; see the header")
     ap.add_argument("--replace", action="store_true",
                     help="rebuild a stone this script added before")
     ap.add_argument("--no-bake", action="store_true",
@@ -279,21 +284,21 @@ def main():
 
     # ---- 1. the maps -------------------------------------------------------
     # build_maps() resamples to whatever `size` it is handed, up or down; the cap
-    # is applied here, against the CROPPED edge, so that a square cut out of a
-    # long photograph is measured as what it will be rather than as what it was.
+    # is applied here, against the edge that SURVIVES the crop, so that a square
+    # cut out of a long photograph is measured as what it will be rather than as
+    # what it was.
     from PIL import Image
     with Image.open(args.src) as probe:
-        edge = min(probe.size) if not args.keep_aspect else max(probe.size)
+        edge = min(probe.size) if args.square else max(probe.size)
     size = min(args.size, edge) if args.size else 0
     out = os.path.join(MAPS_DIR, name)
     print("== maps ==")
-    st = maps_mod.build_maps(args.src, out, size, not args.keep_aspect)
+    st = maps_mod.build_maps(args.src, out, size, args.square)
 
-    short = min(st["w"], st["h"])
-    if short < SOFT_PX:
-        print("\n! %dpx across, and the front face magnifies about 2x - the fine "
+    if st["w"] < SOFT_PX:
+        print("\n! %dpx of width, and the plinth wants about %d - the fine "
               "structure\n  will be soft. Not fatal, and not fixable by "
-              "resampling: it is not in the file." % short)
+              "resampling: it is not in the file." % (st["w"], SOFT_PX))
     if st["ground"] < THIN_GROUND:
         print("\n! ground %.0f%% / calcite %.0f%% / gold %.0f%%. This pipeline "
               "splits minerals by\n  luma, so a light stone classifies as almost "

@@ -197,6 +197,10 @@ almost all calcite and wants `--grade asis` rather than `deep`.
   continues down the face**, the way a block cut from one slab does. The
   `offset` therefore goes on Y *and* Z by the same amount; different numbers is
   the one edit that silently breaks this.
+- **The mapping `Scale` is NOT uniform, and must not be** — see "The stretch"
+  below. Y and Z carry `scale × aspect` where X carries `scale`. They still carry
+  it *as each other*, which is what the arris rule actually asks for: continuity
+  wants the two V axes to agree with one another, not with U.
 - **Subsurface Weight through the calcite mask.** Calcite is translucent, and
   that is most of why real marble looks deep and wet while a flat albedo looks
   like painted card. One socket, never connected in any earlier version.
@@ -209,6 +213,65 @@ almost all calcite and wants `--grade asis` rather than `deep`.
   honed rather than polished.
 
 ---
+
+## The stretch, and why it was also the blur
+
+For a while the stone was **stretched vertically by exactly 1.832×**, and the
+front face was soft. Those were one fault, not two.
+
+A box projection lays the image's [0, 1] over one tile of *model* space per axis
+and knows nothing about the image's own aspect. The mapping scale was uniform —
+`(s, s, s)` — so the 2814×1536 source was squeezed into a square footprint: 2814
+px across `1/s` units of width against 1536 px across `1/s` units of height, or
+**2365 px per unit one way and 1291 the other**. The ratio is the source's
+aspect, to four figures.
+
+The blur followed from it. The front face is 0.070024 units tall over 177 rows of
+plate, and the vertical squeeze is what starved it of source rows:
+
+| | source px per plate px | magnification |
+|---|---|---|
+| across, before and after | 2814 → 3000 | 1.07× |
+| down, **uniform scale** | 90 → 177 | **1.96×** |
+| down, **aspect-corrected** | 165 → 177 | 1.07× |
+
+So it was anisotropic 1.07/1.96, and correcting it makes it isotropic 1.07 —
+near enough native, with no other change and nothing resampled.
+
+**The fix is one line, in `build_photo_material()`:** multiply the two V axes by
+`map_aspect(spec)`, which reads W/H off the base colour map. `H × s×(W/H) == W ×
+s` for any aspect, portrait or landscape.
+
+Three consequences worth knowing:
+
+- **`offset` did not need re-picking.** It is in tiles and applied *after* the
+  scale, so the arris sits at exactly that fraction down the image whatever the
+  scale is. Every stone stayed anchored where it was; its window just got 1.83×
+  taller.
+- **Source WIDTH is now the only thing that sets sharpness.** Both axes end up at
+  `W × scale` texels per model unit, so the height only decides how much slab
+  there is before the pattern repeats. `add-stone.py` warns on width alone.
+- **It broke the V-seam argument at fine scales.** `build-portoro-maps.py`
+  cross-fades U and not V, which was sound while under one tile of V was ever
+  visible. V now advances 1.83× faster, so `0.37 × scale × aspect > 1` — any
+  scale over about 1.48 for this stone — crosses a whole tile. `build-slab.py`
+  prints a per-stone warning when it does. It fires on `gemini-fine` and
+  `gemini-noir-fine` (1.19 tiles); the wrap lands around row 23 of 269, in the
+  far strip of the top face at ~3° grazing, and does not measure above the
+  row-to-row noise. Left alone deliberately — cross-fading V costs a smeared band
+  across every map to fix something nothing can currently see.
+
+### What it obsoleted
+
+`add-stone.py` shipped in #112 with the bug already diagnosed, and worked around
+it at the input: it centre-cropped every new source to a square, giving the
+projection the aspect it had wrongly assumed. That is now unnecessary and was
+costing the sides of every wide photograph, so **the crop is off by default** and
+`--keep-aspect` is gone. `--square` opts into it as a compositional choice.
+
+The gemini maps were never cropped — the note in `build_maps()` explained that
+turning `square` on would silently change all six gemini-* stones, which was
+true, and is why the original stone kept the stretch longest.
 
 ## The candidates
 
@@ -288,7 +351,10 @@ node render.mjs --pages panel --variants sitka --themes dark --stones nero,gemin
 no Frame standing on it, no reflection, no contact shadow and none of the page's
 colour near it, and all four of those change what the marble looks like.
 
-`design/shots/plinth-stones.jpg` is the committed contact sheet.
+`design/shots/plinth-stones.jpg` is the committed contact sheet. **It predates the
+aspect fix**, so every photo-backed stone in it is the stretched, softer version —
+do not pick a stone off it. Nothing generates it; it was assembled by hand, and
+re-shooting it is its own job.
 `design/shots/*__stone-*.png` are gitignored — 1.4 MB each and regenerable.
 
 The capture contract (`python design/tools/check-capture-contract.py`) passes and
