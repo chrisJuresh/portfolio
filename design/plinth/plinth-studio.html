@@ -575,17 +575,26 @@
      from build_photo_material()'s own arithmetic rather than from an eyeball:
 
        U = scale·x + 0.5              across the block
-       V = (scale·aspect)·y + offset  into the top face
-       V = (scale·aspect)·z + offset  down the front face
+       V = (scale·aspect)·z + offset  down the front face, offset AT THE ARRIS
 
-     Both V axes carry the aspect, which is what makes a tile of the texture the
-     same shape on the stone as the photograph is on screen — so the window is
-     simply the block's plan view laid on the picture, and no correction of its
-     own is needed here. The arris is where the two V expressions meet, at
-     V = offset exactly, which is why the pattern runs over the edge.
+     x and z come from slab.json's `block`. Nothing here is a literal.
 
-     x, y, z come from slab.json's `block`, written by build-slab.py. Nothing
-     here is a literal. */
+     THE FRONT FACE ONLY, and that is a correction rather than a shortcut. This
+     used to draw a second band above the arris for the top face, on the reading
+     that a BOX projection gives the top face (x, y) where it gives the front
+     face (x, z), so the two would meet at V = offset and the pattern would run
+     over the edge. Measured against an unlit ortho render of each face, that is
+     not what Blender does: the front face is (x, z) as expected and correlates
+     0.89 against this window, but the TOP FACE IS READ 90° ROUND — U off the
+     block's y, V off its x — and correlates 0.88 that way against 0.04 the way
+     it was drawn. So the top face samples the photograph's height across the
+     plinth's WIDTH, the two faces cannot be continuous at the arris whatever
+     the offset, and a band above the line here was a picture of something that
+     does not happen. It is left undrawn rather than drawn wrong: at 7.8° the
+     top face is a mirror and carries no measurable albedo anyway — correlating
+     a baked plate's top face against the photograph finds nothing at any
+     offset — and on the page it is mostly under the Frame's own reflection.
+     docs/agents/plinth-marble.md has the numbers. */
 
   function sourceBitmap() {
     if (!img) return null;
@@ -643,12 +652,14 @@
     var B = S.block, A = bitmapAspect(bm);
     var s = P.scale, v = s * A, off = P.offset;
     var u0 = 0.5 - B.near_half * s, u1 = 0.5 + B.near_half * s;
-    var vFront = off - B.height * v, vArris = off, vTop = off + B.depth * v;
+    var vFront = off - B.height * v, vArris = off;
 
-    /* Half a block of margin all round, so the window is seen in the picture
-       rather than filling it. */
-    var padU = (u1 - u0) * 0.35, padV = (vTop - vFront) * 0.35;
-    var U0 = u0 - padU, U1 = u1 + padU, V0 = vFront - padV, V1 = vTop + padV;
+    /* Half a block of margin across, and enough of the picture above and below
+       to see where the window sits in it — the front face is only about a tenth
+       of a tile tall, so a margin proportional to IT would frame a slot. */
+    var padU = (u1 - u0) * 0.35;
+    var padV = Math.max((vArris - vFront) * 0.35, 0.22);
+    var U0 = u0 - padU, U1 = u1 + padU, V0 = vFront - padV, V1 = vArris + padV;
     var k = W / (U1 - U0);                  /* px per U tile */
     var kv = k / A;                         /* ...and per V tile, so a tile is the photo's own shape */
     var H = Math.max(60, Math.round((V1 - V0) * kv));
@@ -661,15 +672,17 @@
 
     /* Everything outside the block, dimmed — the window is what is left. */
     ctx.fillStyle = "rgba(0,0,0,0.55)";
-    ctx.fillRect(0, 0, W, Y(vTop));
+    ctx.fillRect(0, 0, W, Y(vArris));
     ctx.fillRect(0, Y(vFront), W, H - Y(vFront));
-    ctx.fillRect(0, Y(vTop), X(u0), Y(vFront) - Y(vTop));
-    ctx.fillRect(X(u1), Y(vTop), W - X(u1), Y(vFront) - Y(vTop));
+    ctx.fillRect(0, Y(vArris), X(u0), Y(vFront) - Y(vArris));
+    ctx.fillRect(X(u1), Y(vArris), W - X(u1), Y(vFront) - Y(vArris));
 
     ctx.lineWidth = 1.5;
     ctx.strokeStyle = "rgba(255,255,255,0.9)";
-    ctx.strokeRect(X(u0), Y(vTop), X(u1) - X(u0), Y(vFront) - Y(vTop));
-    /* The arris, which is the single most looked-at line in the picture. */
+    ctx.strokeRect(X(u0), Y(vArris), X(u1) - X(u0), Y(vFront) - Y(vArris));
+    /* The arris, which is the single most looked-at line in the picture, and
+       the top edge of the window rather than a line through the middle of it —
+       what is above it belongs to a face this cannot draw. */
     ctx.strokeStyle = "#d8a76a";
     ctx.setLineDash([6, 4]);
     ctx.beginPath();
@@ -680,16 +693,20 @@
     ctx.font = "11px ui-monospace, Consolas, monospace";
     ctx.fillText("arris", X(u0) + 4, Y(vArris) - 4);
     ctx.fillStyle = "rgba(255,255,255,0.85)";
-    ctx.fillText("top face", X(u0) + 4, Y(vTop) + 13);
     ctx.fillText("front face", X(u0) + 4, Y(vFront) - 4);
 
-    var tiles = (B.depth + B.height) * v;
-    $("winNote").innerHTML = "— " + tiles.toFixed(2) + " tiles of the photograph tall"
-      + (tiles > 1
-         ? ", <b style='color:var(--ui-bad)'>over one, so the unblended vertical wrap will cross the "
-           + "block</b> (build-portoro-maps.py cross-fades U and only U)"
+    /* The unblended wrap is in V, and BOTH faces are measured against it: the
+       front face spans height·v of V, the top face — read 90° round — spans the
+       block's whole WIDTH of it, which is the one that goes over a tile first. */
+    var vTiles = Math.max(B.height * v, (u1 - u0));
+    $("winNote").innerHTML = "— front face " + (B.height * v).toFixed(3)
+      + " tiles of the photograph tall by " + (u1 - u0).toFixed(2) + " wide"
+      + (vTiles > 1
+         ? ". <b style='color:var(--ui-bad)'>The top face crosses " + vTiles.toFixed(2)
+           + " tiles of V, so the unblended vertical wrap lands on the block</b> "
+           + "(build-portoro-maps.py cross-fades U and only U)"
          : "")
-      + ". " + ((u1 - u0)).toFixed(2) + " tiles wide.";
+      + ". The top face is not drawn — BOX reads it 90° round; see the comment.";
   }
 
   function drawFace() {
