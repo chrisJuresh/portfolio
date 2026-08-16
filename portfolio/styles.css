@@ -2213,17 +2213,26 @@ body::after {
                   is `minmax(0, …)`, so it is capped by what is actually free.
        the height the screen less the page's two margins, divided by the
                   composition's height-as-a-share-of-its-width. That constant
-                  measures 0.4985 —
+                  measures 0.5634 —
                     0.86 × 0.0598   the masthead's line, which is row one's top
                   + 1.66 × 0.0380   one subheading line (the rest of row one)
                                     plus the 0.66 the Frame is dropped by
                   + 0.746923/1.945  the Frame: nine columns of twelve less a
                                     quarter of a gutter, over its aspect ratio
-                  — and 0.5 is what is written, which is that plus a third of a
-                  percent of slack for sub-pixel rounding and for the copy's
+                  + 0.0869 × 0.746923
+                                    the plinth the Frame stands on, which hangs
+                                    below its foot: see --panel-plinth-top and
+                                    --panel-plinth-front, which are shares of the
+                                    FRAME's width and so have to be brought back
+                                    into the composition's here
+                  — and 0.5651 is what is written, which is that plus a third of
+                  a percent of slack for sub-pixel rounding and for the copy's
                   floor on a small window. RE-DERIVE IT if you move the masthead
-                  or subheading ratio, the Frame's columns or its aspect: those
-                  five numbers ARE this one.
+                  or subheading ratio, the Frame's columns or its aspect, or
+                  either of the plinth's two depths: those seven numbers ARE this
+                  one. It was 0.5 before the plinth arrived, and the 13% the
+                  composition gives up to stand on something is the whole of what
+                  #68 costs the drawing.
 
      WHY THIS AND NOT A CEILING ON THE FRAME. Every other way of making the
      section fit takes the fit out of one member and leaves the rest at the size
@@ -2234,7 +2243,7 @@ body::after {
      occlusion, at every size. What it spends is width: on a wide, short window
      the composition no longer reaches the page's margins, and `justify-content`
      below centres what it does use rather than hanging it off the left. */
-  --panel-fit-w: calc((var(--fold) - 2 * var(--corner)) / 0.5);
+  --panel-fit-w: calc((var(--fold) - 2 * var(--corner)) / 0.5651);
   --panel-w: min(calc(0.972 * (100vw - 2 * var(--corner))), var(--panel-fit-w));
 
   /* ---- the type scale ---------------------------------------------------- */
@@ -2349,6 +2358,54 @@ body::after {
      — the fit constant above and the window's own corner radius below — read one
      number rather than each re-deriving it. */
   --panel-frame-w: calc(0.746923 * var(--panel-w));
+
+  /* ---- the plinth, and every length of it is a share of the FRAME'S width ----
+     Not of the composition's, which is what everything else in this block is
+     measured in, and the reason is that the plinth is a thing the Frame stands
+     ON. The render gives all three as distances from the Frame's own edges, the
+     reflection has to be exactly as deep as the top face, and the marble plate is
+     baked at an aspect ratio computed from the two below and the slab's own width
+     — which is 1.112940 Frame widths, ten grid columns against the Frame's nine,
+     and is stated where the slab is drawn rather than here. So a plinth
+     stated against the composition would have to be converted back into Frame
+     widths in four places to be checked in any of them. It is converted ONCE,
+     into the fit constant above, and that conversion is written out there.
+
+     The two are unitless on purpose. --panel-plinth-top is used three times and
+     one of those is a scaleY() on the reflection, where a length would be
+     meaningless; keeping it a bare number is what lets the reflection's squash
+     and the top face's depth be the same constant rather than two that have to
+     be kept equal by hand. design/plinth/build-marble.py states all three again
+     — PLINTH_W, TOP_FACE, FRONT_FACE — because the plate has to be baked at the
+     shape it is drawn at, and there is no third place to put them.
+
+       top    31 render px between the Frame's foot (y 1518) and the block's
+              front edge (y 1549), over a Frame measured 1837 px wide. This is
+              the visible marble in front of the Frame, and the whole of what the
+              reflection has to lie down in.
+       front  the render's own front face is 83 px, 4.52% — but the picture is
+              CUT OFF at 1632 and the stone is still at level 28 there, so that
+              is a floor and not a height. 7% is what is drawn, and the extra is
+              spent on a ramp that reaches the Panel's own black before the plate
+              ends: a block whose bottom nobody can see should run out of light
+              rather than stop on a line. It is baked into the plate, so moving
+              this without re-baking moves where the light stops. */
+  --panel-plinth-top:   0.0169;
+  --panel-plinth-front: 0.0700;
+  /* ...and the two lengths that fall out of them, so no rule below multiplies by
+     --panel-frame-w on its own. */
+  --panel-plinth-face:  calc(var(--panel-plinth-top) * var(--panel-frame-w));
+  --panel-plinth-depth: calc((var(--panel-plinth-top) + var(--panel-plinth-front))
+                             * var(--panel-frame-w));
+
+  /* WHICH MARBLE. Four plates, one drawn, and the switch is here rather than in
+     a script so #69's tuner is a `dataset.marble =` and nothing else. The
+     candidates are below the .panel-plinth block; the ?v= is the digest
+     design/plinth/build-marble.py prints, and it is load-bearing for the same
+     reason the textures' is — vercel.json caches /portfolio/img/ for a day, so a
+     re-baked plate under an unchanged URL is served stale for up to 24 hours
+     while being right on localhost. */
+  --panel-marble: url("img/tex/marble-nero.webp?v=68fed2c6");
 
   position: relative;
   display: grid;
@@ -2486,16 +2543,47 @@ body::after {
   align-self: end;
   margin-bottom: calc(-1 * var(--panel-sub-line));
 }
-/* From a quarter of the way across to the right-hand edge, which is what puts
-   its left edge under the second line rather than clear of it — the horizontal
-   half of the occlusion, where --panel-frame-drop is the vertical one. z-index
-   and no `position`: a grid item takes z-index on its own, and this is the only
-   thing in the composition that paints over anything. */
-.panel-frame {
-  grid-area: 2 / 4 / 3 / 13;
+/* ---- the stage: the Frame, and the plinth it stands on ---------------------
+   ONE GRID ITEM HOLDING TWO, and the reason is that the two do not have the same
+   left edge. The Frame runs from a quarter of the way across to the composition's
+   right-hand edge — nine columns of twelve, which is what puts its left edge
+   under the subheading's second line rather than clear of it, the horizontal half
+   of the occlusion where --panel-frame-drop is the vertical one. The plinth is a
+   column wider, and only on the left.
+
+   WHY ONE COLUMN WIDER ON THE LEFT AND FLUSH ON THE RIGHT, which is the one
+   thing about the slab that is a decision rather than a measurement. The render
+   shows the block's left corner at x 400 against a Frame starting at 574, so the
+   overhang measures 9.47% of the Frame's width; its right end is OUTSIDE the
+   picture and there is no number there to honour. One column plus a gutter is
+   11.30% — the nearest thing on the composition's own grid to the 9.47% measured,
+   and a slab whose left edge lands on a column line belongs to the drawing
+   instead of floating twenty-five pixels off it. The right edge is the
+   composition's own margin, because a symmetric overhang there would put marble
+   into the page's --corner padding and, on a window where the width binds rather
+   than the height, past the viewport — a horizontal scrollbar on the whole
+   document, for a decorative slab.
+
+   `position: relative` and NO z-index, which matters: the plinth has to paint
+   under the Frame and the Frame over the subheading, and both work only while
+   this box is not a stacking context of its own. Giving it one — a z-index, an
+   opacity, a filter — traps .panel-frame's z-index inside it and the Frame stops
+   painting over the type it is supposed to occlude. */
+.panel-stage {
+  grid-area: 2 / 3 / 3 / 13;
   align-self: start;
-  z-index: 1;
   margin-top: var(--panel-frame-drop);
+  position: relative;
+}
+/* The Frame's own left edge inside the stage: the stage is 0.831281 of the
+   composition and the Frame 0.746923, so the difference is 10.1479% of the box it
+   is in. Width is left to `auto`, which is then exactly the rest of it —
+   stating a width as well would be the same number written twice, and it is the
+   sort of pair that comes apart. Scoped to the stage's own child so the copy
+   inside .panel-mirror, which is the same class, is not indented by it. */
+.panel-stage > .panel-frame { margin-left: 10.1479%; }
+.panel-frame {
+  z-index: 1;
   aspect-ratio: var(--panel-frame-ratio);
   position: relative;
   background: var(--panel-frame-fill);
@@ -2536,6 +2624,117 @@ body::after {
   --frame-light:    rgba(242, 241, 238, 0.45);
   --frame-pill-bg:  rgba(242, 241, 238, 0.12);
   --frame-pill-ink: rgba(242, 241, 238, 0.72);
+}
+
+/* ---- the plinth -------------------------------------------------------------
+   The polished marble the Frame stands on: one baked plate holding both faces of
+   the block, stretched over the slab. It sits directly under the Frame inside the
+   stage, so the Frame's foot is the contact line, and it is a column wider than
+   the Frame on the left for the reason the stage's own comment gives.
+
+   `background-size: 100% 100%` AND NOT `cover`, which is the one declaration in
+   here that would be a bug if it were the usual thing. The plate is baked at
+   exactly this box's aspect ratio — 1.112940 : 0.0869 of the Frame's width, which
+   design/plinth/build-marble.py computes from the same three numbers the .panel
+   block states — so stretching it to the box is an identity, and `cover` would
+   crop off either the top face or the ramp that takes the front face into black.
+   The two can only disagree if one of the three moves without the other, which is
+   what the note on --panel-plinth-top is there to prevent.
+
+   The render's slab shows a little more marble BEHIND the contact line where it
+   overhangs the Frame on the left — its top face's far edge sits about 2% of the
+   Frame's width higher there. That is its vanishing point, which is off to the
+   left while the Frame standing on it is drawn square-on; this composition is
+   orthographic everywhere else, so the slab starts at the contact line and the
+   grazing angle is carried by the plate's own light instead. */
+.panel-plinth {
+  /* IN FLOW, DIRECTLY UNDER THE FRAME, and not absolutely placed at `top: 100%`
+     — which draws the same picture and is wrong. The plinth is part of the
+     composition's height: the fit constant that scales the whole drawing to one
+     screen counts it, and an out-of-flow slab would leave the stage exactly as
+     tall as the Frame while the constant said otherwise, so the composition
+     would come out short by the plinth's depth at every window size. In flow,
+     the stage measures what the arithmetic assumes. */
+  position: relative;
+  height: var(--panel-plinth-depth);
+  background-image: var(--panel-marble);
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
+}
+/* The candidates. Three are photographed and one is generated; which is which,
+   and why the generated one is in the set at all, is the CANDIDATES table in
+   design/plinth/build-marble.py. Switched by an attribute on the section so
+   #69's tuner needs no stylesheet of its own — and so that a plate that is not
+   in the repository yet fails as a missing image rather than as a missing rule. */
+.panel[data-marble="stone162"] { --panel-marble: url("img/tex/marble-stone162.webp?v=68fed2c6"); }
+.panel[data-marble="stone161"] { --panel-marble: url("img/tex/marble-stone161.webp?v=68fed2c6"); }
+.panel[data-marble="stone160"] { --panel-marble: url("img/tex/marble-stone160.webp?v=68fed2c6"); }
+
+/* ---- the reflection ---------------------------------------------------------
+   THE FRAME AGAIN, UPSIDE DOWN AND LYING IN THE STONE. Not a picture of it: the
+   copy inside this box is a live clone of the real Frame — the same chrome, the
+   same titlebar, and a second <video> playing the same recording in step with the
+   first — so what the stone shows moves with what the window shows. #68 is
+   explicit that a still reflection under a moving clip reads as broken
+   immediately, and it is right. portfolio/panel-mirror.js makes the copy and says
+   why it is made in script rather than written out twice.
+
+   THIS BOX IS THE TOP FACE AND NOTHING ELSE. It starts at the contact line, it is
+   exactly --panel-plinth-face deep, and it clips — so no part of the reflection
+   can reach the front face, which is a vertical surface and reflects nothing.
+   Its left edge is the Frame's, not the slab's: the overhanging column of marble
+   has no window above it to reflect.
+
+   THE SQUASH IS THE BLUR, and there is deliberately no `filter` on top of it. The
+   copy is scaled to 3.29% of its own height, which is a 30:1 downscale and
+   therefore a low-pass — the compositor is already averaging thirty rows of the
+   recording into every row that lands here. A `blur()` would be a full-size
+   gaussian over a moving picture on every frame, which is exactly the per-frame
+   cost this Panel is built without, to buy softening that has already happened.
+
+   PLAIN ALPHA AND NOT `screen`, which is the physically-minded choice and the
+   wrong one here. A reflection adds light, so `screen` is what a reflection does
+   — but the plate underneath already carries the light: its top face ramps from
+   30 to 78 because that is what the render measures there, and that ramp IS the
+   room reflected in the stone. Screening a second reflection over it would put
+   the light in twice and blow the face past anything the render has. */
+.panel-mirror {
+  position: absolute;
+  top: 0;
+  left: 10.1479%;          /* the Frame's left edge — see .panel-stage */
+  right: 0;
+  height: var(--panel-plinth-face);
+  overflow: hidden;
+  /* A stacking context, so the copy's own z-index: 1 — it is a .panel-frame and
+     carries the class's — stays inside this box instead of competing with the
+     real Frame's. */
+  isolation: isolate;
+  /* How much of the window survives the stone. The render's top face is a
+     modulation of a few levels either side of its ramp, not a mirror; 0.34 at the
+     contact line is what puts the recording's own brightness into that range. */
+  opacity: 0.34;
+  /* ...and it goes out with distance, which is what a polished surface does to
+     everything but the first few millimetres of a reflection. */
+  -webkit-mask-image: linear-gradient(to bottom, #000, transparent);
+  mask-image: linear-gradient(to bottom, #000, transparent);
+  pointer-events: none;
+}
+/* The copy. `bottom: 100%` stands it directly ON the contact line — its own
+   bottom edge against this box's top — and the transform then folds it back down
+   through that same line: `scaleY` about the bottom origin sends a point h above
+   the origin to h below it, which is the whole of what a mirror is.
+   THE SCALE IS NOT A SEPARATE NUMBER. It is the top face's depth times the
+   Frame's aspect ratio, which is exactly "as deep as the marble in front of the
+   window" expressed as a fraction of the window's height — so the reflection
+   cannot come unstuck from the surface it is lying in, whichever of the two is
+   re-measured. */
+.panel-mirror > .panel-frame {
+  position: absolute;
+  bottom: 100%;
+  left: 0;
+  right: 0;
+  transform: scaleY(calc(-1 * var(--panel-plinth-top) * var(--panel-frame-ratio)));
+  transform-origin: bottom;
 }
 
 /* ---- the browser Frame's chrome --------------------------------------------
@@ -3024,10 +3223,17 @@ body::after {
     grid-template-rows: none;
     align-self: stretch;
   }
-  .panel-head, .panel-copy, .panel-points, .panel-frame {
+  .panel-head, .panel-copy, .panel-points, .panel-stage {
     grid-area: auto;
     align-self: auto;
   }
+  /* The slab loses its overhang and becomes exactly as wide as the window it
+     holds up. There is no column to hang off here — the twelve-column grid is a
+     single column on a phone — and a plinth wider than the Frame with nothing on
+     either side of it would just be a wider slab. #70 owns the real reflow. */
+  .panel-stage > .panel-frame { margin-left: 0; }
+  /* ...and the reflection follows the Frame's left edge wherever it goes. */
+  .panel-mirror { left: 0; }
   /* The hanging second line goes back into its own box: with nothing beside it
      and nothing over it, a head that stopped short of its own ink would just
      collide with the paragraph below. */
@@ -3039,7 +3245,7 @@ body::after {
     padding: clamp(1rem, 3vh, 1.5rem) 0 0;
     margin-top: clamp(1rem, 3vh, 1.5rem);
   }
-  .panel-frame { margin-top: clamp(1.5rem, 4vh, 2.5rem); }
+  .panel-stage { margin-top: clamp(1.5rem, 4vh, 2.5rem); }
 }
 
 /* ============================================================================
