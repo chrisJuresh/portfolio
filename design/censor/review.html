@@ -1,0 +1,262 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Censor review — the clip's roll</title>
+  <!--
+    Served by review.mjs, never by the site.
+
+    The whole roll at once, at the size and in the order the clip shows it, and
+    you click the ones to obscure. Nothing is obscured until you say so.
+
+    This replaced a forced one-at-a-time pass that made every photograph a
+    decision and defaulted the undecided ones to obscured. That was the cautious
+    reading of the ticket and it was the wrong shape for the job: the author
+    knows their own library, the answer for most of it is "no" without needing
+    to be asked, and 73 mandatory keypresses is a worse review than one look
+    over the sheet, because attention spent saying no is attention not spent
+    looking.
+
+    What survives from it is the part that was actually load-bearing: the
+    photograph is shown at 1536px, not at the 162px it gets in the clip. That
+    is the size the judgement needs, and here it follows the pointer instead of
+    costing a step -- hover or arrow onto a tile and it is already large.
+  -->
+  <style>
+    :root { color-scheme: dark; --ui: #eaeaea; --ui-bg: #121212; --ui-panel: #1c1c1c; --ui-line: #333; --ui-mut: #8f8f8f; --ui-hit: #d8a76a; --ui-warn: #e0605a; --ui-ok: #6fae72; }
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+    body {
+      margin: 0; display: flex; flex-direction: column;
+      background: var(--ui-bg); color: var(--ui);
+      font: 13px/1.45 "Segoe UI", system-ui, sans-serif;
+    }
+
+    /* ---- top bar ---------------------------------------------------------- */
+    .top {
+      flex: 0 0 auto; display: flex; flex-wrap: wrap; align-items: center; gap: 0.6rem;
+      padding: 0.5rem 0.8rem; border-bottom: 1px solid var(--ui-line);
+    }
+    .top strong { font-size: 11px; letter-spacing: 0.09em; text-transform: uppercase; color: var(--ui-mut); }
+    .grow { flex: 1 1 auto; }
+    .tally { font-size: 12px; color: var(--ui-mut); }
+    .tally b { color: var(--ui-warn); font-variant-numeric: tabular-nums; }
+    button {
+      font: inherit; color: var(--ui); background: transparent;
+      border: 1px solid var(--ui-line); border-radius: 5px;
+      padding: 0.24rem 0.6rem; cursor: pointer;
+    }
+    button:hover:not(:disabled) { border-color: var(--ui-mut); }
+    button:disabled { opacity: 0.4; cursor: default; }
+
+    /* ---- layout ----------------------------------------------------------- */
+    .wrap { flex: 1 1 auto; display: flex; min-height: 0; }
+
+    /* ---- the sheet -------------------------------------------------------- */
+    /* Laid out in the clip's own rows rather than as a reflowing wall, so a
+       tile sits where the recording puts it and "the row after the dark one"
+       means the same thing here as on screen. */
+    .sheet { flex: 1 1 auto; min-width: 0; overflow: auto; padding: 0.8rem; }
+    .row { display: flex; gap: 6px; margin-bottom: 6px; }
+    .pick {
+      padding: 0; border: 0; border-radius: 3px; overflow: hidden;
+      position: relative; line-height: 0; cursor: pointer; background: none;
+    }
+    .pick img { display: block; width: 100%; height: 100%; object-fit: cover; }
+    .pick:focus-visible { outline: 2px solid var(--ui-hit); outline-offset: 2px; }
+    .pick[aria-current="true"] { outline: 2px solid var(--ui-hit); outline-offset: 2px; }
+
+    /* Chosen tiles are pixelated in place, at roughly the coarseness the capture
+       will use, so the sheet shows what the clip will look like rather than a
+       list of ticks. The red edge is what makes an obscured tile legible at a
+       glance when the photograph under it was already dark. */
+    .pick[aria-pressed="true"] img { filter: blur(7px) contrast(0.85); transform: scale(1.15); }
+    .pick[aria-pressed="true"]::after {
+      content: ""; position: absolute; inset: 0;
+      box-shadow: inset 0 0 0 3px var(--ui-warn);
+    }
+    .pick[aria-pressed="false"]:hover img { opacity: 0.75; }
+
+    /* ---- the preview ------------------------------------------------------ */
+    .side {
+      flex: 0 0 27rem; display: flex; flex-direction: column; min-height: 0;
+      border-left: 1px solid var(--ui-line); background: var(--ui-panel);
+    }
+    .preview {
+      flex: 1 1 auto; min-height: 0; display: flex; align-items: center; justify-content: center;
+      padding: 0.7rem; background: #0a0a0a; overflow: auto;
+    }
+    .preview img { display: block; max-width: 100%; max-height: 100%; object-fit: contain; }
+    .preview.actual { align-items: flex-start; justify-content: flex-start; }
+    .preview.actual img { max-width: none; max-height: none; }
+    .meta { flex: 0 0 auto; padding: 0.6rem 0.8rem; border-top: 1px solid var(--ui-line); font-size: 11px; color: var(--ui-mut); line-height: 1.6; }
+    .meta code { font-family: ui-monospace, Consolas, monospace; word-break: break-all; }
+
+    /* ---- the foot --------------------------------------------------------- */
+    .foot { flex: 0 0 auto; padding: 0.7rem 0.8rem; border-top: 1px solid var(--ui-line); }
+    .foot input {
+      font: inherit; width: 100%; margin-bottom: 0.5rem; padding: 0.3rem 0.45rem;
+      color: var(--ui); background: var(--ui-bg); border: 1px solid var(--ui-line); border-radius: 5px;
+    }
+    .foot button { width: 100%; padding: 0.45rem; }
+    .said { margin-top: 0.5rem; font-size: 11px; color: var(--ui-mut); }
+    .said[data-tone="bad"] { color: var(--ui-warn); }
+    .said[data-tone="good"] { color: var(--ui-ok); }
+  </style>
+</head>
+<body>
+  <div class="top">
+    <strong>Censor review</strong>
+    <span class="tally"><b id="tally">0</b> of <span id="total">0</span> obscured</span>
+    <span class="grow"></span>
+    <button id="actual" aria-pressed="false" title="Show the preview at its own pixels rather than fitted">1:1</button>
+    <button id="clearAll">clear all</button>
+    <button id="reveal" title="Open the original file in Explorer">reveal original</button>
+  </div>
+
+  <div class="wrap">
+    <div class="sheet" id="sheet"></div>
+    <div class="side">
+      <div class="preview" id="preview"><img id="shot" alt="" decoding="async"></div>
+      <div class="meta" id="meta"></div>
+      <div class="foot">
+        <input id="who" placeholder="your name, to sign the list" autocomplete="off">
+        <button id="confirm">Confirm the list</button>
+        <div class="said" id="said">Click a tile to obscure it. Nothing is obscured until you do.</div>
+      </div>
+    </div>
+  </div>
+
+<script type="module">
+const sheet = document.getElementById("sheet");
+const preview = document.getElementById("preview");
+const shot = document.getElementById("shot");
+const meta = document.getElementById("meta");
+const tally = document.getElementById("tally");
+const said = document.getElementById("said");
+const who = document.getElementById("who");
+const confirmButton = document.getElementById("confirm");
+
+const roll = await (await fetch("roll.json", { cache: "no-store" })).json();
+document.getElementById("total").textContent = roll.tiles.length;
+
+/* Only the chosen ones are held. An empty set is a valid, complete answer —
+   "none of these need obscuring" — which is the difference between this and the
+   pass it replaced, where absence meant undecided and undecided meant obscured. */
+const censored = new Set();
+let at = 0;
+
+/* Tiles keep the clip's rows. `top` is the row key because it is the same for
+   every tile in a row and the roll is already sorted by it. */
+const buttons = [];
+let row = null;
+let rowTop = null;
+for (const [index, tile] of roll.tiles.entries()) {
+  if (tile.top !== rowTop) {
+    rowTop = tile.top;
+    row = document.createElement("div");
+    row.className = "row";
+    sheet.appendChild(row);
+  }
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = "pick";
+  button.setAttribute("aria-pressed", "false");
+  /* The clip's own dimensions, scaled up so a face is judgeable on the sheet
+     without having to move to the preview for every one. */
+  button.style.width = `${tile.width * 1.25}px`;
+  button.style.height = `${tile.height * 1.25}px`;
+  const image = document.createElement("img");
+  image.src = `/t/${tile.sha}.webp`;
+  image.alt = "";
+  image.decoding = "async";
+  button.appendChild(image);
+  button.addEventListener("click", () => toggle(index));
+  button.addEventListener("mouseenter", () => look(index));
+  button.addEventListener("focus", () => look(index));
+  row.appendChild(button);
+  buttons.push(button);
+}
+
+/* Looking is separate from choosing, which is the whole point of the change:
+   the pointer moving over the sheet is already the full-size review. */
+function look(index) {
+  at = index;
+  const tile = roll.tiles[at];
+  shot.src = `/d/${tile.sha}.webp`;
+  meta.innerHTML =
+    `<div>tile ${at + 1} of ${roll.tiles.length} &middot; sheet index ${tile.index}</div>` +
+    `<div>${tile.width}&times;${tile.height} in the clip, ${tile.top}px down the page</div>` +
+    `<div><code>${tile.sha}</code></div>`;
+  for (const [i, button] of buttons.entries()) button.setAttribute("aria-current", i === at ? "true" : "false");
+}
+
+function toggle(index, force) {
+  const sha = roll.tiles[index].sha;
+  const on = force ?? !censored.has(sha);
+  if (on) censored.add(sha);
+  else censored.delete(sha);
+  buttons[index].setAttribute("aria-pressed", String(on));
+  tally.textContent = censored.size;
+  look(index);
+}
+
+document.getElementById("clearAll").addEventListener("click", () => {
+  for (let i = 0; i < roll.tiles.length; i++) toggle(i, false);
+  tell("cleared — nothing is obscured", null);
+});
+document.getElementById("actual").addEventListener("click", (event) => {
+  const on = preview.classList.toggle("actual");
+  event.currentTarget.setAttribute("aria-pressed", String(on));
+});
+document.getElementById("reveal").addEventListener("click", async () => {
+  const response = await fetch(`/reveal?sha=${roll.tiles[at].sha}`, { method: "POST" });
+  if (!response.ok) tell(await response.text(), "bad");
+});
+
+/* Arrows walk the sheet and space toggles, so the whole pass can be done from
+   the keyboard without the pointer ever choosing something by accident. */
+addEventListener("keydown", (event) => {
+  if (event.target === who || event.metaKey || event.ctrlKey || event.altKey) return;
+  const perRow = roll.tiles.filter((t) => t.top === roll.tiles[at].top).length;
+  const step = { ArrowLeft: -1, ArrowRight: 1, ArrowUp: -perRow, ArrowDown: perRow }[event.key];
+  if (step !== undefined) {
+    event.preventDefault();
+    const next = Math.max(0, Math.min(roll.tiles.length - 1, at + step));
+    buttons[next].focus();
+    return;
+  }
+  if (event.key === " " || event.key === "Enter") { event.preventDefault(); toggle(at); }
+});
+
+function tell(message, tone) {
+  said.textContent = message;
+  if (tone) said.dataset.tone = tone;
+  else delete said.dataset.tone;
+}
+
+confirmButton.addEventListener("click", async () => {
+  if (!who.value.trim()) return tell("sign it first — the list records who confirmed it", "bad");
+  confirmButton.disabled = true;
+  const response = await fetch("/confirm", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({
+      roll_digest: roll.roll_digest,
+      confirmed_by: who.value.trim(),
+      confirmed_at: new Date().toISOString(),
+      censored: [...censored],
+    }),
+  });
+  const body = await response.text();
+  confirmButton.disabled = false;
+  if (!response.ok) return tell(body, "bad");
+  const { censored: n, reviewed } = JSON.parse(body);
+  tell(`written — ${n} of ${reviewed} obscured. censored.json is ready to commit.`, "good");
+});
+
+look(0);
+</script>
+</body>
+</html>

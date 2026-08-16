@@ -294,7 +294,7 @@
        two things that used to sit at this line, an @font-face at the foot of
        styles.css and a script that attached /fonts/friz-local.css on localhost
        only, are both gone. See the cut title block in styles.css. -->
-  <link rel="stylesheet" href="styles.css?v=28">
+  <link rel="stylesheet" href="styles.css?v=32">
 </head>
 <body>
   <!-- Only ever on screen while a corner picture is genuinely outstanding: it is
@@ -315,9 +315,259 @@
        the ascii block in styles.css and drawAscii() in effects.js. -->
   <canvas class="fx-ascii" aria-hidden="true"></canvas>
   <div class="page" id="page"></div>
-  <!-- The second screen the cut title opens onto. Empty, and sized entirely in
-       CSS: see the doorway block in styles.css. -->
-  <div class="doorway"></div>
+  <!-- ====================================================================
+       THE PROJECTS PANEL
+       ====================================================================
+       One project shown as a composition rather than as a card: a masthead,
+       a per-project subheading whose second line passes behind the Frame, a
+       Rail naming the three projects, the body copy, four engineering points,
+       and — for now — a placeholder standing where the browser Frame will.
+       The panel block in styles.css is the whole of the geometry.
+
+       STATIC MARKUP, NOT BUILT BY app.js, for two reasons. It is one
+       composition with no repetition in it, so there is nothing for a template
+       to earn; and it is
+       on screen at first paint, which is what the rest of this page spends so
+       much of its <head> buying. app.js owns the CV because the CV is data.
+
+       WHERE IT STANDS, AND WHY IT IS NOT INSIDE .page.
+       Ticket #57 asks for a sibling of `.col` — the position the cut title
+       occupies — and gives one reason: `chrisJuresh/chrisJuresh`'s hourly
+       capture of this page hides everything after the Work Experience listing
+       by walking `nextElementSibling` from it, so anything outside `.col`
+       survives that pass and stays out of the shot only by falling below the
+       crop. That reason is about not being INSIDE `.col`, and it holds here
+       exactly as it would one level in: the panel is below the fold, far below
+       the 852px crop, and the capture never reaches it.
+
+       There used to be a `.doorway` between this and .page — one blank screen
+       for the cut word to arrive on as its title, from when the word opened
+       onto nothing. It is gone. The word arrives HERE now, and lands on this
+       section's own masthead: see the turn block in styles.css for the two
+       snap ports it leaves, and the travel block in cut-morph.js for the flight
+       between them. The reason the panel still cannot be a child of .page is
+       the one the doorway was written for in the first place — in the
+       one-screen regime .page is exactly one screen and .cut-title is pinned
+       out of flow at `top: 100vh`, so a panel inside .page would land
+       underneath that pinned word and push nothing out of the way. Outside it,
+       the reading order is the one the design asks for in every regime: the CV,
+       and then the section the cut word turns into the title of.
+
+       DARK IN BOTH THEMES, and nothing in here reads --ink, --bg or any of the
+       six other properties the capture overrides by name. The palette is
+       --panel-*, declared on the section itself, so the theme toggle governs
+       the page above and this composition is the same one either way. -->
+  <section class="panel" id="projects" aria-labelledby="panel-masthead">
+    <!-- The Rail. Three projects, one Panel: Photo Vault is the selected one and
+         the other two are grey and inert until they have compositions of their
+         own. They are not links yet — there is nowhere to send anyone — and #72
+         is where they start navigating.
+
+         A PLAIN LABELLED LIST, NOT A <nav>, AND NOT `aria-current`, because
+         neither would be telling the truth yet. A nav landmark announces a set
+         of links to somewhere; this is three words, two of which lead nowhere,
+         and a landmark that offers nothing to navigate is worse than no landmark
+         at all. `aria-current` has the same problem one level down — it is
+         defined against the element a user has moved to, and on a plain <li>
+         screen readers are not obliged to say anything about it, so the
+         selection would be drawn and not announced while looking as though it
+         had been. So the qualifier is words: .visually-hidden, the same device
+         the cut title uses for the word it draws as a picture. #72 turns these
+         into links, and that is the change that earns the <nav> and the
+         `aria-current` back. -->
+    <ul class="panel-rail" aria-label="Projects">
+      <li class="is-selected">Photo Vault<span class="visually-hidden"> — shown below</span></li>
+      <li>Eater Map</li>
+      <li>Record Engine</li>
+    </ul>
+    <div class="panel-inner">
+      <header class="panel-head">
+        <!-- WHAT THE CUT WORD TAKES THE PLACE OF, and usually not what is drawn.
+             When cut-morph.js takes the flight it puts `.cue-fly` on <html> and
+             this h2 goes `visibility: hidden` — it keeps its box, so it is still
+             what sets row one's height and where the subheading starts, and the
+             cut word comes to rest on its baseline at its own size. There is one
+             PROJECTS on the page and this is where it ends up. Drawn twice would
+             be drawn twice.
+             It stays in the markup rather than becoming a CSS-only slot for two
+             reasons: it is the section's accessible name, referenced by the
+             `aria-labelledby` above, which a hidden-but-referenced element still
+             supplies; and without the script it is simply the masthead, drawn,
+             which is the whole of what a browser that never runs cut-morph.js
+             gets. See the landing block in styles.css. -->
+        <h2 class="panel-masthead" id="panel-masthead">Projects</h2>
+        <!-- Two authored lines, not one string left to wrap. The second line is
+             the one the Frame passes in front of, so where it breaks is part of
+             the composition rather than a consequence of the column's width.
+             The wording is one of the five #57 lists; choosing between them by
+             eye is #69's tuner, and this is the one that puts the distinguishing
+             word on the line you can still read. -->
+        <p class="panel-sub"><span>Self-stacking</span> <span>photo gallery</span></p>
+      </header>
+      <!-- career-record's `projects/photos.md`, "Page intro", verbatim. The
+           design render's own copy is generated filler and appears nowhere in
+           the record; #57 discards it. -->
+      <div class="panel-copy">
+        <p>Twenty years of photographs had turned into 1,374,328 file paths across overlapping backups. This is the system that turned them into one immutable content-addressed vault and a website that browses it — a triage engine that re-costs a rule set over the whole corpus in 220 ms, a build pipeline whose only destructive step is resumable, log-backed and independently re-verified byte for byte, and a stacking rule that decides whether two frames are the same photograph by fitting matched keypoints to a single transform. The threshold behind that rule was not chosen; it was measured, from a few hundred of my own judgements, through a report that keeps precision and recall apart and refuses to score a round against the setting it produced. When the shipped result disagreed with what I actually wanted, the objective moved and the reasoning that produced the old one stayed on the page.</p>
+      </div>
+      <!-- The four talking points career-record ranks as strongest, in its own
+           order, each carrying the figure that makes it checkable rather than
+           atmospheric. An ordered list because the order is the ranking. -->
+      <ol class="panel-points">
+        <li>
+          <h3>Label-driven calibration</h3>
+          <p>96.5% precision, 85.6% recall — measured, not chosen</p>
+        </li>
+        <li>
+          <h3>Screen-then-verify matcher</h3>
+          <p>3,632,211 candidate pairs, screened to 566,522</p>
+        </li>
+        <li>
+          <h3>Ledger-backed delete gate</h3>
+          <p>435.6 GB re-hashed and reconciled both ways</p>
+        </li>
+        <li>
+          <h3>Triage rule engine</h3>
+          <p>1,374,328 paths re-costed in 220 ms</p>
+        </li>
+      </ol>
+      <!-- The browser Frame: a window with a glass titlebar, holding the
+           recording. It is a grid item in its own right because the Frame is
+           what occludes the subheading's second line — see the .panel-frame
+           block in styles.css, which is the whole of that arithmetic — and the
+           chrome hangs INSIDE this box rather than around it, so nothing in the
+           composition moved when it arrived. #68 stands the whole thing on the
+           marble.
+
+           Decorative, so the box and everything in it is out of the
+           accessibility tree. A silent looping recording of a scrolling grid is
+           not something a screen reader has any use for, the paragraph beside it
+           says what the project is in the author's own words, and a window's
+           chrome is furniture — announcing three traffic lights and a back
+           button that go nowhere would be worse than silence.
+
+           THE CLIP: the photo vault's grid, stacked, recorded by `record`
+           against design/censor/capture-origin.mjs — which serves each of the
+           14 photographs on design/censor/censored.json as a mosaic of a handful
+           of blocks, so no unobscured frame of one exists anywhere in the
+           pipeline. design/censor/README.md is the whole procedure.
+
+           NO `src` AND NO `<source>` HERE, WHICH IS THE POINT. The sources are
+           given by panel-clip.js and only when the reader has not asked for
+           reduced motion, so under that setting the poster is the whole of it
+           and the video files are never requested. `preload="none"` would not
+           have done it and neither would a CSS rule; see panel-clip.js.
+
+           `muted` is not decoration either: it is what lets `autoplay` run at
+           all, and #57 asks for a page that never makes noise. -->
+      <div class="panel-frame" aria-hidden="true">
+        <!-- The titlebar. EMPTY OF EVERYTHING BUT THE CONTROLS, because the
+             material it is made of is not markup: the flat and blurred rungs of
+             the ladder are this element's own background, and the shader rung is
+             a <canvas> frame-glass.js inserts here as the chrome's first sibling.
+             The three rungs and what picks between them are the .frame-bar block
+             in styles.css. -->
+        <div class="frame-bar">
+          <!-- NOT ONE OF THESE IS A CONTROL, and that is deliberate rather than
+               unfinished. Every one is a <span> or an <i> — no <button>, no <a>,
+               no `tabindex`, no handler — and .frame-chrome takes pointer events
+               out on top of that. The Frame is not a link because the photos site
+               binds to loopback and there is nowhere to send anyone; making any
+               of this live later is a change of element and of nothing else,
+               because every length is measured from the glyph's centre and no
+               rule here depends on what kind of element carries it.
+
+               The icons are drawn at the render's own scale: each viewBox is the
+               glyph's measured ink in the render's pixels, so a stroke-width of
+               1.5 lands within a hundredth of a pixel of 1 at a Frame 1200 wide,
+               and the aspect ratio in the file is the measured one — which is
+               what lets styles.css set a width and leave the height alone. -->
+          <div class="frame-chrome">
+            <span class="frame-lights"><i></i><i></i><i></i></span>
+            <!-- Sidebar toggle: a window with its left pane filled. -->
+            <span class="frame-icon frame-sidebar">
+              <svg viewBox="0 0 26 16" fill="none" stroke="currentColor" stroke-width="1.5">
+                <rect x="0.75" y="0.75" width="24.5" height="14.5" rx="2.5"/>
+                <path d="M9.5 0.75V15.25"/>
+                <rect x="3.4" y="3.6" width="3.2" height="8.8" rx="1" fill="currentColor" stroke="none"/>
+              </svg>
+            </span>
+            <!-- Back, and forward greyed out beside it: the render draws the
+                 second at a third of the first's ink, which is a browser saying
+                 there is nowhere forward to go. See --frame-ink-off. -->
+            <span class="frame-icon frame-back">
+              <svg viewBox="0 0 10 18" fill="none" stroke="currentColor"
+                   stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M8.5 1.5 1.5 9l7 7.5"/>
+              </svg>
+            </span>
+            <span class="frame-icon frame-fwd">
+              <svg viewBox="0 0 10 18" fill="none" stroke="currentColor"
+                   stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M1.5 1.5 8.5 9l-7 7.5"/>
+              </svg>
+            </span>
+            <!-- THE ADDRESS IS THE TRUTH AND NOT A DECORATION. The photos site
+                 binds to loopback on 8770 and is never deployed, so there is no
+                 hostname to put here that would not be an invention — #57's user
+                 story 20 asks for a pill a reader is not misled by, and the only
+                 honest reading of that is the address the thing in the recording
+                 was actually served from. design/censor/capture-origin.mjs is the
+                 origin `record` was pointed at, and it is this one.
+                 The render's pill is EMPTY — `record` was run with `mockup=none`,
+                 so it composited no chrome of its own and there is nothing here
+                 to have measured. The type size is chosen; styles.css says how. -->
+            <span class="frame-pill">
+              <span class="frame-url">127.0.0.1:8770</span>
+              <span class="frame-icon frame-reload">
+                <svg viewBox="0 0 16 18" fill="none" stroke="currentColor"
+                     stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M13.5 9a5.5 5.5 0 1 1-1.9-4.2"/>
+                  <path d="M13.9 1.4v3.6h-3.6"/>
+                </svg>
+              </span>
+            </span>
+            <!-- Share, new tab, tabs. -->
+            <span class="frame-icon frame-share">
+              <svg viewBox="0 0 22 21" fill="none" stroke="currentColor"
+                   stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M6 8.2H2.75v11.05h16.5V8.2H16"/>
+                <path d="M11 1v11.4M11 1 7.3 4.8M11 1l3.7 3.8"/>
+              </svg>
+            </span>
+            <span class="frame-icon frame-new">
+              <svg viewBox="0 0 20 20" fill="none" stroke="currentColor"
+                   stroke-width="1.5" stroke-linecap="round">
+                <path d="M10 1.5v17M1.5 10h17"/>
+              </svg>
+            </span>
+            <!-- Two tabs, the back one offset down and right by the same amount
+                 in both directions. Its path is the part of an identical rounded
+                 rect that the front one does not cover, so it begins and ends ON
+                 the front tab's outline — drawn as a bare corner instead it
+                 reads as a hook coming off the side rather than as a second
+                 rectangle behind the first. -->
+            <span class="frame-icon frame-tabs">
+              <svg viewBox="0 0 25 17" fill="none" stroke="currentColor" stroke-width="1.5">
+                <rect x="0.75" y="0.75" width="17" height="11.5" rx="2.5"/>
+                <path d="M17.75 4.75h3.5a2.5 2.5 0 0 1 2.5 2.5v6.5a2.5 2.5 0 0 1-2.5 2.5H9.25a2.5 2.5 0 0 1-2.5-2.5v-1.5"/>
+              </svg>
+            </span>
+          </div>
+        </div>
+        <!-- The window's content, and it is inset from the window's edge on
+             three sides — the render is explicit about it and the .frame-content
+             block has the measurement. The clip's crop happens here now rather
+             than on the Frame, because this box is the shape the recording has to
+             fill and it is not the Frame's shape. -->
+        <div class="frame-content">
+          <video class="panel-clip" poster="video/photos-grid.webp?v=21f8d5ea"
+                 width="1440" height="900"
+                 autoplay loop muted playsinline preload="none"></video>
+        </div>
+      </div>
+    </div>
+  </section>
   <!-- The effect stack: eight empty layers over the finished page, each one off
        until its token appears in <html data-fx="...">. Order is paint order, and
        it is the order the marks would really have arrived in — the sheet's own
@@ -385,7 +635,7 @@
   </svg>
   <noscript><p style="text-align:center;font-family:'Sitka Text',Charter,'Iowan Old Style',Georgia,serif;padding:2rem">This site needs JavaScript enabled.</p></noscript>
   <script src="content.js?v=3"></script>
-  <script src="app.js?v=22"></script>
+  <script src="app.js?v=24"></script>
   <!-- Last, and after app.js rather than beside it: the effect stack is a
        treatment of a finished page, and drawAscii() measures the corner pictures
        against a layout that has to exist first. It is also the one script here
@@ -398,6 +648,21 @@
        only ever replaces one <svg>'s contents, so a browser that skips it —
        blocked, errored, or asking for reduced motion — keeps the baked Friz
        path exactly as it is inline. -->
-  <script src="cut-morph.js?v=3"></script>
+  <script src="cut-morph.js?v=4"></script>
+  <!-- The Panel's recording, and last for the third time for the third version
+       of the same reason: all it does is hand the <video> its sources, and a
+       browser that skips it keeps the poster that is already on screen — which
+       is exactly what a reader asking for reduced motion is shown. -->
+  <script src="panel-clip.js?v=1"></script>
+  <!-- The titlebar's glass, and last for the fourth time for the fourth version
+       of the same reason: the Frame is already drawn by the time this runs, and
+       a browser that skips it — blocked, errored, or without the WebGL2 the
+       whole thing is built on — keeps the titlebar the stylesheet has already
+       painted. That one is a fill and a pair of rings rather than a hole where a
+       titlebar should be, which is what #57's user story 9 asks for.
+       It does not depend on panel-clip.js and does not wait on the video: what
+       the glass refracts is the Frame's own fill, decided once. The file says
+       why that and not the recording. -->
+  <script src="frame-glass.js?v=1"></script>
 </body>
 </html>

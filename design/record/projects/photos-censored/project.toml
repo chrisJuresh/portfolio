@@ -1,0 +1,55 @@
+# The photo vault's grid as the Projects Panel is allowed to show it: stacked,
+# and with every photograph on design/censor/censored.json obscured before the
+# browser is ever sent it.
+#
+# THIS IS A WORKSPACE, NOT A COPY OF record's PROJECT. `record` reads its
+# Projects from $RECORD_WORKSPACE, so this directory is handed to the tool
+# rather than added to it:
+#
+#   RECORD_WORKSPACE=<this repo>/design/record \
+#     pnpm --dir <record checkout> record run photos-censored scroll-peek
+#
+# design/censor/README.md has the whole procedure and the two checks that come
+# first. Recording record's own `photos` Project instead produces an unstacked
+# clip of unobscured photographs; it is a different Project on purpose.
+
+# The capture origin, NOT the vault — design/censor/capture-origin.mjs.
+base_url = "http://127.0.0.1:8792/"
+ready_path = "/"
+
+# DELIBERATELY NO start_command. record starts a Project that is not answering
+# and stops it again; the capture origin refuses to start against a stale or
+# unsigned list, and a refusal is the answer rather than something to retry
+# around. So it is started by hand, and a Run against a dead origin fails at the
+# health check saying so.
+
+# Read to report staleness. Never written to -- record's ADR 0003.
+source_repository = 'C:\Users\Chris\Documents\photos'
+
+# Never. This clip ships from the portfolio repository, in portfolio/video/,
+# and record's published/ is a public directory of clips of every Project.
+published = false
+
+# #65: record composites no chrome of its own. Its browser-dark Mockup is a
+# plain dark frame with an empty pill, and the Panel stands the clip inside a
+# Safari-style Frame with a glass titlebar (#67) — two chromes around one
+# recording. The capture is bare content and the Frame is the page's.
+mockup = "none"
+
+# Encoded at the width it was captured at, so nothing is resampled on the way
+# out. The Frame is about 1300 CSS pixels wide at a 1920 window, and the capture
+# is at device scale 1, so 1440 is every pixel there is to give it.
+#
+# ABOVE [viewport] AND NOT BELOW IT. Every bare key after a table header belongs
+# to that table, so written at the foot of the file this is viewport.video_width
+# — which nothing reads, and which record reports as standing at its default
+# without complaining that the file said otherwise.
+video_width = 1440
+
+# The geometry design/censor/roll.json was assembled at, and the geometry
+# `collect-roll.mjs --check` compares against. Moving either of these orphans
+# the signed list: the justified rows lay out differently and the clip passes
+# over photographs nobody reviewed.
+[viewport]
+width = 1440
+height = 900

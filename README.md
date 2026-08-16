@@ -7,9 +7,10 @@ JavaScript. No framework, no build step, no dependencies.
 
 A single phone-width column presents a short CV — bio, work experience,
 education, contact — threaded through a full-bleed carousel of 53 of my own
-photographs of London. Alongside it, a wall of tinted cards for the projects.
-Both are a handful of hand-written source files and a folder of images, served
-statically from Vercel.
+photographs of London. Scroll past the cut title at its foot and the page turns
+dark for the Projects Panel, where one project is shown as a composition rather
+than described. All of it is a handful of hand-written source files and a folder
+of images, served statically from Vercel.
 
 <!-- screenshot: full-page desktop view, light theme, carousel mid-strip -->
 
@@ -78,36 +79,51 @@ statically from Vercel.
 
 ```
 .
-├── index.html          # portal at / — links into /portfolio and /projects
-├── vercel.json         # clean URLs + cache headers for /portfolio/img/*
+├── index.html          # portal at / — links into /portfolio and its projects section
+├── vercel.json         # clean URLs + the /projects redirect + cache headers
 ├── run.bat             # double-click to preview locally (Windows)
 ├── portfolio/          # the CV + photo carousel at /portfolio
 │   ├── index.html      # page shell: meta tags, pre-paint theme bootstrap
 │   ├── content.js      # ALL portfolio content — the only file you edit
 │   ├── app.js          # renders content.js and runs the carousel + theme
 │   ├── effects.js      # the effect stack's runtime half — optional, loaded last
+│   ├── cut-morph.js    # the cut title turning into a sans — optional, loaded last
+│   ├── panel-clip.js   # gives the Panel's <video> its sources — optional, loaded last
+│   ├── frame-glass.js  # the browser Frame's glass titlebar — optional, loaded last
 │   ├── styles.css      # layout, warm light/dark palettes, fades, print CV
-│   └── img/            # web-optimised photographs
-│       └── tex/        # the two baked textures — see its README
-├── projects/           # the project wall at /projects
-│   ├── index.html      # the cards themselves, written by hand
-│   ├── app.js          # theme bootstrap only — no rendering
-│   ├── styles.css      # card grid, per-card tints, print styles
-│   └── og.jpg          # social preview, 1200×630 — generated, see design/og/
-├── fonts/              # self-hosted Latin Modern Roman — deployed, unlinked
+│   ├── img/            # web-optimised photographs
+│   │   └── tex/        # the two baked textures — see its README
+│   └── video/          # the Projects Panel's recording — see design/censor/README.md
+├── projects/           # no page here any more — /projects 308s to /portfolio#projects
+│   ├── entries.json    # the eleven cards the retired wall carried, kept as data
+│   └── og.jpg          # the retired page's social card — generated, see design/og/
+├── fonts/              # the self-hosted faces — see its README
 └── design/             # dev-only: typography lab + OG builder — never deployed
 ```
 
-`fonts/` and `design/` are both leftovers of settling the typeface, and neither
-affects a visitor. `fonts/` holds Latin Modern Roman as woff2 subsets; no page
-links it, but it stays deployable so `/fonts/*.woff2` is there if that decision is
-ever revisited. `design/` is excluded from deploys entirely — see **Typography**.
+`fonts/` holds every face the site is actually set in, as woff2 subsets — plus
+Latin Modern Roman, which no page links and which is kept as the record of a
+decision made and reversed. Its own README says which is which. `design/` is the
+dev-only lab those decisions were made in and is excluded from deploys entirely —
+see **Typography**.
 
 One of those leftovers is load-bearing after all. The `/projects` social card was
 made before the move to Sitka and is set in Latin Modern, so
 `design/og/build-og.py` reads `fonts/lmroman10-regular.woff2` to re-set its type.
 Don't delete `fonts/` on the assumption nothing uses it. The card is generated,
 not hand-edited — `design/og/README.md` covers how to change its wording.
+
+`projects/` used to be a page: a wall of eleven tinted cards at `/projects`. It
+was retired for the Projects Panel, which shows one project as a composition
+instead of eleven as summaries. `/projects` now redirects to
+`/portfolio#projects` — the redirect is in `vercel.json`, so every link ever made
+to the old URL still lands somewhere real. The eleven entries are kept verbatim
+in `projects/entries.json`; nothing renders that file yet, and it is there so
+that the eight projects with no Panel of their own can be brought back without
+digging them out of git history. `og.jpg` is the retired page's social card and
+is now unreferenced — a crawler following `/projects` reads `/portfolio`'s tags
+instead — but it is what `design/og/` builds, so it stays until that pipeline is
+either repointed or removed.
 
 The content lives in `portfolio/content.js` as one plain-object literal
 (name, bio, work, education, contact, and the photo list with alt text).
@@ -127,20 +143,21 @@ python -m http.server
 ```
 
 Serve the **repo root**, not a page directory, and don't open the HTML off disk.
-Both pages set an absolute `<base href>`, so their assets only resolve when
-`/portfolio` and `/projects` sit under the server root.
+`/portfolio` sets an absolute `<base href>`, so its assets only resolve when it
+sits under the server root. Note that a plain file server does not read
+`vercel.json`: locally `/projects/` gets you a directory listing of the two files
+still in that folder rather than the redirect. The section it redirects to is
+reached at `/portfolio/#projects` either way.
 
 ## Editing the site
 
 1. Edit `portfolio/content.js` — add or reorder photos (any file in
    `portfolio/img/` can be used), change the bio, work, education or
    contact entries.
-2. Edit the project wall in `projects/index.html` directly. Unlike the
-   portfolio, the cards are hand-written markup with no content file; each
-   carries its own tint, stack, year, line drawing and links. Order matters
-   past the markup: the three feature cards must stay the first three in the
-   wall, and the wide card last, or the breakpoint rules that keep the grid
-   gapless start leaving holes.
+2. Edit the Projects Panel in `portfolio/index.html` directly. Unlike the CV
+   above it, the Panel is one composition with no repetition in it, so it is
+   static markup with no content file — its copy, its four engineering points
+   and its Rail labels are all written where they are read.
 3. If you change a `styles.css`, `app.js` or `content.js`, bump the matching
    `?v=` query string in that page's `index.html` so browsers pick up the new
    version — there is no build step doing cache-busting for you.
@@ -156,10 +173,11 @@ Colours, the column width (`--col`), the carousel image height
 
 ## Typography
 
-The two pages no longer agree. `/portfolio` is set in three self-hosted faces;
-`/projects` is still on the Sitka stack described further down.
+One page, four self-hosted families: three book serifs for the CV and a grotesk
+for the Projects Panel at its foot. The Sitka stack described further down is
+what the whole site used to be set in, and is now only the fallback tail.
 
-**`/portfolio`** — **Vollkorn** for anything meant to be read (`--serif-body`:
+**`/portfolio`, the CV** — **Vollkorn** for anything meant to be read (`--serif-body`:
 body text, role lines, headings, contact), **Spectral** for the small lettered
 labels (`--serif-label`: name, tagline, projects link, theme toggle), and
 **Source Serif 4** for the year column (`--serif-num`). All three are OFL,
@@ -179,8 +197,18 @@ font request fails, and it is kept for exactly that case: every word on the page
 now depends on a webfont, and the failure should land on a screen serif rather
 than on Times New Roman.
 
-**`/projects`** — still **Sitka**, Matthew Carter's serif, cut for reading on
-screen and bundled with Windows:
+**...and one grotesk, at the foot.** Past the cut title and the blank screen it
+opens onto, `/portfolio` ends in the Projects Panel — a dark composition showing
+one project rather than describing it — and that is set in **Host Grotesk**
+(`--sans-panel`), OFL, two cuts, 32 KB. It is not a sixth reading face: the cut
+title *morphs into* Host Grotesk as the page scrolls, so the section is set in
+what the animation above it turns into, and its masthead uses the exact weight
+that morph solved for. `fonts/README.md` has the whole of that, including why
+one of the two cuts is at a weight nobody names.
+
+**The fallback tail** — **Sitka**, Matthew Carter's serif, cut for reading on
+screen and bundled with Windows. It was what `/projects` shipped in until #71
+retired that page, and it is what every stack above still ends in:
 
 ```css
 "Sitka Text", Charter, "Iowan Old Style", Georgia, serif
@@ -191,9 +219,7 @@ family is addressed by optical size, and `Sitka Text` is the reading cut. And it
 can't be self-hosted — it's licensed with Windows, not redistributable — so the
 rest of the stack isn't decoration. macOS gets Charter, iOS Iowan Old Style,
 Android Georgia. Similar x-heights, so the layout holds, but not everyone sees the
-same face. That's the accepted cost of using Sitka at all, and that page's sizes
-are tuned to its x-height rather than the generic `serif` they used to fall back
-to. `/portfolio`'s sizes are still Sitka's too, and were left that way
+same face. `/portfolio`'s sizes are still Sitka's, and were left that way
 deliberately: Vollkorn's x-height is 4% below Sitka's and Spectral's 6%, small
 enough that the faces were chosen at the existing sizes.
 
@@ -207,10 +233,22 @@ Modern lost, measured rather than asserted. Neither folder affects a visitor; se
 ## Deployment
 
 The site deploys to Vercel as a plain static site — no framework preset,
-no build command. `vercel.json` enables clean URLs and sets a
+no build command. `vercel.json` enables clean URLs, 308s `/projects` to
+`/portfolio#projects`, and sets a
 day-long `Cache-Control` (with a week of `stale-while-revalidate`) on the
-image directory, plus a year-long `immutable` one on `/fonts` — so a rebuilt
-face needs a new filename, never a new file under an old one.
+image directory, plus a year-long `immutable` one on `/fonts` and another on
+`/portfolio/video` — so a rebuilt face needs a new filename, never a new file
+under an old one.
+
+The Projects Panel's recording is the one thing under an immutable rule that
+does **not** get a new filename, and it is a deliberate exception rather than an
+oversight: it is named by the page in two places and referred to by a third
+repository's documentation, so it carries a content stamp in its query string
+instead — `video/photos-grid.webm?v=<stamp>`, the same device `styles.css`
+already uses for the baked textures. A re-cut clip changes the stamp. It is
+written down in `design/censor/README.md` beside the command that produces the
+clip, because that is where somebody about to make the mistake will be standing.
+
 `.vercelignore` keeps `design/` out, so the lab and its
 renders never reach the deployment.
 

@@ -6,8 +6,9 @@
 
      node render.mjs
      node render.mjs --variants cm,cmfix --themes dark
-     node render.mjs --viewports desktop,mobile --pages projects,portfolio,portal
+     node render.mjs --viewports desktop,mobile --pages panel,portfolio,portal
      node render.mjs --format jpeg --quality 90     # smaller files
+     node render.mjs --pages panel --glass blur     # see the Frame's second rung
 
    Variants come from design/variants.css — this script does not define any
    styling of its own, it only toggles data-variant on the real pages.
@@ -26,10 +27,28 @@ const SHOTS = resolve(HERE, "..", "shots");
 
 /* ---- the matrix ---------------------------------------------------------- */
 const ALL_VARIANTS = ["asis", "cm", "cm-swap", "cmfix", "cm-all", "hybrid", "georgia-all", "sitka"];
+/* `panel`, and NOT `projects`, which is the key this replaces. #71 retired
+   /projects and the wall of cards that was there; what is worth shooting now is
+   the Panel at the foot of /portfolio, so the entry points at the fragment and
+   CLIP below cuts the shot down to the section.
+
+   THE RENAME IS THE POINT, not tidiness. Shot filenames are built from the page
+   key, so a repointed `projects` key would write `projects__<variant>__…` over
+   the sixteen committed card-wall shots — the only surviving picture of a page
+   this same change deletes, and the thing type-lab.html now tells you to go and
+   look at. It would overwrite them silently, one run at a time, and a
+   deterministic renderer gives no hint that the bytes underneath were a
+   different page. Under a new key the two sets sit side by side. */
 const PAGES = {
-  projects:  "/projects/",
+  panel:     "/portfolio/#projects",
   portfolio: "/portfolio/",
   portal:    "/"
+};
+/* Pages whose shot is one element rather than the whole document, and the
+   selector to probe inside it — the page-wide probe would otherwise measure type
+   that is not in the frame. */
+const CLIP = {
+  panel: { shot: "#projects", probe: ".panel-copy p" }
 };
 const VIEWPORTS = {
   desktop: { width: 1280, height: 900 },
@@ -52,17 +71,72 @@ const opt = args(process.argv.slice(2));
 const list = (v, fallback) => (v ? v.split(",").map((s) => s.trim()).filter(Boolean) : fallback);
 
 const variants  = list(opt.variants, ALL_VARIANTS);
-const pageKeys  = list(opt.pages, ["projects", "portfolio"]);
+/* `panel` is off the default list, and not because it is dead — it is the one
+   thing here set in Host Grotesk and painted from its own --panel-* palette, so
+   not one of the eight variants or two themes reaches it and a default run would
+   write sixteen copies of one picture. The axis it DOES move on is the viewport,
+   which is what #57 wants reviewable, so ask for it with the variant and theme
+   pinned and the viewports opened up:
+
+     node render.mjs --pages panel --variants sitka --themes light \
+                     --viewports desktop,tablet,mobile                         */
+const pageKeys  = list(opt.pages, ["portfolio"]);
 const themes    = list(opt.themes, ["light", "dark"]);
 const viewKeys  = list(opt.viewports, ["desktop"]);
 const scale     = Number(opt.scale || 2);
 const format    = (opt.format || "auto").toLowerCase();
 const quality   = Number(opt.quality || 92);
 
-/* Pick the codec that actually wins for the content. The projects and portal
-   pages are flat colour and line art, where PNG beats JPEG outright (399 KB vs
-   477 KB measured). The portfolio page carries photographs, where JPEG wins by
-   more than 3x (345 KB vs 1161 KB). "auto" is therefore the sane default. */
+/* ---- which rung of the Frame's glass to shoot -------------------------------
+   The Panel's titlebar is drawn three ways and #67 asks for each one to have
+   been SEEN rather than assumed — so this takes the top two away rather than
+   trusting a note that says what would happen if they were gone.
+
+     auto   whatever this browser does. Headless Chromium has WebGL2 through
+            SwiftShader, so it is the top rung, which is the trap: a run that
+            only ever shoots `auto` has never once looked at a fallback.
+     blur   WebGL2 removed at the browser. Chromium's --disable-webgl2 is a real
+            switch and getContext("webgl2") returns null under it, which is the
+            same thing frame-glass.js sees on a browser that never had it.
+     flat   that, and the backdrop-filter declaration overridden away.
+
+   THE BOTTOM RUNG CANNOT BE FORCED THE SAME WAY, and the asymmetry is worth
+   writing down because the obvious flag does not work.
+   --disable-blink-features=CSSBackdropFilter leaves CSS.supports() answering
+   true and the @supports block applying, so the page is unchanged and the shot
+   would be captioned `flat` while showing a blur. The declarations have to be
+   overridden instead — and they have to land BEFORE the page's own script runs,
+   because frame-glass.js reads the computed value to decide what to report.
+   addStyleTag is after load and therefore too late; the init script below is
+   the earliest a stylesheet can be got in.
+
+   BOTH DECLARATIONS, NOT JUST THE BLUR. A browser without backdrop-filter never
+   applies that @supports block at all, so it gets neither the blur nor the two
+   rings inside it — and overriding only the blur would shoot a bar wearing rims
+   no such browser would ever draw, captioned `flat`. */
+const GLASS_MODES = ["auto", "blur", "flat"];
+const glass = (opt.glass || "auto").toLowerCase();
+if (!GLASS_MODES.includes(glass)) fail(`glass must be one of: ${GLASS_MODES.join(", ")}`);
+
+const LAUNCH_ARGS = glass === "auto" ? [] : ["--disable-webgl2"];
+const FLATTEN = `
+  new MutationObserver((_, o) => {
+    if (!document.documentElement) return;
+    const s = document.createElement("style");
+    s.textContent = ".frame-bar { backdrop-filter: none !important;" +
+                    " -webkit-backdrop-filter: none !important;" +
+                    " box-shadow: none !important }";
+    (document.head || document.documentElement).appendChild(s);
+    o.disconnect();
+  }).observe(document, { childList: true, subtree: true });
+`;
+
+/* Pick the codec that actually wins for the content. The portal page and the
+   Panel are flat colour and type, where PNG beats JPEG outright (399 KB vs
+   477 KB measured on the old card wall, and the Panel is flatter still — its
+   Frame is a placeholder, not a photograph). The portfolio page carries
+   photographs, where JPEG wins by more than 3x (345 KB vs 1161 KB). "auto" is
+   therefore the sane default. */
 const PHOTO_PAGES = new Set(["portfolio"]);
 const formatFor = (pageKey) =>
   format === "auto" ? (PHOTO_PAGES.has(pageKey) ? "jpeg" : "png") : format;
@@ -123,7 +197,7 @@ const DETERMINISTIC = `
   .veil { opacity: 1 !important; }
 `;
 
-async function capture(page, origin, pagePath, variant, theme) {
+async function capture(page, origin, pagePath, variant, theme, clipProbe) {
   await page.goto(origin + pagePath, { waitUntil: "load" });
 
   // activate the fonts and the variant on the real page
@@ -146,23 +220,39 @@ async function capture(page, origin, pagePath, variant, theme) {
   await page.waitForTimeout(150);
 
   // prove the variant actually took, rather than trusting it
-  return page.evaluate(() => {
+  return page.evaluate((clipProbe) => {
     const probe = document.createElement("canvas").getContext("2d");
     const w = (f) => { probe.font = "40px " + f; return probe.measureText("Handgloves 123").width; };
     const known = {
       "generic serif": w("serif"), Georgia: w("Georgia"),
       "Latin Modern Roman": w('"Latin Modern Roman"'),
       "LM Roman 9": w('"LM Roman 9"'), "LM Roman 8": w('"LM Roman 8"'),
-      "Sitka Text": w('"Sitka Text"')
+      "Sitka Text": w('"Sitka Text"'), "Host Grotesk": w('"Host Grotesk"')
     };
-    const sel = document.querySelector(".card__desc") ? ".card__desc" : ".intro p + p, .intro .lead, body";
+    /* A clipped page probes inside its own clip. Measuring the default selector
+       would report the CV's lead — type that is not in the frame — and caption
+       the shot with a face it does not contain. `.card__desc` was the projects
+       wall's body copy and went with it in #71; the default is what every
+       unclipped page probes. */
+    const sel = clipProbe || ".intro p + p, .intro .lead, body";
     const el = document.querySelector(sel) || document.body;
     const cs = getComputedStyle(el);
     const width = w(cs.fontFamily);
     let hit = "unrecognised";
     for (const k in known) if (Math.abs(width - known[k]) < 0.01) { hit = k; break; }
-    return { probe: sel, face: hit, size: Math.round(parseFloat(cs.fontSize) * 10) / 10 };
-  });
+
+    /* WHICH RUNG OF THE FRAME'S GLASS ACTUALLY ENGAGED — read off the page, not
+       predicted from it. frame-glass.js writes this attribute from the computed
+       `backdrop-filter` of the bar that is on screen and from whether its four
+       passes really drew, so a shot captioned `blur` is one where the blur is in
+       the picture. A bar with no attribute at all is a bar the script never
+       reached, which is its own answer and is reported as `no script` rather
+       than guessed at. `—` is a page with no Frame in it. */
+    const bar = document.querySelector(".frame-bar");
+    const tier = !bar ? "—" : (bar.dataset.glass || "no script");
+
+    return { probe: sel, face: hit, size: Math.round(parseFloat(cs.fontSize) * 10) / 10, tier };
+  }, clipProbe);
 }
 
 /* ---- contact sheet ------------------------------------------------------ */
@@ -175,7 +265,8 @@ async function contactSheet(rows) {
   const section = (key) => {
     const items = groups[key].map((r) => `
         <figure>
-          <figcaption><b>${r.variant}</b> <span>${r.face} ${r.size}px</span></figcaption>
+          <figcaption><b>${r.variant}</b> <span>${r.face} ${r.size}px${
+            r.tier === "—" ? "" : ` · glass ${r.tier}`}</span></figcaption>
           <a href="${r.file}" target="_blank" rel="noopener"><img src="${r.file}" alt="${r.variant}" loading="lazy"></a>
         </figure>`).join("");
     return `    <section><h2>${key}</h2><div class="strip">${items}</div></section>`;
@@ -199,7 +290,8 @@ async function contactSheet(rows) {
 <body>
   <h1>Typography variants</h1>
   <p class="meta">${rows.length} renders · generated by <code>design/tools/render.mjs</code> · scale ${scale}x ·
-     click any image for full size. Definitions live in <code>design/variants.css</code>.</p>
+     glass <code>${glass}</code> · click any image for full size.
+     Definitions live in <code>design/variants.css</code>.</p>
 ${Object.keys(groups).sort().map(section).join("\n")}
 </body></html>
 `;
@@ -211,7 +303,7 @@ const server = await serve();
 const origin = `http://127.0.0.1:${server.address().port}`;
 await mkdir(SHOTS, { recursive: true });
 
-const browser = await chromium.launch();
+const browser = await chromium.launch({ args: LAUNCH_ARGS });
 const rows = [];
 let n = 0;
 const total = pageKeys.length * variants.length * themes.length * viewKeys.length;
@@ -230,21 +322,35 @@ for (const viewport of viewKeys) {
       });
       // the pages read this on boot, before any of our JS could run
       await context.addInitScript(`try { localStorage.setItem("portfolio-theme", "${theme}"); } catch (e) {}`);
+      if (glass === "flat") await context.addInitScript(FLATTEN);
       const page = await context.newPage();
 
       for (const variant of variants) {
         const ext = formatFor(pageKey);
-        const name = `${pageKey}__${variant}__${theme}__${viewport}.${ext}`;
-        const info = await capture(page, origin, PAGES[pageKey], variant, theme);
-        await page.screenshot({
+        /* The glass mode is in the filename whenever it is not the default, for
+           the reason the page-key comment above gives at length: shots are
+           addressed by name, and a forced rung written over the same name as the
+           unforced one destroys the only picture of the top rung while looking
+           like an ordinary re-run. `auto` keeps the bare name so the committed
+           set does not churn. */
+        const suffix = glass === "auto" ? "" : `__glass-${glass}`;
+        const name = `${pageKey}__${variant}__${theme}__${viewport}${suffix}.${ext}`;
+        const clip = CLIP[pageKey];
+        const info = await capture(page, origin, PAGES[pageKey], variant, theme, clip && clip.probe);
+        const shot = {
           path: join(SHOTS, name),
-          fullPage: true,
           ...(ext === "jpeg" ? { type: "jpeg", quality } : { type: "png" })
-        });
+        };
+        /* A clipped key shoots the element; everything else shoots the document.
+           `fullPage` is not a locator option and would be ignored if passed. */
+        if (clip) await page.locator(clip.shot).screenshot(shot);
+        else await page.screenshot({ ...shot, fullPage: true });
         const bytes = (await stat(join(SHOTS, name))).size;
         rows.push({ page: pageKey, variant, theme, viewport, file: name, ...info });
         console.log(`  [${String(++n).padStart(String(total).length)}/${total}] ${name}` +
-                    `  ${info.probe} → ${info.face} ${info.size}px  (${Math.round(bytes / 1024)} KB)`);
+                    `  ${info.probe} → ${info.face} ${info.size}px` +
+                    (info.tier === "—" ? "" : `  glass → ${info.tier}`) +
+                    `  (${Math.round(bytes / 1024)} KB)`);
       }
       await context.close();
     }

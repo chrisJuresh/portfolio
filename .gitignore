@@ -20,6 +20,30 @@ node_modules/
 .vercel/
 dist/
 
+# where design/tools/check-capture-contract.py stages the profile repo's capture
+# script and the screenshots it takes. It lives beside design/tools/node_modules
+# because ESM resolves `playwright` from the running script's own directory, so
+# the fetched script has to sit under the install rather than anywhere tidier.
+# Nothing in here is committed — the capture is fetched fresh every run, on
+# purpose, so a vendored copy cannot drift against a repo we do not own.
+design/tools/.capture-contract/
+
+# the confirmed photographs baked down to a handful of blocks each, by
+# design/censor/mosaic.py, for design/censor/capture-origin.mjs to serve in the
+# vault's place while the clip is recorded. Derivatives of a real personal
+# library — the same reason photos/ below is ignored — and what ships is the
+# finished clip in portfolio/video/, which IS committed. Rebuild them with one
+# command; capture-origin.mjs refuses to serve against a stale bake.
+design/censor/mosaic/
+
+# where `record` writes when it is handed design/record as its workspace. The
+# Project and its Action are committed — they are the settings the clip was made
+# with — and the Runs are not: ten of them per Action, each carrying the same
+# photographs the clip does, on this machine only. record's own repository
+# ignores its runs/ and published/ for the same reasons.
+design/record/runs/
+design/record/published/
+
 # python bytecode — design/og/build-og.py is the only Python here
 __pycache__/
 *.pyc

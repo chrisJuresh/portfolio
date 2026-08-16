@@ -1,0 +1,4 @@
+# The travel design/censor/roll.json was collected over. Moving it moves which
+# photographs the clip passes over, so the signed list stops covering it and
+# `node design/tools/collect-roll.mjs --check` says DRIFTED.
+distance = 1200
