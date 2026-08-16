@@ -420,10 +420,7 @@
       b.appendChild(ti);
       if (s.baked) {
         var img = document.createElement("img");
-        /* The same ?v= the stylesheet asks for, so the strip and the page can
-           never be showing two different renders of one stone. */
-        img.src = "../../portfolio/img/tex/plinth-" + k + ".webp" +
-                  (slab.version ? "?v=" + slab.version : "");
+        img.src = plateURL(k, "../../");
         img.alt = "";
         img.loading = "lazy";
         b.appendChild(img);
@@ -510,6 +507,18 @@
     c.width = 900;
     c.height = Math.round(900 * slab.plate.h / slab.plate.w);
     return c;
+  }
+
+  /* Where a stone's baked plate lives, from two different places.
+     The strip is at /design/plinth/ and needs `../../`; the frame is a document
+     at /portfolio/ whose own stylesheet writes `img/tex/...` relative to itself,
+     so it needs an absolute path instead. One function so the two can never
+     drift onto different files — and the same ?v= the stylesheet asks for, so
+     the strip and the frame are never showing two different renders of one
+     stone. */
+  function plateURL(k, base) {
+    return (base || "/portfolio/") + "img/tex/plinth-" + k + ".webp" +
+           (slab.version ? "?v=" + slab.version : "");
   }
 
   function markSheet() {
@@ -833,7 +842,19 @@
     if (!panel) { writeExport(); return; }
     panel.dataset.marble = pick;
     if (mode === "baked") {
-      panel.style.removeProperty("--panel-plinth-src");
+      /* SET IT, don't remove it. Removing the inline property falls back to the
+         stylesheet, and the stylesheet only carries a
+         `.panel[data-marble="..."]` rule for the four procedural stones — so
+         every other stone fell through to the default `--panel-plinth-src` and
+         the frame showed plinth-nero.webp no matter what was picked. Silently:
+         data-marble was set correctly, the strip highlighted the right row, and
+         the one thing the page exists to do did not happen.
+
+         A picker cannot require the thing being picked to have already been
+         shipped. Pointing the property straight at the plate works for any
+         stone with a bake, rule or no rule, and the export box still says which
+         rule styles.css will need when one is chosen. */
+      panel.style.setProperty("--panel-plinth-src", 'url("' + plateURL(pick) + '")');
     } else {
       panel.style.setProperty("--panel-plinth-src", 'url("' + lastURL + '")');
     }
