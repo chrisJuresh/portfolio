@@ -2487,7 +2487,7 @@ body::after {
      three wrong diagnoses to find. `nero` is kept below as a candidate rather
      than dropped, because it is the procedural stone every proportion in this
      block was measured against. */
-  --panel-plinth-src: url("img/tex/plinth-gemini-noir.webp?v=96a08f8f");
+  --panel-plinth-src: url("img/tex/plinth-gemini-generated-image-zbkpg6zbkpg6zbkp-1-noir.webp?v=a0b544da");
 
   position: relative;
   display: grid;
@@ -2804,10 +2804,10 @@ body::after {
    `gemini-noir`; the tuner lists every plate in design/plinth/slab.json, which is
    many more than this, and reaches them by pointing the property straight at the
    plate rather than through a rule here. */
-.panel[data-marble="nero"]     { --panel-plinth-src: url("img/tex/plinth-nero.webp?v=96a08f8f"); }
-.panel[data-marble="portoro"]  { --panel-plinth-src: url("img/tex/plinth-portoro.webp?v=96a08f8f"); }
-.panel[data-marble="marquina"] { --panel-plinth-src: url("img/tex/plinth-marquina.webp?v=96a08f8f"); }
-.panel[data-marble="grey"]     { --panel-plinth-src: url("img/tex/plinth-grey.webp?v=96a08f8f"); }
+.panel[data-marble="nero"]     { --panel-plinth-src: url("img/tex/plinth-nero.webp?v=a0b544da"); }
+.panel[data-marble="portoro"]  { --panel-plinth-src: url("img/tex/plinth-portoro.webp?v=a0b544da"); }
+.panel[data-marble="marquina"] { --panel-plinth-src: url("img/tex/plinth-marquina.webp?v=a0b544da"); }
+.panel[data-marble="grey"]     { --panel-plinth-src: url("img/tex/plinth-grey.webp?v=a0b544da"); }
 
 /* ---- the reflection ---------------------------------------------------------
    THE FRAME AGAIN, UPSIDE DOWN AND LYING IN THE STONE. Not a picture of it: the
