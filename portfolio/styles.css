@@ -2418,7 +2418,7 @@ body::after {
      reason the textures' is — vercel.json caches /portfolio/img/ for a day, so a
      re-rendered plate under an unchanged URL is served stale for up to 24 hours
      while being right on localhost. */
-  --panel-plinth-src: url("img/tex/plinth-nero.webp?v=723b5119");
+  --panel-plinth-src: url("img/tex/plinth-nero.webp?v=de287c12");
 
   position: relative;
   display: grid;
@@ -2729,9 +2729,9 @@ body::after {
    one is. Switched by an attribute on the section so #69's tuner needs no
    stylesheet of its own, and so that a plate not in the repository yet fails as a
    missing image rather than as a missing rule. */
-.panel[data-marble="portoro"]  { --panel-plinth-src: url("img/tex/plinth-portoro.webp?v=723b5119"); }
-.panel[data-marble="marquina"] { --panel-plinth-src: url("img/tex/plinth-marquina.webp?v=723b5119"); }
-.panel[data-marble="grey"]     { --panel-plinth-src: url("img/tex/plinth-grey.webp?v=723b5119"); }
+.panel[data-marble="portoro"]  { --panel-plinth-src: url("img/tex/plinth-portoro.webp?v=de287c12"); }
+.panel[data-marble="marquina"] { --panel-plinth-src: url("img/tex/plinth-marquina.webp?v=de287c12"); }
+.panel[data-marble="grey"]     { --panel-plinth-src: url("img/tex/plinth-grey.webp?v=de287c12"); }
 
 /* ---- the reflection ---------------------------------------------------------
    THE FRAME AGAIN, UPSIDE DOWN AND LYING IN THE STONE. Not a picture of it: the

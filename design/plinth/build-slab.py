@@ -84,11 +84,17 @@ this from a plausible dark texture to something that reads as quarried. See
 BEDDING and FRACTURE, which say what each replaced and why the replacement is the
 shape it is.
 
-Deterministic: Cycles is seeded, the material has no random node, and the same
-Blender writes the same bytes.
+NOT DETERMINISTIC, whatever this file used to say. Cycles is seeded and the
+material has no random node, so the PICTURE is reproducible — but the bytes are
+not: rendering `nero` twice in a row on the same machine, same Blender, same
+everything, gives two different sha256s. The OptiX denoiser is the suspect
+(`use_denoising` on a GPU device), and it is not worth turning off to buy a
+property nothing here needs.
 
-Deterministic: Cycles is seeded, the material has no random node, and the same
-Blender writes the same bytes.
+What it costs is that digest() moves on EVERY bake, so the ?v= in
+portfolio/styles.css has to be re-pasted after any render whether or not the
+stone changed, and a changed digest is not evidence that anything changed. If you
+want to know whether a stone actually moved, compare the plates.
 """
 
 from __future__ import annotations
