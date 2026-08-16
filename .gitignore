@@ -1,4 +1,4 @@
-﻿# local tooling / editor. `.claude/` is ignored except the four files every worktree
+# local tooling / editor. `.claude/` is ignored except the four files every worktree
 # needs: the three that carry the worktree-per-change rule, and the launch config the
 # preview starts the static server from. A worktree only gets a file if git puts it
 # there, so anything ignored here is missing from the tree every change is made in.
@@ -24,37 +24,37 @@ dist/
 # script and the screenshots it takes. It lives beside design/tools/node_modules
 # because ESM resolves `playwright` from the running script's own directory, so
 # the fetched script has to sit under the install rather than anywhere tidier.
-# Nothing in here is committed â€” the capture is fetched fresh every run, on
+# Nothing in here is committed — the capture is fetched fresh every run, on
 # purpose, so a vendored copy cannot drift against a repo we do not own.
 design/tools/.capture-contract/
 
 # the confirmed photographs baked down to a handful of blocks each, by
 # design/censor/mosaic.py, for design/censor/capture-origin.mjs to serve in the
 # vault's place while the clip is recorded. Derivatives of a real personal
-# library â€” the same reason photos/ below is ignored â€” and what ships is the
+# library — the same reason photos/ below is ignored — and what ships is the
 # finished clip in portfolio/video/, which IS committed. Rebuild them with one
 # command; capture-origin.mjs refuses to serve against a stale bake.
 design/censor/mosaic/
 
 # where `record` writes when it is handed design/record as its workspace. The
-# Project and its Action are committed â€” they are the settings the clip was made
-# with â€” and the Runs are not: ten of them per Action, each carrying the same
+# Project and its Action are committed — they are the settings the clip was made
+# with — and the Runs are not: ten of them per Action, each carrying the same
 # photographs the clip does, on this machine only. record's own repository
 # ignores its runs/ and published/ for the same reasons.
 design/record/runs/
 design/record/published/
 
-# python bytecode â€” design/og/build-og.py is the only Python here
+# python bytecode — design/og/build-og.py is the only Python here
 __pycache__/
 *.pyc
 
-# full-resolution photo originals (~250MB) â€” the site uses the optimised copies
+# full-resolution photo originals (~250MB) — the site uses the optimised copies
 # in img/. Kept local to keep the repo lean and Vercel deploys fast. Regenerate
 # img/ from these with the Pillow step in README.md.
 photos/
 
-# camera raws, wherever they are dropped. Same reasoning as photos/ â€” a single
-# RW2 off the GX80 is ~19MB â€” but by extension, because the one the corner plate
+# camera raws, wherever they are dropped. Same reasoning as photos/ — a single
+# RW2 off the GX80 is ~19MB — but by extension, because the one the corner plate
 # is built from is handed to design/plate/build-plate.py by path and so tends to
 # sit wherever it was unpacked rather than under photos/.
 *.rw2
@@ -65,7 +65,7 @@ photos/
 # blanket *.png would take those with it.
 /*.png
 
-# the Texturelabs plates the textures are baked from â€” two for the effect stack
+# the Texturelabs plates the textures are baked from — two for the effect stack
 # at 9MB and 12MB, and three marble slabs for the Projects Panel's plinth at
 # about 15MB each. All of them are handed to their build script by path from the
 # repo root, so they land here the way an RW2 does. What ships is
@@ -81,7 +81,7 @@ photos/
 # every run, and nothing serves it.
 portfolio/img/tex/paper-seam-proof.png
 
-# secrets â€” never commit
+# secrets — never commit
 .env
 .env.*
 
