@@ -720,13 +720,16 @@
      re-chosen, and it is spent twice: once as the inset itself and once as the
      white on the far side of the word, which is what --cue-measure below is
      built out of.
-     There was a --title-top here as well, for the top-left corner the word used
-     to come to rest in on a blank second screen. That screen is gone and so is
-     the corner: the word now flies to the projects section's own masthead, and
-     where it lands is that h2's ink, measured at run time rather than declared.
-     See the turn block at the foot of this sheet and the travel in
-     cut-morph.js. */
+     --title-top is the OTHER corner, and it is back. It was retired when the word
+     began to fly to the projects section's own masthead — a landing measured at
+     run time rather than declared — and the flight is gone again: the word does
+     not move at all now, and the section comes UP to meet it. So where the word
+     comes to rest is a declared length once more, and this is it. The cap top
+     lands exactly where the CV's own name does, --name-half-leading below the
+     margin, which is what makes the two screens open on the same line.
+     See the landing block at the foot of this sheet. */
   --title-left: var(--corner);
+  --title-top:  calc(var(--corner) + var(--name-half-leading));
 
   /* Everything in the document that is NOT the photo strip and NOT one of the
      two vh-driven gaps: the masthead, the lead, the scrollbar rule, the three
@@ -912,25 +915,45 @@
 
        where r is a rem in px, --corner is 9vh everywhere the answer is below
        16px (its 3rem floor and 6.5rem ceiling are both clear of 9vh through the
-       whole scaling range), and --cue-clip is the cut word's visible slice,
-       0.62 × 0.154521 of the gutter, where the gutter is 50vw − 13.5r − 2 ×
-       --corner. Put --slide-h at its 15rem minimum, substitute, collect the
-       terms in r, and the h and w terms fall out as
+       whole scaling range), and --cue-clip is the cut word's visible slice.
 
-         r = (0.837245 × 100vh − 0.047902 × 100vw) / 46.4605
+       THE CUT WORD'S SLICE IS NOW THE MASTHEAD'S, WHICH TOOK THE WIDTH TERM OUT
+       OF THIS LINE ENTIRELY. It used to be 0.62 × 0.154521 of the gutter, and
+       the gutter is 50vw − 13.5r − 2 × --corner, so the budget carried a 100vw
+       term and a second term in r. The word is sized off --panel-masthead-size
+       now (see the measure below), so
 
-       47 is what is written, which is that plus 1.2% of slack — and the slack is
-       free, because the strip is the REMAINDER. Ask for a smaller rem than the
+         --cue-clip = 0.62 × 0.700 × 0.0598 × --panel-w = 0.0259532 × --panel-w
+
+       and --panel-w is a min() of two branches. Only an OVER-estimate is safe,
+       so the branch to substitute is the larger one, which is always the height
+       branch — --panel-w is a min, so its fit term is its ceiling. In the turn
+       regime that fit is (100vh − 2 × --corner − nhl) / 0.5603 (the landing
+       block at the foot of this sheet derives the 0.5603), giving
+
+         --cue-clip = 3.798 × 1vh − 0.010622 × r
+
+       Put --slide-h at its 15rem minimum, substitute both, collect the terms in
+       r, and the width falls out of the answer altogether:
+
+         r = 0.782019 × 100vh / 47.7432
+
+       48.32 is what is written, which is that plus 1.2% of slack — and the slack
+       is free, because the strip is the REMAINDER. Ask for a smaller rem than the
        budget allows and the remainder simply comes out larger than 15rem; the
        page is still exactly one screen. The only value that costs anything is one
        that is too BIG, where the clamp's floor binds and the page overflows,
-       which is the thing this whole block exists to stop.
+       which is the thing this whole block exists to stop. A window where the
+       WIDTH branch binds --panel-w is therefore safe by construction: the real
+       slice is smaller than the one substituted here, so the rem comes out
+       smaller than it had to be and the strip takes the difference.
 
        `min(1rem, …)` and not `min(16px, …)`: on the root's own font-size a rem is
        the initial value, which is the reader's own default. A tall screen
        therefore gets the size they asked for and this only ever makes type
-       smaller. 100vw counts the vertical scrollbar the layout does not get, which
-       takes 0.015px off r — the safe direction, and not worth a script.
+       smaller. There used to be a note here about 100vw counting the vertical
+       scrollbar the layout does not get, worth 0.015px of r; the width term is
+       gone and so is the error.
 
        WHAT ELSE MOVES WITH IT. Everything in rem, which is the point: --col, the
        ladder, the strip's own two bounds, the cut word's cap. What does NOT is
@@ -938,56 +961,50 @@
        three absolute floors in the Projects panel, which are floors on
        LEGIBILITY and were converted from rem to px in the same change for
        exactly that reason. A floor that shrinks with the type is not a floor. */
-    font-size: min(1rem, calc((0.837245 * 100vh - 0.047902 * 100vw) / 47));
+    font-size: min(1rem, calc(0.782019 * 100vh / 48.32));
 
-    /* ---- the cut word's measure, out in the gutter -------------------------
+    /* ---- the cut word's measure: it is the masthead ------------------------
        This is the band where the word leaves the column and stands in the
        page's bottom-left corner instead (see the turn block at the foot of
-       this sheet, which does the moving). Out there it has a measure of its
-       own, and one rule sets it: the white to the LEFT of the word — page edge
-       to the P — and the white to its RIGHT — the S to the line the resume
-       starts on — are the same measure, and that measure is --title-left, the
-       page's own margin, which is already the inset the word's corner is set
-       to. So the word is as wide as the gutter less a margin at each end, and
-       the SIZE is whatever makes it exactly that wide. Nothing here is a
-       chosen length: give the page a different width and the word is re-fitted
-       to the space that is left, with the two margins still equal.
-       --edge is "where the text column starts", declared once up in the base
-       block and used by the carousel for the same reason. In this band its
-       max() always resolves to the 50vw term, since the narrowest window here
-       makes that term 334px against a floor of 1.35rem.
+       this sheet, which does the moving), and where it goes on standing until
+       it IS the projects section's masthead. It does not fly there any more and
+       it does not resize on the way: one size, cut by the fold on the first
+       screen, printed as the title of the second. So there is exactly one
+       question about how big it should be, and the second screen is the one
+       entitled to answer it.
 
-       It is written in vw, and one thing follows from that and is worth having
-       in writing: 100vw counts the vertical scrollbar and the column is
-       centred in the width WITHOUT it, so --cue-measure runs half a scrollbar
-       wide of the true gutter — 7.5px on Windows, nothing at all where
-       scrollbars are overlaid, and this band always has a scrollbar because
-       the projects section gives it one. The word itself does not inherit
-       that error.
-       Both of the things that have to be exact are held off something else:
-       the two margins off percentages of the containing block, which do not
-       count the scrollbar, and the CUT off the word's own `cap`, read from the
-       face at the size it actually resolved to. What is left reading the vw
-       twin is the height BUDGET alone — --slide-h and --rhyme — where being
-       0.72px out (0.62 x 0.1545 x 7.5) takes that much off the photo strip.
-       Constant at every window size, and not worth a script.
-       It is worth knowing WHY the cut is not allowed to spend it, because the
-       number looks harmless: 0.72px is 0.9% of the cap at 1920 but 3.9% of it
-       at the narrow end of this band, where the word is a quarter the size. Off
-       --cue-clip the cut would therefore drift from 0.628 of the cap to 0.659
-       across the band — inside the 0.55-0.75 the paragraph on --cue-show gives
-       as legible, but drifting, and "the same fraction of letter at every size"
-       is the whole of what that number is for.
+       SO THE MEASURE IS THE MASTHEAD'S, and this is the whole of the rule: the
+       word's cap height equals --panel-masthead-size's cap, which is 0.700 em
+       of Host Grotesk. --cue-cap-share converts a cap back into the picture's
+       width, which is the only unit the cut understands. What that buys is the
+       design render's own proportion — masthead cap to subheading cap, 1.59 —
+       holding at every window size instead of at the one where it happened to
+       land. It did not hold before: at 1440x1000 the two agreed to within 2%,
+       and at 1920x1080 the word ran 29% larger than the masthead it was about
+       to become.
+
+       WHAT IT COST WAS THE TWO EQUAL MARGINS, and that rule is retired here
+       rather than quietly broken. It used to be that the white to the LEFT of
+       the word — page edge to the P — and the white to its RIGHT — the S to the
+       line the resume starts on — were the same measure, --title-left, and the
+       word was sized to make them so. That was the right rule while the word
+       answered to nothing but the corner it stood in. It answers to the
+       composition below it now, and the two cannot both be satisfied: the
+       gutter is a function of the window's WIDTH and the masthead is a function
+       of whichever of width and height binds the drawing. The word is still set
+       flush to --title-left; what is no longer promised is that the white on
+       its right matches. On a tall window it is wider than the margin, and past
+       roughly 1440x1000 the word reaches a little INTO that margin — 17px at
+       1440, against the 90px of white the column's own inset leaves, so it
+       never touches the measure.
 
        --cue-ink is 100cqw here, against 97.7592 in the base block, and that
        difference is the whole of what the two regimes disagree about. Out here
        the fit is to the word's INK rather than to its advance box: fitting the
-       box would leave the two margins unequal by the difference between its two
-       bearings — the P's 90 units of left sidebearing against the S's 69 of
-       right plus the trailing tracking step, 0.0098 of the font size — and equal
-       margins are the one thing this measure exists to produce. Since the
-       picture's box IS its ink, "fit the ink to the measure" is now simply
-       `width: 100cqw`, and --cue-lead goes to zero with it.
+       box would put the ink a bearing's width off the margin it is set to — the
+       P's 90 units of left sidebearing — and the left margin is still exact.
+       Since the picture's box IS its ink, "fit the ink to the measure" is now
+       simply `width: 100cqw`, and --cue-lead goes to zero with it.
        That also retires --cue-bearing, which used to be here: with type, the P's
        ink started 0.0439em inside its own box, so the box had to be pushed that
        much further left for the ink to land on the margin. The picture starts at
@@ -996,31 +1013,28 @@
        this word's seven pairs was in it. The build script checks rather than
        assumes, and would have baked it in if there had been.)
 
-       --cue-fit then re-points at the gutter and --cue-cap follows from it as it
-       does in the base block, except that the measure is no longer a constant:
-       --cue-cap-share of --cue-measure, 0.1545 of it, where the base block takes
-       0.1545 of 0.977592 x --col.
-       Which makes every height on the page that was spending a constant here
-       spend a function of the window's WIDTH instead, and that is new. The word
-       is 4.079rem of cap at every window today; it is 1.52rem of it at
-       1100x983 and 5.31rem at 1920x1080, so the photo strip — the remainder,
-       and the one element on the page with no intrinsic height — hands back
-       25px at the narrow end and gives up 12px at the wide one (267px against
-       242px, and 309px against 321px). Two notes follow from that:
-       * The 983px floor above is derived as "the height at which the remainder
-         falls to exactly 15rem", and that height is now a function of the width
-         as well. The gate is deliberately left at 983px anyway. It is the
-         height below which photographs would have to go under their designed
-         minimum SOMEWHERE in the band, which is still true, and a floor that
-         moved with the width would be a breakpoint that moved with the width.
-         What changes is only that at the narrow end the strip is no longer
-         sitting exactly on that minimum when the gate opens.
-       * A window that is dragged WIDER now re-sizes the strip, where before
-         only a taller one did. index.html's rung picker is unaffected and
-         needs no change: both corner pictures are scaled to --fold, so the
-         width is still nothing to them, and the comment there saying "width
-         still asks for nothing" is still about them and still true. */
-    --cue-measure: calc(var(--edge) - 2 * var(--title-left));
+       --cue-fit then re-points at that measure and --cue-cap follows from it as
+       it does in the base block. Which makes every height on the page that was
+       spending a constant here spend a function of the WINDOW instead — of its
+       height, mostly, since that is what binds --panel-w on an ordinary desktop
+       — and the photo strip, the remainder and the one element on the page with
+       no intrinsic height, absorbs the difference. Two notes follow:
+       * The 983px figure the floor above was derived from is "the height at
+         which the remainder falls to exactly 15rem", and that height is a
+         function of the width as well. The gate is deliberately left at 700px
+         anyway, for the reason that block gives: a floor that moved with the
+         width would be a breakpoint that moved with the width.
+       * A window dragged WIDER re-sizes the strip, where before only a taller
+         one did. index.html's rung picker is unaffected and needs no change:
+         all three corner pictures are scaled to --fold, so the width is still
+         nothing to them, and the comment there saying "width still asks for
+         nothing" is still about them and still true.
+
+       ONE CYCLE TO NOT WRITE. --panel-w must never come to depend on --cue-*.
+       It is a function of --fold, --corner and --name-half-leading and nothing
+       else, in both regimes, which is exactly why the arithmetic in the landing
+       block substitutes the word's cap out rather than referring to it. */
+    --cue-measure: calc(0.700 * var(--panel-masthead-size) / var(--cue-cap-share));
     --cue-ink:     100cqw;
     --cue-lead:    0px;
     --cue-fit:     var(--cue-measure);
@@ -1934,61 +1948,59 @@ body::after {
    and the section below printed the SAME WORD again as its masthead in the very
    face the morph resolves into.
 
-   So the landing moved to where it was always going. The word flies to the
-   section's masthead and TAKES ITS PLACE — the .panel-masthead h2 goes
-   `visibility: hidden` under `.cue-fly` and this word stands where it stood —
-   which is the whole of the device the morph was built for: PROJECTS in Friz
+   So the landing moved to where it was always going, and then the FLIGHT went.
+   For a while the word flew: it was translated, over the turn, from the corner
+   onto the masthead's own baseline, measured at run time by cut-morph.js. It
+   does not move at all now. It stands in the corner and the page scrolls past
+   it, which means it travels up the window at exactly the rate of the scroll and
+   arrives at the top of the second screen because that is where a fixed thing in
+   a scrolling document ends up. The section comes UP to meet it instead — see
+   the landing block below — and the .panel-masthead h2 goes `visibility: hidden`
+   underneath it.
+
+   That is the whole of the device the morph was built for: PROJECTS in Friz
    Quadrata at the foot of the CV turns into PROJECTS in Host Grotesk at the head
    of the section, once, over one page turn. There is only ever ONE of the word
    on the page, at rest on either screen and at every frame of the turn between
-   them. The flight is measured and drawn by cut-morph.js, off the same T that
-   turns the letters; there is no arithmetic left in this sheet for where the
-   word ends up, because the end is another element's baseline and only layout
-   knows where that is.
+   them. What is left of cut-morph.js is the letterforms and nothing else.
 
-   IT ARRIVES AT THE SIZE IT LEFT AT. #83 fitted it to the masthead's cap, which
-   at 1440 is 75px against the cut word's 49, so the word grew by half on the way
-   down; the size the composition cut it at is the size it keeps, and the travel
-   is a translation and nothing else. What that costs is congruence — the two
-   words cannot fill the same box — so the landing is a baseline rather than a
-   box, and the flight block in cut-morph.js has that reasoning.
+   IT NEITHER MOVES NOR RESIZES, and both halves of that are now stated in this
+   sheet rather than computed in a script. #83 fitted it to the masthead's cap
+   over the flight, growing it by half on the way down, which is the one thing
+   the device is not allowed to do. It is drawn at the masthead's cap from the
+   start instead — see --cue-measure in the one-screen block, which is where that
+   is argued — so the two words are the same size on both screens and there is
+   nothing to interpolate.
 
-   What this sheet still fixes is the START — the two insets below, the cut, and
-   the two snap ports — and that half is unchanged to the pixel. A browser that
-   never runs cut-morph.js gets exactly this block: the word cut at the fold, the
-   section's own masthead drawn as the section's own masthead, and one page turn
-   between them. Nothing here depends on the flight.
+   A browser that runs no script at all gets exactly this block: the word cut at
+   the fold in Friz, the section below it with the word standing as its masthead,
+   and one page turn between them. Nothing here depends on any of the three files.
 
    Two consequences worth naming:
    * The cut becomes REAL. Everywhere else the word is clipped to --cue-clip by
      its own overflow, because the document ends beneath it and there is no
      second screen for the rest of the letters to stand on. Here they are all
      there and the bottom of the window does the cutting, which is what the
-     device was always drawing. So the clip comes off: leave it on and the word
-     would fly to the masthead still guillotined.
+     device was always drawing.
    * The word leaves the measure — both of them. It is no longer the last line of
      the column but a word standing in the page's own corner, so it is set to the
      page's margin instead of the text's — --title-left from the window's edge,
      the same measure as the white above it, which is what makes the corner read
-     as a corner. And it is no longer the column's width either: it is fitted to
-     the
-     gutter it now stands in, so that the white either side of it is that same
-     --title-left twice over — page edge to the P, S to the line the resume
-     starts on. See --cue-measure in the one-screen block for the whole of that
-     derivation; here it is only placed.
-     The placement is two insets and no width. `left` puts the box on the
-     margin; `right` puts its far edge --title-left short of the column's left
-     edge, which sits at 50% - --col/2 of .page's padding box — .page's padding
-     is symmetrical, so the column's centre is the box's centre. Percentages of
-     the containing block rather than of the viewport on purpose: they do not
-     count the scrollbar, and both margins are therefore exactly equal on a
-     window that has one. --cue-measure, which does count it, is spent only on
-     the height budget and says so.
-     `width: auto` between the two insets is what makes the fit happen at all —
-     .cut-title is the container --cue-ink is a percentage of, so the word takes
-     its size from whatever the two insets leave. Inline-size containment cannot
-     make that circular: the used width comes from the insets, never from the
-     word inside.
+     as a corner. And it is no longer the column's width either: it is the
+     masthead's measure, --cue-measure, which the one-screen block derives and
+     this one only places.
+     The placement is two insets and no width. `left` puts the box on the margin
+     and `right` is `100% - --title-left - --cue-measure`, so the box comes out
+     exactly --cue-measure wide. It used to be `50% + --col/2 + --title-left` —
+     the far side of the gutter — because the word was fitted to the gutter and
+     took its size from whatever the insets left. It is sized now, so the insets
+     follow the size instead of setting it.
+     Percentages of the containing block rather than of the viewport, still: they
+     do not count the scrollbar, so the left margin is exact on a window that has
+     one — and this band always has one, because the section below gives it one.
+     `width: auto` between the two insets is what makes the box the container
+     --cue-ink is 100% OF: the word takes its drawn size from the box, and the
+     box from the two insets. Inline-size containment cannot make that circular.
      There used to be one more term, --cue-bearing, and it is worth saying why it
      is gone: with type the P's outline started 0.0439em inside its own advance,
      so the box had to be shifted that much further left than the margin for the
@@ -1996,21 +2008,22 @@ body::after {
      outline and ends at the S's — so the box on the margin is the ink on the
      margin, and --cue-ink goes to a flat 100cqw with --cue-lead at zero.
 
-   .cut-title is positioned rather than laid out for one reason: .page is exactly
-   one screen and the panel is the next, so the word can be a flex item of
-   neither — as .page's it would be pushed down by the section below, and as the
-   panel's it could not stand above its own top edge. Pinned to the fold it is in
-   neither, which is also the truth of it. It lands in the same place the flow
-   put it: --slide-h is sized so the column plus --cue-gap reaches exactly the
-   cap top at 100vh - --cue-clip, so the two agree, and the gap under the contact
-   block is what it always was.
+   .cut-title is positioned rather than laid out for one reason: .page is one
+   screen less the strip the landing opens, and the panel is the next, so the
+   word can be a flex item of neither — as .page's it would be pushed down by the
+   section below, and as the panel's it could not stand above its own top edge,
+   which is exactly where it has to stand. Pinned to the fold it is in neither,
+   which is also the truth of it. It lands in the same place the flow put it:
+   --slide-h is sized so the column plus --cue-gap reaches exactly the cap top at
+   100vh - --cue-clip, so the two agree, and the gap under the contact block is
+   what it always was.
    `top`, not `bottom`, because the offset then holds the cap top on that line
-   whatever the box's own height turns out to be.
-   IT IS ALSO THE ONLY THING THE FLIGHT HAS TO TRANSFORM. Absolutely positioned
-   in .page, the box has a document position that does not move with the scroll,
-   so cut-morph.js can express the whole travel as one translate on this element
-   against one measurement of the masthead's baseline — no fixed positioning, no
-   sticky, no transform-origin to get wrong, and nothing here to undo at T = 0.
+   whatever the box's own height turns out to be. And `top: 100vh` is measured
+   from .page's own padding box, not from its height, so shortening .page below
+   moves the word not at all.
+   NOTHING TRANSFORMS IT ANY MORE. Absolutely positioned in .page, the box has a
+   document position that does not move with the scroll and is not asked to: the
+   window moves past it, which is the whole of the travel.
 
    These rules sit at the end of the sheet, not up in the :root block that shares
    their gate: every one of them overrides a base rule of the same specificity,
@@ -2038,27 +2051,26 @@ body::after {
     position: absolute;
     top: 100vh;
     left: var(--title-left);
-    right: calc(50% + var(--col) / 2 + var(--title-left));
+    right: calc(100% - var(--title-left) - var(--cue-measure));
     width: auto;
     max-width: none;
     margin: 0;
   }
-  /* The word crosses from the paper onto the near-black section during the turn,
-     so it cannot keep one colour. --cue-land is the crossing, 0 to 1, written by
-     cut-morph.js off where the DRAWING actually is against the section's top
-     edge; --cue-land-ink is the far end, read by that same script off the
-     masthead's own computed colour so that the section's palette stays declared
-     in one place — the .panel block — and is not copied up here as a literal.
-     --ink is the near end and is left to the cascade, so the theme toggle still
-     governs the word it leaves as.
-     Falls back to plain --ink wherever `color-mix` is not understood, which is
-     the same stance as the rest of this file: the flight still happens, the word
-     simply arrives the colour it started. #73 is the crossing proper. */
-  :root.cue-fly .cut-title > a {
-    color: color-mix(in oklab,
-                     var(--cue-land-ink, var(--ink)) calc(var(--cue-land, 0) * 100%),
-                     var(--ink));
-  }
+  /* THE WORD IS ALWAYS THE COLOUR OF THE GROUND IT IS ABOUT TO BE READ ON, and
+     since the crossing that is one property and no arithmetic: --panel-ink is
+     itself the mix, from the theme's --ink at the top of the page to the
+     section's own ink at the foot of the turn. There used to be a second ramp
+     here — --cue-land, written by cut-morph.js off where the DRAWING was against
+     the section's top edge — because the word crossed a hard seam between a
+     white page and a black section and one colour could not be right for both
+     halves of it. There is no seam now. The whole document crosses together, so
+     the word crosses with everything else and reads --panel-ink like the section
+     does.
+     It is written out rather than inherited because .panel's `color` does not
+     reach the word: the word stands ABOVE the section in the markup, not inside
+     it. Where `color-mix` is not understood the declaration drops and the word
+     stays --ink, which is the same stance as the rest of this sheet. */
+  .cut-title > a { color: var(--panel-ink); }
   .cut-title > a {
     /* The clip comes off — the bottom of the window does the cutting here, and
        the J's hook and the baseline are meant to be seen on the screen below. */
@@ -2082,40 +2094,6 @@ body::after {
        is not clipped. */
     margin-top: calc(-1 * var(--cue-show) * var(--cue-slab));
   }
-  /* The second resting place, and the far end of the turn. With .doorway gone
-     these are the only two ports in the document — `body::before` at the top and
-     this — which is what makes the turn a turn: `scroll-snap-type: y mandatory`
-     means the scroller must COME TO REST on a port, and with nothing between
-     them there is nowhere to stop half way.
-     `start`, so the section arrives with its masthead against the top of the
-     window; the flying word is aimed at that masthead's baseline, so this is
-     also what fixes where the word comes down. When the composition is taller than
-     the window the area is larger than the scrollport, which relaxes snapping
-     inside it rather than switching it off — you can read to the bottom of a
-     tall panel without being pulled back up, and app.js hands the wheel back to
-     the browser past this port for exactly that stretch.
-     What the Rail does, and the crossing into dark, are still #72 and #73. */
-  .panel { scroll-snap-align: start; }
-
-  /* ---- the landing ---------------------------------------------------------
-     Only while cut-morph.js is actually flying the word: it writes .cue-fly on
-     <html> when it has measured a flight it can draw, and takes it off when it
-     cannot — reduced motion, a regime with no turn in it, a masthead it could
-     not find. So the fallback is the plain page, with this h2 drawn.
-     `visibility`, NOT `display: none` and not `opacity`. The box has to stay
-     exactly where it is: it is what sets row one's height, what the subheading
-     hangs off, and — the point — what the flight is aimed at, which cut-morph.js
-     measures off this element itself: a Range over its own text for the ink's
-     left edge, and a zero-sized probe for the baseline. A hidden box still
-     measures. `opacity: 0` would measure too and would also still be
-     hit-tested and still be read out; `visibility: hidden` takes it out of the
-     accessibility tree, which is right, because the section's name comes from
-     the `aria-labelledby` reference — and a directly-referenced hidden element
-     still supplies one.
-     Gated inside this media query with the rest of the turn, because outside it
-     there is no flight: on a page that scrolls as a column the word stays in the
-     column and this is the only PROJECTS the section has. */
-  :root.cue-fly .panel-masthead { visibility: hidden; }
 }
 
 /* ============================================================================
@@ -2152,65 +2130,91 @@ body::after {
    whole screen further down. design/tools/check-capture-contract.py
    is what proves it: 592 / 852 / 80 / 80 and a light mean luminance, unchanged.
 
-   THE EFFECT STACK DOES NOT REACH IT. .fx is --fx-band tall — the fold — so the
-   paper, the halftone and the film all stop a screen and a half above this. The
-   panel is the one part of the document that is not a print. */
-.panel {
-  /* ---- the palette, and it answers to nothing above ---------------------- */
-  /* PURE BLACK, AND NOT THE RENDER'S NEAR-BLACK. The design render's backdrop
-     is #08090a, which is what this was; the panel is set to #000 by choice, so
-     the composition ends at the same black the screen's own bezel does. The one
-     number measured against the old value is --panel-frame-edge below, and the
-     note there says what the two pixels of difference do to it. */
-  --panel-bg:       #000000;
-  --panel-ink:      #f2f1ee;
-  --panel-ink-soft: #dcdad5;
-  --panel-muted:    #8b8983;
-  --panel-rule:     rgba(242, 241, 238, 0.16);
-  /* The Frame's fill and edge. The fill is the window's body: what shows behind
-     the recording before it decodes, what the titlebar's glass is standing on,
-     and the band between the recording and the window's own edge.
-     THE EDGE IS THE RIM ROUND THE WHOLE WINDOW, and it is measured rather than
-     chosen: the render's outer edge peaks at 84 of 255 against a page backdrop
-     of 8, so 0.32 of #f2f1ee. It was 0.1 while the Frame was a placeholder,
-     which is a third of what the render has.
-     THE BACKDROP IS NOW 0 AND THIS ALPHA WAS LEFT WHERE IT WAS, deliberately.
-     Composited on #000 the rim peaks at 77 rather than the render's 84 — seven
-     of 255 on a hairline — and holding the measured 84 would mean 0.347. Not
-     done here because re-deriving the Frame's rim is a change to the Frame, and
-     this one is a change to the backdrop; if the rim ever looks thin against
-     pure black, 0.347 is the number and this is why.
-     WHAT HAPPENS TO IT ALONG THE TITLEBAR DEPENDS ON THE RUNG, and .frame-bar
-     depends on that in turn, so it is worth being exact. Only the shader's
-     canvas is opaque, so only there is this ring covered — and covered by an
-     edge the shader draws itself, at the same place. On the other two rungs the
-     bar's fill is translucent and this ring shows THROUGH it, which is what
-     keeps the window's outline continuous without the bar drawing a rim of its
-     own. Adding one there would put two on the same pixel. */
-  --panel-frame-fill: #131518;
-  --panel-frame-edge: rgba(242, 241, 238, 0.32);
+   THE EFFECT STACK REACHES IT WHERE THE PAGE TURNS, AND USED NOT TO. .fx is
+   --fx-band tall, and outside the turn regime that is still the fold: the paper,
+   the halftone and the film stop a screen and a half above this, and the panel is
+   the one part of the document that is not a print. Inside the turn regime the
+   stack runs to the foot of the page, this section opens printed and light, and
+   the palette below is the far end of a crossing rather than a constant. The
+   landing block at the foot of this sheet is where all of that is written and
+   argued; nothing in THIS block had to change for it. */
+/* ---- the section's palette, and where it ENDS UP ---------------------------
+   AT :root RATHER THAN ON .panel, WHICH IS WHERE IT USED TO BE, and the move is
+   what the crossing costs. The page's own ground crosses to --panel-bg over the
+   turn, and `body` cannot mix toward a colour that exists only on one of its
+   descendants. .panel goes on reading these by inheritance and its own block
+   does not know the difference.
 
-  /* ---- ONE LENGTH, AND EVERYTHING IN HERE IS A SHARE OF IT -------------------
+   The --*-far half is what the section IS once the page has turned, and it is
+   still a dark composition regardless of the theme above it. The half below is
+   what anything on this page actually reads, and outside the turn regime it is
+   the same constant — so a narrow window, a print, and the profile capture all
+   see exactly what they saw before. Inside the turn regime the landing block at
+   the foot of this sheet redeclares those five as mixes starting at --bg/--ink,
+   which is how the section comes to open as light as the page above it. Two
+   properties and not one mix written here, because a custom property that reads
+   itself is a cycle and drops to unset: the near end and the far end cannot
+   share a name.
+
+   The block's old heading said the palette ANSWERED TO NOTHING ABOVE, and half
+   of that is now deliberately untrue: the theme toggle chooses what the section
+   crosses FROM. It still chooses nothing about where it ends up, which is the
+   half that was load-bearing. The other half — that the eight !important
+   overrides the profile capture appends can never reach these — is untouched,
+   and for a better reason than scoping: the capture renders at 592 and the
+   crossing is gated at 1100, so what it sees is these constants.
+
+   PURE BLACK, AND NOT THE RENDER'S NEAR-BLACK. The design render's backdrop is
+   #08090a, which is what this was; the panel ends at #000 by choice, so the
+   composition ends at the same black the screen's own bezel does. The one number
+   measured against the old value is --panel-frame-edge below, and the note there
+   says what the two pixels of difference do to it. */
+:root {
+  --panel-bg-far:       #000000;
+  --panel-ink-far:      #f2f1ee;
+  --panel-ink-soft-far: #dcdad5;
+  --panel-muted-far:    #8b8983;
+  --panel-rule-far:     rgba(242, 241, 238, 0.16);
+
+  --panel-bg:       var(--panel-bg-far);
+  --panel-ink:      var(--panel-ink-far);
+  --panel-ink-soft: var(--panel-ink-soft-far);
+  --panel-muted:    var(--panel-muted-far);
+  --panel-rule:     var(--panel-rule-far);
+
+  /* ---- ONE LENGTH, AND EVERYTHING IN THE SECTION IS A SHARE OF IT ------------
      --panel-w is the composition's own width — the box the masthead, the copy,
-     the points and the Frame are laid out in, NOT the window's. Every length
-     below is a fraction of it, so the section is one drawing at one set of
-     proportions and the only thing that ever changes between windows is how big
-     that drawing is. That is what makes it possible to say the composition fits
-     the screen: a self-similar drawing has ONE height-to-width ratio, and you
-     can solve for the width that lands its height exactly on the screen.
+     the points and the Frame are laid out in, NOT the window's. Every length in
+     the .panel block is a fraction of it, so the section is one drawing at one
+     set of proportions and the only thing that ever changes between windows is
+     how big that drawing is. That is what makes it possible to say the
+     composition fits the screen: a self-similar drawing has ONE
+     height-to-width ratio, and you can solve for the width that lands its
+     height exactly on the screen.
+
+     AT :root RATHER THAN ON .panel, and one thing put it here: in the
+     one-screen band the cut word IS this section's masthead — it does not fly
+     down onto an h2 any more, it stands where the h2 would and the h2 is hidden
+     under it — so the word is drawn at --panel-masthead-size's own cap, and
+     --cue-measure up in the one-screen block has to be able to read it. A
+     property declared on .panel is invisible to :root. Nothing else moved and
+     nothing in .panel had to change: it reads all three by inheritance.
 
      THE TWO THINGS THAT CAN BIND IT, and the smaller wins:
 
        the width  what the page has left across, less the Rail and its gap. The
                   0.972 is 1 − 0.0274, and 0.0274 is the Rail's own width plus
                   --panel-gap as a share of the composition — the same two
-                  fractions written below, added up once here because a track
+                  fractions .panel writes, added up once here because a track
                   cannot be sized from its own siblings. It ROUNDS TOWARDS
                   ASKING FOR LESS, which is the safe direction twice over: the
                   Rail's floor makes it relatively wider on a small window, and
                   `100vw` counts a classic scrollbar the layout does not get.
-                  Over-asking cannot overflow either way — the grid track below
-                  is `minmax(0, …)`, so it is capped by what is actually free.
+                  Over-asking cannot overflow either way — the grid track is
+                  `minmax(0, …)`, so it is capped by what is actually free.
+                  IN THE TURN REGIME THE RAIL LEAVES THE GRID, so this term
+                  loses the 0.972 and the whole width is the composition's; the
+                  landing block at the foot of this sheet re-declares it.
        the height the screen less the page's two margins, divided by the
                   composition's height-as-a-share-of-its-width. That constant
                   measures 0.5634 —
@@ -2232,7 +2236,9 @@ body::after {
                   either of the plinth's two depths: those seven numbers ARE this
                   one. It was 0.5 before the plinth arrived, and the 13% the
                   composition gives up to stand on something is the whole of what
-                  #68 costs the drawing.
+                  #68 costs the drawing. The turn regime re-derives it once more,
+                  for the two terms the landing adds; the block down there shows
+                  that working rather than restating this one.
 
      WHY THIS AND NOT A CEILING ON THE FRAME. Every other way of making the
      section fit takes the fit out of one member and leaves the rest at the size
@@ -2242,9 +2248,56 @@ body::after {
      at every window. Scaling the drawing keeps all of it, including the
      occlusion, at every size. What it spends is width: on a wide, short window
      the composition no longer reaches the page's margins, and `justify-content`
-     below centres what it does use rather than hanging it off the left. */
+     on .panel centres what it does use rather than hanging it off the left. */
   --panel-fit-w: calc((var(--fold) - 2 * var(--corner)) / 0.5651);
   --panel-w: min(calc(0.972 * (100vw - 2 * var(--corner))), var(--panel-fit-w));
+
+  /* The masthead's size, which belongs to .panel's type scale and is declared
+     here only so the cut word can be drawn at it. The comment there is where
+     the 0.0598 is argued. */
+  --panel-masthead-size: calc(0.0598 * var(--panel-w));
+}
+.panel {
+  /* The Frame's fill and edge. The fill is the window's body: what shows behind
+     the recording before it decodes, what the titlebar's glass is standing on,
+     and the band between the recording and the window's own edge.
+     THE EDGE IS THE RIM ROUND THE WHOLE WINDOW, and it is measured rather than
+     chosen: the render's outer edge peaks at 84 of 255 against a page backdrop
+     of 8, so 0.32 of #f2f1ee. It was 0.1 while the Frame was a placeholder,
+     which is a third of what the render has.
+     THE BACKDROP IS NOW 0 AND THIS ALPHA WAS LEFT WHERE IT WAS, deliberately.
+     Composited on #000 the rim peaks at 77 rather than the render's 84 — seven
+     of 255 on a hairline — and holding the measured 84 would mean 0.347. Not
+     done here because re-deriving the Frame's rim is a change to the Frame, and
+     this one is a change to the backdrop; if the rim ever looks thin against
+     pure black, 0.347 is the number and this is why.
+     WHAT HAPPENS TO IT ALONG THE TITLEBAR DEPENDS ON THE RUNG, and .frame-bar
+     depends on that in turn, so it is worth being exact. Only the shader's
+     canvas is opaque, so only there is this ring covered — and covered by an
+     edge the shader draws itself, at the same place. On the other two rungs the
+     bar's fill is translucent and this ring shows THROUGH it, which is what
+     keeps the window's outline continuous without the bar drawing a rim of its
+     own. Adding one there would put two on the same pixel.
+     SPLIT INTO A FAR END AND A READ PROPERTY, exactly as the five above are, and
+     left on .panel rather than lifted to :root because nothing outside the
+     section reads either one. The landing block at the foot of this sheet gives
+     the read half a mix that starts at the page's own colours, so an empty Frame
+     before the crossing is a pane of the same paper the CV is on, outlined in
+     the rule its hairlines are drawn in. */
+  --panel-frame-fill-far: #131518;
+  --panel-frame-edge-far: rgba(242, 241, 238, 0.32);
+  --panel-frame-fill: var(--panel-frame-fill-far);
+  --panel-frame-edge: var(--panel-frame-edge-far);
+
+  /* ---- ONE LENGTH, AND EVERYTHING IN HERE IS A SHARE OF IT -------------------
+     --panel-w is the composition's own width, and it is DECLARED AT :root — see
+     the block immediately above this one, which is where the whole derivation
+     now lives. It was here until the cut word became the masthead: in the
+     one-screen band the word is drawn at --panel-masthead-size's own cap, and
+     :root cannot read a property that exists only on one of its descendants. So
+     the composition's width and the masthead's size went up with the palette,
+     and everything in this block reads them by inheritance exactly as it did.
+     --panel-masthead-size is up there too, for the same reason and no other. */
 
   /* ---- the type scale ---------------------------------------------------- */
   /* THE DESIGN RENDER IS NOT IN THIS REPOSITORY, so these are constants of the
@@ -2267,7 +2320,9 @@ body::after {
      did not, so the drawing changed shape with the window and no single ratio
      could be solved for. A share of --panel-w needs no ends, because --panel-w
      already has both. */
-  --panel-masthead-size: calc(0.0598 * var(--panel-w));
+  /* --panel-masthead-size is declared with --panel-w at :root above, and only
+     because the cut word has to read it. It is the same expression it always
+     was, 0.0598 of the composition, and it belongs to this scale. */
   --panel-sub-size:      calc(0.0380 * var(--panel-w));
   /* The three small sizes, and WHICH TWO OF THEM GET A FLOOR IS THE WHOLE OF
      THIS BLOCK. A share of the composition stops being readable somewhere — a
@@ -3348,9 +3403,16 @@ body::after {
    would be laid over blank paper and would read as a filter on a browser window
    rather than as a treatment of a print.
 
-   The projects section below the fold is therefore untouched, deliberately. It
-   is not a print — see the panel block — and the cut word, once it has flown
-   down onto it, is not being printed either.
+   The projects section below the fold is therefore untouched — OUTSIDE THE TURN
+   REGIME, where that sentence stands exactly as written and there is no second
+   screen for the stack to have an opinion about. Where the page turns it is not
+   true any more, and it was the thing that made the second screen read as a
+   different document: .fx is given a `bottom` down in the landing block so it
+   runs to the foot of the page, and the section opens as the same sheet of paper
+   the CV is on. --fx-band stays the fold and stays what the film and the dissolve
+   below are measured against. The print is faded back out over the turn, which is
+   the one thing that has to be done through the layers' own masks rather than
+   through this element — see the blending warning below.
 
    --fx-fade softens that ending over the last stretch of the band. It defaults
    to 0, because the pictures themselves stop dead there and an effect layer that
@@ -4277,6 +4339,439 @@ body::after {
 @keyframes loading-pulse {
   0%, 100% { opacity: 0.2; }
   50%      { opacity: 1; }
+}
+
+/* ============================================================================
+   THE LANDING, AND THE CROSSING INTO DARK
+   ============================================================================
+   The far half of the turn, and it is AT THE FOOT OF THE SHEET rather than up
+   in the turn block it belongs to, for the reason that block gives about
+   itself one level up: every rule here overrides a base rule of the same
+   specificity, a media query buys no specificity at all, and the rules being
+   overridden — the whole of the .panel block and the effect stack — are
+   written BELOW the turn. Moved up there with the rest of the turn, the half
+   that touches .panel silently loses and the page comes out looking like the
+   landing was never written. Same gate, deliberately: the two blocks are one
+   idea and have to be kept in step with each other and with the one-screen
+   block near the top. */
+@media (min-width: 1100px) and (min-height: 700px) {
+  /* ---- the landing ------------------------------------------------------------
+     THE WORD DOES NOT COME DOWN TO THE SECTION; THE SECTION COMES UP TO THE WORD.
+     That one sentence is the whole of this block, and every length in it follows
+     from it mechanically.
+
+     The word's cap top sits at --cue-clip above the fold and no scroll position
+     can change that — it is `top: 100vh` less the cut, in the document, forever.
+     The section's own masthead sits --panel-mast-top below the section's top
+     edge, which is what a line of Host Grotesk at that size does inside a line
+     box of 0.86 (see the arithmetic on --panel-frame-drop, which is the same
+     three metrics one line further down). For the word to STAND WHERE THAT
+     MASTHEAD WOULD, the section's top edge has to be --panel-mast-top above the
+     word's cap top — which is above the fold. So it is: .page gives up exactly
+     that much height and the section begins in what .page has let go of.
+
+     Everything else falls out:
+
+       .page min-height    one screen less the strip the section now occupies.
+                           Not a negative margin on .panel, which is the other
+                           way to write it and is worse: the section's box would
+                           then overlap .page's, and .page's own white would be
+                           painted over by whatever the section put there. Giving
+                           the strip up is the honest form, and it moves nothing
+                           in the CV — .col carries `margin-bottom: auto`, so the
+                           column stays at the top and the slack under it is what
+                           shrinks. `100vh` and not --fold, to match the `top`
+                           the word is pinned by.
+       scroll-margin-top   puts the snap PORT on the word's landing rather than
+                           on the section's edge, so the turn ends with the cap
+                           top on --title-top — the same line the CV's own name
+                           starts on, one screen up. It is the edge's inset less
+                           the mast top, which is the same number read the other
+                           way round.
+       min-height          gives the section exactly what it takes, so the
+                           document is two screens and no more: .page + this =
+                           --fold + the landing. That is what lets cut-morph.js
+                           read plain scroll fraction, and it is why the morph
+                           finishes exactly as the scroll does.
+       padding-top         spent by the landing instead. The other three sides
+                           keep --corner.
+
+     WHY THE SECTION'S OWN MASTHEAD STAYS IN THE MARKUP AND ONLY GOES INVISIBLE.
+     Its box is load-bearing three times over: it is row one's stated height, it
+     is what the subheading's second line hangs off — which is what makes the
+     Frame's bite exact — and it is the slot the word now occupies. Take the box
+     out and row one collapses onto the subheading, the paragraph beside it in
+     row one becomes what sizes the row, and the subheading sinks away from the
+     word it is supposed to be the next line of. `visibility: hidden` keeps every
+     one of those and draws nothing. It also keeps the accessible name, which the
+     `aria-labelledby` on the section points at — a directly-referenced hidden
+     element still supplies one — where `display: none` would not.
+     It is unconditional here, where it used to be gated on a class cut-morph.js
+     wrote: there is no script in the landing any more, so there is no state to
+     be in. A browser that runs nothing gets this. */
+  :root {
+    /* Where the masthead's cap top sits inside its own line box, in ems of its
+       font size. Host Grotesk spans 1.330em ascent-to-descent against .panel's
+       0.86 line-height, so the half-leading is (0.86 - 1.330)/2 = -0.235, the
+       baseline lands at -0.235 + 1.015 = 0.780, and the cap top is 0.700 above
+       that. The same three numbers as --panel-frame-drop, one line up. */
+    --panel-mast-top: calc(0.080 * var(--panel-masthead-size));
+
+    /* THE COMPOSITION'S WIDTH, RE-SOLVED FOR THE LANDING. Two terms move.
+       The Rail leaves the grid (below), so the width branch is the whole of what
+       the page has across rather than 0.972 of it.
+       And the height branch has to be re-derived, because the box the drawing is
+       fitted into is no longer "the screen less two margins". It is
+
+         --fold - --title-top + --panel-mast-top - --corner
+
+       — the section's own min-height less its one remaining padding — and
+       --title-top is --corner + nhl while --panel-mast-top is 0.080 x 0.0598 of
+       the width being solved for. Collecting that last term onto the left:
+
+         (0.5634 + ... ) W = --fold - 2 x --corner - nhl
+          0.5634 W - 0.004784 W = ...
+          0.558616 W            = --fold - 2 x --corner - nhl
+
+       0.5603 is what is written, which is that plus the same third of a percent
+       of slack the base constant carries and for the same two reasons. RE-DERIVE
+       IT alongside the base one: 0.5634 is the composition's own height ratio
+       and is shared by both. */
+    --panel-fit-w: calc((var(--fold) - 2 * var(--corner)
+                         - var(--name-half-leading)) / 0.5603);
+    --panel-w: min(calc(100vw - 2 * var(--corner)), var(--panel-fit-w));
+  }
+  .page { min-height: calc(100vh - var(--cue-clip) - var(--panel-mast-top)); }
+  /* The second resting place, and the far end of the turn. With .doorway gone
+     these are the only two ports in the document — `body::before` at the top and
+     this — which is what makes the turn a turn: `scroll-snap-type: y mandatory`
+     means the scroller must COME TO REST on a port, and with nothing between
+     them there is nowhere to stop half way.
+     When the composition is taller than the window the area is larger than the
+     scrollport, which relaxes snapping inside it rather than switching it off —
+     you can read to the bottom of a tall panel without being pulled back up, and
+     app.js hands the wheel back to the browser past this port for exactly that
+     stretch. */
+  .panel {
+    scroll-snap-align: start;
+    scroll-margin-top: calc(var(--title-top) - var(--panel-mast-top));
+    min-height: calc(var(--fold) - var(--title-top) + var(--panel-mast-top));
+    padding-top: 0;
+    /* NO GROUND OF ITS OWN, because the document has one now and it is body's —
+       see the crossing below. Two things need this rather than tolerate it: the
+       section's box begins above the fold, so an opaque ground here would paint
+       over the last strip of the three corner pictures, which sit at z-index -1
+       on the canvas and end at the fold; and one ground painted once cannot
+       disagree with itself part-way through a scroll-driven crossing, which two
+       elements holding the same mix demonstrably can when only one of them is
+       eased. */
+    background: none;
+    /* ONE COLUMN. The Rail is out of flow below, so the composition's own left
+       edge is the panel's content edge — --corner from the page's edge, which is
+       exactly where the word stands. `start` and not `center`: the drawing hangs
+       off the word, and on a window where the width binds rather than the height
+       the leftover has to go under the composition rather than half of it above,
+       which would push the subheading off the word's line. */
+    grid-template-columns: minmax(0, var(--panel-w));
+    justify-content: start;
+  }
+  .panel-inner { align-self: start; }
+  .panel-masthead { visibility: hidden; }
+  /* THE RAIL MOVES OUT INTO THE PAGE'S MARGIN, which is what "the composition
+     starts where the word starts" costs. In the grid it holds the first column,
+     and every column after it — the masthead's included — is pushed right by its
+     width and a gutter, so the word and the section's own title could not be set
+     to the same line. Out of flow and standing in --corner instead: it is one
+     line of vertical type, the margin is exactly the white the page already
+     leaves there, and an index in the margin is a thing a printed page does.
+     `left`, `top` and `bottom` are against .panel's padding box, which is its
+     whole box — absolute insets ignore padding — so `left: 0` is the window's
+     edge and the width IS the margin, with .panel-rail's own `align-items:
+     center` putting the type down the middle of it. */
+  .panel-rail {
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: var(--corner);
+    width: var(--corner);
+  }
+
+  /* ---- the crossing into dark, #73 --------------------------------------------
+     THE SECOND SCREEN IS THE SAME SHEET OF PAPER AS THE FIRST. The page opens as
+     one document, in whatever theme the reader chose, printed with the same
+     stack of effects from top to bottom — and scrolling is what takes it into the
+     dark. It takes ALL of it, the section being arrived at and the CV being left,
+     on one number, so the two screens are never two different documents.
+
+     Gradual, driven by scroll position, and reversible — all three are #73's, and
+     the third is the one with teeth: a one-way switch would mean the front page's
+     theme toggle silently stopped working after a reader had scrolled once, which
+     reads as a defect rather than as a design. --dark going back to 0 on the way
+     up is the whole of the reversal.
+
+     WHY JAVASCRIPT WRITES IT AND A SCROLL TIMELINE DOES NOT. #73 names the hazard
+     and it is not hypothetical: the author's GitHub profile is an hourly
+     screenshot of this page taken with Playwright's `animations: "disabled"`,
+     which fast-forwards finite CSS animations to their END state. A scroll-driven
+     animation on a registered property is the elegant way to write this and would
+     render the profile preview fully dark at scroll 0 while every geometry
+     assertion still passed — silent, and only visible on a page in another
+     repository. Read off scroll position in script, --dark is 0 at scroll 0 under
+     any capture setting. Both properties are also DECLARED HERE, at the values
+     they hold at the top of the page, so a browser that never runs arrival.js —
+     or a reader who asked for reduced motion — gets the CV on paper with the
+     section present and nothing to watch. That is #73 asking for the transition
+     removed rather than shortened, and it is free.
+
+     `color-mix` and not two grounds crossfading, so there is one colour at every
+     frame rather than two stacked ones and no compositing artefact where they
+     meet. Where `color-mix` is not understood every declaration below is dropped
+     and the page is simply the page. */
+  :root {
+    --dark: 0;
+    --turn: 0;
+    --enter: 1;
+
+    /* ---- THE INK DOES NOT CROSS WHEN THE GROUND DOES -------------------------
+       A page that starts as dark type on paper and ends as light type on black
+       has to take its type THROUGH its own ground, and there is no palette that
+       avoids it: both are monotone, they start on opposite sides, so they meet.
+       The only question is when, and how fast.
+
+       Crossed on the same number they meet in the middle, at the one moment the
+       ramp is moving fastest and the type is largest on screen — measured on the
+       page at --dark 0.5, the section's ink came out at oklab L 0.586 against a
+       ground of 0.569, which is not low contrast, it is no contrast.
+
+       --dark-ink is --dark remapped: nothing until the ground is nearly
+       two-thirds gone, then across in a quarter of what is left. The meeting
+       moves late, to --dark 0.69, where the ground is already plainly dark and
+       what the eye reads is ink developing rather than a page washing out; and
+       the two separate about two and a half times faster through it, so the
+       moment is about half as long as well. It cannot be removed and this does
+       not pretend to — it is put where a moving composition can carry it.
+       The ends are exactly --dark's, so nothing about where this page starts or
+       stops is decided here.
+
+       MEASURED, and worth repeating whenever any of the six colours moves. Swept
+       at 41 values of --dark against the real page, the near-black inks come
+       within 0.06 of oklab L of the ground only between --dark 0.65 and 0.675,
+       which is 13px of an 873px turn. */
+    --dark-ink: clamp(0, calc((var(--dark) - 0.62) / 0.26), 1);
+
+    /* ---- AND THE GREYS NEED THEIR OWN, EARLIER AND FASTER --------------------
+       --dark-ink is the wrong remap for --ink-soft, --muted and --rule-soft, and
+       the same sweep says so: crossed on it they sit within 0.06 L of the ground
+       from --dark 0.425 to 0.525 — four times as long as the black ink, and 70px
+       of the turn with the subheading and every small grey line washed out of it.
+
+       The reason is not the remap, it is the colours. A near-black ink travels
+       from L 0.21 to 0.96 and can be made to do it late and fast. A soft grey
+       goes from 0.525 to 0.63: it barely moves at all, so it just sits there
+       while the ground sweeps down through it, and NO remap of a journey that
+       short can outrun a ground crossing the whole range.
+
+       What can be done is to spend the little travel it has exactly where the
+       ground arrives. The ground reaches L 0.525 at --dark 0.443, so this ramps
+       the greys across a fourteenth of the turn centred there. The two then
+       separate about 2.75 times faster, and the measured span within 0.06 falls
+       from 0.10 of --dark to 0.025 — the same two samples of the sweep the black
+       ink costs, and the same ~15px of scroll.
+       Both ends are exactly --dark's, as above. */
+    --dark-soft: clamp(0, calc((var(--dark) - 0.41) / 0.07), 1);
+
+    /* The section's palette, as the FAR END of a crossing rather than as five
+       constants. At --dark 0 --panel-bg IS --bg and --panel-ink IS --ink, so the
+       section opens as light as the page above it and the whole of the .panel
+       block — its ground, its rules, all four of its type colours — comes along
+       without knowing anything has happened to it. */
+    --panel-bg:       color-mix(in oklab, var(--panel-bg-far)
+                                          calc(var(--dark) * 100%), var(--bg));
+    --panel-ink:      color-mix(in oklab, var(--panel-ink-far)
+                                          calc(var(--dark-ink) * 100%), var(--ink));
+    --panel-ink-soft: color-mix(in oklab, var(--panel-ink-soft-far)
+                                          calc(var(--dark-soft) * 100%), var(--ink-soft));
+    --panel-muted:    color-mix(in oklab, var(--panel-muted-far)
+                                          calc(var(--dark-soft) * 100%), var(--muted));
+    --panel-rule:     color-mix(in oklab, var(--panel-rule-far)
+                                          calc(var(--dark-soft) * 100%), var(--rule-soft));
+
+    /* The near ends of the CV's own four, captured once so the mixes on `body`
+       are not self-referential — a custom property that reads itself is a cycle
+       and drops to unset. Taken at :root, so the theme toggle still chooses what
+       "the near end" is, and so that the five mixes above go on reading the
+       theme's --ink rather than the crossed one. */
+    --ink-0:   var(--ink);
+    --soft-0:  var(--ink-soft);
+    --muted-0: var(--muted);
+    --rule-0:  var(--rule-soft);
+  }
+  /* The Frame's own chrome crosses with the rest of the section, and its near
+     ends are the page's: an empty Frame before the crossing is a pane of the same
+     paper, outlined in the rule the CV's hairlines are drawn in. */
+  .panel {
+    --panel-frame-fill: color-mix(in oklab, var(--panel-frame-fill-far)
+                                            calc(var(--dark) * 100%), var(--bg));
+    --panel-frame-edge: color-mix(in oklab, var(--panel-frame-edge-far)
+                                            calc(var(--dark-soft) * 100%), var(--rule-soft));
+  }
+  /* ONE GROUND FOR THE DOCUMENT, and it is body's. --panel-bg is the mix, so
+     body and the section hold the same colour at every value of --dark and the
+     seam between the two screens is a seam in nothing.
+
+     AND ITS TRANSITION HAS TO GO, which is not tidying. body carries a 0.35s ease
+     on background-color and color for the theme toggle — a considered fade
+     between two settled states. This crossing is not two settled states, it is a
+     function of scroll position, and a 0.35s ease on it means the ground arrives
+     a third of a second after the scroll that asked for it while nothing else in
+     the crossing is eased at all: the word's colour, the print's mask and the
+     Frame's fill all track the scroll exactly, so the eased one lags the rest.
+     One ground means one timing, and the timing a scroll-driven crossing wants is
+     none. The cost is that the theme toggle stops fading ON WIDE WINDOWS ONLY.
+     The proper fix is for the toggle to ask for its own fade — a class it sets
+     for the length of it — rather than for the page to leave one running
+     permanently in case it does; that belongs with the toggle, not here.
+
+     THE CV'S OWN INK CROSSES TOO, and it is declared here rather than on .page
+     because almost nothing in the CV names a colour: the four type blocks take
+     theirs by INHERITANCE from `body { color: var(--ink) }`, and body is .page's
+     PARENT rather than one of its descendants. An --ink redeclared on .page is
+     read by the handful of rules that name it and by no glyph on the page.
+     Nothing in the section is caught by the move: .panel sets its own `color`
+     from --panel-ink, every rule under it reads a --panel-*, and those five mixes
+     are resolved at :root, above this. */
+  body {
+    background: var(--panel-bg);
+    transition: none;
+    --ink:       color-mix(in oklab, var(--panel-ink-far)
+                                     calc(var(--dark-ink) * 100%), var(--ink-0));
+    --ink-soft:  color-mix(in oklab, var(--panel-ink-soft-far)
+                                     calc(var(--dark-soft) * 100%), var(--soft-0));
+    --muted:     color-mix(in oklab, var(--panel-muted-far)
+                                     calc(var(--dark-soft) * 100%), var(--muted-0));
+    --rule-soft: color-mix(in oklab, var(--panel-rule-far)
+                                     calc(var(--dark-soft) * 100%), var(--rule-0));
+  }
+
+  /* ---- the print runs to the foot of the document, and leaves with the paper --
+     THE FOOT OF THE STACK IS THE FOOT OF THE DOCUMENT, AND THAT IS A LENGTH
+     NOTHING HERE CAN WRITE. The obvious form is a taller --fx-band, and it is
+     wrong and measurably so: .panel's own height is a min-height and a FLOOR, and
+     the composition can stand past it on a window where the width binds. So
+     `bottom` instead, which asks layout the question only layout can answer. .fx
+     is already absolute in body's coordinates and body is the whole document, so
+     top 0 / bottom 0 IS the document at every width. `height: auto` because the
+     base declaration sets one and two of the three would be over-constrained.
+
+     --fx-band is deliberately left alone. It is not the element's height any
+     more, it is the fold, and both things still measured against it want the
+     fold: the film draws one 35mm frame per screen rather than one stretched over
+     two, and the foot dissolve dissolves over a share of a screen. */
+  .fx {
+    height: auto;
+    bottom: 0;
+  }
+  /* THE FADE IS IN EACH LAYER'S OWN MASK AND IS NOT AN OPACITY, and that is not a
+     preference. The warning at the top of .fx says a z-index — or a mask, or an
+     isolation — on the CONTAINER breaks the whole stack, because an isolated
+     group hands every blending child a transparent backdrop instead of the page,
+     and `overlay` and `soft-light` are no-ops over nothing: the layers stop
+     blending and start painting, and the page comes out flat grey. `opacity`
+     below 1 isolates for exactly the same reason, and would do it the moment this
+     crossing left zero — a pop in the middle of the turn, not a fade. Each
+     layer's own opacity is already spent on its strength. A mask on the LAYER is
+     what the sheet says is safe, and this is the sheet's own declaration with one
+     thing added: the alpha of its first stop.
+     A UNIFORM ALPHA AND NOT THE FOOT DISSOLVE TURNED UP. --fx-fade dissolves from
+     the foot UPWARD, which was the same thing while the band ended at the fold
+     and is not once it runs to the end of the document: at full strength it would
+     take the print off the section and leave the CV — the screen the reader can
+     still see — fully printed. "The paper is leaving" is uniform. With --fx-fade
+     at its default 0 both stops sit at 100%, the gradient is one colour, and the
+     only thing varying is how transparent that colour is. */
+  .fx > * {
+    mask-image: linear-gradient(to bottom,
+      rgb(0 0 0 / calc(1 - var(--dark))) calc(100% - var(--fx-fade) * var(--fx-band)),
+      rgb(0 0 0 / 0) 100%);
+  }
+  /* AND THE PRINT IS KEPT OFF THE SECTION'S TYPE EXACTLY AS IT IS KEPT OFF THE
+     CV'S. data-fx-no-text and data-fx-no-gallery are the page's own answer to
+     "this effect may lie on the paper but not on the words", and the mechanism is
+     paint order — the excluded content is lifted above the layers it names. Until
+     the band reached this far the section was below it and had nothing to be
+     lifted out of; now that it is covered, leaving it out would print halftone
+     dots over the section's type and none over the CV's, one screen apart, which
+     reads as a bug in the effect rather than as a choice.
+     The Rail takes the number and not `position`, for the reason .cut-title does
+     two hundred lines up: it is `absolute` in this block, and this selector — a
+     pseudo-class, an attribute and a class — outweighs the bare class that put it
+     there, so writing `relative` would move it rather than stack it.
+     THE STAGE AND NOT THE FRAME takes the gallery lift, which is the one thing
+     here that is not a copy of the CV's rule. The Frame carries `z-index: 1` to
+     paint over the subheading it occludes, and that only works while .panel-stage
+     is not a stacking context — its own block says so at length. Lifting the
+     Frame to --fx-gallery-z would not change that; lifting the STAGE puts the
+     whole of it level with the type at 17, where it is last in the markup and
+     still wins, and leaves the plinth and the Frame ordered inside it exactly as
+     they were. */
+  :root[data-fx-no-text] .panel-head,
+  :root[data-fx-no-text] .panel-copy,
+  :root[data-fx-no-text] .panel-points {
+    position: relative;
+    z-index: var(--fx-text-z);
+  }
+  :root[data-fx-no-text] .panel-rail { z-index: var(--fx-text-z); }
+  :root[data-fx-no-gallery] .panel-stage { z-index: var(--fx-gallery-z); }
+
+  /* ---- the corner pictures leave ahead of the page ----------------------------
+     All three are boxes that start at the top of the document and stop at the
+     fold, and that was the whole of "they are the composition of the page you
+     open, and they leave as you scroll" while the section began at the fold. It
+     begins ABOVE the fold now, so each picture's own bottom edge — a hard crop,
+     by design, since the plate refuses a soft one — would sit inside the second
+     screen's top strip for the whole of the turn.
+     So they are lifted, at a rate slightly above the scroll's. --turn is the
+     turn's own progress, 0 to 1, and --cue-clip + --title-top is exactly the
+     distance between the fold and the landing — so at the far end of the turn
+     each picture's foot is on the top edge of the window and not a pixel of any
+     of them is left in the section. Derived rather than dialled: it is the one
+     lift that clears them precisely as the page comes to rest.
+     A transform and not `top`, so nothing here costs a layout; they are already
+     at z-index -1 and a transform does not move them out of it. */
+  body::after, .car, .eye {
+    transform: translateY(calc(-1 * var(--turn) * (var(--cue-clip) + var(--title-top))));
+  }
+  /* ...AND THEY LEAVE WITH THE PRINT AS WELL AS AHEAD OF IT, which is the
+     lift's one loose end rather than a second idea. The lift takes each
+     picture's foot off the second screen, but the foot is a hard crop —
+     deliberately, the plate's own block says why a dissolve was refused —
+     and it now travels UP THROUGH THE FIRST SCREEN over the whole turn
+     instead of sitting on the fold where the dark used to start. Against a
+     page that is still paper, that edge is a visible tonal step crossing the
+     CV. Fading them on the same number the print fades on takes it out, and
+     is the truthful reading anyway: these three are the paper's treatment,
+     not content, and the paper is what is leaving.
+     Each keeps its own opacity as the near end, so nothing about how far any
+     of them recedes into the page at rest is decided here. */
+  body::after { opacity: calc(var(--plate-opacity) * (1 - var(--dark))); }
+  .car        { opacity: calc(var(--car-opacity)   * (1 - var(--dark))); }
+  .eye        { opacity: calc(var(--eye-opacity)   * (1 - var(--dark))); }
+
+  /* ---- and the composition is not drawn until the turn has started ------------
+     The section's top edge is --cue-clip + --panel-mast-top above the fold, which
+     is the price of standing the word in the masthead's slot, and row one starts
+     there. The subheading is a masthead's line further down and so is safely
+     below the fold; the PARAGRAPH beside it is not — its first two lines would be
+     drawn in the bottom-right of the first screen, at rest, before the reader has
+     scrolled at all. The Rail's top item is in the same strip.
+     --enter is 0 there and 1 by a third of the way into the turn, which is enough
+     to keep both off the opening composition and early enough that neither
+     appears to arrive late. It is deliberately only these two: everything else in
+     the section is below the fold at rest and has nothing to hide from, and an
+     opacity on a block that carries a z-index or contains one would make a
+     stacking context where the paint order above depends on there not being one.
+     Both of these are leaves. */
+  .panel-copy, .panel-rail { opacity: clamp(0, calc(var(--enter) / 0.34), 1); }
 }
 
 /* ---- print: clean text CV, no photos ------------------------------------- */

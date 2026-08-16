@@ -1,19 +1,23 @@
 /* The cut title's morph — PROJECTS turning from Friz Quadrata into a sans as
- * the page scrolls, and flying out of the CV's bottom-left corner into the
- * projects section's masthead as it turns. The morph and the flight are two
- * halves of one device and read the same scroll: the word the section is titled
- * with IS the word cut off the foot of the page above it, arriving in the face
- * it turned into. The flight block further down is the whole of the second half.
+ * the page scrolls. That is the whole of what this file does now: it draws
+ * eight letters against one number, and the number is how far through the page
+ * turn the reader is.
  *
- * ONE PROJECTS, EVER. That is the rule the whole device is built to keep. The
- * section's own masthead goes `visibility: hidden` under `.cue-fly` and this
- * word takes its place, so the reader never sees two of the word — not at rest
- * on either screen, and not at any frame of the turn between them.
+ * ONE PROJECTS, EVER. That is the rule the device is built to keep, and it is
+ * kept in the stylesheet rather than here: the section's own masthead goes
+ * `visibility: hidden` and this word stands in its slot, so the reader never
+ * sees two of the word — not at rest on either screen, and not at any frame of
+ * the turn between them.
  *
- * AND THE WORD NEVER RESIZES. It leaves the fold at the size the composition
- * cut it at and arrives at that same size; the travel is a translation and
- * nothing else. #83 scaled it to the masthead's cap on the way down, which grew
- * it by half, and that is the one thing this is not allowed to do.
+ * THE WORD NEITHER MOVES NOR RESIZES, and this file no longer contains either
+ * half of that. It used to fly: the whole travel from the CV's bottom-left
+ * corner onto the masthead's baseline was one measured translate written from
+ * here, because where the word landed was another element's ink and only layout
+ * knew how wide a word of Host Grotesk was. The word does not travel any more —
+ * it stands still and the document scrolls past it, which puts it at the top of
+ * the second screen for free — and it is drawn at the masthead's own cap from
+ * the start, so there is nothing left to measure. See the landing block in
+ * styles.css, which is where all of that now is.
  *
  * NOTHING ON THE PAGE DEPENDS ON THIS FILE, the same stance effects.js takes. It
  * is loaded last, and a browser that never runs it — parse error, blocked
@@ -42,11 +46,6 @@
  * still Friz's and none of them moves during the morph. The cap line stays where
  * the cut is taken from.
  *
- * NOTHING ABOUT THE FLIGHT IS DECLARED IN CSS, and that is not an oversight —
- * where the word lands is another element's ink and only layout knows how wide
- * a word of Host Grotesk is. See the flight block for the measurement, and the
- * turn block in styles.css for the half that IS declared: where the word starts.
- *
  * TO CHANGE THE FACE. design/cut-title/morph-tuner.html previews all of them
  * against the real page; it drives this file through window.__cutMorph. To make
  * a choice permanent, re-run the build script with --face <slug> and it rewrites
@@ -69,8 +68,7 @@
   /* cut-morph:data end */
 
   var svg = document.querySelector(".cut-title__word");
-  var host = document.querySelector(".cut-title");
-  if (!svg || !host || !FRIZ || !FACE) return;
+  if (!svg || !FRIZ || !FACE) return;
 
   // ---- paths ---------------------------------------------------------------
 
@@ -173,22 +171,24 @@
 
   var root = document.documentElement;
   var panel = document.querySelector(".panel");
-  var masthead = document.querySelector(".panel-masthead");
 
-  /* WHERE THE TURN ENDS, in document pixels: the top of the projects section,
-     which is the port `scroll-snap-align: start` rests on and the scroll position
-     at which the word is home. Not the document's own end, which is the same
-     number only when the composition happens to be exactly one screen tall.
-     It usually is now — the panel scales its composition to the height the fold
-     leaves it — but it was not before that, and it still is not on a window short
-     enough that the section's floored type outgrows the drawing. Dividing by the
-     document's end there would leave the word still turning after it had
-     landed. */
+  /* WHERE THE TURN ENDS, in document pixels: the section's SNAP PORT, which is
+     the scroll position the page comes to rest at and the one at which the word
+     is home. Not the section's top EDGE, which is a different number since the
+     landing — the section begins above the fold so that the word can stand in
+     its masthead's slot, and `scroll-margin-top` is exactly that difference. And
+     not the document's own end either, which is the same number only when the
+     composition happens to be exactly one screen tall; on a window short enough
+     that the section's floored type outgrows the drawing it is not, and dividing
+     by it would leave the word still turning after it had landed.
+     A page too short to scroll returns 0, and progress() below stays at Friz
+     rather than dividing by nothing. */
   function landing() {
     var max = (root.scrollHeight || 0) - (window.innerHeight || 0);
     if (max <= 1) return 0;
     if (!panel) return max;
     var top = panel.getBoundingClientRect().top + (window.pageYOffset || root.scrollTop || 0);
+    top -= parseFloat(window.getComputedStyle(panel).scrollMarginTop) || 0;
     return Math.max(1, Math.min(max, top));
   }
 
@@ -206,209 +206,16 @@
     return t < 0 ? 0 : t > 1 ? 1 : t;
   }
 
-  /* ---- the flight ----------------------------------------------------------
-     The letters turn from Friz into Host Grotesk over the same scroll that
-     carries the page from the CV to the projects section — and at the end of it
-     the section prints PROJECTS, in Host Grotesk, as its masthead. So the word
-     does not turn and then leave. It turns and LANDS: over the turn it travels
-     out of the page's bottom-left corner and onto the masthead's ink, and the
-     masthead itself is hidden under .cue-fly so that the word is not drawn twice.
-
-     WHY THIS IS MEASURED AND NOT DECLARED. Where the word starts is CSS to the
-     pixel — see the turn block in styles.css — but where it ENDS is another
-     element's ink, and how wide a word of Host Grotesk is at a given size is
-     something only layout knows. There is no expression for it, so there is no
-     expression here: both boxes are read off the page, and the one number in
-     between is scroll.
-
-     BOTH BOXES ARE IN DOCUMENT SPACE, which is what keeps this to one transform
-     and no scroll compensation. .cut-title is absolutely positioned inside
-     .page — a box whose document position does not move — and the masthead sits
-     in ordinary flow below it, so the vector between them is a constant of the
-     layout. Ordinary scrolling supplies the rest of the travel for free. At
-     T = 0 the transform is the identity and nothing here has touched the page.
-
-     THE WORD DOES NOT RESIZE, and that is the one thing this flight is not
-     allowed to do. #83 scaled it to the masthead's cap so the two words would be
-     congruent — at 1440 that is 49px of cap against 75, so the word grew by half
-     on the way down — and the word at the fold is the size the composition wants
-     it. So the travel is a TRANSLATION and nothing else: same size at both ends,
-     same size every frame between them.
-
-     WHAT IS AIMED AT IS THE BASELINE. With the scale gone the two words cannot
-     fill the same box — one is a cap of 49 and the other of 75 — so the landing
-     is the one alignment a line of type has: the word comes to rest ON the
-     masthead's baseline, at its ink's left edge, which is where a line of that
-     size would sit if the h2 were set at it. The cut box IS the cap slab, so its
-     own bottom edge is the word's baseline and no cap height has to be measured
-     at either end.
-     The masthead's baseline comes from the layout rather than from a canvas: a
-     canvas's idea of the line box and the layout's can differ by a fraction
-     under font fallback, and a zero-sized inline-block on the baseline sits with
-     its box exactly on it. That is what the probe below is.
-     What lands where the CAP would have is the top of the word, which now sits
-     about 26px lower in the masthead's slot than the design's own cap line. The
-     slot itself does not move: the h2 keeps its box under `visibility: hidden`,
-     so row one's height and where the subheading starts are the design's still.
-
-     COLOUR is the crossing into dark in miniature and is deliberately no more
-     than that. The word leaves as --ink on paper and lands as the section's own
-     --panel-ink on near-black, and it is ramped between them over the stretch
-     where the word actually crosses the section's top edge — from the moment its
-     lowest visible ink reaches that edge to the moment its highest does. In the
-     middle of that ramp the word genuinely is half on paper and half on the dark,
-     and one colour cannot be right for both; the turn is travelling at about
-     2000 px/s there. #73 is the ticket that owns the crossing properly. */
-
-  var flight = null;
-
-  /* An element's top-left in DOCUMENT space, walked up the offsetParent chain
-     rather than taken from getBoundingClientRect.
-     THE DIFFERENCE IS NOT PEDANTRY AND THIS IS THE BUG IT FIXES. A client rect
-     is the TRANSFORMED box, and .cut-title lives inside .page, which spends its
-     first 0.9s translated 8px down by the page-in reveal. Measured with rects
-     during that animation — which is exactly when this file first runs, being the
-     last script on the page — the word's document position came out 8px low, the
-     vector to the masthead 8px short, and the word landed 8px above the line it
-     was aimed at, on every load, invisibly. Offsets are layout, so no transform
-     on this element or on anything above it can reach them, and the flight's own
-     transform cannot feed back into its own measurement. */
-  function docTop(el) {
-    var y = 0;
-    for (var n = el; n; n = n.offsetParent) y += n.offsetTop;
-    return y;
-  }
-  function docLeft(el) {
-    var x = 0;
-    for (var n = el; n; n = n.offsetParent) x += n.offsetLeft;
-    return x;
-  }
-
-  /* Where the masthead's alphabetic baseline is, in viewport pixels. */
-  function baselineY(el) {
-    var probe = document.createElement("span");
-    probe.setAttribute("aria-hidden", "true");
-    probe.style.cssText = "display:inline-block;width:0;height:0;vertical-align:baseline";
-    el.appendChild(probe);
-    var y = probe.getBoundingClientRect().bottom;
-    el.removeChild(probe);
-    return y;
-  }
-
-  /* Everything the flight needs, taken once per layout. Any of it missing — no
-     section, no masthead, or a regime where the word is still a block in the
-     column — leaves `flight` null, .cue-fly off, and the page exactly as CSS
-     alone draws it, with the section's own masthead drawn. */
-  function measure() {
-    flight = null;
-    root.classList.remove("cue-fly");
-    host.style.transform = "";
-    host.style.zIndex = "";
-    host.style.removeProperty("--cue-land");
-    host.style.removeProperty("--cue-land-ink");
-    if (!panel || !masthead) return;
-    // Read off the cascade rather than restated here: `position: absolute` on
-    // .cut-title is written by the one-screen media query and nowhere else.
-    if (window.getComputedStyle(host).position !== "absolute") return;
-
-    // The cut box IS the cap slab and its bottom edge IS the word's baseline —
-    // see the three nested boxes in styles.css.
-    var slab = host.firstElementChild;
-    if (!slab) return;
-    if (!(slab.offsetWidth > 0) || !(slab.offsetHeight > 0)) return;
-    var slabRect = slab.getBoundingClientRect();
-    var pic = svg.getBoundingClientRect();
-
-    /* The masthead's ink and baseline are the two things offsets cannot give, so
-       they are taken from rects and immediately re-expressed as offsets FROM the
-       masthead's own box. Only the deltas inside that one element come from
-       rects, and nothing above .panel is transformed, so they are exact. */
-    var mBox = masthead.getBoundingClientRect();
-    var range = document.createRange();
-    range.selectNodeContents(masthead);
-    var ink = range.getBoundingClientRect();
-
-    flight = {
-      // the cut word's cap slab, in document space
-      fromX: docLeft(slab),
-      fromY: docTop(slab),
-      // where it is going: the masthead's ink left, and its baseline less the
-      // word's OWN cap, since the word arrives at the size it left at
-      toX: docLeft(masthead) + (ink.width > 0 ? ink.left - mBox.left : 0),
-      toY: docTop(masthead) + (baselineY(masthead) - mBox.top) - slab.offsetHeight,
-      /* The DRAWING against the cap box, for the colour ramp: it is the picture
-         that crosses the section's edge, and it hangs above and below the slab
-         by the O's overshoot and the J's descender. Rects, and a DIFFERENCE of
-         two of them, because an <svg> is not an HTMLElement and has no offsets
-         to walk — and because a difference taken inside one transform context is
-         immune to a translate above it, which is all the page's reveal is. */
-      picOff: pic.top - slabRect.top,
-      picH: pic.height || slabRect.height,
-      // Leave the z-index alone where the effect stack has already lifted the
-      // word clear. It only has to beat .panel, which takes no z-index of its
-      // own, and --fx-text-z (17) does.
-      lift: window.getComputedStyle(host).zIndex === "auto"
-    };
-    host.style.setProperty("--cue-land-ink", window.getComputedStyle(masthead).color);
-    root.classList.add("cue-fly");
-  }
-
-  /* One transform and one number, both a pure function of the scroll. The vector
-     is lerped end to end, so both ends are exact rather than merely close: at
-     T = 0 the transform is not written at all, and at T = 1 the word's baseline
-     and its ink's left edge ARE the masthead's. */
-  function fly(T) {
-    if (!flight) return;
-    var f = flight;
-    if (T <= 0) {
-      host.style.transform = "";
-      host.style.zIndex = "";
-      host.style.setProperty("--cue-land", "0");
-      return;
-    }
-    /* A TRANSLATE AND NOTHING ELSE. With no scale in it the vector is the whole
-       of the transform — the box's own document position cancels out of both
-       ends — so there is no origin to take it about and nothing for a
-       `transform-origin` to get wrong. */
-    var x = (f.toX - f.fromX) * T;
-    var y = (f.toY - f.fromY) * T;
-    host.style.transform = "translate(" + x.toFixed(2) + "px," + y.toFixed(2) + "px)";
-    if (f.lift) host.style.zIndex = "20";
-
-    /* The ramp, measured where it is actually happening: the drawing's own
-       crossing of the section's top edge. 0 while every visible pixel of the word
-       is still above that edge, 1 once none of it is. Clipped to the window at
-       the bottom, because below the fold there is nothing to be over — which is
-       also what keeps this exactly 0 at rest, where the J hangs past a fold the
-       section's edge is sitting on.
-       Smoothstep on top, the same curve the letters are eased with. It does not
-       fix the straddle — nothing one colour can do fixes the straddle — but it
-       keeps the word committed to a ground for most of the crossing and spends
-       the ambiguity in the middle, where the word is genuinely half on each. */
-    var scroll = window.pageYOffset || root.scrollTop || 0;
-    var edge = panel.getBoundingClientRect().top;
-    var span = f.picH;
-    var top = f.fromY + y - scroll + f.picOff;
-    var c = span > 0 ? (Math.min(top + span, window.innerHeight) - edge) / span : 0;
-    c = c < 0 ? 0 : c > 1 ? 1 : c;
-    host.style.setProperty("--cue-land", (c * c * (3 - 2 * c)).toFixed(3));
-  }
-
   var pinned = null;                 // a number while the tuner is holding it
   var queued = false;
 
-  /* The letters take the pinned T when the tuner is holding one; the FLIGHT
-     always takes the real scroll. They are the same number in every case but
-     one, and that one is the tuner: design/cut-title/morph-tuner.html scrubs T
-     without moving the page, and a flight that followed it would carry the word
-     off to a masthead a screen below the window and leave the tuner looking at
-     nothing. Judging the letterforms is what that tool is for; #69's tuner is
-     where the composition gets judged. */
+  /* The letters take the pinned T when the tuner is holding one and the real
+     scroll otherwise. design/cut-title/morph-tuner.html scrubs T without moving
+     the page, which is what judging letterforms wants; #69's tuner is where the
+     composition gets judged. */
   function frame() {
     queued = false;
-    var T = progress();                 // read once: it costs a layout to ask
-    draw(pinned === null ? T : pinned);
-    fly(T);
+    draw(pinned === null ? progress() : pinned);
   }
 
   /* Scrolling goes through a frame — it fires far faster than the display and
@@ -423,22 +230,14 @@
 
   var still = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)");
   if (!still || !still.matches) {
-    /* Re-measured whenever the layout under the flight can have moved, and never
-       per frame: both boxes are constants of the layout, and reading them on a
-       scroll would force a style recalc every frame of the turn for numbers that
-       had not changed. The window is the obvious one; `load` is for the corner
-       pictures, which arrive late and settle the CV's height; and the theme
-       carries the colour the word LEAVES as, which is read here rather than
-       lerped from a cached pair — a toggle mid-turn would otherwise strand the
-       word part-way to a colour the page had stopped using. */
+    /* Scroll is the only input. `resize` and `load` are here because landing()
+       reads the layout — `load` for the three corner pictures, which arrive late
+       and settle the CV's height — and both simply redraw at whatever the new
+       fraction is. There is no cached measurement to invalidate any more: the
+       flight had two boxes to keep, and this has none. */
     window.addEventListener("scroll", kick, { passive: true });
-    window.addEventListener("resize", function () { measure(); kick(); });
-    window.addEventListener("load", function () { measure(); kick(); });
-    if (window.MutationObserver) {
-      new window.MutationObserver(function () { measure(); kick(); })
-        .observe(root, { attributes: true, attributeFilter: ["data-theme"] });
-    }
-    measure();
+    window.addEventListener("resize", kick);
+    window.addEventListener("load", kick);
     kick();
   }
 
@@ -455,8 +254,9 @@
       draw(pinned === null ? progress() : pinned);
     },
     at: function () { return pinned === null ? progress() : pinned; },
-    // For anything that moves the layout under the flight without firing resize
-    // — a tuner swapping the masthead's wording or its size, which is #69.
-    remeasure: function () { measure(); kick(); }
+    // For anything that moves the layout without firing resize — a tuner
+    // swapping the section's wording or its size, which is #69. It only has to
+    // redraw now; landing() reads the page fresh every time it is asked.
+    remeasure: kick
   };
 })();

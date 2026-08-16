@@ -72,10 +72,11 @@
   // of the page. It sits OUTSIDE <main class="col">, as a sibling of it — .page
   // is a flex column and the title has to be .page's own child to be held
   // against the bottom edge. On a screen that composes to one page it is pinned
-  // to the fold instead, and one page turn later the whole of it has flown down
-  // onto the projects section and become that section's masthead. Where it
-  // STARTS is all CSS — see --cut-* and the turn block in styles.css; where it
-  // ends is measured, in cut-morph.js.
+  // to the fold instead, and one page turn later the whole of it is standing at
+  // the top of the projects section as that section's masthead — without having
+  // moved, because the section is placed to meet it. All of that is CSS: see
+  // --cut-* and the turn and landing blocks in styles.css. cut-morph.js turns
+  // the letterforms and nothing else.
   //
   // THE WORD IS A PICTURE, not type. It is the outlines of PROJECTS set in Friz
   // Quadrata, baked to one SVG path by design/cut-title/build-cut-title.py, and

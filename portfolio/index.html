@@ -294,7 +294,7 @@
        two things that used to sit at this line, an @font-face at the foot of
        styles.css and a script that attached /fonts/friz-local.css on localhost
        only, are both gone. See the cut title block in styles.css. -->
-  <link rel="stylesheet" href="styles.css?v=35">
+  <link rel="stylesheet" href="styles.css?v=36">
 </head>
 <body>
   <!-- Only ever on screen while a corner picture is genuinely outstanding: it is
@@ -342,14 +342,14 @@
 
        There used to be a `.doorway` between this and .page — one blank screen
        for the cut word to arrive on as its title, from when the word opened
-       onto nothing. It is gone. The word arrives HERE now, and lands on this
-       section's own masthead: see the turn block in styles.css for the two
-       snap ports it leaves, and the travel block in cut-morph.js for the flight
-       between them. The reason the panel still cannot be a child of .page is
-       the one the doorway was written for in the first place — in the
-       one-screen regime .page is exactly one screen and .cut-title is pinned
-       out of flow at `top: 100vh`, so a panel inside .page would land
-       underneath that pinned word and push nothing out of the way. Outside it,
+       onto nothing. It is gone. The word arrives HERE now, standing where this
+       section's own masthead would be printed: see the turn block in styles.css
+       for the two snap ports, and the landing block at the foot of it for how
+       this section is placed so that the two coincide. The reason the panel
+       still cannot be a child of .page is the one the doorway was written for
+       in the first place — in the one-screen regime .cut-title is pinned out of
+       flow at `top: 100vh`, so a panel inside .page would land underneath that
+       pinned word and push nothing out of the way. Outside it,
        the reading order is the one the design asks for in every regime: the CV,
        and then the section the cut word turns into the title of.
 
@@ -382,19 +382,22 @@
     </ul>
     <div class="panel-inner">
       <header class="panel-head">
-        <!-- WHAT THE CUT WORD TAKES THE PLACE OF, and usually not what is drawn.
-             When cut-morph.js takes the flight it puts `.cue-fly` on <html> and
-             this h2 goes `visibility: hidden` — it keeps its box, so it is still
-             what sets row one's height and where the subheading starts, and the
-             cut word comes to rest on its baseline at its own size. There is one
-             PROJECTS on the page and this is where it ends up. Drawn twice would
-             be drawn twice.
+        <!-- WHAT THE CUT WORD TAKES THE PLACE OF, and in the one-screen band not
+             what is drawn. There it goes `visibility: hidden` and the cut word
+             stands in its slot: the section is positioned so that this h2's cap
+             top and the word's are the same point, which is why the word reads as
+             this masthead without ever having moved. There is one PROJECTS on the
+             page and this is where it ends up; drawn twice would be drawn twice.
+             `visibility` and not `display: none`, because the BOX is load-bearing
+             three times over — it is row one's stated height, it is what the
+             subheading's second line hangs off (and so what makes the Frame's
+             bite exact), and it is the slot the word occupies. A hidden box still
+             does all three.
              It stays in the markup rather than becoming a CSS-only slot for two
              reasons: it is the section's accessible name, referenced by the
              `aria-labelledby` above, which a hidden-but-referenced element still
-             supplies; and without the script it is simply the masthead, drawn,
-             which is the whole of what a browser that never runs cut-morph.js
-             gets. See the landing block in styles.css. -->
+             supplies; and outside that band it is simply the masthead, drawn.
+             See the landing block at the foot of styles.css. -->
         <h2 class="panel-masthead" id="panel-masthead">Projects</h2>
         <!-- Two authored lines, not one string left to wrap. The second line is
              the one the Frame passes in front of, so where it breaks is part of
@@ -679,7 +682,7 @@
   </svg>
   <noscript><p style="text-align:center;font-family:'Sitka Text',Charter,'Iowan Old Style',Georgia,serif;padding:2rem">This site needs JavaScript enabled.</p></noscript>
   <script src="content.js?v=3"></script>
-  <script src="app.js?v=24"></script>
+  <script src="app.js?v=25"></script>
   <!-- Last, and after app.js rather than beside it: the effect stack is a
        treatment of a finished page, and drawAscii() measures the corner pictures
        against a layout that has to exist first. It is also the one script here
@@ -692,7 +695,20 @@
        only ever replaces one <svg>'s contents, so a browser that skips it —
        blocked, errored, or asking for reduced motion — keeps the baked Friz
        path exactly as it is inline. -->
-  <script src="cut-morph.js?v=4"></script>
+  <script src="cut-morph.js?v=5"></script>
+  <!-- The crossing into dark, and the fourth file on this page that the page is
+       whole without. It writes three numbers on <html> off the scroll position
+       and reaches nothing else; every one of them is declared in the sheet at
+       the value it holds at the top of the page, so a browser that skips this —
+       blocked, errored, or asking for reduced motion — gets the CV on paper with
+       the section below it, printed, and nothing to watch. #73 is why the
+       numbers come from a script rather than from a scroll timeline, and
+       arrival.js says it at length: the profile capture fast-forwards finite
+       animations to their end state and would photograph this page fully dark.
+       It is not last only because the three below touch the Frame and want to
+       run in their own order; nothing here depends on any of them, or they on
+       this. -->
+  <script src="arrival.js?v=1"></script>
   <!-- The Panel's recording, and last for the third time for the third version
        of the same reason: all it does is hand the <video> its sources, and a
        browser that skips it keeps the poster that is already on screen — which
