@@ -92,6 +92,14 @@ portfolio/img/tex/paper-seam-proof.png
 /Gemini_Generated_Image_*.jpg
 design/plinth/maps/
 
+# ...and where design/plinth/plinth-studio.py keeps the photographs dropped on
+# it. Same rule again, and worth saying out loud because this is the one that
+# arrives by drag-and-drop rather than by being put somewhere deliberately: a
+# stone's ENTRY and PLATE are committed and the image it was cut from is not, so
+# a stone can be looked at in a fresh checkout and can only be RE-BAKED in a tree
+# that still has this directory. Keep anything you care about elsewhere too.
+design/plinth/sources/
+
 # per-candidate plinth shots from ender.mjs --stones. 1.4MB each and
 # regenerable in a minute; what is committed is the contact sheet built from
 # them, design/shots/plinth-stones.jpg.

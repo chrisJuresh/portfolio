@@ -2474,12 +2474,19 @@ body::after {
      re-rendered plate under an unchanged URL is served stale for up to 24 hours
      while being right on localhost.
 
-     `gemini-noir` is the stone: cut from a photograph by design/plinth/add-stone.py
-     and lit in the dark room, which is the pair docs/agents/plinth-marble.md
-     measures as the one that keeps the black black. It replaces `nero`, the
-     procedural stone the earlier fitted room lit as flat grey smoke — kept below
-     as a candidate rather than dropped, because it is what every proportion in
-     this block was measured against. */
+     THE DECLARATION BELOW IS MACHINE-WRITTEN, so it and not this comment is
+     which stone the site draws. design/plinth/plinth-studio.py rewrites the one
+     line — the filename and the digest together — every time a stone is applied
+     in it, and it cannot rewrite prose, so a paragraph here naming a stone would
+     go stale the first time one was picked and read as authority while doing it.
+     Which stone is drawn and why is docs/agents/plinth-marble.md's to say.
+
+     What belongs here is the standing constraint: whatever is named, it is lit in
+     the DARK room. A surround fitted to a light stone pins a black ground at a
+     flat 24 whatever the texture under it says, which is the fault that doc took
+     three wrong diagnoses to find. `nero` is kept below as a candidate rather
+     than dropped, because it is the procedural stone every proportion in this
+     block was measured against. */
   --panel-plinth-src: url("img/tex/plinth-gemini-noir.webp?v=912aa827");
 
   position: relative;

@@ -68,6 +68,12 @@ design/
                          every value on a slider, for asking what a change would
                          do without paying a minute of Cycles for the answer;
                          it exports a CANDIDATES entry to paste back.
+    plinth-studio.py     interactive, and the only tool in design/ that is a
+    plinth-studio.html   SERVER rather than a page: photograph in, stone on the
+                         site out, with no command in between. Drop an image,
+                         move every parameter a stone has, bake it in Cycles,
+                         see it under the real Frame, write it into styles.css.
+                           python design/plinth/plinth-studio.py
   tools/
     render.mjs       Playwright: serves the repo, walks the matrix, writes shots/
     package.json     dev dependency (playwright) — not the site's
@@ -615,6 +621,57 @@ that comes out on line 3.02 is telling you it wants to be on the line.
 It also carries a `state:` comment at the foot of the export, so pasting an
 earlier one back into the box and pressing `import` restores the whole
 arrangement — the same device the type tuner's `tuner-state` is.
+
+## Plinth studio
+
+The odd one out in a different direction from the layout tuner: every other tool
+here is a page served by a static server, and this one **is** the server, because
+what it does cannot be done from a page. Making a plinth means resampling a
+photograph into four PBR maps and then path-tracing them in Blender, and a
+browser can do neither.
+
+```bash
+python design/plinth/plinth-studio.py
+```
+
+It prints a URL and opens it. Do not serve it with `run.bat` — the page is inert
+without its own server behind it, and it needs no other one: it serves the
+repository as well, so `/portfolio` in its iframe and the plates in its strip
+come off the same origin.
+
+**What it is for** is that the four steps between a photograph and a stone on the
+site were four commands in a fixed order — `build-portoro-maps.py`,
+`build-slab.py` in Blender, `add-stone.py` over the top of both, and then
+`portfolio/styles.css` edited by hand with a digest in it that goes stale
+silently. Now: drop an image, move the sliders, bake, apply.
+
+Three things it knows that those commands do not:
+
+- **Maps are per-image, not per-stone.** They are cached under a digest of the
+  image bytes and the two flags that change what they contain, so a second bake
+  at a different `scale` is fifteen seconds of Cycles rather than another fifty
+  megabytes of PNG. Content-addressed and not name-addressed on purpose — a
+  directory keyed by a name is a directory the next `photo.jpg` overwrites.
+- **The `?v=` is a digest of every plate**, so it moves when any stone is baked,
+  including one only being tried. Apply restamps every plinth `url()` in the
+  stylesheet, and the page shows a warning whenever they have drifted apart —
+  which is exactly the drift that survived two bakes unnoticed before it shipped.
+- **It refuses to shadow a built-in.** A stone it writes is
+  `design/plinth/stones/<key>.json`, the same door `add-stone.py` uses, and a
+  name the tables in `build-slab.py` already define is rejected rather than
+  merged.
+
+**The one thing it draws rather than renders** is the window: the block's
+footprint laid over your photograph, from the same arithmetic
+`build_photo_material()` projects with, so `scale` and `offset` — the two
+strongest controls — are answered before a bake is paid for. Everything else that
+claims to show a stone is a real Cycles render. There is no GLSL previz of a
+photographic material and there is not going to be one; the plinth tuner has one
+for the *procedural* stones and says out loud that it cannot draw these.
+
+What is committed and what is not follows `add-stone.py` exactly: the entry and
+the plate ship, the maps and your photograph do not. `design/plinth/sources/` is
+gitignored, so keep anything you care about somewhere else as well.
 
 ## Regenerating the shots
 
