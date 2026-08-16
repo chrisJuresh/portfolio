@@ -638,8 +638,14 @@
     for (var i = 0; i < parts.length; i++) if (parts[i].el === el) return parts[i];
     return null;
   }
+  /* The name is remembered alongside the node, and it is the name that survives:
+     a reload replaces every element in the preview, so re-selecting by reference
+     would land on a node that is no longer in the document. attach() resolves it
+     again. */
   function select(el) {
     selEl = el || null;
+    var p = selEl && partFor(selEl);
+    selSel = p ? p.sel : null;
     sync(); paintTree(); paintRead();
   }
 
@@ -822,7 +828,7 @@
       b.innerHTML = '<span class="mut">' + lead + "</span>" + esc(short(p.sel))
         + (isAdjusted(a) ? ' <span class="dot">●</span>' : "");
       b.title = p.sel;
-      b.addEventListener("click", function () { select(p.el); selSel = p.sel; });
+      b.addEventListener("click", function () { select(p.el); });
       b.addEventListener("mouseenter", function () {
         if (!layer || drag) return;
         put(hiBox, p.el.getBoundingClientRect(), layer.getBoundingClientRect());
