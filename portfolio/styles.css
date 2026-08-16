@@ -2466,14 +2466,21 @@ body::after {
   --panel-plinth-depth: calc((var(--panel-plinth-top) + var(--panel-plinth-front))
                              * var(--panel-frame-w));
 
-  /* WHICH STONE. Four renders, one drawn, and the switch is here rather than in
+  /* WHICH STONE. Many renders, one drawn, and the switch is here rather than in
      a script so #69's tuner is a `dataset.marble =` and nothing else. The
      candidates are below the .panel-plinth block; the ?v= is the digest
      design/plinth/build-slab.py prints, and it is load-bearing for the same
      reason the textures' is — vercel.json caches /portfolio/img/ for a day, so a
      re-rendered plate under an unchanged URL is served stale for up to 24 hours
-     while being right on localhost. */
-  --panel-plinth-src: url("img/tex/plinth-nero.webp?v=de287c12");
+     while being right on localhost.
+
+     `gemini-noir` is the stone: cut from a photograph by design/plinth/add-stone.py
+     and lit in the dark room, which is the pair docs/agents/plinth-marble.md
+     measures as the one that keeps the black black. It replaces `nero`, the
+     procedural stone the earlier fitted room lit as flat grey smoke — kept below
+     as a candidate rather than dropped, because it is what every proportion in
+     this block was measured against. */
+  --panel-plinth-src: url("img/tex/plinth-gemini-noir.webp?v=912aa827");
 
   position: relative;
   display: grid;
@@ -2778,15 +2785,22 @@ body::after {
   background-size: 100% 100%;
   background-repeat: no-repeat;
 }
-/* The candidates. All four are the same block under the same camera and the same
-   two lights, and differ only in the material — which stone, not which
-   photograph; the CANDIDATES table in design/plinth/build-slab.py is what each
-   one is. Switched by an attribute on the section so #69's tuner needs no
+/* The candidates. All of them are the same block under the same camera, and they
+   differ in the material and in the ROOM — which stone, and what is lighting it;
+   the CANDIDATES table in design/plinth/build-slab.py is what each one is, and
+   docs/agents/plinth-marble.md is why the dark-room ones are the ones to compare
+   against. Switched by an attribute on the section so #69's tuner needs no
    stylesheet of its own, and so that a plate not in the repository yet fails as a
-   missing image rather than as a missing rule. */
-.panel[data-marble="portoro"]  { --panel-plinth-src: url("img/tex/plinth-portoro.webp?v=de287c12"); }
-.panel[data-marble="marquina"] { --panel-plinth-src: url("img/tex/plinth-marquina.webp?v=de287c12"); }
-.panel[data-marble="grey"]     { --panel-plinth-src: url("img/tex/plinth-grey.webp?v=de287c12"); }
+   missing image rather than as a missing rule.
+
+   These are the four the tuner shipped with plus the stone that was drawn before
+   `gemini-noir`; the tuner lists every plate in design/plinth/slab.json, which is
+   many more than this, and reaches them by pointing the property straight at the
+   plate rather than through a rule here. */
+.panel[data-marble="nero"]     { --panel-plinth-src: url("img/tex/plinth-nero.webp?v=912aa827"); }
+.panel[data-marble="portoro"]  { --panel-plinth-src: url("img/tex/plinth-portoro.webp?v=912aa827"); }
+.panel[data-marble="marquina"] { --panel-plinth-src: url("img/tex/plinth-marquina.webp?v=912aa827"); }
+.panel[data-marble="grey"]     { --panel-plinth-src: url("img/tex/plinth-grey.webp?v=912aa827"); }
 
 /* ---- the reflection ---------------------------------------------------------
    THE FRAME AGAIN, UPSIDE DOWN AND LYING IN THE STONE. Not a picture of it: the

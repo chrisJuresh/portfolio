@@ -8,10 +8,12 @@ lives and why it has the value it has.
 | --- | --- | --- | --- |
 | `film-1600.webp`, `film-2600.webp` | Texturelabs Film 185XL | [`build-textures.py`](../../../design/effects/build-textures.py) | one frame over the whole band, `cover`, never tiled |
 | `paper-512.webp`, `paper-1024.webp` | Texturelabs Paper 349XL | [`build-textures.py`](../../../design/effects/build-textures.py) | a square that wraps in both axes, tiled edge to edge |
-| `plinth-nero.webp` | rendered — no source | [`build-slab.py`](../../../design/plinth/build-slab.py) | the Projects Panel's plinth, with its silhouette in the alpha |
+| `plinth-gemini-noir.webp` | a photograph, cut by [`add-stone.py`](../../../design/plinth/add-stone.py) | [`build-slab.py`](../../../design/plinth/build-slab.py) | the Projects Panel's plinth, with its silhouette in the alpha |
+| `plinth-nero.webp` | rendered — no source | [`build-slab.py`](../../../design/plinth/build-slab.py) | ...the stone drawn before it, kept as a candidate |
 | `plinth-portoro.webp` | rendered — no source | [`build-slab.py`](../../../design/plinth/build-slab.py) | ...one candidate for the same plinth |
 | `plinth-marquina.webp` | rendered — no source | [`build-slab.py`](../../../design/plinth/build-slab.py) | ...and another |
 | `plinth-grey.webp` | rendered — no source | [`build-slab.py`](../../../design/plinth/build-slab.py) | ...and the third |
+| `plinth-gemini*.webp`, `plinth-*-noir.webp` | as above | [`build-slab.py`](../../../design/plinth/build-slab.py) | the rest of the bake — reachable from the tuner, not named in the stylesheet |
 
 ## The two effect plates
 
@@ -53,9 +55,11 @@ a seam is rougher than the ground it sits in and catches the light differently.
 3000 px wide is one rung and not the first of a ladder: the slab is ~1800 CSS px
 on a 2560 display, so this is 1:1 at a 2× device ratio and 2:1 at 1×.
 
-**Which one is drawn** is `data-marble` on the `.panel` section — `nero` is the
-default and the other three are named in the stylesheet beside it. #69's tuner is
-the place they get chosen between by eye; only one is ever fetched.
+**Which one is drawn** is `data-marble` on the `.panel` section — `gemini-noir` is
+the default and four others are named in the stylesheet beside it. #69's tuner is
+the place they get chosen between by eye, and it reaches the rest of the bake by
+writing `--panel-plinth-src` straight at a plate rather than through a rule here;
+only one is ever fetched.
 
 ## Rebuilding
 
