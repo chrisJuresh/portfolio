@@ -220,6 +220,39 @@
 
   function warn(msg) { warnEl.textContent = msg || ""; }
 
+  /* WHAT THIS SHADER IS A TWIN OF, and the whole reason it is a constant here
+     rather than something computed. The previz below is a hand-written GLSL
+     copy of build_material() in build-slab.py: every constant it needs comes out
+     of slab.json, so the two cannot disagree about NUMBERS — but the SHAPE of
+     the material is written out twice, once in Blender nodes and once in GLSL,
+     and nothing has ever stopped those two from drifting apart. When they do,
+     both halves still look right on their own, which is the failure this file's
+     own header warns about and then had no defence against.
+
+     So build-slab.py now hashes the material's shaping constants into
+     `material_version` and this is the value the shader below was written
+     against. They differ whenever the material grows something the GLSL does not
+     have, and the banner says so rather than the preview quietly lying.
+
+     THIS ONE IS KNOWN STALE. The material gained a bedding transform, a
+     Voronoi fracture network, per-vein width modulation, vein haloes, density
+     gating, ground mottle and polish variation; the shader below has none of
+     them and still draws the isotropic constant-width level sets that were
+     replaced. Until it is ported it is useful for the BLOCK and the CAMERA and
+     nothing else. Read a baked plate for the stone. */
+  var SHADER_MATERIAL_VERSION = "pre-bedding";
+
+  function checkShaderCurrent() {
+    if (!slab || !slab.material_version) return;
+    if (slab.material_version === SHADER_MATERIAL_VERSION) return;
+    warn("PREVIZ IS OUT OF DATE and is not showing this material. build-slab.py "
+         + "is at material " + slab.material_version + "; the shader in this page "
+         + "was written against " + SHADER_MATERIAL_VERSION + " and has no bedding, "
+         + "fracture network, halo, density gate, mottle or polish variation in it. "
+         + "The block and the camera are still right. For the STONE, bake a plate "
+         + "and look at that.");
+  }
+
   /* ---- the stone the tuner adds ------------------------------------------
      One preset that is NOT in build-slab.py, and it is here because it is the
      answer to the thing that sent anyone to this page. The baked `portoro` is
@@ -293,6 +326,7 @@
     buildControls();
     apply();
     sizeFrame();
+    checkShaderCurrent();
   }).catch(function (e) {
     warn("could not read design/plinth/" + SIDECAR + " (" + e.message + "). " +
          "It is written by build-slab.py — run `blender -b -P design/plinth/build-slab.py -- all`, " +
