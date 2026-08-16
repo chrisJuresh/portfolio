@@ -446,10 +446,10 @@ def digest() -> str:
     do, and vercel.json caches this directory for a day.
 
     IT USED TO HASH EVERY .webp IN THE DIRECTORY, and stopped when
-    design/plinth/build-marble.py started writing its marble plates into the same
+    design/plinth/build-slab.py started writing its plinth renders into the same
     one. Two scripts, one directory: a digest over all of it would make this
-    file's version string change whenever the marble was re-baked, and the
-    marble's change whenever the film was — a stamp that says nothing about the
+    file's version string change whenever the plinth was re-rendered, and the
+    plinth's change whenever the film was — a stamp that says nothing about the
     asset it is stamped on, and a diff that looks like a texture changed when
     none did. Each hashes its own.
     """

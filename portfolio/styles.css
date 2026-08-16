@@ -2371,44 +2371,54 @@ body::after {
      widths in four places to be checked in any of them. It is converted ONCE,
      into the fit constant above, and that conversion is written out there.
 
-     The two are unitless on purpose. --panel-plinth-top is used three times and
-     one of those is a scaleY() on the reflection, where a length would be
+     The three are unitless on purpose. --panel-plinth-top is used three times
+     and one of those is a scaleY() on the reflection, where a length would be
      meaningless; keeping it a bare number is what lets the reflection's squash
      and the top face's depth be the same constant rather than two that have to
-     be kept equal by hand. design/plinth/build-marble.py states all three again
-     — PLINTH_W, TOP_FACE, FRONT_FACE — because the plate has to be baked at the
-     shape it is drawn at, and there is no third place to put them.
+     be kept equal by hand. design/plinth/build-slab.py states all of them again
+     — NEAR_HALF, TOP_FACE, BEHIND, FRONT_FACE — because the block has to be
+     RENDERED at the shape it is drawn at, and there is no third place to put
+     them. There the four also frame the camera, so a change made in one place
+     and not the other does not merely stretch the picture: it moves the block.
 
-       top    31 render px between the Frame's foot (y 1518) and the block's
-              front edge (y 1549), over a Frame measured 1837 px wide. This is
-              the visible marble in front of the Frame, and the whole of what the
-              reflection has to lie down in.
+       behind 36 render px between the block's back edge (y 1482) and the Frame's
+              foot (y 1518), over a Frame measured 1837 px wide. THE SLAB RUNS
+              BEHIND THE WINDOW: the Frame stands ON the top face rather than at
+              the back of it, and this is the marble between the two — hidden
+              under the Frame in the middle and visible at both ends, where the
+              slab overhangs. It was read as zero, which is what made the whole
+              top face 31 px instead of 67 and the block read as a lit strip.
+       top    31 render px between the Frame's foot and the block's front edge
+              (y 1549). This is the visible marble IN FRONT of the Frame, and the
+              whole of what the reflection has to lie down in.
        front  the render's own front face is 83 px, 4.52% — but the picture is
               CUT OFF at 1632 and the stone is still at level 30 there, so that
               is a floor and not a height. 7% is what is drawn, and the extra is
               the rest of a block: the face holds the render's own level through
-              it and turns under into shadow in the last tenth, which is what the
-              bottom of a solid thing does. It used to spend that extra on a fade
-              into the Panel's black, and a slab that fades out is a slab with no
-              body — see THE FRONT FACE IS FLAT in design/plinth/build-marble.py.
-              It is baked into the plate, so moving this without re-baking moves
-              where the block ends. */
-  --panel-plinth-top:   0.0169;
-  --panel-plinth-front: 0.0700;
-  /* ...and the two lengths that fall out of them, so no rule below multiplies by
-     --panel-frame-w on its own. */
+              it and the block turns under at its base. All three are rendered
+              into the plate by design/plinth/build-slab.py, so moving one
+              without re-rendering moves the picture off the box it is drawn in. */
+  --panel-plinth-behind: 0.019597;
+  --panel-plinth-top:    0.016876;
+  --panel-plinth-front:  0.070024;
+  /* ...and the three lengths that fall out of them, so no rule below multiplies
+     by --panel-frame-w on its own. `depth` is what the plinth costs the
+     composition and `back` is what it does not: the two together are the box the
+     plate is drawn in, and `depth` alone is the flow height, which is why the
+     fit constant is untouched by any of this. */
   --panel-plinth-face:  calc(var(--panel-plinth-top) * var(--panel-frame-w));
+  --panel-plinth-back:  calc(var(--panel-plinth-behind) * var(--panel-frame-w));
   --panel-plinth-depth: calc((var(--panel-plinth-top) + var(--panel-plinth-front))
                              * var(--panel-frame-w));
 
-  /* WHICH MARBLE. Four plates, one drawn, and the switch is here rather than in
+  /* WHICH STONE. Four renders, one drawn, and the switch is here rather than in
      a script so #69's tuner is a `dataset.marble =` and nothing else. The
      candidates are below the .panel-plinth block; the ?v= is the digest
-     design/plinth/build-marble.py prints, and it is load-bearing for the same
+     design/plinth/build-slab.py prints, and it is load-bearing for the same
      reason the textures' is — vercel.json caches /portfolio/img/ for a day, so a
-     re-baked plate under an unchanged URL is served stale for up to 24 hours
+     re-rendered plate under an unchanged URL is served stale for up to 24 hours
      while being right on localhost. */
-  --panel-marble: url("img/tex/marble-nero.webp?v=6d0a67ec");
+  --panel-plinth-src: url("img/tex/plinth-nero.webp?v=92d6cb9d");
 
   position: relative;
   display: grid;
@@ -2422,6 +2432,15 @@ body::after {
      like it fell over to the left. */
   grid-template-columns: var(--panel-rail-w) minmax(0, var(--panel-w));
   justify-content: center;
+  /* CLIP, NOT HIDDEN, and only across. The plinth is symmetric about the Frame
+     while the Frame is flush with the composition's right edge, so the slab's
+     right end reaches past it — into the page's margin on any ordinary window,
+     and on a very wide, very tall one as far as the viewport. This is what makes
+     that a crop rather than a horizontal scrollbar. `hidden` would do the same
+     job and also make the section a scroll container, which would break the
+     Rail; `clip` clips without scrolling. The `-y: visible` half is left alone
+     so nothing that leaves the section vertically is affected. */
+  overflow-x: clip;
   /* The Rail runs the full height and the composition sits in the middle of
      whatever is left over — see .panel-rail and .panel-inner, which take the two
      halves of this. */
@@ -2583,7 +2602,22 @@ body::after {
    is in. Width is left to `auto`, which is then exactly the rest of it —
    stating a width as well would be the same number written twice, and it is the
    sort of pair that comes apart. Scoped to the stage's own child so the copy
-   inside .panel-mirror, which is the same class, is not indented by it. */
+   inside .panel-mirror, which is the same class, is not indented by it.
+
+   AND THEN PULLED BACK OFF THE RIGHT EDGE BY THE PLINTH'S OVERHANG, which is the
+   one thing in this rule that is not about the Frame. The stage is 0.831281 of
+   the composition and the Frame 0.746923, so `margin-left: 10.1479%` alone puts
+   the Frame FLUSH with the composition's right edge — and a slab that overhangs
+   it symmetrically then has nowhere on that side to do it, which is how the old
+   plinth ended up hanging off the left only.
+
+   THE FRAME DOES NOT MOVE TO MAKE ROOM FOR THE SLAB, and it was tried: pulling
+   it left by the overhang so a symmetric slab lands inside the composition puts
+   the window over the points, and at 1600x1000 that is 42 px of live text behind
+   it. The Frame is allowed to occlude the subheading, which is set to be
+   occluded; it is not allowed to eat the list. The slab runs off the page's right
+   edge instead — which is what the render does, its own slab being cut off by the
+   picture — and `overflow-x: clip` on the section is what makes that safe. */
 .panel-stage > .panel-frame { margin-left: 10.1479%; }
 .panel-frame {
   z-index: 1;
@@ -2630,26 +2664,44 @@ body::after {
 }
 
 /* ---- the plinth -------------------------------------------------------------
-   The polished marble the Frame stands on: one baked plate holding both faces of
-   the block, stretched over the slab. It sits directly under the Frame inside the
-   stage, so the Frame's foot is the contact line, and it is a column wider than
-   the Frame on the left for the reason the stage's own comment gives.
+   THE BLOCK OF STONE THE FRAME STANDS ON, and it is a rendered block rather than
+   a picture of one: design/plinth/build-slab.py puts a cube in front of a camera
+   solved from the design render and Cycles works out the rest. What lands here is
+   one WebP WITH AN ALPHA CHANNEL, and the alpha is the whole reason this rule
+   changed — the block's ends converge, so its silhouette is not the box it is
+   drawn in and never could be painted into an opaque rectangle.
+
+   IT IS CENTRED ON THE FRAME AND SYMMETRIC ABOUT IT. The render overhangs the
+   Frame by 174 px on the left of its near edge and is CUT OFF on the right, which
+   was read as an asymmetry to reproduce; put symmetrically, the right overhang
+   lands 17 px outside a picture 2568 wide, so the render's slab is symmetric and
+   was only ever cropped.
+
+   Every percentage here is of the STAGE, which is 0.831281 of the composition
+   while the Frame is 0.746923 — so the Frame is 89.8517% of this box and the
+   render's 0.094719-of-a-Frame-width overhang is 8.5110% of it. The slab is the
+   three added up, 106.8737%, starting 8.5110% left of the Frame at 1.6369%.
+
+   Which puts its right end 8.5110% PAST the composition, because the Frame is
+   flush with that edge and there is nowhere else for a symmetric overhang to go.
+   That is the render's own arrangement — its slab runs off the picture — and on
+   an ordinary window it lands in the page's margin with room to spare. On a very
+   wide, very tall one it would reach the viewport; `overflow-x: clip` on .panel
+   is what stops that being a scrollbar, and a slab cut off by the edge of the
+   page is the thing the render is a picture of.
+
+   IT ALSO STARTS ABOVE THE FRAME'S FOOT. The Frame stands ON the top face, not at
+   the back of it, so the block runs --panel-plinth-back higher than the contact
+   line and is pulled up by exactly that with a negative margin. The margin is
+   what keeps the arithmetic honest: the box is `depth + back` tall but costs the
+   flow only `depth`, which is the same 0.0869 of a Frame width the composition's
+   fit constant has always counted. Nothing above this rule moves.
 
    `background-size: 100% 100%` AND NOT `cover`, which is the one declaration in
-   here that would be a bug if it were the usual thing. The plate is baked at
-   exactly this box's aspect ratio — 1.112940 : 0.0869 of the Frame's width, which
-   design/plinth/build-marble.py computes from the same three numbers the .panel
-   block states — so stretching it to the box is an identity, and `cover` would
-   crop off either the top face or the shadow the block's base turns under into.
-   The two can only disagree if one of the three moves without the other, which is
-   what the note on --panel-plinth-top is there to prevent.
-
-   The render's slab shows a little more marble BEHIND the contact line where it
-   overhangs the Frame on the left — its top face's far edge sits about 2% of the
-   Frame's width higher there. That is its vanishing point, which is off to the
-   left while the Frame standing on it is drawn square-on; this composition is
-   orthographic everywhere else, so the slab starts at the contact line and the
-   grazing angle is carried by the plate's own light instead. */
+   here that would be a bug if it were the usual thing. The plate is rendered at
+   exactly this box's aspect ratio — build-slab.py frames its camera on the same
+   four numbers the .panel block states — so stretching it to the box is an
+   identity, and `cover` would crop off either the far edge or the block's base. */
 .panel-plinth {
   /* IN FLOW, DIRECTLY UNDER THE FRAME, and not absolutely placed at `top: 100%`
      — which draws the same picture and is wrong. The plinth is part of the
@@ -2659,19 +2711,27 @@ body::after {
      would come out short by the plinth's depth at every window size. In flow,
      the stage measures what the arithmetic assumes. */
   position: relative;
-  height: var(--panel-plinth-depth);
-  background-image: var(--panel-marble);
+  /* Under the Frame, which carries `z-index: 1`. The marble behind the contact
+     line is drawn and then covered by the window standing on it, which is what
+     leaves it visible only at the two ends — where there is no window. */
+  z-index: 0;
+  margin-left: 1.6369%;    /* 10.1479 - 8.5110 */
+  width: 106.8737%;        /* 8.5110 + 89.8517 + 8.5110 */
+  margin-top: calc(-1 * var(--panel-plinth-back));
+  height: calc(var(--panel-plinth-depth) + var(--panel-plinth-back));
+  background-image: var(--panel-plinth-src);
   background-size: 100% 100%;
   background-repeat: no-repeat;
 }
-/* The candidates. Three are photographed and one is generated; which is which,
-   and why the generated one is in the set at all, is the CANDIDATES table in
-   design/plinth/build-marble.py. Switched by an attribute on the section so
-   #69's tuner needs no stylesheet of its own — and so that a plate that is not
-   in the repository yet fails as a missing image rather than as a missing rule. */
-.panel[data-marble="stone162"] { --panel-marble: url("img/tex/marble-stone162.webp?v=6d0a67ec"); }
-.panel[data-marble="stone161"] { --panel-marble: url("img/tex/marble-stone161.webp?v=6d0a67ec"); }
-.panel[data-marble="stone160"] { --panel-marble: url("img/tex/marble-stone160.webp?v=6d0a67ec"); }
+/* The candidates. All four are the same block under the same camera and the same
+   two lights, and differ only in the material — which stone, not which
+   photograph; the CANDIDATES table in design/plinth/build-slab.py is what each
+   one is. Switched by an attribute on the section so #69's tuner needs no
+   stylesheet of its own, and so that a plate not in the repository yet fails as a
+   missing image rather than as a missing rule. */
+.panel[data-marble="portoro"]  { --panel-plinth-src: url("img/tex/plinth-portoro.webp?v=92d6cb9d"); }
+.panel[data-marble="marquina"] { --panel-plinth-src: url("img/tex/plinth-marquina.webp?v=92d6cb9d"); }
+.panel[data-marble="grey"]     { --panel-plinth-src: url("img/tex/plinth-grey.webp?v=92d6cb9d"); }
 
 /* ---- the reflection ---------------------------------------------------------
    THE FRAME AGAIN, UPSIDE DOWN AND LYING IN THE STONE. Not a picture of it: the
@@ -2703,9 +2763,16 @@ body::after {
    the light in twice and blow the face past anything the render has. */
 .panel-mirror {
   position: absolute;
-  top: 0;
-  left: 10.1479%;          /* the Frame's left edge — see .panel-stage */
-  right: 0;
+  /* THE CONTACT LINE, which is no longer this box's top edge: the slab now runs
+     --panel-plinth-back behind the Frame, and the marble back there has a window
+     standing on it rather than a reflection lying in it. */
+  top: var(--panel-plinth-back);
+  /* The Frame's edges on a slab centred about it — 0.094719 of the Frame's width
+     of overhang, over a slab 1.189439 of it wide. Symmetric, so both are the same
+     number, which is the shortest way to say that the window sits in the middle
+     of the stone it stands on. */
+  left: 7.9633%;
+  right: 7.9633%;
   height: var(--panel-plinth-face);
   overflow: hidden;
   /* A stacking context, so the copy's own z-index: 1 — it is a .panel-frame and
@@ -3235,8 +3302,11 @@ body::after {
      single column on a phone — and a plinth wider than the Frame with nothing on
      either side of it would just be a wider slab. #70 owns the real reflow. */
   .panel-stage > .panel-frame { margin-left: 0; }
-  /* ...and the reflection follows the Frame's left edge wherever it goes. */
-  .panel-mirror { left: 0; }
+  /* The slab keeps its proportion to the Frame — a block narrower at the back
+     than the window standing on it would have the Frame's foot hanging off its
+     own plinth — so only the offset changes, by the same 8.5110% the Frame gave
+     up. The reflection is stated against the SLAB and so needs no rule here. */
+  .panel-plinth { margin-left: -8.5110%; }
   /* The hanging second line goes back into its own box: with nothing beside it
      and nothing over it, a head that stopped short of its own ink would just
      collide with the paragraph below. */
