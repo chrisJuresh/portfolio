@@ -2099,7 +2099,12 @@ body::after {
    panel is the one part of the document that is not a print. */
 .panel {
   /* ---- the palette, and it answers to nothing above ---------------------- */
-  --panel-bg:       #08090a;
+  /* PURE BLACK, AND NOT THE RENDER'S NEAR-BLACK. The design render's backdrop
+     is #08090a, which is what this was; the panel is set to #000 by choice, so
+     the composition ends at the same black the screen's own bezel does. The one
+     number measured against the old value is --panel-frame-edge below, and the
+     note there says what the two pixels of difference do to it. */
+  --panel-bg:       #000000;
   --panel-ink:      #f2f1ee;
   --panel-ink-soft: #dcdad5;
   --panel-muted:    #8b8983;
@@ -2111,6 +2116,12 @@ body::after {
      chosen: the render's outer edge peaks at 84 of 255 against a page backdrop
      of 8, so 0.32 of #f2f1ee. It was 0.1 while the Frame was a placeholder,
      which is a third of what the render has.
+     THE BACKDROP IS NOW 0 AND THIS ALPHA WAS LEFT WHERE IT WAS, deliberately.
+     Composited on #000 the rim peaks at 77 rather than the render's 84 — seven
+     of 255 on a hairline — and holding the measured 84 would mean 0.347. Not
+     done here because re-deriving the Frame's rim is a change to the Frame, and
+     this one is a change to the backdrop; if the rim ever looks thin against
+     pure black, 0.347 is the number and this is why.
      WHAT HAPPENS TO IT ALONG THE TITLEBAR DEPENDS ON THE RUNG, and .frame-bar
      depends on that in turn, so it is worth being exact. Only the shader's
      canvas is opaque, so only there is this ring covered — and covered by an

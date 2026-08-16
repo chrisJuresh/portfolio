@@ -814,7 +814,7 @@ var GROUPS = [
     { k: "shadowExpand", type: "num", min: 2, max: 100, step: 0.01, def: 25, label: "expand",
       tip: "How far the drop shadow spreads from the shape. It is drawn into the backdrop before\nthe blur, so the glass refracts its own shadow — which is why it reads as thickness.\nInert while intensity is 0, which is where the render puts it." },
     { k: "shadowFactor", type: "num", min: 0, max: 100, step: 0.01, def: 0, studio: 15, label: "intensity",
-      tip: "How dark the shadow is. 0 removes it.\nThe render has none: the backdrop three pixels above the titlebar is the same near-black as\nthe backdrop anywhere else. Left at 0, which also stops the shadow eating the panel's own\n#08090a — at the studio's 15 it subtracts more than that colour has." },
+      tip: "How dark the shadow is. 0 removes it.\nThe render has none: the backdrop three pixels above the titlebar is the same near-black as\nthe backdrop anywhere else. Left at 0, which also stops the shadow eating the panel's own\nblack — at the studio's 15 it subtracts from a colour that has nothing to give." },
     { k: "shadowX", type: "num", min: -20, max: 20, step: 0.1, def: 0, label: "offset x",
       tip: "Shadow offset, CSS px." },
     { k: "shadowY", type: "num", min: -20, max: 20, step: 0.1, def: -10, label: "offset y",
@@ -1001,7 +1001,7 @@ if (drift.length) {
 }
 
 /* --panel-bg and --panel-frame-fill, copied for the same reason. */
-var PANEL_BG = "#08090a";
+var PANEL_BG = "#000000";
 var FRAME_FILL = "#131518";
 
 var PANEL_MODES = { dark: 1, marble: 1, clip: 1 };
