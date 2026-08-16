@@ -365,9 +365,15 @@ colour. It stays a gate for any change that points the stylesheet at a new stone
 
 ## Still open
 
-- **Nothing ships yet.** `--panel-plinth-src` in `portfolio/styles.css` still
-  points at `plinth-nero.webp`, deliberately — the stone is the user's pick, and
-  switching it needs the `?v=` digest re-pasted and the capture contract re-run.
+- ~~**Nothing ships yet.**~~ **`gemini-noir` ships.** `--panel-plinth-src` in
+  `portfolio/styles.css` points at `plinth-gemini-noir.webp?v=912aa827` — the
+  user's pick, made in the tuner. The `?v=` had drifted while nothing shipped:
+  the stylesheet still carried `de287c12` from #106 while two further bakes (#108
+  and #114) had moved `slab.json`'s `version` to `912aa827`, so every plate URL
+  on the deployment was a day-stale name for a file that had changed twice. All
+  five are now stamped with the digest `slab.json` actually holds. The capture
+  contract passes at the new stone; `nero` is kept as a `data-marble` candidate
+  because every proportion in the `.panel` block was measured against it.
 - **`plinth-tuner.html` is stale and now more so.** It reimplements the
   procedural material in GLSL and cannot preview a photo-backed stone at all.
   `slab.json` carries `photo_candidates` so the tuner can list them and say it
