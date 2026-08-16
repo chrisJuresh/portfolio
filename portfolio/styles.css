@@ -856,16 +856,29 @@
 
    The band has a floor and a ceiling, and both are real limits, not taste:
 
-   * min-height 983px is where the arithmetic runs out. The strip's own designed
-     minimum is 15rem, and 983px is the height at which the remainder falls to
-     exactly that. Any shorter and photographs would have to go under the size
-     the design already declared was the smallest they should ever be — at 900px
-     the remainder is 172px, at 768px it is 64px, which is not a photograph of
-     anything. So below 983px the rule switches off entirely and the strip goes
-     back to its own `40vh` sizing, rather than sitting pinned at the floor: at
-     768px the original rule gives 307px and this one would give 240px, so
-     keeping it on would make the photographs SMALLER while still not fitting.
-     Short screens scroll, and the cut sits on the document's bottom edge.
+   * min-height 700px is where the arithmetic runs out — WITH THE PAGE ALLOWED TO
+     CHANGE SIZE, which is what the `font-size` below buys and what moved this
+     number down from 983. 983 was the height at which the remainder falls to the
+     strip's designed minimum of 15rem AT A REM OF 16PX: any shorter and
+     photographs would have gone under the size the design declared was the
+     smallest they should ever be — 172px at 900, 64px at 768, which is not a
+     photograph of anything. Below it the rule used to switch off entirely and a
+     short screen simply scrolled, with the cut sitting on the document's bottom
+     edge rather than the window's.
+     A rem is not 16px here any more, so "the smallest a photograph should be" is
+     15 of whatever a rem now is, and the height at which the remainder falls to
+     it moves down with the type. 700 is where the scale reaches 11.4px on a
+     1280-wide window — the smallest this page is willing to set a CV at — and
+     below that the rule still switches off and the page still scrolls. What a
+     short screen gets in between is the whole composition, smaller: the same
+     page, not a truncated one.
+     The scale is a function of the WIDTH as well, so 700 is not one size: the
+     cut word is fitted to the gutter and a wider window spends more of the
+     screen on the slice of it that shows, which is 9.9px of rem at 2560x700
+     against 11.4 at 1280x700. The gate is left at a height for the same reason
+     983 was — a floor that moved with the width would be a breakpoint that moved
+     with the width — and a window that wide and that short is an extreme this
+     page composes for rather than optimises for.
    * The 24rem ceiling inside the clamp is the strip's existing maximum. Above
      roughly 1158px of height the remainder exceeds it, the strip stops growing,
      and the leftover goes above the cut through .col's auto margin instead.
@@ -874,14 +887,59 @@
    desktop conceit — a narrow window is a scrolling column, which is what phones
    and tablets get anyway. It also keeps the strip at 384px for the two widths
    the profile-README capture in chrisJuresh/chrisJuresh probes at, 1000px and
-   592px, whose hardcoded 592 divisor is derived from the photo width.
+   592px, whose hardcoded 592 divisor is derived from the photo width — AND now
+   keeps the scale below off them too, which matters more: the capture's 1000px
+   is outside this gate, so a rem is 16px in every shot it takes and every length
+   the contract asserts on is the length it has always been.
 
    The same gate appears once more at the foot of this sheet, for the turn — the
    page turn out of the CV and into the projects section, which is what the cut
    title opens onto. It has to be down there to win the cascade; the two blocks
    are one idea and the gates must be kept in step. */
-@media (min-width: 1100px) and (min-height: 983px) {
+@media (min-width: 1100px) and (min-height: 700px) {
   :root {
+    /* ---- THE PAGE'S OWN SIZE, and the reason the floor above is 700 and not
+       983 -------------------------------------------------------------------
+       Everything on this page that is not the photo strip or one of the two
+       vh-driven gaps is set in rem, on a φ ladder — that is what --cv-static is
+       a measurement of. So one number moves all of it at once, and the question
+       "does the CV compose to one screen" stops being a question with a yes/no
+       answer and becomes a question with a SIZE for an answer.
+
+       Solve the budget for that size. The composition is
+
+         2 × --corner  +  (--cv-static + --slide-h + nhl − tail) × r  +  --cue-clip
+
+       where r is a rem in px, --corner is 9vh everywhere the answer is below
+       16px (its 3rem floor and 6.5rem ceiling are both clear of 9vh through the
+       whole scaling range), and --cue-clip is the cut word's visible slice,
+       0.62 × 0.154521 of the gutter, where the gutter is 50vw − 13.5r − 2 ×
+       --corner. Put --slide-h at its 15rem minimum, substitute, collect the
+       terms in r, and the h and w terms fall out as
+
+         r = (0.837245 × 100vh − 0.047902 × 100vw) / 46.4605
+
+       47 is what is written, which is that plus 1.2% of slack — and the slack is
+       free, because the strip is the REMAINDER. Ask for a smaller rem than the
+       budget allows and the remainder simply comes out larger than 15rem; the
+       page is still exactly one screen. The only value that costs anything is one
+       that is too BIG, where the clamp's floor binds and the page overflows,
+       which is the thing this whole block exists to stop.
+
+       `min(1rem, …)` and not `min(16px, …)`: on the root's own font-size a rem is
+       the initial value, which is the reader's own default. A tall screen
+       therefore gets the size they asked for and this only ever makes type
+       smaller. 100vw counts the vertical scrollbar the layout does not get, which
+       takes 0.015px off r — the safe direction, and not worth a script.
+
+       WHAT ELSE MOVES WITH IT. Everything in rem, which is the point: --col, the
+       ladder, the strip's own two bounds, the cut word's cap. What does NOT is
+       anything stated in px or vh — the media gates, --corner's 9vh, and the
+       three absolute floors in the Projects panel, which are floors on
+       LEGIBILITY and were converted from rem to px in the same change for
+       exactly that reason. A floor that shrinks with the type is not a floor. */
+    font-size: min(1rem, calc((0.837245 * 100vh - 0.047902 * 100vw) / 47));
+
     /* ---- the cut word's measure, out in the gutter -------------------------
        This is the band where the word leaves the column and stands in the
        page's bottom-left corner instead (see the turn block at the foot of
@@ -1957,7 +2015,7 @@ body::after {
    These rules sit at the end of the sheet, not up in the :root block that shares
    their gate: every one of them overrides a base rule of the same specificity,
    and a media query buys no specificity at all. Moved earlier, they lose. */
-@media (min-width: 1100px) and (min-height: 983px) {
+@media (min-width: 1100px) and (min-height: 700px) {
   html { scroll-snap-type: y mandatory; }
   /* Not `hidden`: an element with hidden overflow is a scroll container even
      when it never overflows, and a snap area belongs to its nearest scroll
@@ -2228,10 +2286,19 @@ body::after {
      and smaller on a window narrower than that, which is the honest trade for a
      composition that is never broken, only small.
      --panel-masthead-size and --panel-sub-size have no floor for the harder
-     version of the same reason: those two ARE the composition's height. */
+     version of the same reason: those two ARE the composition's height.
+
+     THE FLOORS ARE IN PX AND NOT IN REM, which is what they were until the page
+     got a size of its own. A rem is the reader's default only OUTSIDE the
+     one-screen band; inside it the root's font-size is solved from the window —
+     see the composing-to-one-screen block above — so on exactly the short
+     screens these floors exist for, a rem is 11-something px and `0.7rem` is 8.
+     A floor that shrinks with the thing it is holding up is not a floor. The two
+     numbers are what those rem values came to at the 16px they were written
+     against. */
   --panel-copy-size:     calc(0.0100 * var(--panel-w));
-  --panel-small-size:    max(0.7rem,  calc(0.00668 * var(--panel-w)));
-  --panel-rail-size:     max(0.65rem, calc(0.00549 * var(--panel-w)));
+  --panel-small-size:    max(11px, calc(0.00668 * var(--panel-w)));
+  --panel-rail-size:     max(10px, calc(0.00549 * var(--panel-w)));
 
   /* The two gutters, as shares for the same reason, and the Rail's width — which
      is one line box of its own type and is stated rather than left to `auto`
