@@ -374,6 +374,28 @@
     "crack",
     "room"
   ],
+  "relit_candidates": {
+    "nero-noir": {
+      "title": "near-black with fine white veining - the design render's stone",
+      "of": "nero",
+      "room": "noir"
+    },
+    "portoro-noir": {
+      "title": "Nero Portoro - black with gold swathes and white hairlines",
+      "of": "portoro",
+      "room": "noir"
+    },
+    "marquina-noir": {
+      "title": "Nero Marquina - black with bold white veining",
+      "of": "marquina",
+      "room": "noir"
+    },
+    "grey-noir": {
+      "title": "dark grey with soft pale veining",
+      "of": "grey",
+      "room": "noir"
+    }
+  },
   "photo_candidates": {
     "gemini": {
       "title": "Gemini Portoro - deep grade, life size, full surface model",
