@@ -53,6 +53,17 @@ design/
                          so nothing is downloaded and nothing is attributed.
                          Needs Blender, not pip:
                            blender -b -P design/plinth/build-slab.py -- all
+    slab.json            what that script says — camera, block, lights and the
+                         whole CANDIDATES table. WRITTEN BY IT, never by hand:
+                         it is how the tuner below avoids holding a second copy
+                         of constants that would drift out from under it.
+    plinth-tuner.html    interactive: which stone, over the real page. The four
+                         baked plates switch live and exactly — that half is a
+                         `data-marble` attribute and nothing else. The other half
+                         is a WebGL previz of the same material recipe, with
+                         every value on a slider, for asking what a change would
+                         do without paying a minute of Cycles for the answer;
+                         it exports a CANDIDATES entry to paste back.
   tools/
     render.mjs       Playwright: serves the repo, walks the matrix, writes shots/
     package.json     dev dependency (playwright) — not the site's
@@ -64,7 +75,13 @@ design/
 
 The **lab** compares finished candidates; the **tuner** is for arriving at one.
 The **plate tuner** does the same job for the three photographs in the page's
-corners.
+corners, and the **plinth tuner** for the stone the Projects Panel stands on —
+where it is worth knowing which half of the page you are reading. The baked
+plates are the real render and comparing them is exact; the previz beside them is
+an approximation of Cycles and says nothing reliable about where an individual
+vein lands. It is for the character of a stone — how much gold, how wide, how
+sharp — and its numbers want one confirming bake. The page says so twice, in the
+header comment and in the export itself.
 
 ## Why it exists
 
