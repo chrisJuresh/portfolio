@@ -363,5 +363,270 @@
       ]
     }
   },
-  "version": "de287c12"
+  "photo_fields": [
+    "grade",
+    "scale",
+    "offset",
+    "bump",
+    "sss",
+    "coat",
+    "rough",
+    "crack",
+    "room"
+  ],
+  "photo_candidates": {
+    "gemini": {
+      "title": "Gemini Portoro - deep grade, life size, full surface model",
+      "grade": "deep",
+      "scale": 0.84,
+      "offset": 0.4,
+      "bump": [
+        0.22,
+        0.00035
+      ],
+      "sss": 0.65,
+      "coat": [
+        0.35,
+        0.02
+      ],
+      "rough": 1.0,
+      "crack": false,
+      "room": "flat"
+    },
+    "gemini-plain": {
+      "title": "control - photo in Base Color only, flat polish, no relief",
+      "grade": "asis",
+      "scale": 0.84,
+      "offset": 0.4,
+      "bump": [
+        0.0,
+        0.0
+      ],
+      "sss": 0.0,
+      "coat": [
+        0.0,
+        0.0
+      ],
+      "rough": 0.0,
+      "crack": false,
+      "room": "flat"
+    },
+    "gemini-asis": {
+      "title": "faithful grade, full surface model - the photo, lit",
+      "grade": "asis",
+      "scale": 0.84,
+      "offset": 0.4,
+      "bump": [
+        0.22,
+        0.00035
+      ],
+      "sss": 0.65,
+      "coat": [
+        0.35,
+        0.02
+      ],
+      "rough": 1.0,
+      "crack": false,
+      "room": "flat"
+    },
+    "gemini-gold": {
+      "title": "Portoro d'Oro - the gold pushed, showy rather than faithful",
+      "grade": "gold",
+      "scale": 0.84,
+      "offset": 0.4,
+      "bump": [
+        0.24,
+        0.00035
+      ],
+      "sss": 0.7,
+      "coat": [
+        0.4,
+        0.018
+      ],
+      "rough": 1.0,
+      "crack": false,
+      "room": "flat"
+    },
+    "gemini-wide": {
+      "title": "big figure - half a slab across the block, swathes dominate",
+      "grade": "deep",
+      "scale": 0.42,
+      "offset": 0.52,
+      "bump": [
+        0.2,
+        0.00045
+      ],
+      "sss": 0.65,
+      "coat": [
+        0.35,
+        0.02
+      ],
+      "rough": 1.0,
+      "crack": false,
+      "room": "flat"
+    },
+    "gemini-fine": {
+      "title": "fine figure - two slabs across, dense jewel-like network",
+      "grade": "deep",
+      "scale": 1.75,
+      "offset": 0.3,
+      "bump": [
+        0.22,
+        0.00022
+      ],
+      "sss": 0.6,
+      "coat": [
+        0.35,
+        0.02
+      ],
+      "rough": 1.0,
+      "crack": false,
+      "room": "flat"
+    },
+    "gemini-crack": {
+      "title": "hybrid - photo structure under a procedural hairline network",
+      "grade": "deep",
+      "scale": 0.84,
+      "offset": 0.4,
+      "bump": [
+        0.22,
+        0.00035
+      ],
+      "sss": 0.65,
+      "coat": [
+        0.35,
+        0.02
+      ],
+      "rough": 1.0,
+      "crack": true,
+      "room": "flat"
+    },
+    "gemini-gallery": {
+      "title": "gemini, in a room with something in it - lighting, not stone",
+      "grade": "deep",
+      "scale": 0.84,
+      "offset": 0.4,
+      "bump": [
+        0.22,
+        0.00035
+      ],
+      "sss": 0.65,
+      "coat": [
+        0.35,
+        0.02
+      ],
+      "rough": 1.0,
+      "crack": false,
+      "room": "gallery"
+    },
+    "gemini-noir": {
+      "title": "gemini in a dark room - the black finally black",
+      "grade": "deep",
+      "scale": 0.84,
+      "offset": 0.4,
+      "bump": [
+        0.22,
+        0.00035
+      ],
+      "sss": 0.65,
+      "coat": [
+        0.0,
+        0.0
+      ],
+      "rough": 1.0,
+      "crack": false,
+      "room": "noir"
+    },
+    "gemini-noir-gold": {
+      "title": "Portoro d'Oro in a dark room - gold against a real black",
+      "grade": "gold",
+      "scale": 0.84,
+      "offset": 0.4,
+      "bump": [
+        0.24,
+        0.00035
+      ],
+      "sss": 0.7,
+      "coat": [
+        0.0,
+        0.0
+      ],
+      "rough": 1.0,
+      "crack": false,
+      "room": "noir"
+    },
+    "gemini-noir-wide": {
+      "title": "big figure in a dark room",
+      "grade": "deep",
+      "scale": 0.42,
+      "offset": 0.52,
+      "bump": [
+        0.2,
+        0.00045
+      ],
+      "sss": 0.65,
+      "coat": [
+        0.0,
+        0.0
+      ],
+      "rough": 1.0,
+      "crack": false,
+      "room": "noir"
+    },
+    "gemini-noir-fine": {
+      "title": "fine figure in a dark room",
+      "grade": "deep",
+      "scale": 1.75,
+      "offset": 0.3,
+      "bump": [
+        0.22,
+        0.00022
+      ],
+      "sss": 0.6,
+      "coat": [
+        0.0,
+        0.0
+      ],
+      "rough": 1.0,
+      "crack": false,
+      "room": "noir"
+    },
+    "gemini-screen": {
+      "title": "dark room, and the Frame standing in it as a real emitter",
+      "grade": "deep",
+      "scale": 0.84,
+      "offset": 0.4,
+      "bump": [
+        0.22,
+        0.00035
+      ],
+      "sss": 0.65,
+      "coat": [
+        0.0,
+        0.0
+      ],
+      "rough": 1.0,
+      "crack": false,
+      "room": "screen"
+    },
+    "gemini-screen-gold": {
+      "title": "the same, with the gold pushed",
+      "grade": "gold",
+      "scale": 0.84,
+      "offset": 0.4,
+      "bump": [
+        0.24,
+        0.00035
+      ],
+      "sss": 0.7,
+      "coat": [
+        0.0,
+        0.0
+      ],
+      "rough": 1.0,
+      "crack": false,
+      "room": "screen"
+    }
+  },
+  "version": "b4cb2851"
 }

@@ -182,6 +182,15 @@ do not exist on the repo yet**, so `gh issue edit --add-label` fails on them —
 see `docs/agents/triage-labels.md` for which, and the one command that creates
 them.
 
+### The Projects Panel's plinth
+
+Two generators, two rooms, and a bake-off between them. `docs/agents/plinth-marble.md`
+is the authority — read it before touching `design/plinth/`. It carries the one
+rule that cost three wrong diagnoses to find: **a light reads as a highlight or
+as a veil depending on its ANGULAR size against the ±14° arc the front face
+sweeps**, so anything wider than about a third of a model unit is a wall however
+dim it is made.
+
 ### Domain docs
 
 Single-context — one `CONTEXT.md` and one `docs/adr/` at the repo root. Neither

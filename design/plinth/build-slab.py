@@ -1,13 +1,19 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 """Render the Projects Panel's marble plinth as an actual block of stone.
 
     "C:/Program Files/Blender Foundation/Blender 5.2/blender.exe" -b \
-        -P design/plinth/build-slab.py -- [nero | portoro | marquina | grey | all]
+        -P design/plinth/build-slab.py -- [<stone> | proc | photo | all]
+
+There are two families of stone here and they are generated in completely
+different ways. `proc` is nero/portoro/marquina/grey, grown out of noise nodes.
+`photo` is the gemini-* set, read off a photograph by
+design/plinth/build-portoro-maps.py â€” run that first, it needs no GPU. See `the
+stone, photographed` for why both exist and what each one cannot do.
 
 WHY THIS REPLACES design/plinth/build-marble.py. That file painted a plinth: a
 photograph of a slab, warped, dropped onto a luminance ramp measured off the
 design render, with a specular line drawn where the two faces met. It could not
-be made right, and the reason is structural rather than a matter of tuning — it
+be made right, and the reason is structural rather than a matter of tuning â€” it
 had no geometry. The plate it wrote was a RECTANGLE, so the block's ends could
 not converge, the top face could not be a trapezoid, and the whole thing read as
 a lit strip rather than as something with a far side. Every parameter in it was a
@@ -18,7 +24,7 @@ them to be in, and the silhouette comes out of the alpha channel instead of bein
 assumed.
 
 THE CAMERA IS SOLVED FROM THE RENDER, NOT CHOSEN. IMG_20260815_153956.jpg is not
-in this repository — see the .panel block in portfolio/styles.css for why — so
+in this repository â€” see the .panel block in portfolio/styles.css for why â€” so
 these are constants of the composition, but they are measurements and the camera
 that reproduces them is arithmetic:
 
@@ -29,7 +35,7 @@ that reproduces them is arithmetic:
     Frame         x 574..2411, so its centre is x 1492.5
 
 Two things fall out of that and both had been read wrong. The top face is 67 px
-deep, not the 31 px the old plate drew, because 1518 IS NOT THE BACK EDGE — the
+deep, not the 31 px the old plate drew, because 1518 IS NOT THE BACK EDGE â€” the
 block runs 36 px BEHIND the Frame's foot and the Frame stands on it rather than
 at its back. And the near edge overhangs the Frame by 174 px on the left, which
 put symmetrically on the right lands 17 px outside a picture 2568 wide: the
@@ -37,8 +43,8 @@ render's slab is symmetric about the Frame and was only ever cut off. The old
 plate ran flush to the composition on the right and a column past it on the left,
 which is the asymmetry you can see without measuring anything.
 
-With the block's half width set equal to the near edge's own screen half width —
-model units ARE Frame widths — the camera solves in three lines, and the height
+With the block's half width set equal to the near edge's own screen half width â€”
+model units ARE Frame widths â€” the camera solves in three lines, and the height
 and the block's own height come out equal to the screen lengths that measured
 them. See the derivation under `the camera` below.
 
@@ -46,20 +52,20 @@ WHAT THE LIGHT IS. Two area lights in a room, and their placement is the
 reflection and not a look. The top face is polished, so what it shows is whatever
 its mirror ray hits: from the near edge that ray leaves at 7.8 degrees and from
 the far edge at 6.9, so a source BEHIND the block and just above its surface is
-caught by the near rows and missed by the far ones. That is the render's sweep —
-dark at the back, 79 at 81% across, falling off the arris — and it is why the key
+caught by the near rows and missed by the far ones. That is the render's sweep â€”
+dark at the back, 79 at 81% across, falling off the arris â€” and it is why the key
 is behind a block that appears lit from the front. The fill is in front and weak,
 and it is most of what the front face is.
 
 Both energies were fitted rather than picked: the profile the plate is scored
 against is the render's own, meaned across x 620-2380, and the plate this writes
-lands within a couple of levels of it at both ends of both faces — 34 to 80 on the
+lands within a couple of levels of it at both ends of both faces â€” 34 to 80 on the
 top face against a render that runs 36 to 79, and 27 to 30 on the front against a
 flat 30.
 
 WHAT IS NOT FITTED TO THAT PROFILE, deliberately, is anything ACROSS the block.
 The reference profile is a mean over x, so it says nothing about the horizontal,
-and what filled that silence was two ten-unit emitters against a block 1.19 wide —
+and what filled that silence was two ten-unit emitters against a block 1.19 wide â€”
 which is not a pair of lights but a pair of skies. Every column saw the same solid
 angle of them and the plate came out varying by less than a level from one end of
 the front face to the other. Nothing real is that even. Both lights are now
@@ -70,7 +76,7 @@ is the second thing the old pipeline could not do. Texturelabs' slabs are shot
 square-on in flat light: they are pictures of albedo, with no reflectance in them
 at all. A polished plinth is mostly reflectance. Here the veining drives base
 colour, roughness AND bump together, so a vein is rougher than the ground it sits
-in and catches the key differently — which is what marble does and what no amount
+in and catches the key differently â€” which is what marble does and what no amount
 of warping a flat photograph gets to.
 
 AND THE ROCK HAS A GRAIN, WHICH IS THE THING IT TOOK LONGEST TO NOTICE. Every
@@ -78,14 +84,14 @@ field in the first material was isotropic, so the veins were closed blobby loops
 wandering equally in all directions and the hairlines were smooth curves. Marble
 is a squeezed sediment and a real slab is unmistakably directional; its fine white
 network is not veining at all but BRITTLE FRACTURE, which is straight between
-junctions and closes into cells. Those two — a bedding shear on every field, and a
-Voronoi cell boundary instead of a level set for the hairlines — are what moved
+junctions and closes into cells. Those two â€” a bedding shear on every field, and a
+Voronoi cell boundary instead of a level set for the hairlines â€” are what moved
 this from a plausible dark texture to something that reads as quarried. See
 BEDDING and FRACTURE, which say what each replaced and why the replacement is the
 shape it is.
 
 NOT DETERMINISTIC, whatever this file used to say. Cycles is seeded and the
-material has no random node, so the PICTURE is reproducible — but the bytes are
+material has no random node, so the PICTURE is reproducible â€” but the bytes are
 not: rendering `nero` twice in a row on the same machine, same Blender, same
 everything, gives two different sha256s. The OptiX denoiser is the suspect
 (`use_denoising` on a GPU device), and it is not worth turning off to buy a
@@ -129,7 +135,7 @@ TOP_FACE = (NEAR_Y - FAR_Y) / FRAME_W            # 0.036472  the whole top face
 BEHIND = (FOOT_Y - FAR_Y) / FRAME_W              # 0.019597  ...of it behind the Frame
 # The front face the render shows is 83 px and CUT OFF at the picture's bottom
 # edge, so it is a floor and not a height. 7% is what the plate draws, which is
-# what the old pipeline drew too — it is the one number of its that survived, and
+# what the old pipeline drew too â€” it is the one number of its that survived, and
 # keeping it is what leaves the composition's fit constant untouched.
 FRONT_FACE = 0.070024
 PLINTH_W = 2.0 * NEAR_HALF                       # 1.189439
@@ -149,7 +155,7 @@ PLINTH_W = 2.0 * NEAR_HALF                       # 1.189439
 #          that makes h equal to the arris offset itself
 #   HEIGHT the block's own height, by the same identity
 #
-# DEPTH is the one free parameter — the render fixes only the RATIO of depth to
+# DEPTH is the one free parameter â€” the render fixes only the RATIO of depth to
 # camera distance, because that is all a convergence can tell you. 0.30 of a
 # Frame width is a plinth a laptop stands on rather than a plank or a pedestal;
 # moving it moves the camera with it and the picture does not change.
@@ -177,14 +183,14 @@ PLATE_H = int(round(PLATE_W * (_y_top - _y_bot) / (2.0 * _x_half)))
 # BASE_ROUGH the top face is very nearly a mirror, and Fresnel at this camera
 # makes it a strong one: the eye is 7.8 degrees above the surface, so the angle
 # of incidence is 82 degrees and Schlick against IOR 1.55 gives 0.51. Half of
-# what the top face shows is not its own colour at all — it is whatever is in
+# what the top face shows is not its own colour at all â€” it is whatever is in
 # front of the mirror. Against a black world that is nothing, so the face fell
 # back on its diffuse term, which for a ground of 0.019 is almost nothing too,
 # and the two area lights were the only things in the picture. A near-black
 # diffuse surface with two specular lobes on it is a photograph of charcoal.
 #
-# So there is a room now. Not an HDRI — the site carries no binary it does not
-# render — but the two things a room actually is at these angles:
+# So there is a room now. Not an HDRI â€” the site carries no binary it does not
+# render â€” but the two things a room actually is at these angles:
 #
 #   the ramp   how bright the surround is at each elevation, from the floor
 #              below the block through the horizon to the ceiling. Stops are
@@ -204,13 +210,13 @@ PLATE_H = int(round(PLATE_W * (_y_top - _y_bot) / (2.0 * _x_half)))
 #     light two units away varies across a block and a distant surround cannot.
 #   the front face looks back at the camera, so its mirror ray is the view ray
 #     with the sign of y flipped: elevation 0.418 to 0.432, again a sliver. What
-#     varies across that face is AZIMUTH — the reflected ray swings a quarter
-#     turn either side of centre over the block's width — which is why the lobe
+#     varies across that face is AZIMUTH â€” the reflected ray swings a quarter
+#     turn either side of centre over the block's width â€” which is why the lobe
 #     is off-axis and why it, and not the ramp, is what stopped the front face
 #     from being one flat number at every one of its 3000 columns.
 #
 #   the chamfer looks STRAIGHT UP. Its normal is halfway between the two faces,
-#     so the ray it mirrors leaves at 82 degrees — it is the one surface on the
+#     so the ray it mirrors leaves at 82 degrees â€” it is the one surface on the
 #     block that sees the ceiling, and with the ceiling at 0.003 it came out at
 #     level 9 between two faces at 78 and 21. A black wire where the arris should
 #     be is worse than the hard step it replaced. The ceiling is lit because a
@@ -230,6 +236,206 @@ WORLD = [
 # design render's own soft side light has to have been.
 ROOM_LOBE = ((-0.62, -0.74, 0.26), 46.0, 0.030)
 
+# ---- and what the top face has never had anything of ----------------------
+# Read the ramp again at the band the top face grazes: 0.52 is 0.0034 and 0.58
+# is 0.0030. Flat. So the mirror that is half of that face is pointed at a
+# featureless grey wall, and every bit of variation up there comes from the key
+# light instead. That is why the top face reads as a swept gradient rather than
+# as a polished surface in a room, in EVERY stone in this file, procedural or
+# photographic — it is a property of the surround, not of the marble, and no
+# amount of work on the stone was ever going to fix it.
+#
+# What is missing is AZIMUTHAL structure. The ramp cannot supply any: it is a
+# function of elevation alone, so raising the stops the top face reads just
+# makes the whole face brighter by the same amount everywhere. But the mirror
+# ray off the top face swings about 14 degrees either side of straight ahead
+# across the block's width, so anything placed in THAT arc is reflected at a
+# particular position along the plinth — which is what makes a polished slab
+# look like polished stone in a room rather than like a lit gradient.
+#
+# `flat` is the fitted room exactly as it was, and is the default, because the
+# stones have to be compared against each other on terms that did not move.
+# `gallery` adds three sources in that arc — two narrow and one broad and high —
+# and changes nothing else. It is offered as a variant rather than switched on,
+# because the levels in WORLD were fitted against a measured profile and this is
+# the one change here that moves what that profile would read.
+#
+# AND THE BLACK IS NOT BLACK, which is the other thing only the surround can
+# fix and the one that was actually wrong. Measured on the front face of the
+# rendered plate against the source photograph it is cut from:
+#
+#     source photograph, its ground     p5   5.9   p25   8.0   p50  11.0
+#     rendered `gemini`, front face     p5  24.0   p25  24.0   p50  24.0
+#
+# Three times too light — but read the SHAPE of it rather than the size. Those
+# three numbers are the same number. The ground is pinned at a flat 24 whatever
+# the texture underneath it says, and a floor that does not vary with the albedo
+# is not albedo: it is light being added on top of it. The front face's mirror
+# ray leaves at elevation 0.418 to 0.432, which lands between the 0.36 and 0.47
+# stops of WORLD, and 0.47 is 0.0125 — the brightest stop in the lower half of
+# the ramp. The front face is reflecting that, and reflecting it evenly at all
+# 3000 columns, which is exactly a flat floor.
+#
+# So no grade can fix it. `deep` and `gold` already crush the ground to almost
+# nothing and both still measure 24, because they are turning down a term that
+# is not the one doing the damage — which is the same shape of mistake as tuning
+# a vein generator that cannot make the vein.
+#
+# The levels themselves were not wrong when they were set. They were fitted
+# against the design render, whose stone is the much lighter `nero`, and a
+# surround that flatters a mid-grey marble drowns a black one. A black stone
+# needs a darker room; that is a fact about black stone.
+ROOMS = {
+    # The fitted room, untouched, and the default. Every procedural stone goes
+    # on using it so the four of them stay comparable with what shipped.
+    "flat": {"mul": (1.0,) * 7, "lobe": 1.0, "extra": ()},
+    # Same levels, plus three sources in the arc the top face sweeps.
+    "gallery": {"mul": (1.0,) * 7, "lobe": 1.0, "extra": (
+        ((0.22, 0.95, 0.13), 9.0, 0.022),    # a narrow source, right of centre
+        ((-0.30, 0.93, 0.11), 13.0, 0.013),  # a softer, wider one to the left
+        ((0.02, 0.99, 0.30), 26.0, 0.008),   # and the wash off a high ceiling
+    )},
+    # A DARK ROOM WITH BRIGHT THINGS IN IT, which is not the same as a dim room
+    # and the difference is the whole point.
+    #
+    # The first attempt at this scaled every stop by about a third and moved the
+    # black from 24 to 21. Almost nothing, because turning the whole surround
+    # down turns the highlights down with it: the picture gets darker and stays
+    # just as flat. A reference slab is not uniformly dim. It is BLACK, with a
+    # few small hard bright hits in particular places — a ceiling spot, the edge
+    # of a window — and everywhere between them it is black.
+    #
+    # THE TWO TERMS COME APART CLEANLY once you notice they act through
+    # different channels:
+    #
+    #   DIFFUSE does not lift a black ground and cannot. The ground's albedo is
+    #     0.003, so multiply it by as much light as you like and it stays near
+    #     zero — while the calcite at 0.86 and the gold light up in proportion.
+    #     Diffuse light is therefore FREE contrast: it is what makes the veins
+    #     visible without touching the black at all. That is why a real slab
+    #     photographs black against a bright grey wall.
+    #   SPECULAR is what pinned the floor at 24, and a smooth surface mirroring
+    #     a BROAD EVEN emitter returns the same radiance at every pixel, which
+    #     is a veil by construction. The elevation ramp is exactly such an
+    #     emitter — it is smooth in elevation and constant in azimuth, so there
+    #     is nothing in it that could ever land in one place rather than another.
+    #
+    # So: crush the ramp, because it is the mirrored term and only the mirrored
+    # term. Leave KEY and FILL alone, because they are small — their specular is
+    # a local highlight rather than a wash, and their diffuse is what lights the
+    # veining. Then put back, deliberately, the handful of narrow bright sources
+    # that a mirror is supposed to show, at the angles each face actually looks.
+    #
+    # ...AND THAT WAS STILL NOT IT. Crushing the 0.47 stop by sixteen times moved
+    # the black from 24 to 21. Three levels. So the ramp was not what was pinning
+    # it either, and the reasoning above — correct as far as it goes — was
+    # pointed at the wrong broad even emitter. There is a second one.
+    #
+    # FILL is 3.4 by 2.0 units, 1.4 in front of a block 1.19 wide. From the front
+    # face that subtends roughly 100 degrees by 70: it fills the entire specular
+    # lobe and then some, so what the face mirrors is FILL, at every column, at
+    # the same radiance. It is not a light in front of the stone, it is a wall of
+    # light in front of the stone. The header three hundred lines up already
+    # worked out that two ten-unit emitters were "not a pair of lights but a pair
+    # of skies" and narrowed them — and 3.4 x 2.0 against a block 1.19 wide is
+    # still a sky. The narrowing stopped one size too early.
+    #
+    # THE ENERGY DOES NOT CHANGE, only the size, and that is the whole trick.
+    # A Cycles area light's energy is total watts, so shrinking it at fixed
+    # energy holds the DIFFUSE illumination roughly constant — from a distance a
+    # small bright source and a large dim one of the same wattage light a surface
+    # identically — while collapsing the SPECULAR from a veil across the whole
+    # face into a highlight in one place. Which is the asymmetry this whole room
+    # is built to buy, and it turns out the lights needed it more than the ramp.
+    "noir": {
+        "mul": (0.15, 0.15, 0.06, 0.18, 0.20, 0.25, 0.70), "lobe": 0.05,
+        # (at, w, h, energy, rx). THE SIZE IS SET BY AN ANGLE, not by taste, and
+        # this took three goes to see. What a smooth face shows of a light is
+        # the light's own ANGULAR size, so whether a source reads as a highlight
+        # or as a veil is decided by comparing that against the arc the face
+        # sweeps — and the front face sweeps +-14 degrees of azimuth across the
+        # whole block. At FILL's 1.4 units away, 14 degrees is 0.35 units. So:
+        #
+        #   3.40 wide  subtends ~100 deg.  covers the face 3.5x over -> a veil
+        #   1.15 wide  subtends ~45 deg.   still covers all of it -> still a veil
+        #   0.30 wide  subtends ~12 deg.   lands on ~40% of the width -> a hit
+        #
+        # Anything wider than about a third of a unit is a wall, however dim it
+        # is made, and dimming a wall was the first attempt. The energy comes
+        # down too, but for the other reason: at 0.30 wide the area is 100x
+        # smaller than it started, so the original wattage clips the highlight
+        # to flat white, and a clipped highlight only moves when it shrinks.
+        "key": ((0.0, 2.5, 0.39), 0.55, 0.10, 0.105, -80.0),
+        "fill": ((-0.30, -1.4, -0.04), 0.30, 0.20, 1.10, 90.0),
+        # AND THE THING THAT MAKES THE WHOLE SPLIT POSSIBLE. Sizing FILL down
+        # to a highlight blacked the ground out properly and took the veining
+        # with it — p50 1, p95 52, a black slab with nothing on it — because the
+        # light that was veiling the mirror was also the light that lit the
+        # calcite. Every setting of one source trades one against the other:
+        # broad enough to light the veins IS broad enough to veil, at any
+        # brightness. There is no size that satisfies both.
+        #
+        # So use two sources and take the coupling out at the renderer. A light
+        # with `visible_glossy` off is computed for diffuse and skipped for
+        # specular — it lights the stone and is not IN the stone. That is not a
+        # physical object, and it is not pretending to be: it is the diffuse
+        # half of a room whose specular half is the four narrow lobes above,
+        # split apart so each can be set for what it actually does. Broad, dim,
+        # in front and slightly above, which is where a room's light comes from.
+        "wash": ((-0.10, -1.30, 0.55), 3.20, 2.20, 17.0, 72.0),
+        # Narrow and BRIGHT — level of order 1 against a ramp of order 0.001,
+        # and a few degrees wide against the old lobe's 46. A source this small
+        # contributes essentially nothing diffusely (it subtends almost no solid
+        # angle) and everything specularly, which is precisely the asymmetry
+        # being bought.
+        #
+        # The directions are the two faces' mirror rays, worked out rather than
+        # placed by eye. Reflecting the view ray about each face's normal:
+        #   front face  r = (x, -2.43, z - 0.332), so it points BACK past the
+        #     camera and slightly down — about -8 degrees elevation — and swings
+        #     +-14 degrees in azimuth across the block's width.
+        #   top face    r = (x, +2.43, +0.332): forward, about +8 degrees up,
+        #     the same +-14 either side.
+        # An azimuth inside those arcs lands somewhere along the plinth; one
+        # outside is reflected into the void and does nothing at all.
+        "extra": (
+            ((-0.30, -0.94, -0.13), 5.0, 0.55),   # front face, left of centre
+            ((0.19, -0.97, -0.13), 4.0, 0.40),    # front face, right of centre
+            ((0.10, 0.98, 0.13), 4.0, 0.22),      # top face, a ceiling spot
+            ((-0.24, 0.96, 0.12), 6.0, 0.12),     # top face, a softer one
+        ),
+    },
+}
+# ...and the same room with the Frame standing in it as an actual light.
+#
+# WHY THIS IS NOT ALREADY THE CASE, and it is a fair question: the Panel's
+# reflection is drawn in CSS, by flipping the live Frame element under the
+# plinth. That has to stay live, because what is INSIDE the Frame is a video
+# that changes. But the Frame is also a metre of lit white screen standing on a
+# polished black slab, and NONE of that has ever reached the plate — the block
+# is baked alone, in a room the Frame is not in, and then a reflection is pasted
+# under it afterwards. The stone has never been lit by the brightest object in
+# the composition.
+#
+# The two halves come apart cleanly, and only one of them needs to be live:
+#
+#   what MOVES   the pixels inside the Frame, hence the mirror image of them.
+#                Stays in CSS, unchanged.
+#   what DOES NOT   the Frame's position, its size, and the fact that a
+#                light-mode browser window is a large soft near-white emitter
+#                a third of a unit above the stone. Fixed geometry, fixed
+#                brightness, no reason on earth for it to be computed at 60fps
+#                in a browser rather than once in Cycles.
+#
+# So this bakes the illumination and leaves the reflection alone. The Frame is
+# one unit wide by definition — model units ARE Frame widths — it stands on the
+# contact line, and it faces the camera, so what it mostly does is wash the top
+# face from the contact line forward and skim the arris. That glow is the cue
+# that the two objects are in the same room, and the contact SHADOW in
+# `.panel-plinth::after` has been carrying that job alone and unaided.
+SCREEN = ((0.0, 0.145, 0.30), 1.0, 0.60, 2.6, 90.0)
+ROOMS["screen"] = dict(ROOMS["noir"], screen=SCREEN)
+
 
 # ---------------------------------------------------------------------------
 # the light
@@ -239,7 +445,7 @@ ROOM_LOBE = ((-0.62, -0.74, 0.26), 46.0, 0.030)
 # THE KEY IS 2.6 WIDE AND NOT 10, and that is the second thing the flatness was.
 # A 10-unit emitter over a 1.19-unit block is not a light, it is a sky: every
 # column of the block sees the same solid angle of it, so the plate came out
-# 21.2 at x=0 and 21.9 at x=3000 — seven tenths of a level of variation across
+# 21.2 at x=0 and 21.9 at x=3000 â€” seven tenths of a level of variation across
 # the whole face, which no real object has anywhere on it. At 2.6 the block's
 # ends are past the emitter's own ends and fall off, which is what a lit thing
 # does.
@@ -248,13 +454,13 @@ ROOM_LOBE = ((-0.62, -0.74, 0.26), 46.0, 0.030)
 # A Cycles area light's energy is TOTAL WATTS over the whole emitter, not
 # radiance, so narrowing one at a fixed energy makes it brighter in proportion:
 # the key lost 3.85x of its area and would have come back 3.85x as bright per
-# unit of it. Both are scaled by their own area ratio first — 1.00 x 0.364/1.4
-# and 7.00 x 6.8/20 — and only then trimmed for the room, which now carries some
+# unit of it. Both are scaled by their own area ratio first â€” 1.00 x 0.364/1.4
+# and 7.00 x 6.8/20 â€” and only then trimmed for the room, which now carries some
 # of what the two lights used to carry alone.
 KEY = ((0.0, 2.5, 0.39), 2.6, 0.14, 0.300, -80.0)
 # THE FILL SITS BELOW THE TOP FACE, at z = -0.04, and that is the one placement
 # decision in here that is not about brightness. A fill in front at any positive
-# height lights BOTH faces, and what it does to the top one is raise its floor —
+# height lights BOTH faces, and what it does to the top one is raise its floor â€”
 # which flattens the key's sweep, so the ramp came out 64 -> 82 against a render
 # that runs 36 -> 79. Below the surface it cannot reach the top face at all: the
 # normal points away from it, diffuse and specular are both zero, and the sweep
@@ -265,7 +471,7 @@ FILL = ((-0.30, -1.4, -0.04), 3.4, 2.0, 3.30, 90.0)
 # near edge that ray leaves at 7.79 degrees and from the far edge at 6.94, which
 # at y = 2.5 is z = 0.342 and z = 0.268. A source centred at 0.36 is squarely in
 # the near edge's ray and above the far edge's, so the near rows catch it and the
-# far rows fall off it — which IS the render's sweep. Placed at 0.49, where this
+# far rows fall off it â€” which IS the render's sweep. Placed at 0.49, where this
 # started, both edges see only the shoulder of the lobe and the face comes back
 # almost flat: 64 -> 82 against a render that runs 36 -> 79.
 #
@@ -275,7 +481,7 @@ FILL = ((-0.30, -1.4, -0.04), 3.4, 2.0, 3.30, 90.0)
 # against the render's profile over both faces.
 
 # How polished the stone is where there is no vein in it. The veins each raise it
-# — see the CANDIDATES table — because a calcite seam is not as polished as the
+# â€” see the CANDIDATES table â€” because a calcite seam is not as polished as the
 # ground it sits in, and the difference is most of what makes the surface read as
 # stone rather than as a tinted mirror.
 BASE_ROUGH = 0.07
@@ -293,7 +499,7 @@ BASE_ROUGH = 0.07
 # because the obvious next move is to go looking for the bright hairline a
 # chamfer has in a photograph and to keep raising things until it appears. This
 # chamfer's normal is halfway between the two faces, so it mirrors a ray leaving
-# at 82 degrees — straight up, at the ceiling — while its own angle of incidence
+# at 82 degrees â€” straight up, at the ceiling â€” while its own angle of incidence
 # is 37, where Schlick against IOR 1.55 gives 0.047. It reflects four percent of
 # whatever is overhead. The ceiling stop in WORLD was raised sixfold chasing this
 # and moved the chamfer nine levels to eleven; the key cannot help either, being
@@ -308,7 +514,7 @@ BEVEL = (0.00055, 2)
 # millimetre of rock between the veins was the same rock. Marble is a sediment:
 # it clouds. `swing` is the fraction either side of the stated ground colour that
 # the cloud carries it, so 0.55 means the darkest ground is 0.45 of the nominal
-# and the lightest 1.55 of it — a lot, and it has to be, because the veins are
+# and the lightest 1.55 of it â€” a lot, and it has to be, because the veins are
 # the only other thing in the picture and a clean ground is what made them read
 # as wire on a plate rather than as seams in a rock.
 GROUND_MOTTLE = (2.6, 3.0, 0.22)
@@ -318,13 +524,13 @@ GROUND_MOTTLE = (2.6, 3.0, 0.22)
 # ever going to reach it. Marble is a metamorphosed sediment: it was laid down in
 # beds and then squeezed, so every seam in a slab runs in very nearly the same
 # direction, and what a cut face shows is a set of roughly parallel swathes at
-# one angle with cross-fractures between them. Look at any Portoro slab — the
+# one angle with cross-fractures between them. Look at any Portoro slab â€” the
 # gold and the white both run corner to corner and the eye reads that direction
 # before it reads anything else.
 #
 # Every field in this material was ISOTROPIC. A level set of an isotropic noise
 # has no preferred direction by construction, so what it draws is closed blobby
-# loops that wander equally in every direction — and a rock with no grain does
+# loops that wander equally in every direction â€” and a rock with no grain does
 # not exist, which is why the result read as a pattern rather than as stone no
 # matter how the veins themselves were shaped.
 #
@@ -335,14 +541,14 @@ GROUND_MOTTLE = (2.6, 3.0, 0.22)
 # under a 30:1 foreshortening. The compression is what makes a feature long: at
 # 3.8 the field varies nearly four times faster across the bedding than along it,
 # so a level set of it comes out as a swathe rather than as a loop. Past about
-# four it stops reading as bedding and starts reading as COMBED — every seam
+# four it stops reading as bedding and starts reading as COMBED â€” every seam
 # exactly parallel to every other, which is a texture and not a rock.
 BEDDING = (26.0, 3.0)
 # ...and the same for the POLISH, which is not even either. A slab is lapped, not
 # optically flat, and the residual is a long-wavelength variation in how well it
 # takes the light. (scale, detail, swing in absolute roughness.) At BASE_ROUGH
 # 0.07 this runs the surface between 0.035 and 0.105, which is the difference
-# between a hard reflection and a slightly milky one — across the same stone.
+# between a hard reflection and a slightly milky one â€” across the same stone.
 POLISH = (7.5, 2.0, 0.035)
 # The grain under everything, on the BUMP only: a fine tooth so the ground is not
 # a geometric plane between veins. (scale, detail, weight.)
@@ -353,7 +559,7 @@ TOOTH = (240.0, 2.0, 0.16)
 # drew: |f - 1/2| < width is a band whose thickness is set by how fast f crosses
 # its middle, and f's gradient is very nearly constant everywhere, so every vein
 # in the rock came out the same width as every other. That is the single thing
-# most responsible for the stone reading as scratches on a dark surface — real
+# most responsible for the stone reading as scratches on a dark surface â€” real
 # veining swells into swathes and thins to filaments along its own length, and it
 # is the VARIATION that says "mineral" rather than "pen".
 #
@@ -362,7 +568,7 @@ TOOTH = (240.0, 2.0, 0.16)
 # features are three-odd vein spacings across and a vein therefore swells over
 # one stretch and thins over the next rather than beading. Swing is the fraction
 # either side of the stated width, so 0.62 runs each vein between 0.38x and 1.62x
-# of it — a better than fourfold range between its thinnest and its thickest.
+# of it â€” a better than fourfold range between its thinnest and its thickest.
 WIDTH_SWING = (3.4, 2.0, 0.62)
 # ...and a vein does not end at its own edge. Calcite bleeds into the rock it
 # grew in, so there is a soft aureole around every seam that carries some of its
@@ -376,13 +582,13 @@ HALO = (3.6, 2.1, 0.145, 0.34)
 # same vein density in every cubic centimetre of the block, because the field
 # has the same statistics everywhere. Nothing quarried is like that. A slab has
 # clean stretches and shattered ones, and the eye reads uniform density as
-# "generated" long before it can say why — it was reading it here as a screen of
+# "generated" long before it can say why â€” it was reading it here as a screen of
 # wire laid over the whole face at one spacing.
 #
 # So each set is gated by a field of its own at a few vein spacings across.
 # (scale divisor, detail, gate lo, gate hi): below `lo` the set is not in this
 # part of the rock at all, above `hi` it is fully there, and the stretch between
-# is where a seam peters out — which is how they end, rather than by stopping.
+# is where a seam peters out â€” which is how they end, rather than by stopping.
 VEIN_DENSITY = (6.5, 3.0, 0.38, 0.64)
 
 # ---- the hairlines are CRACKS, and a level set cannot draw one ------------
@@ -390,7 +596,7 @@ VEIN_DENSITY = (6.5, 3.0, 0.38, 0.64)
 # marble's fine white network is not a vein at all: it is BRITTLE FRACTURE, the
 # rock broken and the breaks refilled with calcite. Fractures are straight
 # between junctions, they meet each other at angles, and they close into
-# polygonal cells — which is the one shape a noise level set can never make,
+# polygonal cells â€” which is the one shape a noise level set can never make,
 # because a level set of a smooth field is a smooth curve and its junctions are
 # rounded. Every hairline in here was a smooth wandering loop, and a screen of
 # smooth wandering loops is what "drawn rather than quarried" looks like.
@@ -419,7 +625,7 @@ SEED = 20260816
 # `distortion` is how far the field is warped before its level set is taken,
 # which is what makes veins wander and meet rather than run parallel. `width` is
 # how far off a crossing still counts as vein and `sharpness` thins what is left
-# — read them together, they are a support and a falloff. `rough` and `bump` are
+# â€” read them together, they are a support and a falloff. `rough` and `bump` are
 # what the vein does to the SURFACE as well as to its colour, which is the whole
 # reason this is a material and not a picture: a calcite seam is rougher than the
 # stone around it, so it catches the key differently, and no photograph of a slab
@@ -433,7 +639,7 @@ SEED = 20260816
 #
 # THE GROUNDS ARE BLACKER AND THE VEINS ARE BRIGHTER than they were, and the two
 # go together. A reference slab of Portoro is very nearly black between its
-# seams and its calcite is very nearly white — the stone is almost all contrast,
+# seams and its calcite is very nearly white â€” the stone is almost all contrast,
 # and it was being drawn here as mid-grey lines on dark-grey rock, which is the
 # same picture with its dynamic range thrown away. What made that worse rather
 # than better was reaching for the ground mottle and the vein halo to add
@@ -454,7 +660,7 @@ CANDIDATES = {
     },
     # Nero Portoro: a black ground under a branching CREAM-AND-GOLD network with
     # white hairlines through it. Three sets rather than two, because the gold is
-    # a swathe and the white is a filament and they are not the same rock — and
+    # a swathe and the white is a filament and they are not the same rock â€” and
     # the hairlines are the fracture below rather than a set at all.
     "portoro": {
         "title": "Nero Portoro - black with gold swathes and white hairlines",
@@ -492,11 +698,235 @@ CANDIDATES = {
 
 
 # ---------------------------------------------------------------------------
+# the stone, photographed
+# ---------------------------------------------------------------------------
+# Everything above grows a stone out of noise. Everything below reads one off a
+# photograph, and the reason for having both is that they fail in opposite
+# directions and the comparison is the point.
+#
+# WHAT THE PROCEDURAL ONE CANNOT DO, and it is structural rather than a matter
+# of tuning: a vein up there is a level set of a smooth field, and a level set
+# of a smooth field is a closed rounded loop. The hairlines are a Voronoi cell
+# boundary, and a cell boundary is a honeycomb. Portoro is neither â€” it is a
+# connected branching network whose trunks open into patches several percent of
+# the slab across and close to a filament within a hand's width. That shape is
+# not reachable from those generators at any setting, which is why an evening of
+# moving CANDIDATES around got closer every time and was still wrong.
+#
+# WHAT THE PHOTOGRAPH CANNOT DO is respond to light. It was taken under one
+# fixed lamp, and every highlight in it is where THAT lamp was, not where the
+# key is here.
+#
+# So neither one is wired in whole. design/plinth/build-portoro-maps.py takes
+# the photograph apart into what it genuinely knows â€” where the veins go, which
+# mineral each pixel is, and the relief that survives polishing â€” and throws
+# away what it only appears to know, which is the lighting. What comes back is
+# four maps, and Cycles lights them here. See that file's header for the split.
+#
+# NOTHING BELOW USES bedded(). The BEDDING shear exists to give a procedural
+# field the grain that a real rock has; a photograph of a real rock arrived with
+# its grain already in it, and shearing it a second time would be squeezing an
+# already-squeezed sediment.
+MAPS_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "maps")
+
+MISSING_MAPS = """\
+missing %s
+
+The photo-backed stones need the maps that design/plinth/build-portoro-maps.py
+writes, and neither those nor the photograph they come from are committed - see
+the .gitignore note about /Texturelabs_*.jpg, which these follow. Run:
+
+    python design/plinth/build-portoro-maps.py
+
+...from a tree that has the source photograph at its root. NOTE THAT A WORKTREE
+DOES NOT: git only puts tracked files in one, so an ignored source sitting in
+the main checkout is simply absent here. Copy it across first."""
+
+# A photo stone is a grade, a scale, a window and a surface model.
+#
+#   grade    which basecolor-*.png, so which of build-portoro-maps.py's GRADES
+#   scale    tiles per model unit, and a model unit IS a Frame width, so the
+#            block is 1.19 of them. scale 0.84 lays exactly one slab across the
+#            plinth; 0.42 crops into half a slab and the figure doubles in size;
+#            1.75 lays two down and the veining goes fine and jewel-like. This
+#            is the single strongest control in the table and it is not a
+#            quality setting - it is how big the rock is.
+#   offset   where in the slab the block was cut from. Only a sliver is ever
+#            seen (the front face is 0.07 units tall and the top face 0.30 deep,
+#            foreshortened about eight to one), so this decides which veins land
+#            on the plinth at all, and it matters roughly as much as the grade.
+#   bump     (strength, distance) for the height map, AND IT IS THE MOST
+#            DELICATE NUMBER IN THE TABLE, for a reason that is not obvious
+#            until it is rendered. The top face is seen at 7.8 degrees. At that
+#            angle Fresnel is about 0.5 and the face is essentially a MIRROR â€”
+#            `gemini-plain`, which has no relief at all, shows no veining on it
+#            whatsoever, just a smooth sweep, because the albedo is swamped by
+#            the room. So every bit of visible structure up there is the room
+#            being bent by the surface normal, which means bump is not adding
+#            texture to the top face, it is adding DISTORTION to a reflection,
+#            and the amplification at grazing incidence is severe. At 0.0016 the
+#            plinth comes out honed; the relief that actually survives polishing
+#            is sub-micron, and the number has to say so.
+#   sss      Subsurface Weight through the calcite mask. THIS IS THE ONE THAT
+#            MATTERS MOST PER UNIT OF EFFORT. Calcite is translucent: light goes
+#            into the crystal, scatters and comes back out somewhere else, and
+#            that is most of why real marble looks deep and wet while a flat
+#            albedo looks like painted card. It is one socket and it has never
+#            been connected on this plinth in any version of it.
+#   coat     (weight, roughness). A polished slab is not one surface, it is a
+#            very smooth one over a slightly less smooth one, and Coat is
+#            exactly that second lobe. Cheap, and it is what "polished" looks
+#            like as opposed to "shiny".
+#   rough    multiplies the roughness map. 0 pins it flat at BASE_ROUGH instead,
+#            which is the deliberately crippled control - see `gemini-plain`.
+#   crack    lay the procedural FRACTURE network over the photograph as well
+#   room     which ROOM_EXTRA surround to render in. Absent means "flat", which
+#            is the fitted one every other stone in the file uses.
+PHOTO_FIELDS = ("grade", "scale", "offset", "bump", "sss", "coat", "rough",
+                "crack", "room")
+PHOTO_CANDIDATES = {
+    # The proposition. Deep grade, one slab across the plinth, every map wired.
+    "gemini": {
+        "title": "Gemini Portoro - deep grade, life size, full surface model",
+        "grade": "deep", "scale": 0.84, "offset": 0.40,
+        "bump": (0.22, 0.00035), "sss": 0.65, "coat": (0.35, 0.020),
+        "rough": 1.0, "crack": False,
+    },
+    # THE CONTROL, and it is here to be beaten rather than to be chosen. This is
+    # the whole of what "just use the photograph" means: colour in, nothing
+    # else, one flat roughness over the lot. If the maps are worth their
+    # complexity the difference between this and `gemini` is where it shows.
+    "gemini-plain": {
+        "title": "control - photo in Base Color only, flat polish, no relief",
+        "grade": "asis", "scale": 0.84, "offset": 0.40,
+        "bump": (0.0, 0.0), "sss": 0.0, "coat": (0.0, 0.0),
+        "rough": 0.0, "crack": False,
+    },
+    # The photograph as it was taken, but lit properly and with the relief and
+    # the translucency it always implied. Between this and `gemini` is the grade
+    # on its own, with everything else held still.
+    "gemini-asis": {
+        "title": "faithful grade, full surface model - the photo, lit",
+        "grade": "asis", "scale": 0.84, "offset": 0.40,
+        "bump": (0.22, 0.00035), "sss": 0.65, "coat": (0.35, 0.020),
+        "rough": 1.0, "crack": False,
+    },
+    # Portoro d'Oro. Further from the photograph and closer to what the stone is
+    # sold as; "most gorgeous" and "most faithful" were not the same request.
+    "gemini-gold": {
+        "title": "Portoro d'Oro - the gold pushed, showy rather than faithful",
+        "grade": "gold", "scale": 0.84, "offset": 0.40,
+        "bump": (0.24, 0.00035), "sss": 0.70, "coat": (0.40, 0.018),
+        "rough": 1.0, "crack": False,
+    },
+    # Half a slab across the plinth, so the figure doubles and one gold swathe
+    # runs the length of it. A big-figure book-matched look.
+    "gemini-wide": {
+        "title": "big figure - half a slab across the block, swathes dominate",
+        "grade": "deep", "scale": 0.42, "offset": 0.52,
+        "bump": (0.20, 0.00045), "sss": 0.65, "coat": (0.35, 0.020),
+        "rough": 1.0, "crack": False,
+    },
+    # Two slabs across, so the network goes fine and dense. Reads as a smaller,
+    # more precious object - which a plinth under a browser window arguably is.
+    "gemini-fine": {
+        "title": "fine figure - two slabs across, dense jewel-like network",
+        "grade": "deep", "scale": 1.75, "offset": 0.30,
+        "bump": (0.22, 0.00022), "sss": 0.60, "coat": (0.35, 0.020),
+        "rough": 1.0, "crack": False,
+    },
+    # The hybrid, and the one honest use left for the procedural generator: the
+    # photograph brings the branching network no noise field can make, and
+    # FRACTURE lays a crisp hairline crack over the top of it that is sharper
+    # than a JPEG can hold at this magnification. Cracks post-date everything,
+    # so laying them last is also the right geology - see the note above
+    # `fracture_mask` in build_material().
+    "gemini-crack": {
+        "title": "hybrid - photo structure under a procedural hairline network",
+        "grade": "deep", "scale": 0.84, "offset": 0.40,
+        "bump": (0.22, 0.00035), "sss": 0.65, "coat": (0.35, 0.020),
+        "rough": 1.0, "crack": True,
+    },
+    # THE ONLY ONE HERE THAT IS NOT ABOUT THE STONE. Same material as `gemini`
+    # to the last decimal; the difference is entirely the surround. This is the
+    # lighting answer rather than a marble answer — see ROOM_EXTRA for why the
+    # top face could never be fixed from the material side, and note that it is
+    # the one variant whose luminance profile is expected to move.
+    "gemini-gallery": {
+        "title": "gemini, in a room with something in it - lighting, not stone",
+        "grade": "deep", "scale": 0.84, "offset": 0.40,
+        "bump": (0.22, 0.00035), "sss": 0.65, "coat": (0.35, 0.020),
+        "rough": 1.0, "crack": False, "room": "gallery",
+    },
+    # ---- and the same stones with the black actually black -----------------
+    # `noir` is the fix for the flat 24 that ROOMS explains, and the coat comes
+    # off with it: a coat is a second specular layer, so on a black ground it is
+    # a second thing lifting the floor, worth about three levels of the twenty
+    # four. What is left is the marble's own contrast, which is what the source
+    # photograph has and every render above had thrown away.
+    "gemini-noir": {
+        "title": "gemini in a dark room - the black finally black",
+        "grade": "deep", "scale": 0.84, "offset": 0.40,
+        "bump": (0.22, 0.00035), "sss": 0.65, "coat": (0.0, 0.0),
+        "rough": 1.0, "crack": False, "room": "noir",
+    },
+    "gemini-noir-gold": {
+        "title": "Portoro d'Oro in a dark room - gold against a real black",
+        "grade": "gold", "scale": 0.84, "offset": 0.40,
+        "bump": (0.24, 0.00035), "sss": 0.70, "coat": (0.0, 0.0),
+        "rough": 1.0, "crack": False, "room": "noir",
+    },
+    "gemini-noir-wide": {
+        "title": "big figure in a dark room",
+        "grade": "deep", "scale": 0.42, "offset": 0.52,
+        "bump": (0.20, 0.00045), "sss": 0.65, "coat": (0.0, 0.0),
+        "rough": 1.0, "crack": False, "room": "noir",
+    },
+    "gemini-noir-fine": {
+        "title": "fine figure in a dark room",
+        "grade": "deep", "scale": 1.75, "offset": 0.30,
+        "bump": (0.22, 0.00022), "sss": 0.60, "coat": (0.0, 0.0),
+        "rough": 1.0, "crack": False, "room": "noir",
+    },
+    "gemini-screen": {
+        "title": "dark room, and the Frame standing in it as a real emitter",
+        "grade": "deep", "scale": 0.84, "offset": 0.40,
+        "bump": (0.22, 0.00035), "sss": 0.65, "coat": (0.0, 0.0),
+        "rough": 1.0, "crack": False, "room": "screen",
+    },
+    "gemini-screen-gold": {
+        "title": "the same, with the gold pushed",
+        "grade": "gold", "scale": 0.84, "offset": 0.40,
+        "bump": (0.24, 0.00035), "sss": 0.70, "coat": (0.0, 0.0),
+        "rough": 1.0, "crack": False, "room": "screen",
+    },
+}
+
+# ---------------------------------------------------------------------------
+# ...AND THE PROCEDURAL STONES, RE-LIT
+# ---------------------------------------------------------------------------
+# If a surround fitted to a light stone is what flattened the black, then the
+# procedural generator was being judged through the same fault the whole time —
+# and every conclusion drawn about it, including "this isn't working, try
+# photographs", was drawn from pictures taken in the wrong room. That is worth
+# actually testing rather than reasoning about, so each of the four gets a twin
+# rendered in `noir`, same material, only the room moved.
+#
+# It is a real possibility that some of these come back looking fine. It does
+# not un-fix what the photograph fixes — a level set still cannot make a
+# branching vein, and no amount of dimming the room changes the SHAPE of the
+# veining — but "the procedural stone was drowned" and "the procedural stone was
+# wrong" are different diagnoses with different consequences, and only one of
+# them has been demonstrated.
+PROC_ROOMS = {k + "-noir": k for k in CANDIDATES}
+
+
+# ---------------------------------------------------------------------------
 # the scene
 # ---------------------------------------------------------------------------
 
-# ShaderNodeMix carries three sockets called "Result" and six called "A"/"B" —
-# one pair per data type — so every socket on it has to be reached by INDEX. The
+# ShaderNodeMix carries three sockets called "Result" and six called "A"/"B" â€”
+# one pair per data type â€” so every socket on it has to be reached by INDEX. The
 # indices are fixed by Blender: in 0 Factor(float) 1 Factor(vector) 2 A(float)
 # 3 B(float) 4 A(vec) 5 B(vec) 6 A(colour) 7 B(colour); out 0 Result(float)
 # 1 Result(vector) 2 Result(colour). Reaching them by name silently takes the
@@ -514,7 +944,7 @@ def bedded(tree, coord):
 
     TWO Mapping nodes and not one, which is forced rather than fussy: a Mapping
     node applies its scale FIRST and its rotation second, and what this needs is
-    the other order — turn the frame so the bedding lies along X, then squash
+    the other order â€” turn the frame so the bedding lies along X, then squash
     across it. R(S p) elongates features along a fixed axis and then turns the
     whole picture, which is not the same thing and is visibly not: the squash
     ends up across the block rather than across the seams. See BEDDING.
@@ -549,7 +979,7 @@ def fracture_mask(tree, co, x, y):
     """The white hairline network, as a Voronoi cell boundary. See FRACTURE.
 
     `Distance to Edge` is literally the distance to the nearest wall of the cell
-    the point is in, so thresholding it draws the walls — straight between
+    the point is in, so thresholding it draws the walls â€” straight between
     junctions, meeting in threes, closing into cells. That is what a fracture
     network is, and it is the shape a level set of a smooth field cannot make at
     any setting, because a smooth field has smooth level sets and rounded
@@ -611,7 +1041,7 @@ def band(tree, src, so, lo, hi, sharp, x, y, from_max=None):
     """|src| inside a width -> a 1-at-the-centre mask, thinned by a power.
 
     `from_max` is a (node, output) whose value REPLACES the constant `hi`, which
-    is how the width stops being a constant — see WIDTH_SWING.
+    is how the width stops being a constant â€” see WIDTH_SWING.
     """
     mr = tree.nodes.new("ShaderNodeMapRange")
     mr.location = (x, y)
@@ -642,7 +1072,7 @@ def vein_masks(tree, co, spec, x):
 
     NOT A WAVE TEXTURE IN BANDS, which is the usual recipe and is wrong here.
     Bands are a stack of parallel planes and its Detail input roughens them ALONG
-    their own direction, so what comes out is fibre — a grain running one way,
+    their own direction, so what comes out is fibre â€” a grain running one way,
     which reads as wood rather than as stone. Marble's veins are surfaces that
     wander in every direction, and a level set is the only cheap thing that is.
 
@@ -650,7 +1080,7 @@ def vein_masks(tree, co, spec, x):
     both were missing. The width is a FIELD and not a number, so the same vein is
     a swathe in one place and a filament a centimetre later; and the same
     crossing is banded a second time far wider and far softer, which is the
-    aureole the mineral bled into the rock around it. Neither is a look — a level
+    aureole the mineral bled into the rock around it. Neither is a look â€” a level
     set at a fixed width is a contour plot, and it read as one.
     """
     scale, detail, distortion, width, sharp, _c, _r, _b = spec
@@ -836,7 +1266,7 @@ def build_material(key):
     # broke and the breaks filled. So a hairline runs straight across a gold
     # swathe without caring that it is there, which is exactly what the reference
     # slab shows and what a crack laid down first and then painted over would
-    # not. It also has no halo — a fracture is a clean break, not a seam the
+    # not. It also has no halo â€” a fracture is a clean break, not a seam the
     # surrounding rock was altered by.
     fc, fr, fb, fs = spec["fracture"]
     frac = fracture_mask(tree, co, -2400, -1400)
@@ -885,11 +1315,153 @@ def build_material(key):
     return mat
 
 
-def build_world():
-    """The surround, as an elevation ramp with one soft source off the axis.
+def photo_map(tree, co, name, colorspace, x, y):
+    """One of build-portoro-maps.py's maps, box-projected onto the block.
+
+    BOX AND NOT FLAT, and this is the whole trick rather than a default worth
+    leaving alone. A flat projection needs a UV unwrap and would put a seam
+    along the arris, which is the single most looked-at line in the picture. Box
+    projection reads the top face from (x, y) and the front face from (x, z),
+    and because BOTH of those pairs agree at the arris â€” the top face's y is 0
+    there and the front face's z is 0 there â€” the vein pattern RUNS OVER THE
+    EDGE and continues down the face. Which is what a block cut from one slab
+    does, and is a thing the procedural material gets for free and every
+    photograph pipeline before this one got wrong.
+
+    `Non-Color` on everything except base colour, for the usual reason and the
+    usual consequence of forgetting: a roughness map read as sRGB is silently
+    de-gamma'd, so 0.055 arrives as 0.004 and the stone becomes a mirror.
+    """
+    path = os.path.join(MAPS_DIR, name)
+    if not os.path.isfile(path):
+        sys.exit(MISSING_MAPS % path)
+    img = bpy.data.images.load(path, check_existing=True)
+    img.colorspace_settings.name = colorspace
+    n = tree.nodes.new("ShaderNodeTexImage")
+    n.location = (x, y)
+    n.image = img
+    n.projection = 'BOX'
+    # A small blend and not zero: the chamfer is a real face of its own, 0.00055
+    # wide, and a hard switch across it draws a bright line along the arris.
+    n.projection_blend = 0.15
+    n.extension = 'REPEAT'
+    # Cubic, because the front face magnifies the source about 1.6x â€” 0.07 model
+    # units of texture stretched over 177 rows of plate â€” and Linear at that
+    # ratio makes the hairlines look like stair-steps.
+    n.interpolation = 'Cubic'
+    link(tree, co[0], co[1], n, "Vector")
+    return n
+
+
+def build_photo_material(key):
+    """A stone read off a photograph rather than grown out of noise.
+
+    Four maps, a Principled BSDF and no vein nodes at all. Compare the length of
+    this with build_material() above: the structure that costs three hundred
+    lines of noise, warp, threshold and halo up there is simply IN the picture,
+    and what is left to do is say what each mineral is made of.
+    """
+    spec = PHOTO_CANDIDATES[key]
+    mat = bpy.data.materials.new("marble-" + key)
+    mat.use_nodes = True
+    tree = mat.node_tree
+    bsdf = tree.nodes["Principled BSDF"]
+
+    coord = tree.nodes.new("ShaderNodeTexCoord")
+    coord.location = (-1800, 0)
+
+    # Scale and window. The offset goes on Y AND Z by the same amount, which is
+    # what keeps the two faces agreeing at the arris â€” see photo_map(). Putting
+    # a different number in each is the one edit here that silently breaks the
+    # thing this material is built around.
+    s, off = spec["scale"], spec["offset"]
+    m = tree.nodes.new("ShaderNodeMapping")
+    m.location = (-1600, 0)
+    m.inputs["Scale"].default_value = (s, s, s)
+    m.inputs["Location"].default_value = (0.5, off, off)
+    link(tree, coord, "Object", m, "Vector")
+    co = (m, "Vector")
+
+    base = photo_map(tree, co, "basecolor-%s.png" % spec["grade"], "sRGB",
+                     -1300, 400)
+    colour = (base, "Color")
+
+    # ---- the crack overlay, only on the hybrid -----------------------------
+    if spec["crack"]:
+        fc, fr, fb, fs = CANDIDATES["portoro"]["fracture"]
+        frac = fracture_mask(tree, bedded(tree, coord), -1300, -1900)
+        fw = tree.nodes.new("ShaderNodeMath")
+        fw.location = (-900, -1900)
+        fw.operation = 'MULTIPLY'
+        fw.inputs[1].default_value = fs * 0.55   # under a photo, not over a void
+        link(tree, frac[0], frac[1], fw, 0)
+        fmix = tree.nodes.new("ShaderNodeMix")
+        fmix.data_type = 'RGBA'
+        fmix.location = (-700, -1900)
+        fmix.inputs[MIX_CB].default_value = tuple(fc) + (1,)
+        link(tree, fw, "Value", fmix, MIX_FAC)
+        link(tree, colour[0], colour[1], fmix, MIX_CA)
+        colour = (fmix, MIX_OUT_C)
+
+    # ---- roughness ---------------------------------------------------------
+    if spec["rough"] > 0.0:
+        rmap = photo_map(tree, co, "roughness.png", "Non-Color", -1300, 100)
+        rm = tree.nodes.new("ShaderNodeMath")
+        rm.location = (-900, 100)
+        rm.operation = 'MULTIPLY'
+        rm.inputs[1].default_value = spec["rough"]
+        link(tree, rmap, "Color", rm, 0)
+        link(tree, rm, "Value", bsdf, "Roughness")
+    else:
+        bsdf.inputs["Roughness"].default_value = BASE_ROUGH
+
+    # ---- relief ------------------------------------------------------------
+    bstr, bdist = spec["bump"]
+    if bstr > 0.0:
+        hmap = photo_map(tree, co, "height.png", "Non-Color", -1300, -200)
+        bump = tree.nodes.new("ShaderNodeBump")
+        bump.location = (-700, -200)
+        bump.inputs["Strength"].default_value = bstr
+        # A polished face is FLAT. What is left after the wheel is microns of
+        # differential hardness at the mineral boundaries, so the distance here
+        # is deliberately tiny â€” the map is already high-passed to contain
+        # nothing but those boundaries, and a large distance would put a dome
+        # back that build-portoro-maps.py went to some trouble to remove. See
+        # the note on `bump` in the table for why it has to be tinier still
+        # than that argument alone suggests.
+        bump.inputs["Distance"].default_value = bdist
+        link(tree, hmap, "Color", bump, "Height")
+        link(tree, bump, "Normal", bsdf, "Normal")
+
+    # ---- and the reason marble does not look like painted card -------------
+    if spec["sss"] > 0.0:
+        cmap = photo_map(tree, co, "calcite.png", "Non-Color", -1300, -500)
+        sw = tree.nodes.new("ShaderNodeMath")
+        sw.location = (-900, -500)
+        sw.operation = 'MULTIPLY'
+        sw.inputs[1].default_value = spec["sss"]
+        link(tree, cmap, "Color", sw, 0)
+        link(tree, sw, "Value", bsdf, "Subsurface Weight")
+        # One model unit is one Frame width, so call it a metre: a couple of
+        # millimetres of scatter, longest in red the way every mineral is.
+        bsdf.inputs["Subsurface Radius"].default_value = (1.0, 0.82, 0.68)
+        bsdf.inputs["Subsurface Scale"].default_value = 0.0022
+
+    cw, cr = spec["coat"]
+    if cw > 0.0:
+        bsdf.inputs["Coat Weight"].default_value = cw
+        bsdf.inputs["Coat Roughness"].default_value = cr
+
+    link(tree, colour[0], colour[1], bsdf, "Base Color")
+    bsdf.inputs["IOR"].default_value = 1.55
+    return mat
+
+
+def build_world(room="flat"):
+    """The surround, as an elevation ramp with soft sources off the axis.
 
     Texture Coordinate's `Generated` on a world IS the outgoing ray's direction,
-    so its Z is the sine of the elevation and the ramp is read at (z + 1) / 2 —
+    so its Z is the sine of the elevation and the ramp is read at (z + 1) / 2 â€”
     0 straight down, 1/2 the horizon, 1 straight up. The lobe is a dot product
     against a fixed direction, mapped so the stated half-width falls to nothing
     and squared so it has a centre rather than an edge.
@@ -898,7 +1470,7 @@ def build_world():
     background the mirror sees. See `the room` for what each face of the block
     actually samples out of it, which is what the stops were shaped against.
     """
-    w = bpy.data.worlds.new("room")
+    w = bpy.data.worlds.new("room-" + room)
     w.use_nodes = True
     t = w.node_tree
     bg = t.nodes["Background"]
@@ -920,7 +1492,7 @@ def build_world():
     ramp.location = (-460, 120)
     # LINEAR, not B_SPLINE, and that is a tuning property rather than a look: a
     # B-spline does not pass through its own control points, and each face of the
-    # block reads a band of this ramp only a few hundredths wide — so a stop
+    # block reads a band of this ramp only a few hundredths wide â€” so a stop
     # written at 0.0041 arrived as something else, and moving it moved two other
     # bands with it. Straight segments make each stop mean what it says.
     ramp.color_ramp.interpolation = 'LINEAR'
@@ -930,44 +1502,53 @@ def build_world():
     for i, (pos, lvl) in enumerate(WORLD):
         e = els[0] if i == 0 else els.new(pos)
         e.position = pos
+        lvl *= ROOMS[room]["mul"][i]
         e.color = (lvl, lvl, lvl, 1.0)
     t.links.new(up.outputs["Result"], ramp.inputs["Fac"])
 
+    def lobe(spec, y):
+        at, half, level = spec
+        n = math.sqrt(sum(c * c for c in at))
+        dot = t.nodes.new("ShaderNodeVectorMath")
+        dot.location = (-820, y)
+        dot.operation = 'DOT_PRODUCT'
+        dot.inputs[1].default_value = tuple(c / n for c in at)
+        t.links.new(coord.outputs["Generated"], dot.inputs[0])
+
+        fall = t.nodes.new("ShaderNodeMapRange")
+        fall.location = (-640, y)
+        fall.clamp = True
+        fall.inputs["From Min"].default_value = math.cos(math.radians(half))
+        fall.inputs["From Max"].default_value = 1.0
+        t.links.new(dot.outputs["Value"], fall.inputs["Value"])
+
+        sq = t.nodes.new("ShaderNodeMath")
+        sq.location = (-460, y)
+        sq.operation = 'POWER'
+        sq.inputs[1].default_value = 2.0
+        t.links.new(fall.outputs["Result"], sq.inputs[0])
+
+        lvl = t.nodes.new("ShaderNodeMath")
+        lvl.location = (-300, y)
+        lvl.operation = 'MULTIPLY'
+        lvl.inputs[1].default_value = level
+        t.links.new(sq.outputs["Value"], lvl.inputs[0])
+        return lvl
+
     at, half, level = ROOM_LOBE
-    n = math.sqrt(sum(c * c for c in at))
-    dot = t.nodes.new("ShaderNodeVectorMath")
-    dot.location = (-820, -180)
-    dot.operation = 'DOT_PRODUCT'
-    dot.inputs[1].default_value = tuple(c / n for c in at)
-    t.links.new(coord.outputs["Generated"], dot.inputs[0])
-
-    fall = t.nodes.new("ShaderNodeMapRange")
-    fall.location = (-640, -180)
-    fall.clamp = True
-    fall.inputs["From Min"].default_value = math.cos(math.radians(half))
-    fall.inputs["From Max"].default_value = 1.0
-    t.links.new(dot.outputs["Value"], fall.inputs["Value"])
-
-    sq = t.nodes.new("ShaderNodeMath")
-    sq.location = (-460, -180)
-    sq.operation = 'POWER'
-    sq.inputs[1].default_value = 2.0
-    t.links.new(fall.outputs["Result"], sq.inputs[0])
-
-    lvl = t.nodes.new("ShaderNodeMath")
-    lvl.location = (-300, -180)
-    lvl.operation = 'MULTIPLY'
-    lvl.inputs[1].default_value = level
-    t.links.new(sq.outputs["Value"], lvl.inputs[0])
-
-    total = t.nodes.new("ShaderNodeMix")
-    total.data_type = 'RGBA'
-    total.blend_type = 'ADD'
-    total.location = (-140, 0)
-    total.inputs[MIX_FAC].default_value = 1.0
-    t.links.new(ramp.outputs["Color"], total.inputs[MIX_CA])
-    t.links.new(lvl.outputs["Value"], total.inputs[MIX_CB])
-    t.links.new(total.outputs[MIX_OUT_C], bg.inputs[0])
+    primary = (at, half, level * ROOMS[room]["lobe"])
+    acc = ramp.outputs["Color"]
+    for i, spec in enumerate((primary,) + tuple(ROOMS[room]["extra"])):
+        add = t.nodes.new("ShaderNodeMix")
+        add.data_type = 'RGBA'
+        add.blend_type = 'ADD'
+        add.location = (-140, -i * 90)
+        add.inputs[MIX_FAC].default_value = 1.0
+        t.links.new(acc, add.inputs[MIX_CA])
+        t.links.new(lobe(spec, -180 - i * 260).outputs["Value"],
+                    add.inputs[MIX_CB])
+        acc = add.outputs[MIX_OUT_C]
+    t.links.new(acc, bg.inputs[0])
     return w
 
 
@@ -980,6 +1561,31 @@ def add_light(spec):
     L.data.energy = energy
     L.rotation_euler = (math.radians(rx), 0.0, 0.0)
     return L
+
+
+def set_lights(room):
+    """Clear the lights and lay out the ones this room asks for.
+
+    KEY and FILL are the fitted pair unless a room overrides them; `screen` is
+    the Frame, and only rooms that say so get one. Rebuilt per stone rather than
+    once per run because a room is allowed to move them — see ROOMS["noir"],
+    where moving them IS the change.
+    """
+    for ob in [o for o in bpy.data.objects if o.type == 'LIGHT']:
+        bpy.data.objects.remove(ob, do_unlink=True)
+    spec = ROOMS[room]
+    add_light(spec.get("key", KEY))
+    add_light(spec.get("fill", FILL))
+    if spec.get("wash"):
+        L = add_light(spec["wash"])
+        # The one line this whole room is built around — see `wash` in ROOMS.
+        L.visible_glossy = False
+    if spec.get("screen"):
+        L = add_light(spec["screen"])
+        # A light-mode browser window is not white, it is paper — very slightly
+        # warm and very slightly down off full. Baking it dead white puts a
+        # colour cast on the top face that no screen actually makes.
+        L.data.color = (1.0, 0.985, 0.96)
 
 
 def build_scene():
@@ -1021,11 +1627,11 @@ def build_scene():
     # coordinates are the object's LOCAL space, and a cube left carrying a scale
     # of (0.59, 0.15, 0.035) has a local space that is uniform +-1 on a block
     # that is seventeen times wider than it is tall. Every texture in the
-    # material would be stretched by that ratio — which is exactly what a grain
+    # material would be stretched by that ratio â€” which is exactly what a grain
     # smeared sideways into wood looks like. Applied, local space IS world space
     # and a vein is the same width whichever face it crosses.
     bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
-    # THE CHAMFER, and it goes on AFTER the scale is applied — a bevel modifier
+    # THE CHAMFER, and it goes on AFTER the scale is applied â€” a bevel modifier
     # measures its width in the object's own space, so on a cube still carrying
     # a scale of (0.59, 0.15, 0.035) the same 0.0011 would come out seventeen
     # times wider along the block than up its face. Applied first, the width is
@@ -1049,15 +1655,32 @@ def build_scene():
     cam.rotation_euler = (math.pi / 2.0, 0.0, 0.0)
     sc.camera = cam
 
-    add_light(KEY)
-    add_light(FILL)
+    set_lights("flat")
     return sc, slab
 
 
 def build(key, sc, slab):
-    print("%s - %s" % (key, CANDIDATES[key]["title"]))
+    photo = key in PHOTO_CANDIDATES
+    if key in PROC_ROOMS:                    # a procedural stone, re-lit
+        spec = dict(CANDIDATES[PROC_ROOMS[key]], room="noir")
+        mat_key = PROC_ROOMS[key]
+    else:
+        spec = PHOTO_CANDIDATES[key] if photo else CANDIDATES[key]
+        mat_key = key
+    print("%s - %s" % (key, spec["title"]))
+    # The world is rebuilt only when a stone asks for a different one, so the
+    # whole procedural family and every `flat` photo stone go on sharing the one
+    # that was fitted — see ROOM_EXTRA.
+    room = spec.get("room", "flat")
+    # startswith, because bpy.data.worlds.new() uniquifies: a second "room-flat"
+    # comes back named "room-flat.001" and an equality test would rebuild the
+    # world for every stone in the run.
+    if sc.world is None or not sc.world.name.startswith("room-" + room):
+        sc.world = build_world(room)
+        set_lights(room)
     slab.data.materials.clear()
-    slab.data.materials.append(build_material(key))
+    slab.data.materials.append(
+        build_photo_material(mat_key) if photo else build_material(mat_key))
     path = os.path.join(OUT_DIR, "plinth-%s.webp" % key)
     sc.render.filepath = path
     bpy.ops.render.render(write_still=True)
@@ -1083,8 +1706,8 @@ def material_version():
 
     design/plinth/plinth-tuner.html carries a hand-written GLSL twin of
     build_material(), and its numbers come out of the sidecar so the two cannot
-    disagree about those. What they can disagree about is the shape — a field the
-    material grows and the shader never hears of — and that drift is invisible,
+    disagree about those. What they can disagree about is the shape â€” a field the
+    material grows and the shader never hears of â€” and that drift is invisible,
     because a previz missing a whole layer still looks like a plausible stone.
 
     So the shader states which version of the material it was written against and
@@ -1112,8 +1735,8 @@ def write_sidecar():
     the next render rewrites this; the tuner is then describing the script again
     without anybody having remembered to make it.
 
-    It does not need Blender — everything here is arithmetic on module constants
-    — which is what lets the file be refreshed on a machine that has no GPU.
+    It does not need Blender â€” everything here is arithmetic on module constants
+    â€” which is what lets the file be refreshed on a machine that has no GPU.
     """
     doc = {
         "note": "written by design/plinth/build-slab.py - do not edit by hand",
@@ -1128,7 +1751,7 @@ def write_sidecar():
         "camera": {"d": CAM_D, "h": CAM_H, "r": R, "lens": LENS,
                    "x_half": _x_half, "y_top": _y_top, "y_bot": _y_bot},
         "plate": {"w": PLATE_W, "h": PLATE_H},
-        # (x, y, z), width, depth, energy, x-rotation. Fitted, not chosen — see
+        # (x, y, z), width, depth, energy, x-rotation. Fitted, not chosen â€” see
         # WHAT THE LIGHT IS. The tuner cannot move them and offers no slider for
         # them: they are what makes two stones comparable.
         "lights": {"key": KEY, "fill": FILL},
@@ -1136,7 +1759,7 @@ def write_sidecar():
         # `ramp` is (elevation, level) and `lobe` is (direction, half-width,
         # level), and what the previz does with them is sample the ramp at the
         # one elevation each face grazes and add it as a flat term. That is a
-        # stand-in and is marked as one where it is used — but it is a stand-in
+        # stand-in and is marked as one where it is used â€” but it is a stand-in
         # driven by THESE numbers, so raising the room here raises it there, and
         # the two stop being able to disagree about how bright the stone is.
         "world": {"ramp": [list(x) for x in WORLD],
@@ -1147,7 +1770,7 @@ def write_sidecar():
         "base_rough": BASE_ROUGH,
         # Everything that is true of the stone regardless of WHICH stone, which
         # is most of what makes it read as rock. The tuner ports each of these
-        # into its shader and reads the numbers from here — see the note on
+        # into its shader and reads the numbers from here â€” see the note on
         # `world` above for why none of them is copied.
         "stone": {
             "bevel": list(BEVEL),
@@ -1173,6 +1796,21 @@ def write_sidecar():
                 "fracture": [list(v["fracture"][0])] + list(v["fracture"][1:])}
             for k, v in CANDIDATES.items()
         },
+        # The photo-backed stones, listed but NOT described in shader terms â€”
+        # the tuner previews CANDIDATES by reimplementing the node graph in
+        # GLSL, and there is no honest way to reimplement "sample this 2814px
+        # photograph" in a previz that does not have the photograph. So these
+        # are named and parameterised for the picker, and the tuner is expected
+        # to say it cannot draw them rather than to draw something else and let
+        # the difference pass for a preview. See plinth-tuner.html.
+        "photo_fields": list(PHOTO_FIELDS),
+        "photo_candidates": {
+            k: {"title": v["title"],
+                **{f: (list(v[f]) if isinstance(v.get(f), tuple)
+                       else v.get(f, "flat" if f == "room" else None))
+                   for f in PHOTO_FIELDS}}
+            for k, v in PHOTO_CANDIDATES.items()
+        },
         # What the ?v= in portfolio/styles.css should read, so the tuner can say
         # whether the plates on disk are the ones the stylesheet is asking for.
         "version": digest() if os.path.isdir(OUT_DIR) else None,
@@ -1186,13 +1824,24 @@ def write_sidecar():
 
 def main():
     which = (ARGV[0] if ARGV else "all").lower()
-    if which != "all" and which not in CANDIDATES:
+    # `all` is both families, `proc` and `photo` are one each â€” because during a
+    # bake-off you re-render one family at a time and the other four plates are
+    # forty seconds you do not need to spend.
+    groups = {"all": list(CANDIDATES) + list(PHOTO_CANDIDATES) + list(PROC_ROOMS),
+              "proc": list(CANDIDATES),
+              "photo": list(PHOTO_CANDIDATES),
+              "relit": list(PROC_ROOMS)}
+    if which in groups:
+        keys = groups[which]
+    elif which in CANDIDATES or which in PHOTO_CANDIDATES or which in PROC_ROOMS:
+        keys = [which]
+    else:
         sys.exit(__doc__)
     os.makedirs(OUT_DIR, exist_ok=True)
     print("plate %dx%d   camera d=%.5f h=%.5f   block %.5f x %.2f x %.5f"
           % (PLATE_W, PLATE_H, CAM_D, CAM_H, PLINTH_W, DEPTH, HEIGHT))
     sc, slab = build_scene()
-    for k in (CANDIDATES if which == "all" else [which]):
+    for k in keys:
         build(k, sc, slab)
     print("\nPLINTH_VERSION = \"%s\"  <- paste over the ?v= on every --panel-plinth\n"
           "                          url() in portfolio/styles.css when it differs"

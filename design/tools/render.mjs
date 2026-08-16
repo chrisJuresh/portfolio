@@ -114,6 +114,23 @@ const quality   = Number(opt.quality || 92);
    applies that @supports block at all, so it gets neither the blur nor the two
    rings inside it — and overriding only the blur would shoot a bar wearing rims
    no such browser would ever draw, captioned `flat`. */
+/* ---- which stone the Panel's plinth is cut from -----------------------------
+   --panel-plinth-src is declared on `.panel-plinth` itself, and design/plinth/
+   build-slab.py writes a plate per candidate into portfolio/img/tex/. Comparing
+   them is the whole acceptance test for #57's plinth — the plate on its own is
+   3000x269 of stone with no Frame standing on it, no reflection, no contact
+   shadow and none of the page's own colour anywhere near it, and every one of
+   those changes what the marble looks like.
+
+     node render.mjs --pages panel --variants sitka --themes dark \
+                     --stones nero,gemini,gemini-gold
+
+   The stone lands in the filename whenever one is asked for, for exactly the
+   reason the glass mode does: a run that wrote over the committed
+   panel__…__dark__desktop.png with a candidate would destroy the only picture
+   of what is actually shipping, and look like an ordinary re-run doing it. */
+const stones = list(opt.stones, []);
+
 const GLASS_MODES = ["auto", "blur", "flat"];
 const glass = (opt.glass || "auto").toLowerCase();
 if (!GLASS_MODES.includes(glass)) fail(`glass must be one of: ${GLASS_MODES.join(", ")}`);
@@ -197,12 +214,18 @@ const DETERMINISTIC = `
   .veil { opacity: 1 !important; }
 `;
 
-async function capture(page, origin, pagePath, variant, theme, clipProbe) {
+async function capture(page, origin, pagePath, variant, theme, clipProbe, stone) {
   await page.goto(origin + pagePath, { waitUntil: "load" });
 
   // activate the fonts and the variant on the real page
   await page.addStyleTag({ url: "/fonts/fonts.css" });
   await page.addStyleTag({ url: "/design/variants.css" });
+  /* The plate swap, and it has to be `!important` on the same element: the
+     custom property is declared on `.panel-plinth`, so a :root override is
+     shadowed by it and would silently shoot the stylesheet's stone under the
+     candidate's filename. No ?v= — this server sends no cache headers. */
+  if (stone) await page.addStyleTag({ content:
+    `.panel-plinth { --panel-plinth-src: url("/portfolio/img/tex/plinth-${stone}.webp") !important }` });
   await page.evaluate(([v, t]) => {
     document.documentElement.setAttribute("data-variant", v);
     document.documentElement.setAttribute("data-theme", t);
@@ -306,7 +329,8 @@ await mkdir(SHOTS, { recursive: true });
 const browser = await chromium.launch({ args: LAUNCH_ARGS });
 const rows = [];
 let n = 0;
-const total = pageKeys.length * variants.length * themes.length * viewKeys.length;
+const total = pageKeys.length * variants.length * themes.length * viewKeys.length
+            * Math.max(stones.length, 1);
 
 console.log(`serving ${ROOT}\n  on ${origin}`);
 console.log(`rendering ${total} shots — ${viewKeys.length} viewport(s) x ${pageKeys.length} page(s) x ${variants.length} variant(s) x ${themes.length} theme(s)\n`);
@@ -326,6 +350,7 @@ for (const viewport of viewKeys) {
       const page = await context.newPage();
 
       for (const variant of variants) {
+       for (const stone of (stones.length ? stones : [null])) {
         const ext = formatFor(pageKey);
         /* The glass mode is in the filename whenever it is not the default, for
            the reason the page-key comment above gives at length: shots are
@@ -333,10 +358,11 @@ for (const viewport of viewKeys) {
            unforced one destroys the only picture of the top rung while looking
            like an ordinary re-run. `auto` keeps the bare name so the committed
            set does not churn. */
-        const suffix = glass === "auto" ? "" : `__glass-${glass}`;
+        const suffix = (glass === "auto" ? "" : `__glass-${glass}`)
+                     + (stone ? `__stone-${stone}` : "");
         const name = `${pageKey}__${variant}__${theme}__${viewport}${suffix}.${ext}`;
         const clip = CLIP[pageKey];
-        const info = await capture(page, origin, PAGES[pageKey], variant, theme, clip && clip.probe);
+        const info = await capture(page, origin, PAGES[pageKey], variant, theme, clip && clip.probe, stone);
         const shot = {
           path: join(SHOTS, name),
           ...(ext === "jpeg" ? { type: "jpeg", quality } : { type: "png" })
@@ -346,11 +372,12 @@ for (const viewport of viewKeys) {
         if (clip) await page.locator(clip.shot).screenshot(shot);
         else await page.screenshot({ ...shot, fullPage: true });
         const bytes = (await stat(join(SHOTS, name))).size;
-        rows.push({ page: pageKey, variant, theme, viewport, file: name, ...info });
+        rows.push({ page: pageKey, variant: stone || variant, theme, viewport, file: name, ...info });
         console.log(`  [${String(++n).padStart(String(total).length)}/${total}] ${name}` +
                     `  ${info.probe} → ${info.face} ${info.size}px` +
                     (info.tier === "—" ? "" : `  glass → ${info.tier}`) +
                     `  (${Math.round(bytes / 1024)} KB)`);
+       }
       }
       await context.close();
     }
