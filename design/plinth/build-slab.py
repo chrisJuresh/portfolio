@@ -470,6 +470,68 @@ def digest():
     return hashlib.sha256("".join(hashes).encode()).hexdigest()[:8]
 
 
+SIDECAR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "slab.json")
+
+
+def write_sidecar():
+    """Everything design/plinth/plinth-tuner.html needs, written by this script.
+
+    The tuner previews a stone before Blender is asked to spend a minute on it,
+    which means it has to know the camera, the block, the two lights and the
+    CANDIDATES table. NONE OF THAT IS COPIED INTO IT. A tuner holding its own
+    literals is a tuner that drifts: it goes on showing the stone this file used
+    to render, and the drift is invisible because both halves look right on their
+    own. design/plate/plate-tuner.html reads plate-source.json for the same
+    reason and that file says so at more length.
+
+    So this is the one direction the constants travel. Change anything above and
+    the next render rewrites this; the tuner is then describing the script again
+    without anybody having remembered to make it.
+
+    It does not need Blender — everything here is arithmetic on module constants
+    — which is what lets the file be refreshed on a machine that has no GPU.
+    """
+    doc = {
+        "note": "written by design/plinth/build-slab.py - do not edit by hand",
+        # The block and the camera solved from it. The tuner reproduces the
+        # projection rather than guessing at it, so its preview lands on the same
+        # trapezoid-over-a-rectangle the plate does and can be compared with one.
+        "block": {
+            "near_half": NEAR_HALF, "far_half": FAR_HALF, "depth": DEPTH,
+            "height": HEIGHT, "top_face": TOP_FACE, "behind": BEHIND,
+            "front_face": FRONT_FACE, "width": PLINTH_W,
+        },
+        "camera": {"d": CAM_D, "h": CAM_H, "r": R, "lens": LENS,
+                   "x_half": _x_half, "y_top": _y_top, "y_bot": _y_bot},
+        "plate": {"w": PLATE_W, "h": PLATE_H},
+        # (x, y, z), width, depth, energy, x-rotation. Fitted, not chosen — see
+        # WHAT THE LIGHT IS. The tuner cannot move them and offers no slider for
+        # them: they are what makes two stones comparable.
+        "lights": {"key": KEY, "fill": FILL},
+        "base_rough": BASE_ROUGH,
+        "samples": SAMPLES,
+        "seed": SEED,
+        # The order the vein tuples are written in, so the tuner labels its rows
+        # off this file too rather than off a comment in it.
+        "vein_fields": ["scale", "detail", "distortion", "width", "sharpness",
+                        "colour", "rough", "bump"],
+        "candidates": {
+            k: {"title": v["title"], "ground": list(v[GROUND]),
+                "veins": [list(x[:5]) + [list(x[5])] + list(x[6:])
+                          for x in v["veins"]]}
+            for k, v in CANDIDATES.items()
+        },
+        # What the ?v= in portfolio/styles.css should read, so the tuner can say
+        # whether the plates on disk are the ones the stylesheet is asking for.
+        "version": digest() if os.path.isdir(OUT_DIR) else None,
+    }
+    import json
+    with open(SIDECAR, "w", encoding="utf-8", newline="\n") as fh:
+        json.dump(doc, fh, indent=2, sort_keys=False)
+        fh.write("\n")
+    return SIDECAR
+
+
 def main():
     which = (ARGV[0] if ARGV else "all").lower()
     if which != "all" and which not in CANDIDATES:
@@ -483,6 +545,8 @@ def main():
     print("\nPLINTH_VERSION = \"%s\"  <- paste over the ?v= on every --panel-plinth\n"
           "                          url() in portfolio/styles.css when it differs"
           % digest())
+    print("wrote %s  <- what plinth-tuner.html reads"
+          % os.path.relpath(write_sidecar(), ROOT))
 
 
 if __name__ == "__main__":
