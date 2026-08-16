@@ -177,6 +177,16 @@ CAM_D = DEPTH * R / (1.0 - R)                    # 2.43125
 CAM_H = TOP_FACE / (1.0 - R)                     # 0.332048
 HEIGHT = FRONT_FACE
 
+# WHERE THE ARRIS IS IN THE BLOCK'S OWN TEXTURE SPACE, which is not the origin
+# and is the thing every photo-backed stone is windowed against. build_scene()
+# applies the cube's SCALE and leaves its LOCATION on the object, so `Object`
+# texture coordinates run ±DEPTH/2 and ±HEIGHT/2 about the block's centre while
+# WORLD coordinates run 0..DEPTH and -HEIGHT..0 about the arris. The two are a
+# half-block apart on each axis, and build_photo_material() subtracts exactly
+# that. See the note there for what it looked like when it did not.
+ARRIS_Y = -DEPTH / 2.0                           # local y of the front-top edge
+ARRIS_Z = HEIGHT / 2.0                           # ...and its local z
+
 LENS = 50.0
 _x_half = NEAR_HALF / CAM_D
 _y_top = (0.0 - CAM_H) / (DEPTH + CAM_D)         # the far edge -> top of frame
@@ -1446,8 +1456,9 @@ def photo_map(tree, co, name, colorspace, x, y, spec):
     leaving alone. A flat projection needs a UV unwrap and would put a seam
     along the arris, which is the single most looked-at line in the picture. Box
     projection reads the top face from (x, y) and the front face from (x, z),
-    and because BOTH of those pairs agree at the arris — the top face's y is 0
-    there and the front face's z is 0 there — the vein pattern RUNS OVER THE
+    and the mapping in build_photo_material() lands BOTH of those on V = off at
+    the arris — the top face's y is ARRIS_Y there and the front face's z is
+    ARRIS_Z, and each has its own subtracted — so the vein pattern RUNS OVER THE
     EDGE and continues down the face. Which is what a block cut from one slab
     does, and is a thing the procedural material gets for free and every
     photograph pipeline before this one got wrong.
@@ -1494,10 +1505,24 @@ def build_photo_material(key):
     coord = tree.nodes.new("ShaderNodeTexCoord")
     coord.location = (-1800, 0)
 
-    # Scale and window. The offset goes on Y AND Z by the same amount, which is
-    # what keeps the two faces agreeing at the arris — see photo_map(). Putting
-    # a different number in each is the one edit here that silently breaks the
-    # thing this material is built around.
+    # Scale and window. The offset lands the ARRIS at V = off on both faces,
+    # which is what keeps them agreeing there — see photo_map().
+    #
+    # THE TWO V OFFSETS ARE DIFFERENT NUMBERS, AND HAVE TO BE. Object texture
+    # coordinates are the block's LOCAL space, and build_scene() applies the
+    # cube's scale but NOT its location, so local space is centred on the block:
+    # y runs ±DEPTH/2 and z runs ±HEIGHT/2, and the arris — the front-top edge —
+    # sits at (y = -DEPTH/2, z = +HEIGHT/2) rather than at (0, 0). Subtracting
+    # each of those puts the arris at V = off on both faces, which is the whole
+    # point of the box projection.
+    #
+    # Written as `off` on both axes it looked symmetric and was not: the front
+    # face came out half a block-height up the photograph from where the studio's
+    # window guide draws it, the top face 0.23 tiles down from it, and the two
+    # met at the arris 0.29 tiles apart — a cut, not a continuous run over the
+    # edge. Measured by correlating the shipped gemini-noir plate's front face
+    # against basecolor-deep.png: peak at V = 0.452 against the 0.4539 the
+    # centred geometry predicts, and nothing at the intended 0.400.
     #
     # THE SCALE IS NOT UNIFORM, AND MUST NOT BE. A box projection lays the image's
     # [0,1] over one tile of MODEL space per axis and knows nothing about the
@@ -1520,14 +1545,23 @@ def build_photo_material(key):
     m = tree.nodes.new("ShaderNodeMapping")
     m.location = (-1600, 0)
     m.inputs["Scale"].default_value = (s, v, v)
-    m.inputs["Location"].default_value = (0.5, off, off)
+    m.inputs["Location"].default_value = (0.5,
+                                          off - v * ARRIS_Y,
+                                          off - v * ARRIS_Z)
     # The vertical wrap is never blended (build-portoro-maps.py cross-fades U and
-    # only U), which is sound only while under one tile of V is ever visible. The
-    # block shows DEPTH + HEIGHT of it, so a very wide source is the one that
-    # would bring the seam onto the stone.
-    if (DEPTH + HEIGHT) * v > 1.0:
-        print("  ! %s: %.2f tiles of V visible, unblended seam will show"
-              % (key, (DEPTH + HEIGHT) * v))
+    # only U), which is sound only while under one tile of V is ever visible.
+    #
+    # WHICH FACE SPANS THE MOST V IS NOT THE ONE THIS USED TO ASK ABOUT. It
+    # tested (DEPTH + HEIGHT) * v, on the reading that the two faces stack in V.
+    # They do not: measured against an unlit ortho render of each face, BOX gives
+    # the front face (x, z) — V over HEIGHT * v — and the top face (-y, x), read
+    # 90° round, so ITS V runs across the block's whole width at the U scale.
+    # That is 2 * NEAR_HALF * s, about 1.0 tiles at the shipping scale and over
+    # two at gemini-fine's, and it is always the larger of the two.
+    v_tiles = max(HEIGHT * v, PLINTH_W * s)
+    if v_tiles > 1.0:
+        print("  ! %s: %.2f tiles of V visible (top face), unblended seam will show"
+              % (key, v_tiles))
     link(tree, coord, "Object", m, "Vector")
     co = (m, "Vector")
 
@@ -1777,8 +1811,15 @@ def build_scene():
     # of (0.59, 0.15, 0.035) has a local space that is uniform +-1 on a block
     # that is seventeen times wider than it is tall. Every texture in the
     # material would be stretched by that ratio — which is exactly what a grain
-    # smeared sideways into wood looks like. Applied, local space IS world space
-    # and a vein is the same width whichever face it crosses.
+    # smeared sideways into wood looks like. Applied, one local unit IS one world
+    # unit and a vein is the same width whichever face it crosses.
+    #
+    # THE LOCATION IS NOT APPLIED, so local space stays CENTRED on the block
+    # while world space is anchored at the arris — the two are a half-block apart
+    # on Y and on Z. Deliberate, and the box projection is happier for it, but it
+    # means a window measured in world terms is not a window in this space until
+    # ARRIS_Y / ARRIS_Z are taken off it. build_photo_material() does that; the
+    # note there says what it looked like when it did not.
     bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
     # THE CHAMFER, and it goes on AFTER the scale is applied — a bevel modifier
     # measures its width in the object's own space, so on a cube still carrying
