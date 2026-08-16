@@ -43,6 +43,26 @@
     the same thing in its own header, so a number read off here is never mistaken
     for a number that would survive being written as a margin.
 
+    TEXT SIZE IS NOT DRAGGED, IT IS A SLIDER — and it is the one thing in here
+    that does reflow. Nothing in the composition states a size of its own: the
+    panel declares five type tokens, and each is a coefficient times --panel-w,
+    so the type is a share of the drawing exactly as every length is. A slider
+    therefore does not set a size, it scales that COEFFICIENT — which is the
+    number that transcribes back into styles.css and the only one that means the
+    same thing at every window.
+    THE COEFFICIENT IS READ OUT OF THE LIVE SHEET, through the CSSOM, and is
+    never written down here — for the same reason nothing else in this file is,
+    that a copy drifts. It also means the sliders follow the sheet into the phone
+    gate, where three of the five are declared as `clamp()` rather than as
+    shares, and say there is no share to report rather than inventing one. The
+    two floored tokens keep their floor untouched: `max(11px, …)` is a floor on
+    legibility, and a floor that scales with the type is not a floor.
+    A SIXTH SLIDER IS OFFERED UNDER THEM AND IS NOT PART OF THAT SCALE: the
+    page's own rem, which is what the CV above the panel is written in. It is
+    reported in pixels only, because it is a share of nothing — and moving it far
+    is a real way to break the one-screen fit, which is a thing worth seeing
+    rather than a thing to guard against.
+
     WHAT THE EXPORT IS IN, and why three units rather than one. Pixels are what
     you dragged and are true only at the viewport in the top bar. Shares of
     --panel-w are what this sheet is actually written in — almost every length in
@@ -100,7 +120,12 @@
 
     /* ---- layout ----------------------------------------------------------- */
     .wrap { flex: 1 1 auto; display: flex; min-height: 0; }
-    .side { flex: 0 0 24rem; display: flex; flex-direction: column; min-height: 0; border-right: 1px solid var(--ui-line); background: var(--ui-panel); }
+    /* `overflow: auto` on the aside and not only on the parts list: the sidebar
+       now carries a block whose height is fixed by how many type tokens the sheet
+       declares, and on a short screen the three fixed blocks together can outgrow
+       the column. Without this they simply run off the bottom — the parts list
+       stops at its own min-height and nothing scrolls. */
+    .side { flex: 0 0 24rem; display: flex; flex-direction: column; min-height: 0; overflow: auto; border-right: 1px solid var(--ui-line); background: var(--ui-panel); }
     .stage { flex: 1 1 auto; min-width: 0; position: relative; overflow: hidden; padding: 0.8rem; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.35rem; }
 
     /* The preview is the chosen viewport at its TRUE size, scaled down to fit —
@@ -136,6 +161,20 @@
     .read .none { color: var(--ui-mut); font: 11.5px/1.5 "Segoe UI", system-ui, sans-serif; }
     .read .keys { margin: 0.4rem 0 0; }
 
+    /* ---- the type scale --------------------------------------------------- */
+    .type { flex: 0 0 auto; border-top: 1px solid var(--ui-line); }
+    .type > summary { padding: 0.4rem 0.7rem; cursor: pointer; font-size: 11px; letter-spacing: 0.09em; text-transform: uppercase; color: var(--ui-mut); }
+    .type > summary .badge { letter-spacing: 0; }
+    .tbody { padding: 0.1rem 0.7rem 0.5rem; }
+    .trow { margin-top: 0.3rem; }
+    .tlab { display: flex; align-items: baseline; gap: 0.5rem; font: 11px/1.4 ui-monospace, Consolas, monospace; color: var(--ui-mut); }
+    .trow.on .tlab .nm { color: var(--ui-hit); }
+    .tlab .v { margin-left: auto; white-space: nowrap; }
+    .trow.on .tlab .v { color: var(--ui); }
+    .trow input[type="range"] { display: block; width: 100%; height: 1.1rem; margin: 0; padding: 0; border: 0; accent-color: var(--ui-hit); cursor: ew-resize; }
+    .trow.dead { opacity: 0.45; }
+    .tfoot { display: flex; align-items: center; gap: 0.4rem; margin-top: 0.5rem; }
+
     /* ---- export drawer ---------------------------------------------------- */
     .export { flex: 0 0 auto; border-top: 1px solid var(--ui-line); }
     .export > summary { padding: 0.4rem 0.7rem; cursor: pointer; font-size: 11px; letter-spacing: 0.09em; text-transform: uppercase; color: var(--ui-mut); }
@@ -167,6 +206,11 @@
       <div class="tree" id="tree"></div>
 
       <div class="read" id="read"></div>
+
+      <details class="type" open>
+        <summary>text size <span class="badge" id="tcount" data-n="0">0</span></summary>
+        <div class="tbody" id="tbody"></div>
+      </details>
 
       <details class="export" open>
         <summary>export — paste this back to Claude</summary>
@@ -249,6 +293,29 @@
     { k: "w",  x: 0,   y: 0.5, sx: -1, sy: 0,  mx: 1, my: 0, cur: "ew-resize" }
   ];
 
+  /* Every piece of text in the composition, and there are only six rows because
+     there are only six sizes: the panel's five tokens, and the page's rem under
+     them. `reads` is the element the token is spent on, which is where the used
+     pixel size is read from — the same rule as metrics(), that a number comes
+     from what the browser laid out and not from what this file believes.
+     `prop` is the name in the sheet, and it is what the CSSOM is asked for; the
+     coefficient, the floor and which rule owns the declaration all come back
+     with it, so nothing about the type scale is duplicated here. */
+  var TYPE = [
+    { k: "masthead", prop: "--panel-masthead-size", reads: ".panel-masthead",  label: "masthead" },
+    { k: "sub",      prop: "--panel-sub-size",      reads: ".panel-sub",       label: "subheading" },
+    { k: "copy",     prop: "--panel-copy-size",     reads: ".panel-copy",      label: "copy" },
+    { k: "small",    prop: "--panel-small-size",    reads: ".panel-points h3", label: "points" },
+    { k: "rail",     prop: "--panel-rail-size",     reads: ".panel-rail li",   label: "rail" },
+    /* The page's own rem, which is the CV's scale and not the composition's. It
+       is declared as a font-size on :root rather than as a token, and only
+       inside the one-screen band — outside it there is no declaration at all,
+       because the size is meant to be the reader's own. `root: true` carries
+       both differences: the value is written as a font-size, and when the sheet
+       says nothing the slider scales 100% of the reader's default instead. */
+    { k: "rem",      prop: "font-size", root: true, reads: null,               label: "page rem" }
+  ];
+
   /* ---- state --------------------------------------------------------------
      `adj` is keyed by scope and selector, so the same page tuned as `panel` and
      as `page` keeps two independent sets and neither surprises the other. Each
@@ -259,7 +326,12 @@
     scope: "panel", size: "frame", snap: 0,
     grid: false, unclip: true, armed: true,
     at: null,            /* the viewport the numbers were taken at */
-    adj: {}              /* "scope|selector" -> {dx,dy,w,h} */
+    adj: {},             /* "scope|selector" -> {dx,dy,w,h} */
+    /* NOT keyed by scope, unlike `adj`. The type scale belongs to the
+       composition and not to the way you are currently looking at it, so
+       switching to `page` to nudge the CV's column must not quietly take the
+       masthead back to the size the sheet has. */
+    type: {}             /* token key -> factor, 1 meaning untouched */
   };
   try {
     var saved = JSON.parse(localStorage.getItem(STORE) || "null");
@@ -272,6 +344,9 @@
   var doc = null, win = null, layer = null;
   var parts = [];        /* [{el, sel, depth, label}] */
   var base = {};         /* selector -> {w,h} measured with nothing applied */
+  var authored = {};     /* token key -> {text, sel, media} as the sheet declares it HERE */
+  var typeBase = {};     /* token key -> px, measured with no factor applied */
+  var trows = {};        /* token key -> the slider's own nodes */
   var selEl = null;      /* the selected element, in the iframe */
   var scale = 1;
   var drag = null;
@@ -436,6 +511,155 @@
       var a = adjOf(p.sel, false);
       if (isAdjusted(a)) applyTo(p.el, a);
     });
+  }
+
+  /* ---- the type scale, as the sheet declares it ----------------------------
+     WHAT IS READ, and why it is the authored text rather than the computed one.
+     A slider has to end up writing an expression that is still LIVE — one that
+     goes on tracking the window, because --panel-w is a min() of a width branch
+     and a height branch and a type size frozen at one viewport is a type size
+     for nobody's. getComputedStyle would hand back either a resolved pixel
+     length (for font-size) or a token stream with every var() already
+     substituted (for a custom property): the first is dead, the second is the
+     whole derivation inlined, which works but is unreadable and cannot be
+     transcribed. The rule's own `style` gives what the author typed —
+     `calc(0.0380 * var(--panel-w))` — and that is both live and the thing that
+     goes back into the sheet.
+
+     THE LAST DECLARATION WINS, which is the cascade for rules of equal
+     specificity, and every declaration of these six is at `:root` or `.panel`.
+     Media blocks are walked only when they MATCH the preview's own viewport, so
+     picking the 390 preset makes this read the phone gate's clamp() and the
+     sliders change what they say — which is the point of reading the sheet
+     rather than restating it. @supports and @layer are walked through without a
+     condition test because neither changes with the window.
+
+     A PLAIN STYLE RULE HAS A `cssRules` OF ITS OWN — this is the trap, and it
+     cost the first working version of this function. Since nested CSS shipped,
+     CSSStyleRule is a grouping rule too: `:root { --ink: … }` answers `cssRules`
+     with an empty list rather than with undefined. So "is this a group?" cannot
+     be asked first, or every declaration in the sheet is walked straight past
+     and the sliders come up saying the panel states no shares at all — which is
+     exactly what it looks like, six rows of live pixel sizes and not one
+     coefficient, with nothing in the console. Read the declarations first, then
+     descend into whatever is nested underneath them. */
+  function walkRules(rules, media) {
+    for (var i = 0; i < rules.length; i++) {
+      var r = rules[i];
+      if (r.media && r.cssRules) {
+        var on = false;
+        try { on = win.matchMedia(r.conditionText || r.media.mediaText).matches; } catch (_) {}
+        if (on) walkRules(r.cssRules, media || (r.conditionText || r.media.mediaText));
+        continue;
+      }
+      if (r.style && r.selectorText) {
+        for (var j = 0; j < TYPE.length; j++) {
+          var t = TYPE[j];
+          /* The rem is a plain font-size, so unlike the five tokens it needs the
+             selector checking: half the sheet sets a font-size on something. */
+          if (t.root && !/^\s*(:root|html)\s*$/.test(r.selectorText)) continue;
+          var v = r.style.getPropertyValue(t.prop);
+          if (!v) continue;
+          authored[t.k] = { text: v.trim(), sel: r.selectorText, media: media || null };
+        }
+      }
+      if (r.cssRules && r.cssRules.length) walkRules(r.cssRules, media);
+    }
+  }
+  function readAuthored() {
+    authored = {};
+    if (!doc || !win) return;
+    for (var i = 0; i < doc.styleSheets.length; i++) {
+      var rules = null;
+      /* A stylesheet from another origin throws on .cssRules and there is
+         nothing to do about it but skip it. None of this page's are. */
+      try { rules = doc.styleSheets[i].cssRules; } catch (_) { continue; }
+      if (rules) walkRules(rules, null);
+    }
+    /* Outside the one-screen band the sheet states no root size at all, on
+       purpose: the reader's own default is the design. `100%` is that default,
+       written as something a factor can multiply — and NOT 16px, which would
+       take the reader's choice away the moment a slider was touched. */
+    if (!authored.rem) authored.rem = { text: "100%", sel: ":root", media: null, implied: true };
+  }
+
+  /* The coefficient, and the surgery a factor does to it. Scaling the whole
+     declaration would be one character of code — `calc(f * (…))` — and it is
+     wrong for the two floored tokens: `max(11px, calc(0.00668 * var(--panel-w)))`
+     scaled bodily moves the floor to 13.2px, and a floor that follows the type
+     up is not holding anything up. So the number that multiplies --panel-w is
+     the only thing rewritten, and everything around it is left exactly as
+     typed. Where there is no such number — the phone gate's clamp(), the rem —
+     there is nothing to rewrite and the whole value is scaled instead, which is
+     said out loud in the readout rather than passed off as a share. */
+  var COEF = /([0-9]*\.?[0-9]+)(\s*\*\s*var\(\s*--panel-w\s*\))/;
+  function coefOf(k) {
+    var a = authored[k];
+    if (!a) return null;
+    var m = COEF.exec(a.text);
+    return m ? parseFloat(m[1]) : null;
+  }
+  function scaledText(k, f) {
+    var a = authored[k], c = coefOf(k);
+    if (!a) return "";
+    if (c !== null) return a.text.replace(COEF, num(c * f, 6) + "$2");
+    return "calc(" + num(f, 4) + " * (" + a.text + "))";
+  }
+  function factorOf(k) { var f = state.type[k]; return (typeof f === "number" && f > 0) ? f : 1; }
+  function typeCount() {
+    var n = 0;
+    TYPE.forEach(function (t) { if (factorOf(t.k) !== 1) n++; });
+    return n;
+  }
+
+  /* WRITTEN TO BOTH :root AND .panel, every time, and it is not belt-and-braces.
+     --panel-masthead-size is declared at :root because the cut word — which is
+     outside the section — is drawn at it, while the other four are declared on
+     .panel; and in the phone gate .panel declares the masthead too. An inline
+     style on :root is shadowed for everything inside .panel by .panel's own
+     declaration, and an inline style on .panel never reaches the cut word. Both
+     is the only writing that is right in all three cases, and writing a token
+     to an element that never reads it costs nothing.
+     THE REFLECTION NEEDS NOTHING HERE, unlike a drag: custom properties inherit,
+     panel-mirror.js's clone lives inside .panel, so it is already reading these. */
+  function applyType() {
+    if (!doc) return;
+    var root = doc.documentElement, panel = doc.querySelector("section.panel");
+    TYPE.forEach(function (t) {
+      var f = factorOf(t.k);
+      if (t.root) {
+        root.style.fontSize = f === 1 ? "" : scaledText(t.k, f);
+        return;
+      }
+      var v = f === 1 ? null : scaledText(t.k, f);
+      [root, panel].forEach(function (n) {
+        if (!n) return;
+        if (v === null) n.style.removeProperty(t.prop);
+        else n.style.setProperty(t.prop, v);
+      });
+    });
+  }
+  function usedPx(t) {
+    if (!doc || !win) return null;
+    var el = t.root ? doc.documentElement : doc.querySelector(t.reads);
+    if (!el) return null;
+    var v = parseFloat(win.getComputedStyle(el).fontSize);
+    return v === v ? v : null;
+  }
+  /* What each size is at a factor of 1, which is what "was 57.4" is read from.
+     Taken by putting the sheet back, measuring, and putting the factors on
+     again — all in one synchronous pass, so nothing is painted in between.
+     getComputedStyle forces the layout each time, which is what makes that safe
+     and also what makes this the slow function in the file; it runs on a load
+     and on a window change and not on a drag. */
+  function measureTypeBase() {
+    var keep = state.type;
+    state.type = {};
+    applyType();
+    typeBase = {};
+    TYPE.forEach(function (t) { typeBase[t.k] = usedPx(t); });
+    state.type = keep;
+    applyType();
   }
 
   /* ---- the composition's own units ----------------------------------------
@@ -760,8 +984,16 @@
     $("warn").textContent = "";
     build();
     collect();
+    /* The sheet is read, and the sizes measured with nothing on, BEFORE either
+       set of adjustments goes back — the same order and the same reason as
+       measureBase() above it. A reload has thrown away every inline style the
+       last session wrote, so this is the one moment the preview is showing what
+       styles.css actually says. */
+    readAuthored();
     measureBase();
+    measureTypeBase();
     reapply();
+    applyType();
     applyUnclip();
     jump();
     doc.addEventListener("pointerdown", onDown, true);
@@ -799,7 +1031,7 @@
   }
 
   /* ---- painting ------------------------------------------------------------ */
-  function paintAll() { paintChrome(); paintTree(); paintRead(); paintExport(); }
+  function paintAll() { paintChrome(); paintTree(); paintType(); paintRead(); paintExport(); }
 
   function paintChrome() {
     var n = count();
@@ -808,12 +1040,23 @@
     $("unclip").setAttribute("aria-pressed", state.unclip ? "true" : "false");
     $("armed").setAttribute("aria-pressed", state.armed ? "true" : "false");
     $("snap").value = state.snap;
-    var at = state.at, now = sizeDef();
-    $("warn").textContent = (n && at && (at.w !== now.w || at.h !== now.h))
-      ? "These numbers were dragged at " + at.w + " × " + at.h + " and the preview is now "
+    var at = state.at, now = sizeDef(), notes = [];
+    if (n && at && (at.w !== now.w || at.h !== now.h)) {
+      notes.push("These numbers were dragged at " + at.w + " × " + at.h + " and the preview is now "
         + now.w + " × " + now.h + ". A stated width does not reflow, so what is on screen is "
-        + "the old measurement in a new window — reset, or go back."
-      : "";
+        + "the old measurement in a new window — reset, or go back.");
+    }
+    /* The two halves of this instrument disagree about reflow, and it is the one
+       way to get a wrong number out of it without noticing. A type slider moves
+       every box in the composition; a dragged translate and a stated width do
+       not follow, because they are absolute pixels. So numbers dragged before
+       the type moved are measurements of a drawing that no longer exists. */
+    if (n && typeCount()) {
+      notes.push("The type scale has been moved as well. That reflows the composition and a "
+        + "drag does not follow it, so any box dragged before the sliders is now measured "
+        + "against a drawing that has changed under it.");
+    }
+    $("warn").textContent = notes.join("  ");
   }
 
   function paintTree() {
@@ -839,6 +1082,98 @@
   }
   function short(sel) { var bits = sel.split(" > "); return bits[bits.length - 1]; }
   function esc(s) { return s.replace(/&/g, "&amp;").replace(/</g, "&lt;"); }
+
+  /* ---- the sliders ---------------------------------------------------------
+     Built once and repainted, rather than rebuilt: a range input that is
+     replaced mid-drag loses the pointer capture, and the slider would stop
+     following the mouse the instant the first repaint landed.
+     THE RANGE IS A FACTOR AND NOT A SIZE, from 0.4 to 2.5. A size would need six
+     different ranges and would still be a range for one window, since every one
+     of these is a share; a factor is the same slider six times and 1 is always
+     the sheet. The step is 0.005, which is half a percent — small enough that
+     the keyboard is the fine adjustment (a focused slider takes arrow keys for
+     one step and page keys for ten) and coarse enough to drag across. */
+  function buildType() {
+    var host = $("tbody");
+    host.innerHTML = "";
+    trows = {};
+    TYPE.forEach(function (t) {
+      var row = document.createElement("div");
+      row.className = "trow";
+      row.innerHTML = '<div class="tlab"><span class="nm"></span><span class="v"></span></div>';
+      var inp = document.createElement("input");
+      inp.type = "range";
+      inp.min = "0.4"; inp.max = "2.5"; inp.step = "0.005";
+      inp.value = String(factorOf(t.k));
+      inp.setAttribute("aria-label", t.label + " size");
+      inp.title = t.root ? "the page's own rem — the CV's scale, not the composition's" : t.prop;
+      inp.addEventListener("input", function () {
+        state.type[t.k] = parseFloat(this.value) || 1;
+        applyType(); sync(); paintType(); paintRead(); paintChrome();
+      });
+      /* Saved and exported on release and not on every pixel of the drag: the
+         export is a whole document rebuilt from the live geometry, and building
+         it sixty times a second is what makes a slider feel like treacle. */
+      inp.addEventListener("change", function () { save(); paintExport(); });
+      inp.addEventListener("dblclick", function () { resetType(t.k); });
+      row.appendChild(inp);
+      host.appendChild(row);
+      trows[t.k] = { row: row, inp: inp, nm: row.querySelector(".nm"), v: row.querySelector(".v") };
+    });
+    var foot = document.createElement("div");
+    foot.className = "tfoot";
+    var b = document.createElement("button");
+    b.type = "button"; b.textContent = "reset type";
+    b.addEventListener("click", function () { resetType(null); });
+    foot.appendChild(b);
+    var h = document.createElement("span");
+    h.className = "hint";
+    h.textContent = "double-click a slider to put one back";
+    foot.appendChild(h);
+    host.appendChild(foot);
+  }
+  function resetType(k) {
+    if (k === null) state.type = {}; else delete state.type[k];
+    applyType(); save(); sync(); paintType(); paintRead(); paintChrome(); paintExport();
+  }
+
+  /* Whether the share is what you are actually looking at, which for two of
+     these is often no. --panel-small-size and --panel-rail-size are floored, and
+     at anything under about a 1650px composition the floor is what wins — so the
+     slider moves the coefficient and NOTHING ON SCREEN CHANGES until it clears
+     11px, which is a solid thirty seconds of believing the tool is broken. The
+     test is simply whether the used size still equals the share; when it does
+     not, the row says so and the number in the readout is the floor's. */
+  function floored(k, f, px) {
+    var c = coefOf(k), m = metrics();
+    if (c === null || !m || !m.w || px === null) return false;
+    return Math.abs(c * f * m.w - px) > 0.5;
+  }
+
+  /* Three numbers per row and they are in the order you need them: what you did,
+     what it came to, and what to write down. The coefficient is last because it
+     is the one that leaves this page. */
+  function paintType() {
+    TYPE.forEach(function (t) {
+      var g = trows[t.k];
+      if (!g) return;
+      var f = factorOf(t.k), c = coefOf(t.k), px = usedPx(t), was = typeBase[t.k];
+      var bits = [];
+      if (px !== null) {
+        bits.push(num(px, 1) + "px" + (f !== 1 && was ? " ← " + num(was, 1) : ""));
+      }
+      if (c !== null) bits.push(num(c * f, 6) + (floored(t.k, f, px) ? " · floored" : ""));
+      else if (authored[t.k] && authored[t.k].implied) bits.push("of your default");
+      else if (t.root) bits.push("of the sheet's");
+      else bits.push("no share here");
+      g.nm.textContent = t.label + (f !== 1 ? "  ×" + num(f, 3) : "");
+      g.v.textContent = bits.join("  ·  ");
+      g.row.className = "trow" + (f !== 1 ? " on" : "") + (px === null ? " dead" : "");
+      if (g.inp.value !== String(f)) g.inp.value = String(f);
+    });
+    var n = typeCount();
+    $("tcount").textContent = n; $("tcount").dataset.n = n;
+  }
 
   function paintRead() {
     var box = $("read");
@@ -881,6 +1216,7 @@
     var m = metrics(), s = sizeDef(), out = [];
     var pre = state.scope + "|";
     var list = parts.filter(function (p) { return isAdjusted(state.adj[key(p.sel)]); });
+    var tlist = TYPE.filter(function (t) { return factorOf(t.k) !== 1 && authored[t.k]; });
 
     out.push("/* layout tuner — " + scopeDef().label + ", dragged at " + s.w + " × " + s.h);
     if (m) {
@@ -890,9 +1226,51 @@
         + " at (" + num(m.rect.left, 1) + ", " + num(m.rect.top, 1) + ") in the window");
     }
     out.push("");
-    if (!list.length) {
+    if (!list.length && !tlist.length) {
       out.push("   Nothing moved yet.");
       out.push("*/");
+      $("out").value = out.join("\n");
+      return;
+    }
+
+    /* Type first, and not because it was changed first. It is the half that
+       REFLOWS: every box measurement further down was taken with these sizes in
+       place, so reading them in the other order is reading the geometry of a
+       drawing whose type you have not been told about yet. */
+    if (tlist.length) {
+      out.push("   TEXT SIZE. A slider scales the coefficient the sheet states, so the share on");
+      out.push("   the right is the number that transcribes — and unlike a drag this reflowed the");
+      out.push("   composition, which is why it is above the boxes rather than below them.");
+      tlist.forEach(function (t) {
+        var f = factorOf(t.k), c = coefOf(t.k), px = usedPx(t), was = typeBase[t.k];
+        var mid = (px !== null ? num(px, 1) + "px" : "—") + (was ? "  ← " + num(was, 1) : "");
+        out.push("     " + (t.label + pad(11 - t.label.length))
+          + ("×" + num(f, 3) + pad(Math.max(2, 9 - num(f, 3).length)))
+          + mid + pad(Math.max(2, 22 - mid.length))
+          + (c !== null ? num(c, 6) + " → " + num(c * f, 6) + " of --panel-w"
+            + (floored(t.k, f, px) ? "   (the floor is what is on screen, not this)" : "")
+            : t.root ? "the page's own rem — a share of nothing"
+            : "no share stated at this window — the whole value is scaled"));
+      });
+      /* The five tokens come back out exactly as they went in, because a custom
+         property keeps the tokens it was declared with. The rem does not: it is
+         a real font-size, so the browser folds its calc() at parse time and what
+         the CSSOM hands back is `min(1rem, 1.61842vh)` — the same length, still
+         live, and not the sheet's own sentence. Said here rather than left for
+         someone to notice after pasting it over the derivation. */
+      if (tlist.filter(function (t) { return t.root; }).length) {
+        out.push("     The page rem's line below is the browser's reduction of what the sheet says,");
+        out.push("     not the sheet's own text — calc() is folded at parse time for everything");
+        out.push("     that is not a custom property. It behaves the same; it reads differently.");
+      }
+      out.push("");
+    }
+    if (!list.length) {
+      out.push("   No box was moved.");
+      out.push("*/");
+      out.push("");
+      typeCss(out, tlist);
+      out.push(stateLine());
       $("out").value = out.join("\n");
       return;
     }
@@ -934,6 +1312,7 @@
     });
     out.push("*/");
     out.push("");
+    typeCss(out, tlist);
     list.forEach(function (p) {
       var a = state.adj[key(p.sel)], d = [];
       if (a.dx || a.dy) d.push("  translate: " + num(a.dx, 1) + "px " + num(a.dy, 1) + "px;");
@@ -943,13 +1322,41 @@
       out.push(d.join("\n"));
       out.push("}");
     });
-    var st = {};
-    for (var k in state.adj) if (k.indexOf(pre) === 0 && isAdjusted(state.adj[k])) st[k] = state.adj[k];
-    out.push("");
-    out.push("/* state: " + JSON.stringify({ scope: state.scope, size: state.size, adj: st }) + " */");
+    out.push(stateLine());
     $("out").value = out.join("\n");
   }
   function pad(n) { return new Array(Math.max(1, n + 1)).join(" "); }
+
+  /* The declarations, written where the sheet writes them — grouped by the rule
+     that owns each token and wrapped back in its media block if it had one, so
+     what comes out is what goes in and not a pile of properties you then have to
+     find homes for. Two owners is the ordinary case: the masthead at :root
+     because the cut word reads it, the rest on .panel. */
+  function typeCss(out, tlist) {
+    if (!tlist.length) return;
+    var order = [], byKey = {};
+    tlist.forEach(function (t) {
+      var a = authored[t.k], k = (a.media || "") + " " + a.sel;
+      if (!byKey[k]) { byKey[k] = { media: a.media, sel: a.sel, d: [] }; order.push(k); }
+      byKey[k].d.push("  " + (t.root ? "font-size" : t.prop) + ": " + scaledText(t.k, factorOf(t.k)) + ";");
+    });
+    order.forEach(function (k) {
+      var g = byKey[k], in1 = g.media ? "  " : "";
+      if (g.media) out.push("@media " + g.media + " {");
+      out.push(in1 + g.sel + " {");
+      g.d.forEach(function (line) { out.push(in1 + line); });
+      out.push(in1 + "}");
+      if (g.media) out.push("}");
+    });
+    out.push("");
+  }
+
+  function stateLine() {
+    var st = {}, pre = state.scope + "|", ty = {};
+    for (var k in state.adj) if (k.indexOf(pre) === 0 && isAdjusted(state.adj[k])) st[k] = state.adj[k];
+    TYPE.forEach(function (t) { if (factorOf(t.k) !== 1) ty[t.k] = factorOf(t.k); });
+    return "\n/* state: " + JSON.stringify({ scope: state.scope, size: state.size, adj: st, type: ty }) + " */";
+  }
 
   /* ---- chrome wiring ------------------------------------------------------- */
   function chips(host, list, get, set) {
@@ -971,8 +1378,14 @@
       state.size = k; save(); fitFrame();
       /* The composition is derived from the window, so every base measurement
          taken in the old one is now wrong. Re-measure, and let paintChrome say
-         so if there are already numbers that were dragged at the old size. */
-      setTimeout(function () { measureBase(); reapply(); sync(); paintAll(); }, 60);
+         so if there are already numbers that were dragged at the old size.
+         The sheet is re-read for the same reason and one more: the media gates
+         are evaluated against the PREVIEW's viewport, so which declaration of
+         --panel-copy-size is the live one changes with this chip. */
+      setTimeout(function () {
+        readAuthored(); measureBase(); measureTypeBase();
+        reapply(); applyType(); sync(); paintAll();
+      }, 60);
       paintScopes();
     });
   }
@@ -992,6 +1405,10 @@
     var pre = state.scope + "|";
     parts.forEach(function (p) { if (state.adj[key(p.sel)]) applyTo(p.el, null); });
     for (var k in state.adj) if (k.indexOf(pre) === 0) delete state.adj[k];
+    /* All of it, type included — the button says all, and a "reset" that left
+       the masthead at 1.4 would be the one state nothing on screen explains.
+       `reset type` beside the sliders is the narrower one. */
+    state.type = {}; applyType();
     state.at = null; save(); sync(); paintAll();
   });
   $("copy").addEventListener("click", function () {
@@ -1009,8 +1426,13 @@
       var pre = state.scope + "|";
       for (var k in state.adj) if (k.indexOf(pre) === 0) delete state.adj[k];
       for (var k2 in (got.adj || {})) state.adj[k2] = got.adj[k2];
+      /* Replaced outright and not merged, because the type scale is one set: a
+         merge would leave a slider from the last session standing next to five
+         from the export, and the drawing would be neither. An export from before
+         the sliders existed has no `type` at all, and reads as all six at 1. */
+      state.type = got.type || {};
       save(); fitFrame(); paintScopes();
-      collect(); reapply(); sync(); paintAll();
+      collect(); reapply(); applyType(); sync(); paintAll();
       flash("imported");
     } catch (err) { flash("could not read that: " + err.message); }
   });
@@ -1032,6 +1454,7 @@
   });
 
   paintScopes();
+  buildType();
   paintChrome();
   paintRead();
   paintExport();
