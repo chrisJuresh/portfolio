@@ -2,6 +2,12 @@
 """Take a photograph of Nero Portoro apart into the maps a PBR surface wants.
 
     python design/plinth/build-portoro-maps.py [--src PATH] [--size N]
+                                               [--out DIR] [--square]
+
+To put a DIFFERENT photograph on the plinth, do not run this by hand - run
+design/plinth/add-stone.py, which calls build_maps() below into a maps directory
+of its own, writes the stone's entry and bakes its plate. Running this one points
+every gemini-* stone at your photograph, because they all read `maps/`.
 
 WHY THIS EXISTS AT ALL. design/plinth/build-slab.py grows its stone out of noise
 nodes, and the note at the top of it is honest about what that buys and what it
@@ -272,27 +278,43 @@ HEIGHT_GAIN = 2.2
 CALCITE_PROUD = 0.16
 
 
-def main():
-    ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    ap.add_argument("--src", default=DEFAULT_SRC)
-    ap.add_argument("--size", type=int, default=0,
-                    help="longest edge; 0 keeps the source resolution")
-    args = ap.parse_args()
+def build_maps(src, out_dir=OUT_DIR, size=0, square=False):
+    """One photograph -> the four maps, in `out_dir`. Returns the mineral split.
 
-    if not os.path.isfile(args.src):
+    Split out of main() so design/plinth/add-stone.py can build a stone of its
+    own without shelling out, and - the part that actually matters - without one
+    stone's maps landing on top of another's. `out_dir` is maps/ for the stone
+    this file was written for and maps/<name>/ for every stone added since.
+
+    WHY `square` EXISTS AND WHY IT IS OFF HERE. build-slab.py projects these with
+    a BOX projection and a UNIFORM mapping scale, so one tile of the image covers
+    a 1/scale by 1/scale SQUARE of model space whatever the image's own aspect
+    is. A 2:1 photograph is therefore squeezed to half its height on the block.
+    The stone this file was written for is 2814x1536 and every number in its
+    PHOTO_CANDIDATES entry was fitted with that squeeze in place, so turning it
+    on here would silently change all six gemini-* stones. A NEW photograph has
+    nothing fitted to it yet, so add-stone.py crops it square by default and what
+    you see in the picture is what lands on the plinth.
+    """
+    if not os.path.isfile(src):
         raise SystemExit(
             "missing %s\n\nThe source photograph is not in the repository - see\n"
             "the note at the top of this file. Drop it at the repo root, or pass\n"
-            "--src." % args.src)
+            "--src." % src)
 
-    im = Image.open(args.src).convert("RGB")
-    if args.size and max(im.size) != args.size:
-        s = args.size / float(max(im.size))
+    im = Image.open(src).convert("RGB")
+    if square and im.width != im.height:
+        e = min(im.size)
+        l, t = (im.width - e) // 2, (im.height - e) // 2
+        im = im.crop((l, t, l + e, t + e))
+        print("square  centre %dx%d cut from the source" % (e, e))
+    if size and max(im.size) != size:
+        s = size / float(max(im.size))
         im = im.resize((round(im.width * s), round(im.height * s)),
                        Image.LANCZOS)
     srgb = np.asarray(im, np.float32) / 255.0
     h, w = srgb.shape[:2]
-    print("source  %s  %dx%d" % (os.path.basename(args.src), w, h))
+    print("source  %s  %dx%d" % (os.path.basename(src), w, h))
 
     # ---- seamless across U, and only across U -----------------------------
     # The block is 1.19 units wide and at every scale worth using that is more
@@ -315,10 +337,10 @@ def main():
     print("split   ground %.1f%%  gold %.1f%%  calcite %.1f%%"
           % (ground.mean() * 100, gold.mean() * 100, calcite.mean() * 100))
 
-    os.makedirs(OUT_DIR, exist_ok=True)
+    os.makedirs(out_dir, exist_ok=True)
 
     def write(name, a, bits=8):
-        path = os.path.join(OUT_DIR, name)
+        path = os.path.join(out_dir, name)
         if a.ndim == 2:
             a = a[..., None]
         if bits == 16:
@@ -352,7 +374,22 @@ def main():
     # ---- and the mask that makes the stone translucent ---------------------
     write("calcite.png", calcite)
 
-    print("\nwrote %s" % os.path.relpath(OUT_DIR, ROOT))
+    print("\nwrote %s" % os.path.relpath(out_dir, ROOT))
+    return {"w": w, "h": h, "ground": float(ground.mean()),
+            "gold": float(gold.mean()), "calcite": float(calcite.mean())}
+
+
+def main():
+    ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    ap.add_argument("--src", default=DEFAULT_SRC)
+    ap.add_argument("--size", type=int, default=0,
+                    help="longest edge; 0 keeps the source resolution")
+    ap.add_argument("--out", default=OUT_DIR,
+                    help="where to write the maps; defaults to design/plinth/maps")
+    ap.add_argument("--square", action="store_true",
+                    help="centre-crop to a square first - see build_maps()")
+    args = ap.parse_args()
+    build_maps(args.src, args.out, args.size, args.square)
     print("now:  blender -b -P design/plinth/build-slab.py -- gemini")
 
 

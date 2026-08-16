@@ -2,13 +2,23 @@
 """Render the Projects Panel's marble plinth as an actual block of stone.
 
     "C:/Program Files/Blender Foundation/Blender 5.2/blender.exe" -b \
-        -P design/plinth/build-slab.py -- [<stone> | proc | photo | all]
+        -P design/plinth/build-slab.py -- [<stone> | proc | photo | added | all]...
+
+Several may be named at once, and are rendered in the order given.
 
 There are two families of stone here and they are generated in completely
 different ways. `proc` is nero/portoro/marquina/grey, grown out of noise nodes.
 `photo` is the gemini-* set, read off a photograph by
 design/plinth/build-portoro-maps.py — run that first, it needs no GPU. See `the
 stone, photographed` for why both exist and what each one cannot do.
+
+TO ADD A STONE OF YOUR OWN, do not edit the table here — run
+
+    python design/plinth/add-stone.py --src <photo> --name <name>
+
+which builds that photograph's maps into a directory of its own, writes
+design/plinth/stones/<name>.json and calls this script to bake the plate. `added`
+is the group of stones that arrived that way.
 
 WHY THIS REPLACES design/plinth/build-marble.py. That file painted a plinth: a
 photograph of a slab, warped, dropped onto a luminance ramp measured off the
@@ -742,6 +752,17 @@ the .gitignore note about /Texturelabs_*.jpg, which these follow. Run:
 DOES NOT: git only puts tracked files in one, so an ignored source sitting in
 the main checkout is simply absent here. Copy it across first."""
 
+MISSING_ADDED_MAPS = """\
+missing %s
+
+`%s` was added from a photograph by design/plinth/add-stone.py, and the maps it
+built are not in the repository - design/plinth/maps/ is gitignored, so they
+exist only in the tree they were built in and a fresh checkout or a fresh
+worktree has none of them. What ships is the plate and the entry. Rebuild them
+from the same photograph%s:
+
+    python design/plinth/add-stone.py --src <photo> --name %s --replace"""
+
 # A photo stone is a grade, a scale, a window and a surface model.
 #
 #   grade    which basecolor-*.png, so which of build-portoro-maps.py's GRADES
@@ -903,6 +924,67 @@ PHOTO_CANDIDATES = {
 }
 
 # ---------------------------------------------------------------------------
+# ...AND THE STONES ADDED FROM A PHOTOGRAPH OF YOUR OWN
+# ---------------------------------------------------------------------------
+# design/plinth/add-stone.py takes a photograph, builds a set of maps for it in
+# maps/<name>/, and writes design/plinth/stones/<name>.json. Everything above
+# reads `maps/`; a stone here reads its own directory, which is the whole of what
+# `maps` adds to the table and the reason a second photograph does not overwrite
+# the first one's maps.
+#
+# ONE FILE PER STONE rather than one table, and the reason is what a table costs
+# in a repository whose rule is one change per branch: two stones added in two
+# worktrees are two new files that merge, where two entries in one JSON object
+# are a conflict every time. It also makes deleting a stone `rm` on two paths.
+#
+# THEY ARE COMMITTED AND THEIR MAPS ARE NOT, which looks lopsided and is the same
+# split the gemini-* stones already live under — design/plinth/maps/ is gitignored
+# and so is the photograph, and what ships is the plate. So a fresh checkout can
+# LIST an added stone and show its plate, and can only RE-BAKE it from the tree
+# that has the photograph. See MISSING_ADDED_MAPS.
+STONES_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "stones")
+
+_REQUIRED = ("title", "grade", "scale", "offset", "bump", "sss", "coat",
+             "rough", "crack")
+
+
+def load_added_stones():
+    """Every design/plinth/stones/*.json, merged into PHOTO_CANDIDATES.
+
+    A built-in name is never shadowed. Overwriting `gemini` from a JSON file
+    would be a stone that renders as one thing and is documented as another,
+    found only by noticing the plate had changed, so the clash is reported and
+    the file ignored.
+    """
+    import json
+    added = {}
+    for name in sorted(os.listdir(STONES_DIR) if os.path.isdir(STONES_DIR) else []):
+        if not name.endswith(".json"):
+            continue
+        key = name[:-5]
+        path = os.path.join(STONES_DIR, name)
+        if key in PHOTO_CANDIDATES or key in CANDIDATES or key in PROC_ROOMS:
+            print("! %s names a stone this file already defines - ignored"
+                  % os.path.relpath(path, ROOT))
+            continue
+        with open(path, encoding="utf-8") as fh:
+            spec = json.load(fh)
+        missing = [f for f in _REQUIRED if f not in spec]
+        if missing:
+            sys.exit("%s is missing %s\n\nRebuild it with design/plinth/add-stone.py."
+                     % (os.path.relpath(path, ROOT), ", ".join(missing)))
+        # JSON has no tuples and the material unpacks these as pairs; lists work
+        # for that, but write_sidecar() decides what to list() by isinstance, so
+        # keeping the shape identical to a built-in entry keeps the sidecar - and
+        # the tuner's copy-out, which renders Python - identical too.
+        for f in ("bump", "coat"):
+            spec[f] = tuple(spec[f])
+        spec.setdefault("maps", key)
+        added[key] = spec
+    return added
+
+
+# ---------------------------------------------------------------------------
 # ...AND THE PROCEDURAL STONES, RE-LIT
 # ---------------------------------------------------------------------------
 # If a surround fitted to a light stone is what flattened the black, then the
@@ -919,6 +1001,10 @@ PHOTO_CANDIDATES = {
 # wrong" are different diagnoses with different consequences, and only one of
 # them has been demonstrated.
 PROC_ROOMS = {k + "-noir": k for k in CANDIDATES}
+
+# Last, so that load_added_stones() can see every built-in name it must not take.
+ADDED = load_added_stones()
+PHOTO_CANDIDATES.update(ADDED)
 
 
 # ---------------------------------------------------------------------------
@@ -1315,7 +1401,7 @@ def build_material(key):
     return mat
 
 
-def photo_map(tree, co, name, colorspace, x, y):
+def photo_map(tree, co, name, colorspace, x, y, spec):
     """One of build-portoro-maps.py's maps, box-projected onto the block.
 
     BOX AND NOT FLAT, and this is the whole trick rather than a default worth
@@ -1332,8 +1418,15 @@ def photo_map(tree, co, name, colorspace, x, y):
     usual consequence of forgetting: a roughness map read as sRGB is silently
     de-gamma'd, so 0.055 arrives as 0.004 and the stone becomes a mirror.
     """
-    path = os.path.join(MAPS_DIR, name)
+    # maps/ for the stones this file was written for, maps/<name>/ for one added
+    # from a photograph of your own - see load_added_stones().
+    sub = spec.get("maps")
+    path = os.path.join(MAPS_DIR, sub, name) if sub else os.path.join(MAPS_DIR, name)
     if not os.path.isfile(path):
+        if sub:
+            src = spec.get("src")
+            sys.exit(MISSING_ADDED_MAPS
+                     % (path, sub, (" (%s)" % src) if src else "", sub))
         sys.exit(MISSING_MAPS % path)
     img = bpy.data.images.load(path, check_existing=True)
     img.colorspace_settings.name = colorspace
@@ -1383,7 +1476,7 @@ def build_photo_material(key):
     co = (m, "Vector")
 
     base = photo_map(tree, co, "basecolor-%s.png" % spec["grade"], "sRGB",
-                     -1300, 400)
+                     -1300, 400, spec)
     colour = (base, "Color")
 
     # ---- the crack overlay, only on the hybrid -----------------------------
@@ -1405,7 +1498,7 @@ def build_photo_material(key):
 
     # ---- roughness ---------------------------------------------------------
     if spec["rough"] > 0.0:
-        rmap = photo_map(tree, co, "roughness.png", "Non-Color", -1300, 100)
+        rmap = photo_map(tree, co, "roughness.png", "Non-Color", -1300, 100, spec)
         rm = tree.nodes.new("ShaderNodeMath")
         rm.location = (-900, 100)
         rm.operation = 'MULTIPLY'
@@ -1418,7 +1511,7 @@ def build_photo_material(key):
     # ---- relief ------------------------------------------------------------
     bstr, bdist = spec["bump"]
     if bstr > 0.0:
-        hmap = photo_map(tree, co, "height.png", "Non-Color", -1300, -200)
+        hmap = photo_map(tree, co, "height.png", "Non-Color", -1300, -200, spec)
         bump = tree.nodes.new("ShaderNodeBump")
         bump.location = (-700, -200)
         bump.inputs["Strength"].default_value = bstr
@@ -1435,7 +1528,7 @@ def build_photo_material(key):
 
     # ---- and the reason marble does not look like painted card -------------
     if spec["sss"] > 0.0:
-        cmap = photo_map(tree, co, "calcite.png", "Non-Color", -1300, -500)
+        cmap = photo_map(tree, co, "calcite.png", "Non-Color", -1300, -500, spec)
         sw = tree.nodes.new("ShaderNodeMath")
         sw.location = (-900, -500)
         sw.operation = 'MULTIPLY'
@@ -1821,6 +1914,16 @@ def write_sidecar():
                    for f in PHOTO_FIELDS}}
             for k, v in PHOTO_CANDIDATES.items()
         },
+        # Which of those came from design/plinth/stones/*.json rather than from
+        # the table in this file, so the tuner can name the file to edit. Getting
+        # that wrong sends you to change a value in build-slab.py that build-slab.py
+        # does not hold, and the re-bake then looks like it did nothing. `src` is
+        # the photograph's basename, which is all the tuner needs to write the
+        # add-stone.py line for a variant of it, and `stem` is the name the
+        # styles were built off - the maps are shared between them and are named
+        # for it, so it is the one part of the key that is not the style.
+        "added_stones": {k: {"src": v.get("src"), "stem": v.get("maps")}
+                         for k, v in ADDED.items()},
         # What the ?v= in portfolio/styles.css should read, so the tuner can say
         # whether the plates on disk are the ones the stylesheet is asking for.
         "version": digest() if os.path.isdir(OUT_DIR) else None,
@@ -1833,20 +1936,34 @@ def write_sidecar():
 
 
 def main():
-    which = (ARGV[0] if ARGV else "all").lower()
+    # Several arguments, each a stone or a group, because the scene is built once
+    # and a stone is fifteen seconds - so four stones in one invocation is four
+    # renders, and four invocations is four renders plus four Blender starts.
+    # design/plinth/add-stone.py writes a set of stones from one photograph and
+    # asks for all of them at once.
+    which = [a.lower() for a in ARGV] or ["all"]
     # `all` is both families, `proc` and `photo` are one each — because during a
     # bake-off you re-render one family at a time and the other four plates are
     # forty seconds you do not need to spend.
     groups = {"all": list(CANDIDATES) + list(PHOTO_CANDIDATES) + list(PROC_ROOMS),
               "proc": list(CANDIDATES),
               "photo": list(PHOTO_CANDIDATES),
-              "relit": list(PROC_ROOMS)}
-    if which in groups:
-        keys = groups[which]
-    elif which in CANDIDATES or which in PHOTO_CANDIDATES or which in PROC_ROOMS:
-        keys = [which]
-    else:
-        sys.exit(__doc__)
+              "relit": list(PROC_ROOMS),
+              # ...and the ones added from a photograph of your own, which is the
+              # group you want after re-running add-stone.py on a tree that had
+              # to rebuild their maps.
+              "added": list(ADDED)}
+    keys = []
+    for a in which:
+        if a in groups:
+            keys += groups[a]
+        elif a in CANDIDATES or a in PHOTO_CANDIDATES or a in PROC_ROOMS:
+            keys.append(a)
+        else:
+            sys.exit(__doc__)
+    # Order preserved, duplicates dropped: `photo gemini` is a plausible thing to
+    # type and rendering gemini twice is fifteen seconds of rendering it twice.
+    keys = list(dict.fromkeys(keys))
     os.makedirs(OUT_DIR, exist_ok=True)
     print("plate %dx%d   camera d=%.5f h=%.5f   block %.5f x %.2f x %.5f"
           % (PLATE_W, PLATE_H, CAM_D, CAM_H, PLINTH_W, DEPTH, HEIGHT))
