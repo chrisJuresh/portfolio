@@ -44,6 +44,12 @@ design/
     build-textures.py    bakes the two Texturelabs plates into portfolio/img/tex/
     effects-tuner.html   interactive: every effect on chips, every number on a
                          slider, over the real page — CSS export, per theme
+  plinth/
+    build-marble.py      bakes the Projects Panel's marble plinth into the same
+                         directory — one plate per candidate, three from
+                         gitignored Texturelabs slabs and one generated. The
+                         stone is the source; the perspective, the ramp and the
+                         specular line are composited here.
   tools/
     render.mjs       Playwright: serves the repo, walks the matrix, writes shots/
     package.json     dev dependency (playwright) — not the site's
