@@ -1,0 +1,1037 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Layout tuner — the Projects Panel</title>
+  <!--
+    DRAG AND RESIZE EVERY BOX IN THE COMPOSITION, then read off where you put it.
+    This tuner does not decide anything and it does not write to styles.css. It is
+    a measuring instrument: you move things until the drawing is the one you want,
+    and the export drawer says — in pixels, in shares of --panel-w, and in the
+    composition's own twelve columns — exactly where everything ended up. That
+    export is the thing to paste back into a conversation. What is written into
+    the sheet afterwards is a separate, deliberate edit.
+
+    OVER THE REAL /portfolio IN AN IFRAME, the same trick as
+    design/effects/effects-tuner.html and for the same reason: nothing here is a
+    copy of the panel, so nothing here can drift from it. Every length in the
+    composition is derived — --panel-w is a min() of a width branch and a fit
+    branch, the masthead is a share of that, row one is a stated height in two of
+    those shares — so a mock-up with the numbers typed in would be a picture of
+    the arithmetic rather than the arithmetic. This drags the live boxes.
+
+    Serve the repo root (run.bat) and open
+        http://localhost:8000/design/layout-tuner.html
+
+    HOW IT MOVES THINGS, and why it is not what you would write by hand. Position
+    is applied as the standalone `translate` property and never as `transform`,
+    because two boxes in here already carry a transform of their own — the Rail's
+    names are rotated 180deg, and the reflection is folded and squashed — and a
+    transform written over either would delete the thing that makes it what it is.
+    `translate` composes ahead of `transform` instead of replacing it. Size is
+    applied as inline width/height, and ONLY on the axis whose handle you actually
+    dragged: the Frame's height comes from `aspect-ratio`, so a resize that states
+    both when you asked for one would silently take the ratio out of the picture.
+
+    A TRANSLATE IS NOT A LAYOUT, and this is the honest limit of the instrument.
+    Moving a box this way paints it somewhere else and leaves its slot where it
+    was — nothing reflows around it, and two boxes can be dragged on top of each
+    other with neither pushing the other. That is a feature for judging a
+    composition whose parts are placed on a grid and not stacked in flow, which
+    is what this one is; it would be a lie in a column of text. The export says
+    the same thing in its own header, so a number read off here is never mistaken
+    for a number that would survive being written as a margin.
+
+    WHAT THE EXPORT IS IN, and why three units rather than one. Pixels are what
+    you dragged and are true only at the viewport in the top bar. Shares of
+    --panel-w are what this sheet is actually written in — almost every length in
+    the .panel blocks is `calc(<fraction> * var(--panel-w))` — so that column is
+    the one that transcribes. Column numbers are for the four boxes that are
+    placed rather than sized: `grid-area: 2 / 3 / 3 / 13` is how .panel-stage says
+    where it is, and an edge that lands on column 3.02 is telling you it wants to
+    be on the line, not 2px off it.
+
+    THE REFLECTION FOLLOWS THE FRAME. panel-mirror.js clones .panel-frame into the
+    plinth at load, so an inline style set on the original reaches nothing — the
+    window would resize and its reflection would not, and you would be judging the
+    composition against a stale copy of half of it. Every write is therefore made
+    twice, to the element and to the node at the same index path inside
+    .panel-mirror. The mirror's own subtree is not offered in the parts list for
+    the same reason: it is not a thing to tune, it is a thing that agrees.
+
+    EXCLUDED FROM DEPLOY by .vercelignore, which excludes all of design/.
+  -->
+  <style>
+    :root { color-scheme: light dark; --ui: #1a1917; --ui-bg: #fcfbf8; --ui-panel: #f5f2ea; --ui-line: #d6d0c4; --ui-mut: #6f6a5d; --ui-hit: #8a5a2b; }
+    @media (prefers-color-scheme: dark) {
+      :root { --ui: #eaeaea; --ui-bg: #161616; --ui-panel: #1e1e1e; --ui-line: #3a3a3a; --ui-mut: #9a9a9a; --ui-hit: #d8a76a; }
+    }
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+    body {
+      margin: 0; display: flex; flex-direction: column;
+      background: var(--ui-bg); color: var(--ui);
+      font: 13px/1.45 "Segoe UI", system-ui, sans-serif;
+    }
+
+    /* ---- top bar ---------------------------------------------------------- */
+    .top {
+      flex: 0 0 auto; display: flex; flex-wrap: wrap; align-items: center; gap: 0.35rem;
+      padding: 0.5rem 0.8rem; border-bottom: 1px solid var(--ui-line);
+    }
+    .top strong { font-size: 11px; letter-spacing: 0.09em; text-transform: uppercase; color: var(--ui-mut); }
+    .grow { flex: 1 1 auto; }
+    .set { display: inline-flex; gap: 0.2rem; align-items: center; }
+    .set::before { content: attr(data-label); margin-right: 0.15rem; font-size: 10.5px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ui-mut); }
+    button, select, input[type="text"], input[type="number"], textarea {
+      font: inherit; color: var(--ui); background: transparent;
+      border: 1px solid var(--ui-line); border-radius: 5px;
+    }
+    select, input[type="text"], input[type="number"], textarea { background: var(--ui-bg); color-scheme: light dark; }
+    button { padding: 0.24rem 0.55rem; cursor: pointer; }
+    button:hover { border-color: var(--ui-mut); }
+    button[aria-pressed="true"] { background: var(--ui); color: var(--ui-bg); border-color: var(--ui); }
+    .badge { padding: 0.1rem 0.4rem; border-radius: 99px; background: var(--ui-hit); color: var(--ui-bg); font-size: 11px; }
+    .badge[data-n="0"] { background: transparent; color: var(--ui-mut); }
+    .hint { font-size: 10.5px; color: var(--ui-mut); }
+    .warn { margin: 0; padding: 0.45rem 0.7rem; border-bottom: 1px solid var(--ui-line); background: rgba(216, 167, 106, 0.16); font-size: 11.5px; }
+    .warn:empty { display: none; }
+
+    /* ---- layout ----------------------------------------------------------- */
+    .wrap { flex: 1 1 auto; display: flex; min-height: 0; }
+    .side { flex: 0 0 24rem; display: flex; flex-direction: column; min-height: 0; border-right: 1px solid var(--ui-line); background: var(--ui-panel); }
+    .stage { flex: 1 1 auto; min-width: 0; position: relative; overflow: hidden; padding: 0.8rem; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.35rem; }
+
+    /* The preview is the chosen viewport at its TRUE size, scaled down to fit —
+       plate-tuner's fitFrame(), for the same reason it needs one. The whole
+       composition is derived from the window, so a preview that quietly handed
+       the page a 900px viewport would be a correct drawing of the wrong window,
+       and every number read off it would be a number for a screen nobody has. */
+    .frame-fit { position: relative; overflow: hidden; border: 1px solid var(--ui-line); background: #000; }
+    .frame-fit iframe { position: absolute; top: 0; left: 0; border: 0; transform-origin: 0 0; }
+    .scale-note { flex: 0 0 auto; font: 11px/1.3 ui-monospace, Consolas, monospace; color: var(--ui-mut); }
+
+    /* ---- the parts list --------------------------------------------------- */
+    .tree { flex: 1 1 auto; overflow: auto; padding: 0.3rem 0 0.5rem; min-height: 6rem; }
+    .tree button {
+      display: block; width: 100%; padding: 0.12rem 0.7rem; border: 0; border-radius: 0;
+      background: transparent; text-align: left; font: 11.5px/1.5 ui-monospace, Consolas, monospace;
+      color: var(--ui); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .tree button:hover { background: rgba(138, 90, 43, 0.12); }
+    .tree button[aria-pressed="true"] { background: var(--ui-hit); color: var(--ui-bg); }
+    .tree button .dot { color: var(--ui-hit); }
+    .tree button[aria-pressed="true"] .dot { color: var(--ui-bg); }
+    .tree button .mut { color: var(--ui-mut); }
+    .tree button[aria-pressed="true"] .mut { color: var(--ui-bg); opacity: 0.75; }
+
+    /* ---- the readout ------------------------------------------------------ */
+    .read { flex: 0 0 auto; border-top: 1px solid var(--ui-line); padding: 0.45rem 0.7rem 0.55rem; }
+    .read h2 { margin: 0 0 0.3rem; font: 11px/1.4 ui-monospace, Consolas, monospace; color: var(--ui-hit); word-break: break-all; }
+    .read table { width: 100%; border-collapse: collapse; font: 11px/1.5 ui-monospace, Consolas, monospace; }
+    .read th { width: 4.2rem; text-align: left; font-weight: normal; color: var(--ui-mut); vertical-align: top; }
+    .read td { text-align: right; white-space: nowrap; }
+    .read td.l { text-align: left; color: var(--ui-mut); padding-left: 0.5rem; }
+    .read .none { color: var(--ui-mut); font: 11.5px/1.5 "Segoe UI", system-ui, sans-serif; }
+    .read .keys { margin: 0.4rem 0 0; }
+
+    /* ---- export drawer ---------------------------------------------------- */
+    .export { flex: 0 0 auto; border-top: 1px solid var(--ui-line); }
+    .export > summary { padding: 0.4rem 0.7rem; cursor: pointer; font-size: 11px; letter-spacing: 0.09em; text-transform: uppercase; color: var(--ui-mut); }
+    .ebody { padding: 0 0.7rem 0.6rem; }
+    textarea { width: 100%; height: 15rem; padding: 0.4rem; resize: vertical; font: 11px/1.4 ui-monospace, Consolas, monospace; white-space: pre; }
+    .ebtns { display: flex; gap: 0.3rem; align-items: center; margin-top: 0.35rem; }
+  </style>
+</head>
+<body>
+  <div class="top">
+    <strong>layout tuner</strong>
+    <span class="badge" id="count" data-n="0">0</span>
+    <span class="set" id="scopes" data-label="scope"></span>
+    <span class="set" id="sizes" data-label="window"></span>
+    <span class="set" data-label="snap"><input type="number" id="snap" min="0" max="64" step="1" style="width:3.4rem;padding:0.1rem 0.25rem"></span>
+    <button id="grid" type="button" title="draw the twelve columns and the row seam over the composition">grid</button>
+    <button id="unclip" type="button" title="the section is overflow-x: clip — let a dragged box hang past its edge">unclip</button>
+    <button id="armed" type="button" title="off hands the mouse back to the page, so links, hover states and scrolling behave normally">catch mouse</button>
+    <span class="grow"></span>
+    <button id="jump" type="button">to the panel</button>
+    <button id="reload" type="button">reload</button>
+    <button id="reset" type="button">reset all</button>
+  </div>
+
+  <p class="warn" id="warn"></p>
+
+  <div class="wrap">
+    <aside class="side">
+      <div class="tree" id="tree"></div>
+
+      <div class="read" id="read"></div>
+
+      <details class="export" open>
+        <summary>export — paste this back to Claude</summary>
+        <div class="ebody">
+          <textarea id="out" spellcheck="false"></textarea>
+          <div class="ebtns">
+            <button id="copy" type="button">copy</button>
+            <button id="import" type="button" title="paste an earlier export above, then click this">import</button>
+            <span class="hint" id="status"></span>
+          </div>
+        </div>
+      </details>
+    </aside>
+
+    <main class="stage">
+      <div class="frame-fit" id="fit"><iframe id="frame" title="portfolio preview"></iframe></div>
+      <div class="scale-note" id="scalenote"></div>
+    </main>
+  </div>
+
+<script>
+/* ============================================================================
+   Layout tuner — drag and resize the Projects Panel, then read off the numbers.
+
+   The whole of the instrument is four things: a list of the boxes in scope, an
+   overlay of handles drawn INSIDE the previewed document, a table of what the
+   selected box now measures, and an export that says all of it at once.
+
+   THE OVERLAY LIVES IN THE IFRAME, not over it. Every alternative needs the
+   preview's scroll offset and its scale factor carried across the boundary and
+   kept in step, and gets one of them wrong the first time the window is resized
+   mid-drag. Inside, the handles are in the same coordinate space as the boxes
+   they are on, the preview's own scrolling moves them for free, and the parent's
+   `transform: scale()` on the iframe scales the handles with the drawing because
+   it scales everything. It also means pointer coordinates arrive already mapped
+   through that scale: a drag is 1:1 in PAGE pixels at any preview percentage,
+   which is the unit the export is in.
+   ========================================================================== */
+(function () {
+  "use strict";
+
+  var STORE = "portfolio-layout-tuner/v2";
+
+  /* The two readings of "every part of the page". The panel is the default
+     because it is the composition being drawn; `body` is here because the same
+     instrument answers the same question about the CV above it, and refusing to
+     would be an arbitrary line. */
+  var SCOPES = [
+    { k: "panel", label: "panel", sel: "section.panel" },
+    { k: "page",  label: "page",  sel: "body" }
+  ];
+
+  /* Same list plate-tuner offers, and the same reason for stating it rather than
+     using this pane: --panel-w is a min() of a width branch and a HEIGHT branch,
+     so the composition on a 1920x1080 screen is not the composition on a
+     1920x900 one, and a number dragged in an arbitrary window is a number for
+     nobody's window. `frame` first — it is what the profile capture runs at. */
+  var SIZES = [
+    { k: "frame",   label: "1920",  w: 1920, h: 1080 },
+    { k: "laptop2", label: "1600",  w: 1600, h: 1000 },
+    { k: "desktop", label: "1440",  w: 1440, h: 900 },
+    { k: "laptop",  label: "1280",  w: 1280, h: 800 },
+    { k: "tablet",  label: "820",   w: 820,  h: 1180 },
+    { k: "mobile",  label: "390",   w: 390,  h: 844 }
+  ];
+
+  /* Eight handles, each carrying which edges it drags. x/y are where the handle
+     sits on the box as a fraction, sx/sy are which way the size goes, and mx/my
+     say whether the box's own origin has to follow — dragging the west edge
+     makes the box wider AND moves it left, and forgetting the second half is the
+     bug that makes a resize feel like it is fighting you. */
+  var HANDLES = [
+    { k: "nw", x: 0,   y: 0,   sx: -1, sy: -1, mx: 1, my: 1, cur: "nwse-resize" },
+    { k: "n",  x: 0.5, y: 0,   sx: 0,  sy: -1, mx: 0, my: 1, cur: "ns-resize" },
+    { k: "ne", x: 1,   y: 0,   sx: 1,  sy: -1, mx: 0, my: 1, cur: "nesw-resize" },
+    { k: "e",  x: 1,   y: 0.5, sx: 1,  sy: 0,  mx: 0, my: 0, cur: "ew-resize" },
+    { k: "se", x: 1,   y: 1,   sx: 1,  sy: 1,  mx: 0, my: 0, cur: "nwse-resize" },
+    { k: "s",  x: 0.5, y: 1,   sx: 0,  sy: 1,  mx: 0, my: 0, cur: "ns-resize" },
+    { k: "sw", x: 0,   y: 1,   sx: -1, sy: 1,  mx: 1, my: 0, cur: "nesw-resize" },
+    { k: "w",  x: 0,   y: 0.5, sx: -1, sy: 0,  mx: 1, my: 0, cur: "ew-resize" }
+  ];
+
+  /* ---- state --------------------------------------------------------------
+     `adj` is keyed by scope and selector, so the same page tuned as `panel` and
+     as `page` keeps two independent sets and neither surprises the other. Each
+     entry is what has been ASKED FOR and not what resulted: dx/dy always, w/h
+     only on an axis that was actually dragged, which is what keeps aspect-ratio
+     alive on the Frame. */
+  var state = {
+    scope: "panel", size: "frame", snap: 0,
+    grid: false, unclip: true, armed: true,
+    at: null,            /* the viewport the numbers were taken at */
+    adj: {}              /* "scope|selector" -> {dx,dy,w,h} */
+  };
+  try {
+    var saved = JSON.parse(localStorage.getItem(STORE) || "null");
+    if (saved && typeof saved === "object") { for (var k in saved) state[k] = saved[k]; }
+  } catch (_) {}
+  function save() { try { localStorage.setItem(STORE, JSON.stringify(state)); } catch (_) {} }
+
+  var $ = function (id) { return document.getElementById(id); };
+  var frame = $("frame"), fit = $("fit");
+  var doc = null, win = null, layer = null;
+  var parts = [];        /* [{el, sel, depth, label}] */
+  var base = {};         /* selector -> {w,h} measured with nothing applied */
+  var selEl = null;      /* the selected element, in the iframe */
+  var scale = 1;
+  var drag = null;
+
+  function scopeDef() { return SCOPES.filter(function (s) { return s.k === state.scope; })[0] || SCOPES[0]; }
+  function sizeDef()  { return SIZES.filter(function (s) { return s.k === state.size; })[0] || SIZES[0]; }
+  function key(sel)   { return state.scope + "|" + sel; }
+  function adjOf(sel, make) {
+    var k = key(sel);
+    if (!state.adj[k] && make) state.adj[k] = { dx: 0, dy: 0, w: null, h: null };
+    return state.adj[k] || null;
+  }
+  function isAdjusted(a) {
+    return !!a && (a.dx !== 0 || a.dy !== 0 || a.w !== null || a.h !== null);
+  }
+  function count() {
+    var n = 0, pre = state.scope + "|";
+    for (var k in state.adj) if (k.indexOf(pre) === 0 && isAdjusted(state.adj[k])) n++;
+    return n;
+  }
+
+  var num = function (v, dp) {
+    var s = (Math.round(v * Math.pow(10, dp)) / Math.pow(10, dp)).toFixed(dp);
+    return s.replace(/\.?0+$/, "") || "0";
+  };
+  var sign = function (v, dp) { return (v > 0 ? "+" : v < 0 ? "−" : "") + num(Math.abs(v), dp); };
+
+  /* ---- the preview --------------------------------------------------------
+     Scale to fit, never up: the small presets are useful because they are small,
+     and a 390px window blown up to fill this pane would be a picture of nothing.
+     Said out loud in the note under it, because a preview at 47% that does not
+     admit it is a preview you will misread a 3px nudge in. */
+  function fitFrame() {
+    var s = sizeDef(), stage = fit.parentNode;
+    var availW = Math.max(160, stage.clientWidth - 0.8 * 16 * 2 - 2);
+    var availH = Math.max(160, stage.clientHeight - 0.8 * 16 * 2 - 2 - 20);
+    scale = Math.min(1, availW / s.w, availH / s.h);
+    frame.style.width = s.w + "px";
+    frame.style.height = s.h + "px";
+    frame.style.transform = "scale(" + scale + ")";
+    fit.style.width = Math.round(s.w * scale) + "px";
+    fit.style.height = Math.round(s.h * scale) + "px";
+    $("scalenote").textContent = s.w + " × " + s.h +
+      (scale < 1 ? "  ·  shown at " + Math.round(scale * 100) + "%  ·  one mouse pixel is "
+        + num(1 / scale, 2) + " page pixels" : "  ·  actual size");
+  }
+  /* The stage changes size without the window doing anything — the export drawer
+     opening, the parts list growing under a scope change, the sidebar's own
+     content pushing on it — and a fit taken before the first layout settles is
+     an 8% preview that never corrects itself. Observed rather than listened for.
+     `resize` stays as well: it is what catches a device-pixel-ratio change. */
+  window.addEventListener("resize", function () { fitFrame(); sync(); });
+  if (window.ResizeObserver) {
+    new ResizeObserver(function () { fitFrame(); sync(); }).observe(fit.parentNode);
+  }
+
+  function loadFrame() { frame.src = "/portfolio/?tuner=" + Date.now(); }
+
+  /* ---- naming a box -------------------------------------------------------
+     The name has to be three things at once: unique inside the scope so it can
+     be stored and re-resolved after a reload, a valid selector so the export is
+     something you could paste, and short enough to read in a list. So: build the
+     full path from the scope root, then hand back the SHORTEST tail of it that
+     still matches exactly one element. `.panel-frame` for the window, and the
+     whole chain only for the boxes that genuinely need it. */
+  function seg(el) {
+    var cls = [].slice.call(el.classList).filter(function (c) { return c.indexOf("lt-") !== 0; });
+    var s = el.tagName.toLowerCase() + cls.map(function (c) { return "." + CSS.escape(c); }).join("");
+    var sibs = [].slice.call(el.parentElement ? el.parentElement.children : []).filter(function (n) {
+      try { return n.matches(s); } catch (_) { return false; }
+    });
+    if (sibs.length > 1) s += ":nth-child(" + ([].indexOf.call(el.parentElement.children, el) + 1) + ")";
+    return s;
+  }
+  function selectorFor(el, root) {
+    var chain = [], n = el;
+    while (n && n !== root) { chain.unshift(seg(n)); n = n.parentElement; }
+    if (!chain.length) return scopeDef().sel;
+    for (var i = chain.length - 1; i >= 0; i--) {
+      var tail = chain.slice(i).join(" > ");
+      var full = i === 0 ? scopeDef().sel + " > " + tail : tail;
+      try { if (root.querySelectorAll(tail).length === 1) return tail; } catch (_) {}
+      if (i === 0) return full;
+    }
+    return chain.join(" > ");
+  }
+  function resolve(sel) {
+    var root = doc && doc.querySelector(scopeDef().sel);
+    if (!root) return null;
+    try { return sel === scopeDef().sel ? root : root.querySelector(sel); } catch (_) { return null; }
+  }
+
+  /* ---- the parts list -----------------------------------------------------
+     Every element in scope, in document order, with two omissions. The overlay's
+     own nodes, obviously. And everything under .panel-mirror, which is
+     panel-mirror.js's clone of the Frame — tuning a reflection is tuning nothing,
+     since the next reload rebuilds it from the original. The mirror's own box
+     stays: where the reflection sits in the stone is a real decision. */
+  function collect() {
+    parts = [];
+    var root = doc && doc.querySelector(scopeDef().sel);
+    if (!root) return;
+    (function walk(el, depth) {
+      var sel = selectorFor(el, root);
+      parts.push({ el: el, sel: sel, depth: depth });
+      if (el.classList && el.classList.contains("panel-mirror")) return;
+      for (var i = 0; i < el.children.length; i++) {
+        var c = el.children[i];
+        if (c.classList && c.classList.contains("lt-layer")) continue;
+        if (c.tagName === "SCRIPT" || c.tagName === "STYLE" || c.tagName === "LINK") continue;
+        walk(c, depth + 1);
+      }
+    })(root, 0);
+  }
+
+  /* Measured with nothing applied, which is why this runs before the stored
+     adjustments go back on after a load. It is what "was 856 x 440" is read from
+     and what a resize starts from. */
+  function measureBase() {
+    base = {};
+    parts.forEach(function (p) {
+      var r = p.el.getBoundingClientRect();
+      base[p.sel] = { w: r.width, h: r.height };
+    });
+  }
+
+  /* ---- writing the change -------------------------------------------------
+     `translate` and not `transform`; width/height only where asked. Both written
+     to the twin in the reflection as well — see the header. */
+  function twinOf(el) {
+    if (!doc) return null;
+    var stageFrame = doc.querySelector(".panel-stage > .panel-frame");
+    var mirror = doc.querySelector(".panel-mirror > .panel-frame");
+    if (!stageFrame || !mirror) return null;
+    /* The containment test FIRST, and it is not a micro-optimisation. Without it
+       the walk below runs off the top of the document for every box that is not
+       in the Frame — which is most of them — and <html>.parentElement is null, so
+       it throws inside applyTo, AFTER the element's own style has been written
+       and BEFORE the save and the repaint that follow it. The visible symptom is
+       a masthead that nudges on screen while the readout beside it insists it has
+       not moved, with nothing in the console until you go looking. */
+    if (!stageFrame.contains(el)) return null;
+    var path = [], n = el;
+    while (n && n !== stageFrame) { path.unshift([].indexOf.call(n.parentElement.children, n)); n = n.parentElement; }
+    if (n !== stageFrame) return null;
+    var t = mirror;
+    for (var i = 0; i < path.length; i++) { t = t.children[path[i]]; if (!t) return null; }
+    return t;
+  }
+  function applyTo(el, a) {
+    var write = function (n) {
+      if (!n) return;
+      n.style.translate = (a && (a.dx || a.dy)) ? (a.dx + "px " + a.dy + "px") : "";
+      n.style.width = (a && a.w !== null) ? a.w + "px" : "";
+      n.style.height = (a && a.h !== null) ? a.h + "px" : "";
+    };
+    write(el);
+    write(twinOf(el));
+  }
+  function reapply() {
+    parts.forEach(function (p) {
+      var a = adjOf(p.sel, false);
+      if (isAdjusted(a)) applyTo(p.el, a);
+    });
+  }
+
+  /* ---- the composition's own units ----------------------------------------
+     Everything the export says in percent is a share of --panel-w, because that
+     is the unit the .panel blocks in styles.css are written in. Read off the
+     live page rather than written down here, so this tool cannot disagree with
+     the sheet about what the composition measures.
+
+     NOT READ AS CUSTOM PROPERTIES, and this is the one thing in the file that
+     will look like the long way round. getComputedStyle hands a custom property
+     back as the TOKENS it was declared with, resolving nothing — and --panel-w
+     is declared as a `min()` of two `calc()` branches, --panel-gutter as a share
+     of that. parseFloat over either is NaN, which arrives here as a zero gutter
+     and columns 1.6% too wide: every column number in the export off by a
+     fraction, and nothing on screen to say so. effects-tuner gets away with
+     reading properties directly because every row it reads is declared as a
+     plain literal; none of these are.
+     So all four numbers come from used values instead. `grid-template-columns`
+     and `grid-template-rows` on .panel-inner resolve to the pixel track list the
+     browser actually laid out, `column-gap` to the gutter it actually left, and
+     the composition's own width is the box the grid is in — which IS --panel-w,
+     by the definition in styles.css. Nothing is derived twice. */
+  function metrics() {
+    if (!doc || !win) return null;
+    var inner = doc.querySelector(".panel-inner");
+    if (!inner) return null;
+    var cs = win.getComputedStyle(inner);
+    var r = inner.getBoundingClientRect();
+    var cols = cs.gridTemplateColumns.split(/\s+/).map(parseFloat).filter(function (n) { return n === n; });
+    var rows = cs.gridTemplateRows.split(/\s+/).map(parseFloat).filter(function (n) { return n === n; });
+    var gut = parseFloat(cs.columnGap) || 0;
+    return {
+      w: r.width,
+      gutter: gut,
+      rect: r,
+      col: cols.length ? cols[0] : (r.width - 11 * gut) / 12,
+      /* Row one is a stated height — the masthead's line plus one subheading
+         line — so the seam between the rows is the subheading's SECOND line's
+         top edge, and that is the edge --panel-frame-drop is measured from. It
+         is the most useful thing on the page to report a distance against, and
+         the head's own box is not it: the negative bottom margin ends the
+         MARGIN box a line early and leaves the border box running past the seam,
+         so reading it off the head gives a number a whole subheading line out. */
+      seam: rows.length ? r.top + rows[0] : null
+    };
+  }
+  /* WHAT A BOX IS MEASURED AGAINST, and it is not always the composition. In
+     `page` scope you can select the CV's column, and reporting that against
+     --panel-w and the panel's twelve columns would be arithmetic that parses and
+     means nothing — the column is not on that grid and never was. Anything
+     outside section.panel is therefore measured against the window, and the
+     readout says which of the two it used rather than leaving you to notice. */
+  function refFor(el) {
+    var m = metrics();
+    if (m && el && el.closest && el.closest("section.panel")) {
+      return { unit: "--panel-w", w: m.w, rect: m.rect, grid: true, seam: m.seam, m: m, from: "the composition's top-left" };
+    }
+    return {
+      unit: "the window", w: win ? win.innerWidth : 0, grid: false, seam: null, m: null,
+      rect: { left: 0, top: 0, width: win ? win.innerWidth : 0, height: win ? win.innerHeight : 0 },
+      from: "the window's top-left"
+    };
+  }
+  function pct(px, m) { return m && m.w ? num(100 * px / m.w, 3) + "%" : "—"; }
+  /* Which grid LINE an edge is standing on, counting from 1 — the numbers
+     `grid-area: 2 / 3 / 3 / 13` is written in. The two edges do not share a
+     formula and pretending they do is a whole gutter of error: a track's left
+     edge sits at (n-1) pitches from the origin, while its right edge sits a
+     gutter short of the next line's, so the right one has the gutter added back
+     before it divides. .panel-stage is the check that catches it — it is placed
+     3 / 13 in the sheet, so it must read exactly 3.00 and 13.00 here. */
+  function colAt(x, m, right) {
+    if (!m || !m.col) return null;
+    var pitch = m.col + m.gutter;
+    return (x - m.rect.left + (right ? m.gutter : 0)) / pitch + 1;
+  }
+
+  /* ---- the overlay --------------------------------------------------------- */
+  var OVERLAY_CSS = [
+    ".lt-layer{position:fixed;left:0;top:0;width:0;height:0;z-index:2147483000;pointer-events:none;}",
+    ".lt-layer *{box-sizing:border-box;margin:0;padding:0;}",
+    ".lt-hi,.lt-sel,.lt-tag,.lt-g{position:absolute;pointer-events:none;}",
+    ".lt-hi{outline:1px dashed rgba(216,167,106,.85);background:rgba(216,167,106,.07);}",
+    ".lt-sel{outline:1px solid #d8a76a;background:rgba(216,167,106,.05);}",
+    ".lt-tag{font:10px/1.5 ui-monospace,Consolas,monospace;background:#d8a76a;color:#141310;",
+    "padding:0 4px;white-space:nowrap;border-radius:2px;}",
+    ".lt-h{position:absolute;width:10px;height:10px;margin:-5px 0 0 -5px;background:#d8a76a;",
+    "border:1px solid #14130f;border-radius:2px;pointer-events:auto;}",
+    ".lt-g{border-left:1px solid rgba(216,167,106,.35);}",
+    ".lt-g.f{background:rgba(216,167,106,.07);border-right:1px solid rgba(216,167,106,.35);}",
+    ".lt-g.h{border-left:0;border-top:1px dashed rgba(216,167,106,.7);}"
+  ].join("");
+
+  function build() {
+    var st = doc.getElementById("__lt_css");
+    if (!st) { st = doc.createElement("style"); st.id = "__lt_css"; doc.documentElement.appendChild(st); }
+    st.textContent = OVERLAY_CSS;
+    layer = doc.querySelector(".lt-layer");
+    if (!layer) {
+      layer = doc.createElement("div");
+      layer.className = "lt-layer";
+      layer.setAttribute("aria-hidden", "true");
+      doc.documentElement.appendChild(layer);
+    }
+    layer.innerHTML = "";
+    hiBox = layer.appendChild(mk("lt-hi"));
+    selBox = layer.appendChild(mk("lt-sel"));
+    tag = layer.appendChild(mk("lt-tag"));
+    handles = HANDLES.map(function (h) {
+      var el = layer.appendChild(mk("lt-h"));
+      el.style.cursor = h.cur;
+      el.dataset.h = h.k;
+      return el;
+    });
+    guides = [];
+  }
+  var hiBox, selBox, tag, handles = [], guides = [];
+  function mk(cls, t) { var d = doc.createElement(t || "div"); d.className = cls; return d; }
+  function hide(el) { if (el) el.style.display = "none"; }
+  function put(el, r, lr) {
+    el.style.display = "block";
+    el.style.left = (r.left - lr.left) + "px";
+    el.style.top = (r.top - lr.top) + "px";
+    el.style.width = r.width + "px";
+    el.style.height = r.height + "px";
+  }
+
+  /* The layer's own rect is measured every sync and subtracted, rather than
+     trusting `position: fixed` to have landed at the viewport's origin. It does
+     not, if any ancestor ever grows a transform or a filter — which this page,
+     of all pages, is one effect token away from — and the failure mode is a set
+     of handles a hundred pixels off the thing they belong to with nothing on
+     screen to say why. One getBoundingClientRect makes it self-correcting. */
+  function sync() {
+    if (!layer || !doc) return;
+    var lr = layer.getBoundingClientRect();
+    var m = metrics();
+
+    /* Twelve bands and the row seam, rebuilt from scratch each sync rather than
+       moved: the composition's track list changes with the window, and twelve
+       stale bands over a resized grid is the one overlay worse than none. */
+    guides.forEach(function (g) { g.remove(); });
+    guides = [];
+    if (state.grid && m && m.rect) {
+      for (var i = 0; i < 12; i++) {
+        var g = layer.appendChild(mk("lt-g f"));
+        put(g, { left: m.rect.left + i * (m.col + m.gutter), top: m.rect.top, width: m.col, height: m.rect.height }, lr);
+        guides.push(g);
+      }
+      if (m.seam !== null) {
+        var s = layer.appendChild(mk("lt-g h"));
+        put(s, { left: m.rect.left, top: m.seam, width: m.rect.width, height: 0 }, lr);
+        guides.push(s);
+      }
+    }
+
+    if (selEl && doc.contains(selEl)) {
+      var r = selEl.getBoundingClientRect();
+      put(selBox, r, lr);
+      HANDLES.forEach(function (h, i) {
+        var el = handles[i];
+        el.style.display = "block";
+        el.style.left = (r.left - lr.left + h.x * r.width) + "px";
+        el.style.top = (r.top - lr.top + h.y * r.height) + "px";
+      });
+      tag.style.display = "block";
+      tag.style.left = (r.left - lr.left) + "px";
+      tag.style.top = (r.top - lr.top - 15) + "px";
+      tag.textContent = num(r.width, 1) + " × " + num(r.height, 1);
+    } else {
+      hide(selBox); hide(tag);
+      handles.forEach(hide);
+    }
+  }
+
+  /* ---- picking, moving, resizing ------------------------------------------
+     elementsFromPoint and not event.target, because this page stacks four
+     full-bleed effect layers over everything and one of them growing
+     `pointer-events` would quietly make the top half of the composition
+     unpickable. This walks the stack and takes the first thing that is in scope
+     and is not ours. */
+  function hitAt(x, y) {
+    var root = doc.querySelector(scopeDef().sel);
+    if (!root) return null;
+    var stack = doc.elementsFromPoint(x, y) || [];
+    for (var i = 0; i < stack.length; i++) {
+      var el = stack[i];
+      if (!el || (el.classList && el.classList.contains("lt-layer"))) continue;
+      if (el.closest && el.closest(".lt-layer")) continue;
+      if (el === root || (root.contains(el) && el !== doc.body && el !== doc.documentElement)) {
+        if (el.closest && el.closest(".panel-mirror") && !el.classList.contains("panel-mirror")) {
+          el = el.closest(".panel-mirror");
+        }
+        return el;
+      }
+    }
+    return root;
+  }
+  function partFor(el) {
+    for (var i = 0; i < parts.length; i++) if (parts[i].el === el) return parts[i];
+    return null;
+  }
+  function select(el) {
+    selEl = el || null;
+    sync(); paintTree(); paintRead();
+  }
+
+  function snap(v) { return state.snap > 0 ? Math.round(v / state.snap) * state.snap : Math.round(v); }
+
+  function onDown(e) {
+    if (!state.armed || e.button !== 0) return;
+    var h = e.target && e.target.classList && e.target.classList.contains("lt-h") ? e.target.dataset.h : null;
+    var el = h ? selEl : hitAt(e.clientX, e.clientY);
+    if (!el) return;
+    e.preventDefault(); e.stopPropagation();
+
+    var p = partFor(el);
+    if (!p) return;
+    if (!h && el !== selEl) select(el);
+
+    var r = el.getBoundingClientRect();
+    var a = adjOf(p.sel, true);
+    drag = {
+      p: p, h: h ? HANDLES.filter(function (x) { return x.k === h; })[0] : null,
+      x0: e.clientX, y0: e.clientY,
+      dx0: a.dx, dy0: a.dy,
+      w0: a.w !== null ? a.w : r.width,
+      h0: a.h !== null ? a.h : r.height,
+      ratio: r.height ? r.width / r.height : 1,
+      moved: false
+    };
+    try { layer.setPointerCapture(e.pointerId); } catch (_) {}
+    if (h) { try { e.target.setPointerCapture(e.pointerId); } catch (_) {} }
+  }
+
+  function onMove(e) {
+    if (!drag) {
+      if (!state.armed || !layer) return;
+      var el = hitAt(e.clientX, e.clientY);
+      var lr = layer.getBoundingClientRect();
+      if (el && el !== selEl) put(hiBox, el.getBoundingClientRect(), lr); else hide(hiBox);
+      return;
+    }
+    e.preventDefault(); e.stopPropagation();
+    var ddx = e.clientX - drag.x0, ddy = e.clientY - drag.y0;
+    if (Math.abs(ddx) + Math.abs(ddy) > 2) drag.moved = true;
+    var a = adjOf(drag.p.sel, true);
+
+    if (!drag.h) {
+      /* Shift locks the drag to one axis — the one you have moved further in. */
+      if (e.shiftKey) { if (Math.abs(ddx) > Math.abs(ddy)) ddy = 0; else ddx = 0; }
+      a.dx = snap(drag.dx0 + ddx);
+      a.dy = snap(drag.dy0 + ddy);
+    } else {
+      var h = drag.h;
+      var w = drag.w0 + h.sx * ddx;
+      var ht = drag.h0 + h.sy * ddy;
+      /* Shift on a corner keeps the box's proportions, which is the only way to
+         resize the Frame without taking its aspect-ratio out of the sheet. */
+      if (e.shiftKey && h.sx && h.sy) {
+        if (Math.abs(ddx) > Math.abs(ddy)) ht = w / drag.ratio; else w = ht * drag.ratio;
+      }
+      w = Math.max(4, snap(w)); ht = Math.max(4, snap(ht));
+      if (h.sx) { a.w = w; if (h.mx) a.dx = snap(drag.dx0 - (w - drag.w0)); }
+      if (h.sy) { a.h = ht; if (h.my) a.dy = snap(drag.dy0 - (ht - drag.h0)); }
+    }
+    if (!state.at) state.at = { w: sizeDef().w, h: sizeDef().h };
+    applyTo(drag.p.el, a);
+    sync(); paintRead(); paintChrome();
+  }
+
+  function onUp(e) {
+    if (!drag) return;
+    e.preventDefault(); e.stopPropagation();
+    drag = null;
+    save(); paintTree(); paintExport();
+  }
+
+  /* Arrows nudge, alt+arrows resize, both x10 with shift. This is where the last
+     two pixels get decided — a mouse cannot reliably land on one. */
+  function onKey(e) {
+    if (!selEl) return;
+    var d = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] }[e.key];
+    if (e.key === "Escape") { select(null); return; }
+    if ((e.key === "Delete" || e.key === "Backspace") && !isField(e.target)) {
+      var p0 = partFor(selEl);
+      if (p0) { delete state.adj[key(p0.sel)]; applyTo(p0.el, null); save(); sync(); paintAll(); }
+      e.preventDefault();
+      return;
+    }
+    if (!d) return;
+    e.preventDefault();
+    var p = partFor(selEl);
+    if (!p) return;
+    var a = adjOf(p.sel, true), n = e.shiftKey ? 10 : 1;
+    if (e.altKey) {
+      var r = selEl.getBoundingClientRect();
+      if (d[0]) a.w = Math.max(4, (a.w !== null ? a.w : r.width) + d[0] * n);
+      if (d[1]) a.h = Math.max(4, (a.h !== null ? a.h : r.height) + d[1] * n);
+    } else {
+      a.dx += d[0] * n; a.dy += d[1] * n;
+    }
+    if (!state.at) state.at = { w: sizeDef().w, h: sizeDef().h };
+    applyTo(p.el, a);
+    save(); sync(); paintAll();
+  }
+
+  /* ---- attaching to a load ------------------------------------------------- */
+  function attach() {
+    try { doc = frame.contentDocument; win = frame.contentWindow; } catch (_) { doc = null; }
+    if (!doc || !doc.body) {
+      $("warn").textContent = "Cannot reach the preview's document. Open this page over the same "
+        + "server that serves /portfolio — run.bat, then http://localhost:8000/design/layout-tuner.html";
+      return;
+    }
+    $("warn").textContent = "";
+    build();
+    collect();
+    measureBase();
+    reapply();
+    applyUnclip();
+    jump();
+    doc.addEventListener("pointerdown", onDown, true);
+    doc.addEventListener("pointermove", onMove, true);
+    doc.addEventListener("pointerup", onUp, true);
+    doc.addEventListener("click", function (e) { if (state.armed) { e.preventDefault(); e.stopPropagation(); } }, true);
+    doc.addEventListener("keydown", onKey, true);
+    win.addEventListener("scroll", sync, { passive: true });
+    win.addEventListener("resize", sync);
+    /* The composition's own boxes move when a web font lands or the recording
+       decodes, and the handles have to follow without being asked. */
+    if (win.ResizeObserver) {
+      var ro = new win.ResizeObserver(sync);
+      var root = doc.querySelector(scopeDef().sel);
+      if (root) ro.observe(root);
+    }
+    /* Re-resolve the selection by name, so a reload keeps you where you were. */
+    if (selSel) { var again = resolve(selSel); if (again) selEl = again; }
+    sync(); paintAll();
+  }
+  var selSel = null;
+  frame.addEventListener("load", attach);
+
+  function jump() {
+    if (!doc) return;
+    var t = doc.querySelector(scopeDef().sel === "body" ? ".page" : scopeDef().sel);
+    if (t && t.scrollIntoView) t.scrollIntoView({ block: "center", inline: "nearest" });
+    sync();
+  }
+  function applyUnclip() {
+    if (!doc) return;
+    var st = doc.getElementById("__lt_unclip");
+    if (!st) { st = doc.createElement("style"); st.id = "__lt_unclip"; doc.documentElement.appendChild(st); }
+    st.textContent = state.unclip ? "section.panel{overflow:visible !important;}" : "";
+  }
+
+  /* ---- painting ------------------------------------------------------------ */
+  function paintAll() { paintChrome(); paintTree(); paintRead(); paintExport(); }
+
+  function paintChrome() {
+    var n = count();
+    $("count").textContent = n; $("count").dataset.n = n;
+    $("grid").setAttribute("aria-pressed", state.grid ? "true" : "false");
+    $("unclip").setAttribute("aria-pressed", state.unclip ? "true" : "false");
+    $("armed").setAttribute("aria-pressed", state.armed ? "true" : "false");
+    $("snap").value = state.snap;
+    var at = state.at, now = sizeDef();
+    $("warn").textContent = (n && at && (at.w !== now.w || at.h !== now.h))
+      ? "These numbers were dragged at " + at.w + " × " + at.h + " and the preview is now "
+        + now.w + " × " + now.h + ". A stated width does not reflow, so what is on screen is "
+        + "the old measurement in a new window — reset, or go back."
+      : "";
+  }
+
+  function paintTree() {
+    var box = $("tree");
+    box.innerHTML = "";
+    parts.forEach(function (p) {
+      var b = document.createElement("button");
+      b.type = "button";
+      b.setAttribute("aria-pressed", p.el === selEl ? "true" : "false");
+      var a = adjOf(p.sel, false);
+      var lead = new Array(p.depth + 1).join("· ");
+      b.innerHTML = '<span class="mut">' + lead + "</span>" + esc(short(p.sel))
+        + (isAdjusted(a) ? ' <span class="dot">●</span>' : "");
+      b.title = p.sel;
+      b.addEventListener("click", function () { select(p.el); selSel = p.sel; });
+      b.addEventListener("mouseenter", function () {
+        if (!layer || drag) return;
+        put(hiBox, p.el.getBoundingClientRect(), layer.getBoundingClientRect());
+      });
+      b.addEventListener("mouseleave", function () { hide(hiBox); });
+      box.appendChild(b);
+    });
+  }
+  function short(sel) { var bits = sel.split(" > "); return bits[bits.length - 1]; }
+  function esc(s) { return s.replace(/&/g, "&amp;").replace(/</g, "&lt;"); }
+
+  function paintRead() {
+    var box = $("read");
+    if (!selEl || !doc.contains(selEl)) {
+      box.innerHTML = '<p class="none">Nothing selected. Click a box in the preview, or pick one from '
+        + 'the list above. Drag it anywhere; drag a handle to resize; arrows nudge by 1 and by 10 with '
+        + 'shift; alt+arrows resize; delete puts one box back.</p>';
+      return;
+    }
+    var p = partFor(selEl), ref = refFor(selEl), a = adjOf(p.sel, false) || { dx: 0, dy: 0, w: null, h: null };
+    var r = selEl.getBoundingClientRect();
+    var was = base[p.sel] || { w: r.width, h: r.height };
+    var rows = [];
+    var row = function (h, v, l) { rows.push("<tr><th>" + h + "</th><td>" + v + "</td><td class='l'>" + (l || "") + "</td></tr>"); };
+
+    row("moved", sign(a.dx, 1) + ", " + sign(a.dy, 1) + " px",
+      sign(100 * a.dx / ref.w, 3) + "%, " + sign(100 * a.dy / ref.w, 3) + "% of " + ref.unit);
+    row("size", num(r.width, 1) + " × " + num(r.height, 1),
+      pct(r.width, ref) + " × " + pct(r.height, ref) + " of " + ref.unit);
+    if (Math.abs(was.w - r.width) > 0.5 || Math.abs(was.h - r.height) > 0.5) {
+      row("was", num(was.w, 1) + " × " + num(was.h, 1), "before the drag");
+    }
+    row("left", num(r.left - ref.rect.left, 1),
+      pct(r.left - ref.rect.left, ref) + (ref.grid ? " · line " + num(colAt(r.left, ref.m, false), 2) : ""));
+    row("right", num(r.right - ref.rect.left, 1),
+      pct(r.right - ref.rect.left, ref) + (ref.grid ? " · line " + num(colAt(r.right, ref.m, true), 2) : ""));
+    row("top", num(r.top - ref.rect.top, 1), pct(r.top - ref.rect.top, ref) + " from " + ref.from);
+    row("bottom", num(r.bottom - ref.rect.top, 1), pct(r.bottom - ref.rect.top, ref));
+    if (ref.seam !== null) row("seam", sign(r.top - ref.seam, 1), "from the row seam — the subheading's second line");
+    box.innerHTML = "<h2>" + esc(p.sel) + "</h2><table>" + rows.join("") + "</table>"
+      + '<p class="keys hint">drag to move · shift locks an axis · handles resize · '
+      + 'shift on a corner keeps the ratio · arrows nudge · alt+arrows resize · delete resets this box</p>';
+  }
+
+  /* ---- the export ----------------------------------------------------------
+     Prose first and CSS second, because the prose is what gets read and the CSS
+     is what proves it. The trailing state line is what `import` reads back, and
+     it is a comment so the whole textarea stays valid CSS either way. */
+  function paintExport() {
+    var m = metrics(), s = sizeDef(), out = [];
+    var pre = state.scope + "|";
+    var list = parts.filter(function (p) { return isAdjusted(state.adj[key(p.sel)]); });
+
+    out.push("/* layout tuner — " + scopeDef().label + ", dragged at " + s.w + " × " + s.h);
+    if (m) {
+      out.push("   --panel-w " + num(m.w, 1) + "px · gutter " + num(m.gutter, 2) + "px · column "
+        + num(m.col, 2) + "px");
+      if (m.rect) out.push("   the composition: " + num(m.rect.width, 1) + " × " + num(m.rect.height, 1)
+        + " at (" + num(m.rect.left, 1) + ", " + num(m.rect.top, 1) + ") in the window");
+    }
+    out.push("");
+    if (!list.length) {
+      out.push("   Nothing moved yet.");
+      out.push("*/");
+      $("out").value = out.join("\n");
+      return;
+    }
+    out.push("   A translate paints a box somewhere else and leaves its slot where it was, so");
+    out.push("   nothing here reflowed around anything. Read it as a statement of where each box");
+    out.push("   should END UP; the share of --panel-w is the column that transcribes into the");
+    out.push("   sheet, since that is the unit .panel is written in.");
+    out.push("");
+    list.forEach(function (p) {
+      var a = state.adj[key(p.sel)], r = p.el.getBoundingClientRect(), was = base[p.sel] || { w: 0, h: 0 };
+      var ref = refFor(p.el);
+      /* Two columns and they line up, because the whole use of this block is
+         reading down one of them. Pixels on the left, the share of --panel-w
+         that transcribes into the sheet on the right. */
+      var line = function (label, v, note) {
+        out.push("     " + (label + pad(8 - label.length)) + v + pad(Math.max(2, 34 - v.length)) + (note || ""));
+      };
+      out.push("   " + p.sel);
+      if (a.dx || a.dy) {
+        line("moved", sign(a.dx, 1) + ", " + sign(a.dy, 1) + " px",
+          sign(100 * a.dx / ref.w, 3) + "%, " + sign(100 * a.dy / ref.w, 3) + "% of " + ref.unit);
+      }
+      if (a.w !== null || a.h !== null) {
+        line("size", num(r.width, 1) + " × " + num(r.height, 1) + " px",
+          pct(r.width, ref) + " × " + pct(r.height, ref) + " of " + ref.unit
+          + "   (was " + num(was.w, 1) + " × " + num(was.h, 1) + ")");
+      }
+      line("box", "left " + num(r.left - ref.rect.left, 1) + "  top " + num(r.top - ref.rect.top, 1),
+        "right " + num(r.right - ref.rect.left, 1) + "  bottom " + num(r.bottom - ref.rect.top, 1)
+        + "   (from " + ref.from + ")");
+      if (ref.grid) {
+        line("grid", "left edge on line " + num(colAt(r.left, ref.m, false), 2),
+          "right edge on line " + num(colAt(r.right, ref.m, true), 2) + "   of thirteen");
+      }
+      if (ref.seam !== null) {
+        line("seam", sign(r.top - ref.seam, 1) + " px",
+          sign(100 * (r.top - ref.seam) / ref.w, 3) + "% of --panel-w   (from the row seam)");
+      }
+    });
+    out.push("*/");
+    out.push("");
+    list.forEach(function (p) {
+      var a = state.adj[key(p.sel)], d = [];
+      if (a.dx || a.dy) d.push("  translate: " + num(a.dx, 1) + "px " + num(a.dy, 1) + "px;");
+      if (a.w !== null) d.push("  width: " + num(a.w, 1) + "px;");
+      if (a.h !== null) d.push("  height: " + num(a.h, 1) + "px;");
+      out.push(p.sel + " {");
+      out.push(d.join("\n"));
+      out.push("}");
+    });
+    var st = {};
+    for (var k in state.adj) if (k.indexOf(pre) === 0 && isAdjusted(state.adj[k])) st[k] = state.adj[k];
+    out.push("");
+    out.push("/* state: " + JSON.stringify({ scope: state.scope, size: state.size, adj: st }) + " */");
+    $("out").value = out.join("\n");
+  }
+  function pad(n) { return new Array(Math.max(1, n + 1)).join(" "); }
+
+  /* ---- chrome wiring ------------------------------------------------------- */
+  function chips(host, list, get, set) {
+    host.innerHTML = "";
+    list.forEach(function (o) {
+      var b = document.createElement("button");
+      b.type = "button"; b.textContent = o.label;
+      b.setAttribute("aria-pressed", get() === o.k ? "true" : "false");
+      b.addEventListener("click", function () { set(o.k); });
+      host.appendChild(b);
+    });
+  }
+  function paintScopes() {
+    chips($("scopes"), SCOPES, function () { return state.scope; }, function (k) {
+      state.scope = k; selEl = null; selSel = null; save();
+      collect(); measureBase(); reapply(); paintScopes(); sync(); paintAll(); jump();
+    });
+    chips($("sizes"), SIZES, function () { return state.size; }, function (k) {
+      state.size = k; save(); fitFrame();
+      /* The composition is derived from the window, so every base measurement
+         taken in the old one is now wrong. Re-measure, and let paintChrome say
+         so if there are already numbers that were dragged at the old size. */
+      setTimeout(function () { measureBase(); reapply(); sync(); paintAll(); }, 60);
+      paintScopes();
+    });
+  }
+
+  $("snap").addEventListener("input", function () {
+    state.snap = Math.max(0, parseInt(this.value, 10) || 0); save();
+  });
+  $("grid").addEventListener("click", function () { state.grid = !state.grid; save(); sync(); paintChrome(); });
+  $("unclip").addEventListener("click", function () { state.unclip = !state.unclip; save(); applyUnclip(); sync(); paintChrome(); });
+  $("armed").addEventListener("click", function () {
+    state.armed = !state.armed; save(); paintChrome();
+    if (!state.armed) hide(hiBox);
+  });
+  $("jump").addEventListener("click", jump);
+  $("reload").addEventListener("click", loadFrame);
+  $("reset").addEventListener("click", function () {
+    var pre = state.scope + "|";
+    parts.forEach(function (p) { if (state.adj[key(p.sel)]) applyTo(p.el, null); });
+    for (var k in state.adj) if (k.indexOf(pre) === 0) delete state.adj[k];
+    state.at = null; save(); sync(); paintAll();
+  });
+  $("copy").addEventListener("click", function () {
+    $("out").select();
+    navigator.clipboard.writeText($("out").value).then(function () { flash("copied"); },
+      function () { flash("select it and press ctrl+C"); });
+  });
+  $("import").addEventListener("click", function () {
+    var m = /\/\* state:\s*([\s\S]*?)\s*\*\//.exec($("out").value);
+    if (!m) { flash("no state line in that text"); return; }
+    try {
+      var got = JSON.parse(m[1]);
+      if (got.scope) state.scope = got.scope;
+      if (got.size) state.size = got.size;
+      var pre = state.scope + "|";
+      for (var k in state.adj) if (k.indexOf(pre) === 0) delete state.adj[k];
+      for (var k2 in (got.adj || {})) state.adj[k2] = got.adj[k2];
+      save(); fitFrame(); paintScopes();
+      collect(); reapply(); sync(); paintAll();
+      flash("imported");
+    } catch (err) { flash("could not read that: " + err.message); }
+  });
+  var flashT = 0;
+  function flash(msg) {
+    $("status").textContent = msg;
+    clearTimeout(flashT);
+    flashT = setTimeout(function () { $("status").textContent = ""; }, 2400);
+  }
+  /* A keydown's target is an element in every ordinary case and is the document
+     itself in a couple of unordinary ones — which is enough for a bare .matches()
+     to throw inside the handler and take the nudge with it. */
+  function isField(t) {
+    return !!(t && t.matches && t.matches("input, textarea, select, [contenteditable]"));
+  }
+  document.addEventListener("keydown", function (e) {
+    if (isField(e.target)) return;
+    onKey(e);
+  });
+
+  paintScopes();
+  paintChrome();
+  paintRead();
+  paintExport();
+  fitFrame();
+  loadFrame();
+})();
+</script>
+</body>
+</html>
