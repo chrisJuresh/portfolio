@@ -1,0 +1,20 @@
+{
+  "title": "gemini-gold-1",
+  "grade": "asis",
+  "scale": 0.94,
+  "offset": 0.0,
+  "bump": [
+    0.24,
+    0.00035
+  ],
+  "sss": 0.7,
+  "coat": [
+    0.0,
+    0.0
+  ],
+  "rough": 1.0,
+  "crack": false,
+  "room": "noir",
+  "maps": "gemini-generated-image-13pkuz13pkuz13pk-45476b2c",
+  "src": "Gemini_Generated_Image_13pkuz13pkuz13pk.jpg"
+}
