@@ -36,6 +36,11 @@
     .badge { padding: 0.1rem 0.4rem; border-radius: 99px; background: var(--ui-hit); color: var(--ui-bg); font-size: 11px; }
     .badge[data-n="0"] { background: transparent; color: var(--ui-mut); }
     .ms { font: 11px/1 ui-monospace, Consolas, monospace; color: var(--ui-mut); min-width: 7rem; }
+    /* The top bar is the one strip of this page that never scrolls, so it is
+       the only place a stone can be changed with the plinth still in view. */
+    #pick { max-width: 15rem; padding: 0.18rem 0.3rem; }
+    #prev, #next { padding: 0.24rem 0.45rem; }
+    #pos { min-width: 3.4rem; }
 
     /* ---- layout ----------------------------------------------------------- */
     .wrap { flex: 1 1 auto; display: flex; min-height: 0; }
@@ -50,8 +55,19 @@
        Every candidate at the same width, stacked, so two stones are compared by
        looking down rather than by remembering. The live one is a canvas in the
        same list and at the same width as the plates, which is what makes the
-       preview answerable against a render instead of merely pretty. */
-    .sheet { flex: 0 0 auto; border: 1px solid var(--ui-line); background: var(--ui-panel); }
+       preview answerable against a render instead of merely pretty.
+
+       THE STRIP IS CAPPED AND SCROLLS INSIDE ITSELF, and that is what keeps the
+       preview on screen. Twenty-three stones at plate width is some three
+       thousand pixels of contact sheet, and while the strip sized to its
+       content the iframe under it began two screens down — so picking a stone
+       meant scrolling up, clicking, and scrolling back down to see what it did,
+       with the answer off screen at the moment it changed. Drag the strip's
+       bottom edge to trade it against the preview; the picker in the top bar
+       cycles without either. */
+    .sheet { flex: 0 0 auto; border: 1px solid var(--ui-line); background: var(--ui-panel);
+             height: 34vh; min-height: 3rem; overflow: auto; resize: vertical; }
+    .sheet[hidden] { display: none; }
     .sheet ol { list-style: none; margin: 0; padding: 0; }
     .sheet li { border-top: 1px solid var(--ui-line); }
     .sheet li:first-child { border-top: 0; }
@@ -104,10 +120,16 @@
 </head>
 <body>
   <div class="top">
+    <strong>stone</strong>
+    <button id="prev" title="previous stone — [ or ←">◀</button>
+    <select id="pick" aria-label="stone"></select>
+    <button id="next" title="next stone — ] or →">▶</button>
+    <span class="ms" id="pos"></span>
     <strong>show</strong>
     <button id="mode-baked" aria-pressed="true">baked plate</button>
     <button id="mode-live" aria-pressed="false">live previz</button>
     <span class="grow"></span>
+    <button id="strip" aria-pressed="true" title="the contact strip, folded away">strip</button>
     <strong>frame</strong>
     <input type="number" id="fw" value="1440" min="320" max="3840" step="10" aria-label="frame width">
     <input type="number" id="fh" value="900" min="320" max="2400" step="10" aria-label="frame height">
@@ -199,6 +221,10 @@
   var frame = document.getElementById("frame");
   var warnEl = document.getElementById("warn");
   var sheetEl = document.getElementById("sheet");
+  var sheetBox = document.querySelector(".sheet");   /* the scroller; sheetEl is the list inside it */
+  var pickEl = document.getElementById("pick");
+  var posEl = document.getElementById("pos");
+  var stripBtn = document.getElementById("strip");
   var controlsEl = document.getElementById("controls");
   var countEl = document.getElementById("count");
   var msEl = document.getElementById("ms");
@@ -212,6 +238,8 @@
   var doc = null, win = null, panel = null;
   var mode = "baked";
   var pick = "nero";         /* which stone is selected */
+  var order = [];            /* every stone name, in the strip's order — what [ and ] walk */
+  var strip = true;          /* is the contact strip shown at all */
   var theme = "light";
   var stones = {};           /* name -> {title, ground, veins, baked, shipped} */
   var live = null;           /* the working copy the sliders drag */
@@ -386,12 +414,18 @@
        time. Instantly, not smoothly: a half-second glide on every reload is a
        half-second of not being able to see the thing being tuned. */
     panel.scrollIntoView({ block: "end", behavior: "instant" });
+    /* A keydown inside the iframe never reaches this document, and clicking the
+       preview — to scroll it, to open the Panel — is the likeliest thing to
+       have taken focus before someone reaches for ]. Same handler, same origin,
+       re-attached on every load because it is a new document each time. */
+    doc.addEventListener("keydown", keys);
     apply();
   });
 
   /* ---- the contact strip ------------------------------------------------- */
 
   function buildSheet() {
+    buildPicker();
     sheetEl.textContent = "";
     Object.keys(stones).forEach(function (k) {
       var s = stones[k];
@@ -525,7 +559,106 @@
     Array.prototype.forEach.call(sheetEl.querySelectorAll("button"), function (b) {
       b.setAttribute("aria-pressed", b.dataset.stone === pick ? "true" : "false");
     });
+    markPicker();
+    revealRow();
   }
+
+  /* Keep the picked row visible INSIDE the strip, and by hand rather than with
+     scrollIntoView(): that walks the whole ancestor chain, so it would scroll
+     .stage as well and take the preview off screen — the one thing all of this
+     exists to stop. A row taller than the box is aligned to its top; a row
+     bottom-aligned in a box it does not fit is a row whose name is cut off. */
+  function revealRow() {
+    var b = sheetEl.querySelector('button[data-stone="' + pick + '"]');
+    if (!b || sheetBox.hidden) return;
+    var r = b.getBoundingClientRect(), c = sheetBox.getBoundingClientRect();
+    if (r.top < c.top || r.height > c.height) sheetBox.scrollTop += r.top - c.top;
+    else if (r.bottom > c.bottom) sheetBox.scrollTop += r.bottom - c.bottom;
+  }
+
+  /* ---- cycling, with the plinth still in view ------------------------------
+     The strip is the honest way to COMPARE two stones — put them one above the
+     other and look down rather than remember — and a poor way to walk
+     twenty-three of them, because the row being clicked and the plinth being
+     judged cannot both be on screen at plate width. So the same list is also a
+     select in the top bar, which never scrolls, and two keys that do not need
+     the mouse to leave the preview at all. Same `order`, same select(); this
+     adds a way in, not a second source of truth. */
+
+  function buildPicker() {
+    order = Object.keys(stones);
+    pickEl.textContent = "";
+    var groups = {};
+    order.forEach(function (k) {
+      var s = stones[k];
+      /* The four families the strip's captions already name, so that scrolling
+         a menu of twenty-three says which of them can be drawn live before one
+         is picked and the mode silently changes underneath. */
+      var g = !s.baked ? "previz only — no plate"
+            : s.kind === "re-lit" ? "re-lit — plate only"
+            : s.kind === "photograph" ? "photograph — plate only"
+            : "procedural — previz + plate";
+      if (!groups[g]) {
+        groups[g] = document.createElement("optgroup");
+        groups[g].label = g;
+        pickEl.appendChild(groups[g]);
+      }
+      var o = document.createElement("option");
+      o.value = k;
+      o.textContent = k;
+      o.title = s.title;
+      groups[g].appendChild(o);
+    });
+  }
+
+  function markPicker() {
+    pickEl.value = pick;
+    posEl.textContent = (order.indexOf(pick) + 1) + " / " + order.length;
+  }
+
+  /* Wraps rather than stopping at the ends: a set of candidates being compared
+     against each other is a ring, and running off the last one into nothing is
+     a dead key at the moment the answer is two rows back. */
+  function step(d) {
+    if (!order.length) return;
+    var i = order.indexOf(pick);
+    if (i < 0) i = 0;
+    select(order[(i + d + order.length) % order.length]);
+  }
+
+  pickEl.addEventListener("change", function () { select(pickEl.value); });
+  document.getElementById("prev").addEventListener("click", function () { step(-1); });
+  document.getElementById("next").addEventListener("click", function () { step(1); });
+
+  /* [ and ] because they sit together under one hand and neither is spoken for
+     by the browser; the arrows as an alias. Both are dropped while a field has
+     focus, so ← and → still nudge a slider a step and the select still opens on
+     its own keys. */
+  function keys(e) {
+    if (e.metaKey || e.ctrlKey || e.altKey) return;
+    var tag = e.target && e.target.tagName;
+    if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
+    var d = (e.key === "[" || e.key === "ArrowLeft") ? -1
+          : (e.key === "]" || e.key === "ArrowRight") ? 1 : 0;
+    if (!d) return;
+    e.preventDefault();
+    step(d);
+  }
+  document.addEventListener("keydown", keys);
+
+  /* Fold the strip away and the preview has the stage to itself. The picker
+     above still cycles, which is what makes this a fold rather than a
+     surrender: with the strip gone there is no other way to change stone. */
+  function markStrip() {
+    stripBtn.setAttribute("aria-pressed", strip ? "true" : "false");
+    sheetBox.hidden = !strip;
+  }
+  stripBtn.addEventListener("click", function () {
+    strip = !strip;
+    markStrip();
+    revealRow();
+    save();
+  });
 
   function select(k) {
     pick = k;
@@ -593,7 +726,12 @@
   document.getElementById("fit").addEventListener("click", function () {
     var stage = document.querySelector(".stage");
     fwEl.value = Math.round(stage.clientWidth - 26);
-    fhEl.value = Math.max(400, Math.round(stage.clientHeight * 0.72));
+    /* Fit to what the strip actually left, not to a fraction of the stage: the
+       0.72 that was here stood in for a strip whose height nothing knew, and
+       now something does — it is a fixed 34vh, or nothing at all when folded.
+       19 is the stage's own padding, 10 the column gap, 2 the iframe's border. */
+    var used = sheetBox.hidden ? 0 : sheetBox.offsetHeight + 10;
+    fhEl.value = Math.max(320, Math.round(stage.clientHeight - used - 21));
     sizeFrame();
   });
 
@@ -1348,7 +1486,7 @@
     try {
       localStorage.setItem(STORE, JSON.stringify({
         pick: pick, mode: mode, live: live, cal: cal, closed: closed,
-        theme: theme, w: fwEl.value, h: fhEl.value
+        theme: theme, w: fwEl.value, h: fhEl.value, strip: strip
       }));
     } catch (_) {}
   }
@@ -1365,6 +1503,7 @@
         if (s.closed) closed = s.closed;
         if (s.w) fwEl.value = s.w;
         if (s.h) fhEl.value = s.h;
+        if (typeof s.strip === "boolean") strip = s.strip;
         /* The stored stone is only put back if it is still the SAME stone —
            a re-render that changed the table should win over a session that
            was dragging the old one, and silently reviving numbers the script
@@ -1375,6 +1514,7 @@
     if (!stones[pick]) pick = Object.keys(stones)[0];
     if (!live) live = cloneStone(stones[pick]);
     if (!stones[pick].baked) mode = "live";
+    markStrip();     /* before markSheet(), which scrolls a row the fold may have hidden */
     markSheet();
     markMode();
     ready = true;
