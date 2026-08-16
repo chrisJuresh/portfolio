@@ -2099,7 +2099,12 @@ body::after {
    panel is the one part of the document that is not a print. */
 .panel {
   /* ---- the palette, and it answers to nothing above ---------------------- */
-  --panel-bg:       #08090a;
+  /* PURE BLACK, AND NOT THE RENDER'S NEAR-BLACK. The design render's backdrop
+     is #08090a, which is what this was; the panel is set to #000 by choice, so
+     the composition ends at the same black the screen's own bezel does. The one
+     number measured against the old value is --panel-frame-edge below, and the
+     note there says what the two pixels of difference do to it. */
+  --panel-bg:       #000000;
   --panel-ink:      #f2f1ee;
   --panel-ink-soft: #dcdad5;
   --panel-muted:    #8b8983;
@@ -2111,6 +2116,12 @@ body::after {
      chosen: the render's outer edge peaks at 84 of 255 against a page backdrop
      of 8, so 0.32 of #f2f1ee. It was 0.1 while the Frame was a placeholder,
      which is a third of what the render has.
+     THE BACKDROP IS NOW 0 AND THIS ALPHA WAS LEFT WHERE IT WAS, deliberately.
+     Composited on #000 the rim peaks at 77 rather than the render's 84 — seven
+     of 255 on a hairline — and holding the measured 84 would mean 0.347. Not
+     done here because re-deriving the Frame's rim is a change to the Frame, and
+     this one is a change to the backdrop; if the rim ever looks thin against
+     pure black, 0.347 is the number and this is why.
      WHAT HAPPENS TO IT ALONG THE TITLEBAR DEPENDS ON THE RUNG, and .frame-bar
      depends on that in turn, so it is worth being exact. Only the shader's
      canvas is opaque, so only there is this ring covered — and covered by an
@@ -2120,6 +2131,53 @@ body::after {
      own. Adding one there would put two on the same pixel. */
   --panel-frame-fill: #131518;
   --panel-frame-edge: rgba(242, 241, 238, 0.32);
+
+  /* ---- ONE LENGTH, AND EVERYTHING IN HERE IS A SHARE OF IT -------------------
+     --panel-w is the composition's own width — the box the masthead, the copy,
+     the points and the Frame are laid out in, NOT the window's. Every length
+     below is a fraction of it, so the section is one drawing at one set of
+     proportions and the only thing that ever changes between windows is how big
+     that drawing is. That is what makes it possible to say the composition fits
+     the screen: a self-similar drawing has ONE height-to-width ratio, and you
+     can solve for the width that lands its height exactly on the screen.
+
+     THE TWO THINGS THAT CAN BIND IT, and the smaller wins:
+
+       the width  what the page has left across, less the Rail and its gap. The
+                  0.972 is 1 − 0.0274, and 0.0274 is the Rail's own width plus
+                  --panel-gap as a share of the composition — the same two
+                  fractions written below, added up once here because a track
+                  cannot be sized from its own siblings. It ROUNDS TOWARDS
+                  ASKING FOR LESS, which is the safe direction twice over: the
+                  Rail's floor makes it relatively wider on a small window, and
+                  `100vw` counts a classic scrollbar the layout does not get.
+                  Over-asking cannot overflow either way — the grid track below
+                  is `minmax(0, …)`, so it is capped by what is actually free.
+       the height the screen less the page's two margins, divided by the
+                  composition's height-as-a-share-of-its-width. That constant
+                  measures 0.4985 —
+                    0.86 × 0.0598   the masthead's line, which is row one's top
+                  + 1.66 × 0.0380   one subheading line (the rest of row one)
+                                    plus the 0.66 the Frame is dropped by
+                  + 0.746923/1.945  the Frame: nine columns of twelve less a
+                                    quarter of a gutter, over its aspect ratio
+                  — and 0.5 is what is written, which is that plus a third of a
+                  percent of slack for sub-pixel rounding and for the copy's
+                  floor on a small window. RE-DERIVE IT if you move the masthead
+                  or subheading ratio, the Frame's columns or its aspect: those
+                  five numbers ARE this one.
+
+     WHY THIS AND NOT A CEILING ON THE FRAME. Every other way of making the
+     section fit takes the fit out of one member and leaves the rest at the size
+     the window suggested — a narrower Frame slides out from under the
+     subheading's second line and loses the occlusion the whole composition is
+     built on, and smaller type against a full-width Frame is a different design
+     at every window. Scaling the drawing keeps all of it, including the
+     occlusion, at every size. What it spends is width: on a wide, short window
+     the composition no longer reaches the page's margins, and `justify-content`
+     below centres what it does use rather than hanging it off the left. */
+  --panel-fit-w: calc((var(--fold) - 2 * var(--corner)) / 0.5);
+  --panel-w: min(calc(0.972 * (100vw - 2 * var(--corner))), var(--panel-fit-w));
 
   /* ---- the type scale ---------------------------------------------------- */
   /* THE DESIGN RENDER IS NOT IN THIS REPOSITORY, so these are constants of the
@@ -2131,20 +2189,59 @@ body::after {
      would publish the thing those two tickets are careful about, so it stays out
      and the numbers below stand on their own.
      What was measured, for whoever wants to move one: the masthead's cap is 5.1%
-     of the render's width, and Host Grotesk's cap is 0.700 em, so 7.3vw; the
-     subheading's is 3.2%, so 4.6vw. Written as vw so the composition holds its
-     proportions rather than its pixels. The RATIO between them — 1.59 — is the
-     number to preserve if either is re-chosen by eye: it is what makes the two
-     lines read as one masthead. Both are clamped at the ends, where a share of
-     the window stops being a sensible size for a word. */
-  --panel-masthead-size: clamp(2.75rem, 7.3vw, 8.5rem);
-  --panel-sub-size:      clamp(1.75rem, 4.6vw, 5.4rem);
-  /* The body copy is NOT the render's size. The render's paragraph is 55 words
-     of filler; the real one is career-record's Page intro at 145, and set at the
-     render's 1.6vw it would be twice the height of the frame beside it. */
-  --panel-copy-size:     clamp(0.8rem, 0.88vw, 1.1rem);
-  --panel-small-size:    clamp(0.76rem, 0.98vw, 0.95rem);
-  --panel-rail-size:     clamp(0.62rem, 0.72vw, 0.78rem);
+     of the render's width, and Host Grotesk's cap is 0.700 em. The RATIO between
+     the two — 1.59 — is the number to preserve if either is re-chosen by eye: it
+     is what makes the two lines read as one masthead.
+
+     SHARES OF THE COMPOSITION, NOT OF THE WINDOW, and no clamp on either. They
+     used to be `clamp(_, vw, _)`, which is the same idea aimed at the wrong box
+     and stopped at both ends — and the ceiling was half of why this section
+     overflowed the screen: past ~1860px the type stopped growing while the Frame
+     did not, so the drawing changed shape with the window and no single ratio
+     could be solved for. A share of --panel-w needs no ends, because --panel-w
+     already has both. */
+  --panel-masthead-size: calc(0.0598 * var(--panel-w));
+  --panel-sub-size:      calc(0.0380 * var(--panel-w));
+  /* The three small sizes, and WHICH TWO OF THEM GET A FLOOR IS THE WHOLE OF
+     THIS BLOCK. A share of the composition stops being readable somewhere — a
+     1280×720 laptop draws this drawing at half the width a 2560 display does,
+     and half of 15px is not a size anything can be read at — so a floor is
+     wanted. But a floor is a break in the self-similarity the fit above is
+     solved on, and a block that stops shrinking with the drawing eventually
+     outgrows the space the drawing left it.
+
+     The points and the Rail can afford one because they sit in slack: the points
+     column runs to two fifths of the height its row is given and the Rail is
+     three words against the screen's whole height, so both can stop shrinking
+     for a long way before anything notices. They stop being affordable at about
+     500px of composition — a 560px window, which is inside the phone gate at the
+     foot of this block.
+
+     THE COPY CANNOT, and it is the one that would most like to. Its height goes
+     as the SQUARE of its type against its column — a floor makes the type bigger
+     and the column no wider, so the lines get shorter as well as taller — and it
+     is measured against row one, which is a stated height. Floored at 0.7rem it
+     ran 30px past a row of 71 at an 800px composition, and the Frame paints over
+     row two. So it is a plain share and the paragraph is short enough to hold at
+     four lines everywhere: see the .panel-copy block. What that costs is
+     absolute size below the 1280×720 this page is asked to hold — 11px there,
+     and smaller on a window narrower than that, which is the honest trade for a
+     composition that is never broken, only small.
+     --panel-masthead-size and --panel-sub-size have no floor for the harder
+     version of the same reason: those two ARE the composition's height. */
+  --panel-copy-size:     calc(0.0100 * var(--panel-w));
+  --panel-small-size:    max(0.7rem,  calc(0.00668 * var(--panel-w)));
+  --panel-rail-size:     max(0.65rem, calc(0.00549 * var(--panel-w)));
+
+  /* The two gutters, as shares for the same reason, and the Rail's width — which
+     is one line box of its own type and is stated rather than left to `auto`
+     only because the 0.0274 above has to know it. 1.5 is the panel's
+     line-height, so this is exactly what a line of vertical type measures and
+     the names neither overflow their column nor sit in a gutter of air. It
+     follows the Rail's floor down a small window on its own. */
+  --panel-gap:     calc(0.01935 * var(--panel-w));
+  --panel-rail-w:  calc(1.5 * var(--panel-rail-size));
+  --panel-gutter:  calc(0.01231 * var(--panel-w));
 
   /* One line of the subheading, as a length. Its line-height is 1, so a line is
      exactly its font-size — and three things measure off it: how far the head's
@@ -2152,6 +2249,11 @@ body::after {
      and where the engineering points start. Change the sub's line-height and this
      stops being --panel-sub-size. */
   --panel-sub-line: var(--panel-sub-size);
+  /* The masthead's line, the same way, and the 0.86 is .panel-masthead's own
+     line-height restated — the two have to move together. Row one is this plus
+     one subheading line and nothing else, so this is a length the composition's
+     height is built out of and not just the size of a word. */
+  --panel-mast-line: calc(0.86 * var(--panel-masthead-size));
   /* HOW FAR DOWN THE SECOND LINE THE FRAME'S TOP EDGE FALLS, and the one number
      in this block that is an assertion rather than a taste. Stated as a share of
      the line it is biting into, so the overlap is the same fraction of a letter
@@ -2173,26 +2275,45 @@ body::after {
      composition is measured against, and cropping the recording into it is a
      smaller lie than reshaping the window the whole design is drawn around. */
   --panel-frame-ratio: 1.945;
+  /* The Frame's width as a share of the composition — nine columns of twelve
+     less a quarter of a gutter, which is what `9c + 8g` comes to once `c` is
+     substituted out. Nothing lays out FROM this; it is here so that the two
+     places which have to know the Frame's width without being able to measure it
+     — the fit constant above and the window's own corner radius below — read one
+     number rather than each re-deriving it. */
+  --panel-frame-w: calc(0.746923 * var(--panel-w));
 
   position: relative;
   display: grid;
-  /* The Rail takes what it needs — one line of vertical type — and the
-     composition takes the rest. */
-  grid-template-columns: auto minmax(0, 1fr);
-  column-gap: clamp(1rem, 2.4vw, 2.75rem);
+  /* The Rail at a fixed share of the composition, and the composition at
+     whatever --panel-w resolved to — capped by `minmax(0, …)` at what is
+     actually free, so an over-generous --panel-w can never overflow the page.
+     `justify-content` is what the fit costs: when the height binds, the drawing
+     is narrower than the page and the leftover goes to both margins at once
+     rather than piling up on the right. On an ordinary window it is a few
+     pixels; on a wide, short one it is what stops the composition from looking
+     like it fell over to the left. */
+  grid-template-columns: var(--panel-rail-w) minmax(0, var(--panel-w));
+  justify-content: center;
+  /* The Rail runs the full height and the composition sits in the middle of
+     whatever is left over — see .panel-rail and .panel-inner, which take the two
+     halves of this. */
+  align-items: center;
+  column-gap: var(--panel-gap);
   /* --fold, not a re-typed `100svh`. They are the same length today and the
      variable is the one with the backstop: the @supports above gives --fold back
      as 100vh where svh is not understood, and a literal here would opt out of
      that silently. It is also the datum the three corner pictures and the whole
      effect stack are measured off, so "one screen" means one thing on this page.
-     A FLOOR AND NOT A CEILING, and on a wide window it is genuinely exceeded:
-     the Frame is nine of twelve columns and grows with the width while the
-     window's height does not, so at 1920x1080 the composition stands about 6%
-     past the fold. Left rather than fought, because every way of capping it here
-     is worse than the overflow — clamping the Frame's height breaks the ratio it
-     is holding space at, and clamping its width means the one thing this section
-     exists to show stops filling the composition. #67 builds the real Frame and
-     #70 does the reflow; between them is where a ceiling belongs, if one does. */
+     STILL A FLOOR AND NOT A CEILING, and it no longer needs to be one: the
+     composition is scaled to the height this leaves rather than to the window's
+     width, so it reaches the fold and stops. It used to stand about 6% past it
+     at 1920x1080 and 1% at 2560x1329, which on a page that snaps to two ports is
+     a whole second scroll to see the last dozen pixels of a section that was
+     already fully drawn. What can still exceed it is a floored small size on a
+     window short enough that the type no longer fits the drawing — see the
+     floors above — and there `min-height` is the right answer rather than a
+     clipped paragraph. */
   min-height: var(--fold);
   /* --corner is the page's own margin: the measure the cut word stands off in
      its corner and the one the CV's gutters are cut to. The panel is a different
@@ -2226,6 +2347,12 @@ body::after {
   flex-direction: column;
   justify-content: space-between;
   align-items: center;
+  /* The one thing in the section that answers to the SCREEN and not to the
+     composition: it spans the page's whole margin-to-margin height, whatever the
+     drawing beside it came out at. `stretch` against the `align-items: center`
+     the panel sets for the composition — three names spread over part of the
+     window would read as a list that ran out rather than as an edge. */
+  align-self: stretch;
 }
 .panel-rail li {
   writing-mode: vertical-rl;
@@ -2254,26 +2381,37 @@ body::after {
    fraction of the way down the letters. Nothing in the arithmetic goes through
    the head's total height, the copy's height, or the row's.
 
-   THE COPY CAN NEVER BE PAINTED OVER, WHICH IS THE OTHER HALF OF THE SAME MOVE.
-   career-record's Page intro is 145 words against the design render's 55 of
-   filler, so the paragraph is much the taller block, and left to set its own row
-   it would run down behind a Frame that is nine columns wide. Here it cannot:
-   its row ENDS where the second line begins, and the Frame starts 0.66 of a line
-   below that. If the paragraph is taller than the head — which it is on a narrow
-   desktop — row one grows and the head sinks with it, bottom aligned; the
-   masthead sits a little lower and every word stays legible. That is the
-   degradation this composition chooses, and it is chosen: the alternative
-   (top-aligning the head) keeps the masthead pinned and silently slides the
-   second line out from under the Frame, losing the depth the render is built on. */
+   ROW ONE IS A STATED HEIGHT AND NOT THE TALLER OF ITS TWO OCCUPANTS. It is
+   exactly the masthead's line plus one subheading line, which is precisely the
+   head's box once its negative margin is taken off — so the head fills its row
+   exactly, `end` and `start` mean the same thing for it, and the masthead sits on
+   the composition's own top edge at every size.
+   It used to be `auto`, and the copy was allowed to set it: career-record's Page
+   intro ran to 145 words against the design render's 55 of filler, so on
+   anything narrower than a 2K display the paragraph was the taller block, row
+   one grew, and the bottom-aligned head SANK — the masthead ended up a third of
+   the way down a 1440x900 screen instead of at the top of the drawing. That was
+   a deliberate degradation while the section was free to be as tall as it liked.
+   It is not available now: row one's height is a term in the fit constant, so a
+   row that grows with the text is a composition that no longer fits the screen.
+   The paragraph is cut to the render's own length instead, which is the honest
+   fix — see the copy block for what keeps it inside this row, and note that the
+   copy cannot be painted over either way, because its row ENDS where the second
+   line begins and the Frame starts 0.66 of a line below that. */
 .panel-inner {
   display: grid;
   grid-template-columns: repeat(12, minmax(0, 1fr));
-  grid-template-rows: auto 1fr;
-  column-gap: clamp(0.75rem, 1.6vw, 1.75rem);
+  grid-template-rows: calc(var(--panel-mast-line) + var(--panel-sub-line)) 1fr;
+  column-gap: var(--panel-gutter);
   /* No row gap. The seam between the two rows IS the second line's top edge —
      see above — so a gap here would open under the first line and push the
      subheading apart. Everything that wants air below the head asks by margin. */
   row-gap: 0;
+  /* Not stretched. The panel is at least a screen tall and the drawing is
+     whatever the fit made it, so on a window the width binds first there is
+     height left over — and it goes above and below the composition equally
+     rather than under it. The Rail beside it still spans the whole screen. */
+  align-self: center;
 }
 
 .panel-head {
@@ -2294,7 +2432,16 @@ body::after {
   aspect-ratio: var(--panel-frame-ratio);
   position: relative;
   background: var(--panel-frame-fill);
-  border-radius: var(--frame-radius);
+  /* The same 1.6333% of the window's width every other corner in here is cut to,
+     but NOT written as --frame-radius, and the difference is not cosmetic.
+     Container units resolve against the nearest ancestor container, and an
+     element is not its own — so --frame-radius, which is `1.6333cqw`, is the
+     Frame's width everywhere INSIDE the Frame and the viewport's width here.
+     That put a 41.8px curve on the window's outer corners at 2560 against the
+     27.8px the titlebar drew on the same two corners: one radius, two values,
+     visibly disagreeing along the top edge. --panel-frame-w is the Frame's width
+     as a plain length, so this reads the box it is actually cutting. */
+  border-radius: calc(0.016333 * var(--panel-frame-w));
   /* The rim, as a ring rather than a `border`. A border would take a pixel off
      the inside of every child's box and put the window's own edge INSIDE the
      titlebar, one pixel in from where the glass draws its own — two rims a pixel
@@ -2687,16 +2834,32 @@ body::after {
 .panel-sub span { display: block; }
 
 /* ---- the body copy ---------------------------------------------------------
-   career-record's Page intro, verbatim, behind the same hairline rule the render
-   puts between the heading area and the text. The rule is a border rather than a
+   career-record's Page intro, behind the same hairline rule the render puts
+   between the heading area and the text. The rule is a border rather than a
    pseudo-element so it is exactly as tall as the paragraph — which is why the
    copy is `align-self: start`: stretched, the rule would run the height of the
-   composition and read as a column divider instead. */
+   composition and read as a column divider instead.
+
+   IT IS THE INTRO'S FIRST AND LAST SENTENCES AND NOT ALL FIVE, which is a
+   decision about the composition and not about the writing. Row one is a stated
+   height now — see .panel-inner — so the paragraph has a ceiling: at this size
+   and this column width it is four lines at 2560 and four at 1280, because both
+   the type and the column are the same share of --panel-w and a self-similar
+   drawing breaks its lines in the same places at every size. The full 145 words
+   are seven, which is more than row one has. The middle three sentences are the
+   ones the four engineering points already carry, figure for figure, so they are
+   what goes; what is left is the problem and what was done about it, in the
+   author's own words, at the render's own length.
+   The size that goes with it is 1% of the composition — bigger than the 0.88vw
+   this used to be set at, and deliberately so. That number was chosen to fit 145
+   words beside the Frame; with the render's 55 the paragraph can be set at
+   something closer to the render's own 1.6%, and the copy reads as part of the
+   drawing rather than as a caption under it. */
 .panel-copy {
   grid-area: 1 / 7 / 2 / 13;
   align-self: start;
   border-left: 1px solid var(--panel-rule);
-  padding-left: clamp(1rem, 1.8vw, 2rem);
+  padding-left: calc(0.01407 * var(--panel-w));
   font-size: var(--panel-copy-size);
   line-height: 1.5;
   color: var(--panel-ink-soft);
@@ -2716,11 +2879,11 @@ body::after {
 .panel-points {
   grid-area: 2 / 1 / 3 / 4;
   align-self: start;
-  margin: calc(var(--panel-sub-line) + clamp(1rem, 3vh, 2.25rem)) 0 0;
+  margin: calc(var(--panel-sub-line) + 0.01583 * var(--panel-w)) 0 0;
   list-style: none;
   padding: 0;
   display: grid;
-  row-gap: clamp(1rem, 2.4vh, 1.9rem);
+  row-gap: calc(0.01337 * var(--panel-w));
 }
 .panel-points h3 {
   margin: 0;
@@ -2738,26 +2901,49 @@ body::after {
   color: var(--panel-muted);
 }
 
-/* ---- one column, until #70 does this properly ------------------------------
+/* ---- one column, on a phone, until #70 does this properly ------------------
    The responsive reflow is its own change: the Rail becomes a horizontal row,
    the Frame and its reflection survive at phone width, and the headline stops
    being a scaled-down desktop. None of that is here. What IS here is the floor
-   under it — below this width everything stacks in source order and the frame
-   keeps its space, so a narrow window gets a plain page rather than a broken
-   composition. The occlusion is deliberately dropped rather than approximated:
-   overlapping a line of type at 380px wide hides the word instead of layering it.
+   under it — everything stacks in source order and the Frame keeps its space, so
+   a hand-held gets a plain page rather than a broken composition. The occlusion
+   is deliberately dropped rather than approximated: overlapping a line of type
+   at 380px wide hides the word instead of layering it.
 
-   900px IS A CHOICE AND NOT A MEASUREMENT, unlike the two gates this sheet
-   already carries. 1100/983 asks whether the CV composes to one screen and 700
-   asks how much of a photograph is on screen; neither is the question here,
-   which is when the twelve-column composition stops being able to hold a
-   masthead beside a paragraph beside a Frame. The three do not fail at one
-   width — the copy column gets unreadably narrow before the masthead stops
-   fitting — so this is the widest round number at which all three still hold,
-   and #70 is where it gets replaced by something derived. */
-@media (max-width: 900px) {
+   IT ASKS WHETHER THIS IS A PHONE, AND NOT WHETHER THE WINDOW IS NARROW, which
+   is the whole of what changed here. `max-width: 900px` on its own was a guess
+   at the same question and it caught the wrong things: a 1280x720 laptop is
+   nowhere near it and used to get a composition that ran off the bottom of the
+   screen, while any browser window dragged narrow on a desktop got the phone
+   page. The composition now scales to fit rather than assuming a size, so there
+   is nothing left for a width gate to protect against until the pointer says a
+   finger — `pointer: coarse` — and the screen agrees. The second clause is the
+   backstop for the genuinely tiny window on a mouse-driven machine, where the
+   drawing would be scaled below the point its floors can hold it up.
+
+   Both numbers are choices and neither is a measurement, which is the same thing
+   the 900 it replaces admitted. #70 is where they get replaced by something
+   derived. */
+@media (max-width: 900px) and (pointer: coarse), (max-width: 600px) {
   .panel {
+    /* No height term, and no fit to solve for: the stack is taller than a screen
+       by design, so the drawing takes the width it is given and the floors on
+       the small sizes do the rest. */
+    --panel-w: calc(100vw - 2 * var(--corner));
+    --panel-frame-w: var(--panel-w);
+    /* The three that have no floor of their own — see the type scale. Two of
+       them are the composition's height up there and the third is measured
+       against a row that is a stated height; none of that is true here, where
+       the section stacks and is as tall as it needs to be. So they get sizes
+       rather than shares: a share of a phone's width is a 15px masthead and a
+       2px paragraph. These are what a phone would have been given if it had ever
+       been drawn for one, and #70 is where it actually is. */
+    --panel-masthead-size: clamp(2.5rem, 12vw, 5rem);
+    --panel-sub-size:      clamp(1.5rem, 7.5vw, 3rem);
+    --panel-copy-size:     clamp(0.85rem, 3.8vw, 1.05rem);
     grid-template-columns: minmax(0, 1fr);
+    justify-content: stretch;
+    align-items: stretch;
     row-gap: clamp(1.5rem, 4vh, 2.5rem);
   }
   .panel-rail {
@@ -2766,7 +2952,11 @@ body::after {
     gap: clamp(1rem, 5vw, 2rem);
   }
   .panel-rail li { writing-mode: horizontal-tb; transform: none; }
-  .panel-inner { grid-template-columns: minmax(0, 1fr); grid-template-rows: none; }
+  .panel-inner {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: none;
+    align-self: stretch;
+  }
   .panel-head, .panel-copy, .panel-points, .panel-frame {
     grid-area: auto;
     align-self: auto;
