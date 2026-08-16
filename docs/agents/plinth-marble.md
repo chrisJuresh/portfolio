@@ -141,7 +141,34 @@ Then:
 
 `proc` | `photo` | `relit` | `all` | a single stone name. ~5 s each.
 
-### Putting a different photograph on the plinth
+### Putting a different photograph on the plinth, without a terminal
+
+`python design/plinth/plinth-studio.py`, then open what it prints. It is the
+whole pipeline behind one page: drop an image, move every slider a stone has,
+bake, look at it standing under the real Frame, write it into `styles.css`. Its
+own docstring is the reference; what matters from outside it is:
+
+- **It serves the tree it is started in**, like `render.mjs` and unlike
+  `preview_start` — so a stone tried out in a worktree is tried out against that
+  worktree's `/portfolio`.
+- **Maps are cached per photograph**, keyed by a digest of the image bytes and
+  the two options that change what the maps are (`size`, `square`). So a second
+  bake of one photograph at a different `scale` is fifteen seconds of Cycles and
+  not another fifty megabytes of PNG — which is the one thing `add-stone.py`
+  cannot do, because it is a one-shot and rebuilds them every run.
+- **It writes `portfolio/styles.css`** when Apply is pressed, and nothing else
+  outside `design/plinth/` and `portfolio/img/tex/`. It restamps every plinth
+  `?v=` in the file at the same time, which is the drift that went unnoticed for
+  two bakes in #106–#114. It does not commit, and applying a stone is a change to
+  `/portfolio`'s colour — run the capture contract before merging one.
+- **The only thing it draws rather than renders is the window**: the block's
+  footprint laid on the photograph, from `build_photo_material()`'s own
+  arithmetic. That answers `scale` and `offset` before paying for a bake, and it
+  is honest about answering nothing else. There is deliberately no GLSL previz of
+  a photographic material — see "Still open" for why the tuner does not have one
+  either.
+
+### Putting a different photograph on the plinth, from the command line
 
 `design/plinth/add-stone.py`, and **not** by running `build-portoro-maps.py` by
 hand — that writes `maps/`, which every `gemini-*` stone reads, so it silently
@@ -377,7 +404,12 @@ colour. It stays a gate for any change that points the stylesheet at a new stone
 - **`plinth-tuner.html` is stale and now more so.** It reimplements the
   procedural material in GLSL and cannot preview a photo-backed stone at all.
   `slab.json` carries `photo_candidates` so the tuner can list them and say it
-  cannot draw them. Issue #69 covers tuner work.
+  cannot draw them. Issue #69 covers tuner work. **The studio does not replace
+  it and does not try to**: the tuner previews a PROCEDURAL stone without
+  rendering it, which is the thing it is for, and the studio bakes a
+  PHOTOGRAPHIC one and shows the render. Neither can do the other's job — a
+  photograph cannot be previewed in GLSL without the photograph, and a
+  procedural stone has no photograph to drop on the studio.
 - **The top face is still the weak face.** In the dark room it is dark, which is
   correct for polished black stone in a dark room, but it leans entirely on the
   CSS reflection for interest.

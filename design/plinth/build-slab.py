@@ -4,7 +4,9 @@
     "C:/Program Files/Blender Foundation/Blender 5.2/blender.exe" -b \
         -P design/plinth/build-slab.py -- [<stone> | proc | photo | added | all]...
 
-Several may be named at once, and are rendered in the order given.
+Several may be named at once, and are rendered in the order given. `none`
+renders nothing and rewrites design/plinth/slab.json alone, which is what a
+deleted stone needs — see the group table in main().
 
 There are two families of stone here and they are generated in completely
 different ways. `proc` is nero/portoro/marquina/grey, grown out of noise nodes.
@@ -2006,7 +2008,15 @@ def main():
               # ...and the ones added from a photograph of your own, which is the
               # group you want after re-running add-stone.py on a tree that had
               # to rebuild their maps.
-              "added": list(ADDED)}
+              "added": list(ADDED),
+              # NOTHING, which is not a no-op: main() writes slab.json whatever
+              # it rendered, so this is "rewrite the sidecar" on its own. What
+              # needs it is a stone being DELETED — the tables are read at import
+              # and the picker in design/plinth/plinth-studio.html reads the
+              # sidecar, so until this runs it goes on listing an entry whose
+              # file is gone. Three seconds of starting Blender against a minute
+              # of re-rendering something to make it notice.
+              "none": []}
     keys = []
     for a in which:
         if a in groups:
