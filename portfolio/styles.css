@@ -2418,7 +2418,7 @@ body::after {
      reason the textures' is — vercel.json caches /portfolio/img/ for a day, so a
      re-rendered plate under an unchanged URL is served stale for up to 24 hours
      while being right on localhost. */
-  --panel-plinth-src: url("img/tex/plinth-nero.webp?v=92d6cb9d");
+  --panel-plinth-src: url("img/tex/plinth-nero.webp?v=723b5119");
 
   position: relative;
   display: grid;
@@ -2729,9 +2729,9 @@ body::after {
    one is. Switched by an attribute on the section so #69's tuner needs no
    stylesheet of its own, and so that a plate not in the repository yet fails as a
    missing image rather than as a missing rule. */
-.panel[data-marble="portoro"]  { --panel-plinth-src: url("img/tex/plinth-portoro.webp?v=92d6cb9d"); }
-.panel[data-marble="marquina"] { --panel-plinth-src: url("img/tex/plinth-marquina.webp?v=92d6cb9d"); }
-.panel[data-marble="grey"]     { --panel-plinth-src: url("img/tex/plinth-grey.webp?v=92d6cb9d"); }
+.panel[data-marble="portoro"]  { --panel-plinth-src: url("img/tex/plinth-portoro.webp?v=723b5119"); }
+.panel[data-marble="marquina"] { --panel-plinth-src: url("img/tex/plinth-marquina.webp?v=723b5119"); }
+.panel[data-marble="grey"]     { --panel-plinth-src: url("img/tex/plinth-grey.webp?v=723b5119"); }
 
 /* ---- the reflection ---------------------------------------------------------
    THE FRAME AGAIN, UPSIDE DOWN AND LYING IN THE STONE. Not a picture of it: the
@@ -2748,19 +2748,38 @@ body::after {
    Its left edge is the Frame's, not the slab's: the overhanging column of marble
    has no window above it to reflect.
 
-   THE SQUASH IS THE BLUR, and there is deliberately no `filter` on top of it. The
-   copy is scaled to 3.29% of its own height, which is a 30:1 downscale and
-   therefore a low-pass — the compositor is already averaging thirty rows of the
-   recording into every row that lands here. A `blur()` would be a full-size
-   gaussian over a moving picture on every frame, which is exactly the per-frame
-   cost this Panel is built without, to buy softening that has already happened.
+   A MIRROR IMAGE IS THE SAME SIZE AS THE THING IT REFLECTS, and getting that
+   wrong is what made this read as a smear rather than as a reflection. A planar
+   mirror puts the image as far behind the surface as the object is in front of
+   it, so object and image subtend the SAME angle at the eye and project to the
+   same height. The visible strip is short because the SLAB is short, not because
+   the image is: reflect the eye through the top face and look along the ray to
+   where the Frame's plane stands, and the marble in front of the window shows
+   the window from its foot up to 0.017779 of a Frame width — 3.28% of a Frame
+   0.541667 tall. THE SAME 3.28%, which is what makes this worth writing down. It
+   was read as a SCALE and applied as one, so the whole 401-pixel window was
+   squashed into the thirteen pixels that are actually the bottom 3.28% of it
+   seen life-size. Thirty rows of chrome, tabs, toolbar and clip averaged into
+   every row of stone is a grey band that changes when the clip changes; the
+   bottom edge of the window, mirrored 1:1 and cut off by the front arris, is a
+   reflection. The transform is therefore a plain scaleY(-1) and the clipping is
+   this box's own `overflow`, which was already here doing nothing.
+
+   NO `filter: blur()`. Roughness 0.07 at 82 degrees of incidence spreads a
+   reflection by something on the order of a pixel over a strip thirteen deep,
+   which is not worth a full-size gaussian over a moving picture on every frame —
+   the per-frame cost this Panel is built without. What the eye actually reads as
+   softness here is the contact shadow above and the stone's own veining showing
+   through, and both are free.
 
    PLAIN ALPHA AND NOT `screen`, which is the physically-minded choice and the
    wrong one here. A reflection adds light, so `screen` is what a reflection does
    — but the plate underneath already carries the light: its top face ramps from
-   30 to 78 because that is what the render measures there, and that ramp IS the
+   31 to 80 because that is what the render measures there, and that ramp IS the
    room reflected in the stone. Screening a second reflection over it would put
-   the light in twice and blow the face past anything the render has. */
+   the light in twice and blow the face past anything the render has. Alpha also
+   gets the dark half right for free: a black tab bar reflected in polished stone
+   makes the stone DARKER than the marble beside it, which `screen` cannot do. */
 .panel-mirror {
   position: absolute;
   /* THE CONTACT LINE, which is no longer this box's top edge: the slab now runs
@@ -2779,31 +2798,102 @@ body::after {
      carries the class's — stays inside this box instead of competing with the
      real Frame's. */
   isolation: isolate;
-  /* How much of the window survives the stone. The render's top face is a
-     modulation of a few levels either side of its ramp, not a mirror; 0.34 at the
-     contact line is what puts the recording's own brightness into that range. */
-  opacity: 0.34;
-  /* ...and it goes out with distance, which is what a polished surface does to
-     everything but the first few millimetres of a reflection. */
-  -webkit-mask-image: linear-gradient(to bottom, #000, transparent);
-  mask-image: linear-gradient(to bottom, #000, transparent);
+  /* How much of the window survives the stone, and it is a MEASUREMENT now. The
+     reflectance of the top face is Fresnel at this camera's angle of incidence,
+     and Schlick against the IOR 1.55 the render's material is built at gives
+     0.526 at the contact line and 0.507 at the front arris — half the light,
+     and all but flat. 0.34 was fitted to a squashed reflection that had to be
+     held down because it was showing the whole window at once. */
+  opacity: 0.5;
+  /* ...and it does NOT go out with distance, which was the other half of the
+     same mistake. Fresnel moves two points over the whole strip, so a polished
+     surface reflects the near end and the far end of thirteen pixels equally
+     well: a reflection that has faded to nothing before it reaches the front
+     arris leaves a band of stone at the very front that reflects nothing, which
+     is the one place a grazing eye sees the MOST. What is left here is the
+     small, honest part of it — roughness scattering a little more of the image
+     the further it has to travel — so this bottoms out at 0.62 rather than at
+     transparent, and the front arris still carries a reflection. */
+  -webkit-mask-image: linear-gradient(to bottom, #000, rgb(0 0 0 / 0.62));
+  mask-image: linear-gradient(to bottom, #000, rgb(0 0 0 / 0.62));
   pointer-events: none;
+}
+/* ---- the contact shadow -----------------------------------------------------
+   WHERE THE WINDOW MEETS THE STONE, and its absence was the loudest thing in the
+   composition. Everything else on this plinth is a question of how the marble is
+   lit or how the reflection is shaped; this is the cue the eye uses to decide
+   whether two objects are TOUCHING at all, and there was none — the Frame ended,
+   the marble began, and nothing happened at the join, which is what a sticker on
+   a photograph looks like.
+
+   It cannot come out of the plate. build-slab.py renders a bare block: the thing
+   standing on it is a live DOM element whose foot lands wherever the composition
+   scaled it to, so an occlusion baked into the marble at one width would be in
+   the wrong place at every other. Here it is drawn from the same two edges the
+   reflection is, and follows the Frame for free.
+
+   IT SITS ON THE TOP FACE AND STOPS THERE. Not a soft shadow spilling down the
+   front, which is the reflex and is wrong: the front face is a vertical plane
+   over a Frame width away from the foot in the depth direction, and the fill
+   that lights it is in FRONT of the block, so the window occludes none of it.
+   `height` is therefore the top face exactly.
+
+   THE ENDS FADE. The shadow belongs to the window, so it has to end where the
+   window does — but a hard vertical edge where the Frame's corner is would read
+   as a drawn rectangle, and light wraps round a foot rather than stopping at it.
+   The mask takes the last few percent at each end off.
+
+   ABOVE THE REFLECTION, which is a decision rather than an accident of order. An
+   occlusion strictly darkens the DIFFUSE term and leaves the specular alone, so
+   a purist would paint it under. But what is occluded here is also most of the
+   room the stone had to reflect in the first place, and a reflection that stays
+   at full strength right up to the foot of the thing casting it looks lit from
+   underneath. */
+.panel-plinth::after {
+  content: "";
+  position: absolute;
+  /* The Frame's own edges, and the same pair the reflection uses — see there for
+     why both are 7.9633%. */
+  left: 7.9633%;
+  right: 7.9633%;
+  top: var(--panel-plinth-back);
+  height: var(--panel-plinth-face);
+  /* Over .panel-mirror, which carries no z-index of its own. Still under the
+     Frame, which is a sibling of the whole plinth at z-index 1, so the half of
+     this that falls under the window is covered by it — as it should be. */
+  z-index: 1;
+  pointer-events: none;
+  background: linear-gradient(to bottom,
+                              rgb(0 0 0 / 0.66) 0%,
+                              rgb(0 0 0 / 0.30) 38%,
+                              rgb(0 0 0 / 0.09) 72%,
+                              rgb(0 0 0 / 0) 100%);
+  -webkit-mask-image: linear-gradient(to right, transparent 0, #000 3%,
+                                      #000 97%, transparent 100%);
+  mask-image: linear-gradient(to right, transparent 0, #000 3%,
+                              #000 97%, transparent 100%);
 }
 /* The copy. `bottom: 100%` stands it directly ON the contact line — its own
    bottom edge against this box's top — and the transform then folds it back down
-   through that same line: `scaleY` about the bottom origin sends a point h above
-   the origin to h below it, which is the whole of what a mirror is.
-   THE SCALE IS NOT A SEPARATE NUMBER. It is the top face's depth times the
-   Frame's aspect ratio, which is exactly "as deep as the marble in front of the
-   window" expressed as a fraction of the window's height — so the reflection
-   cannot come unstuck from the surface it is lying in, whichever of the two is
-   re-measured. */
+   through that same line: `scaleY(-1)` about the bottom origin sends a point h
+   above the origin to h below it, which is the whole of what a mirror is, at the
+   one magnification a mirror has.
+
+   NOTHING CLIPS IT HERE. The flipped copy is the Frame's full height and hangs
+   the whole way down through the plinth and out of the composition; what cuts it
+   to the marble available is `overflow: hidden` on the box above, which is the
+   front arris of the slab and is exactly the thing that cuts it in life. The
+   arithmetic that used to be in this rule has not been lost — it has been
+   recognised: --panel-plinth-top times --panel-frame-ratio is 3.28%, and 3.28%
+   is the share of the window this box is tall enough to show. Writing it as a
+   `scale` made the box show all of the window at 3.28% of its size instead of
+   3.28% of the window at all of it. See the block above. */
 .panel-mirror > .panel-frame {
   position: absolute;
   bottom: 100%;
   left: 0;
   right: 0;
-  transform: scaleY(calc(-1 * var(--panel-plinth-top) * var(--panel-frame-ratio)));
+  transform: scaleY(-1);
   transform-origin: bottom;
 }
 
@@ -3426,8 +3516,8 @@ body::after {
      ?v= is the digest build-textures.py prints. Same job as index.html's
      IMG_VERSION and the same reason — the filename does not change when the
      bytes do, and vercel.json caches this directory for a day. */
-  --fx-film-src: image-set(url("img/tex/film-1600.webp?v=3311dec2") 1x,
-                           url("img/tex/film-2600.webp?v=3311dec2") 2x);
+  --fx-film-src: image-set(url("img/tex/film-1600.webp?v=723b5119") 1x,
+                           url("img/tex/film-2600.webp?v=723b5119") 2x);
   --fx-film-strength: 0.14;
   --fx-film-blend: multiply;
   /* ---- HOW BIG THE MARKS ARE, WHICH IS THE ONLY LEVER THERE IS -------------
@@ -3487,8 +3577,8 @@ body::after {
 
      Anything is a valid size — the tile wraps, so there is no rung to land on —
      but sizes near a whole fraction of 512 resample most cleanly. */
-  --fx-paper-src: image-set(url("img/tex/paper-512.webp?v=3311dec2") 1x,
-                            url("img/tex/paper-1024.webp?v=3311dec2") 2x);
+  --fx-paper-src: image-set(url("img/tex/paper-512.webp?v=723b5119") 1x,
+                            url("img/tex/paper-1024.webp?v=723b5119") 2x);
   --fx-paper-size: 384px;
   --fx-paper-strength: 0.18;
   --fx-paper-blend: multiply;
