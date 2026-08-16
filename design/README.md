@@ -45,11 +45,14 @@ design/
     effects-tuner.html   interactive: every effect on chips, every number on a
                          slider, over the real page — CSS export, per theme
   plinth/
-    build-marble.py      bakes the Projects Panel's marble plinth into the same
-                         directory — one plate per candidate, three from
-                         gitignored Texturelabs slabs and one generated. The
-                         stone is the source; the perspective, the ramp and the
-                         specular line are composited here.
+    build-slab.py        RENDERS the Projects Panel's marble plinth into the
+                         same directory — Blender, headless, one WebP per stone
+                         with the block's silhouette in the alpha. The camera is
+                         solved from the design render and the two lights are
+                         fitted to its measured profile; the stone is procedural,
+                         so nothing is downloaded and nothing is attributed.
+                         Needs Blender, not pip:
+                           blender -b -P design/plinth/build-slab.py -- all
   tools/
     render.mjs       Playwright: serves the repo, walks the matrix, writes shots/
     package.json     dev dependency (playwright) — not the site's
