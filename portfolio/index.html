@@ -294,7 +294,7 @@
        two things that used to sit at this line, an @font-face at the foot of
        styles.css and a script that attached /fonts/friz-local.css on localhost
        only, are both gone. See the cut title block in styles.css. -->
-  <link rel="stylesheet" href="styles.css?v=32">
+  <link rel="stylesheet" href="styles.css?v=33">
 </head>
 <body>
   <!-- Only ever on screen while a corner picture is genuinely outstanding: it is
@@ -404,11 +404,22 @@
              word on the line you can still read. -->
         <p class="panel-sub"><span>Self-stacking</span> <span>photo gallery</span></p>
       </header>
-      <!-- career-record's `projects/photos.md`, "Page intro", verbatim. The
-           design render's own copy is generated filler and appears nowhere in
-           the record; #57 discards it. -->
+      <!-- career-record's `projects/photos.md`, "Page intro" — its first
+           sentence, the head of its second, and its last. The design render's own
+           copy is generated filler and appears nowhere in the record; #57
+           discards it.
+           CUT, AND CUT RATHER THAN RE-WRITTEN: every word here is the record's
+           own, in the record's own order, with the tail of the second sentence
+           and the whole of the third lifted out. What went is what the four
+           engineering points below already carry — the 220 ms triage, the
+           resumable build, the stacking rule and the threshold behind it are each
+           a point with its figure attached, and saying them twice cost the
+           paragraph three lines it does not have. Row
+           one of the composition is a stated height now, so the paragraph has a
+           ceiling; the .panel-copy block in styles.css is where that is worked
+           out. What is left is the problem and what was done about it. -->
       <div class="panel-copy">
-        <p>Twenty years of photographs had turned into 1,374,328 file paths across overlapping backups. This is the system that turned them into one immutable content-addressed vault and a website that browses it — a triage engine that re-costs a rule set over the whole corpus in 220 ms, a build pipeline whose only destructive step is resumable, log-backed and independently re-verified byte for byte, and a stacking rule that decides whether two frames are the same photograph by fitting matched keypoints to a single transform. The threshold behind that rule was not chosen; it was measured, from a few hundred of my own judgements, through a report that keeps precision and recall apart and refuses to score a round against the setting it produced. When the shipped result disagreed with what I actually wanted, the objective moved and the reasoning that produced the old one stayed on the page.</p>
+        <p>Twenty years of photographs had turned into 1,374,328 file paths across overlapping backups. This is the system that turned them into one immutable content-addressed vault and a website that browses it. When the shipped result disagreed with what I actually wanted, the objective moved and the reasoning that produced the old one stayed on the page.</p>
       </div>
       <!-- The four talking points career-record ranks as strongest, in its own
            order, each carrying the figure that makes it checkable rather than

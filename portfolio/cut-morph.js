@@ -178,10 +178,12 @@
   /* WHERE THE TURN ENDS, in document pixels: the top of the projects section,
      which is the port `scroll-snap-align: start` rests on and the scroll position
      at which the word is home. Not the document's own end, which is the same
-     number only when the composition happens to be exactly one screen tall — on
-     a wide window the Frame grows with the width and the panel stands a few per
-     cent past the fold, and dividing by THAT would leave the word still turning
-     after it had landed. */
+     number only when the composition happens to be exactly one screen tall.
+     It usually is now — the panel scales its composition to the height the fold
+     leaves it — but it was not before that, and it still is not on a window short
+     enough that the section's floored type outgrows the drawing. Dividing by the
+     document's end there would leave the word still turning after it had
+     landed. */
   function landing() {
     var max = (root.scrollHeight || 0) - (window.innerHeight || 0);
     if (max <= 1) return 0;
