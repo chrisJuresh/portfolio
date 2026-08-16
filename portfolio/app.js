@@ -486,12 +486,13 @@
     }
     function pageMax() { return document.documentElement.scrollHeight - window.innerHeight; }
     // The far port: the panel's own top edge, which is where `scroll-snap-align:
-    // start` rests. NOT pageMax(), and the difference is only visible on a wide
-    // window — the panel is min-height:--fold but the Frame grows with the width,
-    // so past about 1600px the composition stands a few per cent past the fold
-    // and the document is longer than the turn. Turning to pageMax() there would
-    // fly the page to the panel's FOOT, overshooting the port, the masthead, and
-    // the word's landing along with it.
+    // start` rests. NOT pageMax(), even though the two are now the same number on
+    // every ordinary window: the panel scales its composition to the height the
+    // fold leaves it, so it no longer stands a few per cent past the fold the way
+    // it did past about 1600px of width. It can still exceed it on a window short
+    // enough that the section's floored type outgrows the drawing, and there
+    // turning to pageMax() would fly the page to the panel's FOOT, overshooting
+    // the port, the masthead, and the word's landing along with it.
     function panelPort() {
       if (!panel) return pageMax();
       return Math.max(0, Math.min(pageMax(),
