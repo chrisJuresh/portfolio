@@ -141,6 +141,37 @@ Then:
 
 `proc` | `photo` | `relit` | `all` | a single stone name. ~5 s each.
 
+### Putting a different photograph on the plinth
+
+`design/plinth/add-stone.py`, and **not** by running `build-portoro-maps.py` by
+hand — that writes `maps/`, which every `gemini-*` stone reads, so it silently
+repoints all fourteen of them at your photograph.
+
+```bash
+python design/plinth/add-stone.py --src <photo> --name <name>
+```
+
+Builds `maps/<name>/`, writes four entries into `design/plinth/stones/`, and
+bakes their plates in one Blender run — `<name>-noir`, `<name>-noir-fine`,
+`<name>-screen`, `<name>-screen-fine`, which are the `gemini-*` recipes worth
+having crossed with the two questions a new photograph raises: which room lights
+it better, and whether its figure wants to be laid one slab across the block or
+two. Reload the tuner and they are in the strip. `--styles noir` for just the one;
+every field in the table has a flag as well.
+
+**The entries are committed and their maps are not**, which is the split the
+`gemini-*` stones already live under. So a fresh checkout lists an added stone and
+shows its plate, and can only re-bake it from a tree that still has the
+photograph. `build-slab.py` says so by name when the maps are missing.
+
+**What the source has to be** is in the script's header at length; the two that
+are not guessable are that it is cropped **square** by default, because a BOX
+projection with a uniform mapping scale lays one tile over a square of model
+space whatever the image's aspect is (the Gemini source is 1.83:1 and is squashed
+to half its height on the block — every number fitted to it assumes that), and
+that the mineral split is a luma threshold, so a **light** stone classifies as
+almost all calcite and wants `--grade asis` rather than `deep`.
+
 ### Three things in the maps worth not undoing
 
 - **Grade each mineral separately, then recombine through the masks.** A curve

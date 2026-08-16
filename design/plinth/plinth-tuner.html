@@ -454,7 +454,13 @@
       b.appendChild(ti);
       if (s.baked) {
         var img = document.createElement("img");
-        img.src = plateURL(k, "../../");
+        /* `../../portfolio/` and not `../../`: this page is at /design/plinth/,
+           so two levels up is the repository root and the plates are a further
+           directory in. It read `../../` and every thumbnail in the strip 404'd
+           — silently, because a broken <img> in a dark row looks like a stone
+           that has not been baked yet, which is a thing the strip is expected to
+           contain. */
+        img.src = plateURL(k, "../../portfolio/");
         img.alt = "";
         img.loading = "lazy";
         b.appendChild(img);
@@ -489,6 +495,12 @@
     return '"' + v + '"';
   }
 
+  /* Stones that arrived through design/plinth/add-stone.py rather than out of
+     the table in build-slab.py. Their values live in design/plinth/stones/, and
+     everything this page says about where to go and change them has to say so —
+     see photoControls() and writeExport(). */
+  function addedStone(k) { return (slab.added_stones || {})[k] || null; }
+
   var PHOTO_ROWS = [
     ["grade", "which basecolor-*.png, so which of build-portoro-maps.py's GRADES"],
     ["scale", "tiles per model unit, and a unit is a Frame width. 0.84 lays one slab across the plinth; 0.42 crops in and the figure doubles; 1.75 goes fine and jewel-like. The strongest control here, and not a quality setting."],
@@ -509,7 +521,14 @@
           + "so drawing it live would show this stone in the light it was made to get away from. "
         : "cut from a photograph, not grown from noise. There is no previz for it. ")
       + "The picture above is the real Cycles plate. "
-      + "These are read-only — change them in PHOTO_CANDIDATES in build-slab.py and re-bake:"
+      /* An added stone's values are NOT in build-slab.py — it merges them from
+         design/plinth/stones/<name>.json, which design/plinth/add-stone.py
+         wrote. Sending you to the table in build-slab.py to change a number it
+         does not hold costs a re-bake that appears to do nothing. */
+      + (addedStone(pick)
+          ? "These are read-only — change them in design/plinth/stones/" + pick
+            + ".json and re-bake:"
+          : "These are read-only — change them in PHOTO_CANDIDATES in build-slab.py and re-bake:")
       + "\n\n    blender -b -P design/plinth/build-slab.py -- " + pick;
     n.style.whiteSpace = "pre-wrap";
     controlsEl.appendChild(n);
@@ -544,7 +563,7 @@
   }
 
   /* Where a stone's baked plate lives, from two different places.
-     The strip is at /design/plinth/ and needs `../../`; the frame is a document
+     The strip is at /design/plinth/ and needs `../../portfolio/`; the frame is a document
      at /portfolio/ whose own stylesheet writes `img/tex/...` relative to itself,
      so it needs an absolute path instead. One function so the two can never
      drift onto different files — and the same ?v= the stylesheet asks for, so
@@ -1377,6 +1396,34 @@
     var name = pick;
     var ind = "        ";
     var lines = [];
+    var add = live.photo ? addedStone(name) : null;
+    if (add) {
+      /* An added stone exports as the COMMAND that would make another one,
+         because that is the only form of it that works. Pasting its entry into
+         PHOTO_CANDIDATES under a new name would give a stone pointing at
+         design/plinth/maps/, which is the gemini photograph's maps and not this
+         one's — a copy that bakes cleanly and comes out as a different rock. */
+      lines.push("# design/plinth/stones/" + name + ".json, added by add-stone.py.");
+      lines.push("# Nothing on this stone is tunable from here. For a variant, run");
+      lines.push("# this against the same photograph and change what you want:");
+      /* --name takes the STEM, not the key: add-stone.py appends the style to
+         it, so passing the key back in would ask for `<name>-screen-fine-noir`
+         and three others nobody wanted. */
+      var stem = add.stem || name;
+      var style = name.indexOf(stem + "-") === 0 ? name.slice(stem.length + 1) : null;
+      lines.push("python design/plinth/add-stone.py \\");
+      lines.push("    --src " + (add.src || "<photo>") + " --name " + stem + "-2"
+                 + (style ? " --styles " + style : "") + " \\");
+      lines.push("    --grade " + live.photo.grade + " --scale " + live.photo.scale
+                 + " --offset " + live.photo.offset + " \\");
+      lines.push("    --bump " + live.photo.bump.join(" ")
+                 + " --sss " + live.photo.sss + " --coat " + live.photo.coat.join(" ") + " \\");
+      lines.push("    --rough " + live.photo.rough + " --room " + (live.photo.room || "flat")
+                 + (live.photo.crack ? " --crack" : ""));
+      outPy.value = lines.join("\n") + "\n";
+      writeCss(name);
+      return;
+    }
     if (live.photo) {
       /* The PHOTO_CANDIDATES entry as it stands, not as edited — nothing here
          is editable. It is exported anyway because the useful thing to copy off
