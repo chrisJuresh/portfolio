@@ -63,6 +63,32 @@
     is a real way to break the one-screen fit, which is a thing worth seeing
     rather than a thing to guard against.
 
+    ONE UNDO STACK OVER BOTH KINDS OF CHANGE, because there is only one thing to
+    put back. A drag, a nudge, a slider, a delete and `reset all` all move the
+    same two records — `adj` and `type` — and nothing else in here changes the
+    drawing. So undo snapshots those records rather than replaying an inverse of
+    whatever was done, which is what lets a single entry cover a gesture that
+    touched both: `reset all` clears the boxes and the type scale together, and
+    goes back the same way.
+    A STEP IS A GESTURE AND NOT A FRAME. A drag writes sixty times a second and
+    is ONE entry, taken at pointerdown and thrown away again on a pointerup that
+    never moved — so a click that only selects does not fill the stack with
+    nothing. A held arrow key is one entry for the whole repeat, and a tapped one
+    is an entry each: `e.repeat` is what tells them apart, and the difference
+    matters because tapped arrows are where the last two pixels get decided and
+    undoing them one at a time is the point. A slider is one entry per drag,
+    opened on the first `input` and closed by the `change` that ends it — the
+    same seam the export already uses to avoid rebuilding itself per pixel.
+    THE SNAPSHOT CARRIES THE SCOPE it was taken in, and undo switches back when
+    they differ. `adj` is keyed by scope, so undoing in `page` a drag made in
+    `panel` would otherwise restore a box that is not on screen — an undo that
+    visibly does nothing, which is worse than no undo. Coming back that way
+    repaints from the restored record, so the boxes the OTHER scope has dragged
+    are painted again by the scope switch rather than by the undo.
+    NOT SAVED, and 60 deep. The stack is the session's, not the drawing's: what
+    localStorage is for here is the numbers, and reloading is already how you ask
+    the sheet what it says without them.
+
     WHAT THE EXPORT IS IN, and why three units rather than one. Pixels are what
     you dragged and are true only at the viewport in the top bar. Shares of
     --panel-w are what this sheet is actually written in — almost every length in
@@ -112,6 +138,8 @@
     button { padding: 0.24rem 0.55rem; cursor: pointer; }
     button:hover { border-color: var(--ui-mut); }
     button[aria-pressed="true"] { background: var(--ui); color: var(--ui-bg); border-color: var(--ui); }
+    button:disabled { opacity: 0.4; cursor: default; }
+    button:disabled:hover { border-color: var(--ui-line); }
     .badge { padding: 0.1rem 0.4rem; border-radius: 99px; background: var(--ui-hit); color: var(--ui-bg); font-size: 11px; }
     .badge[data-n="0"] { background: transparent; color: var(--ui-mut); }
     .hint { font-size: 10.5px; color: var(--ui-mut); }
@@ -195,6 +223,7 @@
     <button id="armed" type="button" title="off hands the mouse back to the page, so links, hover states and scrolling behave normally">catch mouse</button>
     <span class="grow"></span>
     <button id="jump" type="button">to the panel</button>
+    <button id="undo" type="button" title="put back the last drag, nudge, slider or reset — ctrl+Z">undo</button>
     <button id="reload" type="button">reload</button>
     <button id="reset" type="button">reset all</button>
   </div>
@@ -338,6 +367,57 @@
     if (saved && typeof saved === "object") { for (var k in saved) state[k] = saved[k]; }
   } catch (_) {}
   function save() { try { localStorage.setItem(STORE, JSON.stringify(state)); } catch (_) {} }
+
+  /* ---- undo ----------------------------------------------------------------
+     See the header for what one step is. What matters here is that `mark()` is
+     called BEFORE the mutation, every time, without exception: a drag mutates
+     its `adj` entry in place sixty times a second, so the version taken a moment
+     earlier is the only one that still exists to go back to.
+     `unmark()` is the other half of that bargain — pointerdown has to mark
+     before it knows whether the pointer will move, so a press that turns out to
+     be a plain click takes its own snapshot back off. */
+  var HIST_MAX = 60;
+  var hist = [];
+  function shot() {
+    return {
+      scope: state.scope,
+      adj:   JSON.parse(JSON.stringify(state.adj)),
+      type:  JSON.parse(JSON.stringify(state.type)),
+      at:    state.at ? { w: state.at.w, h: state.at.h } : null
+    };
+  }
+  function mark() {
+    hist.push(shot());
+    if (hist.length > HIST_MAX) hist.shift();
+    paintChrome();
+  }
+  function unmark() { hist.pop(); paintChrome(); }
+  function undo() {
+    var s = hist.pop();
+    if (!s) { flash("nothing to undo"); return; }
+    /* The scope goes back first, because collect() and every key() below it read
+       it — restoring `adj` into the wrong scope would file the old numbers under
+       the current one. */
+    var back = s.scope !== state.scope;
+    if (back) { state.scope = s.scope; selEl = null; selSel = null; }
+    state.adj = s.adj; state.type = s.type; state.at = s.at;
+    save();
+    if (back) { collect(); measureBase(); paintScopes(); }
+    repaintBoxes(); applyType();
+    sync(); paintAll();
+    if (back) jump();
+  }
+  /* reapply() writes only the boxes that ARE adjusted, which is right at attach
+     time when every inline style has just been thrown away by the reload and
+     wrong here: undoing a drag means the box it was on has no entry any more,
+     and the style that moved it is still on the element. So clear and write in
+     the same pass, over every part in scope. */
+  function repaintBoxes() {
+    parts.forEach(function (p) {
+      var a = adjOf(p.sel, false);
+      applyTo(p.el, isAdjusted(a) ? a : null);
+    });
+  }
 
   var $ = function (id) { return document.getElementById(id); };
   var frame = $("frame"), fit = $("fit");
@@ -897,6 +977,9 @@
       ratio: r.height ? r.width / r.height : 1,
       moved: false
     };
+    /* Before the first write, which is in onMove — and taken back in onUp if the
+       pointer never moved. */
+    mark();
     try { layer.setPointerCapture(e.pointerId); } catch (_) {}
     if (h) { try { e.target.setPointerCapture(e.pointerId); } catch (_) {} }
   }
@@ -940,6 +1023,7 @@
   function onUp(e) {
     if (!drag) return;
     e.preventDefault(); e.stopPropagation();
+    if (!drag.moved) unmark();
     drag = null;
     save(); paintTree(); paintExport();
   }
@@ -947,12 +1031,21 @@
   /* Arrows nudge, alt+arrows resize, both x10 with shift. This is where the last
      two pixels get decided — a mouse cannot reliably land on one. */
   function onKey(e) {
+    /* Ahead of the selection test, because undo is the one key in here that is
+       about the tuner rather than about a box, and nothing is selected on the
+       reload you most want it after. */
+    if ((e.ctrlKey || e.metaKey) && (e.key === "z" || e.key === "Z") && !e.shiftKey && !e.altKey) {
+      e.preventDefault(); undo(); return;
+    }
     if (!selEl) return;
     var d = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] }[e.key];
     if (e.key === "Escape") { select(null); return; }
     if ((e.key === "Delete" || e.key === "Backspace") && !isField(e.target)) {
       var p0 = partFor(selEl);
-      if (p0) { delete state.adj[key(p0.sel)]; applyTo(p0.el, null); save(); sync(); paintAll(); }
+      if (p0) {
+        if (isAdjusted(adjOf(p0.sel, false))) mark();
+        delete state.adj[key(p0.sel)]; applyTo(p0.el, null); save(); sync(); paintAll();
+      }
       e.preventDefault();
       return;
     }
@@ -960,6 +1053,8 @@
     e.preventDefault();
     var p = partFor(selEl);
     if (!p) return;
+    /* One entry for a held key and one per tap — see the header. */
+    if (!e.repeat) mark();
     var a = adjOf(p.sel, true), n = e.shiftKey ? 10 : 1;
     if (e.altKey) {
       var r = selEl.getBoundingClientRect();
@@ -1039,6 +1134,10 @@
     $("grid").setAttribute("aria-pressed", state.grid ? "true" : "false");
     $("unclip").setAttribute("aria-pressed", state.unclip ? "true" : "false");
     $("armed").setAttribute("aria-pressed", state.armed ? "true" : "false");
+    /* Depth on the button, because the one thing you want to know before pressing
+       it a fourth time is whether there is a fourth thing behind it. */
+    $("undo").disabled = hist.length === 0;
+    $("undo").textContent = hist.length ? "undo " + hist.length : "undo";
     $("snap").value = state.snap;
     var at = state.at, now = sizeDef(), notes = [];
     if (n && at && (at.w !== now.w || at.h !== now.h)) {
@@ -1107,14 +1206,20 @@
       inp.value = String(factorOf(t.k));
       inp.setAttribute("aria-label", t.label + " size");
       inp.title = t.root ? "the page's own rem — the CV's scale, not the composition's" : t.prop;
+      /* One undo entry per gesture, not per pixel — opened on the first `input`
+         and closed by the `change` under it. A keyboard step on a focused slider
+         raises both at once, so a tapped arrow is its own entry, which is the
+         same bargain the box nudges make. */
+      var open = false;
       inp.addEventListener("input", function () {
+        if (!open) { open = true; mark(); }
         state.type[t.k] = parseFloat(this.value) || 1;
         applyType(); sync(); paintType(); paintRead(); paintChrome();
       });
       /* Saved and exported on release and not on every pixel of the drag: the
          export is a whole document rebuilt from the live geometry, and building
          it sixty times a second is what makes a slider feel like treacle. */
-      inp.addEventListener("change", function () { save(); paintExport(); });
+      inp.addEventListener("change", function () { open = false; save(); paintExport(); });
       inp.addEventListener("dblclick", function () { resetType(t.k); });
       row.appendChild(inp);
       host.appendChild(row);
@@ -1133,6 +1238,7 @@
     host.appendChild(foot);
   }
   function resetType(k) {
+    if (k === null ? typeCount() > 0 : state.type[k] !== undefined) mark();
     if (k === null) state.type = {}; else delete state.type[k];
     applyType(); save(); sync(); paintType(); paintRead(); paintChrome(); paintExport();
   }
@@ -1180,7 +1286,7 @@
     if (!selEl || !doc.contains(selEl)) {
       box.innerHTML = '<p class="none">Nothing selected. Click a box in the preview, or pick one from '
         + 'the list above. Drag it anywhere; drag a handle to resize; arrows nudge by 1 and by 10 with '
-        + 'shift; alt+arrows resize; delete puts one box back.</p>';
+        + 'shift; alt+arrows resize; delete puts one box back; ctrl+Z undoes the last thing you did.</p>';
       return;
     }
     var p = partFor(selEl), ref = refFor(selEl), a = adjOf(p.sel, false) || { dx: 0, dy: 0, w: null, h: null };
@@ -1205,7 +1311,8 @@
     if (ref.seam !== null) row("seam", sign(r.top - ref.seam, 1), "from the row seam — the subheading's second line");
     box.innerHTML = "<h2>" + esc(p.sel) + "</h2><table>" + rows.join("") + "</table>"
       + '<p class="keys hint">drag to move · shift locks an axis · handles resize · '
-      + 'shift on a corner keeps the ratio · arrows nudge · alt+arrows resize · delete resets this box</p>';
+      + 'shift on a corner keeps the ratio · arrows nudge · alt+arrows resize · delete resets this box '
+      + '· ctrl+Z undoes</p>';
   }
 
   /* ---- the export ----------------------------------------------------------
@@ -1401,8 +1508,12 @@
   });
   $("jump").addEventListener("click", jump);
   $("reload").addEventListener("click", loadFrame);
+  $("undo").addEventListener("click", undo);
   $("reset").addEventListener("click", function () {
     var pre = state.scope + "|";
+    /* One entry for the whole of it, boxes and type together — the snapshot does
+       not care that this button clears two records at once. */
+    if (count() || typeCount() || state.at) mark();
     parts.forEach(function (p) { if (state.adj[key(p.sel)]) applyTo(p.el, null); });
     for (var k in state.adj) if (k.indexOf(pre) === 0) delete state.adj[k];
     /* All of it, type included — the button says all, and a "reset" that left
@@ -1421,6 +1532,10 @@
     if (!m) { flash("no state line in that text"); return; }
     try {
       var got = JSON.parse(m[1]);
+      /* Marked before anything is read out of it, and inside the try: an import
+         that throws half way has already deleted a scope's worth of numbers, and
+         undo is then the only way back to them. */
+      mark();
       if (got.scope) state.scope = got.scope;
       if (got.size) state.size = got.size;
       var pre = state.scope + "|";
@@ -1432,7 +1547,10 @@
          the sliders existed has no `type` at all, and reads as all six at 1. */
       state.type = got.type || {};
       save(); fitFrame(); paintScopes();
-      collect(); reapply(); applyType(); sync(); paintAll();
+      /* repaintBoxes() and not reapply(), for the reason written on it: an
+         import REPLACES a scope's numbers, so a box the old set had moved and
+         this one does not is still carrying the style that moved it. */
+      collect(); repaintBoxes(); applyType(); sync(); paintAll();
       flash("imported");
     } catch (err) { flash("could not read that: " + err.message); }
   });
