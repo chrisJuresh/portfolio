@@ -1,0 +1,655 @@
+{
+  "note": "written by design/plinth/build-slab.py - do not edit by hand",
+  "block": {
+    "near_half": 0.5947196516058791,
+    "far_half": 0.5293957539466522,
+    "depth": 0.3,
+    "height": 0.070024,
+    "top_face": 0.03647250952640174,
+    "behind": 0.0195971692977681,
+    "front_face": 0.070024,
+    "width": 1.1894393032117583
+  },
+  "camera": {
+    "d": 2.4312500000000004,
+    "h": 0.3320518054799493,
+    "r": 0.8901601830663616,
+    "lens": 50.0,
+    "x_half": 0.24461476672735386,
+    "y_top": -0.12157503175467249,
+    "y_bot": -0.1653782233336552
+  },
+  "plate": {
+    "w": 3000,
+    "h": 269
+  },
+  "lights": {
+    "key": [
+      [
+        0.0,
+        2.5,
+        0.39
+      ],
+      2.6,
+      0.14,
+      0.3,
+      -80.0
+    ],
+    "fill": [
+      [
+        -0.3,
+        -1.4,
+        -0.04
+      ],
+      3.4,
+      2.0,
+      3.3,
+      90.0
+    ]
+  },
+  "world": {
+    "ramp": [
+      [
+        0.0,
+        0.0026
+      ],
+      [
+        0.36,
+        0.004
+      ],
+      [
+        0.47,
+        0.0125
+      ],
+      [
+        0.52,
+        0.0034
+      ],
+      [
+        0.58,
+        0.003
+      ],
+      [
+        0.72,
+        0.012
+      ],
+      [
+        1.0,
+        0.018
+      ]
+    ],
+    "lobe": [
+      [
+        -0.62,
+        -0.74,
+        0.26
+      ],
+      46.0,
+      0.03
+    ]
+  },
+  "material_version": "11384094",
+  "base_rough": 0.07,
+  "stone": {
+    "bevel": [
+      0.00055,
+      2
+    ],
+    "ground_mottle": [
+      2.6,
+      3.0,
+      0.22
+    ],
+    "polish": [
+      7.5,
+      2.0,
+      0.035
+    ],
+    "tooth": [
+      240.0,
+      2.0,
+      0.16
+    ],
+    "width_swing": [
+      3.4,
+      2.0,
+      0.62
+    ],
+    "halo": [
+      3.6,
+      2.1,
+      0.145,
+      0.34
+    ],
+    "vein_density": [
+      6.5,
+      3.0,
+      0.38,
+      0.64
+    ],
+    "bedding": [
+      26.0,
+      3.0
+    ],
+    "fracture": [
+      13.0,
+      0.86,
+      0.013,
+      1.7,
+      3.0,
+      0.3,
+      2.4,
+      0.4,
+      0.7
+    ]
+  },
+  "samples": 1024,
+  "seed": 20260816,
+  "vein_fields": [
+    "scale",
+    "detail",
+    "distortion",
+    "width",
+    "sharpness",
+    "colour",
+    "rough",
+    "bump"
+  ],
+  "candidates": {
+    "nero": {
+      "title": "near-black with fine white veining - the design render's stone",
+      "ground": [
+        0.0075,
+        0.007,
+        0.0074
+      ],
+      "veins": [
+        [
+          8.0,
+          5.0,
+          1.1,
+          0.03,
+          2.4,
+          [
+            0.52,
+            0.515,
+            0.52
+          ],
+          0.3,
+          0.42
+        ],
+        [
+          17.0,
+          4.0,
+          1.2,
+          0.013,
+          2.9,
+          [
+            0.74,
+            0.735,
+            0.74
+          ],
+          0.24,
+          0.26
+        ]
+      ],
+      "fracture": [
+        [
+          0.8,
+          0.795,
+          0.79
+        ],
+        0.2,
+        0.22,
+        0.85
+      ]
+    },
+    "portoro": {
+      "title": "Nero Portoro - black with gold swathes and white hairlines",
+      "ground": [
+        0.0052,
+        0.0048,
+        0.0052
+      ],
+      "veins": [
+        [
+          5.0,
+          5.0,
+          1.5,
+          0.052,
+          2.3,
+          [
+            0.62,
+            0.4,
+            0.1
+          ],
+          0.46,
+          0.62
+        ],
+        [
+          9.5,
+          4.0,
+          1.3,
+          0.026,
+          2.7,
+          [
+            0.86,
+            0.68,
+            0.3
+          ],
+          0.36,
+          0.46
+        ],
+        [
+          19.0,
+          4.0,
+          1.2,
+          0.013,
+          3.0,
+          [
+            0.92,
+            0.9,
+            0.86
+          ],
+          0.26,
+          0.3
+        ]
+      ],
+      "fracture": [
+        [
+          0.9,
+          0.89,
+          0.87
+        ],
+        0.22,
+        0.24,
+        1.0
+      ]
+    },
+    "marquina": {
+      "title": "Nero Marquina - black with bold white veining",
+      "ground": [
+        0.0058,
+        0.0054,
+        0.0058
+      ],
+      "veins": [
+        [
+          4.5,
+          4.0,
+          1.2,
+          0.048,
+          2.2,
+          [
+            0.9,
+            0.89,
+            0.87
+          ],
+          0.36,
+          0.58
+        ],
+        [
+          13.0,
+          4.0,
+          1.2,
+          0.015,
+          2.9,
+          [
+            0.7,
+            0.695,
+            0.69
+          ],
+          0.26,
+          0.24
+        ]
+      ],
+      "fracture": [
+        [
+          0.82,
+          0.815,
+          0.8
+        ],
+        0.2,
+        0.2,
+        0.7
+      ]
+    },
+    "grey": {
+      "title": "dark grey with soft pale veining",
+      "ground": [
+        0.03,
+        0.0295,
+        0.031
+      ],
+      "veins": [
+        [
+          7.0,
+          4.0,
+          1.0,
+          0.044,
+          2.4,
+          [
+            0.44,
+            0.44,
+            0.45
+          ],
+          0.32,
+          0.34
+        ],
+        [
+          16.0,
+          4.0,
+          1.1,
+          0.017,
+          2.8,
+          [
+            0.62,
+            0.62,
+            0.63
+          ],
+          0.24,
+          0.22
+        ]
+      ],
+      "fracture": [
+        [
+          0.66,
+          0.66,
+          0.67
+        ],
+        0.2,
+        0.18,
+        0.6
+      ]
+    }
+  },
+  "photo_fields": [
+    "grade",
+    "scale",
+    "offset",
+    "bump",
+    "sss",
+    "coat",
+    "rough",
+    "crack",
+    "room"
+  ],
+  "relit_candidates": {
+    "nero-noir": {
+      "title": "near-black with fine white veining - the design render's stone",
+      "of": "nero",
+      "room": "noir"
+    },
+    "portoro-noir": {
+      "title": "Nero Portoro - black with gold swathes and white hairlines",
+      "of": "portoro",
+      "room": "noir"
+    },
+    "marquina-noir": {
+      "title": "Nero Marquina - black with bold white veining",
+      "of": "marquina",
+      "room": "noir"
+    },
+    "grey-noir": {
+      "title": "dark grey with soft pale veining",
+      "of": "grey",
+      "room": "noir"
+    }
+  },
+  "photo_candidates": {
+    "gemini": {
+      "title": "Gemini Portoro - deep grade, life size, full surface model",
+      "grade": "deep",
+      "scale": 0.84,
+      "offset": 0.4,
+      "bump": [
+        0.22,
+        0.00035
+      ],
+      "sss": 0.65,
+      "coat": [
+        0.35,
+        0.02
+      ],
+      "rough": 1.0,
+      "crack": false,
+      "room": "flat"
+    },
+    "gemini-plain": {
+      "title": "control - photo in Base Color only, flat polish, no relief",
+      "grade": "asis",
+      "scale": 0.84,
+      "offset": 0.4,
+      "bump": [
+        0.0,
+        0.0
+      ],
+      "sss": 0.0,
+      "coat": [
+        0.0,
+        0.0
+      ],
+      "rough": 0.0,
+      "crack": false,
+      "room": "flat"
+    },
+    "gemini-asis": {
+      "title": "faithful grade, full surface model - the photo, lit",
+      "grade": "asis",
+      "scale": 0.84,
+      "offset": 0.4,
+      "bump": [
+        0.22,
+        0.00035
+      ],
+      "sss": 0.65,
+      "coat": [
+        0.35,
+        0.02
+      ],
+      "rough": 1.0,
+      "crack": false,
+      "room": "flat"
+    },
+    "gemini-gold": {
+      "title": "Portoro d'Oro - the gold pushed, showy rather than faithful",
+      "grade": "gold",
+      "scale": 0.84,
+      "offset": 0.4,
+      "bump": [
+        0.24,
+        0.00035
+      ],
+      "sss": 0.7,
+      "coat": [
+        0.4,
+        0.018
+      ],
+      "rough": 1.0,
+      "crack": false,
+      "room": "flat"
+    },
+    "gemini-wide": {
+      "title": "big figure - half a slab across the block, swathes dominate",
+      "grade": "deep",
+      "scale": 0.42,
+      "offset": 0.52,
+      "bump": [
+        0.2,
+        0.00045
+      ],
+      "sss": 0.65,
+      "coat": [
+        0.35,
+        0.02
+      ],
+      "rough": 1.0,
+      "crack": false,
+      "room": "flat"
+    },
+    "gemini-fine": {
+      "title": "fine figure - two slabs across, dense jewel-like network",
+      "grade": "deep",
+      "scale": 1.75,
+      "offset": 0.3,
+      "bump": [
+        0.22,
+        0.00022
+      ],
+      "sss": 0.6,
+      "coat": [
+        0.35,
+        0.02
+      ],
+      "rough": 1.0,
+      "crack": false,
+      "room": "flat"
+    },
+    "gemini-crack": {
+      "title": "hybrid - photo structure under a procedural hairline network",
+      "grade": "deep",
+      "scale": 0.84,
+      "offset": 0.4,
+      "bump": [
+        0.22,
+        0.00035
+      ],
+      "sss": 0.65,
+      "coat": [
+        0.35,
+        0.02
+      ],
+      "rough": 1.0,
+      "crack": true,
+      "room": "flat"
+    },
+    "gemini-gallery": {
+      "title": "gemini, in a room with something in it - lighting, not stone",
+      "grade": "deep",
+      "scale": 0.84,
+      "offset": 0.4,
+      "bump": [
+        0.22,
+        0.00035
+      ],
+      "sss": 0.65,
+      "coat": [
+        0.35,
+        0.02
+      ],
+      "rough": 1.0,
+      "crack": false,
+      "room": "gallery"
+    },
+    "gemini-noir": {
+      "title": "gemini in a dark room - the black finally black",
+      "grade": "deep",
+      "scale": 0.84,
+      "offset": 0.4,
+      "bump": [
+        0.22,
+        0.00035
+      ],
+      "sss": 0.65,
+      "coat": [
+        0.0,
+        0.0
+      ],
+      "rough": 1.0,
+      "crack": false,
+      "room": "noir"
+    },
+    "gemini-noir-gold": {
+      "title": "Portoro d'Oro in a dark room - gold against a real black",
+      "grade": "gold",
+      "scale": 0.84,
+      "offset": 0.4,
+      "bump": [
+        0.24,
+        0.00035
+      ],
+      "sss": 0.7,
+      "coat": [
+        0.0,
+        0.0
+      ],
+      "rough": 1.0,
+      "crack": false,
+      "room": "noir"
+    },
+    "gemini-noir-wide": {
+      "title": "big figure in a dark room",
+      "grade": "deep",
+      "scale": 0.42,
+      "offset": 0.52,
+      "bump": [
+        0.2,
+        0.00045
+      ],
+      "sss": 0.65,
+      "coat": [
+        0.0,
+        0.0
+      ],
+      "rough": 1.0,
+      "crack": false,
+      "room": "noir"
+    },
+    "gemini-noir-fine": {
+      "title": "fine figure in a dark room",
+      "grade": "deep",
+      "scale": 1.75,
+      "offset": 0.3,
+      "bump": [
+        0.22,
+        0.00022
+      ],
+      "sss": 0.6,
+      "coat": [
+        0.0,
+        0.0
+      ],
+      "rough": 1.0,
+      "crack": false,
+      "room": "noir"
+    },
+    "gemini-screen": {
+      "title": "dark room, and the Frame standing in it as a real emitter",
+      "grade": "deep",
+      "scale": 0.84,
+      "offset": 0.4,
+      "bump": [
+        0.22,
+        0.00035
+      ],
+      "sss": 0.65,
+      "coat": [
+        0.0,
+        0.0
+      ],
+      "rough": 1.0,
+      "crack": false,
+      "room": "screen"
+    },
+    "gemini-screen-gold": {
+      "title": "the same, with the gold pushed",
+      "grade": "gold",
+      "scale": 0.84,
+      "offset": 0.4,
+      "bump": [
+        0.24,
+        0.00035
+      ],
+      "sss": 0.7,
+      "coat": [
+        0.0,
+        0.0
+      ],
+      "rough": 1.0,
+      "crack": false,
+      "room": "screen"
+    }
+  },
+  "added_stones": {},
+  "version": "912aa827"
+}

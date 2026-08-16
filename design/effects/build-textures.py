@@ -440,13 +440,24 @@ def build_paper() -> None:
 # ---------------------------------------------------------------------------
 
 def digest() -> str:
-    """One short hash over every file in portfolio/img/tex/, for the ?v= these
-    assets are fetched with. Same job and same reasoning as IMG_VERSION in
-    portfolio/index.html — a rung's filename does not change when its contents
-    do, and vercel.json caches this directory for a day."""
+    """One short hash over THIS script's own plates in portfolio/img/tex/, for the
+    ?v= these assets are fetched with. Same job and same reasoning as IMG_VERSION
+    in portfolio/index.html — a rung's filename does not change when its contents
+    do, and vercel.json caches this directory for a day.
+
+    IT USED TO HASH EVERY .webp IN THE DIRECTORY, and stopped when
+    design/plinth/build-slab.py started writing its plinth renders into the same
+    one. Two scripts, one directory: a digest over all of it would make this
+    file's version string change whenever the plinth was re-rendered, and the
+    plinth's change whenever the film was — a stamp that says nothing about the
+    asset it is stamped on, and a diff that looks like a texture changed when
+    none did. Each hashes its own.
+    """
     hashes = []
     for name in sorted(os.listdir(OUT_DIR)):
         if not name.endswith(".webp"):
+            continue
+        if not (name.startswith("film-") or name.startswith("paper-")):
             continue
         with open(os.path.join(OUT_DIR, name), "rb") as fh:
             hashes.append(hashlib.sha256(fh.read()).hexdigest())

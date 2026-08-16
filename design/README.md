@@ -30,6 +30,10 @@ design/
   variants.css       every variant, defined ONCE — the source of truth
   type-lab.html      interactive: flip variants on the real pages in a browser
   type-tuner.html    interactive: free-form size/spacing/font sliders + CSS export
+  layout-tuner.html  interactive: drag and resize every box in the Projects Panel
+                     over the real page — no sliders, a measuring instrument. The
+                     export says where each box ended up in pixels, in shares of
+                     --panel-w, and on the composition's own grid lines
   shots/             committed renders + index.html contact sheet
   plate/
     build-plate.py   develops a source into portfolio/img/<stem>-*.webp — the grade
@@ -44,6 +48,26 @@ design/
     build-textures.py    bakes the two Texturelabs plates into portfolio/img/tex/
     effects-tuner.html   interactive: every effect on chips, every number on a
                          slider, over the real page — CSS export, per theme
+  plinth/
+    build-slab.py        RENDERS the Projects Panel's marble plinth into the
+                         same directory — Blender, headless, one WebP per stone
+                         with the block's silhouette in the alpha. The camera is
+                         solved from the design render and the two lights are
+                         fitted to its measured profile; the stone is procedural,
+                         so nothing is downloaded and nothing is attributed.
+                         Needs Blender, not pip:
+                           blender -b -P design/plinth/build-slab.py -- all
+    slab.json            what that script says — camera, block, lights and the
+                         whole CANDIDATES table. WRITTEN BY IT, never by hand:
+                         it is how the tuner below avoids holding a second copy
+                         of constants that would drift out from under it.
+    plinth-tuner.html    interactive: which stone, over the real page. The four
+                         baked plates switch live and exactly — that half is a
+                         `data-marble` attribute and nothing else. The other half
+                         is a WebGL previz of the same material recipe, with
+                         every value on a slider, for asking what a change would
+                         do without paying a minute of Cycles for the answer;
+                         it exports a CANDIDATES entry to paste back.
   tools/
     render.mjs       Playwright: serves the repo, walks the matrix, writes shots/
     package.json     dev dependency (playwright) — not the site's
@@ -55,7 +79,13 @@ design/
 
 The **lab** compares finished candidates; the **tuner** is for arriving at one.
 The **plate tuner** does the same job for the three photographs in the page's
-corners.
+corners, and the **plinth tuner** for the stone the Projects Panel stands on —
+where it is worth knowing which half of the page you are reading. The baked
+plates are the real render and comparing them is exact; the previz beside them is
+an approximation of Cycles and says nothing reliable about where an individual
+vein lands. It is for the character of a stone — how much gold, how wide, how
+sharp — and its numbers want one confirming bake. The page says so twice, in the
+header comment and in the export itself.
 
 ## Why it exists
 
@@ -523,6 +553,68 @@ It needs the two XL JPEGs at the repo root; they are gitignored, and
 `portfolio/img/tex/README.md` says where they come from and how they are
 attributed. Paste the `TEX_VERSION` it prints over the `?v=` on `--fx-film-src`
 and `--fx-paper-src` in the same commit as the re-baked files.
+
+## Layout tuner
+
+The odd one out, and it is worth saying why before the how: every other tuner in
+here is a set of sliders over a number that already exists in the sheet. This one
+has no sliders and changes nothing. It is a measuring instrument — you drag the
+boxes of the Projects Panel around until the drawing is the one you want, and it
+tells you where you put them. What is written into `styles.css` afterwards is a
+separate, deliberate edit, made by hand, by somebody reading the export.
+
+```
+http://localhost:8000/design/layout-tuner.html
+```
+
+The real `/portfolio` in an iframe, same as the effects tuner and for the same
+reason: every length in the composition is derived — `--panel-w` is a `min()` of
+a width branch and a fit branch, the masthead is a share of that, row one is a
+stated height in two of those shares — so a mock-up with the numbers typed in
+would be a picture of the arithmetic rather than the arithmetic itself.
+
+Click any box to select it, drag it anywhere, drag a handle to resize. Shift
+locks a drag to one axis and keeps the proportions on a corner handle; arrows
+nudge by 1 and by 10 with shift; alt+arrows resize; delete puts one box back.
+`grid` draws the twelve columns and the row seam over the composition, `window`
+picks which viewport the whole thing is derived for, and `scope` widens the
+instrument from the panel to the whole page.
+
+Three things about it are decisions rather than details:
+
+- **A translate is not a layout, and the export says so itself.** Position is
+  applied as the standalone `translate` property, so a moved box paints somewhere
+  else and leaves its slot where it was — nothing reflows around it and two boxes
+  can be dragged over each other with neither pushing the other. That is right
+  for a composition whose parts are placed on a grid, which this one is, and
+  would be a lie in a column of text. `translate` and never `transform`, because
+  the Rail's names are rotated and the reflection is folded, and a transform
+  written over either deletes the thing that makes it what it is.
+- **Size is applied only on the axis whose handle you dragged.** The Frame's
+  height comes from `aspect-ratio`; a resize that stated both when you asked for
+  one would take the ratio out of the picture without mentioning it. Drag the
+  east handle and the height follows the ratio, which is what the composition
+  does.
+- **Nothing is read as a custom property.** `getComputedStyle` hands one back as
+  the tokens it was declared with, resolving nothing, and every number this needs
+  — `--panel-w`, the gutter, the column, row one's height — is declared as a
+  `min()` or a `calc()`. So all four come from used values instead:
+  `grid-template-columns`, `grid-template-rows` and `column-gap` off
+  `.panel-inner`, which resolve to the pixel track list the browser actually laid
+  out. The effects tuner reads properties directly and is right to; every row it
+  reads is a plain literal, and none of these are.
+
+The export gives every box in three units at once, because they answer different
+questions: pixels are what you dragged and are true only at the viewport named in
+the header; the share of `--panel-w` is the unit the `.panel` blocks are actually
+written in and so the column that transcribes; and the grid line numbers are for
+the boxes that are placed rather than sized — `.panel-stage` reads exactly 3.00
+and 13.00 there, which is `grid-area: 2 / 3 / 3 / 13` said back to you. An edge
+that comes out on line 3.02 is telling you it wants to be on the line.
+
+It also carries a `state:` comment at the foot of the export, so pasting an
+earlier one back into the box and pressing `import` restores the whole
+arrangement — the same device the type tuner's `tuner-state` is.
 
 ## Regenerating the shots
 

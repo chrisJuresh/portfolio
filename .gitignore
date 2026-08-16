@@ -65,13 +65,15 @@ photos/
 # blanket *.png would take those with it.
 /*.png
 
-# the two Texturelabs plates the effect stack is baked from — 9MB and 12MB, and
-# handed to design/effects/build-textures.py by path from the repo root, so they
-# land here the way an RW2 does. What ships is portfolio/img/tex/, which IS
-# committed. There is a licence reason as well as a size one: texturelabs.org
-# asks that the source files not be redistributed as textures, and a baked,
-# cut-down, blended derivative is a different thing from the original asset.
-# Attribution is in portfolio/img/tex/README.md.
+# the Texturelabs plates the textures are baked from — two for the effect stack
+# at 9MB and 12MB, and three marble slabs for the Projects Panel's plinth at
+# about 15MB each. All of them are handed to their build script by path from the
+# repo root, so they land here the way an RW2 does. What ships is
+# portfolio/img/tex/, which IS committed. There is a licence reason as well as a
+# size one: texturelabs.org asks that the source files not be redistributed as
+# textures, and a baked, cut-down, blended derivative is a different thing from
+# the original asset. Attribution is in portfolio/img/tex/README.md, and the two
+# scripts are design/effects/build-textures.py and design/plinth/build-marble.py.
 /Texturelabs_*.jpg
 
 # ...and the 2x2 lay-up build-textures.py writes beside the paper tile so its
@@ -82,3 +84,15 @@ portfolio/img/tex/paper-seam-proof.png
 # secrets — never commit
 .env
 .env.*
+
+# the AI-generated Nero Portoro plate design/plinth/build-portoro-maps.py takes
+# apart, and the maps it writes. Same rule as the Texturelabs plates above:
+# sources and intermediates stay out, the bake ships. Unlike those there is no
+# upstream to re-fetch this one from - see docs/agents/plinth-marble.md.
+/Gemini_Generated_Image_*.jpg
+design/plinth/maps/
+
+# per-candidate plinth shots from ender.mjs --stones. 1.4MB each and
+# regenerable in a minute; what is committed is the contact sheet built from
+# them, design/shots/plinth-stones.jpg.
+design/shots/*__stone-*.png

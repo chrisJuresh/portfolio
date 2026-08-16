@@ -34,16 +34,43 @@
  * recording carrying on up under the chrome is visibly not the render. The
  * recording is also the only one of the three that costs anything — a moving
  * backdrop is four passes a frame, forever, on a page that promises none. So the
- * static one ships. #68 puts marble behind the Frame and is where the first half
- * of that stops being true; the recording is a change to paintScene() and to
- * this paragraph, and the tuner's `panel · recording` chip is where to look at it
- * before making it.
+ * static one ships. #68 was expected to be where the first half of that stopped
+ * being true, and it is not: the marble it added stands the Frame UP rather than
+ * sitting behind it, so what is behind the titlebar is still the Frame's own
+ * fill and this still renders once. The recording carrying on up under the
+ * chrome remains a change to paintScene() and to this paragraph, and the tuner's
+ * `panel · recording` chip is where to look at it before making it.
+ *
+ * IT IS DRAWN TWICE NOW AND RENDERED ONCE. #68's reflection is a clone of the
+ * whole Frame lying in the stone, so there is a second titlebar on the page that
+ * has to be made of the same glass. It is not a second render: the picture this
+ * file produces is blitted into a 2D canvas on every other `.frame-bar` it can
+ * find — see paintEchoes at the foot of the file, and portfolio/panel-mirror.js
+ * for who makes the copy and when.
  */
 (function () {
   "use strict";
 
-  var bar = document.querySelector(".frame-bar");
+  var bar = document.querySelector(".panel-stage > .panel-frame > .frame-bar");
   if (!bar) return;
+
+  /* EVERY OTHER TITLEBAR ON THE PAGE, which today is exactly one: the copy of the
+     Frame that panel-mirror.js clones into the marble for the reflection. This
+     file does not know what a reflection is and does not need to — the rule is
+     that the material is rendered once and every titlebar gets the result, which
+     is true of a mirror and would be true of anything else that wanted a second
+     window later.
+     A CLONE ARRIVES WITH AN EMPTY CANVAS, AND THAT IS THE ONE THING cloneNode
+     CANNOT DO. A canvas element clones as a canvas; its pixels do not come with
+     it. So the copies are given a 2D context and the finished picture is blitted
+     into them below, rather than each running the four passes again — which
+     would be a second WebGL2 context held for the life of the page to draw the
+     picture that is already sitting in the first one. */
+  var echoes = [];
+  var allBars = document.querySelectorAll(".frame-bar");
+  for (var b = 0; b < allBars.length; b++) {
+    if (allBars[b] !== bar) echoes.push(allBars[b]);
+  }
 
   /* ---- the settled material ------------------------------------------------
      #66's export, verbatim, minus the rows that only ever drove the tuner (the
@@ -471,12 +498,24 @@
      rule sets `backdrop-filter: none` itself, so leaving it on would read the
      rung above's own suppression and call a blur-capable browser flat. */
   function setTier(shaderDrew) {
-    if (shaderDrew) { bar.dataset.glass = "webgl"; return "webgl"; }
-    bar.removeAttribute("data-glass");
-    var cs = getComputedStyle(bar);
-    var bf = cs.backdropFilter || cs.webkitBackdropFilter || "none";
-    var tier = bf && bf !== "none" ? "blur" : "flat";
+    var tier;
+    if (shaderDrew) {
+      tier = "webgl";
+    } else {
+      bar.removeAttribute("data-glass");
+      var cs = getComputedStyle(bar);
+      var bf = cs.backdropFilter || cs.webkitBackdropFilter || "none";
+      tier = bf && bf !== "none" ? "blur" : "flat";
+    }
     bar.dataset.glass = tier;
+    /* The copies are told the same thing, because the attribute is what turns
+       the two lower rungs OFF — a reflected titlebar left on `blur` under a
+       canvas would be drawing a backdrop-filter behind an opaque child, which is
+       the per-composite cost the webgl rule exists to remove. It is also the
+       honest reading: the reflection is made of whatever the Frame is made of,
+       and reporting anything else would make design/tools/render.mjs's probe a
+       liar about half the windows on the page. */
+    for (var i = 0; i < echoes.length; i++) echoes[i].dataset.glass = tier;
     return tier;
   }
 
@@ -813,6 +852,38 @@
      resize, to reach a conclusion that cannot change. */
   var dead = false;
 
+  /* The finished picture, copied onto the other titlebars. One 2D canvas each,
+     the same pixel size as the source, and a single drawImage — so the material
+     is identical rather than similar, and the copies cost a blit apiece at the
+     moments the real one is rendered and at no other time.
+     `getContext` is asked for on every call rather than cached: a canvas's
+     context is stable, so this is a lookup, and it is the only way the function
+     survives an echo whose canvas was removed by a failed attempt. */
+  function paintEchoes(ok) {
+    for (var i = 0; i < echoes.length; i++) {
+      var into = echoes[i].querySelector(".frame-glass");
+      if (!ok) {
+        if (into) into.parentNode.removeChild(into);
+        continue;
+      }
+      if (!into) {
+        into = document.createElement("canvas");
+        into.className = "frame-glass";
+        /* First child, for the reason the real one is: the chrome sits ON the
+           glass. The clone brought its own chrome with it. */
+        echoes[i].insertBefore(into, echoes[i].firstChild);
+      }
+      if (into.width !== canvas.width || into.height !== canvas.height) {
+        into.width = canvas.width;
+        into.height = canvas.height;
+      }
+      var ctx = into.getContext("2d");
+      if (!ctx) continue;
+      ctx.clearRect(0, 0, into.width, into.height);
+      ctx.drawImage(canvas, 0, 0);
+    }
+  }
+
   function attempt() {
     if (dead) return false;
     var ok = false;
@@ -826,6 +897,7 @@
       if (canvas.parentNode) canvas.parentNode.removeChild(canvas);
       setTier(false);
     }
+    paintEchoes(ok);
     return ok;
   }
 
@@ -864,5 +936,8 @@
     dead = true;
     if (canvas.parentNode) canvas.parentNode.removeChild(canvas);
     setTier(false);
+    /* The copies go down with it. A 2D canvas still holding the last blit would
+       leave the reflection showing a titlebar the Frame above it no longer has. */
+    paintEchoes(false);
   });
 })();
