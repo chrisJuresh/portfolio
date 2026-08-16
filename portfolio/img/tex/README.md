@@ -33,14 +33,19 @@ that runs along the block's front edge. `.panel-plinth` in
 [`../../styles.css`](../../styles.css) stretches it with
 `background-size: 100% 100%`, which is exact rather than approximate: the plate
 is baked at the aspect ratio that block's own numbers give, and `cover` would
-crop off either the top face or the ramp that takes the front face into black.
+crop off either the top face or the shadow the block's base turns under into.
 
 They are **not centred on mid-grey** and are not overlays. A plinth is a surface
 in the composition rather than a treatment of one, so each plate carries the
-light the design render measures — the top face ramping 30 → 78 → 53 and the
-front face 38 → 28 → out — and the stone only modulates it. What the marble is
-allowed to contribute is a bright tail of about 27 levels, which is what the
-render's own veining measures.
+light the design render measures — the top face ramping 36 → 79 → 64 and the
+front face 38 → 32 → 30, flat, until the last tenth turns it under — and the
+stone only modulates it. What the marble is allowed to contribute is a bright
+tail of about 27 levels, which is what the render's own veining measures.
+
+They are also **not grey**, which the first bake's were. Each source's own colour
+is thrown away and the render's plum-grey put back, identically to all four, so
+the candidates still differ only in their stone. `MARBLE_CAST` in the build
+script is the measurement and the reason.
 
 3000 px wide is one rung and not the first of a ladder: the slab is ~1800 CSS px
 on a 2560 display, so this is 1:1 at a 2× device ratio and 2:1 at 1×, and the
@@ -93,7 +98,8 @@ the Texturelabs licence, which permits commercial use and asks for attribution.
 What is committed here is a derivative of each: greyscaled, and then either
 band-passed, high-passed, re-levelled and cut down (the two effect plates, one of
 them cropped to a square and made to tile), or cut into two faces, perspective-
-warped, re-lit onto a measured ramp and given a specular edge (the marble). The
+warped, re-lit onto a measured ramp, given a specular edge and re-cast into the
+render's own plum-grey (the marble). The
 licence's restriction is on redistributing the source files *as textures*, which
 is the other reason the originals stay out of the repo rather than merely a size
 one.
