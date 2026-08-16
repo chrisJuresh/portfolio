@@ -3,9 +3,9 @@
 
     python design/plinth/build-marble.py [nero | stone162 | stone161 | stone160 | all]
 
-WHAT A PLATE IS. One WebP, about eighteen times wider than it is tall, holding
+WHAT A PLATE IS. One WebP, about thirteen times wider than it is tall, holding
 the whole of the plinth the browser Frame stands on: a receding TOP FACE across
-the top quarter and the FRONT FACE below it, joined at the specular line the
+the top fifth and the FRONT FACE below it, joined at the specular line the
 render draws along the block's front edge. `.panel-plinth` in portfolio/styles.css
 stretches it over the slab with `background-size: 100% 100%`, and every
 proportion below is derived from the numbers in that block, so the plate is baked
@@ -36,13 +36,26 @@ moves, which is the one thing that ticket says reads as broken immediately. The
 mirror is a copy of the real Frame, squashed onto this plate at runtime: see
 portfolio/panel-mirror.js and the .panel-mirror block in the stylesheet.
 
-EVERYTHING LEAVES HERE GREYSCALE, for the reason design/effects/build-textures.py
-gives about its own two plates and one more of its own. The render's plinth is
-neutral to within four levels — its front face means R 33.7, G 29.2, B 31.7 — so
-the colour carries nothing; and the four candidates are wildly different colours
-in the source (a slate blue, a warm beige, a near-black), which would make
-choosing between them a choice of cast rather than of stone. Grey puts all four
-on the same light, which is what makes them comparable at all.
+EVERY SOURCE'S OWN COLOUR IS THROWN AWAY AND THE RENDER'S IS PUT BACK, which is
+two decisions and they were run together once. The four candidates are wildly
+different colours in the source — a slate blue, a warm beige, a near-black — and
+carrying that through would make choosing between them a choice of cast rather
+than of stone, so each one is reduced to luminance the way the plates in
+design/effects/build-textures.py are.
+
+But the plate does not then LEAVE grey, and the first bake's doing so is a large
+part of why the plinth did not read as the render's. "Neutral to within four
+levels" is true and is the wrong test: four levels on a face that means 31 is a
+7% cast, and the block sits on a backdrop that is itself faintly green (8.7,
+10.6, 9.7), so the eye is reading the difference between the two and not the
+absolute. Measured over the whole block, both faces agree on it —
+
+    top face    R 76.1  G 68.6  B 73.9      cast 1.044, 0.942, 1.014
+    front face  R 33.6  G 29.1  B 31.6      cast 1.069, 0.927, 1.005
+
+— a plum-grey, warm against a cool ground. It goes on in save_webp, identically
+to all four, so the candidates are still being compared on their stone and only
+their stone: one light, one cast, four rocks.
 
 Deterministic: same inputs, byte-identical outputs. The procedural candidate is
 seeded, in the way design/plate/build-plate.py's grain is; the three photographic
@@ -72,7 +85,7 @@ import sys
 
 import numpy as np
 from PIL import Image
-from scipy.ndimage import gaussian_filter, map_coordinates
+from scipy.ndimage import gaussian_filter, map_coordinates, zoom
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 OUT_DIR = os.path.join(ROOT, "portfolio", "img", "tex")
@@ -110,27 +123,46 @@ PLATE_H = int(round(PLATE_W / PLATE_ASPECT))
 TOP_H = int(round(PLATE_H * TOP_FACE / (TOP_FACE + FRONT_FACE)))
 
 # ---------------------------------------------------------------------------
-# the light, and all six numbers are read off the design render
+# the light, and every number in it is read off the design render
 # ---------------------------------------------------------------------------
-# A vertical profile down x 1000-1100 of IMG_20260815_153956.jpg, which is under
-# the Frame and clear of both ends of the block:
+# A vertical profile down IMG_20260815_153956.jpg, MEANED ACROSS x 620-2380 —
+# the whole of the block that is under the Frame and clear of both ends, rather
+# than the single 100px column this was first read off. One column of a slab with
+# veins in it is a reading of whatever vein happens to cross it; the mean over
+# 1760 columns is a reading of the light.
 #
-#   y 1518   30    the contact line: the top face at its far edge
-#   y 1541   78    the peak, 74% of the way across the face
-#   y 1549   53    the front edge, and then it falls off it
+#   y 1518   36    the contact line: the top face at its far edge
+#   y 1543   79    the peak, 81% of the way across the face
+#   y 1549   64    the front edge...
+#   y 1551   40    ...and it falls off it in two pixels
 #   y 1553   38    the front face at its top
-#   y 1632   28    ...and at the bottom of the picture, still falling
+#   y 1560   32    ...which is where it settles
+#   y 1631   30    ...and where it still is at the bottom of the picture
 #
 # The render is not this repository's — see the .panel block in styles.css for
 # why it is not committed — so these are constants of the composition rather than
 # a derivation anybody can re-run. What they are not is chosen.
-TOP_BACK = 30.0
-TOP_PEAK = 78.0
-TOP_PEAK_AT = 0.74      # where the peak sits across the top face, 0 far, 1 near
-TOP_EDGE = 53.0
+TOP_BACK = 36.0
+TOP_PEAK = 79.0
+TOP_PEAK_AT = 0.81      # where the peak sits across the top face, 0 far, 1 near
+TOP_EDGE = 64.0
+
+# THE FRONT FACE IS FLAT, and this is the correction that matters most. It was
+# read as "28 at the bottom of the picture, still falling" and given a ramp that
+# spent the plate's bottom half going to black. It is not falling: meaned across
+# the block it is 32.0 at y 1560 and 29.7 at y 1631, which is 2 levels over 71 px
+# — a face lit evenly, on a block whose bottom the render never reaches.
+#
+# So the stone holds. What the plate has that the render does not is an END: the
+# composition here is centred with black under it, so the block cannot simply be
+# cut off. It is given a base instead — the last tenth turns under into shadow,
+# which is what the bottom of a solid block does. The 55% fade this replaces is
+# why the plinth read as a smear of light rather than as something to stand on.
 FRONT_TOP = 38.0
-FRONT_MID = 28.0        # at 4.52/7.00 of the front face — the render's own floor
-FRONT_BOTTOM = 2.0      # ...and the rest is the ramp into the Panel's black
+FRONT_SET = 32.0        # 9% down, where the falloff off the edge settles
+FRONT_MID = 30.0        # at 4.52/7.00 — the last of the face the render shows
+FRONT_BASE = 26.0       # ...and the drift the render's own 2 levels extrapolate to
+FRONT_BOTTOM = 5.0      # the block turns under, in the last tenth of the face
 
 # The block's left corner, which is the one vertical edge of it the render shows:
 # a bright line at x 400 peaking at 57 against a front face of 27 and a backdrop
@@ -138,6 +170,13 @@ FRONT_BOTTOM = 2.0      # ...and the rest is the ramp into the Panel's black
 # the slab at every size, and as levels ABOVE the face it lights.
 CORNER_W = 0.0022
 CORNER_GAIN = 30.0
+
+# The stone's colour, as a multiplier per channel on the luminance the whole of
+# the rest of this file works in. Both faces of the render's block agree on it to
+# within 2.5% — see the docstring for the two measurements and why the plate does
+# not stay grey. Normalised to a mean of 1, so applying it moves the hue and not
+# the exposure, and every number above stays a reading of the same picture.
+MARBLE_CAST = (1.0577, 0.9333, 1.0090)
 
 # How hard the top face recedes. The warp below maps the output row to a source
 # row through 1/y, so this is the ratio between the far edge's compression and
@@ -356,80 +395,149 @@ def fbm(rng: np.random.Generator, shape: tuple[int, int],
     `sigma` is a (rows, columns) PAIR and is meant to be used anisotropically:
     a field that is smooth down the slab and busy across it has level sets that
     run down the slab, and the level sets are what become the veins.
+
+    EACH OCTAVE IS DRAWN ON A GRID ITS OWN SIGMA CAN SEE, and then scaled up. A
+    gaussian of sigma s has nothing in it above 1/s, so drawing it on a grid many
+    times finer than s and then blurring away everything that was drawn is work
+    whose whole output is discarded — and gaussian_filter's cost grows with the
+    radius, so the widest octave was also the slowest. On this slab, one field at
+    (538, 64) went from 40 seconds to under one, which is the difference between
+    a bake that can be looked at and re-tuned and a bake that can be run once.
+    The field is a low-pass either way; drawing it at the resolution it occupies
+    and interpolating back is the same field to well under a level.
     """
     out = np.zeros(shape, dtype=np.float32)
     amp = 1.0
     s = np.asarray(sigma, dtype=np.float64)
     for _ in range(octaves):
-        n = rng.standard_normal(shape).astype(np.float32)
-        out += amp * gaussian_filter(n, sigma=tuple(s), mode="wrap")
+        # Six samples per sigma, which is three per standard deviation of the
+        # narrowest feature the octave has — comfortably above what interpolating
+        # it back up can tell apart, and never coarser than the field itself.
+        step = np.maximum(1.0, np.floor(s / 6.0))
+        small = tuple(int(max(2, np.ceil(shape[i] / step[i]))) for i in (0, 1))
+        n = rng.standard_normal(small).astype(np.float32)
+        f = gaussian_filter(n, sigma=tuple(s / step), mode="wrap")
+        if small != shape:
+            f = zoom(f, (shape[0] / small[0], shape[1] / small[1]),
+                     order=1, mode="nearest")[:shape[0], :shape[1]]
+            # zoom's output can land a row or column short of the target
+            f = np.pad(f, ((0, shape[0] - f.shape[0]), (0, shape[1] - f.shape[1])),
+                       mode="edge")
+        out += amp * f
         s = s * 0.5
         amp *= 0.5
     return out / out.std()
 
 
+# WHAT SCALE ANYTHING HERE HAS TO BE AT, and getting this wrong is what made the
+# first bake's veins read as smoke. Neither face uses the slab: `cut` takes a band
+# whose HEIGHT is the plate's width over the face's aspect, so the front face is
+# 4096x256 of these 4096x2731 and the top face is 4096x138. Everything is judged
+# through a window about 250 rows tall. A vein whose field has a vertical sigma of
+# 430 does not bend inside 250 rows — it comes through as a smooth vertical sweep,
+# which is the one shape that does not read as stone. Every sigma below is set
+# against the WINDOW and not against the slab.
+NERO_WINDOW = 256
+
 # The three vein sets, as (sigma, sharpness, band, amplitude). Read them as one
-# picture rather than as nine numbers:
+# picture rather than as twelve numbers:
 #
 #   sigma      how far apart the veins are, and how much they run down the slab
 #              rather than across it — the second figure is what sets the count
-#              across 4096 px, the first is what keeps them near-vertical
+#              across 4096 px, the first is what keeps them near-vertical, and it
+#              is a fraction of NERO_WINDOW so they visibly wander inside the band
+#              that is actually cut
 #   band       how wide a slice either side of the field's zero crossing counts
-#              as vein at all, in standard deviations. This is the sparsity
-#              control and it is the one that matters: at 1.9 nearly every pixel
-#              of the slab is inside some vein and the result is a plasma, at
-#              0.4 the stone has large calm areas between its veins, which is
-#              what marble is
-#   sharpness  the power the band is raised to, which thins what is left
+#              as vein at all, in standard deviations
+#   sharpness  the power that band is raised to. Read the two together: they are
+#              a SUPPORT and a FALLOFF, and it is the ratio between them that says
+#              whether a vein is a line or a glow. The first bake had 0.30 and 4,
+#              which is a narrow support with a soft profile — a fat blurred
+#              streak, and against a black ground a fat blurred streak is a halo.
+#              A wide support with a steep falloff (0.85 and 11) puts a thin
+#              bright core inside stone that shades away from it, which is what
+#              calcite in marble looks like
 #   amplitude  how bright, relative to the coarse set
 NERO_VEINS = [
-    ((430, 130), 4.0, 0.30, 1.00),      # the ones that cross the whole block
-    ((210, 62), 4.5, 0.24, 0.45),       # ...and what branches off them
-    ((100, 28), 5.0, 0.20, 0.18),       # ...and the hairlines
+    ((2.10, 64), 11.0, 0.85, 1.00),     # the ones that cross the whole block
+    ((1.05, 33), 10.0, 0.62, 0.40),     # ...and what branches off them
+    ((0.52, 17), 8.0, 0.48, 0.12),      # ...and the hairlines
 ]
+
+# HOW BRIGHT A VEIN IS ALLOWED TO GET, over a ground of about 15. The first bake
+# put 230 levels into a field that peaks near 1.6, so every vein core clipped at
+# 255 and came out as a flat white plateau with a soft shoulder either side of it
+# — an arc of light rather than a seam in a rock. Held under the ceiling, the core
+# keeps its shape and `detail()` below still normalises the tail to the render's.
+NERO_VEIN_GAIN = 88.0
+
+# ...and the stone BETWEEN the veins, which the first bake left flat. Detrended,
+# the render's front face is +6.9 at its 90th percentile against +26.3 at its
+# 99.5th: two thirds of its texture is not vein at all, it is a soft vertically
+# streaked drift over the whole face. Baked with a black ground under sparse
+# filaments that figure came out at +2.4, and a plinth with nothing happening
+# between its veins is a plinth that reads as a painted backdrop.
+NERO_STREAK = 7.0       # the streaks, at a sigma tall and narrow enough to survive
+NERO_DRIFT = 3.6        # ...and the slow light-and-dark across the whole slab
 
 
 def synth_nero() -> np.ndarray:
-    """A near-black slab with fine near-white veining.
+    """A dark slab with fine near-white veining over streaked stone.
 
     The veins are RIDGES of a domain-warped fBm, which is the standard way to get
     filaments out of a field that has none: `1 - |f|` turns every zero crossing
-    of a smooth field into a line, and warping the coordinates by two more fields
-    first is what stops those lines being smooth arcs. Three sets are laid up at
-    halving scale, because one set reads as a crack pattern rather than as stone
-    — real veining branches, and branching is what the finer sets are.
+    of a smooth field into a line, and warping the coordinates first is what stops
+    those lines being smooth arcs. Three sets are laid up at halving scale,
+    because one set reads as a crack pattern rather than as stone — real veining
+    branches, and branching is what the finer sets are.
 
-    ONE OCTAVE PER SET, and that is the whole difference between marble and
-    lightning. Every extra octave puts wiggle into the field at a finer scale,
-    and a wiggle in the field is a wiggle in its level set: at five octaves the
-    veins come back as a mat of filaments with no calm stone anywhere between
-    them. The branching is supposed to come from the three scales, not from
-    roughening one.
+    THE WARP IS AT TWO SCALES, and the second one is what marble has that smoke
+    does not. A slow warp alone bends a vein into a long even curve; the render's
+    veins change direction two or three times across the face and meet each other
+    at angles. That is a warp at roughly the vein spacing, and it goes on top of
+    the slow one rather than instead of it — a fast warp alone would only roughen
+    the edges of a line that was still travelling straight.
+
+    ONE OCTAVE PER VEIN SET, still. Every extra octave puts wiggle into the field
+    at a finer scale, and a wiggle in the field is a wiggle in its level set: at
+    five octaves the veins come back as a mat of filaments with no calm stone
+    anywhere between them. The kinks are supposed to come from the warp and the
+    branching from the three scales, not from roughening one field.
     """
     rng = np.random.default_rng(NERO_SEED)
     w, h = NERO_SIZE
     shape = (h, w)
+    win = float(NERO_WINDOW)
 
-    # The warp. Large and slow: it bends the veins rather than roughening them.
-    wx = fbm(rng, shape, (110, 110), 3) * 34.0
-    wy = fbm(rng, shape, (110, 110), 3) * 34.0
+    # The warp, slow and fast. The slow one bends whole veins; the fast one kinks
+    # them. Both are anisotropic in the same direction the veins run, so a kink
+    # displaces a vein sideways rather than chopping it into segments.
+    wx = fbm(rng, shape, (1.20 * win, 110), 3) * 34.0
+    wy = fbm(rng, shape, (1.20 * win, 110), 3) * 34.0
+    wx += fbm(rng, shape, (0.28 * win, 26), 2) * 11.0
+    wy += fbm(rng, shape, (0.28 * win, 26), 2) * 11.0
     yy, xx = np.mgrid[0:h, 0:w].astype(np.float32)
     coords = np.stack([np.clip(yy + wy, 0, h - 1), np.clip(xx + wx, 0, w - 1)])
 
     veins = np.zeros(shape, dtype=np.float32)
-    for sigma, sharpness, band, amp in NERO_VEINS:
-        f = map_coordinates(fbm(rng, shape, sigma, 1), coords,
+    for (sy, sx), sharpness, band, amp in NERO_VEINS:
+        f = map_coordinates(fbm(rng, shape, (sy * win, sx), 1), coords,
                             order=1, mode="reflect")
         r = 1.0 - np.abs(f / (np.abs(f).std() * band))
         veins += amp * np.clip(r, 0.0, 1.0) ** sharpness
 
-    # The ground: near-black with a slow mottle in it, so the stone is not a flat
-    # fill with lines drawn on it.
-    ground = 13.0 + 7.0 * fbm(rng, shape, (90, 90), 3)
+    # The ground. Not a flat fill: a slow drift across the slab with a much finer
+    # vertical streak through it, warped by the same field the veins are so the
+    # stone shades along its own grain instead of across it.
+    ground = 15.0
+    ground = ground + NERO_DRIFT * map_coordinates(
+        fbm(rng, shape, (1.4 * win, 260), 3), coords, order=1, mode="reflect")
+    ground = ground + NERO_STREAK * map_coordinates(
+        fbm(rng, shape, (0.22 * win, 15), 2), coords, order=1, mode="reflect")
     # ...and the crystal, which is what stops the veins looking painted on.
-    grain = 3.0 * fbm(rng, shape, (1.1, 1.1), 2)
+    grain = 2.0 * fbm(rng, shape, (1.1, 1.1), 2)
 
-    return np.clip(ground + 230.0 * veins + grain, 0.0, 255.0)
+    return np.clip(ground + NERO_VEIN_GAIN * veins + grain, 0.0, 255.0)
 
 
 # ---------------------------------------------------------------------------
@@ -462,7 +570,8 @@ def build(key: str) -> None:
     # ---- the front face: square-on, because it is ---------------------------
     front = resize(cut(slab, spec["front"], PLATE_W / float(front_h)),
                    PLATE_W, front_h)
-    front = ramp([(0.0, FRONT_TOP), (0.646, FRONT_MID), (1.0, FRONT_BOTTOM)],
+    front = ramp([(0.0, FRONT_TOP), (0.09, FRONT_SET), (0.646, FRONT_MID),
+                  (0.90, FRONT_BASE), (1.0, FRONT_BOTTOM)],
                  front_h)[:, None] + detail(front, MARBLE_PEAK_FRONT * gain)
 
     plate = np.concatenate([top, front], axis=0)
@@ -486,10 +595,11 @@ def build(key: str) -> None:
 def save_webp(a: np.ndarray, name: str) -> str:
     os.makedirs(OUT_DIR, exist_ok=True)
     path = os.path.join(OUT_DIR, name)
-    im = Image.fromarray(np.round(a).astype(np.uint8), mode="L")
-    # Same note as build-textures.py: WebP has no greyscale mode and stores L as
-    # three identical channels for about nothing.
-    im.convert("RGB").save(path, "WEBP", quality=MARBLE_QUALITY, method=6)
+    # The one place the plate stops being a luminance. WebP has no greyscale mode
+    # and would have stored three identical channels anyway, so the cast is free.
+    rgb = a[:, :, None] * np.asarray(MARBLE_CAST, dtype=np.float32)[None, None, :]
+    im = Image.fromarray(np.round(np.clip(rgb, 0, 255)).astype(np.uint8), mode="RGB")
+    im.save(path, "WEBP", quality=MARBLE_QUALITY, method=6)
     print("  %-24s %4dx%-4d  %6.1f KB  q%d" %
           (name, im.width, im.height, os.path.getsize(path) / 1024.0,
            MARBLE_QUALITY))

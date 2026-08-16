@@ -2384,12 +2384,15 @@ body::after {
               the visible marble in front of the Frame, and the whole of what the
               reflection has to lie down in.
        front  the render's own front face is 83 px, 4.52% — but the picture is
-              CUT OFF at 1632 and the stone is still at level 28 there, so that
+              CUT OFF at 1632 and the stone is still at level 30 there, so that
               is a floor and not a height. 7% is what is drawn, and the extra is
-              spent on a ramp that reaches the Panel's own black before the plate
-              ends: a block whose bottom nobody can see should run out of light
-              rather than stop on a line. It is baked into the plate, so moving
-              this without re-baking moves where the light stops. */
+              the rest of a block: the face holds the render's own level through
+              it and turns under into shadow in the last tenth, which is what the
+              bottom of a solid thing does. It used to spend that extra on a fade
+              into the Panel's black, and a slab that fades out is a slab with no
+              body — see THE FRONT FACE IS FLAT in design/plinth/build-marble.py.
+              It is baked into the plate, so moving this without re-baking moves
+              where the block ends. */
   --panel-plinth-top:   0.0169;
   --panel-plinth-front: 0.0700;
   /* ...and the two lengths that fall out of them, so no rule below multiplies by
@@ -2405,7 +2408,7 @@ body::after {
      reason the textures' is — vercel.json caches /portfolio/img/ for a day, so a
      re-baked plate under an unchanged URL is served stale for up to 24 hours
      while being right on localhost. */
-  --panel-marble: url("img/tex/marble-nero.webp?v=68fed2c6");
+  --panel-marble: url("img/tex/marble-nero.webp?v=6d0a67ec");
 
   position: relative;
   display: grid;
@@ -2637,7 +2640,7 @@ body::after {
    exactly this box's aspect ratio — 1.112940 : 0.0869 of the Frame's width, which
    design/plinth/build-marble.py computes from the same three numbers the .panel
    block states — so stretching it to the box is an identity, and `cover` would
-   crop off either the top face or the ramp that takes the front face into black.
+   crop off either the top face or the shadow the block's base turns under into.
    The two can only disagree if one of the three moves without the other, which is
    what the note on --panel-plinth-top is there to prevent.
 
@@ -2666,9 +2669,9 @@ body::after {
    design/plinth/build-marble.py. Switched by an attribute on the section so
    #69's tuner needs no stylesheet of its own — and so that a plate that is not
    in the repository yet fails as a missing image rather than as a missing rule. */
-.panel[data-marble="stone162"] { --panel-marble: url("img/tex/marble-stone162.webp?v=68fed2c6"); }
-.panel[data-marble="stone161"] { --panel-marble: url("img/tex/marble-stone161.webp?v=68fed2c6"); }
-.panel[data-marble="stone160"] { --panel-marble: url("img/tex/marble-stone160.webp?v=68fed2c6"); }
+.panel[data-marble="stone162"] { --panel-marble: url("img/tex/marble-stone162.webp?v=6d0a67ec"); }
+.panel[data-marble="stone161"] { --panel-marble: url("img/tex/marble-stone161.webp?v=6d0a67ec"); }
+.panel[data-marble="stone160"] { --panel-marble: url("img/tex/marble-stone160.webp?v=6d0a67ec"); }
 
 /* ---- the reflection ---------------------------------------------------------
    THE FRAME AGAIN, UPSIDE DOWN AND LYING IN THE STONE. Not a picture of it: the
