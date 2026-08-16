@@ -286,15 +286,15 @@ def build_maps(src, out_dir=OUT_DIR, size=0, square=False):
     stone's maps landing on top of another's. `out_dir` is maps/ for the stone
     this file was written for and maps/<name>/ for every stone added since.
 
-    WHY `square` EXISTS AND WHY IT IS OFF HERE. build-slab.py projects these with
-    a BOX projection and a UNIFORM mapping scale, so one tile of the image covers
-    a 1/scale by 1/scale SQUARE of model space whatever the image's own aspect
-    is. A 2:1 photograph is therefore squeezed to half its height on the block.
-    The stone this file was written for is 2814x1536 and every number in its
-    PHOTO_CANDIDATES entry was fitted with that squeeze in place, so turning it
-    on here would silently change all six gemini-* stones. A NEW photograph has
-    nothing fitted to it yet, so add-stone.py crops it square by default and what
-    you see in the picture is what lands on the plinth.
+    `square` IS A COMPOSITIONAL CROP AND NOTHING ELSE NOW. It used to be the
+    workaround for build-slab.py projecting these with a BOX projection and a
+    UNIFORM mapping scale, which laid one tile of the image over a square of
+    model space whatever the image's own aspect was and squeezed a 2:1 photograph
+    to half its height on the block. Cropping the input square hid that by giving
+    the projection the aspect it had assumed. build_photo_material() now scales
+    its two V axes by the source's own aspect instead, so the stretch is gone at
+    the projection and every aspect arrives on the stone undistorted. Leave this
+    off unless you want the centre of the picture and not the whole of it.
     """
     if not os.path.isfile(src):
         raise SystemExit(
@@ -318,11 +318,21 @@ def build_maps(src, out_dir=OUT_DIR, size=0, square=False):
 
     # ---- seamless across U, and only across U -----------------------------
     # The block is 1.19 units wide and at every scale worth using that is more
-    # than one tile ACROSS, so a vertical seam would land somewhere on the
-    # front face. It is never more than one tile DOWN - the front face is 0.07
-    # units tall and the top face 0.30 deep - so the vertical wrap is reachable
-    # by offsetting the sampled window instead, which costs nothing and blends
-    # nothing. Hence one axis, not two.
+    # than one tile ACROSS, so a vertical seam would land somewhere on the front
+    # face. Down, the block shows only 0.37 units - 0.07 of front face and 0.30
+    # of top - so the wrap was reachable by offsetting the sampled window
+    # instead, which costs nothing and blends nothing. Hence one axis, not two.
+    #
+    # THAT IS NO LONGER UNCONDITIONAL. build_photo_material() scales the V axes
+    # by the source's aspect now, so V advances aspect times faster than it used
+    # to and a wide source at a fine scale can cross a whole tile: 0.37 * scale *
+    # aspect > 1, which for this 1.83:1 stone means any scale over about 1.48.
+    # build-slab.py says so per stone when it happens. On the two gemini-*-fine
+    # stones it does, and the wrap lands around row 23 of 269 - the far strip of
+    # the top face, seen at about 3 degrees, where the albedo is swamped by the
+    # reflection - so it does not measure above the row-to-row noise. If a source
+    # whose top and bottom edges disagree ever makes it visible, the fix is to
+    # cross-fade V here as well, and to pay the smeared band for it.
     band = int(w * 0.10)
     ramp = smoothstep(np.linspace(0.0, 1.0, band, dtype=np.float32), 0.0, 1.0)
     blend = srgb.copy()

@@ -766,16 +766,22 @@ from the same photograph%s:
 # A photo stone is a grade, a scale, a window and a surface model.
 #
 #   grade    which basecolor-*.png, so which of build-portoro-maps.py's GRADES
-#   scale    tiles per model unit, and a model unit IS a Frame width, so the
-#            block is 1.19 of them. scale 0.84 lays exactly one slab across the
-#            plinth; 0.42 crops into half a slab and the figure doubles in size;
-#            1.75 lays two down and the veining goes fine and jewel-like. This
-#            is the single strongest control in the table and it is not a
-#            quality setting - it is how big the rock is.
+#   scale    tiles ACROSS per model unit, and a model unit IS a Frame width, so
+#            the block is 1.19 of them. scale 0.84 lays exactly one slab across
+#            the plinth; 0.42 crops into half a slab and the figure doubles in
+#            size; 1.75 lays two down and the veining goes fine and jewel-like.
+#            This is the single strongest control in the table and it is not a
+#            quality setting - it is how big the rock is. Across only: the two
+#            V axes get this times the source's aspect, so the rock stays the
+#            same shape it is in the photograph - see build_photo_material().
 #   offset   where in the slab the block was cut from. Only a sliver is ever
 #            seen (the front face is 0.07 units tall and the top face 0.30 deep,
 #            foreshortened about eight to one), so this decides which veins land
 #            on the plinth at all, and it matters roughly as much as the grade.
+#            It is in TILES and it is applied AFTER the scale, so the arris sits
+#            at exactly this fraction down the image whatever the scale is: the
+#            aspect correction left every value here anchored where it was and
+#            only made the window it opens 1.83x taller.
 #   bump     (strength, distance) for the height map, AND IT IS THE MOST
 #            DELICATE NUMBER IN THE TABLE, for a reason that is not obvious
 #            until it is rendered. The top face is seen at 7.8 degrees. At that
@@ -1401,6 +1407,36 @@ def build_material(key):
     return mat
 
 
+def map_path(spec, name):
+    """Where one of a stone's maps lives, or the instruction to go make it.
+
+    maps/ for the stones this file was written for, maps/<name>/ for one added
+    from a photograph of your own - see load_added_stones().
+    """
+    sub = spec.get("maps")
+    path = os.path.join(MAPS_DIR, sub, name) if sub else os.path.join(MAPS_DIR, name)
+    if not os.path.isfile(path):
+        if sub:
+            src = spec.get("src")
+            sys.exit(MISSING_ADDED_MAPS
+                     % (path, sub, (" (%s)" % src) if src else "", sub))
+        sys.exit(MISSING_MAPS % path)
+    return path
+
+
+def map_aspect(spec):
+    """The source photograph's width over its height, read off the base colour.
+
+    All four of a stone's maps come out of one image, so one of them answers for
+    all four, and photo_map() reloads it with `check_existing` rather than
+    opening a second copy.
+    """
+    img = bpy.data.images.load(
+        map_path(spec, "basecolor-%s.png" % spec["grade"]), check_existing=True)
+    w, h = img.size
+    return (w / float(h)) if h else 1.0
+
+
 def photo_map(tree, co, name, colorspace, x, y, spec):
     """One of build-portoro-maps.py's maps, box-projected onto the block.
 
@@ -1418,17 +1454,7 @@ def photo_map(tree, co, name, colorspace, x, y, spec):
     usual consequence of forgetting: a roughness map read as sRGB is silently
     de-gamma'd, so 0.055 arrives as 0.004 and the stone becomes a mirror.
     """
-    # maps/ for the stones this file was written for, maps/<name>/ for one added
-    # from a photograph of your own - see load_added_stones().
-    sub = spec.get("maps")
-    path = os.path.join(MAPS_DIR, sub, name) if sub else os.path.join(MAPS_DIR, name)
-    if not os.path.isfile(path):
-        if sub:
-            src = spec.get("src")
-            sys.exit(MISSING_ADDED_MAPS
-                     % (path, sub, (" (%s)" % src) if src else "", sub))
-        sys.exit(MISSING_MAPS % path)
-    img = bpy.data.images.load(path, check_existing=True)
+    img = bpy.data.images.load(map_path(spec, name), check_existing=True)
     img.colorspace_settings.name = colorspace
     n = tree.nodes.new("ShaderNodeTexImage")
     n.location = (x, y)
@@ -1438,9 +1464,12 @@ def photo_map(tree, co, name, colorspace, x, y, spec):
     # wide, and a hard switch across it draws a bright line along the arris.
     n.projection_blend = 0.15
     n.extension = 'REPEAT'
-    # Cubic, because the front face magnifies the source about 1.6x — 0.07 model
-    # units of texture stretched over 177 rows of plate — and Linear at that
-    # ratio makes the hairlines look like stair-steps.
+    # Cubic. With the mapping's V axes corrected for the source's aspect the
+    # front face sits at about 1.07x — 165 source rows over 177 rows of plate —
+    # so this is no longer covering for a 2x magnification, and the hairlines are
+    # sharp rather than interpolated. It is kept because the scale in a stone's
+    # entry is free to magnify past native and Linear stair-steps as soon as it
+    # does.
     n.interpolation = 'Cubic'
     link(tree, co[0], co[1], n, "Vector")
     return n
@@ -1467,11 +1496,36 @@ def build_photo_material(key):
     # what keeps the two faces agreeing at the arris — see photo_map(). Putting
     # a different number in each is the one edit here that silently breaks the
     # thing this material is built around.
+    #
+    # THE SCALE IS NOT UNIFORM, AND MUST NOT BE. A box projection lays the image's
+    # [0,1] over one tile of MODEL space per axis and knows nothing about the
+    # image's own aspect, so a uniform scale squeezes a 1.83:1 photograph into a
+    # square footprint: 2814 px across 1/s units of width against 1536 px across
+    # 1/s units of height, which is 2365 px per unit one way and 1291 the other.
+    # The stone comes out stretched vertically by exactly the source's aspect.
+    #
+    # Multiplying the V axes by that aspect equalises the two densities — H * s*A
+    # == W * s for A = W/H, whichever way round the picture is — and it is the
+    # SHARPNESS fix as much as the shape one, because the stretch is what starved
+    # the front face of source rows. 0.070024 units over 177 rows of plate reads
+    # 90 source rows uniform and 165 corrected, against a 1.07x magnification
+    # across. Anisotropic 1.07/1.96 becomes isotropic 1.07 — near enough native.
+    #
+    # It stays on Y AND Z together, so the arris rule is untouched: continuity
+    # wants the two V axes to agree with each other, not with U.
     s, off = spec["scale"], spec["offset"]
+    v = s * map_aspect(spec)
     m = tree.nodes.new("ShaderNodeMapping")
     m.location = (-1600, 0)
-    m.inputs["Scale"].default_value = (s, s, s)
+    m.inputs["Scale"].default_value = (s, v, v)
     m.inputs["Location"].default_value = (0.5, off, off)
+    # The vertical wrap is never blended (build-portoro-maps.py cross-fades U and
+    # only U), which is sound only while under one tile of V is ever visible. The
+    # block shows DEPTH + HEIGHT of it, so a very wide source is the one that
+    # would bring the seam onto the stone.
+    if (DEPTH + HEIGHT) * v > 1.0:
+        print("  ! %s: %.2f tiles of V visible, unblended seam will show"
+              % (key, (DEPTH + HEIGHT) * v))
     link(tree, coord, "Object", m, "Vector")
     co = (m, "Vector")
 
