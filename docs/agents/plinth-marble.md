@@ -480,15 +480,32 @@ colour. It stays a gate for any change that points the stylesheet at a new stone
   crop of its photograph than the one it was picked as — same stone, same scale,
   the window moved half a block-height. Worth a second look at any stone chosen
   before it, `gemini-noir` included.
-- **`plinth-tuner.html` is stale and now more so.** It reimplements the
-  procedural material in GLSL and cannot preview a photo-backed stone at all.
-  `slab.json` carries `photo_candidates` so the tuner can list them and say it
-  cannot draw them. Issue #69 covers tuner work. **The studio does not replace
-  it and does not try to**: the tuner previews a PROCEDURAL stone without
+- **`plinth-tuner.html`'s PREVIZ is stale; the rest of the page is not.** The
+  page is now the Panel's variant tuner and covers all four of the things #57
+  left to be chosen by eye — the stone, the subheading's wording, what sits
+  behind the titlebar's glass, and the glass itself. Three of those four are
+  driven over the real `/portfolio` in the iframe and are exact: the stone is a
+  `data-marble` attribute, the wording is the two text nodes `.panel-sub` already
+  carries, and the glass is `portfolio/frame-glass.js`'s own uniforms moved
+  through the seam at the foot of that file. What is stale is only the GLSL
+  material previz, which still draws the pre-bedding level sets and cannot
+  preview a photo-backed stone at all — `slab.json` carries `photo_candidates`
+  so the tuner can list them and say it cannot draw them. **The studio does not
+  replace it and does not try to**: the tuner previews a PROCEDURAL stone without
   rendering it, which is the thing it is for, and the studio bakes a
   PHOTOGRAPHIC one and shows the render. Neither can do the other's job — a
   photograph cannot be previewed in GLSL without the photograph, and a
   procedural stone has no photograph to drop on the studio.
+- **The three behind-the-glass treatments are in the shipping file, and `dark`
+  ships.** `paintScene()` in `frame-glass.js` branches three ways and the default
+  is what #66 settled, so the page still renders once and nothing a reader does
+  can move it. Measured off the glass's own canvas at `--dark 1`: `dark`
+  (44,38,49), which is the design render's chrome body to the integer, `marble`
+  (27,19,28), `clip` (65,65,85). **The first two are the SAME colour at the top
+  of the page** — both tokens are a `color-mix` against the page's own ground, so
+  they only separate as `--dark` crosses. Choosing between them on what can be
+  seen is choosing nothing; `clip` is the only one that is visibly not the render,
+  and the only one that costs a redraw per frame forever.
 - **The top face is still the weak face.** In the dark room it is dark, which is
   correct for polished black stone in a dark room, but it leans entirely on the
   CSS reflection for interest.

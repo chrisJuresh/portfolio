@@ -61,13 +61,24 @@ design/
                          whole CANDIDATES table. WRITTEN BY IT, never by hand:
                          it is how the tuner below avoids holding a second copy
                          of constants that would drift out from under it.
-    plinth-tuner.html    interactive: which stone, over the real page. The four
-                         baked plates switch live and exactly — that half is a
-                         `data-marble` attribute and nothing else. The other half
-                         is a WebGL previz of the same material recipe, with
-                         every value on a slider, for asking what a change would
-                         do without paying a minute of Cycles for the answer;
-                         it exports a CANDIDATES entry to paste back.
+    plinth-tuner.html    interactive: the Panel's four by-eye decisions on one
+                         page, all of them switched over the real /portfolio in
+                         an iframe. Which STONE (a `data-marble` attribute and
+                         nothing else, so comparing the baked plates is exact),
+                         which of #57's five WORDINGS the subheading carries (the
+                         two text nodes .panel-sub already has), WHAT SITS BEHIND
+                         the titlebar's glass (three treatments, frame-glass.js's
+                         own), and the GLASS itself — twenty-one uniforms on
+                         sliders, moved through the seam at the foot of that file
+                         so the material being judged is the material that ships.
+                         Its one approximate half is a WebGL previz of the
+                         procedural stone's recipe, for asking what a change
+                         would do without paying a minute of Cycles; it is stale
+                         against the current material and says so. Exports a
+                         CANDIDATES entry, the styles.css rule and the bake for
+                         the stone, and for the other three the markup line, what
+                         shipping a treatment would take, and a `glass-state v2`
+                         blob that imports straight into glass-tuner.html.
     plinth-studio.py     interactive, and the only tool in design/ that is a
     plinth-studio.html   SERVER rather than a page: photograph in, stone on the
                          site out, with no command in between. Drop an image,
@@ -85,13 +96,24 @@ design/
 
 The **lab** compares finished candidates; the **tuner** is for arriving at one.
 The **plate tuner** does the same job for the three photographs in the page's
-corners, and the **plinth tuner** for the stone the Projects Panel stands on —
-where it is worth knowing which half of the page you are reading. The baked
-plates are the real render and comparing them is exact; the previz beside them is
-an approximation of Cycles and says nothing reliable about where an individual
-vein lands. It is for the character of a stone — how much gold, how wide, how
-sharp — and its numbers want one confirming bake. The page says so twice, in the
-header comment and in the export itself.
+corners, and the **plinth tuner** for the whole of the Projects Panel — the
+stone it stands on, the wording of its subheading, what sits behind its glass,
+and what that glass is made of. Three of those four are the real page driven in
+an iframe, so what is being looked at is what would ship. The fourth is where it
+is worth knowing which half of the page you are reading: the baked plates are the
+real render and comparing them is exact, while the previz beside them is an
+approximation of Cycles and says nothing reliable about where an individual vein
+lands. It is for the character of a stone — how much gold, how wide, how sharp —
+and its numbers want one confirming bake. The page says so twice, in the header
+comment and in the export itself.
+
+The **glass tuner** is the other half of the titlebar's story and is not replaced
+by any of that. It draws the four passes itself, so it can step through them one
+at a time and stand the bar over a checkerboard or a photograph — things the real
+page has no way to do. The plinth tuner cannot: it moves the shipping page's
+uniforms and asks the shipping page to render. They share the vocabulary and the
+export format on purpose, so a `glass-state v2` blob taken over the real
+composition pastes into the glass tuner's own import box and back again.
 
 ## Why it exists
 
