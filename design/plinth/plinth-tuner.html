@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Marble tuner — the Panel's plinth</title>
+  <title>Panel tuner — the marble, the wording, the glass</title>
   <style>
     :root { color-scheme: light dark; --ui: #1a1917; --ui-bg: #fcfbf8; --ui-panel: #f5f2ea; --ui-line: #d6d0c4; --ui-mut: #6f6a5d; --ui-hit: #8a5a2b; }
     @media (prefers-color-scheme: dark) {
@@ -104,6 +104,12 @@
     .row input[type="range"] { width: 100%; min-width: 0; accent-color: var(--ui-hit); }
     .row output { font: 11px/1 ui-monospace, Consolas, monospace; text-align: right; }
     .row input[type="color"] { width: 100%; height: 1.5rem; padding: 0; border: 1px solid var(--ui-line); background: transparent; }
+    .row input[type="checkbox"] { justify-self: start; width: 1rem; height: 1rem; accent-color: var(--ui-hit); }
+    /* The three treatments, one chip apart — design/glass-tuner.html's own
+       control for the same question, so the two pages ask it the same way and a
+       decision made in one is recognisable in the other. */
+    .chips { display: flex; flex-wrap: wrap; gap: 0.25rem; }
+    .chips button { padding: 0.16rem 0.42rem; font-size: 11px; }
     .vhead { display: flex; align-items: center; gap: 0.35rem; margin: 0.5rem 0 0.15rem; }
     .vhead span { flex: 1 1 auto; font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ui-mut); }
     .vhead button { padding: 0.1rem 0.4rem; font-size: 11px; }
@@ -139,6 +145,25 @@
     <span class="badge" id="count" data-n="0">0 moved</span>
     <button id="reset">reset stone</button>
   </div>
+  <!-- THE OTHER TWO PICKS, on the strip that never scrolls, for the same reason
+       the stone picker is up here: both are judged by FLICKING between candidates
+       with the composition in view, and a control that has to be scrolled to
+       cannot be flicked. The glass is not here — it is twenty sliders and a
+       question about a material rather than a choice between five spellings. -->
+  <div class="top">
+    <strong>subheading</strong>
+    <select id="subpick" aria-label="subheading wording"
+            title="The five wordings #57 lists. Focus this and the arrow keys walk them,
+which is the whole of choosing one: the type is set in the real face at the real
+size with the Frame biting the real amount out of the second line."></select>
+    <span class="ms" id="subpos"></span>
+    <strong>behind the glass</strong>
+    <div class="chips" id="behind"></div>
+    <span class="grow"></span>
+    <span class="ms" id="glassms"></span>
+    <span class="badge" id="glasscount" data-n="0">0 moved</span>
+    <button id="glassreset">reset glass</button>
+  </div>
   <p class="warn" id="warn"></p>
 
   <div class="wrap">
@@ -155,6 +180,10 @@
             <h3>styles.css + the bake <button id="copy-css">copy</button></h3>
             <textarea id="out-css" spellcheck="false" readonly style="height:6.5rem"></textarea>
           </div>
+          <div class="out">
+            <h3>the wording, the backdrop, the glass <button id="copy-panel">copy</button></h3>
+            <textarea id="out-panel" spellcheck="false" readonly style="height:13rem"></textarea>
+          </div>
         </div>
       </div>
     </aside>
@@ -167,11 +196,25 @@
 
 <script>
 /* ============================================================================
-   Marble tuner — which stone the Projects Panel's plinth is cut from, and what
-   that stone is made of.
+   Panel tuner — the four things about the Projects Panel that were left to be
+   chosen by eye: which stone the plinth is cut from and what that stone is made
+   of, which of #57's five wordings the subheading carries, what sits behind the
+   titlebar's glass, and what the glass itself is made of.
+
+   ALL FOUR ARE SWITCHED OVER THE REAL COMPOSITION, which is the whole design of
+   this page and not a convenience. /portfolio is in an iframe, same origin, and
+   every control below reaches into it: the stone is a `data-marble` attribute,
+   the wording is two text nodes, and the glass is portfolio/frame-glass.js's own
+   uniforms moved through the seam at the foot of that file. So the Frame is the
+   real Frame at the real width, the type is the real face with the real amount
+   bitten out of its second line by the real window, and the reflection lying in
+   the marble is the real reflection. Nothing here draws a picture of the Panel to
+   decide something about the Panel — except the marble previz, which says so
+   loudly, twice, below.
 
    TWO HALVES, AND THE FIRST IS EXACT WHILE THE SECOND IS NOT. Knowing which is
-   which is the whole of using this page honestly.
+   which is the whole of using this page honestly. It is a statement about THE
+   STONE; the wording and the glass have no approximate half at all.
 
    * BAKED PLATE is the real thing. design/plinth/build-slab.py has already put a
      block in front of Cycles for each stone in its CANDIDATES table, and what
@@ -210,6 +253,22 @@
    holding its own literals goes on showing the stone the script used to render,
    and both halves look right on their own while it does. design/plate/
    plate-tuner.html reads plate-source.json for the same reason.
+
+   THE GLASS'S CONSTANTS COME FROM THE PAGE, for exactly that reason one step
+   further on. `window.panelGlass.defaults` is what frame-glass.js is actually
+   set to, handed over rather than restated here, so "moved from what ships" is
+   measured against what ships and cannot go stale. What this file owns is the
+   BOUNDS and the TOOLTIPS — a question about what is worth dragging through,
+   which frame-glass.js has no opinion about — the same split VEIN_ROWS lives
+   under. The bounds themselves are design/glass-tuner.html's, so a number
+   settled in one page is reachable in the other.
+
+   AND THE GLASS IS NOT DRAWN HERE. design/glass-tuner.html carries the four
+   passes and this page deliberately does not carry them a second time: it moves
+   the shipping page's uniforms and asks the shipping page to render. That is
+   also why the glass half is silent on a browser that fell to the CSS rung —
+   there is no shader to drag, and it says so rather than moving sliders at
+   nothing.
    ========================================================================= */
 (function () {
   "use strict";
@@ -232,7 +291,13 @@
   var fhEl = document.getElementById("fh");
   var outPy = document.getElementById("out-py");
   var outCss = document.getElementById("out-css");
+  var outPanel = document.getElementById("out-panel");
   var themeBtn = document.getElementById("theme");
+  var subPickEl = document.getElementById("subpick");
+  var subPosEl = document.getElementById("subpos");
+  var behindEl = document.getElementById("behind");
+  var glassCountEl = document.getElementById("glasscount");
+  var glassMsEl = document.getElementById("glassms");
 
   var slab = null;           /* what build-slab.py says */
   var doc = null, win = null, panel = null;
@@ -245,6 +310,15 @@
   var live = null;           /* the working copy the sliders drag */
   var ready = false;
   var closed = {};           /* which control groups are folded */
+  var sub = 0;               /* which wording, an index into SUBS */
+  var shippedSub = -1;       /* which one the page arrived carrying, or -1 */
+  var subChosen = false;     /* did `sub` come from a stored session, or is it a default */
+  var behind = "dark";       /* what sits behind the glass */
+  var glass = {};            /* the glass values moved off what ships — sparse */
+  var glassDefaults = null;  /* window.panelGlass.defaults, once the frame is up */
+  var stoneEl = null;        /* the stone's own controls, rebuilt per stone */
+  var glassEl = null;        /* the glass's, built once */
+  var clipLoop = 0;          /* the rAF that keeps a MOVING backdrop moving */
 
   function warn(msg) { warnEl.textContent = msg || ""; }
 
@@ -331,7 +405,168 @@
       tip: "How much this set adds to the height field, so how much it stands proud.\nThe first set is the height field; the others are added onto it by this." }
   ];
 
-  /* ---- boot -------------------------------------------------------------- */
+  /* ---- the wording --------------------------------------------------------
+     #57's five candidates, each three words containing PHOTOS or GALLERY and
+     describing the whole project rather than one part of it.
+
+     TWO AUTHORED LINES AND NOT A STRING LEFT TO WRAP, because that is what the
+     markup is: `.panel-sub` carries two spans and `.panel-sub span` is `display:
+     block`, so where the break falls is part of the composition. The split is the
+     same for all five — the distinguishing word alone on line one, `photo gallery`
+     on line two — and that is the point rather than a shortcut: line two is the
+     one the Frame bites the bottom quarter out of, so the word that tells the
+     five apart has to be on the line that is still whole. index.html says the
+     same thing where it picks one.
+
+     WRITTEN IN SENTENCE CASE, as the markup writes them, because `.panel-sub` is
+     `text-transform: uppercase` with `case` on. Typing them in capitals here
+     would export markup that differs from every other string in the file and
+     would render identically, which is the worst of both.
+
+     Nothing is uppercased, hyphenated or re-split by this page. What is switched
+     is exactly what would be pasted. */
+  var SUBS = [
+    { a: "Stacking",     b: "photo gallery" },
+    { a: "Immutable",    b: "photo gallery" },
+    { a: "Infinite",     b: "photo gallery" },
+    { a: "Deduplicated", b: "photo gallery" },
+    { a: "Self-stacking", b: "photo gallery" }
+  ];
+
+  /* ---- what sits behind the glass -----------------------------------------
+     THE THREE TREATMENTS #57 ASKS FOR, and they are frame-glass.js's own three
+     rather than a drawing of them — see the seam at the foot of that file. The
+     names are design/glass-tuner.html's chips' names, so the question is asked in
+     one vocabulary across both pages and a `glass-state` export moves between
+     them.
+
+     TWO OF THE THREE ARE NEARLY THE SAME PICTURE, and saying so here is more
+     useful than letting it be discovered by flicking. Measured off the glass's own
+     canvas, down the middle of the titlebar, with the crossing complete:
+
+       dark    (44,38,49)  the design render's measured chrome body, exactly
+       marble  (27,19,28)  the same tint over the page's own black instead
+       clip    (65,65,85)  the recording, and it is plainly a photograph
+
+     So `marble` is seventeen levels of one channel away from what ships, and #68
+     did not change that: the marble stands the Frame UP, it does not sit behind
+     its titlebar. Only `clip` is visibly not the design render, and only `clip`
+     costs anything.
+
+     AND THE FIRST TWO COLLAPSE INTO EACH OTHER AT THE TOP OF THE PAGE. Both
+     --panel-bg and --panel-frame-fill are a color-mix against the page's own
+     ground driven by --dark, so at --dark 0 they are the same colour to the
+     integer and these two chips are the same picture. The three above are at
+     --dark 1. If flicking between the first two shows nothing at all, that is the
+     thing to check -- and it is arrival.js doing its job, not this page failing
+     at one. */
+  var BEHIND = [
+    { k: "dark", label: "panel · dark", ship: true,
+      tip: "The Frame's own fill behind the titlebar, rounded into the window's top corners.\nWhat #66 settled and what ships. Renders once and never again." },
+    { k: "marble", label: "panel · marble",
+      tip: "The page's backdrop showing through the titlebar instead - the window's body\nstarting BELOW the chrome rather than behind it.\nToday's Panel is flat black behind the Frame, so the whole of the difference is the\nglass's body coming out at (27,19,28) rather than the render's own (44,38,49):\nseventeen levels of one channel, and only once --dark has crossed. At the top of the\npage both tokens mix to the same colour and this chip and the last are one picture.\nWorth choosing on principle, not on what you can see." },
+    { k: "clip", label: "panel · recording",
+      tip: "The recording carrying on up under the chrome. The only one of the three that is\nvisibly not the design render, and the only one that costs: the backdrop moves, so\nthe four passes run EVERY FRAME for as long as the page is open. Nothing else on\nthis Panel renders per frame.\nSelecting it starts that loop here so the cost is a number you can read beside the\npicture rather than a warning you have to believe." }
+  ];
+
+  /* ---- the glass ----------------------------------------------------------
+     EVERY ROW HERE IS A UNIFORM frame-glass.js ALREADY CARRIES. Nothing is added
+     and nothing is invented: the keys are its GLASS keys, spelled the way
+     design/glass-tuner.html spells them, so what this exports imports there.
+
+     THE DEFAULTS ARE NOT IN THIS TABLE, deliberately — they are read off
+     `window.panelGlass.defaults` at boot. See the header: a tuner that restates
+     the settled values goes on calling a moved control default the first time
+     somebody edits the shipping page.
+
+     EVERY LENGTH IS A CSS PX AT A FRAME 1200 WIDE. frame-glass.js scales them by
+     the Frame's actual width on the way into the shader, so a bevel dragged here
+     holds its look at every window size — and a number copied out of here means
+     nothing without that reference, which is why the export carries it.
+
+     WHAT IS NOT HERE, and why. The Frame's width, the titlebar's height and the
+     corner radius are MEASURED off the laid-out element by frame-glass.js rather
+     than set, so there is nothing to drag: they are the window's, and the window
+     is the composition's. `shapeRoundness` is the exception and is here, because
+     it is the one shape number that was fitted rather than measured — #66's
+     2.2, all but a circular arc, against the studio's 5. */
+  var GLASS_GROUPS = [
+    { title: "glass — refraction", key: "gref", rows: [
+      { k: "refThickness", label: "thickness", min: 1, max: 80, step: 0.01, dp: 2,
+        tip: "How far in from the edge the bending reaches, in CSS px at a Frame 1200 wide. Past it\nthe glass is flat and only blurs. THE SINGLE MOST VISIBLE CONTROL — it is the width of\nthe bevel. 10 is a quarter of the strip's height.\nNot settled against the design render: it is near-black behind the render's titlebar and\na bend in nothing is invisible. This is the control `panel · recording` is worth\nselecting for." },
+      { k: "refFactor", label: "refraction", min: 1, max: 4, step: 0.01, dp: 2,
+        tip: "The index of refraction, so how hard the bevel bends what is behind it." },
+      { k: "refDispersion", label: "dispersion", min: 0, max: 50, step: 0.01, dp: 2,
+        tip: "How far the three colour channels' indices are pulled apart — the fringe on the bevel.\nAlso invisible over a flat backdrop." },
+      { k: "refFresnelRange", label: "fresnel size", min: 0, max: 100, step: 0.01, dp: 2,
+        tip: "How wide the rim the Fresnel term lights is." },
+      { k: "refFresnelHardness", label: "fresnel hardness", min: 0, max: 100, step: 0.01, dp: 2,
+        tip: "How sharply that rim falls off into the body of the glass." },
+      { k: "refFresnelFactor", label: "fresnel intensity", min: 0, max: 100, step: 0.01, dp: 2,
+        tip: "How bright it is. The render's TOP rim peaks at 66 of 255 over a body of 44, which is\nwhat 11.5 solves — and it is the number the CSS rung's first inset ring restates as\n0.104 of white." }
+    ] },
+    { title: "glass — glare", key: "gglare", rows: [
+      { k: "glareRange", label: "glare size", min: 0, max: 100, step: 0.01, dp: 2,
+        tip: "How wide the angular highlight is." },
+      { k: "glareHardness", label: "glare hardness", min: 0, max: 100, step: 0.01, dp: 2,
+        tip: "How sharply it falls off." },
+      { k: "glareFactor", label: "glare intensity", min: 0, max: 120, step: 0.01, dp: 2,
+        tip: "How bright. With the Fresnel ring under it this is the pair that has to reach the\nrender's side rims of 85 and 90 — the CSS rung writes the same pair as 0.104 then 0.132,\nwhich is what compositing two rings on one pixel comes to." },
+      { k: "glareConvergence", label: "convergence", min: 0, max: 100, step: 0.01, dp: 2,
+        tip: "How tightly the glare gathers toward the angle below." },
+      { k: "glareOppositeFactor", label: "opposite side", min: 0, max: 100, step: 0.01, dp: 2,
+        tip: "How much of it lands on the far side as well. 100 is symmetric." },
+      { k: "glareAngle", label: "angle", min: -180, max: 180, step: 0.01, dp: 2,
+        tip: "Which way the glare points, in degrees. THE SHADER DOUBLES IT, so 90 lights the two\nENDS of the strip and not its top — which is why the render's side rims are the bright\nones and why the CSS rung puts its second ring on the left and right edges." }
+    ] },
+    { title: "glass — surface", key: "gsurf", rows: [
+      { k: "blurRadius", label: "blur radius", min: 1, max: 200, step: 1, dp: 0,
+        tip: "Gaussian radius on the backdrop the glass reads, in device px — the frosting.\nCosts two passes of (2r+1) taps per pixel; 200 is genuinely expensive, and under\n`panel · recording` you are paying it every frame.\nA blur of a flat colour is that colour, so this does nothing at all under the other two\ntreatments. 24 is what leaves the vault's toolbar readable as shapes and not as words." },
+      { k: "blurEdge", label: "blur the edge", bool: true,
+        tip: "On: the bevel reads the blurred backdrop like the rest of the glass.\nOff: it fades from the sharp backdrop at the very edge to blurred further in, which keeps\nthe refracted detail legible." },
+      { k: "tintColor", label: "tint", hex: true,
+        tip: "The glass's own colour, sRGB — this one is a plain hex the shader takes as it is, unlike\nthe stone's colours above, which are linear.\n#fab2ff, and it is not a chosen colour: the render's chrome body is (44,38,49) over a fill\nof #131518, and this at 0.108 solves all three channels to the integer." },
+      { k: "tintAlpha", label: "tint amount", min: 0, max: 1, step: 0.005, dp: 3,
+        tip: "How much of that colour, at the 0.8 the shader multiplies it by.\nTHE RENDER FIXES THE PRODUCT, NOT THE SPLIT: every pair of colour and amount that\nmultiplies out the same is equally faithful to it. 0.135 is the lowest amount that reaches\nthe render's value, which leaves the most of the backdrop showing — and the backdrop is\nwhat the three treatments are there to be judged on." }
+    ] },
+    { title: "glass — shadow", key: "gshadow", rows: [
+      { k: "shadowExpand", label: "expand", min: 2, max: 100, step: 0.01, dp: 2,
+        tip: "How far the drop shadow spreads from the shape. It is drawn into the backdrop before the\nblur, so the glass refracts its own shadow, which is what reads as thickness.\nInert while intensity is 0, which is where the render puts it." },
+      { k: "shadowFactor", label: "intensity", min: 0, max: 100, step: 0.01, dp: 2,
+        tip: "How dark the shadow is. 0 removes it, and that is what ships.\nBEFORE RAISING IT, READ frame-glass.js's OWN WARNING: the background pass spreads the\nshadow symmetrically about the WHOLE doubled shape, and the shape is twice the titlebar\nwith half of it off the canvas — so this gives no shadow under the bar and a phantom band\na strip-height below it. It has to be clipped inside that pass first." },
+      { k: "shadowX", label: "offset x", min: -20, max: 20, step: 0.1, dp: 1,
+        tip: "Shadow offset across, in CSS px at a Frame 1200 wide. Negated on the way into the shader." },
+      { k: "shadowY", label: "offset y", min: -20, max: 20, step: 0.1, dp: 1,
+        tip: "Shadow offset down. Also negated." }
+    ] },
+    { title: "glass — shape", key: "gshape", rows: [
+      { k: "shapeRoundness", label: "superellipse", min: 2, max: 7, step: 0.01, dp: 2,
+        tip: "The exponent of the corner's superellipse. 2 is a circular arc; the studio's default is 5.\nTHE ONE SHAPE NUMBER THAT WAS FITTED RATHER THAN MEASURED: 2.2 is what the render's two top\ncorners solve to within half a pixel of rms over 32 sampled columns, and #66 calls it the\nmost surprising number it produced.\nThe Frame's width, the bar's height and the corner radius are not here because\nframe-glass.js reads them off the laid-out window rather than being told." }
+    ] }
+  ];
+
+  var GLASS_ROWS = [];
+  GLASS_GROUPS.forEach(function (g) { g.rows.forEach(function (r) { GLASS_ROWS.push(r); }); });
+
+  /* ---- boot ----------------------------------------------------------------
+     THE OTHER THREE DECISIONS DO NOT WAIT FOR slab.json AND MUST NOT. Only the
+     stone needs the sidecar; the wording is two strings and the glass reads its
+     own defaults off the page. Built here rather than inside the fetch so that a
+     missing or unparseable slab.json leaves the wording and the glass working —
+     inside the .then they would have gone down with the marble, and the two
+     halves that need no Blender at all would have been unreachable until somebody
+     ran Blender. What is lost with the sidecar is the SESSION: restore() needs the
+     stone table to know which stone to put back, so a run without slab.json opens
+     at the defaults and remembers nothing. */
+  buildSubPicker();
+  buildBehind();
+  /* Two hosts inside one scroller, in this order and made once: the stone's
+     controls are rebuilt every time a stone is picked and the glass's are not, so
+     they cannot share a parent that gets emptied. */
+  stoneEl = document.createElement("div");
+  glassEl = document.createElement("div");
+  controlsEl.appendChild(stoneEl);
+  controlsEl.appendChild(glassEl);
 
   fetch(SIDECAR, { cache: "no-store" }).then(function (r) {
     if (!r.ok) throw new Error(r.status + " " + r.statusText);
@@ -381,6 +616,13 @@
     restore();
     buildControls();
     apply();
+    /* The frame's load event and this promise race, and either can win. Both ends
+       apply all four decisions, so whichever arrives second is what the page ends
+       up wearing — and neither leaves a picker saying one thing while the page
+       shows another. Both are no-ops before the frame is up: applySub() has no
+       document to write into and applyGlass() has no seam to reach. */
+    applySub();
+    applyGlass(true);
     sizeFrame();
     checkShaderCurrent();
   }).catch(function (e) {
@@ -402,6 +644,9 @@
   frame.addEventListener("load", function () {
     doc = frame.contentDocument;
     win = frame.contentWindow;
+    /* The old document's rAF callbacks died with it, so any id held here is a loop
+       that is not running. Cleared before anything can read it as one that is. */
+    clipLoop = 0;
     panel = doc.getElementById("projects");
     if (!panel) {
       warn("no #projects in the frame — /portfolio has no Panel to stand a plinth under.");
@@ -409,6 +654,16 @@
     }
     theme = doc.documentElement.getAttribute("data-theme") === "dark" ? "dark" : "light";
     themeBtn.textContent = "theme: " + theme;
+    /* WHICH WORDING THE PAGE ARRIVED CARRYING, read rather than remembered, so
+       "what ships" in the picker and the export is whatever index.html actually
+       says today and not what it said when this table was written. A wording that
+       is no longer one of the five reads back as -1, and the picker says so. */
+    readShippedSub();
+    /* The glass's controls cannot be built before this: their defaults are the
+       shipping page's own, and the shipping page is what has just loaded. Built
+       once and then left alone — a reload re-reads the defaults and rebuilds, in
+       case frame-glass.js changed under an open tuner. */
+    buildGlass();
     /* The plinth is at the foot of the page and the page is several screens
        long, so a tuner that did not scroll would open on the masthead every
        time. Instantly, not smoothly: a half-second glide on every reload is a
@@ -420,6 +675,14 @@
        re-attached on every load because it is a new document each time. */
     doc.addEventListener("keydown", keys);
     apply();
+    applySub();
+    /* Last, and with a redraw asked for: the glass is the only one of the four
+       that costs a render, and the page has just drawn itself once with what
+       ships. */
+    applyGlass(true);
+    /* Because this handler is where the shipped wording is finally known, and boot
+       has already written the blob without it. */
+    save();
   });
 
   /* ---- the contact strip ------------------------------------------------- */
@@ -531,9 +794,9 @@
           : "These are read-only — change them in PHOTO_CANDIDATES in build-slab.py and re-bake:")
       + "\n\n    blender -b -P design/plinth/build-slab.py -- " + pick;
     n.style.whiteSpace = "pre-wrap";
-    controlsEl.appendChild(n);
+    stoneEl.appendChild(n);
 
-    group("photograph", "photo", function (b) {
+    group(stoneEl, "photograph", "photo", function (b) {
       PHOTO_ROWS.forEach(function (r) {
         var v = base.photo[r[0]];
         if (v === undefined || v === null) return;
@@ -775,7 +1038,9 @@
 
   /* ---- controls ---------------------------------------------------------- */
 
-  function group(title, key, fill) {
+  /* `into` rather than always the scroller, because there are two hosts in it now
+     and only one of them is emptied when a stone is picked. */
+  function group(into, title, key, fill) {
     var head = document.createElement("button");
     head.className = "ghead";
     head.type = "button";
@@ -792,8 +1057,8 @@
     head.appendChild(caret);
     head.appendChild(document.createTextNode(" " + title));
     head.addEventListener("click", function () { closed[key] = !closed[key]; paint(); save(); });
-    controlsEl.appendChild(head);
-    controlsEl.appendChild(body);
+    into.appendChild(head);
+    into.appendChild(body);
     paint();
     fill(body);
     return body;
@@ -801,8 +1066,17 @@
 
   /* One slider, its number, and the highlight that says it has been moved off
      what build-slab.py says. `get`/`set` rather than a property name, because
-     the same row shape drives the ground colour, a vein's eight values and the
-     two calibration gains, which live in three different places. */
+     the same row shape drives the ground colour, a vein's eight values, the two
+     calibration gains and now the glass's twenty uniforms, which live in five
+     different places.
+
+     FOUR KINDS OF CONTROL AND ONE COMPARISON. `spec.colour` is a LINEAR rgb
+     triple, which is what Cycles is handed and why the swatch looks darker than
+     the number; `spec.hex` is a plain sRGB string, which is what the shader's tint
+     is and must not go through the transfer functions; `spec.bool` is a checkbox;
+     anything else is a slider. All four decide "moved" by comparing against `was`
+     as a string or a number, so the highlight means the same thing in every
+     group. */
   function row(parent, spec, get, set, was) {
     var el = document.createElement("div");
     el.className = "row";
@@ -812,23 +1086,53 @@
     el.appendChild(lab);
 
     var out = document.createElement("output");
+    /* What a move is answered by. The stone's rows repaint the plinth; the glass's
+       ask the shipping page for four passes, which is a different and much more
+       expensive thing to do — so which one is a property of the row rather than a
+       branch in here. */
+    var changed = spec.onchange || apply;
     function moved() {
       if (was === undefined) return false;
-      if (spec.colour) return String(get()) !== String(was);
+      if (spec.colour || spec.hex || spec.bool) return String(get()) !== String(was);
       return Math.abs(get() - was) > 1e-9;
     }
     function paint() {
       el.classList.toggle("moved", moved());
-      if (!spec.colour) out.textContent = fmt(get(), spec.dp);
+      if (!spec.colour && !spec.hex && !spec.bool) out.textContent = fmt(get(), spec.dp);
     }
 
-    if (spec.colour) {
+    if (spec.bool) {
+      var cb = document.createElement("input");
+      cb.type = "checkbox";
+      cb.checked = !!get();
+      cb.addEventListener("change", function () {
+        set(cb.checked);
+        paint(); changed(); save();
+      });
+      el.appendChild(cb);
+      out.textContent = "";
+      el.appendChild(out);
+      paint();
+    } else if (spec.hex) {
+      var hx = document.createElement("input");
+      hx.type = "color";
+      hx.value = get();
+      hx.addEventListener("input", function () {
+        set(hx.value);
+        paint(); changed(); save();
+      });
+      el.appendChild(hx);
+      out.textContent = "";
+      out.style.fontSize = "10px";
+      el.appendChild(out);
+      paint();
+    } else if (spec.colour) {
       var ci = document.createElement("input");
       ci.type = "color";
       ci.value = linToHex(get());
       ci.addEventListener("input", function () {
         set(hexToLin(ci.value));
-        paint(); apply(); save();
+        paint(); changed(); save();
       });
       el.appendChild(ci);
       out.textContent = "";
@@ -844,7 +1148,7 @@
       r.value = get();
       r.addEventListener("input", function () {
         set(parseFloat(r.value));
-        paint(); apply(); save();
+        paint(); changed(); save();
       });
       el.appendChild(r);
       el.appendChild(out);
@@ -855,7 +1159,7 @@
   }
 
   function buildControls() {
-    controlsEl.textContent = "";
+    stoneEl.textContent = "";
     if (!live) return;
     var base = stones[pick];
     if (base.photo) { photoControls(base); return; }
@@ -866,9 +1170,9 @@
       ? "`" + pick + "` has a plate. Flip to baked plate above to see the real render; " +
         "the previz below is for asking what a change would do."
       : "`" + pick + "` has no plate yet. Everything you see is the previz.";
-    controlsEl.appendChild(n);
+    stoneEl.appendChild(n);
 
-    group("ground", "ground", function (b) {
+    group(stoneEl, "ground", "ground", function (b) {
       row(b, { label: "ground colour", colour: true,
                tip: "The rock between the veins, in LINEAR light. Near-black for three of the four:\nthe Panel's own ground is very dark and a plinth lighter than the page it stands\non stops reading as something the Frame rests on." },
           function () { return live.ground; },
@@ -882,7 +1186,7 @@
     });
 
     live.veins.forEach(function (v, i) {
-      group("vein set " + (i + 1), "v" + i, function (b) {
+      group(stoneEl, "vein set " + (i + 1), "v" + i, function (b) {
         var h = document.createElement("div");
         h.className = "vhead";
         var s = document.createElement("span");
@@ -927,10 +1231,10 @@
                          Math.max(0, last[7] - 0.1)]);
         buildControls(); apply(); save();
       });
-      controlsEl.appendChild(add);
+      stoneEl.appendChild(add);
     }
 
-    group("previz calibration", "cal", function (b) {
+    group(stoneEl, "previz calibration", "cal", function (b) {
       var p = document.createElement("p");
       p.className = "note";
       p.style.margin = "0 0 0.3rem";
@@ -950,7 +1254,7 @@
   function fieldIndex(k) { return slab.vein_fields.indexOf(k); }
 
   function countMoved() {
-    var n = controlsEl.querySelectorAll(".row.moved").length;
+    var n = stoneEl.querySelectorAll(".row.moved").length;
     var base = stones[pick];
     if (base.photo) { countEl.textContent = "read-only"; countEl.dataset.n = 0; return; }
     if (live.veins.length !== base.veins.length) n += 1;
@@ -1018,6 +1322,283 @@
     countMoved();
     writeExport();
   }
+
+  /* ======================================================================= */
+  /*  the wording                                                            */
+  /* ======================================================================= */
+
+  function buildSubPicker() {
+    subPickEl.textContent = "";
+    SUBS.forEach(function (s, i) {
+      var o = document.createElement("option");
+      o.value = String(i);
+      /* Shown as the page draws it, because the page draws it in capitals and
+         choosing between five spellings by eye means seeing the spelling. The
+         export carries the sentence case that actually gets pasted. */
+      o.textContent = (s.a + " " + s.b).toUpperCase();
+      subPickEl.appendChild(o);
+    });
+  }
+
+  /* WHICH WORDING THE PAGE IS CARRYING, matched against the five rather than
+     assumed to be one of them. A page that has moved on to a sixth reads back as
+     -1 and the picker says `page differs` instead of quietly calling one of these
+     five the shipped one — which is the whole value of reading it: this table and
+     index.html are two places one decision is written, and only one of them ships.
+     NOT A warn(), on purpose. The banner is one line and the previz's staleness
+     notice is already competing for it; the readout beside the picker is always
+     visible and the export says it at length. */
+  function readShippedSub() {
+    shippedSub = -1;
+    if (!doc) return;
+    var spans = doc.querySelectorAll(".panel-sub span");
+    if (spans.length < 2) return;
+    var a = spans[0].textContent.trim(), b = spans[1].textContent.trim();
+    SUBS.forEach(function (s, i) { if (s.a === a && s.b === b) shippedSub = i; });
+    /* A TUNER OPENS ON WHAT SHIPS. Without this the first slot in the table wins
+       every fresh session, so the page's own wording is replaced by another one
+       before anybody has chosen anything — and the first thing you compare against
+       is a candidate rather than the thing you are trying to beat. A stored session
+       is a choice already made and is left alone. */
+    if (!subChosen && shippedSub >= 0) sub = shippedSub;
+  }
+
+  function markSub() {
+    subPickEl.value = String(sub);
+    subPosEl.textContent = (sub + 1) + " / " + SUBS.length +
+      (shippedSub < 0 ? " · page differs" : shippedSub === sub ? " · ships" : " · moved");
+  }
+
+  /* TWO TEXT NODES AND NOTHING ELSE. Not a stylesheet override, not a class, not
+     a second copy of the markup: the same two spans index.html carries, with the
+     same two strings that would be pasted into it. So the Frame bites the real
+     amount out of the real face at the real size, and the occlusion — which is
+     the only reason the split matters — is the page's own arithmetic rather than
+     an imitation of it. */
+  function applySub() {
+    markSub();
+    if (doc) {
+      var spans = doc.querySelectorAll(".panel-sub span");
+      if (spans.length >= 2) {
+        spans[0].textContent = SUBS[sub].a;
+        spans[1].textContent = SUBS[sub].b;
+      }
+    }
+    writePanel();
+  }
+
+  subPickEl.addEventListener("change", function () {
+    sub = parseInt(subPickEl.value, 10) || 0;
+    subChosen = true;
+    applySub();
+    save();
+  });
+
+  /* ======================================================================= */
+  /*  what sits behind the glass, and what the glass is made of              */
+  /* ======================================================================= */
+
+  /* The seam at the foot of portfolio/frame-glass.js, or null on a browser that
+     never got a shader — in which case there is nothing here to drag and the
+     panel below says so rather than pretending. */
+  function glassAPI() { return win && win.panelGlass ? win.panelGlass : null; }
+
+  function shippedBehind() {
+    var api = glassAPI();
+    return api && api.shipped ? api.shipped.backdrop : "dark";
+  }
+
+  function buildBehind() {
+    behindEl.textContent = "";
+    BEHIND.forEach(function (t) {
+      var b = document.createElement("button");
+      b.type = "button";
+      b.dataset.behind = t.k;
+      b.textContent = t.label;
+      b.title = t.tip;
+      b.addEventListener("click", function () {
+        behind = t.k;
+        markBehind();
+        applyGlass(true);
+        save();
+      });
+      behindEl.appendChild(b);
+    });
+    markBehind();
+  }
+
+  function markBehind() {
+    Array.prototype.forEach.call(behindEl.querySelectorAll("button"), function (b) {
+      b.setAttribute("aria-pressed", b.dataset.behind === behind ? "true" : "false");
+    });
+  }
+
+  /* A MOVING BACKDROP IS THE ONE THING THAT MAKES THE SCENE DIRTY EVERY FRAME,
+     and this loop is in the tuner rather than in frame-glass.js because it is the
+     COST BEING JUDGED and not a feature being shipped. Selecting `panel ·
+     recording` starts it and the per-frame time appears beside the chips, so what
+     that treatment would cost is a number read off the real page rather than a
+     warning to be taken on trust. Every other treatment is static and the loop
+     stops.
+     THE rAF IS THE IFRAME'S, so a reload cancels it for free — its callbacks die
+     with the document. `clipLoop` is reset on load for that reason: a stale id
+     from the last document would otherwise look like a loop that is still going
+     and stop a new one being started. */
+  function markClipLoop() {
+    if (behind === "clip" && glassAPI()) {
+      /* Cleared as the loop starts, not when its first frame lands: the readout
+         would otherwise go on showing the last one-shot `N ms` until the first
+         tick, which is a figure for a different question. */
+      if (!clipLoop) { glassMsEl.textContent = ""; clipLoop = win.requestAnimationFrame(tickClip); }
+    } else if (clipLoop) {
+      if (win && win.cancelAnimationFrame) win.cancelAnimationFrame(clipLoop);
+      clipLoop = 0;
+      glassMsEl.textContent = "";
+    }
+  }
+
+  function tickClip() {
+    clipLoop = 0;
+    var api = glassAPI();
+    if (behind !== "clip" || !api) { glassMsEl.textContent = ""; return; }
+    var t0 = performance.now();
+    api.draw();
+    glassMsEl.textContent = (performance.now() - t0).toFixed(1) + " ms/frame";
+    clipLoop = win.requestAnimationFrame(tickClip);
+  }
+
+  /* What a control is set to: the override if one has been dragged, otherwise what
+     the shipping page carries. `glass` is deliberately SPARSE — it holds only what
+     has been moved, so a value settled in frame-glass.js and then edited there
+     arrives here as the new default instead of being shadowed by a stored copy of
+     the old one. Same reason restore() refuses to revive a stone the table no
+     longer has. */
+  function glassValue(k) {
+    if (Object.prototype.hasOwnProperty.call(glass, k)) return glass[k];
+    return glassDefaults ? glassDefaults[k] : undefined;
+  }
+
+  function buildGlass() {
+    if (!glassEl) return;
+    glassEl.textContent = "";
+    glassDefaults = null;
+    var api = glassAPI();
+    if (!api) {
+      var p = document.createElement("p");
+      p.className = "note";
+      p.textContent = "No shader on the page, so there is no glass to tune. "
+        + "frame-glass.js only exposes its seam once the four passes have compiled and "
+        + "drawn — a browser without WebGL2 gets the CSS rung, which has no uniforms. "
+        + "The bar in the frame is reporting `"
+        + (doc && doc.querySelector(".frame-bar") ? (doc.querySelector(".frame-bar").dataset.glass || "nothing") : "no titlebar")
+        + "`. The wording and the stone above are unaffected.";
+      glassEl.appendChild(p);
+      countGlassMoved();
+      return;
+    }
+    glassDefaults = {};
+    Object.keys(api.defaults).forEach(function (k) { glassDefaults[k] = api.defaults[k]; });
+    glassDefaults.shapeRoundness = api.shipped.shapeRoundness;
+
+    /* An override for a uniform the page no longer has is dropped rather than
+       carried: it would count as `moved` forever and never reach anything. */
+    Object.keys(glass).forEach(function (k) {
+      if (!(k in glassDefaults)) delete glass[k];
+    });
+
+    /* THE DRIFT CHECK, and it is the same instinct as checkShaderCurrent() one
+       section up: frame-glass.js can grow a uniform this table has no row for, and
+       both halves look right on their own while it does. Reported rather than
+       guessed at, because the answer is on the page. */
+    var unreachable = Object.keys(glassDefaults).filter(function (k) {
+      return !GLASS_ROWS.some(function (r) { return r.k === k; });
+    });
+    var absent = GLASS_ROWS.filter(function (r) { return !(r.k in glassDefaults); })
+                           .map(function (r) { return r.k; });
+    if (unreachable.length || absent.length) {
+      var d = document.createElement("p");
+      d.className = "note";
+      d.textContent = (unreachable.length
+          ? "frame-glass.js carries " + unreachable.length + " value" + (unreachable.length === 1 ? "" : "s")
+            + " this page has no slider for: " + unreachable.join(", ") + ". "
+          : "")
+        + (absent.length
+          ? "And " + absent.length + " slider" + (absent.length === 1 ? " has" : "s have")
+            + " no uniform on the page any more: " + absent.join(", ") + ". "
+          : "")
+        + "GLASS_GROUPS in this file is behind the shipping page.";
+      glassEl.appendChild(d);
+    }
+
+    GLASS_GROUPS.forEach(function (g) {
+      group(glassEl, g.title, g.key, function (b) {
+        g.rows.forEach(function (spec) {
+          if (!(spec.k in glassDefaults)) return;
+          /* A copy, so the shared table is not given a closure over this frame's
+             api — the iframe reloads and the table does not. */
+          var s = {};
+          Object.keys(spec).forEach(function (p) { s[p] = spec[p]; });
+          s.onchange = glassChanged;
+          row(b, s,
+              function () { return glassValue(spec.k); },
+              function (v) { glass[spec.k] = v; },
+              glassDefaults[spec.k]);
+        });
+      });
+    });
+    countGlassMoved();
+  }
+
+  function glassChanged() { applyGlass(true); }
+
+  /* THE ONE FUNCTION THAT REACHES THE SHIPPING PAGE'S SHADER. Every value is
+     pushed, not only the moved ones: a control dragged and then put back has to be
+     put back on the page too, and the page has no idea a tuner exists. */
+  function applyGlass(draw) {
+    countGlassMoved();
+    var api = glassAPI();
+    if (api && glassDefaults) {
+      var patch = { backdrop: behind };
+      Object.keys(glassDefaults).forEach(function (k) { patch[k] = glassValue(k); });
+      api.set(patch);
+      if (draw) {
+        var t0 = performance.now();
+        var ok = api.draw();
+        var ms = performance.now() - t0;
+        if (behind !== "clip") glassMsEl.textContent = ok ? ms.toFixed(1) + " ms" : "shader refused";
+      }
+    }
+    markClipLoop();
+    writePanel();
+  }
+
+  /* Counted off the VALUES and not off the `.row.moved` classes, unlike the
+     stone's badge. Reset empties `glass` without touching a control, and a badge
+     that read the DOM would go on reporting the rows as moved until something
+     rebuilt them. */
+  function countGlassMoved() {
+    if (!glassDefaults) {
+      glassCountEl.textContent = "no shader";
+      glassCountEl.dataset.n = 0;
+      return;
+    }
+    var n = 0;
+    Object.keys(glassDefaults).forEach(function (k) {
+      if (String(glassValue(k)) !== String(glassDefaults[k])) n += 1;
+    });
+    if (behind !== shippedBehind()) n += 1;
+    glassCountEl.textContent = n + " moved";
+    glassCountEl.dataset.n = n;
+  }
+
+  document.getElementById("glassreset").addEventListener("click", function () {
+    glass = {};
+    behind = shippedBehind();
+    markBehind();
+    buildGlass();
+    applyGlass(true);
+    save();
+  });
 
   /* ======================================================================= */
   /*  the previz                                                             */
@@ -1505,6 +2086,172 @@
     outCss.value = css.join("\n") + "\n";
   }
 
+  /* ---- the export: the other three decisions -------------------------------
+     ONE BLOCK, THREE CHOICES, AND THE GLASS HALF IS WRITTEN IN THE SHAPE
+     design/glass-tuner.html's OWN DRAWER EMITS — the same header lines, the same
+     "changed from default" table, and the same `glass-state v2:` blob at the foot.
+     That is not a courtesy. Pasting this into that page's box and pressing import
+     puts the material back exactly, so a number arrived at over the real
+     composition can be carried to the page where the four passes can be stepped
+     through one at a time, and carried back. It works because the keys are
+     frame-glass.js's and frame-glass.js's are that tuner's.
+
+     WITHOUT THE REFERENCE LINE THE NUMBERS MEAN NOTHING. Every length is a CSS px
+     at a Frame 1200 wide and the refraction offset is multiplied by the device
+     pixel ratio inside the shader, so the same settings on a 2x display bend twice
+     as far. Both travel with the export, as they do there.
+
+     WHAT SHIPPING A CHOICE WOULD ACTUALLY TAKE is spelled out per treatment rather
+     than left as "set the attribute". Two of the three need a stylesheet change as
+     well, because the shader is only the top rung of a three-rung ladder and the
+     two below it read the page rather than a uniform — a backdrop switched in
+     frame-glass.js alone would be one thing under WebGL2 and another under
+     `backdrop-filter`. */
+  var BEHIND_SHIP = {
+    dark: [
+      "This is what ships. Nothing to change."
+    ],
+    marble: [
+      "NOT what ships. To ship it:",
+      "  portfolio/frame-glass.js  —  var backdrop = \"marble\";",
+      "  portfolio/styles.css      —  .panel-frame's fill has to start BELOW the",
+      "    titlebar, or the two lower rungs go on showing the window's body through",
+      "    a translucent bar while the shader shows the page. Something like:",
+      "      background: linear-gradient(to bottom,",
+      "                    transparent 0 var(--frame-bar),",
+      "                    var(--panel-frame-fill) var(--frame-bar));",
+      "  Worth being sure first: the Panel is flat black behind the Frame today, so",
+      "  this moves the glass's body from the render's own (44,38,49) to (27,19,28),",
+      "  and only once --dark has crossed. #66 measured it as",
+      "  indistinguishable from `dark` in the design render."
+    ],
+    clip: [
+      "NOT what ships, and it is the expensive one. To ship it:",
+      "  portfolio/frame-glass.js  —  var backdrop = \"clip\";  ...AND the",
+      "    render-once promise in that file's header comes off with it. The backdrop",
+      "    moves, so the four passes run every frame for as long as the page is",
+      "    open, and the reflection is re-blitted on every one of them. Nothing",
+      "    else on this Panel renders per frame; the figure beside the chips is what",
+      "    it costs on this display.",
+      "  portfolio/styles.css      —  .frame-content { top: 0 }, so the recording's",
+      "    box starts at the Frame's top edge rather than below the titlebar. Its",
+      "    own corner radius then rounds the recording's two top corners, which the",
+      "    scene painter does not draw.",
+      "  design/tools/render.mjs   —  the tier probe still reports `webgl` and that",
+      "    is no longer the whole truth. Worth a second probe that says how often."
+    ]
+  };
+
+  /* The titlebar's height at the reference width, and the ratio the shader was
+     handed. Both measured off the frame rather than restated: the bar is
+     3.4583cqw of a Frame that is nine of twelve fluid columns, so its height in
+     CSS px is a different number in every window. */
+  function glassReference() {
+    var api = glassAPI();
+    var refW = api ? api.reference.w : 1200;
+    var b = doc && doc.querySelector(".panel-stage > .panel-frame > .frame-bar");
+    var r = b && b.getBoundingClientRect();
+    return {
+      w: refW,
+      bar: r && r.width ? r.height * (refW / r.width) : null,
+      dpr: win ? Math.min(win.devicePixelRatio || 1, 2) : null
+    };
+  }
+
+  /* Numbers as numbers, strings quoted, booleans as booleans — the three kinds the
+     glass carries, written the way JavaScript would take them back. */
+  function jsVal(v) {
+    if (typeof v === "string") return '"' + v + '"';
+    if (typeof v === "boolean") return v ? "true" : "false";
+    return String(v);
+  }
+
+  function writePanel() {
+    if (!outPanel) return;
+    var L = [];
+    L.push("panel tuner — the Projects Panel's variants, chosen over the real composition");
+    L.push("");
+
+    L.push("SUBHEADING — " + (sub + 1) + " of " + SUBS.length + ", " +
+           (shippedSub < 0 ? "and the page is carrying a sixth"
+            : shippedSub === sub ? "which is what ships" : "moved from what ships"));
+    L.push("portfolio/index.html, in .panel-head. Sentence case, because .panel-sub is");
+    L.push("text-transform: uppercase and the markup is written the way it is read:");
+    L.push('    <p class="panel-sub"><span>' + SUBS[sub].a + "</span> <span>" + SUBS[sub].b + "</span></p>");
+    if (shippedSub < 0) {
+      L.push("The page's own wording is not one of #57's five, so nothing above is marked");
+      L.push("as shipped. Either index.html has moved on or SUBS in the tuner has.");
+    }
+    L.push("");
+
+    var spec = null;
+    BEHIND.forEach(function (t) { if (t.k === behind) spec = t; });
+    L.push("BEHIND THE GLASS — `" + behind + "`, " + (spec ? spec.label : behind));
+    (BEHIND_SHIP[behind] || []).forEach(function (s) { L.push(s); });
+    L.push("");
+
+    if (!glassDefaults) {
+      /* Two different reasons for the same missing half, and they are worth
+         telling apart: before the iframe has loaded there is nothing to have
+         found yet, and after it there is a browser that got the CSS rung.
+         Reported as the second either way, this box said "no shader" for the
+         moment before the frame arrived. */
+      L.push(doc
+        ? "GLASS — no shader on the page, so nothing was tuned and nothing is exported."
+        : "GLASS — the frame has not loaded yet, so nothing has been read off it.");
+      outPanel.value = L.join("\n") + "\n";
+      return;
+    }
+    var ref = glassReference();
+    var moved = Object.keys(glassDefaults).filter(function (k) {
+      return String(glassValue(k)) !== String(glassDefaults[k]);
+    });
+    L.push("GLASS — " + moved.length + " control" + (moved.length === 1 ? "" : "s") +
+           " moved from what ships");
+    L.push("glass-tuner v2 — liquid-glass-studio settings, the Panel's titlebar");
+    L.push("reference: Frame " + ref.w + " CSS px wide, titlebar " +
+           (ref.bar === null ? "unmeasured" : ref.bar.toFixed(1)) +
+           " — scale every length with the Frame's width");
+    L.push("rendering at dpr " + (ref.dpr === null ? "unknown" : ref.dpr.toFixed(2)) +
+           " (this display, capped at 2 the way frame-glass.js caps it)");
+    if (!moved.length) {
+      L.push("every control at what frame-glass.js already carries.");
+    } else {
+      L.push("changed from default (" + moved.length + "):");
+      var wide = 0;
+      moved.forEach(function (k) { wide = Math.max(wide, k.length); });
+      moved.forEach(function (k) {
+        var name = k;
+        while (name.length < wide) name += " ";
+        var v = String(glassValue(k));
+        while (v.length < 9) v += " ";
+        L.push("  " + name + "  " + v + "  ships " + glassDefaults[k]);
+      });
+      L.push("");
+      L.push("portfolio/frame-glass.js — the GLASS block, and ROUNDNESS beside it:");
+      /* Written as the two declarations it replaces, braces and all, rather than as
+         a list of entries. A fragment is a paste that has to be reasoned about at
+         the moment it is least likely to be. */
+      var entries = [];
+      GLASS_ROWS.forEach(function (r) {
+        if (r.k === "shapeRoundness" || !(r.k in glassDefaults)) return;
+        entries.push("    " + r.k + ": " + jsVal(glassValue(r.k)));
+      });
+      L.push("  var GLASS = {");
+      entries.forEach(function (e, i) { L.push(e + (i < entries.length - 1 ? "," : "")); });
+      L.push("  };");
+      L.push("  var ROUNDNESS = " + glassValue("shapeRoundness") + ";");
+    }
+    L.push("");
+    /* The blob design/glass-tuner.html's import button reads. `backdrop` is one of
+       its own chips and `shapeRoundness` one of its own rows, so the treatment and
+       the corner travel with the material rather than being described beside it. */
+    var state = { backdrop: behind };
+    Object.keys(glassDefaults).forEach(function (k) { state[k] = glassValue(k); });
+    L.push("glass-state v2: " + JSON.stringify(state));
+    outPanel.value = L.join("\n") + "\n";
+  }
+
   function copy(el) {
     el.select();
     try { navigator.clipboard.writeText(el.value); } catch (_) { document.execCommand("copy"); }
@@ -1513,6 +2260,7 @@
   }
   document.getElementById("copy-py").addEventListener("click", function (e) { e.stopPropagation(); copy(outPy); });
   document.getElementById("copy-css").addEventListener("click", function (e) { e.stopPropagation(); copy(outCss); });
+  document.getElementById("copy-panel").addEventListener("click", function (e) { e.stopPropagation(); copy(outPanel); });
   document.getElementById("drawer-head").addEventListener("click", function () {
     var body = document.getElementById("drawer-body");
     var hid = !body.hidden;
@@ -1533,7 +2281,20 @@
     try {
       localStorage.setItem(STORE, JSON.stringify({
         pick: pick, mode: mode, live: live, cal: cal, closed: closed,
-        theme: theme, w: fwEl.value, h: fhEl.value, strip: strip
+        theme: theme, w: fwEl.value, h: fhEl.value, strip: strip,
+        /* `glass` is the SPARSE override set and not a snapshot of every uniform,
+           which is what lets a value edited in frame-glass.js arrive here as the
+           new default rather than being shadowed by a stored copy of the old one.
+           Same argument as the stone below.
+           `subChosen` TRAVELS WITH `sub` AND HAS TO. save() is reached from
+           sizeFrame() at the end of boot, which is before the frame's load event
+           has run readShippedSub() — so what gets written on a first visit is the
+           table's first slot and not the page's own wording. Stored alone, that
+           came back next session looking like a decision, and the tuner opened on
+           a candidate and called the shipped wording moved. With the flag beside
+           it an unchosen `sub` is re-corrected to whatever index.html says every
+           time, and a chosen one is never touched. */
+        sub: sub, subChosen: subChosen, behind: behind, glass: glass
       }));
     } catch (_) {}
   }
@@ -1551,6 +2312,15 @@
         if (s.w) fwEl.value = s.w;
         if (s.h) fhEl.value = s.h;
         if (typeof s.strip === "boolean") strip = s.strip;
+        /* Bounds-checked rather than trusted: SUBS can lose a wording between
+           sessions and an index past its end would set the subheading to
+           `undefined undefined` on the real page. */
+        if (typeof s.sub === "number" && s.sub >= 0 && s.sub < SUBS.length) {
+          sub = s.sub;
+          subChosen = !!s.subChosen;
+        }
+        if (s.behind && BEHIND.some(function (t) { return t.k === s.behind; })) behind = s.behind;
+        if (s.glass && typeof s.glass === "object") glass = s.glass;
         /* The stored stone is only put back if it is still the SAME stone —
            a re-render that changed the table should win over a session that
            was dragging the old one, and silently reviving numbers the script
@@ -1564,6 +2334,10 @@
     markStrip();     /* before markSheet(), which scrolls a row the fold may have hidden */
     markSheet();
     markMode();
+    /* Both were painted at their defaults when the two pickers were built, before
+       this had read anything. */
+    markSub();
+    markBehind();
     ready = true;
   }
 })();

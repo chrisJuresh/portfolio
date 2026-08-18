@@ -37,9 +37,19 @@
  * static one ships. #68 was expected to be where the first half of that stopped
  * being true, and it is not: the marble it added stands the Frame UP rather than
  * sitting behind it, so what is behind the titlebar is still the Frame's own
- * fill and this still renders once. The recording carrying on up under the
- * chrome remains a change to paintScene() and to this paragraph, and the tuner's
- * `panel · recording` chip is where to look at it before making it.
+ * fill and this still renders once.
+ *
+ * ALL THREE TREATMENTS ARE IN paintScene() NOW, AND ONE OF THEM SHIPS. #69 asks
+ * for the choice to be made over the real composition rather than over the
+ * tuner's drawing of it, and a treatment that only exists in design/ cannot be
+ * looked at on the page it is for. So `dark` — the Frame's own fill, which is
+ * what #66 settled — is the default and is what a reader gets; `marble` and
+ * `clip` are reachable only by asking, through the seam at the foot of this
+ * file, and design/plinth/plinth-tuner.html is the only thing that asks. What
+ * that costs the shipping page is one branch in paintScene() and no per-frame
+ * work at all: nothing moves the default off `dark`, so the promise above is the
+ * same promise. What choosing `clip` would cost is still four passes a frame,
+ * forever, and the tuner says so on the chip.
  *
  * IT IS DRAWN TWICE NOW AND RENDERED ONCE. #68's reflection is a clone of the
  * whole Frame lying in the stone, so there is a second titlebar on the page that
@@ -663,29 +673,109 @@
      arcs are drawn by hand, because a browser without it would otherwise get a
      square-cornered fill refracted through round-cornered glass — a bright
      wedge in each corner rather than a missing rounding, which is much the more
-     obvious wrong. */
+     obvious wrong.
+
+     THREE TREATMENTS OF IT, AND THE DEFAULT IS THE ONE THAT SHIPS:
+
+       dark    the Frame's own fill, rounded into the window's top corners. What
+               #66 settled and what a reader gets.
+       marble  the page's backdrop showing through the titlebar instead — the
+               window's body starting BELOW the chrome rather than behind it. On
+               today's Panel that is a flat --panel-bg, so the whole difference is
+               the glass's body coming out at (27,19,28) instead of (44,38,49) —
+               and only once --dark has crossed. Both tokens are a color-mix
+               against the page's own ground, so at the top of the page the two
+               treatments are the SAME colour to the integer. #68 did not change
+               that: the marble stands the Frame up, it does not sit behind its
+               titlebar.
+       clip    the recording carrying on up under the chrome. The only one of the
+               three that is visibly not the design render, and the only one that
+               costs anything — the backdrop moves, so the four passes run every
+               frame for as long as the page is open.
+
+     Named the same three things design/glass-tuner.html's chips are named, so a
+     setting judged there and a setting judged over the real page are the same
+     word rather than two vocabularies for one decision. */
+  var BACKDROPS = { dark: 1, marble: 1, clip: 1 };
+  var backdrop = "dark";
+
   var scene = document.createElement("canvas");
   var sctx = scene.getContext("2d");
 
-  function paintScene(w, h, radius) {
+  function paintScene(w, h, radius, dpr) {
     scene.width = w;
     scene.height = h;
     sctx.fillStyle = cssColor("--panel-bg");
     sctx.fillRect(0, 0, w, h);
-    sctx.fillStyle = cssColor("--panel-frame-fill");
-    sctx.beginPath();
-    if (sctx.roundRect) {
-      sctx.roundRect(0, 0, w, h * 2, [radius, radius, 0, 0]);
-    } else {
-      sctx.moveTo(0, h * 2);
-      sctx.lineTo(0, radius);
-      sctx.arcTo(0, 0, radius, 0, radius);
-      sctx.lineTo(w - radius, 0);
-      sctx.arcTo(w, 0, w, radius, radius);
-      sctx.lineTo(w, h * 2);
-      sctx.closePath();
+    /* `marble` IS THIS BRANCH NOT TAKEN. The window's body is the only thing
+       between the glass and the page, so leaving it unpainted is the whole of
+       "the backdrop showing through" — there is no second surface to draw. */
+    if (backdrop !== "marble") {
+      sctx.fillStyle = cssColor("--panel-frame-fill");
+      sctx.beginPath();
+      if (sctx.roundRect) {
+        sctx.roundRect(0, 0, w, h * 2, [radius, radius, 0, 0]);
+      } else {
+        sctx.moveTo(0, h * 2);
+        sctx.lineTo(0, radius);
+        sctx.arcTo(0, 0, radius, 0, radius);
+        sctx.lineTo(w - radius, 0);
+        sctx.arcTo(w, 0, w, radius, radius);
+        sctx.lineTo(w, h * 2);
+        sctx.closePath();
+      }
+      sctx.fill();
     }
-    sctx.fill();
+    if (backdrop === "clip") paintClip(w, h, dpr);
+  }
+
+  /* THE RECORDING, GROWN UP UNDER THE CHROME. `clip`'s only difference from
+     `dark` is that the video's box starts at the Frame's top edge instead of
+     below the titlebar, so the strip of it that lands on this canvas is moving
+     picture rather than flat fill. Both boxes are measured off the laid-out
+     elements, for the reason every other length in this file is: --frame-inset is
+     a cqw, and an unregistered custom property hands back a token sequence rather
+     than a length.
+     COVER-CROPPED WITH THE STYLESHEET'S OWN ANCHOR. .panel-clip is `object-fit:
+     cover` at `50% 0`, so a preview cropped about the middle would show a band of
+     the recording the page never shows.
+     WHAT IT DOES NOT DRAW is .frame-content's own corner radius, which would
+     round the recording's two top corners if this treatment ever shipped. It is
+     --frame-inset, a third of the window's corner, under glass that is bending
+     everything in those corners anyway. */
+  var poster = null;
+  function clipSource() {
+    var v = frame.querySelector(".panel-clip");
+    if (!v) return null;
+    if (v.readyState >= 2) return v;
+    /* No frame decoded yet — and under prefers-reduced-motion there never will be
+       one, because panel-clip.js gives that reader no source at all. The poster is
+       the still the page itself shows there and it is already fetched as the
+       element's `poster` attribute, so this costs no request. */
+    if (!poster && v.poster) {
+      poster = new Image();
+      poster.addEventListener("load", function () { if (backdrop === "clip") redraw(); });
+      poster.src = v.poster;
+    }
+    return poster && poster.complete && poster.naturalWidth ? poster : null;
+  }
+
+  function paintClip(w, h, dpr) {
+    var content = frame.querySelector(".frame-content");
+    var src = clipSource();
+    if (!content || !src) return;
+    var br = bar.getBoundingClientRect();
+    var cr = content.getBoundingClientRect();
+    if (!cr.width || !cr.height) return;
+    var iw = src.videoWidth || src.naturalWidth || 0;
+    var ih = src.videoHeight || src.naturalHeight || 0;
+    if (!iw || !ih) return;
+    var dw = cr.width * dpr;
+    var dh = (cr.height + br.height) * dpr;
+    var sw = iw, sh = ih, sx = 0, sy = 0;
+    if (iw / ih > dw / dh) { sw = ih * (dw / dh); sx = (iw - sw) / 2; }
+    else { sh = iw / (dw / dh); }
+    sctx.drawImage(src, sx, sy, sw, sh, (cr.left - br.left) * dpr, 0, dw, dh);
   }
 
   /* ---- render --------------------------------------------------------------- */
@@ -730,7 +820,7 @@
     sizeTarget(tV, W, H);
     sizeTarget(tH, W, H);
 
-    paintScene(W, H, radius * dpr);
+    paintScene(W, H, radius * dpr, dpr);
     gl.bindTexture(gl.TEXTURE_2D, sceneTex);
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, scene);
 
@@ -940,4 +1030,61 @@
        leave the reflection showing a titlebar the Frame above it no longer has. */
     paintEchoes(false);
   });
+
+  /* ---- the seam the tuner drives -------------------------------------------
+     THE ONLY THING ON THIS PAGE THAT CALLS ANY OF THIS IS A TUNER IN design/,
+     which is excluded from the deployment. Nothing above reaches it, no reader
+     ever runs it, and the page renders exactly once whether it exists or not.
+
+     WHY IT IS HERE RATHER THAN A FOURTH COPY OF THE SHADERS. The four passes are
+     already written twice — upstream, and design/glass-tuner.html, which this
+     file is a port of — and #69 asks for the glass to be judged OVER THE REAL
+     COMPOSITION: the real Frame, at the real width, with the real backdrop behind
+     it and the real reflection lying in the marble under it. A tuner that drew
+     its own titlebar again would be a third material that agrees with this one
+     only while somebody keeps checking, which is the drift design/plinth/slab.json
+     exists to stop one directory over. So the tuner moves THESE numbers and asks
+     for THIS render, and what it shows cannot disagree with what ships.
+
+     `defaults` is what the shipping page is set to, handed over rather than
+     restated, so the tuner can mark a control as moved without carrying its own
+     copy of #66's settled values. `reference` is the two lengths every number is
+     stated against — see the GLASS block at the top of the file; a set of numbers
+     without them means nothing. */
+  function redraw() {
+    /* The size guard has to be defeated by hand: same box, different scene. */
+    drawn.ok = false;
+    return attempt();
+  }
+
+  window.panelGlass = {
+    defaults: JSON.parse(JSON.stringify(GLASS)),
+    shipped: { backdrop: backdrop, shapeRoundness: ROUNDNESS },
+    reference: { w: REFERENCE_W, h: REFERENCE_H },
+    backdrops: Object.keys(BACKDROPS),
+    /* What is set right now, in the shape `set` takes — so an export is a read
+       of the thing that drew the picture and not of the thing that asked for it. */
+    state: function () {
+      var s = { backdrop: backdrop, shapeRoundness: ROUNDNESS };
+      Object.keys(GLASS).forEach(function (k) { s[k] = GLASS[k]; });
+      return s;
+    },
+    /* Silently ignores a key it does not have, and a backdrop it does not know.
+       The alternative is a tuner that can put this file into a state it has no
+       branch for and then render it as if it were a choice. */
+    set: function (patch) {
+      if (!patch) return;
+      Object.keys(patch).forEach(function (k) {
+        if (k === "backdrop") { if (BACKDROPS[patch[k]]) backdrop = patch[k]; }
+        else if (k === "shapeRoundness") { ROUNDNESS = Number(patch[k]); }
+        else if (Object.prototype.hasOwnProperty.call(GLASS, k)) { GLASS[k] = patch[k]; }
+      });
+    },
+    draw: redraw,
+    /* Which rung actually engaged, off the page rather than predicted — the same
+       answer design/tools/render.mjs probes for. A tuner that moved a uniform on
+       a browser drawing the CSS rung would be dragging sliders at nothing, and
+       this is how it can say so instead. */
+    tier: function () { return bar.dataset.glass || ""; }
+  };
 })();
