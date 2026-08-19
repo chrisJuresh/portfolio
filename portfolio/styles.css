@@ -2508,7 +2508,15 @@ body::after {
      that a crop rather than a horizontal scrollbar. `hidden` would do the same
      job and also make the section a scroll container, which would break the
      Rail; `clip` clips without scrolling. The `-y: visible` half is left alone
-     so nothing that leaves the section vertically is affected. */
+     here so nothing that leaves the section vertically is affected — AND THE
+     EXIT BLOCK TAKES IT BACK, which is the one place this rule is overridden.
+     It has to: a treatment that travels downwards is transformed overflow at the
+     end edge, which contributes to the document's scrollable height, so a
+     sinking plinth would make the page taller for the length of a crossing and
+     then give it back. See THE EXIT TREATMENTS, where the same `clip` is
+     restated for both axes and the reason is written out. Nothing was leaving
+     vertically for it to break: the composition is byte-identical either way at
+     1440x900, 900x1200 and 390x844. */
   overflow-x: clip;
   /* The Rail runs the full height and the composition sits in the middle of
      whatever is left over — see .panel-rail and .panel-inner, which take the two
@@ -3488,6 +3496,325 @@ body::after {
 }
 
 /* ============================================================================
+   THE EXIT TREATMENTS
+   ============================================================================
+   How the composition comes apart when it is left, and how the next one arrives
+   — #74. The text, the Frame and the plinth each leave in their own direction,
+   at their own rate, and the point is the COMBINATION rather than a set of
+   presets: three groups, five numbers each, mixable, and nothing here decides
+   which mixture is right. design/plinth/plinth-tuner.html is where that is
+   chosen, over the real composition, by watching.
+
+   ONE NUMBER DRIVES ALL OF IT, AND IT IS SIGNED.
+
+     --exit   -1 . . . 0 . . . +1
+              arriving  settled  gone
+
+   +1 is a Panel that has left. -1 is a Panel that has not arrived yet. Zero is
+   the composition as it is drawn today, and it is what the sheet declares — so
+   a browser that runs nothing, a reader who asked for reduced motion, and the
+   profile capture all get the settled composition and there is nothing here for
+   any of them to fast-forward into. #73 says at length why that matters and the
+   same discipline applies: no @keyframes, no animation-timeline, no registered
+   property with a scroll timeline on it. Every value below is a function of one
+   number, and that number is 0 unless something writes it.
+
+   THE ARRIVAL IS THE DEPARTURE RUN BACKWARDS THROUGH ZERO, which is not a
+   convenience — it is the whole of "the outgoing Panel leaving and the incoming
+   one arriving never leave an empty screen". A crossing at progress t puts the
+   outgoing Panel at --exit t and the incoming one at t - 1, so the two are
+   always the same distance either side of the settled state. Every ramp below
+   is ODD in --exit and MONOTONE ONTO its whole range, and those two properties
+   together are what make a hole impossible: whatever has left the outgoing
+   composition has arrived on the incoming one, in the same amount, at the same
+   instant. design/tools/check-panel-exit.mjs measures the sum across a sweep
+   rather than taking that on trust.
+
+   WHICH IS WHY THE RATE IS A SHAPE AND NOT A GAIN. "Leaves faster" written as a
+   multiplier on --exit is the obvious form and it is the one that opens the
+   hole: a group at twice the rate is gone by t = 0.5 while the incoming copy of
+   it does not begin arriving until t = 0.5, and for that instant neither is
+   drawn. So the rate below re-shapes a ramp that still spans the whole crossing:
+
+     f(u) = rate * u + (1 - rate) * u * u        u = |--exit|,  rate in [0, 2]
+
+   rate 1 is the straight line. Below 1 the group hangs on and then goes; above
+   1 it goes at once and eases in. Monotone and onto for every rate in the range
+   — f(0) = 0, f(1) = 1, f'(u) = rate + 2(1 - rate)u, which is non-negative at
+   both ends and so throughout. The signed form is `--exit * (rate + (1-rate)u)`,
+   which carries the sign in --exit itself and needs neither sign() nor pow():
+   its magnitude is exactly f(u), and a browser that has `max()` has all of it.
+
+   A TREATMENT IS FIVE NUMBERS, AND THERE IS ONE GEOMETRY.
+   Every group moves the same way and differs only in what it is told:
+
+     x       travel across, as a share of --panel-w
+     y       travel down
+     scale   how much of itself it gives up by the far end
+     fade    how much opacity it gives up by the far end
+     rate    the shape above
+
+   plus --exit-*-dir, +1 or -1, which flips x and y together. So `lift` and
+   `fall` are one treatment and a direction rather than two treatments, and a
+   combination the author reaches by dragging is expressible as five numbers per
+   group rather than as a name somebody has to have thought of first. The named
+   sets below are starting points, not the menu.
+
+   THE RAIL DOES NOT LEAVE. It names the three projects and it is what a reader
+   navigates by; a crossing that took the index away with the page would leave
+   nothing to arrive at. It keeps the --enter opacity the landing gives it and
+   nothing in this block reaches it.
+
+   THE TEXT'S STAGGER IS IN DISTANCE AND NOT IN TIME, which is the second place
+   the no-hole rule bites. Giving the masthead, the paragraph and the points
+   their own delays reads well going out and opens a gap per block coming in —
+   the outgoing masthead is gone at 0.4 while the incoming one has not started at
+   0.6. Giving them different DISTANCES over the same ramp reads as the same
+   composition coming apart and keeps every block's ramp onto its own range.
+
+   EVERYTHING IS A TRANSFORM AND AN OPACITY AND NOTHING ELSE. No blur, no
+   filter, no box-shadow, no colour interpolation — those are the properties
+   that cost a repaint per frame, and #58's user story 18 asks for the animation
+   to stay off the main thread where it can. `translate`, `scale` and `opacity`
+   composite. That is also what makes the mobile half below a reduction in
+   LAYERS rather than in movement.
+
+   THE INDIVIDUAL TRANSFORM PROPERTIES AND NOT `transform`, for one hard reason:
+   the reflection in the marble is a clone of the Frame and already carries
+   `transform: scaleY(-1)`. `translate` and `scale` compose with it instead of
+   replacing it, so the reflection can be moved without the fold being rewritten
+   here — see .panel-mirror > .panel-frame at the foot of this block, which is
+   where the one asymmetry lives. */
+.panel {
+  /* Where in the crossing this Panel is. Declared, never animated. */
+  --exit: 0;
+  /* AND THE ONLY VALUE ANYTHING BELOW READS, which is not the same property and
+     the difference is what makes this safe to hand to a driver. A crossing runs
+     one Panel from 0 to 1 while the other runs from -1 to 0, and anything
+     driving that off a scroll position, a velocity or an eased overshoot will
+     hand it 1.06 sooner or later. Unclamped, the travel keeps growing while the
+     opacity has already bottomed out, so a composition that is gone goes on
+     going — visible as a Panel that drifts back into shot when the ease
+     settles. Clamped here rather than in every driver, because there is going
+     to be more than one and they should not each have to know. */
+  --exit-c: clamp(-1, var(--exit), 1);
+  /* |--exit-c|, once, because all three groups need it and `max` is the whole of
+     abs(): the larger of a number and its negation. */
+  --exit-u: max(var(--exit-c), calc(-1 * var(--exit-c)));
+
+  /* ---- the text: the masthead, the subheading, the paragraph, the points ---- */
+  --exit-text-rate: 1;
+  --exit-text-dir:  1;
+  --exit-text-x:    0;
+  --exit-text-y:    -0.055;
+  --exit-text-scale: 0;
+  --exit-text-fade: 1;
+  /* The distance stagger — see above for why it is distances and not delays.
+     The masthead travels least because it is the thing the eye is holding on
+     to; the points travel most because they are the furthest from it. */
+  --exit-head-k:   1;
+  --exit-copy-k:   1.5;
+  --exit-points-k: 2.1;
+
+  /* ---- the Frame, and the reflection that goes with it --------------------- */
+  --exit-frame-rate: 1;
+  --exit-frame-dir:  1;
+  --exit-frame-x:    0;
+  --exit-frame-y:    0.012;
+  --exit-frame-scale: 0.14;
+  --exit-frame-fade: 1;
+
+  /* ---- the plinth ---------------------------------------------------------- */
+  --exit-plinth-rate: 1;
+  --exit-plinth-dir:  1;
+  --exit-plinth-x:    0;
+  --exit-plinth-y:    0.06;
+  --exit-plinth-scale: 0;
+  --exit-plinth-fade: 1;
+
+  /* ---- what each group's numbers come out at ------------------------------
+     -p is signed and is what travels; -m is its magnitude and is what is given
+     up. Two properties rather than one because a length wants the sign and an
+     opacity does not, and because `abs()` of an already-substituted expression
+     is the one thing this arrangement is written to avoid needing. */
+  --exit-text-p: calc(var(--exit-c) * (var(--exit-text-rate)
+                      + (1 - var(--exit-text-rate)) * var(--exit-u)));
+  --exit-text-m: calc(var(--exit-u) * (var(--exit-text-rate)
+                      + (1 - var(--exit-text-rate)) * var(--exit-u)));
+  --exit-frame-p: calc(var(--exit-c) * (var(--exit-frame-rate)
+                       + (1 - var(--exit-frame-rate)) * var(--exit-u)));
+  --exit-frame-m: calc(var(--exit-u) * (var(--exit-frame-rate)
+                       + (1 - var(--exit-frame-rate)) * var(--exit-u)));
+  --exit-plinth-p: calc(var(--exit-c) * (var(--exit-plinth-rate)
+                        + (1 - var(--exit-plinth-rate)) * var(--exit-u)));
+  --exit-plinth-m: calc(var(--exit-u) * (var(--exit-plinth-rate)
+                        + (1 - var(--exit-plinth-rate)) * var(--exit-u)));
+
+  /* The travel, resolved to lengths once per group so that the three text
+     blocks below are their own multiplier and nothing else. */
+  --exit-text-dx: calc(var(--exit-text-p) * var(--exit-text-dir)
+                       * var(--exit-text-x) * var(--panel-w));
+  --exit-text-dy: calc(var(--exit-text-p) * var(--exit-text-dir)
+                       * var(--exit-text-y) * var(--panel-w));
+  --exit-frame-dx: calc(var(--exit-frame-p) * var(--exit-frame-dir)
+                        * var(--exit-frame-x) * var(--panel-w));
+  --exit-frame-dy: calc(var(--exit-frame-p) * var(--exit-frame-dir)
+                        * var(--exit-frame-y) * var(--panel-w));
+  --exit-plinth-dx: calc(var(--exit-plinth-p) * var(--exit-plinth-dir)
+                         * var(--exit-plinth-x) * var(--panel-w));
+  --exit-plinth-dy: calc(var(--exit-plinth-p) * var(--exit-plinth-dir)
+                         * var(--exit-plinth-y) * var(--panel-w));
+
+  /* The opacity FACTOR and not the opacity, because .panel-copy already has one
+     of its own from the landing's --enter and two `opacity` declarations on one
+     element is the later one winning rather than the two multiplying. Everything
+     below multiplies by its factor instead, and the landing block does the same
+     where it sets the paragraph's. */
+  --exit-text-o:   clamp(0, calc(1 - var(--exit-text-m) * var(--exit-text-fade)), 1);
+  --exit-frame-o:  clamp(0, calc(1 - var(--exit-frame-m) * var(--exit-frame-fade)), 1);
+  --exit-plinth-o: clamp(0, calc(1 - var(--exit-plinth-m) * var(--exit-plinth-fade)), 1);
+
+  /* AND THE SECTION CLIPS BOTH WAYS WHILE A CROSSING CAN HAPPEN. It already
+     clipped across — the slab is deliberately wider than the composition and
+     runs off the page's right edge — and the reason generalises the moment
+     anything in here travels down: transformed overflow contributes to the
+     document's scrollable area at the end edges, so a plinth sinking 0.06 of
+     the composition would make the page a hundred pixels taller for the length
+     of the transition and then give it back. A scrollbar that grows mid-scroll
+     is a bug wherever it comes from. `clip` and not `hidden`, as everywhere
+     else on this page: `hidden` would make .panel a scroll container and take
+     `scroll-snap-align` with it. */
+  overflow: clip;
+}
+
+/* ---- the named starting points ---------------------------------------------
+   Each of these is the five numbers and nothing else — there is no rule below
+   that knows a treatment's name, so a combination the tuner arrives at by
+   dragging is the same kind of thing as one of these and pastes as five
+   declarations. `dir` is deliberately not set by any of them: it is the
+   author's, and flipping it turns `lift` into a fall and `slide` into a slide
+   the other way without needing a sixth name for either. */
+.panel[data-exit-text="lift"]     { --exit-text-x: 0;     --exit-text-y: -0.055; --exit-text-scale: 0;    }
+.panel[data-exit-text="slide"]    { --exit-text-x: -0.09; --exit-text-y: 0;      --exit-text-scale: 0;    }
+.panel[data-exit-text="close"]    { --exit-text-x: 0;     --exit-text-y: 0;      --exit-text-scale: 0.06; }
+.panel[data-exit-text="dissolve"] { --exit-text-x: 0;     --exit-text-y: 0;      --exit-text-scale: 0;    }
+/* The one that is not a direction: the paragraph goes the other way from the
+   masthead and the points, so the composition opens down its middle rather than
+   travelling as a block. A negative multiplier and not a second axis — the
+   stagger is already a per-block number and this is that number's sign. */
+.panel[data-exit-text="scatter"]  { --exit-text-x: -0.05; --exit-text-y: -0.045; --exit-text-scale: 0;
+                                    --exit-copy-k: -1.5; }
+
+.panel[data-exit-frame="recede"]   { --exit-frame-x: 0;     --exit-frame-y: 0.012; --exit-frame-scale: 0.14; }
+.panel[data-exit-frame="slide"]    { --exit-frame-x: -0.16; --exit-frame-y: 0;     --exit-frame-scale: 0;    }
+.panel[data-exit-frame="sink"]     { --exit-frame-x: 0;     --exit-frame-y: 0.10;  --exit-frame-scale: 0;    }
+.panel[data-exit-frame="dissolve"] { --exit-frame-x: 0;     --exit-frame-y: 0;     --exit-frame-scale: 0;    }
+
+.panel[data-exit-plinth="sink"]     { --exit-plinth-x: 0;     --exit-plinth-y: 0.06; --exit-plinth-fade: 1; }
+.panel[data-exit-plinth="slide"]    { --exit-plinth-x: -0.16; --exit-plinth-y: 0;    --exit-plinth-fade: 1; }
+.panel[data-exit-plinth="dissolve"] { --exit-plinth-x: 0;     --exit-plinth-y: 0;    --exit-plinth-fade: 1; }
+/* THE STONE STAYS. The projects change and the floor they stand on does not —
+   which is the treatment that makes mixing worth having at all, because it is
+   only legible against a Frame and a text that do leave. It is also the one
+   whose crossing wants the two Panels to SHARE a plinth rather than to hold one
+   each, and sharing is an arrangement only #72 can make; until it does, two
+   Panels crossing with `hold` both draw their own slab in the same place. Which
+   is exactly right when the two slabs are the same stone, and is worth knowing
+   before a second marble is chosen for a second project. */
+.panel[data-exit-plinth="hold"] { --exit-plinth-x: 0; --exit-plinth-y: 0;
+                                  --exit-plinth-scale: 0; --exit-plinth-fade: 0; }
+
+/* ---- and what each group actually does with its numbers -------------------- */
+.panel-head {
+  translate: calc(var(--exit-text-dx) * var(--exit-head-k))
+             calc(var(--exit-text-dy) * var(--exit-head-k));
+  scale: calc(1 - var(--exit-text-m) * var(--exit-text-scale));
+  opacity: var(--exit-text-o);
+}
+.panel-copy {
+  translate: calc(var(--exit-text-dx) * var(--exit-copy-k))
+             calc(var(--exit-text-dy) * var(--exit-copy-k));
+  scale: calc(1 - var(--exit-text-m) * var(--exit-text-scale));
+  opacity: var(--exit-text-o);
+}
+.panel-points {
+  translate: calc(var(--exit-text-dx) * var(--exit-points-k))
+             calc(var(--exit-text-dy) * var(--exit-points-k));
+  scale: calc(1 - var(--exit-text-m) * var(--exit-text-scale));
+  opacity: var(--exit-text-o);
+}
+/* The Frame, AND THE REFLECTION WITH IT, because both are `.panel-frame` — the
+   copy in the marble is a clone of this element and carries the class. So the
+   fade and the shrink reach the reflection by not being scoped, which is the
+   right answer: a window that dims has a dimmer reflection, and one that backs
+   off has a smaller one. Only the travel has to be told apart, below. */
+.panel-frame {
+  scale: calc(1 - var(--exit-frame-m) * var(--exit-frame-scale));
+  opacity: var(--exit-frame-o);
+}
+.panel-stage > .panel-frame {
+  translate: var(--exit-frame-dx) var(--exit-frame-dy);
+  /* ABOUT ITS FOOT AND NOT ITS MIDDLE, because the window stands on the plinth:
+     a Frame shrinking about its centre lifts off the stone and floats, and the
+     reflection under it — which is folded about the contact line and so already
+     has this origin — would disagree with it about where the two touch. */
+  transform-origin: bottom;
+}
+/* THE ONE ASYMMETRY IN THE BLOCK, and it is the only thing a mirror ever asks
+   for: the fold is about a horizontal line, so across is preserved and down is
+   negated. Lift the window and its reflection sinks; slide it left and the
+   reflection goes left with it. What then happens is that the reflection is cut
+   off almost at once by .panel-mirror's own `overflow: hidden` — the box is
+   3.28% of the window tall — which is also what happens in life when you lift
+   something off polished stone. */
+.panel-mirror > .panel-frame {
+  translate: var(--exit-frame-dx) calc(-1 * var(--exit-frame-dy));
+}
+.panel-plinth {
+  translate: var(--exit-plinth-dx) var(--exit-plinth-dy);
+  scale: calc(1 - var(--exit-plinth-m) * var(--exit-plinth-scale));
+  opacity: var(--exit-plinth-o);
+}
+
+/* ---- lighter on a phone: one layer instead of five --------------------------
+   #74 asks for the treatments to be lighter on mobile so that a weaker device
+   does not stutter, and the honest reduction is not in how far anything travels
+   — every property above already composites — but in HOW MANY THINGS ARE
+   COMPOSITED. Five separately transformed and separately faded boxes, two of
+   them holding a playing video and a WebGL canvas, become one: .panel-inner
+   moves and fades as a piece and nothing inside it does anything.
+
+   IT IS THE TEXT GROUP'S NUMBERS THAT SURVIVE, so a combination chosen on a
+   desktop still leaves in the direction the author chose and at the rate they
+   chose — it just leaves in one piece. That is what "lighter" costs here and it
+   is worth saying rather than discovering: on a phone the Frame does not recede
+   and the plinth cannot hold.
+
+   THE SAME GATE AS THE REFLOW ABOVE, restated rather than shared, because a
+   media query buys no specificity and these rules have to beat the ones a
+   hundred lines up. Keep the two in step.
+
+   An opacity on .panel-inner makes it a stacking context, and that is safe
+   where the same thing on .panel-stage would not be: everything the Frame has
+   to paint over — the subheading's hanging second line — is inside .panel-inner
+   with it, so their order is untouched. The .fx exclusions that DO depend on
+   .panel-stage not being one are inside the 1100px landing block and cannot
+   apply at these widths. */
+@media (max-width: 900px) and (pointer: coarse), (max-width: 600px) {
+  .panel-inner {
+    translate: var(--exit-text-dx) var(--exit-text-dy);
+    opacity: var(--exit-text-o);
+  }
+  .panel-head, .panel-copy, .panel-points,
+  .panel-frame, .panel-stage > .panel-frame, .panel-mirror > .panel-frame,
+  .panel-plinth {
+    translate: none;
+    scale: none;
+    opacity: 1;
+  }
+}
+
+/* ============================================================================
    THE EFFECT STACK
    ============================================================================
    Ten optical treatments laid over the finished page, each one a token in
@@ -4442,6 +4769,22 @@ body::after {
   .carousel { transition: none; }        /* the edge dissolve, --fade-l / --fade-r */
   .track { scroll-behavior: auto; }
   body, .theme-toggle__thumb { transition: none; }
+  /* THE EXIT TREATMENTS, REMOVED RATHER THAN SHORTENED — #74, and the same
+     posture #73 takes for the crossing and this block already takes for the
+     page turn. Every one of the three groups is a function of --exit and of
+     nothing else, so pinning that one number settles all of them: the text
+     stands where it stands, the Frame does not recede, the plinth does not sink,
+     and a navigation still arrives — at the settled state, directly.
+
+     `!important`, WHICH IS THE POINT AND NOT EMPHASIS. Whatever drives a
+     crossing writes --exit on the section, and an inline declaration beats a
+     stylesheet rule of any specificity — but not an `!important` one. So this
+     holds even against a driver that never asked about the setting, which means
+     the guarantee is the sheet's and does not have to be re-made in every file
+     that ever moves a Panel. A driver should still return early, the way
+     arrival.js does; this is what makes that a courtesy rather than the only
+     thing standing between a reader and the movement they asked not to have. */
+  .panel { --exit: 0 !important; }
 }
 @keyframes page-held-in-still {
   0%, 62.5% { opacity: 0; }
@@ -4881,8 +5224,18 @@ body::after {
      the section is below the fold at rest and has nothing to hide from, and an
      opacity on a block that carries a z-index or contains one would make a
      stacking context where the paint order above depends on there not being one.
-     Both of these are leaves. */
-  .panel-copy, .panel-rail { opacity: clamp(0, calc(var(--enter) / 0.34), 1); }
+     Both of these are leaves.
+
+     THE PARAGRAPH'S IS MULTIPLIED BY THE EXIT'S AND THE RAIL'S IS NOT, which is
+     the one place the two blocks meet. `opacity` does not accumulate across
+     declarations — the later one simply wins — so the paragraph, which is the
+     only thing on the page carrying an opacity from both, has to be written as
+     the product here rather than left to the exit block a thousand lines up. The
+     Rail is not in that product on purpose: it does not leave. See THE EXIT
+     TREATMENTS, which is where --exit-text-o comes from and why every other
+     block in the section reaches its own factor directly. */
+  .panel-copy { opacity: calc(clamp(0, calc(var(--enter) / 0.34), 1) * var(--exit-text-o)); }
+  .panel-rail { opacity: clamp(0, calc(var(--enter) / 0.34), 1); }
 }
 
 /* ---- print: clean text CV, no photos ------------------------------------- */

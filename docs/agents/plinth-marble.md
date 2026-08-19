@@ -483,11 +483,14 @@ colour. It stays a gate for any change that points the stylesheet at a new stone
 - **`plinth-tuner.html`'s PREVIZ is stale; the rest of the page is not.** The
   page is now the Panel's variant tuner and covers all four of the things #57
   left to be chosen by eye — the stone, the subheading's wording, what sits
-  behind the titlebar's glass, and the glass itself. Three of those four are
+  behind the titlebar's glass, and the glass itself — plus #74's exit
+  treatments, which are the fifth. All of those are
   driven over the real `/portfolio` in the iframe and are exact: the stone is a
   `data-marble` attribute, the wording is the two text nodes `.panel-sub` already
-  carries, and the glass is `portfolio/frame-glass.js`'s own uniforms moved
-  through the seam at the foot of that file. What is stale is only the GLSL
+  carries, the glass is `portfolio/frame-glass.js`'s own uniforms moved
+  through the seam at the foot of that file, and the exit is three attributes and
+  one signed custom property on the section — `--exit`, which is 0 on the
+  shipping page and only a crossing between Panels moves. What is stale is only the GLSL
   material previz, which still draws the pre-bedding level sets and cannot
   preview a photo-backed stone at all — `slab.json` carries `photo_candidates`
   so the tuner can list them and say it cannot draw them. **The studio does not

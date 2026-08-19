@@ -61,24 +61,34 @@ design/
                          whole CANDIDATES table. WRITTEN BY IT, never by hand:
                          it is how the tuner below avoids holding a second copy
                          of constants that would drift out from under it.
-    plinth-tuner.html    interactive: the Panel's four by-eye decisions on one
+    plinth-tuner.html    interactive: the Panel's five by-eye decisions on one
                          page, all of them switched over the real /portfolio in
                          an iframe. Which STONE (a `data-marble` attribute and
                          nothing else, so comparing the baked plates is exact),
                          which of #57's five WORDINGS the subheading carries (the
                          two text nodes .panel-sub already has), WHAT SITS BEHIND
                          the titlebar's glass (three treatments, frame-glass.js's
-                         own), and the GLASS itself — twenty-one uniforms on
+                         own), the GLASS itself — twenty-one uniforms on
                          sliders, moved through the seam at the foot of that file
-                         so the material being judged is the material that ships.
+                         so the material being judged is the material that ships
+                         — and HOW THE COMPOSITION LEAVES (#74): the text, the
+                         Frame and the plinth each on their own chip, mixable,
+                         with the five numbers behind every treatment on sliders
+                         beside them. `crossing` loads a SECOND /portfolio and
+                         stands it on the first with its ground taken away, so
+                         the Panel leaving and the Panel arriving are on the
+                         screen together; the readout beside the scrub is how
+                         thin the two ever get at once, measured off both.
                          Its one approximate half is a WebGL previz of the
                          procedural stone's recipe, for asking what a change
                          would do without paying a minute of Cycles; it is stale
                          against the current material and says so. Exports a
                          CANDIDATES entry, the styles.css rule and the bake for
-                         the stone, and for the other three the markup line, what
+                         the stone; for the middle three the markup line, what
                          shipping a treatment would take, and a `glass-state v2`
-                         blob that imports straight into glass-tuner.html.
+                         blob that imports straight into glass-tuner.html; and
+                         for the exit the markup line, the moved numbers as the
+                         declarations they are, and an `exit-state v1` blob.
     plinth-studio.py     interactive, and the only tool in design/ that is a
     plinth-studio.html   SERVER rather than a page: photograph in, stone on the
                          site out, with no command in between. Drop an image,
@@ -92,14 +102,31 @@ design/
                      replays the GitHub profile README's hourly screenshot of
                      /portfolio against a local tree, so a change can be shown
                      not to have broken it. See docs/agents/capture-contract.md
+    check-panel-clip.mjs
+                     does the Panel's recording behave the way #65 asks — it
+                     plays, loops, is silent, and under prefers-reduced-motion
+                     not one byte of either video file is fetched
+    check-panel-exit.mjs
+                     do the Panel's exit treatments behave the way #74 asks. It
+                     reads one Panel TWICE, at t and at t - 1, because that is
+                     exactly the pair a crossing holds — so the "never an empty
+                     screen" criterion is measured before there is a second Panel
+                     to measure it against. Also: the settled composition is
+                     untouched, the Rail does not leave, the document does not
+                     grow mid-crossing, the three groups really are mixable, the
+                     recording keeps playing, reduced motion pins it settled, and
+                     a phone composites one layer instead of five
 ```
 
 The **lab** compares finished candidates; the **tuner** is for arriving at one.
 The **plate tuner** does the same job for the three photographs in the page's
 corners, and the **plinth tuner** for the whole of the Projects Panel — the
 stone it stands on, the wording of its subheading, what sits behind its glass,
-and what that glass is made of. Three of those four are the real page driven in
-an iframe, so what is being looked at is what would ship. The fourth is where it
+what that glass is made of, and how the whole composition comes apart when it is
+left. Every one of the five is the real page driven in
+an iframe, so what is being looked at is what would ship — the exit twice over,
+because `crossing` puts a second real page on top of the first rather than
+drawing a picture of one. THE STONE is where it
 is worth knowing which half of the page you are reading: the baked plates are the
 real render and comparing them is exact, while the previz beside them is an
 approximation of Cycles and says nothing reliable about where an individual vein
