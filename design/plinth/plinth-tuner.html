@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Panel tuner — the marble, the wording, the glass</title>
+  <title>Panel tuner — the marble, the wording, the glass, the exit</title>
   <style>
     :root { color-scheme: light dark; --ui: #1a1917; --ui-bg: #fcfbf8; --ui-panel: #f5f2ea; --ui-line: #d6d0c4; --ui-mut: #6f6a5d; --ui-hit: #8a5a2b; }
     @media (prefers-color-scheme: dark) {
@@ -115,6 +115,31 @@
     .vhead button { padding: 0.1rem 0.4rem; font-size: 11px; }
     .note { margin: 0.4rem 0.7rem 0; padding: 0.4rem 0.5rem; border-left: 2px solid var(--ui-line); color: var(--ui-mut); font-size: 11px; }
 
+    /* ---- the exit strip ----------------------------------------------------
+       The scrub is the one control on this page that is a POSITION IN TIME
+       rather than a value, so it gets the whole width the three chip rows leave
+       and sits on the strip that never scrolls. -1 is a Panel that has not
+       arrived, +1 one that has left, and the middle is the composition as it is
+       drawn. */
+    .exitrow { display: flex; align-items: center; gap: 0.3rem; }
+    .exitrow > strong { flex: 0 0 auto; }
+    #scrub { flex: 1 1 12rem; min-width: 8rem; accent-color: var(--ui-hit); }
+    #presence { font: 11px/1 ui-monospace, Consolas, monospace; color: var(--ui-mut); min-width: 15rem; }
+    #presence.thin { color: var(--ui-hit); }
+
+    /* THE TWO COMPOSITIONS, ONE OVER THE OTHER, which is the only arrangement
+       that answers the question the crossing asks: is there ever a moment when
+       neither is on the screen. Side by side would show two Panels and no
+       crossing. The incoming copy takes no pointer events — it is a picture of
+       what is arriving, not a second page to drive. */
+    .pair { position: relative; flex: 0 0 auto; align-self: flex-start; }
+    .pair iframe { display: block; }
+    #ghost {
+      position: absolute; inset: 0; width: 100%; height: 100%;
+      pointer-events: none; background: transparent;
+    }
+    #ghost[hidden] { display: none; }
+
     /* ---- export drawer ---------------------------------------------------- */
     .drawer { flex: 0 0 auto; border-top: 1px solid var(--ui-line); background: var(--ui-panel); }
     .drawer > .ghead { border-top: 0; }
@@ -164,6 +189,45 @@ size with the Frame biting the real amount out of the second line."></select>
     <span class="badge" id="glasscount" data-n="0">0 moved</span>
     <button id="glassreset">reset glass</button>
   </div>
+  <!-- THE EXIT, AND IT IS THREE CHOICES RATHER THAN ONE. #74 asks for the text,
+       the Frame and the plinth to be able to leave differently — direction, rate,
+       and whether they go together or separately — so the three rows here are
+       independent and the point of the page is the COMBINATION. The five numbers
+       behind each treatment are in the sidebar; these chips are the starting
+       points, and dragging past one of them is the intended use rather than an
+       abuse of it.
+
+       THE SCRUB RUNS FROM -1 TO +1 and the whole design of the treatments is in
+       that sign. +1 is this Panel gone, -1 is this Panel not arrived yet, and a
+       crossing at progress t holds the outgoing Panel at t and the incoming one
+       at t - 1. So the scrub is not "how far through the animation" — it is
+       where in the crossing THIS composition stands, and `crossing` below puts
+       the other one on top of it at the other value. -->
+  <div class="top exitrow">
+    <strong>exit</strong>
+    <div class="chips" id="exit-text"></div>
+    <div class="chips" id="exit-frame"></div>
+    <div class="chips" id="exit-plinth"></div>
+    <span class="badge" id="exitcount" data-n="0">0 moved</span>
+    <button id="exitreset">reset exit</button>
+  </div>
+  <div class="top exitrow">
+    <strong>scrub</strong>
+    <input type="range" id="scrub" min="-1" max="1" step="0.005" value="0"
+           aria-label="where in the crossing this Panel stands"
+           title="-1 arriving · 0 settled · +1 gone. A crossing holds the outgoing Panel
+at t and the incoming one at t - 1, which is what `crossing` shows.">
+    <span class="ms" id="scrubval">0.000</span>
+    <button id="settle">settle</button>
+    <button id="play">play ▶</button>
+    <button id="crossing" aria-pressed="false"
+            title="Loads a SECOND /portfolio and stands it on top of this one at t - 1, so the
+Panel leaving and the Panel arriving are on the screen together. It is a whole
+second page — a second WebGL titlebar and a second recording — so it is off
+until asked for.">crossing</button>
+    <span class="grow"></span>
+    <span id="presence"></span>
+  </div>
   <p class="warn" id="warn"></p>
 
   <div class="wrap">
@@ -184,13 +248,22 @@ size with the Frame biting the real amount out of the second line."></select>
             <h3>the wording, the backdrop, the glass <button id="copy-panel">copy</button></h3>
             <textarea id="out-panel" spellcheck="false" readonly style="height:13rem"></textarea>
           </div>
+          <div class="out">
+            <h3>the exit treatments <button id="copy-exit">copy</button></h3>
+            <textarea id="out-exit" spellcheck="false" readonly style="height:13rem"></textarea>
+          </div>
         </div>
       </div>
     </aside>
 
     <main class="stage">
       <div class="sheet"><ol id="sheet"></ol></div>
-      <iframe id="frame" src="/portfolio/" title="/portfolio"></iframe>
+      <div class="pair">
+        <iframe id="frame" src="/portfolio/" title="/portfolio"></iframe>
+        <!-- No `src` until `crossing` is pressed, so the second page is never
+             fetched by a session that is not judging a crossing. -->
+        <iframe id="ghost" title="/portfolio — the Panel arriving" hidden></iframe>
+      </div>
     </main>
   </div>
 
@@ -298,6 +371,13 @@ size with the Frame biting the real amount out of the second line."></select>
   var behindEl = document.getElementById("behind");
   var glassCountEl = document.getElementById("glasscount");
   var glassMsEl = document.getElementById("glassms");
+  var outExit = document.getElementById("out-exit");
+  var ghost = document.getElementById("ghost");
+  var scrubEl = document.getElementById("scrub");
+  var scrubValEl = document.getElementById("scrubval");
+  var presenceEl = document.getElementById("presence");
+  var exitCountEl = document.getElementById("exitcount");
+  var crossBtn = document.getElementById("crossing");
 
   var slab = null;           /* what build-slab.py says */
   var doc = null, win = null, panel = null;
@@ -318,7 +398,17 @@ size with the Frame biting the real amount out of the second line."></select>
   var glassDefaults = null;  /* window.panelGlass.defaults, once the frame is up */
   var stoneEl = null;        /* the stone's own controls, rebuilt per stone */
   var glassEl = null;        /* the glass's, built once */
+  var exitEl = null;         /* the exit's, rebuilt when a treatment changes */
   var clipLoop = 0;          /* the rAF that keeps a MOVING backdrop moving */
+  var exitPick = {};         /* group -> treatment name */
+  var exitShipped = {};      /* what the page arrived carrying, or null */
+  var exitChosen = false;    /* did exitPick come from a stored session */
+  var exitVals = {};         /* "text.rate" -> number, sparse, moved off the treatment */
+  var exitDefaults = {};     /* the same keys, read off the page under the treatment */
+  var exitT = 0;             /* the scrub: where in the crossing this Panel stands */
+  var crossing = false;      /* is the second /portfolio loaded and standing on this one */
+  var ghostDoc = null, ghostPanel = null;
+  var playLoop = 0;          /* the rAF running a crossing, in THIS document */
 
   function warn(msg) { warnEl.textContent = msg || ""; }
 
@@ -469,6 +559,101 @@ size with the Frame biting the real amount out of the second line."></select>
       tip: "The recording carrying on up under the chrome. The only one of the three that is\nvisibly not the design render, and the only one that costs: the backdrop moves, so\nthe four passes run EVERY FRAME for as long as the page is open. Nothing else on\nthis Panel renders per frame.\nSelecting it starts that loop here so the cost is a number you can read beside the\npicture rather than a warning you have to believe." }
   ];
 
+  /* ---- the exit -----------------------------------------------------------
+     #74: how the composition comes apart when it is left. THREE GROUPS THAT DO
+     NOT KNOW ABOUT EACH OTHER, which is the whole ticket — the point is the
+     combination, not a menu of presets, so the text, the Frame and the plinth
+     are three independent picks and everything below is per group.
+
+     THE CHIPS ARE STARTING POINTS AND THE SLIDERS ARE THE CONTROL. Every named
+     treatment in styles.css is exactly five numbers — x, y, scale, fade and the
+     rate — and there is no rule over there that knows a treatment's name, so
+     dragging past a chip is not leaving the system, it is using it. That is why
+     the export writes the five numbers as well as the name: a mixture arrived at
+     here is as shippable as one of the five.
+
+     NOTHING HERE RESTATES WHAT THE PAGE IS SET TO. The defaults are read off the
+     real .panel under the treatment currently applied, the same way the glass
+     reads `window.panelGlass.defaults` — so "moved" means moved from what the
+     chip gives you, and a number edited in styles.css arrives here as the new
+     default rather than being shadowed by a copy of the old one.
+
+     WHY THE RATE IS SHAPED AND NOT SCALED, because it is the one control whose
+     obvious form is wrong and the slider gives no hint. "Leaves faster" as a
+     multiplier on the crossing empties the screen: a group at twice the rate is
+     gone half way through while the incoming copy of it has not begun. So the
+     rate re-shapes a ramp that still spans the whole crossing —
+     f(u) = rate*u + (1-rate)*u*u — and the readout beside the scrub is what
+     that costs, measured off both compositions rather than asserted here. */
+  var EXIT_ROWS = [
+    { k: "rate", prop: "rate", label: "rate", min: 0, max: 2, step: 0.01, dp: 2,
+      tip: "The SHAPE of the ramp, not its speed — the group always spans the whole crossing.\n1 is a straight line and conserves presence exactly. Below 1 it hangs on and then\ngoes; above 1 it goes at once and eases in, and both compositions are thinner in\nthe middle of the crossing for it. The presence readout beside the scrub is the\nnumber that costs." },
+    { k: "dir", prop: "dir", label: "direction", min: -1, max: 1, step: 2, dp: 0,
+      tip: "Flips x and y together, so `lift` and a fall are one treatment and a sign rather\nthan two names. -1 or +1." },
+    { k: "x", prop: "x", label: "travel across", min: -0.3, max: 0.3, step: 0.005, dp: 3,
+      tip: "A share of --panel-w, the composition's own width — so the drawing travels the same\nfraction of itself at every window size. Negative is leftwards.\nThe section clips across, so a slab or a Frame going sideways is cut at the page's\nedge rather than making a scrollbar." },
+    { k: "y", prop: "y", label: "travel down", min: -0.3, max: 0.3, step: 0.005, dp: 3,
+      tip: "A share of --panel-w, as across. Positive is downwards.\nThe section clips both ways while a crossing can happen — see THE EXIT TREATMENTS —\nso a plinth sinking does not make the document taller for the length of it." },
+    { k: "scale", prop: "scale", label: "shrink by", min: 0, max: 0.6, step: 0.005, dp: 3,
+      tip: "How much of itself the group gives up by the far end. The Frame scales about its\nFOOT, because it stands on the plinth and the reflection is folded about that same\nline — scaling about the middle floats the window off the stone." },
+    { k: "fade", prop: "fade", label: "fade by", min: 0, max: 1, step: 0.01, dp: 2,
+      tip: "How much opacity the group gives up by the far end. 1 leaves nothing; 0 is the\n`hold` treatment — the group does not leave at all." }
+  ];
+
+  /* The text's three blocks travel different DISTANCES over one ramp rather than
+     at different times, which is what keeps the stagger from opening a gap per
+     block on the way in. A negative multiplier sends a block the other way — it
+     is what `scatter` is. */
+  var EXIT_TEXT_ROWS = [
+    { k: "headK", prop: "head-k", label: "masthead x", min: -3, max: 3, step: 0.1, dp: 1,
+      tip: "The masthead and the subheading, as a multiple of the text group's travel." },
+    { k: "copyK", prop: "copy-k", label: "paragraph x", min: -3, max: 3, step: 0.1, dp: 1,
+      tip: "The paragraph. Negative sends it the other way from the rest, which is the whole\nof `scatter`: the composition opens down its middle instead of moving as a block." },
+    { k: "pointsK", prop: "points-k", label: "points x", min: -3, max: 3, step: 0.1, dp: 1,
+      tip: "The four engineering points — furthest from the masthead, so furthest travelled." }
+  ];
+
+  var EXIT_GROUPS = [
+    { k: "text", label: "text", attr: "data-exit-text",
+      probe: ".panel-head",
+      names: [
+        { k: "lift", label: "text · lift", ship: true,
+          tip: "The masthead, the paragraph and the points rise and fade together, each travelling a\ndifferent distance — the masthead least, because it is the thing the eye is holding\non to. What ships." },
+        { k: "slide", label: "text · slide",
+          tip: "The same three go sideways instead. Flip the direction to send them the other way;\nthe section clips across, so nothing reaches the page's edge." },
+        { k: "close", label: "text · close",
+          tip: "No travel at all: the type shrinks in place and fades. The quietest of the five and\nthe one that reads as the composition receding rather than leaving." },
+        { k: "dissolve", label: "text · dissolve",
+          tip: "Opacity and nothing else. The cheapest, and what the whole composition collapses to\non a phone." },
+        { k: "scatter", label: "text · scatter",
+          tip: "The paragraph goes the opposite way from the masthead and the points, so the\ncomposition opens down its middle. A negative `paragraph x` and nothing else — the\nstagger is already a per-block number and this is that number's sign." }
+      ] },
+    { k: "frame", label: "Frame", attr: "data-exit-frame",
+      probe: ".panel-stage > .panel-frame",
+      names: [
+        { k: "recede", label: "Frame · recede", ship: true,
+          tip: "The window backs off towards the stone it stands on, scaling about its own foot, and\ndims. The reflection scales with it and stays in contact. What ships." },
+        { k: "slide", label: "Frame · slide",
+          tip: "The window travels sideways off the composition, taking its reflection with it —\nacross is preserved by a mirror, so the two go the same way." },
+        { k: "sink", label: "Frame · sink",
+          tip: "The window goes down into the plinth and the reflection comes UP to meet it: the fold\nis about the contact line, so down is negated. The two meet on the marble." },
+        { k: "dissolve", label: "Frame · dissolve",
+          tip: "Opacity only. Worth trying against a plinth that holds — a window fading off a stone\nthat stays is the cheapest thing on this page that still reads as a change of\nproject." }
+      ] },
+    { k: "plinth", label: "plinth", attr: "data-exit-plinth",
+      probe: ".panel-plinth",
+      names: [
+        { k: "sink", label: "plinth · sink", ship: true,
+          tip: "The stone goes down out of the composition, taking the reflection lying in it. What\nships." },
+        { k: "slide", label: "plinth · slide",
+          tip: "The slab travels sideways. It is already wider than the composition and runs off the\npage's right edge, so this is the treatment the section's clipping was written for." },
+        { k: "dissolve", label: "plinth · dissolve",
+          tip: "Opacity only." },
+        { k: "hold", label: "plinth · hold",
+          tip: "THE STONE STAYS. The projects change and the floor they stand on does not — which is\nonly legible against a Frame and a text that DO leave, and is the reason for mixing\nrather than choosing a preset.\nIt is also the one whose crossing wants the two Panels to share a plinth rather than\nhold one each, and sharing is an arrangement only #72 can make: turn `crossing` on\nwith this selected and you are looking at two slabs in the same place. Which is\nexactly right while they are the same stone." }
+      ] }
+  ];
+
   /* ---- the glass ----------------------------------------------------------
      EVERY ROW HERE IS A UNIFORM frame-glass.js ALREADY CARRIES. Nothing is added
      and nothing is invented: the keys are its GLASS keys, spelled the way
@@ -560,13 +745,17 @@ size with the Frame biting the real amount out of the second line."></select>
      at the defaults and remembers nothing. */
   buildSubPicker();
   buildBehind();
-  /* Two hosts inside one scroller, in this order and made once: the stone's
-     controls are rebuilt every time a stone is picked and the glass's are not, so
-     they cannot share a parent that gets emptied. */
+  buildExitChips();
+  /* Three hosts inside one scroller, in this order and made once: the stone's
+     controls are rebuilt every time a stone is picked and the exit's every time
+     a treatment is — the glass's never are — so they cannot share a parent that
+     gets emptied. */
   stoneEl = document.createElement("div");
   glassEl = document.createElement("div");
+  exitEl = document.createElement("div");
   controlsEl.appendChild(stoneEl);
   controlsEl.appendChild(glassEl);
+  controlsEl.appendChild(exitEl);
 
   fetch(SIDECAR, { cache: "no-store" }).then(function (r) {
     if (!r.ok) throw new Error(r.status + " " + r.statusText);
@@ -623,6 +812,11 @@ size with the Frame biting the real amount out of the second line."></select>
        document to write into and applyGlass() has no seam to reach. */
     applySub();
     applyGlass(true);
+    /* Fourth of the four, and it races the frame's load event exactly as the
+       three above do: whichever arrives second is what the page ends up wearing,
+       and both ends read the defaults before they build the rows. */
+    applyExit();
+    buildExitControls();
     sizeFrame();
     checkShaderCurrent();
   }).catch(function (e) {
@@ -676,6 +870,14 @@ size with the Frame biting the real amount out of the second line."></select>
     doc.addEventListener("keydown", keys);
     apply();
     applySub();
+    /* The exit's defaults are the shipping page's own under whichever treatment
+       is selected, so like the glass's they cannot be read before this. Read
+       what the page arrived wearing, put the mixture on it, and only then build
+       the rows — a row built earlier would hold a `was` of nothing and call
+       every untouched slider moved. */
+    readExitShipped();
+    applyExit();
+    buildExitControls();
     /* Last, and with a redraw asked for: the glass is the only one of the four
        that costs a render, and the page has just drawn itself once with what
        ships. */
@@ -1601,6 +1803,339 @@ size with the Frame biting the real amount out of the second line."></select>
   });
 
   /* ======================================================================= */
+  /*  the exit treatments                                                    */
+  /* ======================================================================= */
+
+  /* THE PROPERTY A ROW DRIVES, and the one irregularity in the naming: the three
+     text-block multipliers belong to blocks rather than to the group, so they
+     are --exit-head-k and not --exit-text-head-k. Spelled out here rather than
+     derived twice. */
+  function exitProp(g, prop) {
+    return /-k$/.test(prop) ? "--exit-" + prop : "--exit-" + g + "-" + prop;
+  }
+  function exitRowsFor(g) {
+    return g === "text" ? EXIT_ROWS.concat(EXIT_TEXT_ROWS) : EXIT_ROWS;
+  }
+  function exitValue(g, k) {
+    var id = g + "." + k;
+    return exitVals[id] !== undefined ? exitVals[id] : exitDefaults[id];
+  }
+  function exitGroup(k) {
+    var found = null;
+    EXIT_GROUPS.forEach(function (g) { if (g.k === k) found = g; });
+    return found;
+  }
+
+  /* WHAT THE TREATMENT GIVES YOU, read off the real .panel with every inline
+     override taken away first — so "moved" means moved from the chip that is
+     selected, and changing chip changes what counts as moved. The same
+     discipline the glass reads its defaults under, one step further on: there
+     the defaults are a constant of the page, here they are a function of the
+     attribute, so they are re-read rather than cached. */
+  function readExitDefaults() {
+    if (!panel || !win) return;
+    var cs = win.getComputedStyle(panel);
+    EXIT_GROUPS.forEach(function (g) {
+      exitRowsFor(g.k).forEach(function (r) {
+        var v = parseFloat(cs.getPropertyValue(exitProp(g.k, r.prop)));
+        exitDefaults[g.k + "." + r.k] = isNaN(v) ? 0 : v;
+      });
+    });
+  }
+
+  /* One composition, put where a crossing at progress `t` would have it. Called
+     twice when the second page is up: the outgoing Panel at t and the incoming
+     one at t - 1, which is the whole of why the scrub is signed. */
+  function applyExitTo(p, t, isReal) {
+    EXIT_GROUPS.forEach(function (g) {
+      p.setAttribute(g.attr, exitPick[g.k]);
+      exitRowsFor(g.k).forEach(function (r) { p.style.removeProperty(exitProp(g.k, r.prop)); });
+    });
+    /* Between the clear and the re-apply is the ONE moment the page is showing
+       what the treatment alone says, which is the only moment its defaults can
+       be read. */
+    if (isReal) readExitDefaults();
+    EXIT_GROUPS.forEach(function (g) {
+      exitRowsFor(g.k).forEach(function (r) {
+        var id = g.k + "." + r.k;
+        if (exitVals[id] !== undefined) {
+          p.style.setProperty(exitProp(g.k, r.prop), String(exitVals[id]));
+        }
+      });
+    });
+    p.style.setProperty("--exit", String(t));
+  }
+
+  function applyExit() {
+    markExit();
+    if (!panel) { writeExit(); return; }
+    applyExitTo(panel, exitT, true);
+    if (ghostPanel) applyExitTo(ghostPanel, exitT - 1, false);
+    measurePresence();
+    writeExit();
+  }
+
+  /* ---- how thin the two compositions ever get, MEASURED ---------------------
+     #74's hardest criterion is that the outgoing Panel leaving and the incoming
+     one arriving never leave an empty screen, and the treatments are built so
+     that they cannot — every ramp is odd in --exit and spans the whole crossing,
+     so whatever has left one composition has arrived on the other. This reads
+     that back off the page rather than restating it: each group's opacity at t
+     plus the same group's opacity at t - 1, swept, and the worst of them.
+
+     1.000 is presence exactly conserved and is what the straight ramp gives.
+     Anything below is the rate control being pushed, and the readout goes amber
+     rather than the page pretending it is free. Zero would be an empty screen
+     and no setting of these sliders can reach it.
+     design/tools/check-panel-exit.mjs asserts the same number at 51 samples
+     across every treatment; 21 here is enough to drag against. */
+  var PRESENCE_FLOOR = 0.995;
+  function measurePresence() {
+    if (!panel || !win || !doc) { presenceEl.textContent = ""; return; }
+    var probes = EXIT_GROUPS.map(function (g) { return doc.querySelector(g.probe); });
+    if (probes.some(function (el) { return !el; })) { presenceEl.textContent = ""; return; }
+    function opacitiesAt(t) {
+      panel.style.setProperty("--exit", String(t));
+      return probes.map(function (el) { return parseFloat(win.getComputedStyle(el).opacity); });
+    }
+    var worst = Infinity, worstAt = 0, worstG = "";
+    for (var i = 0; i <= 20; i++) {
+      var u = i / 20;
+      var a = opacitiesAt(u), b = opacitiesAt(u - 1);
+      for (var j = 0; j < probes.length; j++) {
+        var s = a[j] + b[j];
+        if (s < worst - 1e-9) { worst = s; worstAt = u; worstG = EXIT_GROUPS[j].label; }
+      }
+    }
+    panel.style.setProperty("--exit", String(exitT));
+    presenceEl.textContent = "thinnest moment " + worst.toFixed(3) +
+      " of one composition — " + worstG + ", t " + worstAt.toFixed(2);
+    presenceEl.className = worst < PRESENCE_FLOOR ? "thin" : "";
+  }
+
+  /* ---- the chips ---------------------------------------------------------- */
+  function buildExitChips() {
+    EXIT_GROUPS.forEach(function (g) {
+      var host = document.getElementById("exit-" + g.k);
+      host.textContent = "";
+      g.names.forEach(function (t) {
+        var b = document.createElement("button");
+        b.type = "button";
+        b.dataset.exit = t.k;
+        b.textContent = t.label;
+        b.title = t.tip;
+        b.addEventListener("click", function () {
+          exitPick[g.k] = t.k;
+          exitChosen = true;
+          /* The treatment changes what the sliders' defaults ARE, so the rows
+             are rebuilt rather than repainted — a row holding the old `was`
+             would call an untouched value moved. */
+          applyExit();
+          buildExitControls();
+          save();
+        });
+        host.appendChild(b);
+      });
+      if (!exitPick[g.k]) exitPick[g.k] = g.names[0].k;
+    });
+    markExit();
+  }
+
+  function countExitMoved() {
+    var n = Object.keys(exitVals).length;
+    EXIT_GROUPS.forEach(function (g) {
+      if (exitShipped[g.k] && exitPick[g.k] !== exitShipped[g.k]) n += 1;
+    });
+    exitCountEl.textContent = n + " moved";
+    exitCountEl.dataset.n = n;
+  }
+
+  function markExit() {
+    EXIT_GROUPS.forEach(function (g) {
+      var host = document.getElementById("exit-" + g.k);
+      Array.prototype.forEach.call(host.querySelectorAll("button"), function (b) {
+        b.setAttribute("aria-pressed", b.dataset.exit === exitPick[g.k] ? "true" : "false");
+      });
+    });
+    scrubEl.value = String(exitT);
+    scrubValEl.textContent = (exitT < 0 ? "" : "+") + exitT.toFixed(3);
+    countExitMoved();
+  }
+
+  /* WHICH MIXTURE THE PAGE ARRIVED CARRYING, read rather than remembered — the
+     same reason readShippedSub() reads the subheading off the document. The three
+     attributes are in index.html precisely so that this question has an answer;
+     a page that has moved on to a treatment this table does not know reads back
+     as null and the export says so instead of quietly calling one of ours
+     shipped. */
+  function readExitShipped() {
+    if (!doc || !panel) return;
+    EXIT_GROUPS.forEach(function (g) {
+      var v = panel.getAttribute(g.attr);
+      var known = g.names.some(function (t) { return t.k === v; });
+      exitShipped[g.k] = known ? v : null;
+      if (!exitChosen && known) exitPick[g.k] = v;
+    });
+  }
+
+  /* ---- the sliders -------------------------------------------------------- */
+  function buildExitControls() {
+    /* No page, no defaults — and a row built against an undefined `was` calls
+       every slider moved and reads back NaN. The frame's load event and the
+       sidecar's promise both come back here once there is one. */
+    if (!exitEl || !panel) return;
+    exitEl.textContent = "";
+    EXIT_GROUPS.forEach(function (g) {
+      group(exitEl, "exit — " + g.label, "exit-" + g.k, function (body) {
+        exitRowsFor(g.k).forEach(function (r) {
+          var id = g.k + "." + r.k;
+          row(body, {
+            label: r.label, min: r.min, max: r.max, step: r.step, dp: r.dp, tip: r.tip,
+            onchange: applyExit
+          }, function () { return exitValue(g.k, r.k); },
+             function (v) {
+               /* Back to exactly the treatment's own number is not an override,
+                  it is having changed your mind — so it leaves the sparse set
+                  rather than sitting in it as a value that happens to match. */
+               if (Math.abs(v - exitDefaults[id]) < 1e-9) delete exitVals[id];
+               else exitVals[id] = v;
+             },
+             exitDefaults[id]);
+        });
+      });
+    });
+  }
+
+  /* ---- the scrub, and running it ------------------------------------------
+     WHERE YOU ARE STANDING IS NOT WHAT YOU HAVE CHOSEN, and separating the two
+     is what keeps `play` smooth. applyExit() re-reads the defaults, re-applies
+     every override and sweeps 21 samples to measure the crossing — none of which
+     can change while only the scrub moves, and all of which would run sixty
+     times a second through a play. This writes the one number that did change,
+     to both compositions. */
+  function positionExit() {
+    markExit();
+    if (!panel) return;
+    panel.style.setProperty("--exit", String(exitT));
+    if (ghostPanel) ghostPanel.style.setProperty("--exit", String(exitT - 1));
+  }
+  function setExit(t) {
+    exitT = Math.max(-1, Math.min(1, t));
+    positionExit();
+  }
+  scrubEl.addEventListener("input", function () {
+    stopPlay();
+    setExit(parseFloat(scrubEl.value));
+  });
+  document.getElementById("settle").addEventListener("click", function () {
+    stopPlay();
+    setExit(0);
+  });
+
+  /* A CROSSING, RUN. The scrub answers "what does it look like here"; this
+     answers "does it read", which is the question a still cannot be asked. It
+     runs -1 to +1 because that is one whole crossing seen from one Panel — the
+     composition arrives, settles for no time at all, and leaves. */
+  var PLAY_MS = 2000;
+  function stopPlay() {
+    if (playLoop) { cancelAnimationFrame(playLoop); playLoop = 0; }
+    document.getElementById("play").textContent = "play ▶";
+  }
+  document.getElementById("play").addEventListener("click", function () {
+    if (playLoop) { stopPlay(); return; }
+    this.textContent = "stop ■";
+    var t0 = performance.now();
+    (function step() {
+      var u = (performance.now() - t0) / PLAY_MS;
+      if (u >= 1) { stopPlay(); setExit(1); return; }
+      setExit(-1 + 2 * u);
+      playLoop = requestAnimationFrame(step);
+    })();
+  });
+
+  /* ---- the Panel arriving --------------------------------------------------
+     A SECOND /portfolio, STOOD ON THE FIRST WITH ITS GROUND TAKEN AWAY, and the
+     stripping is the truthful model rather than a cheat: in a real crossing
+     there is ONE page and two compositions on it, so a second document keeping
+     its own body background would be showing something that never happens. What
+     is left of the second page is the section and nothing else.
+
+     IT IS THE SAME PROJECT, BECAUSE THERE IS ONLY ONE. #58 puts the Eater Map
+     and the Record Engine out of scope and #72 is where a second Panel arrives,
+     so what stands here is this composition arriving — which is exactly the
+     right thing to judge a crossing on, and would be even if there were three.
+     Its Rail is moved to the second project so the two can be told apart at a
+     glance; that is the one thing about it that is a stand-in. */
+  /* WHAT IS TAKEN OFF THE SECOND PAGE, AND WHAT IS DELIBERATELY LEFT ON IT.
+     Only things that are out of flow are hidden — the effect stack, the three
+     corner pictures, the loading line — so the ghost's layout is the real one to
+     the pixel and its composition lands exactly where the first page's does.
+
+     .page IS LEFT ALONE, which looks like an omission and is the opposite. It is
+     a screen above the Panel and never on the ghost's screen at all; hiding it
+     would change where the section begins in the document, and arrival.js
+     measures the crossing into dark against exactly that — so a hidden CV gives
+     the ghost a different --dark and a different palette from the page under it,
+     which is the one difference that would make the two look like two documents.
+
+     .cut-title GOES INVISIBLE RATHER THAN AWAY, for the reason its own block in
+     styles.css gives about the masthead it stands in for: cut-morph.js measures
+     it on every scroll, and a display:none element measures as nothing and hands
+     the script NaN, which it then writes into an SVG path. `visibility: hidden`
+     draws nothing and measures the same as ever. There is one PROJECTS on a
+     page and this is the second page's copy of it. */
+  function styleGhost() {
+    if (!ghostDoc) return;
+    var s = ghostDoc.createElement("style");
+    s.textContent =
+      "html, body { background: transparent !important; }" +
+      ".fx, .loading, .car, .eye, .fx-ascii { display: none !important; }" +
+      "body::after { display: none !important; }" +
+      ".cut-title { visibility: hidden !important; }";
+    ghostDoc.head.appendChild(s);
+    var rail = ghostDoc.querySelectorAll(".panel-rail li");
+    if (rail.length > 1) {
+      rail[0].classList.remove("is-selected");
+      rail[1].classList.add("is-selected");
+    }
+  }
+
+  ghost.addEventListener("load", function () {
+    ghostDoc = ghost.contentDocument;
+    ghostPanel = ghostDoc && ghostDoc.getElementById("projects");
+    if (!ghostPanel) return;
+    styleGhost();
+    ghostPanel.scrollIntoView({ block: "end", behavior: "instant" });
+    applyExit();
+  });
+
+  function markCrossing() {
+    crossBtn.setAttribute("aria-pressed", crossing ? "true" : "false");
+    ghost.hidden = !crossing;
+    if (crossing && !ghost.getAttribute("src")) ghost.setAttribute("src", "/portfolio/");
+  }
+  crossBtn.addEventListener("click", function () {
+    crossing = !crossing;
+    markCrossing();
+    applyExit();
+    save();
+  });
+
+  document.getElementById("exitreset").addEventListener("click", function () {
+    exitVals = {};
+    EXIT_GROUPS.forEach(function (g) {
+      if (exitShipped[g.k]) exitPick[g.k] = exitShipped[g.k];
+    });
+    exitChosen = false;
+    exitT = 0;
+    /* The full path and not setExit(), because this is the one place the scrub
+       moves AND the values behind it do. */
+    applyExit();
+    buildExitControls();
+    save();
+  });
+
+  /* ======================================================================= */
   /*  the previz                                                             */
   /* ======================================================================= */
 
@@ -2252,6 +2787,95 @@ size with the Frame biting the real amount out of the second line."></select>
     outPanel.value = L.join("\n") + "\n";
   }
 
+  /* ---- the export: the exit -----------------------------------------------
+     THE MIXTURE AND THEN THE NUMBERS, in that order, because they are two
+     different sizes of decision. Picking three chips is a markup line; dragging
+     a slider past one of them is a stylesheet change, and it is written out as
+     the declarations it actually is rather than as a table to be transcribed.
+
+     A MOVED SLIDER IS OFFERED TWO WAYS AND BOTH ARE HONEST. Pasted into the
+     named rule it redefines that treatment for everything that ever selects it;
+     pasted as a new name it becomes a sixth chip. Which one is wanted is a
+     question about whether the author has improved `lift` or invented something
+     else, and no tuner can answer that — so it says both and names the file.
+
+     THE PRESENCE FIGURE TRAVELS WITH IT, because it is the one number that can
+     be pushed into a defect by a slider that looks harmless. 1.000 is presence
+     exactly conserved across a crossing; the rate control is the only thing that
+     moves it and the export says where it ended up. */
+  function writeExit() {
+    if (!outExit) return;
+    var L = [];
+    L.push("panel tuner — the exit treatments, #74");
+    L.push("");
+
+    if (!panel) {
+      L.push("the frame has not loaded yet, so nothing has been read off the page.");
+      outExit.value = L.join("\n") + "\n";
+      return;
+    }
+
+    var same = EXIT_GROUPS.every(function (g) { return exitPick[g.k] === exitShipped[g.k]; });
+    var unknown = EXIT_GROUPS.filter(function (g) { return !exitShipped[g.k]; });
+    L.push("THE MIXTURE — " + EXIT_GROUPS.map(function (g) {
+      return g.k + " " + exitPick[g.k];
+    }).join(", ") + (same ? ", which is what ships" : ", moved from what ships"));
+    L.push("portfolio/index.html, on <section class=\"panel\">:");
+    L.push("    " + EXIT_GROUPS.map(function (g) {
+      return g.attr + '="' + exitPick[g.k] + '"';
+    }).join(" "));
+    if (unknown.length) {
+      L.push("The page is carrying " + unknown.map(function (g) {
+        return g.attr + '="' + (panel.getAttribute(g.attr) || "nothing") + '"';
+      }).join(" and ") + ", which this table does not know.");
+      L.push("Either index.html has moved on or EXIT_GROUPS in the tuner has.");
+    }
+    L.push("");
+
+    var moved = Object.keys(exitVals);
+    L.push("THE NUMBERS — " + moved.length + " slider" + (moved.length === 1 ? "" : "s") +
+           " moved off the treatment" + (moved.length ? ":" : ", so the three chips are the whole of it."));
+    if (moved.length) {
+      EXIT_GROUPS.forEach(function (g) {
+        var mine = exitRowsFor(g.k).filter(function (r) {
+          return exitVals[g.k + "." + r.k] !== undefined;
+        });
+        if (!mine.length) return;
+        L.push("portfolio/styles.css — into .panel[" + g.attr + '="' + exitPick[g.k] + '"],');
+        L.push("  or under a name of its own beside it:");
+        mine.forEach(function (r) {
+          var id = g.k + "." + r.k;
+          L.push("    " + exitProp(g.k, r.prop) + ": " + fmt(exitVals[id], r.dp) + ";" +
+                 "    /* " + fmt(exitDefaults[id], r.dp) + " under `" + exitPick[g.k] + "` */");
+        });
+      });
+      L.push("");
+      L.push("Every travel is a share of --panel-w, the composition's own width, so a");
+      L.push("number here holds its look at every window size. The rate is a SHAPE and");
+      L.push("not a speed: the group spans the whole crossing whatever it is set to,");
+      L.push("which is what stops a crossing opening a hole. See THE EXIT TREATMENTS.");
+      L.push("");
+    }
+
+    L.push("THE CROSSING — " + (presenceEl.textContent || "not measured"));
+    L.push("Presence is each group's opacity at t plus its own at t - 1, swept: 1.000");
+    L.push("is a crossing that conserves it exactly. Nothing here can reach 0.");
+    L.push("`node design/tools/check-panel-exit.mjs` asserts the same at 51 samples,");
+    L.push("across every treatment and five rates, and checks the rest of #74 with it.");
+    L.push("");
+    L.push("NOTHING DRIVES --exit ON THE SHIPPING PAGE YET. It is declared 0 in the");
+    L.push("sheet and only a crossing between Panels moves it; #72 is that crossing.");
+    L.push("So pasting the above changes what a departure LOOKS like and does not");
+    L.push("make one happen.");
+    L.push("");
+
+    var state = { mixture: {}, values: {} };
+    EXIT_GROUPS.forEach(function (g) { state.mixture[g.k] = exitPick[g.k]; });
+    Object.keys(exitVals).forEach(function (id) { state.values[id] = exitVals[id]; });
+    L.push("exit-state v1: " + JSON.stringify(state));
+    outExit.value = L.join("\n") + "\n";
+  }
+
   function copy(el) {
     el.select();
     try { navigator.clipboard.writeText(el.value); } catch (_) { document.execCommand("copy"); }
@@ -2261,6 +2885,7 @@ size with the Frame biting the real amount out of the second line."></select>
   document.getElementById("copy-py").addEventListener("click", function (e) { e.stopPropagation(); copy(outPy); });
   document.getElementById("copy-css").addEventListener("click", function (e) { e.stopPropagation(); copy(outCss); });
   document.getElementById("copy-panel").addEventListener("click", function (e) { e.stopPropagation(); copy(outPanel); });
+  document.getElementById("copy-exit").addEventListener("click", function (e) { e.stopPropagation(); copy(outExit); });
   document.getElementById("drawer-head").addEventListener("click", function () {
     var body = document.getElementById("drawer-body");
     var hid = !body.hidden;
@@ -2294,7 +2919,19 @@ size with the Frame biting the real amount out of the second line."></select>
            a candidate and called the shipped wording moved. With the flag beside
            it an unchosen `sub` is re-corrected to whatever index.html says every
            time, and a chosen one is never touched. */
-        sub: sub, subChosen: subChosen, behind: behind, glass: glass
+        sub: sub, subChosen: subChosen, behind: behind, glass: glass,
+        /* `exitChosen` travels with `exitPick` for exactly the reason
+           `subChosen` travels with `sub` — save() is reached before the frame's
+           load event has read what the page is wearing, so a first visit would
+           otherwise store the table's first chip and call it a decision next
+           session. `exitVals` is the sparse moved set and not a snapshot, same
+           argument as `glass` above: a number edited in styles.css then arrives
+           as the new default instead of being shadowed by a stored copy.
+           THE SCRUB IS DELIBERATELY NOT STORED. It is where you are standing,
+           not what you have chosen, and a tuner that opened at --exit 0.62 would
+           open on a composition half gone with no clue why. */
+        exitPick: exitPick, exitChosen: exitChosen, exitVals: exitVals,
+        crossing: crossing
       }));
     } catch (_) {}
   }
@@ -2321,6 +2958,20 @@ size with the Frame biting the real amount out of the second line."></select>
         }
         if (s.behind && BEHIND.some(function (t) { return t.k === s.behind; })) behind = s.behind;
         if (s.glass && typeof s.glass === "object") glass = s.glass;
+        /* Every stored chip checked against the table it has to be in, for the
+           reason the stored wording is bounds-checked: a treatment can leave
+           EXIT_GROUPS between sessions, and an attribute the stylesheet has no
+           rule for would silently fall back to the base declarations while the
+           chips said something else entirely. */
+        if (s.exitPick && typeof s.exitPick === "object") {
+          EXIT_GROUPS.forEach(function (g) {
+            var v = s.exitPick[g.k];
+            if (v && g.names.some(function (t) { return t.k === v; })) exitPick[g.k] = v;
+          });
+          exitChosen = !!s.exitChosen;
+        }
+        if (s.exitVals && typeof s.exitVals === "object") exitVals = s.exitVals;
+        if (typeof s.crossing === "boolean") crossing = s.crossing;
         /* The stored stone is only put back if it is still the SAME stone —
            a re-render that changed the table should win over a session that
            was dragging the old one, and silently reviving numbers the script
@@ -2338,6 +2989,8 @@ size with the Frame biting the real amount out of the second line."></select>
        this had read anything. */
     markSub();
     markBehind();
+    markExit();
+    markCrossing();
     ready = true;
   }
 })();
