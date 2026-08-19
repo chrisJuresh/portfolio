@@ -152,6 +152,16 @@ const SWEEP = ([GROUPS, RATES]) => {
     (v.translate === "none" || /^(0px)( 0px)?$/.test(v.translate)) &&
     (v.scale === "none" || v.scale === "1" || v.scale === "1 1");
 
+  /* A page that has lost one of the three attributes reads back as null, and
+     `setAttribute(attr, null)` writes the STRING "null" — a value no rule
+     matches, so the sweeps that follow would run against the base declarations
+     while the report said the attribute was merely missing. Put back as absent
+     when it was absent. */
+  const restoreShipped = (g) => {
+    if (shipped[g.key]) panel.setAttribute(g.attr, shipped[g.key]);
+    else panel.removeAttribute(g.attr);
+  };
+
   const at = (t, sel) => {
     panel.style.setProperty("--exit", String(t));
     return read(sel);
@@ -195,7 +205,7 @@ const SWEEP = ([GROUPS, RATES]) => {
       }
       panel.style.removeProperty("--exit-" + g.key + "-rate");
     }
-    panel.setAttribute(g.attr, shipped[g.key]);
+    restoreShipped(g);
   }
 
   /* ---- 3. the Rail does not leave ----------------------------------------- */
@@ -238,13 +248,13 @@ const SWEEP = ([GROUPS, RATES]) => {
   const alone = {}, together = {};
   const other = (g) => g.names.find((n) => n !== shipped[g.key]);
   for (const g of GROUPS) {
-    for (const h of GROUPS) h !== g && panel.setAttribute(h.attr, shipped[h.key]);
+    for (const h of GROUPS) if (h !== g) restoreShipped(h);
     panel.setAttribute(g.attr, other(g));
     alone[g.key] = at(0.5, g.sel);
   }
   for (const g of GROUPS) panel.setAttribute(g.attr, other(g));
   for (const g of GROUPS) together[g.key] = at(0.5, g.sel);
-  for (const g of GROUPS) panel.setAttribute(g.attr, shipped[g.key]);
+  for (const g of GROUPS) restoreShipped(g);
   out.mix = GROUPS.map((g) => ({
     group: g.key,
     treatment: other(g),

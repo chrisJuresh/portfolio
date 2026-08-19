@@ -2508,7 +2508,15 @@ body::after {
      that a crop rather than a horizontal scrollbar. `hidden` would do the same
      job and also make the section a scroll container, which would break the
      Rail; `clip` clips without scrolling. The `-y: visible` half is left alone
-     so nothing that leaves the section vertically is affected. */
+     here so nothing that leaves the section vertically is affected — AND THE
+     EXIT BLOCK TAKES IT BACK, which is the one place this rule is overridden.
+     It has to: a treatment that travels downwards is transformed overflow at the
+     end edge, which contributes to the document's scrollable height, so a
+     sinking plinth would make the page taller for the length of a crossing and
+     then give it back. See THE EXIT TREATMENTS, where the same `clip` is
+     restated for both axes and the reason is written out. Nothing was leaving
+     vertically for it to break: the composition is byte-identical either way at
+     1440x900, 900x1200 and 390x844. */
   overflow-x: clip;
   /* The Rail runs the full height and the composition sits in the middle of
      whatever is left over — see .panel-rail and .panel-inner, which take the two

@@ -1929,7 +1929,16 @@ until asked for.">crossing</button>
           exitChosen = true;
           /* The treatment changes what the sliders' defaults ARE, so the rows
              are rebuilt rather than repainted — a row holding the old `was`
-             would call an untouched value moved. */
+             would call an untouched value moved.
+
+             A MOVED SLIDER SURVIVES THE CHIP, which is deliberate and is the
+             one thing about this control worth knowing: the chips are starting
+             points and the sliders are the choice, so a travel dragged under
+             `lift` is still there under `dissolve` and that treatment then
+             travels. It cannot happen quietly — the row stays amber against its
+             new default, the badge counts it, and the export writes the number
+             beside what the chip would have given. `reset exit` is the way back
+             to the chips alone. */
           applyExit();
           buildExitControls();
           save();
