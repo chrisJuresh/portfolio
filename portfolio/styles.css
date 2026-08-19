@@ -559,7 +559,13 @@
   --slide-h: clamp(15rem, 40vh, 24rem);  /* carousel image height        */
   --slide-w: calc(var(--slide-h) * 3 / 4);
   --gap: 0.5rem;                          /* gap between photos           */
-  --edge: max(1.35rem, calc(50vw - var(--col) / 2));  /* where the text column starts */
+  /* Where the text column starts: half the leftover either side of --col, and
+     --page-side once the column is wider than the page has room for. That floor
+     IS .page's own side padding — the same declaration, read from the other end —
+     so it is the variable rather than the literal it was written as. Declared
+     below this line, which costs nothing: both are on this one :root and custom
+     properties resolve after the whole block is read, not in source order. */
+  --edge: max(var(--page-side), calc(50vw - var(--col) / 2));
 
   /* ---- the page's one vertical rhyme --------------------------------------
      The white above the name and the white below the last contact line are the
@@ -584,6 +590,18 @@
   --corner: clamp(3rem, 9vh, 6.5rem);
   --rhyme: var(--corner);
   --name-half-leading: calc(0.294 * 0.78rem);
+  /* THE PAGE'S MARGIN ACROSS, which is the other half of what the paragraph
+     above says: --corner tracks the window's HEIGHT, so it is the wrong measure
+     the moment it is used as a horizontal inset. .page has always known that and
+     has always set its own left and right to a flat 1.35rem; this is that number
+     given a name, and the value is unchanged.
+     It is named because the Panel needs it. The section takes --corner on all
+     four sides, which is right while the composition is fitted to one screen and
+     the drawing is the thing setting the pace. Outside that band it stacks and is
+     as tall as it likes, and 9vh across is then 76px of white on each side of a
+     390px screen — 152 of the 390 spent on margin, against the 43 the CV
+     directly above it leaves. See the stacked block in the .panel section. */
+  --page-side: 1.35rem;
 
   /* ---- the cut title -------------------------------------------------------
      A display word dropped into the bottom corner and cut off by the end of the
@@ -1377,7 +1395,7 @@ body::after {
   display: flex;
   flex-direction: column;
   min-height: 100vh;
-  padding: var(--rhyme) 1.35rem 0;
+  padding: var(--rhyme) var(--page-side) 0;
 }
 .col {
   width: 100%;
@@ -3242,6 +3260,64 @@ body::after {
 /* 2.61% between new tab and tabs, less both half-widths */
 .frame-tabs  { width: 1.36cqw; margin-left: 1.415cqw; }
 
+/* ---- what is left of the chrome on a small Frame ----------------------------
+   #70. A share of the Frame's width is a glyph while the Frame is big and a
+   smudge once it is not, and every length in the block above is a share of the
+   Frame's width. At the 347px Frame a 390px phone gives this section, the back
+   chevron is 1.9px of box carrying a 0.28px stroke and the address is 3.3px
+   type: not small versions of themselves, but grey noise in the shape of a
+   titlebar. Both are DROPPED rather than approximated, which is the same stance
+   the stacked block below takes on the subheading's occlusion and for the same
+   reason — a thing drawn at a size it cannot be read at is worse than the thing
+   not being drawn.
+
+   A CONTAINER QUERY AND NOT A MEDIA QUERY, which is the whole reason this is
+   here rather than in the stacked block at the foot of the section. The question
+   is how wide the FRAME is and not how wide the window is, and the two come
+   apart: the composition is fitted to the smaller of the page's width and what
+   its height will carry, so a wide window on a short screen draws a small Frame
+   and a viewport gate would be asking about the wrong box.
+   .panel-frame is already `container-type: inline-size` for the chrome's own
+   sake, so the gate costs nothing — and the reflection's clone is a .panel-frame
+   with a container of its own, so both copies answer the same question about
+   themselves rather than one being told what the other measured. They agree by
+   arithmetic as well: the mirror is inset 7.9633% each side of a slab 118.9439%
+   of the Frame, and 1.189439 x (1 - 2 x 0.079633) is 1.0000, so the clone is the
+   Frame's width exactly and the two rungs change together at every size.
+
+   IT NEVER FIRES INSIDE THE ONE-SCREEN BAND, which is worth stating because a
+   gate that crossed the stacked block's would be two breakpoints pretending to
+   be one. In the band the drawing's width is at least (700 - 2 x --corner) /
+   0.5603, so the Frame bottoms out at 727px at the band's own shortest window and
+   grows from there; 520 is below every value it can take. Measured across
+   2560x650 down to 1100x700: 672 at the narrowest.
+
+   520px IS WHERE THE SMALLEST ENABLED GLYPH RUNS OUT. The back chevron is
+   0.54cqw, so 2.8px of box at this width, and its 1.5 stroke against a 10-unit
+   viewBox is 0.42px of ink — under half a device pixel at 1x and the last width
+   at which a hairline is a line at 2x. The address goes at the same point:
+   0.95cqw is 4.9px, which is below the smallest size any of the page's faces is
+   hinted for.
+
+   THE LIGHTS AND THE PILL STAY, and between them they are still unmistakably a
+   browser window: three discs of 4.9px and a rounded field across the middle.
+   The pill is left EMPTY rather than removed, which is not a degradation — it is
+   what the design render itself has, the address in it being authored here and
+   not measured. Nor does an empty field cost #57's user story 20 anything: what
+   that story is protecting against is a reader being TOLD the project is hosted
+   somewhere it is not, and a field with nothing in it says nothing. The whole
+   stage is `aria-hidden`, so no reader was ever offered the string either way. */
+@container (max-width: 520px) {
+  .frame-sidebar,
+  .frame-back,
+  .frame-fwd,
+  .frame-share,
+  .frame-new,
+  .frame-tabs,
+  .frame-reload,
+  .frame-url { display: none; }
+}
+
 /* ---- the window's content ---------------------------------------------------
    THE RECORDING DOES NOT REACH THE WINDOW'S EDGE, and the render is explicit
    about it: at every height sampled down the left side the outer rim is followed
@@ -3411,88 +3487,303 @@ body::after {
   color: var(--panel-muted);
 }
 
-/* ---- one column, on a phone, until #70 does this properly ------------------
-   The responsive reflow is its own change: the Rail becomes a horizontal row,
-   the Frame and its reflection survive at phone width, and the headline stops
-   being a scaled-down desktop. None of that is here. What IS here is the floor
-   under it — everything stacks in source order and the Frame keeps its space, so
-   a hand-held gets a plain page rather than a broken composition. The occlusion
-   is deliberately dropped rather than approximated: overlapping a line of type
-   at 380px wide hides the word instead of layering it.
+/* ---- one column, outside the band the composition is fitted to -------------
+   #70. The composition above is one drawing solved to stand on one screen: its
+   type, its gutters, its Frame and its plinth are all shares of a single width,
+   and that width is the smaller of what the page has across and what the fit
+   constant says the height will carry. This block is what happens where that
+   stops being possible — the section becomes a single column that is as tall as
+   it needs to be, in the order #70 asks for: masthead, body copy, the Frame with
+   its plinth and its reflection, then the engineering points, with the Rail
+   turned across the top.
 
-   IT ASKS WHETHER THIS IS A PHONE, AND NOT WHETHER THE WINDOW IS NARROW, which
-   is the whole of what changed here. `max-width: 900px` on its own was a guess
-   at the same question and it caught the wrong things: a 1280x720 laptop is
-   nowhere near it and used to get a composition that ran off the bottom of the
-   screen, while any browser window dragged narrow on a desktop got the phone
-   page. The composition now scales to fit rather than assuming a size, so there
-   is nothing left for a width gate to protect against until the pointer says a
-   finger — `pointer: coarse` — and the screen agrees. The second clause is the
-   backstop for the genuinely tiny window on a mouse-driven machine, where the
-   drawing would be scaled below the point its floors can hold it up.
+   THE GATE IS THE WIDTH HALF OF THE SHEET'S OWN ONE-SCREEN BAND, NEGATED — the
+   same 1100 the composing block near the top and the landing at the foot are
+   written against, and stated as `not all and (min-width: …)` rather than as a
+   `max-width` so it is that gate's exact complement at fractional widths too.
 
-   Both numbers are choices and neither is a measurement, which is the same thing
-   the 900 it replaces admitted. #70 is where they get replaced by something
-   derived. */
-@media (max-width: 900px) and (pointer: coarse), (max-width: 600px) {
+   AND ONLY THE WIDTH HALF, WHICH WAS MEASURED RATHER THAN ASSUMED. Taking the
+   whole band negated is the tidier sentence and it is wrong: the composition's
+   width is `min(what the page has across, what the height will carry)`, so a
+   short window makes a small drawing at any width and it looked like the height
+   belonged in the gate. Swept on the tree this block replaces, it does not.
+   2560x650 draws the composition 943 wide — copy at 9.4px, the slab clear of the
+   points by construction — and so do 1920x650, 1600x620 and 1280x660. The height
+   branch only pulls the drawing under the width the failures below start at when
+   the window is shorter than about 500px, which is not a window this page has
+   ever been asked to hold. A short, wide window keeps the composition.
+
+   IT DOES NOT HOLD, and the two failures are measured rather than a matter of
+   taste. Both come out of the same place: the copy has no floor — it cannot have
+   one, the .panel type scale says why — while the points and the Rail do, so
+   below a certain size the drawing stops being self-similar and the floored parts
+   start outgrowing the space the shares left them.
+
+     THE COPY GOES PAST READING. 6.2px at 820x1000, which is the harness's own
+     tablet, against the 10.5px a 1280x720 laptop gets — and that one the type
+     scale already names as the honest floor of the trade.
+
+     THE PLINTH LANDS ON THE ENGINEERING POINTS. Its left end overhangs the
+     Frame by a column — the .panel-plinth block is explicit that this is the
+     render's own arrangement — and the points, whose type has stopped shrinking
+     while their column has not, wrap onto enough lines to reach down into the
+     band of marble beside them. Swept at 900px of viewport height on the tree
+     this block replaces: 41px of slab over TRIAGE RULE ENGINE at 900px of width,
+     26px at 625, and clear from 925px up. The .panel-stage block is explicit
+     that the Frame is allowed to occlude the subheading and is not allowed to eat
+     the list, and it is the stone rather than the window that eats it.
+
+   So the drawing stops eating itself at about 925px, and 1100 is 175px above
+   that. The margin is deliberate and it is where the copy is: at 1024 the slab is
+   already clear and the paragraph is still 8.2px, so the number that ends the
+   hard failure is not the number the composition is worth drawing at. 1100 is the
+   nearest of the two that the sheet already stands on.
+
+   WHICH REPLACES TWO NUMBERS THAT WERE ADMITTEDLY GUESSES. It was
+   `(max-width: 900px) and (pointer: coarse), (max-width: 600px)`, and the pointer
+   clause is the one worth naming: it made a 820px tablet and a 820px browser
+   window two different pages, and it was the touch one that got the readable
+   page. Nothing in here is about fingers — there is nothing to tap — so there is
+   nothing for `pointer` to be asking. */
+@media not all and (min-width: 1100px) {
   .panel {
-    /* No height term, and no fit to solve for: the stack is taller than a screen
-       by design, so the drawing takes the width it is given and the floors on
-       the small sizes do the rest. */
-    --panel-w: calc(100vw - 2 * var(--corner));
+    /* No height term and no fit to solve for: the stack is taller than a screen
+       by design, so the drawing takes the width it is given.
+
+       --page-side AND NOT --corner, which is the single change that makes the
+       rest of this block a phone page rather than a narrow desktop one. The
+       section takes --corner on all four sides above, and --corner is 9vh — a
+       vertical measure, and the :root block that declares it says in as many
+       words that a margin tracking the window's height reads as an error the
+       moment it is used across. On a 390x844 phone it is 76px a side, so the
+       composition got 238 of 390 while the CV directly above it, which has
+       always set its own sides to --page-side, got 347. The drawing was not too
+       big for the screen; it had been given a third of one. Top and bottom keep
+       --corner, where it is measuring the thing it was written for.
+
+       `100vw` INCLUDES A CLASSIC SCROLLBAR AND THIS BOX DOES NOT, which is worth
+       writing down because it is the one length in here that is not exact. The
+       stacked page always scrolls, so on a platform that reserves a gutter for
+       the bar — Windows, and only outside overlay-scrollbar mode — --panel-w runs
+       about 15px over the box it describes. Nothing lays out FROM it here: the
+       track is `1fr` and the plinth's width a real percentage, so the drawing is
+       the right shape either way. What drifts is --panel-frame-w's three plinth
+       depths and the Frame's corner radius, by 15 in 1055 at the top of this
+       block's range and 15 in 332 on a phone — where the platforms that do it
+       are the ones with overlay bars, so in practice zero. It is inherited rather
+       than introduced, the block this replaces read 100vw too, and the fix is not
+       a smaller number: it is the stage becoming an inline-size container so the
+       plinth can be stated in `cqw`, which is a change to the composition above
+       as much as to this block and does not belong in a reflow. */
+    --panel-w: calc(100vw - 2 * var(--page-side));
     --panel-frame-w: var(--panel-w);
-    /* The three that have no floor of their own — see the type scale. Two of
-       them are the composition's height up there and the third is measured
-       against a row that is a stated height; none of that is true here, where
-       the section stacks and is as tall as it needs to be. So they get sizes
-       rather than shares: a share of a phone's width is a 15px masthead and a
-       2px paragraph. These are what a phone would have been given if it had ever
-       been drawn for one, and #70 is where it actually is. */
+    /* The five sizes, and every one of them is a size rather than a share. The
+       scale above is shares of --panel-w because the drawing is self-similar at
+       every width it is fitted to; here the drawing is as wide as the page and
+       the page can be 390px, where 0.0598 of the composition is a 21px masthead
+       and 0.0100 of it is a 3px paragraph. #70 asks for a headline that stays
+       readable, and a headline that is a share of a phone's width is exactly the
+       scaled-down desktop it asks for instead.
+
+       THE SUBHEADING IS A SHARE OF THE MASTHEAD AND NOT A CLAMP OF ITS OWN, and
+       that is the one structural difference from the scale above. The .panel type
+       scale names 1.59 — the render's masthead cap over its subheading's — as the
+       thing to preserve if either is ever re-chosen by eye, because it is what
+       makes the two read as one masthead rather than as a title and a caption.
+       Two clamps cannot hold a ratio: 12vw over 7.5vw is 1.60, but the two hit
+       their ceilings at different windows (the sub at 640px, the head at 667) and
+       both floors at different ones again, so the ratio walks to 1.667 over most
+       of this block's range and back. 0.625 is that 12-over-7.5 written once, and
+       it holds at every width because the masthead's own ends carry it: measured
+       1.600 from 300px to 1099. Which is the render's 1.59 to within a hundredth,
+       and nearer it than the composition's own pair — 0.0380 over 0.0598 is
+       1.574 — so the two regimes differ by less than either differs from the
+       render, and neither is the one to move.
+
+       THE OTHER THREE ARE SIZES RATHER THAN SHARES, and are chosen against what
+       they have to be readable at rather than derived from the drawing — there is
+       nothing left to derive them from, which is the whole of what this block is.
+       The floors are the 320px screen and the ceilings the 1099px window at the
+       top of the range; between them the vw term is what carries the drawing.
+         copy   3.8vw is 14.8px at 390 and 16.8 at the 1.05rem ceiling, which is
+                a page's running text at both ends. It cannot be a share here for
+                the reason it cannot be one above.
+         small  3.2vw, so the points sit at 0.84 of the copy — the same subordinate
+                step the scale above gives them at 0.668 of 1.00, rounded up
+                because 0.668 of 14.8px is 9.9 and the phone is where they are
+                read closest.
+         rail   2.9vw, and its floor and gap are solved against the three names —
+                see the Rail block below, which is where that arithmetic is.
+
+       THE FLOORS ARE IN REM HERE AND IN PX ABOVE, which is the same distinction
+       the scale above draws and the opposite answer. Inside the one-screen band
+       the root's font-size is solved from the window, so a rem is not the
+       reader's and a rem floor would shrink with the thing it holds up. Outside
+       the band the root is the reader's own, and a floor that answers to their
+       text size is the one to want. */
     --panel-masthead-size: clamp(2.5rem, 12vw, 5rem);
-    --panel-sub-size:      clamp(1.5rem, 7.5vw, 3rem);
+    --panel-sub-size:      calc(0.625 * var(--panel-masthead-size));
     --panel-copy-size:     clamp(0.85rem, 3.8vw, 1.05rem);
+    --panel-small-size:    clamp(0.8rem, 3.2vw, 0.95rem);
+    --panel-rail-size:     clamp(0.7rem, 2.9vw, 0.9rem);
+    /* One rhythm for the whole stack, so the head, the copy, the Frame and the
+       points are spaced by one number rather than by four margins that drift.
+       5vw is a third of the masthead's 12vw at every width between the ends, and
+       the ends are that same third of the masthead's: 2.5rem under 5rem, 1.5rem
+       under 2.5rem. So the air between the blocks is a third of the largest thing
+       on the page, which is what keeps the stack reading as one column of
+       separated things rather than as four things that happen to follow. */
+    --panel-stack-gap: clamp(1.5rem, 5vw, 2.5rem);
+
+    padding: var(--corner) var(--page-side);
+    /* ONE COLUMN, AND `1fr` RATHER THAN --panel-w, so the track is exactly the
+       content box and there is no free space in the grid at all. That is what
+       retires the base rule's `justify-content: center` without restating it —
+       centring nothing is centring — and the two children below each state their
+       own `align-self`, so its `align-items: center` is answered there rather
+       than overridden here. Neither is re-declared in this block: a declaration
+       that changes no pixel is a declaration the next reader has to disprove. */
     grid-template-columns: minmax(0, 1fr);
-    justify-content: stretch;
-    align-items: stretch;
-    row-gap: clamp(1.5rem, 4vh, 2.5rem);
+    row-gap: var(--panel-stack-gap);
   }
+  /* ---- the Rail, turned across the top ------------------------------------
+     Three names in a row instead of three down an edge, and the selection is
+     still the only thing that says which — white against grey, exactly as it is
+     down the side. What it needed was room and a size: at the 10px floor the
+     column wears, in a composition that had been squeezed to 238px, the three
+     names measured 305px against a box of 229 and RECORD ENGINE was cut off by
+     the section's own `overflow-x: clip`. A Rail that does not name the third
+     project is not a Rail.
+
+     THE SIZE AND THE GAP ARE SOLVED TOGETHER AGAINST THE THREE NAMES, because
+     RECORD ENGINE at 0.22em of tracking is a long word. At 12px the three
+     measure 321, which leaves 11px for two gaps in the 332 a 375px screen gives
+     the composition — so the third name goes onto a line of its own at the
+     commonest phone width there is. The 0.7rem floor brings them to 299 and the
+     0.9rem gap floor takes the row to 328: one line from 374px of window up,
+     which is both common iPhone widths. The ceilings let the pair grow again on
+     a stacked window.
+
+     `wrap` UNDERNEATH THAT, because 360 and 320 are real screens and neither
+     fits: they put RECORD ENGINE on a second line rather than losing it to the
+     section's own `overflow-x: clip`, which is what happened before — 305px of
+     names in a 229px box, and the third project simply not named. Between the two
+     the list cannot overflow at any width, which is half of #70's no-horizontal-
+     scroll criterion; the other half is the slab, which is clipped rather than
+     fitted, below.
+
+     `baseline` and not the column's `center`: turned across, these are three
+     lines of type on one line and they sit on it. */
   .panel-rail {
     flex-direction: row;
+    flex-wrap: wrap;
     justify-content: flex-start;
-    gap: clamp(1rem, 5vw, 2rem);
+    align-items: baseline;
+    column-gap: clamp(0.9rem, 4vw, 2rem);
+    /* Only ever seen on the two screens too narrow for one line, and in ems of
+       the Rail's own size so it follows the type it is separating. Half a line
+       of it: .panel's line-height is 1.5, so the names already carry a quarter of
+       their size above and below, and 0.5em on top puts a clear line of space
+       between two rows without opening a gap a reader could take for a break
+       between two lists. */
+    row-gap: 0.5em;
   }
   .panel-rail li { writing-mode: horizontal-tb; transform: none; }
+  /* ---- the stack ----------------------------------------------------------
+     Twelve columns become one, both rows become auto, and the four blocks are
+     placed again — because #70's order is not the source order. The markup is
+     written in the composition's own reading order, where the points sit to the
+     LEFT of the Frame in row two and so come before it; stacked, the ticket asks
+     for the Frame directly under the copy with the points last. Stated as rows
+     here rather than reordered in the markup, so the composition above keeps the
+     document order it was written for. Nothing in the stage is focusable or in
+     the accessibility tree — the whole box is `aria-hidden` and none of the
+     chrome is a control — so there is no reading order for this to disagree
+     with. */
   .panel-inner {
     grid-template-columns: minmax(0, 1fr);
     grid-template-rows: none;
     align-self: stretch;
+    row-gap: var(--panel-stack-gap);
   }
   .panel-head, .panel-copy, .panel-points, .panel-stage {
-    grid-area: auto;
+    grid-column: 1;
     align-self: auto;
   }
-  /* The slab loses its overhang and becomes exactly as wide as the window it
-     holds up. There is no column to hang off here — the twelve-column grid is a
-     single column on a phone — and a plinth wider than the Frame with nothing on
-     either side of it would just be a wider slab. #70 owns the real reflow. */
-  .panel-stage > .panel-frame { margin-left: 0; }
-  /* The slab keeps its proportion to the Frame — a block narrower at the back
-     than the window standing on it would have the Frame's foot hanging off its
-     own plinth — so only the offset changes, by the same 8.5110% the Frame gave
-     up. The reflection is stated against the SLAB and so needs no rule here. */
-  .panel-plinth { margin-left: -8.5110%; }
-  /* The hanging second line goes back into its own box: with nothing beside it
-     and nothing over it, a head that stopped short of its own ink would just
-     collide with the paragraph below. */
+  .panel-head   { grid-row: 1; }
+  .panel-copy   { grid-row: 2; }
+  .panel-stage  { grid-row: 3; }
+  .panel-points { grid-row: 4; }
+  /* The hanging second line goes back into its own box, and the occlusion with
+     it. It is dropped rather than approximated: the Frame is the full width of
+     the column here, so a window laid over the subheading would cover the line
+     rather than bite a quarter off the letters — hiding the word instead of
+     layering it. --panel-frame-drop is what the stage gave up with it. */
   .panel-head { margin-bottom: 0; }
-  .panel-points { margin-top: clamp(1.5rem, 4vh, 2.5rem); }
+  .panel-stage { margin-top: 0; }
+  /* The row gap is the whole of the spacing now, so the list's own top margin —
+     one subheading line plus air, which is what cleared the hanging line beside
+     the Frame — has nothing left to clear. Its INTERNAL gap stays a share of the
+     drawing and so had shrunk to 4px at phone width, which ran the four points
+     together into one block of type; a multiple of their own size holds them
+     apart at every width instead.
+
+     1.35 of that size, and the number it has to beat is the gap already INSIDE
+     each point: the figure line carries `margin: 0.35em` off its own heading, so
+     anything at or under 0.35 would space four points exactly as far apart as the
+     two lines of one, and the list would read as eight lines rather than as four
+     pairs. 1.35 is that plus one whole line of the type — the smallest step that
+     makes the grouping unambiguous — and it is the same shape as the base rule's
+     share, one number times a size, rather than a length arriving from nowhere.
+     A longhand and not `margin`, which is the trap the base rule's own comment
+     names: the shorthand would take its `list-style` and `padding` with it. */
+  .panel-points {
+    margin-top: 0;
+    row-gap: calc(1.35 * var(--panel-small-size));
+  }
+  /* The rule moves from the paragraph's left edge to its top, which is where a
+     divider goes when the thing it divides is above rather than beside.
+
+     AND THE PARAGRAPH GETS A MEASURE. Beside the Frame it is six columns of
+     twelve and its line length is settled by the grid; across the whole page it
+     is not, and at the top of this block's range that is a 1055px line at 16.8px
+     — 133 characters measured, near twice anything is read at. 34em of its own
+     size is 571px and 72, which is the long end of the usual range and the right
+     end to be at: the paragraph is five lines there and the block above it is an
+     80px masthead, so a narrower measure would read as a column of caption under
+     a poster. On a phone the column is narrower than the cap and nothing here
+     applies — 50 characters at 390px. */
   .panel-copy {
     border-left: 0;
     border-top: 1px solid var(--panel-rule);
-    padding: clamp(1rem, 3vh, 1.5rem) 0 0;
-    margin-top: clamp(1rem, 3vh, 1.5rem);
+    padding: var(--panel-stack-gap) 0 0;
+    max-width: 34em;
   }
-  .panel-stage { margin-top: clamp(1.5rem, 4vh, 2.5rem); }
+  /* ---- the plinth, re-solved for a Frame that fills the stage ---------------
+     THE SLAB IS 1.189439 FRAME WIDTHS AND IS CENTRED ON THE FRAME, always: the
+     plate is rendered at exactly that aspect ratio, the reflection and the
+     contact shadow are both stated as 7.9633% of the slab because that is where
+     the Frame's edges fall on it, and design/plinth/build-slab.py frames its
+     camera on the same numbers. It is not a proportion this block is free to
+     change — it is the shape of the picture.
+
+     The percentages above cannot come through unchanged, because they are shares
+     of the STAGE and the Frame is not the same share of the stage here. Up there
+     the stage is 0.831281 of the composition and the Frame 0.746923, so the Frame
+     is 89.8517% of the box and the overhang 8.5110% of it; here the Frame fills
+     the stage, so the same overhang is 9.4719% and the slab 118.9439%. Carried
+     over as they stood, the block came out 10% narrow and — because only its left
+     margin had been re-stated — asymmetric: it overhung by 8.5% on the left while
+     ending 1.6% SHORT of the Frame's right foot, which is a window standing off
+     the end of its own plinth. The reflection inherited the error exactly, since
+     it is stated as a share of the slab: the mirror came out 10.2% narrower than
+     the window lying in it, at every width the stack was drawn at.
+     Both are one number each, and both are the render's. */
+  .panel-stage > .panel-frame { margin-left: 0; }
+  .panel-plinth {
+    margin-left: -9.4719%;
+    width: 118.9439%;
+  }
 }
 
 /* ============================================================================
