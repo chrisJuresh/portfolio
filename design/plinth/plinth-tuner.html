@@ -650,7 +650,7 @@ until asked for.">crossing</button>
         { k: "dissolve", label: "plinth · dissolve",
           tip: "Opacity only." },
         { k: "hold", label: "plinth · hold",
-          tip: "THE STONE STAYS. The projects change and the floor they stand on does not — which is\nonly legible against a Frame and a text that DO leave, and is the reason for mixing\nrather than choosing a preset.\nIt is also the one whose crossing wants the two Panels to share a plinth rather than\nhold one each, and sharing is an arrangement only #72 can make: turn `crossing` on\nwith this selected and you are looking at two slabs in the same place. Which is\nexactly right while they are the same stone." }
+          tip: "THE STONE STAYS. The projects change and the floor they stand on does not — which is\nonly legible against a Frame and a text that DO leave, and is the reason for mixing\nrather than choosing a preset.\nIt is also the one whose crossing wants the two Panels to share a plinth rather than\nhold one each, and sharing is an arrangement that needs a second Panel: turn `crossing` on\nwith this selected and you are looking at two slabs in the same place. Which is\nexactly right while they are the same stone." }
       ] }
   ];
 
@@ -1863,7 +1863,24 @@ until asked for.">crossing</button>
         }
       });
     });
-    p.style.setProperty("--exit", String(t));
+    setExitOn(p, t);
+  }
+
+  /* WHERE --exit IS WRITTEN, AND WHY IT IS NOT WRITTEN DIRECTLY. Since #72 the
+     shipping page drives --exit itself, off the scroll position, from
+     arrival.js — so an inline value set from out here is overwritten by the next
+     scroll or resize inside the iframe, and this tuner produces both: it puts
+     the Panel on screen with scrollIntoView, and its own panes are laid out
+     against the window. So the scrub asks arrival.js to HOLD the number instead,
+     through the handle that file exposes for exactly this, the way
+     design/cut-title/morph-tuner.html holds the morph's T.
+     The direct write is kept as the fallback and is not dead: arrival.js returns
+     before it defines anything under `prefers-reduced-motion`, and then there is
+     no driver to fight and nothing to ask. */
+  function setExitOn(p, t) {
+    var w = p.ownerDocument && p.ownerDocument.defaultView;
+    if (w && w.__arrival && w.__arrival.setExit) w.__arrival.setExit(t);
+    else p.style.setProperty("--exit", String(t));
   }
 
   function applyExit() {
@@ -1907,7 +1924,7 @@ until asked for.">crossing</button>
         if (s < worst - 1e-9) { worst = s; worstAt = u; worstG = EXIT_GROUPS[j].label; }
       }
     }
-    panel.style.setProperty("--exit", String(exitT));
+    setExitOn(panel, exitT);
     presenceEl.textContent = "thinnest moment " + worst.toFixed(3) +
       " of one composition — " + worstG + ", t " + worstAt.toFixed(2);
     presenceEl.className = worst < PRESENCE_FLOOR ? "thin" : "";
@@ -2025,8 +2042,8 @@ until asked for.">crossing</button>
   function positionExit() {
     markExit();
     if (!panel) return;
-    panel.style.setProperty("--exit", String(exitT));
-    if (ghostPanel) ghostPanel.style.setProperty("--exit", String(exitT - 1));
+    setExitOn(panel, exitT);
+    if (ghostPanel) setExitOn(ghostPanel, exitT - 1);
   }
   function setExit(t) {
     exitT = Math.max(-1, Math.min(1, t));
@@ -2070,7 +2087,7 @@ until asked for.">crossing</button>
      is left of the second page is the section and nothing else.
 
      IT IS THE SAME PROJECT, BECAUSE THERE IS ONLY ONE. #58 puts the Eater Map
-     and the Record Engine out of scope and #72 is where a second Panel arrives,
+     and the Record Engine out of scope and #72 shipped without adding one,
      so what stands here is this composition arriving — which is exactly the
      right thing to judge a crossing on, and would be even if there were three.
      Its Rail is moved to the second project so the two can be told apart at a
@@ -2102,10 +2119,21 @@ until asked for.">crossing</button>
       "body::after { display: none !important; }" +
       ".cut-title { visibility: hidden !important; }";
     ghostDoc.head.appendChild(s);
+    /* The ghost's Rail names the second project, so the two compositions can be
+       told apart at a glance. `aria-current` COMES OFF AND DOES NOT MOVE, which
+       matters since #72 made the first entry a link and put the announcement on
+       it: left where it was, the ghost would draw one project as selected while
+       announcing another, and the second entry has no link to move it to —
+       putting it on the bare <li> is the thing #64 argued against, because a
+       screen reader is not obliged to say anything about it there. So the ghost
+       announces no current project, which is the truth about a stand-in for a
+       Panel that does not exist. It is a dev preview either way. */
     var rail = ghostDoc.querySelectorAll(".panel-rail li");
     if (rail.length > 1) {
       rail[0].classList.remove("is-selected");
       rail[1].classList.add("is-selected");
+      var was = rail[0].querySelector("[aria-current]");
+      if (was) was.removeAttribute("aria-current");
     }
   }
 
@@ -2872,10 +2900,11 @@ until asked for.">crossing</button>
     L.push("`node design/tools/check-panel-exit.mjs` asserts the same at 51 samples,");
     L.push("across every treatment and five rates, and checks the rest of #74 with it.");
     L.push("");
-    L.push("NOTHING DRIVES --exit ON THE SHIPPING PAGE YET. It is declared 0 in the");
-    L.push("sheet and only a crossing between Panels moves it; #72 is that crossing.");
-    L.push("So pasting the above changes what a departure LOOKS like and does not");
-    L.push("make one happen.");
+    L.push("WHAT DRIVES --exit ON THE SHIPPING PAGE is the scroll position, since #72:");
+    L.push("arrival.js writes (turn - 1) on the section, so the Panel ARRIVES as the");
+    L.push("page crosses into it. A departure needs a second Panel to depart towards,");
+    L.push("so pasting the above changes what one would look like rather than making");
+    L.push("one happen.");
     L.push("");
 
     var state = { mixture: {}, values: {} };

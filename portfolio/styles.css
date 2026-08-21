@@ -2578,22 +2578,39 @@ body::after {
    rotating each item turns only its own glyphs. Each then measures as a tall
    narrow box in an ordinary column, so `space-between` still means what it says.
    Exactly one is selected, and it is said twice: .is-selected here for anything
-   looking, and a .visually-hidden qualifier in the markup for anything
-   listening — the comment there says why that rather than `aria-current`. */
+   looking, and `aria-current` on that entry's link for anything listening — the
+   comment in index.html says why that is now the honest pair.
+
+   TWO BOXES SINCE #72, AND THE SPLIT IS THE LANDMARK'S. .panel-rail is a <nav>
+   and owns the PLACEMENT — the grid cell it holds here, the page margin it
+   stands in inside the turn regime, the opacity the landing gives it — and
+   .panel-rail-items is the <ul> inside it and owns the LIST. Every rule that
+   placed the Rail before is still on .panel-rail and unmoved; what came off it
+   is the flex column the three names are spread down, which is the list's own
+   business. Doing it the other way round — the landmark on the inner box — would
+   have put a nav inside a list item, and `display: contents` on the <ul> to keep
+   one box is exactly what costs the list its role in a screen reader. */
 .panel-rail {
-  list-style: none;
-  margin: 0;
-  padding: 0;
   display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  align-items: center;
   /* The one thing in the section that answers to the SCREEN and not to the
      composition: it spans the page's whole margin-to-margin height, whatever the
      drawing beside it came out at. `stretch` against the `align-items: center`
      the panel sets for the composition — three names spread over part of the
      window would read as a list that ran out rather than as an edge. */
   align-self: stretch;
+}
+.panel-rail-items {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  /* Fills the <nav> in both axes, so `space-between` is spreading the names down
+     the whole of whatever height the placement above arrived at rather than down
+     the height of the three names themselves. */
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
 }
 .panel-rail li {
   writing-mode: vertical-rl;
@@ -2603,8 +2620,29 @@ body::after {
   letter-spacing: 0.22em;
   color: var(--panel-muted);
 }
-/* The whole of the selection, and the whole of what #72 will have to move. */
+/* The whole of the selection, and it reaches the link because the link takes its
+   colour from the item rather than having one of its own. */
 .panel-rail li.is-selected { color: var(--panel-ink); }
+/* ---- the entries that navigate — #72 ---------------------------------------
+   `a { color: inherit }` is already the page's rule, so the only thing an entry
+   gains by holding a link is the underline, which goes: these are three words in
+   a margin and an underline across a rotated one reads as a strikethrough.
+
+   THE FOCUS RING IS THE PAGE'S OWN, the hairline-and-3px the carousel, the theme
+   toggle and the cut title all use, so a reader tabbing down the page is not
+   handed a different indicator by the last thing on it. It cannot be clipped by
+   .panel's `overflow: clip` even though the Rail stands at `left: 0` inside the
+   turn regime: the item is centred in a --corner-wide column and measures one
+   line of type across, so the ring is tens of pixels clear of the edge. */
+.panel-rail a { text-decoration: none; }
+.panel-rail li:not(.is-selected) a:hover { color: var(--panel-ink); }
+.panel-rail a:focus-visible { outline: 1px solid currentColor; outline-offset: 3px; }
+/* Set by arrival.js for as long as the Rail is still fading in over the top of
+   the CV, and only inside the turn regime — an opacity-0 link is still a click
+   target and the Rail's first entry stands in the bottom-left of the first
+   screen. The file says why an attribute rather than a property; the keyboard is
+   untouched, which is the point. */
+.panel-rail[data-faint] { pointer-events: none; }
 
 /* ---- the composition -------------------------------------------------------
    Twelve columns, two rows, and the placements below are the design render read
@@ -3162,8 +3200,9 @@ body::after {
    INERT, AND SAID TWICE. `pointer-events: none` here, and nothing in the markup
    below is a button or a link — see the comment there. The Frame is not a link
    because the photos site binds to loopback and there is nowhere to send anyone;
-   this is the arrangement that lets #72 or a later ticket switch that on by
-   changing the elements, without moving a single length in this block.
+   this is the arrangement that lets a later ticket switch that on by changing the
+   elements, without moving a single length in this block. #58 puts the chrome
+   being interactive out of scope, so #72 did not take it.
 
    A flex row, not ten absolutely-positioned percentages, and the measured
    centres are still what places everything: each gap below is the distance
@@ -3674,7 +3713,7 @@ body::after {
 
      `baseline` and not the column's `center`: turned across, these are three
      lines of type on one line and they sit on it. */
-  .panel-rail {
+  .panel-rail-items {
     flex-direction: row;
     flex-wrap: wrap;
     justify-content: flex-start;
@@ -4008,10 +4047,12 @@ body::after {
    which is the treatment that makes mixing worth having at all, because it is
    only legible against a Frame and a text that do leave. It is also the one
    whose crossing wants the two Panels to SHARE a plinth rather than to hold one
-   each, and sharing is an arrangement only #72 can make; until it does, two
-   Panels crossing with `hold` both draw their own slab in the same place. Which
-   is exactly right when the two slabs are the same stone, and is worth knowing
-   before a second marble is chosen for a second project. */
+   each, and sharing is an arrangement that needs a SECOND PANEL to be made — #72
+   drove --exit off the scroll position but there is still one composition, so
+   there is nothing to share a slab with. Two Panels crossing with `hold` will
+   each draw their own slab in the same place until then, which is exactly right
+   while the two are the same stone, and is worth knowing before a second marble
+   is chosen for a second project. */
 .panel[data-exit-plinth="hold"] { --exit-plinth-x: 0; --exit-plinth-y: 0;
                                   --exit-plinth-scale: 0; --exit-plinth-fade: 0; }
 
@@ -5231,7 +5272,7 @@ body::after {
      leaves there, and an index in the margin is a thing a printed page does.
      `left`, `top` and `bottom` are against .panel's padding box, which is its
      whole box — absolute insets ignore padding — so `left: 0` is the window's
-     edge and the width IS the margin, with .panel-rail's own `align-items:
+     edge and the width IS the margin, with .panel-rail-items' own `align-items:
      center` putting the type down the middle of it. */
   .panel-rail {
     position: absolute;
@@ -5527,6 +5568,18 @@ body::after {
      block in the section reaches its own factor directly. */
   .panel-copy { opacity: calc(clamp(0, calc(var(--enter) / 0.34), 1) * var(--exit-text-o)); }
   .panel-rail { opacity: clamp(0, calc(var(--enter) / 0.34), 1); }
+  /* AND THE RAIL IS DRAWN WHENEVER IT HOLDS FOCUS — #72 asks for a visible focus
+     state on the Rail's labels, and at the top of the page --enter is 0, so a
+     reader tabbing off the end of the CV would land on a link that is there,
+     announced, and invisible. `:focus-within` and not `:has(:focus-visible)`:
+     the ring itself is still `:focus-visible`'s to draw, so a mouse click does
+     not paint one, but the thing the ring is drawn ON has to be opaque either
+     way — including for the one browser that draws a ring on a click.
+     Not scrolling instead, which was the other answer and is worse: the Rail
+     stands above the fold at rest on purpose, and moving the page because focus
+     arrived would take the reader somewhere they had not asked to go. Following
+     the link is what does that, and that is a keystroke away. */
+  .panel-rail:focus-within { opacity: 1; }
 }
 
 /* ---- print: clean text CV, no photos ------------------------------------- */

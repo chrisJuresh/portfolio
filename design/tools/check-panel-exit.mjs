@@ -17,8 +17,9 @@
    composites one layer rather than five.
 
    THE CROSSING IS SIMULATED FROM ONE PANEL, WHICH IS THE HONEST THING TO DO
-   AND NOT A SHORTCUT. There is one Panel on the page — #72 is where a second
-   one arrives — but the whole design of the treatments is that arrival IS
+   AND NOT A SHORTCUT. There is one Panel on the page — #72 drove --exit off the
+   scroll position and did not add a second, and #58 puts the other two out of
+   scope — but the whole design of the treatments is that arrival IS
    departure reflected through zero: a crossing at progress t puts the outgoing
    Panel at --exit t and the incoming one at t - 1. So one Panel, read twice,
    is exactly the pair, and reading it twice is the only way to measure the pair

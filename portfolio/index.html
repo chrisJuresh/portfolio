@@ -294,7 +294,7 @@
        two things that used to sit at this line, an @font-face at the foot of
        styles.css and a script that attached /fonts/friz-local.css on localhost
        only, are both gone. See the cut title block in styles.css. -->
-  <link rel="stylesheet" href="styles.css?v=36">
+  <link rel="stylesheet" href="styles.css?v=37">
 </head>
 <body>
   <!-- Only ever on screen while a corner picture is genuinely outstanding: it is
@@ -372,35 +372,62 @@
        asked to beat, exactly as it reads the subheading's two text nodes. A
        default nobody has written down is not something a tuner can call shipped.
 
-       NOTHING MOVES BECAUSE OF THEM. --exit is 0 and is declared 0 in the
-       sheet, so all three treatments resolve to the settled composition — the
-       page is byte-identical to one without them, measured, at two widths. What
-       writes --exit is a crossing between Panels, and there is only one Panel:
-       #72 is where these start being driven. -->
+       WHAT DRIVES THEM IS THE SCROLL POSITION, since #72: arrival.js writes
+       --exit as (turn - 1), so this composition ARRIVES as the page crosses into
+       the section rather than standing there waiting to be scrolled to. The
+       settled page is unchanged by that — --exit is 0 at the port and declared 0
+       in the sheet, and the render is byte-identical to one without any of this
+       at four widths in both themes, measured. A crossing between two Panels is
+       the other half of the same number and needs a second Panel to have one. -->
+
   <section class="panel" id="projects" aria-labelledby="panel-masthead"
            data-exit-text="lift" data-exit-frame="recede" data-exit-plinth="sink">
-    <!-- The Rail. Three projects, one Panel: Photo Vault is the selected one and
-         the other two are grey and inert until they have compositions of their
-         own. They are not links yet — there is nowhere to send anyone — and #72
-         is where they start navigating.
+    <!-- The Rail — and as of #72 it navigates. Three projects, one Panel: Photo
+         Vault has a composition and is a link to it; the other two are grey and
+         inert until they have one of their own, which is #58's own out-of-scope
+         note rather than an omission here.
 
-         A PLAIN LABELLED LIST, NOT A <nav>, AND NOT `aria-current`, because
-         neither would be telling the truth yet. A nav landmark announces a set
-         of links to somewhere; this is three words, two of which lead nowhere,
-         and a landmark that offers nothing to navigate is worse than no landmark
-         at all. `aria-current` has the same problem one level down — it is
-         defined against the element a user has moved to, and on a plain <li>
-         screen readers are not obliged to say anything about it, so the
-         selection would be drawn and not announced while looking as though it
-         had been. So the qualifier is words: .visually-hidden, the same device
-         the cut title uses for the word it draws as a picture. #72 turns these
-         into links, and that is the change that earns the <nav> and the
-         `aria-current` back. -->
-    <ul class="panel-rail" aria-label="Projects">
-      <li class="is-selected">Photo Vault<span class="visually-hidden"> — shown below</span></li>
-      <li>Eater Map</li>
-      <li>Record Engine</li>
-    </ul>
+         AN ENTRY IS A ROUTE IF IT HOLDS A LINK, and that is the whole of the
+         machinery — there is no `data-` attribute saying which Panel an entry
+         names, because the link's own fragment already says it. app.js reads the
+         hash, finds the section it names, and eases the page onto that section's
+         snap port; an entry with no link has no Panel and there is nothing to
+         read. So the third and fourth entries are two more <li> with an <a> in
+         them on the day their Panels arrive, and nothing else changes.
+
+         WHICH IS WHAT EARNS THE <nav> AND `aria-current` BACK. #64 argued
+         against both, and the argument was about there being nowhere to go: a
+         landmark announcing a set of links to somewhere, over three words that
+         all led nowhere. One of them leads somewhere now, and `aria-current` is
+         defined against exactly this — the item in a set that the reader is
+         currently on — and it is on an <a>, where it is announced, rather than
+         on a plain <li>, where screen readers are not obliged to say anything
+         about it. That is why the .visually-hidden qualifier has come off this
+         entry and gone onto the two that are still inert: the selection is now
+         announced by the role, and what is not yet announced is why two of the
+         three cannot be followed.
+
+         `role="list"` ON A LIST THAT ALREADY IS ONE, because .panel-rail-items
+         carries `list-style: none` and VoiceOver drops list semantics from a
+         list with no markers. #72 asks for the Rail to be announced as a list of
+         projects; the role is what makes that true in the browser the criterion
+         is most likely to be checked in.
+
+         HREFS ARE REWRITTEN AT RUN TIME, and the reason is the one app.js
+         documents at length for the masthead's link and the cut title's: this
+         document sets <base href="/portfolio/"> while Vercel serves it at
+         /portfolio, so a bare "#projects" resolves to a different path and the
+         browser reloads the page to reach an anchor one frame away. app.js
+         replaces it with location.pathname + the fragment. Left as written it
+         still navigates — it just pays for a reload — which is the right
+         fallback for a browser that runs no script at all. -->
+    <nav class="panel-rail" aria-label="Projects">
+      <ul class="panel-rail-items" role="list">
+        <li class="is-selected"><a href="#projects" aria-current="true">Photo Vault</a></li>
+        <li>Eater Map<span class="visually-hidden"> — no page yet</span></li>
+        <li>Record Engine<span class="visually-hidden"> — no page yet</span></li>
+      </ul>
+    </nav>
     <div class="panel-inner">
       <header class="panel-head">
         <!-- WHAT THE CUT WORD TAKES THE PLACE OF, and in the one-screen band not
@@ -703,7 +730,7 @@
   </svg>
   <noscript><p style="text-align:center;font-family:'Sitka Text',Charter,'Iowan Old Style',Georgia,serif;padding:2rem">This site needs JavaScript enabled.</p></noscript>
   <script src="content.js?v=3"></script>
-  <script src="app.js?v=25"></script>
+  <script src="app.js?v=26"></script>
   <!-- Last, and after app.js rather than beside it: the effect stack is a
        treatment of a finished page, and drawAscii() measures the corner pictures
        against a layout that has to exist first. It is also the one script here
@@ -729,7 +756,7 @@
        It is not last only because the three below touch the Frame and want to
        run in their own order; nothing here depends on any of them, or they on
        this. -->
-  <script src="arrival.js?v=1"></script>
+  <script src="arrival.js?v=2"></script>
   <!-- The Panel's recording, and last for the third time for the third version
        of the same reason: all it does is hand the <video> its sources, and a
        browser that skips it keeps the poster that is already on screen — which

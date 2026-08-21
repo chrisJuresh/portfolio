@@ -566,6 +566,105 @@
       if (turnRaf === null || turnTarget !== target) turnPage(target);
     }, { passive: false });
 
+    // ---- the Rail, as the direct route into the section ----------------------
+    // #72. The Rail names the projects and is what a reader navigates by; this
+    // is the half of it that has to know about the turn. The other half — the
+    // composition arriving as the page crosses — is one number in arrival.js and
+    // knows nothing about this.
+    //
+    // A THIRD CONSUMER OF THE ARBITRATION ABOVE, NOT A SECOND LISTENER, which is
+    // why it is inside this block with the turn rather than in a file of its own.
+    // It does not read the wheel at all: it calls the same turnPage() the wheel
+    // handler calls, so a notch taken while a Rail-initiated turn is in the air
+    // arrives at the handler above with the turn already running and RETARGETS it
+    // — the two carried terms in the quintic take the speed and the force the
+    // Rail's turn was carrying and reverse them continuously. A second listener
+    // easing the window itself would have been the same journey driven twice, and
+    // the reversal would have been the thing that showed it.
+    //
+    // WITH ONE PANEL THE SECTION HAS ONE STOP, and it is the port the turn
+    // already targets, so nothing here competes with the page turn for a gesture
+    // and the turn behaves exactly as it did. When the other two Panels exist,
+    // panelFor() below already resolves each Rail entry to its own section and
+    // what has to grow is panelPort(), from one port to one per Panel. #58 says
+    // that plainly: the machinery is built for three, and there is one to move to.
+    var rail = document.querySelector(".panel-rail");
+    if (rail) {
+      // THE BASE-HREF TRAP, and the same fix panelHref exists for further up. The
+      // Rail is static markup so it cannot compute this; written as "#projects"
+      // it resolves against <base href="/portfolio/"> rather than against the
+      // document, and following it would RELOAD the page to reach an anchor one
+      // frame away. Only the fragment is kept from what the markup said.
+      var railLinks = rail.querySelectorAll("a[href]");
+      for (var ri = 0; ri < railLinks.length; ri++) {
+        if (railLinks[ri].hash) railLinks[ri].setAttribute("href", location.pathname + railLinks[ri].hash);
+      }
+
+      // The Panel a Rail entry names, or null for an entry that names none yet —
+      // which is the whole of what makes the other two inert. An entry is a route
+      // if it holds a link; nothing here carries a list of which projects have
+      // compositions, because the markup already says it by having an <a> or not.
+      function panelFor(a) {
+        var id = a && a.hash ? a.hash.slice(1) : "";
+        var el = id ? document.getElementById(id) : null;
+        return el && el.classList.contains("panel") ? el : null;
+      }
+
+      // Which entry is drawn and announced as the current one, DERIVED FROM THE
+      // PANEL rather than restated. The markup ships with the answer already in
+      // it, because the section is on screen at first paint and a Rail that
+      // waited for a script would say nothing for a frame — but the markup is not
+      // the authority, this is, so the two cannot drift.
+      function selectRail(id) {
+        var items = rail.querySelectorAll("li");
+        for (var i = 0; i < items.length; i++) {
+          var a = items[i].querySelector("a[href]");
+          var mine = !!a && a.hash === "#" + id;
+          items[i].classList.toggle("is-selected", mine);
+          if (!a) continue;
+          if (mine) a.setAttribute("aria-current", "true");
+          else a.removeAttribute("aria-current");
+        }
+      }
+
+      // The Panel on screen. One Panel, so it is that one, and the selection
+      // never changes — which is why there is no scroll listener here. This is
+      // the seam a second Panel arrives at: what it becomes is "the Panel whose
+      // stop the page is nearest", and selectRail() above already takes an id.
+      function onScreen() {
+        var panels = document.querySelectorAll(".panel");
+        return panels.length === 1 ? panels[0] : null;
+      }
+
+      rail.addEventListener("click", function (e) {
+        var a = e.target && e.target.closest ? e.target.closest("a[href]") : null;
+        if (!a || !rail.contains(a)) return;
+        var dest = panelFor(a);
+        if (!dest) return;                                // an entry with no Panel
+        selectRail(dest.id);
+        // OUTSIDE THE TURN REGIME, AND FOR A READER WHO ASKED FOR NO MOVEMENT,
+        // THE LINK IS THE WHOLE ROUTE. There is no turn to run — the section is
+        // the next block in an ordinary column — so the browser jumps to the
+        // fragment and `scroll-margin-top` puts it where the landing wants it.
+        // #72 asks for the Rail to still navigate when the movement is removed,
+        // and this is that: not a shortened turn, the anchor doing its own job.
+        if (reduce || !inTurn()) return;
+        var target = panelPort();
+        if (turnRaf === null && Math.abs(window.scrollY - target) < 1) return;
+        e.preventDefault();
+        if (turnRaf === null || turnTarget !== target) turnPage(target);
+        // The fragment the anchor would have left, without the history entry it
+        // would have left with it: the turn is not a navigation, and a Back that
+        // only un-set a fragment would move the page without the reader asking.
+        // Reloading on this URL lands on the section already settled, which is
+        // what a deep link to it is meant to do.
+        try { history.replaceState(null, "", a.href); } catch (_) {}
+      });
+
+      var here = onScreen();
+      if (here) selectRail(here.id);
+    }
+
     // drag to scroll (mouse / pen), with a fling on release; touch stays native
     var down = false, lastX = 0, flingV = 0, lastMoveT = 0;
     var FLING = 3.2;                                    // how far a flick carries past the drag
