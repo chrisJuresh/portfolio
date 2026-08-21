@@ -25,10 +25,19 @@
  * reports it beside every shot and can force the lower two, which is what
  * #67 means by each tier having been seen rather than assumed.
  *
- * IT RENDERS ONCE, which is the promise #57 makes about this Frame. What sits
- * behind the titlebar is the Frame's own fill and the page's backdrop outside
- * its corners — both constant — so there is nothing to redraw until the box
- * changes size. #66 built three treatments of that backdrop and measured them:
+ * IT RENDERS ONCE PER BACKDROP, and that qualifier is #73 arriving after this
+ * file rather than a hedge. The promise #57 makes about this Frame is that there
+ * is no per-frame cost, and there is none: what sits behind the titlebar is the
+ * Frame's own fill and the page's backdrop outside its corners, and neither
+ * moves while the page is at rest. What they are no longer is CONSTANT. --dark
+ * runs 0 to 1 off scroll position and every --panel-* colour is a mix against
+ * it, so the backdrop is white at the top of the page and black once the reader
+ * has crossed into the section — and a canvas baked at load and never revisited
+ * held a near-white titlebar over near-white chrome ink for the whole of the
+ * crossing and everything after it. See the `drawn` block, which is where the
+ * bake is now keyed to what it was baked against; a crossing costs at most
+ * sixteen renders of a 25px strip and an untouched page costs none.
+ * #66 built three treatments of that backdrop and measured them:
  * the render cannot tell the Frame's fill from the page showing through it,
  * because it is near-black behind its own titlebar either way, and only the
  * recording carrying on up under the chrome is visibly not the render. The
@@ -37,7 +46,7 @@
  * static one ships. #68 was expected to be where the first half of that stopped
  * being true, and it is not: the marble it added stands the Frame UP rather than
  * sitting behind it, so what is behind the titlebar is still the Frame's own
- * fill and this still renders once.
+ * fill and this still renders once per backdrop.
  *
  * ALL THREE TREATMENTS ARE IN paintScene() NOW, AND ONE OF THEM SHIPS. #69 asks
  * for the choice to be made over the real composition rather than over the
@@ -785,8 +794,49 @@
      callback for the element's initial size the moment observe() is called, so
      the four passes run again immediately for the box attempt() has just drawn.
      Nothing about the result changes, which is exactly why it would never have
-     been noticed. */
-  var drawn = { w: 0, h: 0, ok: false };
+     been noticed.
+
+     `bg` IS THE THIRD TERM AND IT IS NOT AN OPTIMISATION, it is a correctness
+     fix. The size guard on its own said "same box, therefore same picture", and
+     that was true when the glass shipped: the Panel's backdrop was one colour
+     for the life of the page. #73 made it two. --dark now runs 0 to 1 off scroll
+     position and every --panel-* colour is a mix against it, so the backdrop
+     this canvas refracts is WHITE at the top of the page and black by the time
+     the reader is looking at the section. Baked once at load, the titlebar was a
+     near-white bar holding near-white chrome ink for the whole of the crossing
+     and after it — the shader drawing (254,247,255) where the same shader
+     against the arrived backdrop draws (44,38,49), which is the value the
+     backdrop comment below quotes as the right one. Legible in the two rungs
+     below, because those are CSS and follow the cascade for free, and illegible
+     in the one that actually ships.
+     So the bake now carries WHAT IT WAS BAKED AGAINST, and a backdrop that has
+     moved is a stale canvas the same way a resized box is. */
+  var drawn = { w: 0, h: 0, ok: false, bg: "" };
+
+  /* The identity of the backdrop, as a string, and deliberately the token
+     sequence rather than a resolved colour. --panel-bg is
+     `color-mix(in oklab, #000 calc(var(--dark) * 100%), #fff)`, and an
+     unregistered custom property substitutes its references and computes to the
+     token sequence — so this hands back `calc(1.000 * 100%)` with --dark's
+     current value already written into it. It changes when and only when
+     something the scene is painted from changes, which is exactly the question
+     being asked, and it costs two property reads rather than a paint.
+     Both tokens, because paintScene() uses both and `marble` uses only the
+     first: keyed on one of them, switching the treatment past a crossing could
+     reuse a canvas painted from the other.
+     QUANTISED, because arrival.js writes --dark to three decimals on every
+     coalesced scroll tick and the four passes are not something to run seventy
+     times across one turn. Sixteen steps is at most sixteen renders over a whole
+     crossing and none at all once the page is at rest, on a strip 25px tall
+     whose colour is interpolating — the step is invisible and the cost is the
+     thing this file is arranged around. */
+  var DARK_STEPS = 16;
+  function backdropKey() {
+    var d = parseFloat(
+      getComputedStyle(document.documentElement).getPropertyValue("--dark")) || 0;
+    return backdrop + "|" + Math.round(d * DARK_STEPS) + "|"
+      + cssColor("--panel-bg") + "|" + cssColor("--panel-frame-fill");
+  }
 
   function render() {
     var m = metrics();
@@ -801,11 +851,12 @@
     var w = Math.max(1, Math.round(m.w * dpr));
     var h = Math.max(1, Math.round(m.h * dpr));
 
-    /* Same pixels as last time, so the canvas already holds the right picture.
-       Device px and not CSS px, because that is what actually decides whether a
-       redraw would differ — a fractional CSS width that rounds to the same
-       device size is the same canvas. */
-    if (drawn.ok && drawn.w === w && drawn.h === h) return true;
+    /* Same pixels AND the same backdrop as last time, so the canvas already
+       holds the right picture. Device px and not CSS px, because that is what
+       actually decides whether a redraw would differ — a fractional CSS width
+       that rounds to the same device size is the same canvas. */
+    var bgKey = backdropKey();
+    if (drawn.ok && drawn.w === w && drawn.h === h && drawn.bg === bgKey) return true;
 
     /* THE EXPORT'S LENGTHS ARE PX AT A FRAME 1200 WIDE. This is the ratio that
        makes them px at the Frame that is actually on screen. */
@@ -932,6 +983,7 @@
        about. Better to hand the reader the rung below, which cannot fail. */
     drawn.w = w;
     drawn.h = h;
+    drawn.bg = bgKey;
     drawn.ok = gl.getError() === gl.NO_ERROR;
     return drawn.ok;
   }
@@ -1007,6 +1059,33 @@
       if (pending) return;
       pending = requestAnimationFrame(function () { pending = 0; attempt(); });
     }).observe(bar);
+  }
+
+  /* Re-baked when the backdrop crosses, and by the same means: the guard above
+     decides whether anything is actually redrawn, so this only has to make sure
+     the question gets asked.
+
+     WHY THE ROOT'S `style` ATTRIBUTE AND NOT A SCROLL LISTENER. --dark is not a
+     scroll position, it is what arrival.js WRITES from one — inline, on <html>,
+     already coalesced to one animation frame — so the attribute changing is the
+     signal itself, at exactly the rate the value changes and no faster. A scroll
+     listener would fire on scrolls that move --dark nowhere (past the end of the
+     turn, outside the one-screen band, along the horizontal) and would still be
+     reading the same property back to find out. This also picks up the two
+     writes that are not scrolls at all: `removeProperty` when a resize leaves
+     the turn regime, and a tuner setting the value by hand.
+     Nothing is observed on a page whose --dark never moves — a reader who asked
+     for reduced motion, or a browser that never ran arrival.js — because the
+     attribute is never written. The observer costs nothing and the guard turns
+     every spurious callback into two property reads. */
+  if (window.MutationObserver) {
+    var bgPending = 0;
+    new MutationObserver(function () {
+      if (bgPending) return;
+      bgPending = requestAnimationFrame(function () { bgPending = 0; attempt(); });
+    }).observe(document.documentElement, {
+      attributes: true, attributeFilter: ["style"]
+    });
   }
 
   /* A context can be taken away — a laptop switching graphics adapters, a driver
