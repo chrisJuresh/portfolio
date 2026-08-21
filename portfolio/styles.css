@@ -5318,6 +5318,32 @@ body::after {
     --turn: 0;
     --enter: 1;
 
+    /* ---- WHERE IN THE TURN THE CROSSING HAPPENS, #58's last user story -------
+       0 and 1 are the whole turn, which is what shipped with #73 and is what
+       these two say out loud rather than leave implicit. They are the two ends of
+       the crossing as fractions of the turn: --dark leaves 0 at --cross-in and
+       reaches 1 at --cross-out, and outside that stretch the page is simply the
+       page it was, or simply dark.
+
+       THEY ARE READ BY arrival.js AND WRITTEN NOWHERE, which is the whole reason
+       they are declared here rather than kept as two constants in that file: the
+       tuner sets them inline on <html> and asks for a remeasure, so a pair
+       arrived at by scrubbing can be pasted back into this block and BE the
+       shipping page. Same arrangement as the exit treatments' five numbers.
+
+       0 AND 1 ARE A DEFAULT AND NOT A CHOICE, said here for the reason #122 says
+       it about the subheading and the backdrop: nobody has yet looked at the
+       crossing over a shorter stretch and preferred the whole turn. The tuner is
+       where that is decided, and until it is this is what #73 measured.
+
+       NOTHING ANIMATES THEM, and that is the same discipline the rest of this
+       block is written under: a keyframe or a scroll timeline on either would
+       hand `animations: "disabled"` something to fast-forward, and the author's
+       profile preview would photograph this page dark at scroll 0. They are two
+       declared numbers, read once per measure. */
+    --cross-in: 0;
+    --cross-out: 1;
+
     /* ---- THE INK DOES NOT CROSS WHEN THE GROUND DOES -------------------------
        A page that starts as dark type on paper and ends as light type on black
        has to take its type THROUGH its own ground, and there is no palette that

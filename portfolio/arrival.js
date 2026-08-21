@@ -4,10 +4,11 @@
  * EXIT TREATMENTS block is what the fourth reaches, and this file only says
  * where in the turn we are.
  *
- *   --dark    0 to 1 over the whole turn. Every colour on the page is a mix
- *             against it: the ground, the CV's ink, the section's palette and
- *             the Frame's chrome. The two screens go dark together, which is
- *             the point — they are one sheet of paper.
+ *   --dark    0 to 1 over the STRETCH OF THE TURN the sheet asks for, which is
+ *             --cross-in to --cross-out and by default the whole of it. Every
+ *             colour on the page is a mix against it: the ground, the CV's ink,
+ *             the section's palette and the Frame's chrome. The two screens go
+ *             dark together, which is the point — they are one sheet of paper.
  *   --turn    the same ramp UNEASED, which is what the three corner pictures
  *             are lifted by. They have to clear the window exactly as the page
  *             comes to rest, and a picture that eased out of the way while the
@@ -46,6 +47,17 @@
  * Read off scroll position in script, --dark is 0 at scroll 0 under any capture
  * setting.
  *
+ * WHERE THE CROSSING STARTS AND STOPS IS THE SHEET'S TO SAY, and #58's last
+ * user story is that the author can find those two points by watching rather
+ * than by reading a description. --cross-in and --cross-out are declared in the
+ * crossing block, read here on every measure, and scrubbed live by
+ * design/plinth/plinth-tuner.html — so a pair arrived at by dragging is the
+ * same pair that can be pasted back into the sheet. THEY MOVE --dark AND
+ * NOTHING ELSE: --turn is what lifts the three corner pictures out of the way
+ * and they have to clear the window as the page comes to rest whatever the
+ * colour is doing, and --enter is two blocks above the fold at rest. Only the
+ * COLOUR is a matter of taste; the other two are geometry.
+ *
  * NOTHING ON THE PAGE DEPENDS ON THIS FILE, the same stance effects.js and
  * cut-morph.js take. All four properties are declared in the sheet at the values
  * they hold at the top of the page — --dark 0, --turn 0, --enter 1, --exit 0 —
@@ -77,6 +89,17 @@
   var rail = panel.querySelector(".panel-rail");
   var landing = 0, ready = false, queued = false, wasFaint = null;
   var pinnedExit = null;             // a number while a tuner is holding --exit
+  var pinnedTurn = null;             // a number while a tuner is holding the turn
+  /* The crossing's two ends, as fractions of the turn. Read off the sheet in
+     measure() rather than restated here — see the header. These are what the
+     sheet declares, so a file that never re-measures still crosses the whole
+     turn the way #73 shipped it. */
+  var crossIn = 0, crossOut = 1;
+  /* The narrowest crossing that is still a crossing. Below this a stretch of
+     scroll is one frame of a wheel notch and the ramp is a flip, which is the one
+     thing #73 says the crossing must not be — so an inverted or collapsed pair
+     out of a tuner is held here rather than dividing by nothing. */
+  var MIN_SPAN = 0.02;
 
   /* Document space, walked up the offsetParent chain rather than taken from a
      client rect. .page spends its first 0.9s translated 8px down by the page-in
@@ -95,14 +118,37 @@
      with the section's own edge on the window's — see the landing block. */
   function measure() {
     ready = false;
+    /* THE CROSSING'S TWO ENDS, READ AND NOT REMEMBERED, off <html> because that
+       is where the sheet declares them and where a tuner writes them. Here
+       rather than in frame() because frame() runs on every scrolled frame and a
+       getComputedStyle in it is a forced style recalculation sixty times a
+       second for two numbers that only a resize or a tuner can change; a tuner
+       that moves them asks for the remeasure that re-reads them. Read off the
+       ROOT and not off the panel: a custom property inherits, so .panel would
+       answer the same today and would quietly follow a per-section override
+       tomorrow, and the crossing is the whole page's.
+       ABOVE THE REGIME CHECK and not below it, because a held turn is drawn at
+       every window size — including the ones with no turn to measure — and it
+       has to be drawn against the pair the sheet says NOW rather than against
+       whatever was read the last time the window was wide. */
+    var rs = window.getComputedStyle(root);
+    var a = parseFloat(rs.getPropertyValue("--cross-in"));
+    var b = parseFloat(rs.getPropertyValue("--cross-out"));
+    crossIn = clamp01(isFinite(a) ? a : 0);
+    crossOut = clamp01(isFinite(b) ? b : 1);
     /* The turn regime, read off the cascade rather than restated here: .panel
        takes `scroll-snap-align` inside the one-screen media query and nowhere
        else. Outside it the page is an ordinary column with no turn to cross. */
     var cs = window.getComputedStyle(panel);
     if (cs.scrollSnapAlign === "none") {
-      root.style.removeProperty("--dark");
-      root.style.removeProperty("--turn");
-      root.style.removeProperty("--enter");
+      /* Left alone while a tuner is holding the turn, for the reason --exit is
+         below: the hold is a deliberate value and a resize of the tuner's own
+         panes is not a reason to lose it. */
+      if (pinnedTurn === null) {
+        root.style.removeProperty("--dark");
+        root.style.removeProperty("--turn");
+        root.style.removeProperty("--enter");
+      }
       /* And the arrival with them: outside the turn regime the section is the
          next block in an ordinary column, so it is simply there. Removed rather
          than pinned to 0, so what is left is the sheet's own declaration and
@@ -140,12 +186,31 @@
      belongs to the page turn, and the turn is already a quintic. */
   function smooth(t) { return t * t * (3 - 2 * t); }
 
-  function frame() {
-    queued = false;
-    if (!ready) return;
-    var t = clamp01((window.pageYOffset || root.scrollTop || 0) / landing);
+  /* The turn fraction the CROSSING is at, which is the turn fraction remapped
+     onto the stretch the sheet asked for. Nothing but --dark goes through this —
+     see the header — and with the shipped 0 and 1 it is the identity, so #73's
+     measurements hold unless somebody moves the pair. */
+  function crossed(t) {
+    var span = crossOut - crossIn;
+    if (span >= MIN_SPAN) return clamp01((t - crossIn) / span);
+    /* HELD AGAINST THE FAR END AND NOT THE NEAR ONE, which is the difference
+       between degrading and breaking. Floored the other way — start where
+       --cross-in says and run MIN_SPAN from there — a pair like 0.99 / 1 puts the
+       crossing's far end past the landing, and the page comes to REST at --dark
+       0.5: the composition on a mid-grey ground, which is the one thing the whole
+       section is arranged not to be. Anchored at --cross-out the page always
+       finishes where it was told to finish, and what a collapsed pair costs is
+       the start moving rather than the end never arriving. */
+    return clamp01((t - (crossOut - MIN_SPAN)) / MIN_SPAN);
+  }
+
+  /* WHERE IN THE TURN THE PAGE IS DRAWN, given the fraction. Split out of
+     frame() so that a tuner holding the turn does not need a landing to divide
+     by — the same reason setExit() writes --exit without going through frame(),
+     and the reason a hold works at a window size where there is no turn at all. */
+  function draw(t) {
     root.style.setProperty("--turn", t.toFixed(4));
-    root.style.setProperty("--dark", smooth(t).toFixed(3));
+    root.style.setProperty("--dark", smooth(crossed(t)).toFixed(3));
     /* The first third of the turn, and not eased: what it drives is an opacity
        on two blocks that are only just above the fold, and easing it would keep
        them faintly drawn over the opening composition for longer rather than
@@ -178,6 +243,17 @@
     }
   }
 
+  function frame() {
+    queued = false;
+    /* A HELD TURN IS DRAWN WHETHER OR NOT THERE IS A LANDING, which is what puts
+       this before the ready check rather than after it: a tuner holds the turn at
+       window sizes outside the turn regime as well, and there the landing does
+       not exist. */
+    if (pinnedTurn !== null) return void draw(pinnedTurn);
+    if (!ready) return;
+    draw(clamp01((window.pageYOffset || root.scrollTop || 0) / landing));
+  }
+
   function kick() {
     if (!queued) { queued = true; window.requestAnimationFrame(frame); }
   }
@@ -199,7 +275,16 @@
      puts the Panel on screen with scrollIntoView) and resizes (its panes are
      laid out against the window), so a scrub set to 0.62 would silently snap
      back to wherever the iframe's scroll position said. Pinning is what stops
-     that: a number holds --exit against the scroll, and null hands it back. */
+     that: a number holds --exit against the scroll, and null hands it back.
+
+     SINCE #58 IT ALSO HOLDS THE TURN, for the crossing into dark — the same
+     problem one property along. The tuner puts the Panel on screen with
+     scrollIntoView, which lands at the far end of the turn, so a page seen
+     through that iframe is ALWAYS fully crossed and there is nothing about the
+     crossing to judge. Holding the turn is what lets it be looked at at 0.3.
+     THE TWO PINS ARE INDEPENDENT ON PURPOSE: --exit is where the composition
+     stands and the turn is where the page's colour is, and the whole point of
+     scrubbing one is to hold the other still. */
   window.__arrival = {
     /* Anything that is not a finite number — null, for one — hands --exit back
        to the scroll position. Written here on the spot rather than queued
@@ -214,8 +299,24 @@
       if (pinnedExit === null) { measure(); kick(); }
       else panel.style.setProperty("--exit", String(pinnedExit));
     },
+    /* Where in the turn to draw the page, 0 to 1 — the crossing's own scrub, and
+       #58's "the theme crossing tunable" is this plus the two ends the sheet
+       declares. Anything that is not a finite number hands the turn back to the
+       scroll position, and then measure() re-reads the two ends, so a tuner that
+       has just written a new pair inline gets it applied by releasing.
+       Drawn on the spot, for setExit's reasons: the tuner reads the page's
+       colour back immediately after asking, and a deferred write would have it
+       measuring the frame it was replacing. */
+    setTurn: function (v) {
+      pinnedTurn = typeof v === "number" && isFinite(v) ? clamp01(v) : null;
+      if (pinnedTurn === null) { measure(); kick(); }
+      else draw(pinnedTurn);
+    },
     /* For a tuner that moves the layout without firing resize — swapping the
-       section's wording or its size, which is what #69's does. */
+       section's wording or its size, which is what #69's does — and for one that
+       has just written --cross-in or --cross-out inline and needs them re-read.
+       The redraw goes through kick() rather than draw(), so a held turn is
+       redrawn at its held value by frame(). */
     remeasure: function () { measure(); kick(); }
   };
 

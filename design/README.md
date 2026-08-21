@@ -79,6 +79,14 @@ design/
                          the Panel leaving and the Panel arriving are on the
                          screen together; the readout beside the scrub is how
                          thin the two ever get at once, measured off both.
+                         And WHERE IN THE TURN THE PAGE GOES DARK (#73, #58): two
+                         sliders for the crossing's ends and a scrub that holds
+                         the turn, so the middle of a crossing is a thing you can
+                         stand in — the iframe otherwise opens at the far end,
+                         where the crossing is already over. The readout is
+                         measured off the ground rather than off the numbers,
+                         which is how you find out the page is already black a
+                         sixth of a turn before `finishes at` says.
                          Its one approximate half is a WebGL previz of the
                          procedural stone's recipe, for asking what a change
                          would do without paying a minute of Cycles; it is stale
@@ -88,7 +96,9 @@ design/
                          shipping a treatment would take, and a `glass-state v2`
                          blob that imports straight into glass-tuner.html; and
                          for the exit the markup line, the moved numbers as the
-                         declarations they are, and an `exit-state v1` blob.
+                         declarations they are, and an `exit-state v1` blob; and
+                         for the crossing the two declarations and a
+                         `cross-state v1` blob.
     plinth-studio.py     interactive, and the only tool in design/ that is a
     plinth-studio.html   SERVER rather than a page: photograph in, stone on the
                          site out, with no command in between. Drop an image,
@@ -106,6 +116,24 @@ design/
                      does the Panel's recording behave the way #65 asks — it
                      plays, loops, is silent, and under prefers-reduced-motion
                      not one byte of either video file is fetched
+    check-panel-nav.mjs
+                     does scrolling carry the reader into the section and does
+                     the Rail tell the truth (#72). Measures the weld between the
+                     composition and the scroll position frame by frame through a
+                     real mid-flight reversal, and reads the browser's own ARIA
+                     tree rather than the markup
+    check-crossing.mjs
+                     does the page cross into dark where the sheet says, and come
+                     back (#73, tunable per #58). Every number in it is body's own
+                     computed ground rasterised to sRGB through a 1x1 canvas, so
+                     nothing is asserted about a property: light at the top, the
+                     section's own black at rest, monotone and identical in both
+                     directions, and a moved --cross-in/--cross-out honoured on
+                     both sides. Also that a deep link lands settled rather than
+                     mid-crossing, that a reader who chose light still gets light
+                     after scrolling back, and that neither <html> nor body
+                     animates or eases its colour — which is the assertion that
+                     keeps the profile capture from photographing this page dark
     check-panel-exit.mjs
                      do the Panel's exit treatments behave the way #74 asks. It
                      reads one Panel TWICE, at t and at t - 1, because that is
@@ -122,8 +150,8 @@ The **lab** compares finished candidates; the **tuner** is for arriving at one.
 The **plate tuner** does the same job for the three photographs in the page's
 corners, and the **plinth tuner** for the whole of the Projects Panel — the
 stone it stands on, the wording of its subheading, what sits behind its glass,
-what that glass is made of, and how the whole composition comes apart when it is
-left. Every one of the five is the real page driven in
+what that glass is made of, how the whole composition comes apart when it is
+left, and where in the turn the page crosses into dark. Every one of the five is the real page driven in
 an iframe, so what is being looked at is what would ship — the exit twice over,
 because `crossing` puts a second real page on top of the first rather than
 drawing a picture of one. THE STONE is where it

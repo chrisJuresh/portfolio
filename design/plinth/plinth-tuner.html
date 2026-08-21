@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Panel tuner — the marble, the wording, the glass, the exit</title>
+  <title>Panel tuner — the marble, the wording, the glass, the exit, the crossing</title>
   <style>
     :root { color-scheme: light dark; --ui: #1a1917; --ui-bg: #fcfbf8; --ui-panel: #f5f2ea; --ui-line: #d6d0c4; --ui-mut: #6f6a5d; --ui-hit: #8a5a2b; }
     @media (prefers-color-scheme: dark) {
@@ -126,6 +126,12 @@
     #scrub { flex: 1 1 12rem; min-width: 8rem; accent-color: var(--ui-hit); }
     #presence { font: 11px/1 ui-monospace, Consolas, monospace; color: var(--ui-mut); min-width: 15rem; }
     #presence.thin { color: var(--ui-hit); }
+    /* The turn scrub, on its own strip and shaped like the exit one so the two
+       read as the same kind of control — which they are. */
+    #turn { flex: 1 1 12rem; min-width: 8rem; accent-color: var(--ui-hit); }
+    #turnval { min-width: 7.5rem; }
+    #crossms { font: 11px/1 ui-monospace, Consolas, monospace; color: var(--ui-mut); min-width: 20rem; }
+    #crossms.thin { color: var(--ui-hit); }
 
     /* THE TWO COMPOSITIONS, ONE OVER THE OTHER, which is the only arrangement
        that answers the question the crossing asks: is there ever a moment when
@@ -228,6 +234,37 @@ until asked for.">crossing</button>
     <span class="grow"></span>
     <span id="presence"></span>
   </div>
+  <!-- THE CROSSING INTO DARK, #73, MADE A THING YOU CAN LOOK AT. Like the exit
+       scrub above this is a POSITION IN TIME and not a value, so it is up here on
+       the strip that never scrolls; the two numbers it is for — where the
+       crossing starts and where it finishes — are sliders in the sidebar.
+
+       WHY IT EXISTS AT ALL. This page puts the Panel on screen with
+       scrollIntoView, which lands at the FAR END of the turn, so a page seen
+       through this iframe is always fully crossed and there is nothing about the
+       crossing to judge. Holding the turn is what lets it be looked at at 0.3.
+
+       THE TWO SCRUBS ARE INDEPENDENT ON PURPOSE. `scrub` is where the
+       composition stands and this is where the page's COLOUR is, and holding one
+       still while the other moves is the whole point of having two: an exit
+       treatment is judged against a settled ground, and a ground is judged
+       against a settled composition. -->
+  <div class="top exitrow">
+    <strong>turn</strong>
+    <input type="range" id="turn" min="0" max="1" step="0.005" value="1"
+           aria-label="where in the turn the page is drawn"
+           title="0 is the top of the page and 1 is the section at rest. Dragging this HOLDS the
+turn against the iframe's own scroll position — `release` hands it back.
+It moves the page's colour and nothing about where the composition stands; that
+is `scrub` above.">
+    <span class="ms" id="turnval"></span>
+    <button id="turnrelease" title="Hand the turn back to the iframe's scroll position, which is where
+scrollIntoView left it — the far end.">release</button>
+    <span class="grow"></span>
+    <span id="crossms"></span>
+    <span class="badge" id="crosscount" data-n="0">0 moved</span>
+    <button id="crossreset">reset crossing</button>
+  </div>
   <p class="warn" id="warn"></p>
 
   <div class="wrap">
@@ -252,6 +289,10 @@ until asked for.">crossing</button>
             <h3>the exit treatments <button id="copy-exit">copy</button></h3>
             <textarea id="out-exit" spellcheck="false" readonly style="height:13rem"></textarea>
           </div>
+          <div class="out">
+            <h3>the crossing into dark <button id="copy-cross">copy</button></h3>
+            <textarea id="out-cross" spellcheck="false" readonly style="height:11rem"></textarea>
+          </div>
         </div>
       </div>
     </aside>
@@ -269,16 +310,18 @@ until asked for.">crossing</button>
 
 <script>
 /* ============================================================================
-   Panel tuner — the four things about the Projects Panel that were left to be
-   chosen by eye: which stone the plinth is cut from and what that stone is made
-   of, which of #57's five wordings the subheading carries, what sits behind the
-   titlebar's glass, and what the glass itself is made of.
+   Panel tuner — everything about the Projects Panel that was left to be chosen by
+   eye: which stone the plinth is cut from and what that stone is made of, which
+   of #57's five wordings the subheading carries, what sits behind the titlebar's
+   glass, what the glass itself is made of, how the composition comes apart when
+   it is left, and where in the turn the page crosses into dark.
 
-   ALL FOUR ARE SWITCHED OVER THE REAL COMPOSITION, which is the whole design of
+   ALL OF IT IS SWITCHED OVER THE REAL COMPOSITION, which is the whole design of
    this page and not a convenience. /portfolio is in an iframe, same origin, and
    every control below reaches into it: the stone is a `data-marble` attribute,
-   the wording is two text nodes, and the glass is portfolio/frame-glass.js's own
-   uniforms moved through the seam at the foot of that file. So the Frame is the
+   the wording is two text nodes, the glass is portfolio/frame-glass.js's own
+   uniforms moved through the seam at the foot of that file, and the exit and the
+   crossing are custom properties portfolio/arrival.js reads. So the Frame is the
    real Frame at the real width, the type is the real face with the real amount
    bitten out of its second line by the real window, and the reflection lying in
    the marble is the real reflection. Nothing here draws a picture of the Panel to
@@ -372,6 +415,11 @@ until asked for.">crossing</button>
   var glassCountEl = document.getElementById("glasscount");
   var glassMsEl = document.getElementById("glassms");
   var outExit = document.getElementById("out-exit");
+  var outCross = document.getElementById("out-cross");
+  var turnEl = document.getElementById("turn");
+  var turnValEl = document.getElementById("turnval");
+  var crossMsEl = document.getElementById("crossms");
+  var crossCountEl = document.getElementById("crosscount");
   var ghost = document.getElementById("ghost");
   var scrubEl = document.getElementById("scrub");
   var scrubValEl = document.getElementById("scrubval");
@@ -399,6 +447,7 @@ until asked for.">crossing</button>
   var stoneEl = null;        /* the stone's own controls, rebuilt per stone */
   var glassEl = null;        /* the glass's, built once */
   var exitEl = null;         /* the exit's, rebuilt when a treatment changes */
+  var crossEl = null;        /* the crossing's two ends, built once */
   var clipLoop = 0;          /* the rAF that keeps a MOVING backdrop moving */
   var exitPick = {};         /* group -> treatment name */
   var exitShipped = {};      /* what the page arrived carrying, or null */
@@ -406,6 +455,9 @@ until asked for.">crossing</button>
   var exitVals = {};         /* "text.rate" -> number, sparse, moved off the treatment */
   var exitDefaults = {};     /* the same keys, read off the page under the treatment */
   var exitT = 0;             /* the scrub: where in the crossing this Panel stands */
+  var crossVals = {};        /* "in" / "out" -> number, sparse, moved off the sheet */
+  var crossDefaults = {};    /* the same keys, read off the page */
+  var turnT = null;          /* the turn scrub: a number while it is HELD, null on the scroll */
   var crossing = false;      /* is the second /portfolio loaded and standing on this one */
   var ghostDoc = null, ghostPanel = null;
   var playLoop = 0;          /* the rAF running a crossing, in THIS document */
@@ -746,16 +798,18 @@ until asked for.">crossing</button>
   buildSubPicker();
   buildBehind();
   buildExitChips();
-  /* Three hosts inside one scroller, in this order and made once: the stone's
+  /* Four hosts inside one scroller, in this order and made once: the stone's
      controls are rebuilt every time a stone is picked and the exit's every time
-     a treatment is — the glass's never are — so they cannot share a parent that
-     gets emptied. */
+     a treatment is — the glass's and the crossing's never are — so they cannot
+     share a parent that gets emptied. */
   stoneEl = document.createElement("div");
   glassEl = document.createElement("div");
   exitEl = document.createElement("div");
+  crossEl = document.createElement("div");
   controlsEl.appendChild(stoneEl);
   controlsEl.appendChild(glassEl);
   controlsEl.appendChild(exitEl);
+  controlsEl.appendChild(crossEl);
 
   fetch(SIDECAR, { cache: "no-store" }).then(function (r) {
     if (!r.ok) throw new Error(r.status + " " + r.statusText);
@@ -817,6 +871,9 @@ until asked for.">crossing</button>
        and both ends read the defaults before they build the rows. */
     applyExit();
     buildExitControls();
+    /* And the fifth, on the same terms. */
+    applyCross();
+    buildCrossControls();
     sizeFrame();
     checkShaderCurrent();
   }).catch(function (e) {
@@ -868,6 +925,13 @@ until asked for.">crossing</button>
        have taken focus before someone reaches for ]. Same handler, same origin,
        re-attached on every load because it is a new document each time. */
     doc.addEventListener("keydown", keys);
+    /* AND THE TURN READOUT FOLLOWS THE IFRAME'S OWN SCROLL while nothing is
+       holding it, because "· scroll" has to mean the number beside it is the
+       page's rather than the last one this tuner wrote. Re-attached on every load
+       because it is a new window each time, the same reason `keys` is. */
+    win.addEventListener("scroll", function () {
+      if (turnT === null) win.requestAnimationFrame(markCross);
+    }, { passive: true });
     apply();
     applySub();
     /* The exit's defaults are the shipping page's own under whichever treatment
@@ -878,6 +942,13 @@ until asked for.">crossing</button>
     readExitShipped();
     applyExit();
     buildExitControls();
+    /* The crossing's two ends are the page's own declarations, so like the exit's
+       defaults and the glass's they cannot be read before this. The turn is left
+       on the scroll — scrollIntoView has just put the section on screen, so what
+       the author opens on is the settled composition on its own ground, and the
+       scrub is what takes them back up the turn. */
+    applyCross();
+    buildCrossControls();
     /* Last, and with a redraw asked for: the glass is the only one of the four
        that costs a render, and the page has just drawn itself once with what
        ships. */
@@ -2172,6 +2243,303 @@ until asked for.">crossing</button>
     save();
   });
 
+  /* ---- the crossing into dark ---------------------------------------------
+     #73 built the crossing and measured it over the WHOLE turn; #58's last user
+     story is that the author can find the two points it starts and finishes at
+     by watching rather than by reading a description. That is this: two sliders
+     and a scrub.
+
+     TWO NUMBERS AND NOT A CURVE. The shape is a smoothstep in arrival.js and is
+     not offered here, deliberately — #73 argued the shape (it leaves and arrives
+     at rest, and the drama belongs to the page turn, which is already a quintic)
+     and nothing about the story asks for it back. What was never chosen is WHERE
+     in the turn the crossing sits, and that is exactly two numbers.
+
+     THEY ARE DECLARATIONS IN THE SHEET AND NOT CONSTANTS IN THE DRIVER, which is
+     the whole reason this control can exist: --cross-in and --cross-out are
+     declared in styles.css's crossing block, so writing them inline on the
+     iframe's <html> is a thing an outside document can do, and pasting the pair
+     back into that block is a thing the shipping page can wear. The same
+     arrangement, for the same reason, as the exit treatments' five numbers.
+
+     THE DEFAULTS ARE READ OFF THE PAGE, not restated here. Same reason the glass
+     reads window.panelGlass.defaults and the exit reads the treatment: a pair
+     edited in styles.css has to arrive here as the new default rather than being
+     shadowed by a copy of the old one. So "moved" means moved from what the sheet
+     says today. */
+  var CROSS_ROWS = [
+    { k: "in", prop: "cross-in", label: "starts at", min: 0, max: 1, step: 0.005, dp: 3,
+      tip: "Where in the turn the page begins to leave the paper, as a fraction of it. 0 is the\ntop of the page — the crossing starts the moment the reader does.\nRaising it keeps the CV on paper for longer and then crosses faster, because the\ncrossing always finishes where `finishes at` says." },
+    { k: "out", prop: "cross-out", label: "finishes at", min: 0, max: 1, step: 0.005, dp: 3,
+      tip: "Where the page is fully dark, as a fraction of the turn. 1 is the section at rest.\nWATCH THE READOUT RATHER THAN THIS NUMBER: the ramp is a smoothstep and flattens\nat both ends, so the ground reaches black in 8 bits some way BEFORE this — with the\nshipped 0 and 1 it is black from about 0.85 and the last sixth of the turn is doing\nnothing you can see." }
+  ];
+  /* arrival.js's own floor on the span, restated so the readout can say why a
+     collapsed or inverted pair is being held rather than obeyed. */
+  var CROSS_MIN_SPAN = 0.02;
+  var CROSS_SAMPLES = 40;
+
+  function crossValue(k) {
+    if (crossVals[k] !== undefined) return crossVals[k];
+    if (crossDefaults[k] !== undefined) return crossDefaults[k];
+    return k === "in" ? 0 : 1;
+  }
+
+  /* THE GROUND AS THREE INTEGERS AND NOT AS A STRING, which is the one piece of
+     machinery here worth explaining. `--panel-bg` is a `color-mix` in oklab and
+     Chromium computes body's background to `oklab(0.4999 ...)`, while `--bg` is
+     `#fff`: comparing the two as text compares spellings, and pulling numbers out
+     with a regexp compares 0-to-1 against 0-to-255. Painting each into a 1x1
+     canvas and reading the pixel back is the only comparison that is about the
+     colour, and it is what the eye does anyway. design/tools/check-crossing.mjs
+     measures the same thing the same way. */
+  var crossCtx = null;
+  function groundOf(value) {
+    if (!crossCtx) {
+      var c = document.createElement("canvas");
+      c.width = c.height = 1;
+      crossCtx = c.getContext("2d", { willReadFrequently: true });
+    }
+    crossCtx.clearRect(0, 0, 1, 1);
+    crossCtx.fillStyle = "#000";
+    crossCtx.fillStyle = value;
+    crossCtx.fillRect(0, 0, 1, 1);
+    var d = crossCtx.getImageData(0, 0, 1, 1).data;
+    return [d[0], d[1], d[2]];
+  }
+  function sameGround(a, b) {
+    return Math.abs(a[0] - b[0]) <= 1 && Math.abs(a[1] - b[1]) <= 1 && Math.abs(a[2] - b[2]) <= 1;
+  }
+
+  /* What the sheet says, read in the one moment nothing inline is shadowing it —
+     the same clear-then-read applyExitTo() does for the treatments. */
+  function readCrossDefaults() {
+    if (!win || !doc) return;
+    var cs = win.getComputedStyle(doc.documentElement);
+    CROSS_ROWS.forEach(function (r) {
+      var v = parseFloat(cs.getPropertyValue("--" + r.prop));
+      crossDefaults[r.k] = isNaN(v) ? (r.k === "in" ? 0 : 1) : v;
+    });
+  }
+
+  function applyCross() {
+    if (!doc || !win) { markCross(); writeCross(); return; }
+    var r = doc.documentElement;
+    CROSS_ROWS.forEach(function (x) { r.style.removeProperty("--" + x.prop); });
+    readCrossDefaults();
+    CROSS_ROWS.forEach(function (x) {
+      if (crossVals[x.k] !== undefined) r.style.setProperty("--" + x.prop, String(crossVals[x.k]));
+    });
+    /* AND THE PAGE HAS TO BE ASKED TO RE-READ THEM. arrival.js reads the pair
+       once per measure rather than once per frame — a getComputedStyle in a
+       scroll handler is a forced recalculation sixty times a second — so a pair
+       written inline is invisible to it until something remeasures. This is what
+       that handle is for, and it is why the sliders below could not have been
+       built against a driver that kept the two numbers to itself. */
+    if (win.__arrival && win.__arrival.remeasure) win.__arrival.remeasure();
+    positionTurn();
+    measureCrossing();
+    markCross();
+    writeCross();
+  }
+
+  /* ---- where the crossing actually starts and finishes, MEASURED -----------
+     The two sliders say what was asked for; this says what the page does with
+     it, and the difference is the point. The ramp is a smoothstep, so it
+     flattens at both ends and the GROUND saturates in 8 bits before the number
+     does: with the shipped 0 and 1 the page is already black from about turn 0.85
+     and the last sixth of the turn is doing nothing an eye can see. That is worth
+     knowing while choosing and is invisible from the sliders.
+
+     Swept through the same hold the scrub uses, and the hold is put back
+     afterwards — the same shape as measurePresence(), which sweeps --exit and
+     restores it. Not run while the scrub is being dragged: 41 style
+     recalculations per frame on a page carrying a WebGL Frame is not a thing to
+     do sixty times a second, and nothing it measures can change while only the
+     scrub moves. */
+  function measureCrossing() {
+    if (!win || !doc || !doc.body) { crossMsEl.textContent = ""; crossMsEl.className = ""; return; }
+    var api = win.__arrival;
+    if (!api || !api.setTurn) {
+      crossMsEl.textContent = "no driver — arrival.js returns early under prefers-reduced-motion";
+      crossMsEl.className = "thin";
+      return;
+    }
+    var root = doc.documentElement;
+    var near = groundOf(win.getComputedStyle(root).getPropertyValue("--bg").trim());
+    var far = groundOf(win.getComputedStyle(root).getPropertyValue("--panel-bg-far").trim());
+    var lastNear = -1, firstFar = -1, seen = {};
+    for (var i = 0; i <= CROSS_SAMPLES; i++) {
+      api.setTurn(i / CROSS_SAMPLES);
+      var g = groundOf(win.getComputedStyle(doc.body).backgroundColor);
+      seen[g.join(",")] = 1;
+      if (sameGround(g, near)) lastNear = i;
+      if (firstFar < 0 && sameGround(g, far)) firstFar = i;
+    }
+    api.setTurn(turnT);
+    var span = crossValue("out") - crossValue("in");
+    var held = span < CROSS_MIN_SPAN;
+    /* The one case where the sheet's floor is doing the talking rather than the
+       sliders, said out loud rather than left as a ramp that does not match the
+       numbers beside it. */
+    if (sameGround(near, far)) {
+      crossMsEl.textContent = "this theme's ground and the section's are the same colour — nothing to see";
+      crossMsEl.className = "thin";
+      return;
+    }
+    crossMsEl.textContent =
+      "paper until turn " + (lastNear < 0 ? "—" : (lastNear / CROSS_SAMPLES).toFixed(3)) +
+      " · black from " + (firstFar < 0 ? "never" : (firstFar / CROSS_SAMPLES).toFixed(3)) +
+      " · " + Object.keys(seen).length + " grounds" +
+      (held ? " · SPAN HELD AT " + CROSS_MIN_SPAN : "");
+    crossMsEl.className = held || firstFar < 0 ? "thin" : "";
+  }
+
+  /* ---- the scrub -----------------------------------------------------------
+     WHERE YOU ARE STANDING IS NOT WHAT YOU HAVE CHOSEN, the same split the exit
+     scrub is written around: this writes the one number that moved and does not
+     re-read a default or sweep anything. */
+  function positionTurn() {
+    if (!win || !win.__arrival || !win.__arrival.setTurn) { markCross(); return; }
+    win.__arrival.setTurn(turnT);
+    markCross();
+    /* AND AGAIN ON THE NEXT FRAME, WHEN THE HOLD IS BEING HANDED BACK. A hold is
+       written on the spot, so marking it immediately reads the number that was
+       just set; a RELEASE only queues the driver's own rAF, so --turn still says
+       where the hold was and the readout would keep claiming 0.350 on a page that
+       had gone back to 1.
+       THE IFRAME'S rAF AND NOT THIS DOCUMENT'S, which is the whole of the fix and
+       cost one wrong one first: two documents have two callback queues and nothing
+       orders them against each other, so a frame requested out here can run before
+       the driver's inside there and read the value it was waiting for to change.
+       Requested in the same window as the driver's, after the driver's, it runs
+       after the driver's. */
+    if (turnT === null && win.requestAnimationFrame) win.requestAnimationFrame(markCross);
+  }
+
+  function setTurnHold(t) {
+    turnT = t === null ? null : Math.max(0, Math.min(1, t));
+    positionTurn();
+  }
+
+  /* Where the page is when nothing is holding it, which is where scrollIntoView
+     left it — the far end. Read rather than assumed so the released readout says
+     the truth on a page that has been scrolled by hand inside the iframe. */
+  function turnOnPage() {
+    if (!win || !doc) return null;
+    var v = parseFloat(win.getComputedStyle(doc.documentElement).getPropertyValue("--turn"));
+    return isNaN(v) ? null : v;
+  }
+
+  function markCross() {
+    /* NO DRIVER MEANS NO POSITION TO REPORT, and reporting one anyway was the
+       readout's one lie: under prefers-reduced-motion arrival.js returns before
+       it writes --turn, so the sheet's declared 0 reads back as "the top of the
+       page" on an iframe that is scrolled to the section. The scrub cannot move
+       anything there either, so it says so instead of showing a number. */
+    var driven = !!(win && win.__arrival && win.__arrival.setTurn);
+    var live = turnT === null ? turnOnPage() : turnT;
+    if (live !== null) turnEl.value = String(live);
+    turnEl.disabled = !driven && !!doc;
+    turnValEl.textContent = !driven && doc ? "— · no driver"
+      : (live === null ? "—" : live.toFixed(3)) + (turnT === null ? " · scroll" : " · held");
+    document.getElementById("turnrelease").disabled = turnT === null;
+    var n = Object.keys(crossVals).length;
+    crossCountEl.textContent = n + " moved";
+    crossCountEl.dataset.n = n;
+  }
+
+  turnEl.addEventListener("input", function () { setTurnHold(parseFloat(turnEl.value)); });
+  document.getElementById("turnrelease").addEventListener("click", function () { setTurnHold(null); });
+  document.getElementById("crossreset").addEventListener("click", function () {
+    crossVals = {};
+    turnT = null;
+    applyCross();
+    buildCrossControls();
+    save();
+  });
+
+  /* ---- the sliders -------------------------------------------------------- */
+  function buildCrossControls() {
+    if (!crossEl || !doc) return;
+    crossEl.textContent = "";
+    group(crossEl, "crossing into dark", "cross", function (body) {
+      CROSS_ROWS.forEach(function (r) {
+        row(body, {
+          label: r.label, min: r.min, max: r.max, step: r.step, dp: r.dp, tip: r.tip,
+          onchange: applyCross
+        }, function () { return crossValue(r.k); },
+           function (v) {
+             /* Back to exactly the sheet's own number is having changed your mind
+                rather than an override that happens to match — so it leaves the
+                sparse set, the same rule the exit's rows follow. */
+             if (Math.abs(v - crossDefaults[r.k]) < 1e-9) delete crossVals[r.k];
+             else crossVals[r.k] = v;
+           },
+           crossDefaults[r.k]);
+      });
+    });
+  }
+
+  function writeCross() {
+    if (!outCross) return;
+    var L = [];
+    L.push("panel tuner — the crossing into dark, #73, tunable per #58");
+    L.push("");
+    if (!doc) {
+      L.push("the frame has not loaded yet, so nothing has been read off the page.");
+      outCross.value = L.join("\n") + "\n";
+      return;
+    }
+    var a = crossValue("in"), b = crossValue("out");
+    var moved = Object.keys(crossVals);
+    L.push("THE PAIR — starts at " + fmt(a, 3) + " of the turn, finishes at " + fmt(b, 3) +
+           (moved.length ? ", moved from what the sheet says" : ", which is what the sheet says"));
+    L.push("portfolio/styles.css — in the crossing block's :root, inside the turn regime:");
+    L.push("    --cross-in: " + fmt(a, 3) + ";" +
+           "     /* " + fmt(crossDefaults.in, 3) + " today */");
+    L.push("    --cross-out: " + fmt(b, 3) + ";" +
+           "    /* " + fmt(crossDefaults.out, 3) + " today */");
+    L.push("");
+    if (b - a < CROSS_MIN_SPAN) {
+      L.push("THIS PAIR IS TOO SHORT TO SHIP. arrival.js holds the span at " + CROSS_MIN_SPAN +
+             " rather than");
+      L.push("dividing by nothing, so the page will not do what these two numbers say — a");
+      L.push("crossing that happens inside one wheel notch is the flip #73 says it must not be.");
+      L.push("");
+    }
+    L.push("MEASURED — " + (crossMsEl.textContent || "not measured"));
+    L.push("The ramp is a smoothstep, so it flattens at both ends and the ground reaches");
+    L.push("black in 8 bits BEFORE `finishes at` does. Choose against the measured pair");
+    L.push("rather than the asked-for one: the stretch between them is turn a reader");
+    L.push("spends looking at a page that has stopped changing.");
+    L.push("");
+    L.push("WHAT MOVES AND WHAT DOES NOT. These two carry --dark, and --dark is every");
+    L.push("colour on the page — the ground, the CV's ink, the section's palette and the");
+    L.push("Frame's chrome, all one number. They do NOT carry --turn, which lifts the");
+    L.push("three corner pictures clear of the window as the page comes to rest, or");
+    L.push("--enter, which fades in the two blocks standing above the fold. Those two are");
+    L.push("geometry and are not anybody's taste.");
+    L.push("");
+    L.push("WHAT A SHORTER CROSSING COSTS, since it is the one thing the sliders hide.");
+    L.push("frame-glass.js re-bakes the titlebar when --dark has moved by a sixteenth, so");
+    L.push("a crossing is at most sixteen renders however long it is — a SHORTER one packs");
+    L.push("the same sixteen into less scroll, which is more work per wheel notch on the");
+    L.push("one strip of this page that renders at all. Sixteen is sixteen; watch a phone");
+    L.push("before shipping a crossing much under a third of the turn.");
+    L.push("");
+    L.push("AND NOTHING HERE MAY BECOME AN ANIMATION. The author's profile README is an");
+    L.push("hourly screenshot of /portfolio taken with Playwright's `animations:");
+    L.push('"disabled"`, which fast-forwards finite CSS animations to their end state. Two');
+    L.push("declared numbers read by a scroll handler are safe; the same crossing written");
+    L.push("as a keyframe or a scroll timeline photographs this page fully dark at scroll 0");
+    L.push("while every geometry assertion still passes. See #73, and");
+    L.push("`node design/tools/check-crossing.mjs`, which asserts the pair is honoured and");
+    L.push("that neither <html> nor body is animating or easing its colour.");
+    L.push("");
+    L.push("cross-state v1: " + JSON.stringify({ in: a, out: b, moved: crossVals }));
+    outCross.value = L.join("\n") + "\n";
+  }
+
   /* ======================================================================= */
   /*  the previz                                                             */
   /* ======================================================================= */
@@ -2924,6 +3292,7 @@ until asked for.">crossing</button>
   document.getElementById("copy-css").addEventListener("click", function (e) { e.stopPropagation(); copy(outCss); });
   document.getElementById("copy-panel").addEventListener("click", function (e) { e.stopPropagation(); copy(outPanel); });
   document.getElementById("copy-exit").addEventListener("click", function (e) { e.stopPropagation(); copy(outExit); });
+  document.getElementById("copy-cross").addEventListener("click", function (e) { e.stopPropagation(); copy(outCross); });
   document.getElementById("drawer-head").addEventListener("click", function () {
     var body = document.getElementById("drawer-body");
     var hid = !body.hidden;
@@ -2969,6 +3338,16 @@ until asked for.">crossing</button>
            not what you have chosen, and a tuner that opened at --exit 0.62 would
            open on a composition half gone with no clue why. */
         exitPick: exitPick, exitChosen: exitChosen, exitVals: exitVals,
+        /* The crossing's overrides, sparse, for the reason `glass` and `exitVals`
+           are: a pair edited in styles.css arrives as the new default instead of
+           being shadowed by a stored copy of the old one. There is no `chosen`
+           flag beside it because there is nothing to choose — the two ends are
+           numbers and an unmoved one is simply absent.
+           THE TURN IS DELIBERATELY NOT STORED, the same call the exit scrub's is:
+           it is where you are standing and not what you have chosen, and a tuner
+           that opened holding the turn at 0.3 would open on a half-crossed page
+           with no clue why. */
+        crossVals: crossVals,
         crossing: crossing
       }));
     } catch (_) {}
@@ -3009,6 +3388,17 @@ until asked for.">crossing</button>
           exitChosen = !!s.exitChosen;
         }
         if (s.exitVals && typeof s.exitVals === "object") exitVals = s.exitVals;
+        /* Bounds-checked rather than trusted, for the reason the stored wording
+           is: a pair out of range is a page that either never crosses or is dark
+           from the top, and the second of those is the failure the profile
+           capture cannot see. Each end on its own — a stored `in` is not thrown
+           away because a stored `out` was junk. */
+        if (s.crossVals && typeof s.crossVals === "object") {
+          CROSS_ROWS.forEach(function (r) {
+            var v = s.crossVals[r.k];
+            if (typeof v === "number" && isFinite(v) && v >= 0 && v <= 1) crossVals[r.k] = v;
+          });
+        }
         if (typeof s.crossing === "boolean") crossing = s.crossing;
         /* The stored stone is only put back if it is still the SAME stone —
            a re-render that changed the table should win over a session that
@@ -3028,6 +3418,7 @@ until asked for.">crossing</button>
     markSub();
     markBehind();
     markExit();
+    markCross();
     markCrossing();
     ready = true;
   }
