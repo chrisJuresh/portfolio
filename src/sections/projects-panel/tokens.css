@@ -1,0 +1,72 @@
+/* The Projects Panel's Tokens: plain custom properties on the Section's own
+   root, and the only style file the Editor writes.
+
+   The composition is ONE DRAWING, and every length in it is a share of one
+   width. So the numbers here are mostly shares rather than sizes — that is what
+   lets the Section be solved to stand on one screen. NOTES.md derives every one
+   of them, and says which are measurements rather than choices. */
+.projects-panel {
+  /* ---- the palette, at the FAR END of the crossing ------------------------ */
+  --projects-panel-bg-far: #000000;
+  --projects-panel-ink-far: #f2f1ee;
+  --projects-panel-ink-soft-far: #dcdad5;
+  --projects-panel-muted-far: #8b8983;
+  --projects-panel-rule-far: rgba(242, 241, 238, 0.16);
+  /* The near end of the hairline, which the Kernel does not publish one of. */
+  --projects-panel-rule-near: color-mix(in oklab, var(--ink-soft), transparent 88%);
+
+  /* ---- the page's two margins, kept rather than invented ------------------ */
+  --projects-panel-inset: clamp(3rem, 9vh, 6.5rem);
+  --projects-panel-side: 1.35rem;
+
+  /* ---- the two constants the composition's width is solved from ----------- */
+  --projects-panel-fit: 0.5651;
+  --projects-panel-across: 0.972;
+
+  /* ---- the type scale: shares of the composition, not of the window ------- */
+  --projects-panel-masthead-share: 0.0598;
+  --projects-panel-sub-share: 0.038;
+  --projects-panel-copy-share: 0.01;
+  --projects-panel-small-share: 0.00668;
+  --projects-panel-rail-share: 0.00549;
+
+  /* Two of the five get a floor, and it is in px. NOTES.md says which and why. */
+  --projects-panel-small-floor: 11px;
+  --projects-panel-rail-floor: 10px;
+
+  /* ---- the same five, for the one column outside the band ----------------- */
+  --projects-panel-masthead-stacked: clamp(2.5rem, 12vw, 5rem);
+  --projects-panel-sub-stacked: calc(0.625 * var(--projects-panel-masthead-size));
+  --projects-panel-copy-stacked: clamp(0.85rem, 3.8vw, 1.05rem);
+  --projects-panel-small-stacked: clamp(0.8rem, 3.2vw, 0.95rem);
+  --projects-panel-rail-stacked: clamp(0.7rem, 2.9vw, 0.9rem);
+
+  /* ---- the gutters, as shares for the same reason ------------------------- */
+  --projects-panel-gap-share: 0.01935;
+  --projects-panel-gutter-share: 0.01231;
+  --projects-panel-copy-inset-share: 0.01407;
+  --projects-panel-points-gap-share: 0.01337;
+  --projects-panel-points-air-share: 0.01583;
+
+  /* ---- how it is set ------------------------------------------------------ */
+  --projects-panel-leading: 1.5;
+  --projects-panel-masthead-leading: 0.86;
+  --projects-panel-masthead-weight: 500;
+  --projects-panel-masthead-tracking: -0.005em;
+  --projects-panel-sub-leading: 1;
+  --projects-panel-copy-leading: 1.5;
+  --projects-panel-rail-tracking: 0.22em;
+  --projects-panel-point-weight: 500;
+  --projects-panel-point-leading: 1.25;
+  --projects-panel-point-tracking: 0.045em;
+  --projects-panel-figure-leading: 1.3;
+  --projects-panel-figure-tracking: 0.03em;
+  --projects-panel-figure-air: 0.35em;
+
+  /* ---- the one column outside the band ------------------------------------ */
+  --projects-panel-stack-gap: clamp(1.5rem, 5vw, 2.5rem);
+  --projects-panel-stack-rail-gap: clamp(0.9rem, 4vw, 2rem);
+  --projects-panel-stack-rail-rows: 0.5em;
+  --projects-panel-stack-points-gap: 1.35;
+  --projects-panel-stack-measure: 34em;
+}

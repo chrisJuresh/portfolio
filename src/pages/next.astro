@@ -3,6 +3,7 @@
 // replacing anything. `/portfolio` goes on being the live document until the
 // ticket that flips this route; keeping both up is what lets every porting ticket
 // land without taking the site down.
+import ProjectsPanel from '../sections/projects-panel/ProjectsPanel.astro';
 import Stub from '../sections/stub/Stub.astro';
 import Shell from '../shell/Shell.astro';
 ---
@@ -16,5 +17,9 @@ import Shell from '../shell/Shell.astro';
         though it were. */}
     <meta name="robots" content="noindex" />
   </Fragment>
+  {/* The stub carries data-turn, which is where the crossing into dark happens:
+      across the scroll of whatever stands above the Panel. It is the Front
+      Screen's job once #136 lands it, and the stub goes then. */}
   <Stub />
+  <ProjectsPanel />
 </Shell>

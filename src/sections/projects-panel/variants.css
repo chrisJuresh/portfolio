@@ -1,0 +1,15 @@
+/* The Projects Panel's Variants — none yet, deliberately.
+
+   This ticket is a port: the Panel reads on `/next` as it reads today, and every
+   number in `tokens.css` is the live sheet's own. Its text, its sizes, its
+   positioning and its motion are all due a rework, and that rework is a later
+   session by design — once the Editor exists, so the alternatives can be judged
+   by eye against the real page rather than argued in prose. A direction invented
+   here would be a guess standing in the record as though it had been compared.
+
+   `pnpm variants` still renders this Section: with nothing declared it shoots the
+   unselected direction alone, which is what `tokens.css` says on its own and the
+   thing every later Variant will be an argument against.
+
+   docs/agents/variants.md is the authority on writing one, and `NOTES.md` in the
+   stub Section is where the grammar `check-source.mjs` enforces is written out. */
