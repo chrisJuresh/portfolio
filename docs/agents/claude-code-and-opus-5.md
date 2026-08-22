@@ -33,9 +33,9 @@ is, if anything, understated.
 It is a reference, not a protocol — nothing here needs reading before an ordinary
 change. Read it when you are about to change `.claude/`, when you are choosing an
 effort level for a piece of work, or when a session is costing more than it
-should. The short list that genuinely belongs in front of *every* session is
-gathered at the end, under [For the Agent Contract](#for-the-agent-contract), so
-that #147 can lift it rather than rediscover it.
+should. The short list that genuinely belongs in front of *every* session no
+longer lives here: [the Agent Contract](contract.md) lifted it, and the tail of
+this file says what went.
 
 Every claim below has a source. Where the documentation is silent, this file says
 so rather than filling the gap.
@@ -528,48 +528,27 @@ Recorded so no future session re-litigates it:
   read-to-creation ratio means caching is working well. If creation stays high
   turn after turn, something is changing in your prefix."
 
-## For the Agent Contract
+## What moved to the Agent Contract
 
-The short list that belongs in front of every session, for #147 to place. Each
-line is sourced above; none of it is repeated anywhere else in the repository, so
-this is a move rather than a copy.
+**The short list that belongs in front of every session** — effort, not
+instructing a re-check, delivering the ticket's scope, when to delegate,
+`ultrathink`, `/rewind` and `/compact`, matching the written deliverable to the
+task, and recording denials — is now in
+[the Agent Contract](contract.md#how-to-run-the-session). #147 lifted it, and this
+was a move rather than a copy: every line is still sourced above, and none of it
+is restated here.
 
-1. **Effort follows the ticket, and is chosen before the first tool call.** It is
-   part of the cache key, so changing it mid-session re-reads the whole
-   conversation. `xhigh` for a Section built from scratch and for diagnosing
-   timing or layout; `high` for a port, a refactor, or a Check; `low` or `medium`
-   for tickets, triage, docs and reviews; `max` only where being wrong is
-   expensive and invisible.
-2. **Do not add verification or re-check instructions, and do not ask for a
-   subagent to double-check.** Opus 5 already does it; instructing it wastes
-   model tokens for no gain.
-3. **Deliver the ticket's scope.** Opus 5 expands scope readily, and here a
-   second concern means a second worktree and a second PR.
-4. **Delegate only for large, genuinely independent tracks of work.** Not to
-   verify, not for something finishable in a handful of tool calls. Subagents run
-   at `low` effort and on a five-minute cache TTL, and never read the parent's
-   cache.
-5. **`ultrathink` in a prompt is free and does not touch the cache. "Think
-   carefully" does nothing at all** — it is not a recognised keyword.
-6. **`/rewind` when a path goes wrong; `/compact` only at a natural break.**
-   Rewinding returns to a prefix that is already cached.
-7. **Match the written deliverable to the task.** Opus 5's files run long by
-   default, and ADR 0006 exists because the source drowned in prose.
-8. **Record every classifier, permission or hook denial in the friction log**,
-   with what was attempted, the exact refusal, and the change that would prevent
-   it.
+**The denial this section carried as a seed** is now in `docs/friction-log.md`,
+where the gate it named was corrected. It read as the vendored worktree guard
+refusing a read-only `echo` as "too complex to verify that it stays inside the
+worktree". That string has never existed in `.claude/hooks/worktree-guard.py` or
+anywhere in `chrisJuresh/skills`; it belongs to Claude Code's own worktree
+isolation, so the "fix it upstream" the entry recommended would have changed
+nothing. The log has the corrected entry, and `CLAUDE.md` has the rule that avoids
+the gate entirely.
 
-One denial from this session, to seed that log:
-
-- The worktree guard refused `echo "CLAUDE_EFFORT=$CLAUDE_EFFORT"` — a read-only
-  `echo`, no path, no git verb — as "too complex to verify that it stays inside
-  the worktree", and refused it again when the surrounding compound command was
-  split apart. `env | grep -E 'CLAUDE_EFFORT'` was allowed. The common factor in
-  both refusals was `$VAR` expansion, which is a hypothesis and not a reading of
-  the guard's source. It belongs upstream in `chrisJuresh/skills`, not patched
-  here.
-
-And one trap that is not a denial but cost a turn the same way: `WebFetch` of
-`code.claude.com/docs/en/env-vars.md` returned a truncated page and reported four
-documented variables as "not listed". Fetch the page that *owns* a variable —
-`sub-agents.md` for the subagent caps — not the index that references it.
+**One trap from this research that is not a denial** but cost a turn the same way:
+`WebFetch` of `code.claude.com/docs/en/env-vars.md` returned a truncated page and
+reported four documented variables as "not listed". Fetch the page that *owns* a
+variable — `sub-agents.md` for the subagent caps — not the index that references
+it.

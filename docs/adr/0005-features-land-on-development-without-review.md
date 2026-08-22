@@ -2,7 +2,8 @@
 
 Work is still done in a worktree on its own branch — that is what makes several
 tickets safe to run at once — but it lands on `development` directly, with no
-pull request. `CLAUDE.md` describes the opposite, and this supersedes it.
+pull request. `CLAUDE.md` described the opposite when this was decided, and this
+supersedes it; #147 rewrote that file to match.
 
 There is no reviewer. Nobody reads the code before it lands, and nobody will: the
 author validates by pulling `development` and looking at the running site. A pull

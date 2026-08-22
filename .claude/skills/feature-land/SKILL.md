@@ -45,10 +45,11 @@ way, so this is tidying and not a failure:
 pnpm feature clean <name>
 ```
 
-Run that from the main checkout. Call `ExitWorktree` (`action: "keep"`) first — a
-session standing in the directory is itself something holding it. `clean` refuses
-if the worktree has uncommitted changes or the branch has commits `development`
-does not, so it cannot be pointed at live work by mistake.
+Run that from the main checkout — and check nothing is standing in the directory
+first, including this session's own working directory, because that is itself
+something holding it. `clean` refuses if the worktree has uncommitted changes or
+the branch has commits `development` does not, so it cannot be pointed at live work
+by mistake.
 
 ## After it succeeds
 
@@ -62,8 +63,9 @@ Two things it deliberately leaves to you:
    says so and names the entries it appended to `docs/friction-log.md` in the main
    checkout. That file is the record of gates that cost tokens.
 
-Then call `ExitWorktree` with `action: "keep"` — the worktree is already gone, and
-`action: "remove"` only removes one `EnterWorktree` itself created.
+There is nothing to exit. Nothing entered the worktree in the first place —
+`CLAUDE.md` and `/feature-start` both say not to call `EnterWorktree` — so the
+directory this command deleted was never the session's own.
 
 ## A second change in the same session
 
