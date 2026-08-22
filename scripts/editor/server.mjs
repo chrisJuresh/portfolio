@@ -8,6 +8,12 @@
  * Editor exists in `dist/` itself: the injection happens in this response, on
  * this origin, and `scripts/` is not among the paths a build assembles.
  *
+ * WHAT IT WRITES, part two. Tokens, through `lib/tokens.mjs`, on their own route
+ * — and the route is what chooses the file name (see sections.mjs), so a Content
+ * edit cannot land in a stylesheet however it is addressed. A Token's controls are
+ * DISCOVERED: nothing here lists them, the Section's own `tokens.css` does, so a
+ * Section that promotes a new number gets a control for free.
+ *
  * THE BASELINE, WHICH IS THE ONE SUBTLE THING IN HERE. The served page is a
  * build, so its words are the Content as it stood when that build ran. The
  * Editor's client has to do two different things with a Content value: FIND the
@@ -18,9 +24,14 @@
  * on the page is reported as not found rather than silently unbound, which is
  * also how a stale `--no-build` dist announces itself.
  *
- * WHAT IT WILL WRITE. One file per Section, named `content.ts`, chosen by
- * `lib/sections.mjs` from a Section NAME. Nothing on the wire ever becomes a
- * path. ADR 0004 is the rule; that module is the mechanism.
+ * A TOKEN HAS A BASELINE TOO, for a different reason: it is what "return this to
+ * what it was before the session" means, and it is also where each control's
+ * RANGE comes from. Deriving the range from the current value instead would move
+ * the slider under the author's own finger as they dragged it.
+ *
+ * WHAT IT WILL WRITE. Two files per Section, named `content.ts` and `tokens.css`,
+ * chosen by `lib/sections.mjs` from a Section NAME. Nothing on the wire ever
+ * becomes a path. ADR 0004 is the rule; that module is the mechanism.
  */
 
 import { spawnSync } from 'node:child_process';
@@ -32,7 +43,7 @@ import { fileURLToPath } from 'node:url';
 import { contentType, resolveFile } from '../static-tree.mjs';
 import { Refused } from './lib/content.mjs';
 import { publish } from './lib/publish.mjs';
-import { put, readAll } from './lib/sections.mjs';
+import { put, putToken, readAll, readAllTokens } from './lib/sections.mjs';
 
 const here = fileURLToPath(new URL('.', import.meta.url));
 
@@ -60,9 +71,23 @@ const HANDSHAKE = 'x-editor';
 /** Room for the longest Content string and its JSON, and nothing like a file. */
 const LONGEST_BODY = 64 * 1024;
 
+/**
+ * The Editor's own files, and the two library modules the surface shares with the
+ * boundary.
+ *
+ * `lib/tokens.mjs` is served to the browser on purpose. It has no node imports —
+ * only `Refused` out of `lib/content.mjs`, which has none either — so the surface
+ * can import the very functions that decide what control a value asks for and how
+ * a number is written back. Two spellings of "0.1 + 0.2 is 0.3rem", one in node
+ * and one in the browser, is exactly the kind of disagreement this repository
+ * pays for elsewhere; this is one spelling, used by both.
+ */
 const CLIENT = {
   '/client.js': { file: 'client/editor.js', type: 'text/javascript; charset=utf-8' },
+  '/tokens.js': { file: 'client/tokens.js', type: 'text/javascript; charset=utf-8' },
   '/client.css': { file: 'client/editor.css', type: 'text/css; charset=utf-8' },
+  '/lib/tokens.mjs': { file: 'lib/tokens.mjs', type: 'text/javascript; charset=utf-8' },
+  '/lib/content.mjs': { file: 'lib/content.mjs', type: 'text/javascript; charset=utf-8' },
 };
 
 function send(response, status, body, type = 'text/plain; charset=utf-8') {
@@ -98,6 +123,16 @@ function baselineOf(sectionsRoot) {
   return baseline;
 }
 
+/** Every Token as it stood before the session — what a control can be returned
+ *  to, and what its range is derived from. */
+function tokenBaselineOf(sectionsRoot) {
+  const baseline = new Map();
+  for (const { section, tokens } of readAllTokens(sectionsRoot)) {
+    baseline.set(section, new Map(tokens.map((token) => [token.key, token.value])));
+  }
+  return baseline;
+}
+
 /**
  * The Editor's two files, in front of every HTML response.
  *
@@ -127,6 +162,7 @@ function inject(html) {
 export async function start({ dist, sectionsRoot, repoRoot, port = 0, canPublish = true }) {
   // Read once, at startup, and never again: this is what the served build says.
   const baseline = baselineOf(sectionsRoot);
+  const wasToken = tokenBaselineOf(sectionsRoot);
   const sectionsRelative = relative(repoRoot, sectionsRoot).replace(/\\/g, '/');
 
   const git = (args) => {
@@ -146,6 +182,23 @@ export async function start({ dist, sectionsRoot, repoRoot, port = 0, canPublish
         key,
         value,
         built: baseline.get(section)?.get(key) ?? null,
+      })),
+    })),
+    tokens: readAllTokens(sectionsRoot).map(({ section, tokens }) => ({
+      section,
+      // What the file says, and what it said before the session. WHAT CONTROL to
+      // draw for it is the surface's decision and is made there — out of the same
+      // `control()` this module could have called, because the surface imports the
+      // boundary rather than carrying a copy of it.
+      tokens: tokens.map((token) => ({
+        key: token.key,
+        selector: token.selector,
+        ruleNote: token.ruleNote,
+        property: token.property,
+        value: token.value,
+        was: wasToken.get(section)?.get(token.key) ?? token.value,
+        group: token.group,
+        note: token.note,
       })),
     })),
   });
@@ -177,7 +230,7 @@ export async function start({ dist, sectionsRoot, repoRoot, port = 0, canPublish
 
       // An unknown route is a 404 before it is a wrong method, or a mistyped
       // GET comes back as "POST only" and reads like a route that exists.
-      if (rest !== '/content' && rest !== '/publish') {
+      if (rest !== '/content' && rest !== '/tokens' && rest !== '/publish') {
         return send(response, 404, `no such Editor route: ${rest}`);
       }
 
@@ -192,6 +245,20 @@ export async function start({ dist, sectionsRoot, repoRoot, port = 0, canPublish
       if (rest === '/content') {
         const { section, key, value } = await readBody(request);
         const written = put(sectionsRoot, section, key, value);
+        return sendJson(response, 200, {
+          section,
+          key: written.key,
+          value: written.value,
+          changed: written.changed,
+          file: relative(repoRoot, written.file).replace(/\\/g, '/'),
+        });
+      }
+
+      // The route is what decides which file name is written, which is why there
+      // are two of these and not one with a kind in the body.
+      if (rest === '/tokens') {
+        const { section, key, value } = await readBody(request);
+        const written = putToken(sectionsRoot, section, key, value);
         return sendJson(response, 200, {
           section,
           key: written.key,

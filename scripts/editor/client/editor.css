@@ -139,6 +139,131 @@
   opacity: 1;
 }
 
+/* ---- the tab strip, and the three surfaces behind it -------------------- */
+
+[data-editor-tabs] {
+  display: flex;
+  gap: 4px;
+  margin: 0 0 8px;
+}
+
+[data-editor-tab][aria-pressed='true'] {
+  border-color: var(--editor-live);
+  color: var(--editor-live);
+}
+
+/* ---- a Token's control -------------------------------------------------- */
+
+/* Flex and not a grid, because a row is a different number of controls
+   depending on what the value is — a number is a slider, the value and its unit;
+   a colour is a swatch, an alpha and what it comes to. A grid would have to be
+   as wide as the widest of those and would leave the others a hole. */
+[data-editor-token] {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 3px 0;
+}
+
+[data-editor-token] > span {
+  flex: 0 0 8.5rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  opacity: 0.7;
+}
+
+/* A Token this session has moved, so the file's own value and the page's are not
+   the same thing any more. */
+[data-editor-token][data-editor-moved] > span {
+  color: var(--editor-live);
+  opacity: 1;
+}
+
+[data-editor-token] input[type='range'],
+[data-editor-token] input[type='text'] {
+  flex: 1 1 3rem;
+}
+
+[data-editor-token] input[type='number'] {
+  flex: 0 0 5.5rem;
+  text-align: right;
+}
+
+[data-editor-token] input[type='color'] {
+  flex: 0 0 2.75rem;
+  padding: 0;
+  block-size: 1.6rem;
+}
+
+[data-editor-token] > small {
+  flex: 0 1 auto;
+  min-width: 1.4rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  opacity: 0.55;
+}
+
+[data-editor-token] [data-editor-was] {
+  flex: 0 0 auto;
+  padding: 2px 5px;
+  line-height: 1.2;
+}
+
+[data-editor-group] > summary {
+  opacity: 0.85;
+}
+
+[data-editor-group] {
+  margin-left: 8px;
+}
+
+[data-editor-note] {
+  margin: 2px 0 5px;
+  padding-left: 8px;
+  border-left: 1px solid var(--editor-line);
+  opacity: 0.5;
+}
+
+/* ---- the Timelines ------------------------------------------------------ */
+
+[data-editor-hold] {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+[data-editor-hold] small {
+  opacity: 0.5;
+}
+
+[data-editor-pane='motion'][data-editor-held] [data-editor-holding] {
+  border-color: var(--editor-live);
+  color: var(--editor-live);
+}
+
+[data-editor-timeline] {
+  display: grid;
+  grid-template-columns: 8.5rem minmax(3rem, 1fr) 3.5rem;
+  align-items: center;
+  gap: 6px;
+  margin: 3px 0;
+}
+
+[data-editor-timeline] > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  opacity: 0.7;
+}
+
+[data-editor-timeline] small {
+  text-align: right;
+  opacity: 0.55;
+}
+
 /* ---- on the page itself ------------------------------------------------- */
 
 /* Outline and not border: a border is layout, and the composition being judged

@@ -147,5 +147,13 @@ uncover it, and it is wrong here for the same reason.
 
 `--stub-rise` is read by `timeline.ts` rather than by the stylesheet, which is
 the one case where a Token is not a CSS value: it is the distance the motion
-covers, and the Editor is meant to be able to drag it. A Token read only by a
-Timeline still belongs in `tokens.css`.
+covers, and the Editor draws it a control like any other (#144). A Token read only
+by a Timeline still belongs in `tokens.css`.
+
+**Dragging it needs a reload, and that is this Section's doing rather than the
+Editor's.** It is read inside a function-based tween value, which GSAP evaluates
+when the tween initialises — so the number is taken once, at mount, and the
+Editor's live preview has nothing left to reach. `front-screen/timeline.ts` reads
+its own feel Tokens once per GESTURE for exactly this reason and they do move
+under a drag. A Section that wants its motion Tokens draggable reads them where
+the motion is computed.

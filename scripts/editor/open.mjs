@@ -13,6 +13,12 @@
  * Editor cannot find on the page, and says so. Building first is what makes that
  * case rare enough to be a diagnostic rather than the normal state.
  *
+ * A TOKEN HAS THE SAME PROBLEM WITH A QUIETER SYMPTOM. Its value is baked into
+ * the built stylesheet, and the Tokens surface shows the file's value over the top
+ * of it — so against a stale dist every control is right and the page under it is
+ * a build ago, with nothing out of place to notice. That is the other reason this
+ * builds first, and the reason `--no-build` says so in the report below.
+ *
  * IT SERVES THE TREE IT WAS INVOKED FROM, for the same reason `pnpm preview` and
  * the Checks do: the in-app preview serves the main checkout, so in a worktree it
  * would show `development` while looking like it showed the branch — and here it
@@ -60,8 +66,9 @@ const served = await start({ dist, sectionsRoot, repoRoot, port });
 console.log('editor: the Portfolio, editable.\n');
 console.log(`  open       ${served.origin}${PAGE}`);
 console.log(`  serving    ${dist}`);
-console.log(`  writing    src/sections/*/content.ts   ${build ? '' : '(against a dist this did not build)'}`);
+console.log(`  writing    src/sections/*/{content.ts,tokens.css}   ${build ? '' : '(against a dist this did not build)'}`);
 console.log('\n  Click any text to change it. Enter commits, Escape puts it back.');
+console.log('  The Tokens tab drags every Token a Section declares; Motion scrubs its Timeline.');
 console.log('  Publish commits and pushes — the Checks run on the commit, so it takes a minute.');
 console.log('\n  Ctrl-C to stop.');
 

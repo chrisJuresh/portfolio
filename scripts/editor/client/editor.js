@@ -21,7 +21,16 @@
  * field they were not looking at. The panel's field list is how those are
  * reached, and it is also how anything the page speaks without drawing — an aria
  * label, an href — is reached at all.
+ *
+ * THE PANEL HOSTS THREE SURFACES AND OWNS ONE. Content is here, because it is
+ * this file's binding-by-matching that reaches it. Tokens and the Timelines are
+ * `client/tokens.js`, and the split is at a real seam rather than a tidy one: a
+ * Token is addressed by a rule and a property and is bound to no element at all,
+ * so it shares none of the field index everything in this file turns on. What is
+ * shared is the panel, the report line and Publish, and those are passed in.
  */
+
+import { Motion, Tokens } from './tokens.js';
 
 const API = '/__editor';
 /** Elements whose text is not words on the page. */
@@ -74,7 +83,8 @@ function edges(value) {
 class Editor {
   constructor(state) {
     this.state = state;
-    /** Which fields this session has written, for the panel's count. */
+    /** What this session has written — a Content field or a Token — for the
+     *  panel's count. Both, because the count is a count of unpublished work. */
     this.edits = new Set();
     /** element -> { section, key } */
     this.bound = new Map();
@@ -228,7 +238,14 @@ class Editor {
         <button type="button" data-editor-fold aria-expanded="true">fold</button>
       </header>
       <div data-editor-body>
-        <div data-editor-fields></div>
+        <nav data-editor-tabs>
+          <button type="button" data-editor-tab="content" aria-pressed="true">Content</button>
+          <button type="button" data-editor-tab="tokens" aria-pressed="false">Tokens</button>
+          <button type="button" data-editor-tab="motion" aria-pressed="false">Motion</button>
+        </nav>
+        <div data-editor-pane="content"><div data-editor-fields></div></div>
+        <div data-editor-pane="tokens" hidden></div>
+        <div data-editor-pane="motion" hidden></div>
         <div data-editor-publish>
           <input type="text" data-editor-message placeholder="what changed (optional)" />
           <button type="button" data-editor-go>Publish</button>
@@ -271,6 +288,27 @@ class Editor {
       fields.append(group);
     }
 
+    // Tokens and the Timelines. Handed the panel's own report line and its edit
+    // count rather than growing their own, so "3 edited" and "refused: …" mean
+    // the same thing whichever surface produced them.
+    this.tokens = new Tokens({
+      sections: this.state.tokens ?? [],
+      post,
+      say: (text, bad) => this.say(text, bad),
+      edited: (id) => {
+        this.edits.add(id);
+        this.count();
+      },
+    });
+    this.tokens.mount(panel.querySelector('[data-editor-pane="tokens"]'));
+
+    this.motion = new Motion({ say: (text, bad) => this.say(text, bad) });
+    this.motion.mount(panel.querySelector('[data-editor-pane="motion"]'));
+
+    for (const tab of panel.querySelectorAll('[data-editor-tab]')) {
+      tab.addEventListener('click', () => this.show(tab.dataset.editorTab));
+    }
+
     panel.querySelector('[data-editor-fold]').addEventListener('click', (event) => {
       const open = panel.toggleAttribute('data-editor-folded');
       event.currentTarget.setAttribute('aria-expanded', String(!open));
@@ -283,6 +321,18 @@ class Editor {
         `${this.unfound.length} field(s) are not clickable on this page — use the list above: ${this.unfound.join(', ')}`,
       );
     }
+  }
+
+  /** Which surface is in front. One at a time, because three at once is the wall
+   *  this panel exists to not be. */
+  show(which) {
+    for (const tab of this.panel?.querySelectorAll('[data-editor-tab]') ?? []) {
+      tab.setAttribute('aria-pressed', String(tab.dataset.editorTab === which));
+    }
+    for (const pane of this.panel?.querySelectorAll('[data-editor-pane]') ?? []) {
+      pane.toggleAttribute('hidden', pane.dataset.editorPane !== which);
+    }
+    if (which === 'motion') this.motion?.refresh();
   }
 
   count() {

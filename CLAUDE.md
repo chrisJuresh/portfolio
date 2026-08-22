@@ -206,21 +206,26 @@ unselected Variant has to cost the shipped page nothing.
 [`docs/agents/variants.md`](docs/agents/variants.md) is the authority; read it
 before writing one.
 
-A Section's words are its **Content**, and changing one is not an agent's job:
+A Section's words are its **Content** and its named numbers are its **Tokens**,
+and changing either is not an agent's job:
 
 ```bash
 pnpm editor
 ```
 
 That opens the real page locally with the Editor over it — click any text, type,
-Enter — and Publish commits and pushes. It writes Content and nothing else, and
+Enter; or drag a Token and watch the page move — and Publish commits and pushes.
+It writes Content and Tokens and nothing else (ADR 0004), and
 [`scripts/editor/NOTES.md`](scripts/editor/NOTES.md) is the authority: read it
-before touching `scripts/editor/`. Two things there are easy to get wrong and
-expensive to rediscover — **the write boundary replaces one string literal's bytes
-rather than re-serialising the file**, which is what keeps a Content file's
-comments and formatting, and **an element is matched against the value the SERVED
-BUILD was made from**, which is what makes an edit survive a reload. Tokens are
-#144.
+before touching `scripts/editor/`. Four things there are easy to get wrong and
+expensive to rediscover — **each write boundary replaces one span's bytes rather
+than re-serialising the file**, which is what keeps a Content file's comments and
+a Tokens file's paragraphs; **an element is matched against the value the SERVED
+BUILD was made from**, which is what makes a Content edit survive a reload; **a
+Token's page and its file are two different things**, because its value is baked
+into the built stylesheet, so a drag previews through a stylesheet of the Editor's
+own and a release writes the file; and **a Timeline is held before it is
+scrubbed**, or the moment survives one frame.
 
 `IntersectionObserver` never delivers in the in-app browser pane, for the same
 reason `requestAnimationFrame` never ticks there: the pane does not run the

@@ -89,6 +89,11 @@ the alternative was worse: driving them off the switch's own `aria-checked`
 leaves the pill on the wrong side and the wrong word on screen until a script has
 run, where the Shell has already written `data-theme` before the first paint.
 
+The Editor does draw a control for each of the three, because it discovers Tokens
+rather than being handed a list of them, and a rule it did not expect is not a
+reason to hide one. They are grouped under that selector's own name, so what the
+author is looking at is which paper the value belongs to.
+
 ## Composing to one screen
 
 The band is `min-width: 1100px and min-height: 700px`, the same gate the live

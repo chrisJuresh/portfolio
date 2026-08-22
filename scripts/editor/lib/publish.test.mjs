@@ -2,17 +2,17 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
 import { Refused } from './content.mjs';
-import { contentAmong, publish } from './publish.mjs';
+import { publish, writtenAmong } from './publish.mjs';
 
 /**
  * Publish: commit what the Editor wrote, push it, and say what it did.
  *
  * git is injected, because what is worth asserting here is not that git works —
  * it does — but WHICH ARGUMENTS it is handed. Two of those carry the whole of the
- * Editor's limit on reach: the commit is pathspec-limited to Content files, so
- * nothing else in the tree can ride along even if it is already staged, and the
- * paths in that pathspec come from git's own status output filtered to Content
- * rather than from anything the browser said.
+ * Editor's limit on reach: the commit is pathspec-limited to the two files the
+ * Editor writes, so nothing else in the tree can ride along even if it is already
+ * staged, and the paths in that pathspec come from git's own status output
+ * filtered to those two names rather than from anything the browser said.
  */
 
 /** A git that answers from a script of replies and records what it was asked. */
@@ -56,13 +56,14 @@ const run = (git, options = {}) =>
 // What it commits
 // ---------------------------------------------------------------------------
 
-test('it commits the Content files that changed, and only those', async () => {
+test('it commits the Content and Tokens that changed, and only those', async () => {
   const git = setup();
   const done = await run(git);
 
   assert.deepEqual(done.files, [
     'src/sections/front-screen/content.ts',
     'src/sections/projects-panel/content.ts',
+    'src/sections/front-screen/tokens.css',
   ]);
 
   const [commit] = git.ran('commit');
@@ -80,8 +81,8 @@ test('the commit is pathspec-limited, so nothing already staged rides along', as
 
   const [commit] = git.ran('commit');
   assert.ok(!commit.includes('--all') && !commit.includes('-a'), commit.join(' '));
-  assert.ok(!commit.some((arg) => arg.endsWith('tokens.css')), commit.join(' '));
   assert.ok(!commit.some((arg) => arg.endsWith('kernel.ts')), commit.join(' '));
+  assert.ok(!commit.some((arg) => arg.endsWith('scratch.md')), commit.join(' '));
   assert.equal(git.ran('add').length, 0);
 });
 
@@ -97,11 +98,7 @@ test('it reports what it left alone, so a dirty tree is visible rather than sile
   const git = setup();
   const done = await run(git);
 
-  assert.deepEqual(done.left, [
-    'src/sections/front-screen/tokens.css',
-    'src/kernel/kernel.ts',
-    'scratch.md',
-  ]);
+  assert.deepEqual(done.left, ['src/kernel/kernel.ts', 'scratch.md']);
 });
 
 test('it reports the branch, the commit and the push', async () => {
@@ -113,18 +110,28 @@ test('it reports the branch, the commit and the push', async () => {
   assert.equal(done.message, 'Edit some words');
 });
 
-test('a message it was not given names the Sections it published', async () => {
+test('a message it was not given names the Sections it published, and what of them', async () => {
   const done = await run(setup(), { message: undefined });
 
   assert.match(done.message, /front-screen/);
   assert.match(done.message, /projects-panel/);
+  assert.match(done.message, /Content and Tokens/);
+});
+
+test('a message it was not given says Tokens alone when that is what moved', async () => {
+  const git = setup({
+    status: { status: 0, stdout: ' M src/sections/stub/tokens.css\n', stderr: '' },
+  });
+  const done = await run(git, { message: undefined });
+
+  assert.equal(done.message, 'Edit the stub Tokens');
 });
 
 // ---------------------------------------------------------------------------
 // Refusals, and the one failure that is not a refusal
 // ---------------------------------------------------------------------------
 
-test('it refuses when no Content has changed', async () => {
+test('it refuses when nothing the Editor writes has changed', async () => {
   const git = setup({ status: { status: 0, stdout: ' M src/kernel/kernel.ts\n', stderr: '' } });
 
   await assert.rejects(() => run(git), Refused);
@@ -169,9 +176,13 @@ test('it refuses a message that is not one line of words', async () => {
   }
 });
 
-test('a Content file outside the Sections root is not something it publishes', async () => {
+test('either file outside the Sections root is not something it publishes', async () => {
   const git = setup({
-    status: { status: 0, stdout: ' M design/legacy/content.ts\n M scripts/editor/content.ts\n', stderr: '' },
+    status: {
+      status: 0,
+      stdout: ' M design/legacy/content.ts\n M scripts/editor/content.ts\n M portfolio/tokens.css\n',
+      stderr: '',
+    },
   });
 
   await assert.rejects(() => run(git), Refused);
@@ -189,34 +200,39 @@ test('it reads a renamed and a staged Content file as changed', async () => {
   assert.deepEqual(done.files, ['src/sections/front-screen/content.ts']);
 });
 
-test('what counts as a Content path is the Section-name pattern, not a looser copy', () => {
-  // The name half comes from sections.mjs so that the two files cannot disagree.
-  // These four are what a hand-written `[a-z][a-z0-9-]*` would have let through.
+test('what counts as one of the Editor’s paths is the Section-name pattern, not a looser copy', () => {
+  // The name half comes from sections.mjs so that the two files cannot disagree,
+  // and so do both file names. The middle four are what a hand-written
+  // `[a-z][a-z0-9-]*` would have let through; the last four are the shapes that
+  // look like the Editor's files and are not.
   assert.deepEqual(
-    contentAmong(
+    writtenAmong(
       [
         'src/sections/front-screen/content.ts',
+        'src/sections/front-screen/tokens.css',
         'src/sections/a--b/content.ts',
         'src/sections/trailing-/content.ts',
         'src/sections/-leading/content.ts',
+        'src/sections/a--b/tokens.css',
         'src/sections/front-screen/nested/content.ts',
-        'src/sections/front-screen/tokens.css',
+        'src/sections/front-screen/variants.css',
         'src/sections/front-screen/content.ts.bak',
+        'src/sections/front-screen/contentXts',
         'design/legacy/front-screen/content.ts',
       ],
       'src/sections',
     ),
-    ['src/sections/front-screen/content.ts'],
+    ['src/sections/front-screen/content.ts', 'src/sections/front-screen/tokens.css'],
   );
 });
 
 test('a Windows path separator is read as a path separator', () => {
-  // git reports forward slashes, so the normalisation in contentAmong is
+  // git reports forward slashes, so the normalisation in writtenAmong is
   // defensive — but it is there, so it is asserted. Built rather than written as
   // a literal: a backslash in a path in a test in a heredoc is four layers of
   // escaping and the last version of this test asserted a mangled string.
   const sep = String.fromCharCode(92);
   const windows = ['src', 'sections', 'front-screen', 'content.ts'].join(sep);
 
-  assert.deepEqual(contentAmong([windows], 'src/sections'), [windows]);
+  assert.deepEqual(writtenAmong([windows], 'src/sections'), [windows]);
 });

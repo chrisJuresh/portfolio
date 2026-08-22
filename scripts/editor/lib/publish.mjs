@@ -1,5 +1,5 @@
 /**
- * Publish: commit the Content the Editor wrote, push it, and say what it did.
+ * Publish: commit what the Editor wrote, push it, and say what it did.
  *
  * The whole point of the Editor is that a wording change costs no tokens, and
  * that includes not costing a session to land it — so Publish is part of the
@@ -7,12 +7,14 @@
  *
  * TWO THINGS ARE LOAD-BEARING ABOUT HOW IT COMMITS.
  *
- * The commit is PATHSPEC-LIMITED to the Content files git itself reports as
- * changed. `git commit -- <paths>` commits those paths and leaves the rest of the
- * index alone, so an agent's staged work in another window cannot ride along in a
- * commit the author thinks is a typo fix. The paths come from `git status`
- * filtered to Content, never from anything the browser said — the browser cannot
- * name a file at all (see sections.mjs).
+ * The commit is PATHSPEC-LIMITED to the files the Editor writes and git itself
+ * reports as changed — a Section's `content.ts` and a Section's `tokens.css`,
+ * and nothing else in the repository whatever state it is in. `git commit --
+ * <paths>` commits those paths and leaves the rest of the index alone, so an
+ * agent's staged work in another window cannot ride along in a commit the author
+ * thinks is a typo fix or a nudged gap. The paths come from `git status` filtered
+ * to those two file names, never from anything the browser said — the browser
+ * cannot name a file at all (see sections.mjs).
  *
  * It does NOT pass `--no-verify`. `.githooks/pre-commit` runs the Checks on every
  * commit (ADR 0006), so a Publish takes about a minute and a broken tree refuses
@@ -25,10 +27,13 @@
  */
 
 import { Refused } from './content.mjs';
-import { CONTENT, NAME } from './sections.mjs';
+import { CONTENT, NAME, TOKENS } from './sections.mjs';
 
 /** One line of words, long enough to say what changed. */
 const LONGEST_MESSAGE = 300;
+
+/** What each of the Editor's two files is called in a commit message. */
+const KIND = { [CONTENT]: 'Content', [TOKENS]: 'Tokens' };
 
 const lines = (text) =>
   String(text ?? '')
@@ -52,21 +57,26 @@ export function changed(porcelain) {
 }
 
 /**
- * The Content files under `sections`, and nothing that merely looks like one.
+ * The files under `sections` that the Editor writes, and nothing that merely
+ * looks like one.
  *
  * The Section-name half comes from `sections.mjs`'s own pattern rather than a
- * second spelling of it: this decides what gets committed, and a looser copy here
- * would be two files disagreeing about what a Section is called.
+ * second spelling of it, and so do both file names: this decides what gets
+ * committed, and a looser copy here would be two files disagreeing about what a
+ * Section is called or about which of its files the Editor is allowed to touch.
  */
-export function contentAmong(paths, sections) {
+export function writtenAmong(paths, sections) {
   const root = sections.replace(/\\/g, '/').replace(/\/+$/, '');
   const name = NAME.source.replace(/^\^/, '').replace(/\$$/, '');
-  const shape = new RegExp(`^${root}/(?:${name})/${CONTENT.replace('.', '\\.')}$`);
+  // `[.]` and not a backslash: the dot in a file name is a literal, and a
+  // character class says so without an escape to lose in a tool chain.
+  const files = [CONTENT, TOKENS].map((file) => file.replace('.', '[.]')).join('|');
+  const shape = new RegExp(`^${root}/(?:${name})/(?:${files})$`);
   return paths.filter((path) => shape.test(path.replace(/\\/g, '/')));
 }
 
 /**
- * Commit and push the Editor's Content edits.
+ * Commit and push the Editor's edits.
  *
  * @param {object} options
  * @param {(args: string[]) => { status: number, stdout: string, stderr: string }} options.run  git, bound to the repository
@@ -80,17 +90,18 @@ export async function publish({ run, sections, message }) {
   if (status.status !== 0) throw new Refused(`git status failed — ${outputOf(status)}`);
 
   const dirty = changed(status.stdout);
-  const files = contentAmong(dirty, sections);
+  const files = writtenAmong(dirty, sections);
   if (files.length === 0) {
     throw new Refused(
       dirty.length === 0
         ? 'nothing to publish — the tree is clean'
-        : `nothing to publish — no Section’s Content has changed (${dirty.length} other file(s) have)`,
+        : `nothing to publish — no Section’s Content or Tokens have changed (${dirty.length} other file(s) have)`,
     );
   }
 
   const named = [...new Set(files.map((file) => file.split('/').at(-2)))];
-  const wanted = message ?? `Edit the ${named.join(' and ')} Content`;
+  const kinds = [...new Set(files.map((file) => KIND[file.split('/').at(-1)]))].sort();
+  const wanted = message ?? `Edit the ${named.join(' and ')} ${kinds.join(' and ')}`;
   if (typeof wanted !== 'string' || wanted.trim() === '') {
     throw new Refused('a commit message is one line of words, and this one is empty');
   }
