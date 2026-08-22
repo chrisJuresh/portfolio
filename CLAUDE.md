@@ -250,10 +250,27 @@ outrank the composition it argues with, and nothing imports `variants.css`,
 because an unselected Variant has to cost the shipped page nothing.
 `docs/agents/variants.md` is the authority; read it before writing one.
 
+A Section's words are its **Content**, and changing one is not an agent's job:
+
+```bash
+pnpm editor
+```
+
+That opens the real page locally with the Editor over it — click any text, type,
+Enter — and Publish commits and pushes. It writes Content and nothing else, and
+`scripts/editor/NOTES.md` is the authority: read it before touching
+`scripts/editor/`. Two things there are easy to get wrong and expensive to
+rediscover — **the write boundary replaces one string literal's bytes rather than
+re-serialising the file**, which is what keeps a Content file's comments and
+formatting, and **an element is matched against the value the SERVED BUILD was
+made from**, which is what makes an edit survive a reload. Tokens are #144.
+
 `IntersectionObserver` never delivers in the in-app browser pane, for the same
 reason `requestAnimationFrame` never ticks there: the pane does not run the
 rendering steps. Lazy mounting and motion have to be verified in a real headless
-browser, never in the preview.
+browser, never in the preview. **Never open the Editor through `preview_start`
+either**: it serves the main checkout, so in a worktree it would let a Content
+edit be made against one tree while looking at another.
 
 ## Verifying a change to /next
 

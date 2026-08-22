@@ -69,7 +69,7 @@ directory's `dist/`, on an ephemeral port so two features in flight never collid
 pane at all, which is the other half of the same rule: lazy mounting and motion
 cannot be verified there even by hand.
 
-## The seven Checks
+## The eight Checks
 
 | Check           | fails when                                                                  |
 | --------------- | --------------------------------------------------------------------------- |
@@ -80,6 +80,7 @@ cannot be verified there even by hand.
 | `ground`        | paper is not light, or the Turn does not arrive dark, in either theme         |
 | `moments`       | a Timeline cannot be seeked, does not survive a scroll, moves nothing, or will not release |
 | `unpublishable` | a Section's words or its spoken attributes match the denylist                 |
+| `editor`        | the Editor cannot change a word on the real page, or the change does not reach the file, or a refusal does, or the Editor is in the built tree |
 
 `front-screen` is the first Section-specific Check, and the pattern it sets is
 worth copying: it asserts only relationships between two things that have to stay
@@ -105,6 +106,15 @@ elements and wires up only the first still satisfies "something moves". What thi
 catches is a Timeline wired to nothing at all — the failure the author would not
 see. Partial wiring is one they would.
 
+**`editor` is one smoke Check and is not where the Editor is tested.** The Editor's
+tests are at its write boundary, on the bytes — `scripts/editor/lib/*.test.mjs`,
+run by `pnpm test` — because that is where a bug corrupts a source file. What the
+boundary cannot see is whether the surface is WIRED to it, and that is all this
+Check is for. It writes to a temporary copy of every Section's Content and
+compares the real files before and after: it runs from the pre-commit hook, and a
+Check that edited the tree it was gating would put a file it wrote into the commit
+it was checking. `scripts/editor/NOTES.md` is the authority.
+
 **`unpublishable` reads Sections, not the whole document.** Text outside every
 `[data-section]` is not scanned, which is deliberate: the Shell holds no
 composition and the words that come from Content are inside a Section. A leak in
@@ -115,6 +125,12 @@ the Shell's own head is a different thing and has no Check.
 A Check is a module in `checks/` exporting `{ name, title, run(ctx) }`. `run`
 gets `{ browser, origin, repoRoot, dist }` and returns either an array of failure
 strings or `{ failures, notes }`. Register it in the `CHECKS` array in `run.mjs`.
+
+`editor` is the one Check that does not settle, and the reason is worth knowing
+before copying it: `settle()` exists because a Section's TIMELINE mounts on
+approach, but the markup and every word in it are prerendered and present at load,
+and the Editor binds to words. Anything asserting about a Section's motion, its
+mount state or its geometry still has to settle.
 
 Open the page through `lib/page.mjs` — it records every response, console message
 and uncaught throw for you, and `settle()` scrolls the document so every Section
@@ -207,7 +223,8 @@ one thing this suite may not do.
 
 ## The runner's own unit tests
 
-`lib/colour.test.mjs` and `lib/denylist.test.mjs`, run by `pnpm test` and by
+`lib/colour.test.mjs`, `lib/denylist.test.mjs` and everything under
+`scripts/editor/lib/` and `scripts/feature/lib/`, run by `pnpm test` and by
 `pnpm check` before the browser starts. They are not Checks — nothing in them is
 an assertion about a Section — but they run from the same command on purpose,
 because the luminance bands and the denylist matching are what several Checks

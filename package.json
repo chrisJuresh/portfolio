@@ -8,6 +8,7 @@
     "build": "node scripts/check-source.mjs && astro check && astro build && node scripts/assemble-dist.mjs",
     "preview": "node scripts/serve-dist.mjs",
     "variants": "node design/tools/render-variants.mjs",
+    "editor": "node scripts/editor/open.mjs",
     "feature": "node scripts/feature/cli.mjs",
     "check": "node scripts/checks/run.mjs",
     "check:sections": "node scripts/check-source.mjs",

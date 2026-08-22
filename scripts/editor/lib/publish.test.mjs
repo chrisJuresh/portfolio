@@ -1,0 +1,190 @@
+import assert from 'node:assert/strict';
+import { test } from 'node:test';
+
+import { Refused } from './content.mjs';
+import { publish } from './publish.mjs';
+
+/**
+ * Publish: commit what the Editor wrote, push it, and say what it did.
+ *
+ * git is injected, because what is worth asserting here is not that git works —
+ * it does — but WHICH ARGUMENTS it is handed. Two of those carry the whole of the
+ * Editor's limit on reach: the commit is pathspec-limited to Content files, so
+ * nothing else in the tree can ride along even if it is already staged, and the
+ * paths in that pathspec come from git's own status output filtered to Content
+ * rather than from anything the browser said.
+ */
+
+/** A git that answers from a script of replies and records what it was asked. */
+function fakeGit(replies = {}) {
+  const calls = [];
+  const answer = (args) => {
+    const key = args.slice(0, 2).join(' ');
+    return (
+      replies[args.join(' ')] ??
+      replies[key] ??
+      replies[args[0]] ?? { status: 0, stdout: '', stderr: '' }
+    );
+  };
+  const run = (args) => {
+    calls.push(args);
+    return answer(args);
+  };
+  return { run, calls, ran: (name) => calls.filter((args) => args[0] === name) };
+}
+
+const DIRTY = [
+  ' M src/sections/front-screen/content.ts',
+  ' M src/sections/projects-panel/content.ts',
+  ' M src/sections/front-screen/tokens.css',
+  ' M src/kernel/kernel.ts',
+  '?? scratch.md',
+].join('\n');
+
+const setup = (replies = {}) =>
+  fakeGit({
+    status: { status: 0, stdout: `${DIRTY}\n`, stderr: '' },
+    'rev-parse --abbrev-ref': { status: 0, stdout: 'development\n', stderr: '' },
+    'rev-parse --short': { status: 0, stdout: 'a1b2c3d\n', stderr: '' },
+    ...replies,
+  });
+
+const run = (git, options = {}) =>
+  publish({ run: git.run, sections: 'src/sections', message: 'Edit some words', ...options });
+
+// ---------------------------------------------------------------------------
+// What it commits
+// ---------------------------------------------------------------------------
+
+test('it commits the Content files that changed, and only those', async () => {
+  const git = setup();
+  const done = await run(git);
+
+  assert.deepEqual(done.files, [
+    'src/sections/front-screen/content.ts',
+    'src/sections/projects-panel/content.ts',
+  ]);
+
+  const [commit] = git.ran('commit');
+  assert.ok(commit.includes('--'), commit.join(' '));
+  const pathspec = commit.slice(commit.indexOf('--') + 1);
+  assert.deepEqual(pathspec, done.files);
+});
+
+test('the commit is pathspec-limited, so nothing already staged rides along', async () => {
+  // `git commit -- <paths>` commits those paths and leaves the rest of the index
+  // alone. Without the pathspec, a Publish would carry whatever an agent or the
+  // author had staged in another window into a commit nobody reviewed.
+  const git = setup();
+  await run(git);
+
+  const [commit] = git.ran('commit');
+  assert.ok(!commit.includes('--all') && !commit.includes('-a'), commit.join(' '));
+  assert.ok(!commit.some((arg) => arg.endsWith('tokens.css')), commit.join(' '));
+  assert.ok(!commit.some((arg) => arg.endsWith('kernel.ts')), commit.join(' '));
+  assert.equal(git.ran('add').length, 0);
+});
+
+test('it never skips the hooks that gate a commit', async () => {
+  const git = setup();
+  await run(git);
+
+  const [commit] = git.ran('commit');
+  assert.ok(!commit.includes('--no-verify'), commit.join(' '));
+});
+
+test('it reports what it left alone, so a dirty tree is visible rather than silent', async () => {
+  const git = setup();
+  const done = await run(git);
+
+  assert.deepEqual(done.left, [
+    'src/sections/front-screen/tokens.css',
+    'src/kernel/kernel.ts',
+    'scratch.md',
+  ]);
+});
+
+test('it reports the branch, the commit and the push', async () => {
+  const done = await run(setup());
+
+  assert.equal(done.branch, 'development');
+  assert.equal(done.commit, 'a1b2c3d');
+  assert.equal(done.pushed, true);
+  assert.equal(done.message, 'Edit some words');
+});
+
+test('a message it was not given names the Sections it published', async () => {
+  const done = await run(setup(), { message: undefined });
+
+  assert.match(done.message, /front-screen/);
+  assert.match(done.message, /projects-panel/);
+});
+
+// ---------------------------------------------------------------------------
+// Refusals, and the one failure that is not a refusal
+// ---------------------------------------------------------------------------
+
+test('it refuses when no Content has changed', async () => {
+  const git = setup({ status: { status: 0, stdout: ' M src/kernel/kernel.ts\n', stderr: '' } });
+
+  await assert.rejects(() => run(git), Refused);
+  assert.equal(git.ran('commit').length, 0);
+});
+
+test('it refuses when the tree is clean', async () => {
+  const git = setup({ status: { status: 0, stdout: '', stderr: '' } });
+
+  await assert.rejects(() => run(git), Refused);
+  assert.equal(git.ran('commit').length, 0);
+});
+
+test('a Check failing in the pre-commit hook is a refusal that quotes it', async () => {
+  const git = setup({
+    commit: { status: 1, stdout: '', stderr: 'pre-commit: a Check failed, so nothing was committed.' },
+  });
+
+  await assert.rejects(() => run(git), (error) => {
+    assert.ok(error instanceof Refused);
+    assert.match(error.message, /a Check failed/);
+    return true;
+  });
+  assert.equal(git.ran('push').length, 0);
+});
+
+test('a push that fails leaves the commit reported, and says it is not pushed', async () => {
+  // The commit landed. Calling the whole thing a failure would send the author
+  // looking for work that is already committed, so this is a report and not a
+  // refusal.
+  const git = setup({ push: { status: 1, stdout: '', stderr: 'fatal: no upstream' } });
+  const done = await run(git);
+
+  assert.equal(done.commit, 'a1b2c3d');
+  assert.equal(done.pushed, false);
+  assert.match(done.why, /no upstream/);
+});
+
+test('it refuses a message that is not one line of words', async () => {
+  for (const message of ['', '   ', 'two\nlines', 'x'.repeat(301)]) {
+    await assert.rejects(() => run(setup(), { message }), Refused, JSON.stringify(message));
+  }
+});
+
+test('a Content file outside the Sections root is not something it publishes', async () => {
+  const git = setup({
+    status: { status: 0, stdout: ' M design/legacy/content.ts\n M scripts/editor/content.ts\n', stderr: '' },
+  });
+
+  await assert.rejects(() => run(git), Refused);
+});
+
+test('it reads a renamed and a staged Content file as changed', async () => {
+  // git's status codes are two columns, and the Editor's own write shows up in
+  // the second. A filter that only looked for ` M` would call a staged edit
+  // nothing to publish.
+  const git = setup({
+    status: { status: 0, stdout: 'M  src/sections/front-screen/content.ts\n', stderr: '' },
+  });
+  const done = await run(git);
+
+  assert.deepEqual(done.files, ['src/sections/front-screen/content.ts']);
+});

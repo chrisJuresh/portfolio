@@ -1,0 +1,156 @@
+/*
+ * The Editor's own paint, and nothing else's.
+ *
+ * Every selector is under `[data-editor]` or a `data-editor-*` attribute, and the
+ * two properties this file puts on the PAGE's own elements — an outline on a
+ * bound element, a ground under the one being edited — are outline and
+ * background, which change no geometry. That is deliberate: the author is judging
+ * the composition while they are editing it, so the Editor may not move anything.
+ *
+ * It is its own palette rather than the Kernel's. The Editor is a tool sitting
+ * over the page in either theme, and borrowing the page's ink would make it
+ * disappear into whichever one is on.
+ */
+
+[data-editor] {
+  --editor-ink: #f4f2ee;
+  --editor-ground: #1b1b1e;
+  --editor-line: #3a3a40;
+  --editor-live: #7fb3ff;
+  --editor-bad: #ff9a8a;
+
+  position: fixed;
+  right: 12px;
+  bottom: 12px;
+  z-index: 2147483000;
+  width: min(30rem, calc(100vw - 24px));
+  max-height: min(70vh, 40rem);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid var(--editor-line);
+  border-radius: 6px;
+  background: var(--editor-ground);
+  color: var(--editor-ink);
+  font: 12px/1.45 ui-monospace, "Cascadia Mono", Menlo, Consolas, monospace;
+  box-shadow: 0 8px 32px rgb(0 0 0 / 45%);
+}
+
+[data-editor] header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 9px;
+  border-bottom: 1px solid var(--editor-line);
+}
+
+[data-editor] header strong {
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+
+[data-editor-count] {
+  margin-right: auto;
+  color: var(--editor-live);
+}
+
+[data-editor-body] {
+  overflow: auto;
+  padding: 8px 9px 9px;
+}
+
+[data-editor-folded] [data-editor-body] {
+  display: none;
+}
+
+[data-editor] details {
+  margin-bottom: 6px;
+}
+
+[data-editor] summary {
+  cursor: pointer;
+  padding: 2px 0;
+  letter-spacing: 0.03em;
+}
+
+[data-editor] summary small {
+  opacity: 0.55;
+}
+
+[data-editor] label {
+  display: grid;
+  grid-template-columns: 11rem minmax(0, 1fr);
+  align-items: center;
+  gap: 6px;
+  margin: 3px 0;
+}
+
+[data-editor] label span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  opacity: 0.7;
+}
+
+[data-editor] input,
+[data-editor] button {
+  min-width: 0;
+  padding: 4px 6px;
+  border: 1px solid var(--editor-line);
+  border-radius: 3px;
+  background: #111114;
+  color: inherit;
+  font: inherit;
+}
+
+[data-editor] button {
+  cursor: pointer;
+  background: #26262c;
+}
+
+[data-editor] button:disabled {
+  cursor: progress;
+  opacity: 0.5;
+}
+
+[data-editor] input:focus-visible,
+[data-editor] button:focus-visible {
+  outline: 2px solid var(--editor-live);
+  outline-offset: 1px;
+}
+
+[data-editor-publish] {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 6px;
+  margin-top: 9px;
+  padding-top: 9px;
+  border-top: 1px solid var(--editor-line);
+}
+
+[data-editor-said] {
+  margin: 8px 0 0;
+  overflow-wrap: anywhere;
+  opacity: 0.75;
+}
+
+[data-editor-said][data-editor-bad] {
+  color: var(--editor-bad);
+  opacity: 1;
+}
+
+/* ---- on the page itself ------------------------------------------------- */
+
+/* Outline and not border: a border is layout, and the composition being judged
+   is the composition being edited. */
+[data-editor-bound]:hover {
+  outline: 1px dashed rgb(127 179 255 / 70%);
+  outline-offset: 2px;
+  cursor: text;
+}
+
+[data-editor-editing] {
+  outline: 2px solid #7fb3ff;
+  outline-offset: 2px;
+  background: rgb(127 179 255 / 12%);
+}

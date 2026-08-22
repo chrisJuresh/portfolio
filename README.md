@@ -246,6 +246,7 @@ pnpm build       # checks, typechecks, builds, assembles dist/
 pnpm preview     # serves that dist/ — of the tree it is run from
 pnpm dev         # Astro's dev server, with the static site beside it
 pnpm variants    # renders every Variant of every Section into one sheet
+pnpm editor      # opens the real page locally, editable
 ```
 
 `/next` is one document made of Sections. A **Section** owns its markup, styles,
@@ -265,6 +266,15 @@ declares. The rejected ones stay in the source as the record of what was
 compared, and cost a reader nothing: nothing imports them, so they are not in the
 build at all. This is the general form of the typographic comparison in `design/`
 described above.
+
+Its words are its **Content**, held as typed data apart from the markup that
+presents them, and `pnpm editor` is how they are changed. It opens the built page
+locally with the Editor over it: click any piece of text, type, press Enter, and
+the change is in the source file. Publish commits and pushes, and the live site
+follows. It writes Content and nothing else — a limit that is a mechanism rather
+than a promise, since the only file it can name is a Section's `content.ts` and the
+only thing it can do to one is replace a single string literal's bytes.
+`scripts/editor/NOTES.md` is the rest of it.
 
 Nothing at `/next` is live yet — it carries a stub Section, and `/portfolio` goes
 on being the document until the ticket that flips the route.
