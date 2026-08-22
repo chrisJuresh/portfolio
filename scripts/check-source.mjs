@@ -14,6 +14,7 @@
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { VARIANT_GATE, compounds, outsideAnyRule, rules } from './variant-sheet.mjs';
 
 const repoRoot = fileURLToPath(new URL('..', import.meta.url));
 const sectionsDir = join(repoRoot, 'src', 'sections');
@@ -46,11 +47,6 @@ function filesUnder(dir) {
   return found;
 }
 
-/** Comments carry examples of the things being banned, so they come out first. */
-function withoutComments(source) {
-  return source.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/^\s*\/\/.*$/gm, ' ');
-}
-
 /** Every module specifier in a source file, from either import form. */
 function imports(code) {
   const found = [];
@@ -59,46 +55,11 @@ function imports(code) {
   return found;
 }
 
-/**
- * A selector split into its compounds, on the combinators between them — or
- * null if it uses a sibling combinator.
- *
- * The split has to know about brackets and quotes, because `[data-x~='a']` and
- * `:is(a + b)` both carry characters that mean something else at the top level.
- * Sibling combinators are refused outright rather than reasoned about: the
- * guarantee below is that a Variant's rule can only match inside its own
- * Section, and a sibling of a Section's root is another Section.
- */
-function compounds(selector) {
-  const parts = [];
-  let current = '';
-  let depth = 0;
-  let quote = null;
-  for (const character of selector) {
-    if (quote) {
-      current += character;
-      if (character === quote) quote = null;
-      continue;
-    }
-    if (character === '"' || character === "'") {
-      quote = character;
-      current += character;
-      continue;
-    }
-    if (character === '[' || character === '(') depth += 1;
-    if (character === ']' || character === ')') depth -= 1;
-    if (depth === 0) {
-      if (character === '+' || character === '~') return null;
-      if (character === '>' || /\s/.test(character)) {
-        if (current) parts.push(current);
-        current = '';
-        continue;
-      }
-    }
-    current += character;
-  }
-  if (current) parts.push(current);
-  return parts;
+/** Comments carry examples of the things being banned, so they come out first.
+ *  Only the .astro/.ts scans need this here; the stylesheets go through
+ *  variant-sheet.mjs, which strips them itself. */
+function withoutComments(source) {
+  return source.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/^\s*\/\/.*$/gm, ' ');
 }
 
 // ---------------------------------------------------------------------------
@@ -125,25 +86,6 @@ const SCOPE_ESCAPES = [
   [/:global\s*\(/, ':global() — a Section may not write a global rule'],
   [/<style[^>]*\bis:inline\b/, '<style is:inline> — an inline style block is not scoped'],
 ];
-
-/** One top-level `selector { … }`. Both stylesheets are a flat list of them, and
- *  the check just above the loop is what makes that an assertion. Global, so
- *  that stripping every rule out of the file really does strip every one —
- *  without the flag `replace` takes the first and the leftover reads as an
- *  error in every file that has more than one rule in it. */
-const RULE = /([^{}]+)\{([^{}]*)\}/g;
-
-/** How a Variant is selected: an attribute on the document's root element.
- *
- *  `:root` is not decoration and not a habit. It is what makes a Variant win.
- *  Together with `scopedStyleStrategy: 'where'` in astro.config.mjs it is the
- *  whole of the mechanism: that strategy narrows a component's rules with
- *  :where(), which weighs nothing, so a scoped rule keeps the specificity it is
- *  written with and `:root[data-variant='…']` in front of the same selector
- *  outranks it by (0,2,0) every time. Drop either half and a Variant starts
- *  winning or losing on how many compounds the composition happened to write —
- *  which reads as a Variant that "did not apply". docs/agents/variants.md. */
-const VARIANT_GATE = /^:root\[data-variant=(?:'([^']*)'|"([^"]*)"|([^\]]*))\]$/;
 
 /**
  * Every compound after the gate has to be one the Section owns, and only the
@@ -245,34 +187,30 @@ for (const section of sections) {
     if (!exists(file)) continue;
     const css = withoutComments(readFileSync(file, 'utf8'));
 
-    // Anything left once every top-level `selector { … }` is taken out. An
-    // @media block is the case this exists for, and it is worth being exact
-    // about why: the query's INNER rule is a perfectly good match for the
-    // pattern below, so without this the wrapper is skipped in silence and the
-    // file is checked as though the query were not there. NOTES.md has claimed
-    // an @media here fails the build since the convention was written; this is
-    // the line that makes that true. The Editor writes a value and not a
+    // Anything left once every top-level rule is taken out. An @media block is
+    // the case this exists for, and it is worth being exact about why: the
+    // query's INNER rule is a perfectly good match for a rule pattern, so
+    // without this the wrapper is skipped in silence and the file is checked as
+    // though the query were not there. The Editor writes a value and not a
     // breakpoint, and a Variant is a direction rather than something that
     // arrives at a width.
-    const outside = css.replace(RULE, '').trim();
+    const outside = outsideAnyRule(css);
     if (outside) {
       const shown = outside.replace(/\s+/g, ' ').slice(0, 48);
       fail(file, `"${shown}" is outside any rule — this file is a flat list of rules`);
     }
 
-    for (const [, selector, body] of css.matchAll(RULE)) {
-      for (const one of selector.split(',')) {
-        const trimmed = one.trim().replace(/\s+/g, ' ');
-        if (!trimmed) continue;
+    for (const rule of rules(css)) {
+      for (const selector of rule.selectors) {
         if (name === 'tokens.css') {
-          if (!new RegExp(`\\.${section}$`).test(trimmed)) {
-            fail(file, `selector "${trimmed}" does not end in .${section}`);
+          if (!new RegExp(`\\.${section}$`).test(selector)) {
+            fail(file, `selector "${selector}" does not end in .${section}`);
           }
         } else {
-          checkVariantSelector(file, section, trimmed);
+          checkVariantSelector(file, section, selector);
         }
       }
-      for (const declaration of body.split(';')) {
+      for (const declaration of rule.declarations) {
         const property = declaration.split(':')[0]?.trim();
         if (!property) continue;
         const own = property.startsWith(`--${section}-`);
@@ -288,6 +226,45 @@ for (const section of sections) {
         }
       }
     }
+  }
+}
+
+// ---------------------------------------------------------------------------
+// The half of the Variant mechanism that does not live in a Section.
+// ---------------------------------------------------------------------------
+
+// A Variant is selected by `:root[data-variant='…']` in front of a selector the
+// composition already wrote, and it has to WIN that pairing. It only does because
+// of two things that are nowhere near each other: the gate above, checked per
+// selector, and one line of Astro configuration.
+//
+// Astro narrows every compound of a scoped rule so it cannot match another
+// component's elements. HOW it narrows decides the arithmetic. The default
+// strategy appends a bare attribute selector, worth (0,1,0) — PER COMPOUND — so a
+// scoped rule's weight grows with the length of its selector, and a Variant, which
+// is one fixed gate in front of the same selector, wins or loses on how many
+// compounds the composition happened to write. `.stub__points li` came out an
+// exact tie, settled by whichever stylesheet the bundler emitted second.
+// `scopedStyleStrategy: 'where'` wraps the same narrowing in :where(), which
+// selects identically and weighs nothing, so the gate outranks the composition by
+// (0,2,0) in every case.
+//
+// This was a paragraph in five files and an assertion in none, which is exactly
+// what ADR 0006 says not to do: a comment saying "do not break this" is a wish.
+// The failure it is guarding against is silent — a Variant that renders as though
+// it had not been selected — so it is worth the eleven lines.
+const astroConfig = join(repoRoot, 'astro.config.mjs');
+if (exists(astroConfig)) {
+  const config = withoutComments(readFileSync(astroConfig, 'utf8'));
+  const strategy = /scopedStyleStrategy\s*:\s*['"]([a-z-]+)['"]/.exec(config);
+  if (!strategy) {
+    fail(astroConfig, "no scopedStyleStrategy — Variants need 'where' to outrank a Section's own rules");
+  } else if (strategy[1] !== 'where') {
+    fail(
+      astroConfig,
+      `scopedStyleStrategy is '${strategy[1]}' — Variants need 'where', or a scoped rule's` +
+        " specificity grows with its selector and :root[data-variant='…'] stops outranking it",
+    );
   }
 }
 

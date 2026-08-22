@@ -38,16 +38,36 @@
    wrong diagnosis once already.
 
    Playwright resolves out of design/tools/node_modules, like every other tool in
-   this directory:  npm --prefix design/tools install
+   this directory:  cd design/tools && npm ci
    ========================================================================== */
 
+import { createHash } from 'node:crypto';
 import { createReadStream, statSync } from 'node:fs';
 import { createServer } from 'node:http';
 import { mkdir, readdir, readFile, rm, stat, writeFile } from 'node:fs/promises';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { chromium } from 'playwright';
 import { contentType, resolveFile } from '../../scripts/static-tree.mjs';
+import { rules, variantsIn, withoutComments } from '../../scripts/variant-sheet.mjs';
+
+/* Playwright is design/tools/'s dependency, not the root install's, so the first
+   thing this can fail at is not finding it — and a bare ERR_MODULE_NOT_FOUND for
+   a package the README never told you to install is a poor way to learn that.
+   A worktree never has it at all: the directory is gitignored, so git does not
+   put it there. */
+let chromium;
+try {
+  ({ chromium } = await import('playwright'));
+} catch (error) {
+  if (error?.code !== 'ERR_MODULE_NOT_FOUND') throw error;
+  console.error(
+    'error: playwright is not installed for design/tools.\n' +
+      '  cd design/tools && npm ci\n' +
+      '  (it is not part of `pnpm install`, and a fresh worktree never has it —\n' +
+      '   design/tools/node_modules is gitignored. docs/agents/variants.md)',
+  );
+  process.exit(1);
+}
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(HERE, '..', '..');
@@ -87,6 +107,22 @@ const opt = args(process.argv.slice(2));
 const list = (value, fallback) =>
   value ? value.split(',').map((one) => one.trim()).filter(Boolean) : fallback;
 
+/* `args` gives a flag with no value the string 'true', so an unvalidated
+   Number(opt.x || d) turns `--scale` into NaN — and a NaN deviceScaleFactor is a
+   run that looks fine and writes nothing you can compare. */
+function number(name, value, fallback) {
+  if (value === undefined) return fallback;
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed) || parsed <= 0) fail(`--${name} takes a positive number, not "${value}"`);
+  return parsed;
+}
+
+function flag(name, value) {
+  if (value === undefined) return false;
+  if (value !== 'true') fail(`--${name} takes no value — got "${value}"`);
+  return true;
+}
+
 const wanted = {
   sections: list(opt.sections, null),
   variants: list(opt.variants, null),
@@ -97,9 +133,12 @@ const progresses = list(opt.progress, ['0']).map(Number);
 /** The Turn is the Kernel's, not a Section's, so it is pinned rather than
  *  crossed: one value for the whole run, or left where the scroll put it. */
 const turn = opt.turn === undefined ? null : Number(opt.turn);
-const scale = Number(opt.scale || 1);
+const scale = number('scale', opt.scale, 1);
 const route = opt.route || ROUTE;
-const full = opt.full === 'true';
+/* `--full` takes no value, so `args` gives it the string 'true' when it is
+   present. Anything else was a typo — `--full 1` reading as false is the kind of
+   quiet wrong answer this whole tool exists to avoid. */
+const full = flag('full', opt.full);
 /* PNG is faithful and PNG is what these cost: the Effect Stack's grain and
    halftone are noise by construction, so a screen of nearly blank paper comes
    out at over a megabyte and a full matrix at forty. JPEG is a fifth of that and
@@ -107,9 +146,12 @@ const full = opt.full === 'true';
    on — so it is the right answer for a wide matrix and the wrong one for judging
    a texture. Hence a flag rather than a default. */
 const format = (opt.format || 'png').toLowerCase();
-const quality = Number(opt.quality || 92);
+const quality = number('quality', opt.quality, 92);
 if (format !== 'png' && format !== 'jpeg') fail('--format must be png or jpeg');
-const out = resolve(ROOT, opt.out || join('design', 'sheets'));
+/* One output directory, named once. It was a flag, and the flag was never
+   passed and the closing log ignored it anyway. */
+const OUT_REL = join('design', 'sheets');
+const out = resolve(ROOT, OUT_REL);
 
 for (const key of viewKeys) if (!VIEWPORTS[key]) fail(`unknown viewport "${key}" — have: ${Object.keys(VIEWPORTS).join(', ')}`);
 for (const p of progresses) if (!Number.isFinite(p) || p < 0 || p > 1) fail(`--progress takes numbers from 0 to 1, not "${p}"`);
@@ -125,33 +167,22 @@ for (const theme of themes) if (theme !== 'light' && theme !== 'dark') fail(`unk
    loader globs for a Section's Timeline instead of keeping a register: adding a
    Variant is writing one, and there is nowhere to forget to add it. */
 
-const COMMENTS = /\/\*[\s\S]*?\*\//g;
-const RULE = /([^{}]+)\{([^{}]*)\}/g;
-const GATE = /:root\[data-variant=(?:'([^']*)'|"([^"]*)"|([^\]]*))\]/;
+/* The sheet and the Check read variants.css through one parser
+   (scripts/variant-sheet.mjs), because they have to agree about what is in it and
+   once did not: a Variant reached by the second half of a selector LIST passed
+   every Check and was never rendered. */
 
-/** A Variant's rules, as CSS, keyed by the name its selectors gate on. */
-function byVariant(css) {
-  const found = new Map();
-  for (const [, selector, body] of css.replace(COMMENTS, '').matchAll(RULE)) {
-    const gate = GATE.exec(selector);
-    if (!gate) continue;
-    const name = (gate[1] ?? gate[2] ?? gate[3] ?? '').trim();
-    const rule = `${selector.trim().replace(/\s*\n\s*/g, '\n')} {${body.replace(/\s+$/, '')}\n}`;
-    found.set(name, [...(found.get(name) ?? []), rule]);
-  }
-  return found;
-}
+/** The name for the direction with no Variant selected — what tokens.css says on
+ *  its own. Not `base`: CONTEXT.md's Kernel entry puts that on an avoid list, and
+ *  this is the one state that cannot be confused with a Variant's own name. */
+const UNSELECTED = 'unselected';
 
-/** The declarations of a flat stylesheet, for the sheet to caption `base` with. */
+/** tokens.css as a flat list of declarations, to caption `unselected` with. */
 function declarations(css) {
-  const found = [];
-  for (const [, , body] of css.replace(COMMENTS, '').matchAll(RULE)) {
-    for (const declaration of body.split(';')) {
-      const trimmed = declaration.trim().replace(/\s+/g, ' ');
-      if (trimmed) found.push(`${trimmed};`);
-    }
-  }
-  return found.join('\n');
+  return rules(css)
+    .flatMap((rule) => rule.declarations)
+    .map((one) => `${one};`)
+    .join('\n');
 }
 
 /** A Variant may reach for one of its Section's own assets, and a relative URL
@@ -176,19 +207,27 @@ async function declaredVariants() {
     if (wanted.sections && !wanted.sections.includes(entry.name)) continue;
     const dir = join(SECTIONS, entry.name);
     if (!(await present(join(dir, 'variants.css')))) continue;
+    // Guarded, like variants.css beside it: this tool does not run
+    // check-source, so a Section missing a file is a message and not a stack.
+    if (!(await present(join(dir, 'tokens.css')))) {
+      fail(`${entry.name} has no tokens.css — run \`pnpm check:sections\``);
+    }
     const css = await readFile(join(dir, 'variants.css'), 'utf8');
     const tokens = await readFile(join(dir, 'tokens.css'), 'utf8');
-    const rules = byVariant(css);
-    let names = [...rules.keys()];
+    const declared = variantsIn(css);
+    let names = [...declared.keys()];
     if (wanted.variants) names = names.filter((name) => wanted.variants.includes(name));
+    if (declared.has(UNSELECTED)) {
+      fail(`${entry.name} declares a Variant called "${UNSELECTED}", which is what the sheet calls no Variant at all`);
+    }
     found.push({
       name: entry.name,
-      // `base` first and always: the direction that ships is the thing every
-      // Variant is an argument against, so it belongs in the picture beside them.
-      names: ['base', ...names],
-      rules,
+      // The unselected direction first and always: it is the thing every Variant
+      // is an argument against, so it belongs in the picture beside them.
+      names: [UNSELECTED, ...names],
+      rules: declared,
       tokens: declarations(tokens),
-      style: absoluteUrls(css.replace(COMMENTS, ''), `/src/sections/${entry.name}/`),
+      style: absoluteUrls(withoutComments(css), `/src/sections/${entry.name}/`),
     });
   }
   return found;
@@ -235,7 +274,7 @@ function serve() {
 const INJECT = (variant, css) => `
   new MutationObserver((_, o) => {
     if (!document.documentElement) return;
-    ${variant === 'base' ? '' : `document.documentElement.setAttribute("data-variant", ${JSON.stringify(variant)});`}
+    ${variant === UNSELECTED ? '' : `document.documentElement.setAttribute("data-variant", ${JSON.stringify(variant)});`}
     const style = document.createElement("style");
     style.textContent = ${JSON.stringify(css)};
     (document.head || document.documentElement).appendChild(style);
@@ -318,8 +357,8 @@ async function sheet(rows, declared) {
   const source = new Map(declared.map((one) => [one.name, one]));
   const css = (row) => {
     const section = source.get(row.section);
-    if (row.variant === 'base')
-      return `/* tokens.css — the direction that ships */\n${section.tokens}`;
+    if (row.variant === UNSELECTED)
+      return `/* tokens.css — with no Variant selected */\n${section.tokens}`;
     return (section.rules.get(row.variant) ?? []).join('\n\n');
   };
 
@@ -330,7 +369,7 @@ async function sheet(rows, declared) {
         (row) => `
         <figure>
           <figcaption>
-            <b>${escape(row.variant)}</b>
+            <b>${escape(row.variant)}${row.identical ? ' <i>identical</i>' : ''}</b>
             <span>${escape(row.face)} ${escape(row.size)} · ${escape(row.box)} · turn ${escape(row.turn)}</span>
           </figcaption>
           <a href="${row.file}" target="_blank" rel="noopener"
@@ -355,6 +394,7 @@ async function sheet(rows, declared) {
   figure { margin: 0; flex: 0 0 auto; width: 460px; display: flex; flex-direction: column; gap: 0.35rem; }
   figcaption { display: flex; justify-content: space-between; gap: 0.5rem; align-items: baseline; }
   figcaption b { font-size: 0.95rem; }
+  figcaption i { font-weight: 400; font-style: normal; opacity: 0.55; font-size: 0.8rem; }
   figcaption span { opacity: 0.6; font-family: ui-monospace, monospace; font-size: 11px; text-align: right; }
   img { width: 100%; height: auto; border: 1px solid rgba(128,128,128,0.35); border-radius: 4px; display: block; }
   /* Capped and scrolling, so a Variant that declares a lot does not push the
@@ -370,9 +410,12 @@ async function sheet(rows, declared) {
   <p class="meta">${rows.length} render${rows.length === 1 ? '' : 's'} of ${route}, at ${scale}x, by
      <code>design/tools/render-variants.mjs</code>. Under each picture is what that
      Variant declares and nothing else, so the choice can be made here rather than
-     in the files. <b>base</b> is the direction that ships — what is in
-     <code>tokens.css</code>, with no Variant selected. Click a picture for full
-     size. Every run rewrites this directory.</p>
+     in the files. <b>${UNSELECTED}</b> is what <code>tokens.css</code> says on its
+     own, with no Variant selected — the thing each Variant is an argument against.
+     A picture marked <i>identical</i> came back byte-for-byte the same as it, which
+     is the honest answer for a Variant that only exists in motion: give it
+     <code>--progress</code>. Click a picture for full size. Every run rewrites
+     this directory.</p>
 ${/* In the order the run made them — viewport, then theme, then Section — rather
       than alphabetically, which would put dark before light for no reason. */
    [...groups.keys()].map((key) => `    <section><h2>${escape(key)}</h2><div class="strip">${figures(key)}</div></section>`).join('\n')}
@@ -400,6 +443,14 @@ const server = await serve();
 const origin = `http://127.0.0.1:${server.address().port}`;
 const browser = await chromium.launch();
 const rows = [];
+/* What the unselected direction looked like, per group, so a Variant whose render
+   is byte-for-byte the same can be labelled as such rather than left looking like
+   a picture of nothing. `drift` is exactly that at progress 0 — the whole of it is
+   a distance the Timeline moves through — and a sheet that does not say so is a
+   sheet with a card you cannot read. The unselected render comes first in every
+   group, which is what makes this possible in one pass. */
+const unselectedDigest = new Map();
+const groupOf = (section, theme, viewport, progress) => `${section}|${theme}|${viewport}|${progress}`;
 const total =
   viewKeys.length *
   themes.length *
@@ -446,11 +497,16 @@ for (const viewport of viewKeys) {
           if (full) await page.locator(`[data-section="${section.name}"]`).screenshot(target);
           else await page.screenshot(target);
           const bytes = (await stat(join(out, file))).size;
-          rows.push({ section: section.name, variant, theme, viewport, progress, file, ...info });
+          const group = groupOf(section.name, theme, viewport, progress);
+          const digest = createHash('sha256').update(await readFile(join(out, file))).digest('hex');
+          if (variant === UNSELECTED) unselectedDigest.set(group, digest);
+          const identical = variant !== UNSELECTED && unselectedDigest.get(group) === digest;
+          rows.push({ section: section.name, variant, theme, viewport, progress, file, identical, ...info });
           console.log(
             `  [${String(++n).padStart(String(total).length)}/${total}] ${file}` +
               `  ${info.face} ${info.size} · ${info.box} · turn ${info.turn}` +
-              `  (${Math.round(bytes / 1024)} KB)`,
+              `  (${Math.round(bytes / 1024)} KB)` +
+              (identical ? `  — identical to ${UNSELECTED}` : ''),
           );
         }
         await context.close();
@@ -463,5 +519,12 @@ await browser.close();
 server.close();
 await sheet(rows, declared);
 
-console.log(`\nwrote ${rows.length} shot(s) + index.html to ${opt.out || 'design/sheets'}/`);
-console.log('open design/sheets/index.html — the sheet');
+const identical = rows.filter((row) => row.identical).length;
+console.log(`\nwrote ${rows.length} shot(s) + index.html to ${OUT_REL.replace(/\\/g, '/')}/`);
+if (identical) {
+  console.log(
+    `${identical} render(s) came back identical to ${UNSELECTED} — a Variant that only exists` +
+      ' in motion needs --progress',
+  );
+}
+console.log(`open ${join(OUT_REL, 'index.html').replace(/\\/g, '/')} — the sheet`);

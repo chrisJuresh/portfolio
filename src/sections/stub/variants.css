@@ -1,22 +1,9 @@
-/* The stub Section's Variants: complete alternative directions, all present in
-   the source at once, selected by an attribute on the document's root so several
-   can be rendered side by side and chosen by eye.
+/* The stub Section's Variants — complete alternative directions, selected by
+   attribute, rendered side by side with `pnpm variants`. Nothing imports this
+   file. NOTES.md is the grammar every selector below keeps, why `:root` is
+   load-bearing, and why a Variant may not centre anything vertically here. */
 
-     pnpm variants
-
-   Nothing imports this file — that is what makes an unselected Variant cost the
-   shipped page nothing — and scripts/check-source.mjs fails the build if
-   anything starts to. design/tools/render-variants.mjs injects it at render
-   time, and NOTES.md is the rest of it, including the grammar every selector
-   below has to keep and why `:root` is load-bearing.
-
-   Five here, and they are five different KINDS of direction rather than five
-   sizes of the same one: a Variant that restates Tokens, one that does it the
-   other way, one that changes the layout, one that changes the surface, and one
-   that is only visible in motion. */
-
-/* Tokens, and nothing else. The whole of a typographic or rhythmic direction
-   fits here, and this is what a Variant looked like when it could only be this. */
+/* Tokens only — a typographic and rhythmic direction. */
 :root[data-variant='tight'] .stub {
   --stub-measure: 26rem;
   --stub-gap: 0.75rem;
@@ -32,18 +19,7 @@
   --stub-lead-leading: 1.75;
 }
 
-/* A Section is taller than a screen — the stub is 240svh, because its Timeline
-   is scrubbed by its own scroll — and the sheet shoots the first screen of it,
-   which is what a reader arriving at the Section sees. So a Variant centring
-   anything vertically centres it in that whole box and out of the frame. It is
-   not the sheet mis-measuring; it is the Variant putting the composition off
-   screen, and the first draft of `split` below did exactly that.
-
-   LAYOUT. The measure stops being a column and becomes two: the heading down the
-   left against the copy, and the points laid across the foot rather than listed.
-   Not expressible as Tokens at any price — the component reads Tokens for its
-   lengths, not for its structure, and a direction that has to ask permission of
-   the composition it is arguing with is not an alternative to it. */
+/* Layout: the measure becomes two columns, the points a row across the foot. */
 :root[data-variant='split'] .stub {
   --stub-measure: 66rem;
   --stub-gap: 2rem;
@@ -66,17 +42,12 @@
   flex-direction: row;
 }
 
-/* The one selector here that is not the Section's own: `li` can match nothing
-   outside `.stub__points`, which is why the grammar only asks about the compound
-   right after the gate. */
 :root[data-variant='split'] .stub__points li {
   flex: 1 1 0;
 }
 
-/* SURFACE. The same layout on a plate instead of on the ground, drawn from the
-   Kernel's ink so it holds in both papers and across the Turn. Reading the
-   Kernel is what a Section may do; declaring `--ink` here would be reaching out
-   of it, and the build refuses that. */
+/* Surface: the same copy on a plate, drawn from the Kernel's ink so it holds in
+   both papers and across the Turn. */
 :root[data-variant='plate'] .stub {
   --stub-inset: 10vmin;
   justify-content: center;
@@ -94,13 +65,9 @@
   font-style: italic;
 }
 
-/* MOTION. Nothing to see at rest — --stub-rise is the distance timeline.ts moves
-   the Section through, so this Variant and the Section as it ships are the same
-   picture at progress 0 and different ones at every other moment. Look at it
-   with the sheet's own axis:
-
-     pnpm variants -- --progress 0,0.5,1                                       */
+/* Motion, and NOTHING else, which is what makes it worth having here: at rest it
+   is the unselected direction to the byte, and the sheet says so.
+   `pnpm variants -- --progress 0,0.5,1`. */
 :root[data-variant='drift'] .stub {
   --stub-rise: 56px;
-  --stub-gap: 1.75rem;
 }

@@ -35,7 +35,10 @@ number of Variants in it. Every selector reads:
   is two Variants.
 
 `scripts/check-source.mjs` is all of that as a build failure, and `pnpm
-check:sections` is it on its own.
+check:sections` is it on its own. It and the render tool read the file through one
+parser, `scripts/variant-sheet.mjs` — they have to agree about what is in it, and
+once did not: a Variant reached only by the second half of a selector *list*
+passed every Check and was never rendered.
 
 ## Rendering them
 
@@ -46,8 +49,10 @@ pnpm variants       # every Variant of every Section, both themes, one sheet
 
 Then open `design/sheets/index.html`. Under each picture is what that Variant
 declares and nothing else, so the choice is made there rather than in the files.
-`base` is the direction that ships — `tokens.css`, with no Variant selected — and
-it is in every strip, because it is the thing each Variant is an argument against.
+`unselected` is what `tokens.css` says on its own, and it is in every strip because
+it is the thing each Variant is an argument against. A card marked *identical* came
+back byte-for-byte the same as it — the honest answer for a Variant that only
+exists in motion, and the cue to pass `--progress`.
 
 ```bash
 pnpm variants -- --sections stub --variants split,plate
@@ -72,9 +77,12 @@ wins or loses depending on how many compounds the composition happened to write.
 `.stub__points li` was an exact tie, settled by whichever stylesheet the bundler
 emitted second. So `astro.config.mjs` sets `scopedStyleStrategy: 'where'`, which
 selects identically and weighs nothing, and the gate then outranks the
-composition by (0,2,0) in every case. **Both halves are load-bearing.** Change
-either and Variants start losing silently, which reads as a Variant that "did not
-apply".
+composition by (0,2,0) in every case.
+
+Both halves are load-bearing, so both are checked — `check-source.mjs` reads
+`astro.config.mjs` and fails the build if the strategy is missing or changed. It
+has to be a Check rather than a note: the regression is a Variant that renders as
+though it had not been selected, and nothing else about the page looks wrong.
 
 **Nothing imports `variants.css`.** That is the whole of an unselected Variant
 costing the shipped page nothing: the file is not in the build, so rejected
@@ -120,11 +128,24 @@ to have.
 in that directory, and it is not what `pnpm install` at the root installs:
 
 ```bash
-npm --prefix design/tools install
+cd design/tools && npm ci
 ```
 
-A worktree does not get it at all — the directory is gitignored — so a fresh one
-needs either that install or a junction to the main checkout's copy.
+**From that directory, and `ci` rather than `install`.** `npm --prefix
+design/tools install`, run from the repo root, installs the package in the *cwd*
+into the prefix — so it adds `"portfolio": "file:../.."` to
+`design/tools/package.json` and rewrites the lockfile, two tracked files, as a
+side effect of installing Playwright. `npm ci` also refuses to touch either one.
+
+A worktree does not get the directory at all — it is gitignored, so git never puts
+it there — and `pnpm variants` says so rather than failing with a bare
+`ERR_MODULE_NOT_FOUND`.
+
+**Install it, do not link it.** A junction from a worktree to the main checkout's
+copy works and then takes the main checkout down with it: `git worktree remove`
+walks the link and deletes the contents of the *target*, leaving the main
+checkout's `design/tools/node_modules` an empty directory and every tool in that
+folder broken. It has happened. The install is two seconds.
 
 ## Not to be confused with
 
