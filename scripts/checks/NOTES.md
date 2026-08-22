@@ -69,16 +69,24 @@ directory's `dist/`, on an ephemeral port so two features in flight never collid
 pane at all, which is the other half of the same rule: lazy mounting and motion
 cannot be verified there even by hand.
 
-## The six Checks
+## The seven Checks
 
 | Check           | fails when                                                                  |
 | --------------- | --------------------------------------------------------------------------- |
 | `assets`        | anything the page fetches 404s or never answers, in either theme, with every Effect Stack layer lit |
 | `console`       | anything logs an error or a warning, or throws, including across a theme flip |
 | `faces`         | a declared `@font-face` will not load, or no face Token names a declared family |
+| `front-screen`  | the Front Screen's rhyme, its one-screen budget, the Cut Title's cut or its accessible name, the crossing's span, the switch's ARIA, or the type's place in the Effect Stack breaks |
 | `ground`        | paper is not light, or the Turn does not arrive dark, in either theme         |
 | `moments`       | a Timeline cannot be seeked, does not survive a scroll, moves nothing, or will not release |
 | `unpublishable` | a Section's words or its spoken attributes match the denylist                 |
+
+`front-screen` is the first Section-specific Check, and the pattern it sets is
+worth copying: it asserts only relationships between two things that have to stay
+equal, and the Section's own `NOTES.md` records that every assertion has been
+shown to fail when the thing it guards is removed and to pass when a Token is set
+to something else. A Check nobody has tried to break is a Check nobody knows the
+strength of.
 
 ## What a pass does not mean
 
@@ -110,7 +118,9 @@ strings or `{ failures, notes }`. Register it in the `CHECKS` array in `run.mjs`
 
 Open the page through `lib/page.mjs` — it records every response, console message
 and uncaught throw for you, and `settle()` scrolls the document so every Section
-has actually mounted. **A Check that reads the page without settling it reads a
+has actually mounted. `open()` takes a `viewport`, defaulting to DESK; a Check
+that names another one had better say why, because the same window for every
+Check is what makes two failures comparable. **A Check that reads the page without settling it reads a
 document with no Sections in it**, and every Section-shaped assertion then passes
 vacuously.
 
@@ -118,7 +128,7 @@ Every failure string names the thing that broke: the URL, the family, the
 selector, the measured number and the wanted one. "something is wrong" costs a
 diagnosis session; "404 for /_astro/vollkorn-regular.Dnyk-4Dy.woff2" costs nothing.
 
-## Six traps, each of which cost a wrong answer here
+## Eight traps, each of which cost a wrong answer here
 
 **`hold()` before you seek, and it is not enough to seek twice.** A scrubbed
 Timeline is recomputed from the scroll position, so a bare seek survives about a
@@ -138,6 +148,23 @@ paragraph beginning with a capital arrive as one word — `HoldingsA Section` �
 denylist term sitting at an element boundary is invisible to a whole-word match,
 and words that were never on the page are manufactured. `unpublishable` walks the
 text nodes and joins them with newlines instead.
+
+**A composition fitted to one screen has regimes one window cannot reach.** The
+Front Screen hands its leftover height to the photographs' slot until that slot
+hits its ceiling, and only then splits it between the two margins — so the
+mechanism holding the margins equal is *inert* at every ordinary desktop height.
+Measured at DESK alone, `front-screen` passed with that mechanism deleted. It
+measures at two heights now. Any Check on a composition with a ceiling in it
+should ask which side of that ceiling its window is on.
+
+**A degenerate ScrollTrigger is not an error, it is a flip.** `data-turn` on a
+Section exactly one screen tall leaves `top top` and `bottom bottom` at the same
+scroll position. GSAP reports 0 at the top of the page and 1 one pixel later, so
+the page still opens on paper and every "does it arrive dark" assertion passes —
+the crossing has simply stopped being a crossing. The first version of
+`front-screen` asserted `--turn` is 0 at the top and greater than 0 further down,
+and that mutation walked straight through it. What catches it is the SPAN: sample
+the document and assert the crossing takes at least half a screen of scroll.
 
 **Chromium refuses to fetch from certain ports.** An ephemeral port can land on
 one, and the whole suite then fails as `net::ERR_UNSAFE_PORT` — about one run in a

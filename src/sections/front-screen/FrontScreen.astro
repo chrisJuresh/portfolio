@@ -1,0 +1,559 @@
+---
+// The Front Screen. NOTES.md is the reasoning: the one-screen budget, the Cut
+// Title's two regimes, what is deliberately not here yet, and which numbers are
+// Tokens and which are measurements of the drawing.
+import { content } from './content';
+import { TOGGLE } from './theme-toggle';
+import drawing from './assets/cut-title.svg?raw';
+import './tokens.css';
+
+// The Cut Title's word, taken apart so the <svg> is an element this component
+// compiles and Astro can therefore scope: `set:html` content carries no scope
+// attribute, so a scoped selector reaches nothing inside it. The picture's own
+// viewBox is where its proportion comes from — stated as width and height
+// attributes rather than restated as a CSS ratio, so there is one number and
+// nothing to disagree with it.
+const box = /viewBox="([\d.\s-]+)"/.exec(drawing)?.[1]?.trim();
+const inside = /<svg[^>]*>([\s\S]*)<\/svg>/.exec(drawing)?.[1];
+const sides = box?.split(/\s+/) ?? [];
+const [wide, tall] = [sides[2], sides[3]];
+if (!box || !inside || !wide || !tall) {
+  throw new Error(
+    'front-screen: assets/cut-title.svg has no four-number viewBox, or no drawing inside it',
+  );
+}
+
+const listings = [content.work, content.education];
+---
+
+{/* data-section is the loader's handle. No data-turn: the Section is one screen,
+    so `top top` and `bottom bottom` would be the same scroll position and the
+    page would open already crossed. The crossing spans the Section AFTER this
+    one, which starts at this one's foot. NOTES.md. */}
+<section class="front-screen" data-section="front-screen" aria-labelledby="front-screen-name">
+  <div class="front-screen__col">
+    <header class="front-screen__masthead">
+      <h1 class="front-screen__name" id="front-screen-name">{content.name}</h1>
+      <div class="front-screen__meta">
+        <p class="front-screen__location">{content.location}</p>
+        <a class="front-screen__projects" href={content.projects.href}>{content.projects.label}</a>
+      </div>
+    </header>
+
+    <div class="front-screen__intro">
+      <p class="front-screen__lead">{content.bio[0]}</p>
+      {content.bio.slice(1).map((paragraph) => <p class="front-screen__prose">{paragraph}</p>)}
+    </div>
+
+    {/* The photographs' slot: empty until #137, and the box the one-screen budget
+        spends its remainder on. NOTES.md. */}
+    <div class="front-screen__strip" aria-hidden="true"></div>
+
+    {
+      listings.map((listing) => (
+        <section class="front-screen__listing">
+          <h2 class="front-screen__heading">{listing.heading}</h2>
+          {listing.entries.map((entry) => (
+            <div class="front-screen__entry">
+              <p class="front-screen__line">
+                <span>{entry.org}</span>
+                <em class="front-screen__years">{entry.years}</em>
+              </p>
+              <p class="front-screen__detail">{entry.detail}</p>
+            </div>
+          ))}
+        </section>
+      ))
+    }
+
+    <section class="front-screen__listing">
+      <h2 class="front-screen__heading">{content.contact.heading}</h2>
+      <div class="front-screen__corner">
+        <ul class="front-screen__contact">
+          {
+            content.contact.entries.map((entry, index) => (
+              <li class={index === 0 ? 'front-screen__contact-first' : undefined}>
+                <a href={entry.href}>{entry.text}</a>
+              </li>
+            ))
+          }
+        </ul>
+        {/* One name, and the state in aria-checked rather than in the name — a
+            switch's label does not change when it is thrown. The two words are
+            both in the markup and the stylesheet shows one, so the visible word
+            is right before any script runs. */}
+        <button
+          class="front-screen__toggle"
+          type="button"
+          role="switch"
+          aria-checked="false"
+          aria-label={content.toggle.name}
+          {...{ [TOGGLE]: '' }}
+        >
+          <span class="front-screen__word-paper" aria-hidden="true">{content.toggle.onPaper}</span>
+          <span class="front-screen__word-dark" aria-hidden="true">{content.toggle.onDark}</span>
+          <span class="front-screen__track" aria-hidden="true"><span class="front-screen__thumb"></span></span>
+        </button>
+      </div>
+    </section>
+  </div>
+
+  {/* The Cut Title. The word is a picture of Friz Quadrata rather than type, so
+      the text beside it is what a screen reader announces and a crawler indexes —
+      the only text in here, and the reason the picture is allowed to be one. */}
+  <div class="front-screen__cut">
+    <a href={content.projects.href}>
+      <svg
+        class="front-screen__cut-word"
+        width={wide}
+        height={tall}
+        viewBox={box}
+        fill="currentColor"
+        aria-hidden="true"
+        set:html={inside}
+      />
+      <span class="front-screen__cut-text">{content.cut}</span>
+    </a>
+  </div>
+</section>
+
+<script>
+  import { mountThemeToggle } from './theme-toggle';
+
+  mountThemeToggle();
+</script>
+
+<style>
+  /* Scoped by the build: every selector below is narrowed with this component's
+     own attribute, so none of them can match an element in another Section. */
+
+  .front-screen,
+  .front-screen * {
+    box-sizing: border-box;
+  }
+
+  /* ---- the drawing's own measurements, and the faces' ----------------------
+     Not Tokens. The first two are properties of assets/cut-title.svg, printed by
+     design/cut-title/build-cut-title.py and re-pasted with the file; the second
+     two are measured off the faces. NOTES.md says what each is and what dragging
+     one would break. */
+  .front-screen {
+    --front-screen-cut-cap-share: 0.154521;
+    --front-screen-cut-overshoot: 0.003926;
+    --front-screen-cut-ink: 97.7592cqw;
+    --front-screen-cut-lead: 1.0086cqw;
+
+    --front-screen-half-leading: calc(0.294 * var(--front-screen-name-size));
+    --front-screen-contact-tail: 0.4075rem;
+
+    /* Where the type stands in the Effect Stack. The layers carry EVEN
+       z-indexes so excluded content has an odd one to stand on between any two
+       of them; 5 is above `paper` (2) and `halftone` (4), which is the pair the
+       Shell lights by default, and below everything else. Read
+       effect-stack.css before changing it. */
+    --front-screen-type-z: 5;
+
+    --front-screen-cut-gap: calc(
+      var(--front-screen-rhyme) + var(--front-screen-half-leading) -
+        var(--front-screen-contact-tail)
+    );
+    --front-screen-cut-slab: calc(
+      var(--front-screen-cut-cap-share) * var(--front-screen-cut-ink)
+    );
+  }
+
+  /* ---- the page ---------------------------------------------------------- */
+  .front-screen {
+    display: flex;
+    flex-direction: column;
+    min-height: var(--fold);
+    padding: var(--front-screen-rhyme) var(--front-screen-side) 0;
+    font-family: var(--face-body);
+    font-size: var(--front-screen-body-size);
+    line-height: var(--front-screen-body-leading);
+    animation: front-screen-in var(--front-screen-reveal) cubic-bezier(0.22, 1, 0.36, 1) backwards;
+  }
+
+  /* `backwards` and not `both`: a forward fill holds `transform: none` for ever,
+     which computes to the identity matrix rather than to the keyword and makes
+     this a permanent stacking context — which would seal the Cut Title's tail
+     inside the Section instead of letting it stand over the one below. */
+  @keyframes front-screen-in {
+    from {
+      opacity: 0;
+      transform: translateY(var(--front-screen-reveal-rise));
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  /* margin-bottom auto, so on a screen the composition does not fill the slack
+     ends up ABOVE the Cut Title and the cut stays on the page's own bottom edge. */
+  .front-screen__col {
+    width: 100%;
+    max-width: var(--front-screen-measure);
+    margin: 0 auto auto;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* Every gap down the column is stated as a margin-top on the block below it,
+     and nothing declares a margin-bottom. In a flex column margins do not
+     collapse, so a pair of them would add where they used to merge. */
+  .front-screen__col > * {
+    flex: none;
+    margin-top: var(--front-screen-space-s);
+  }
+
+  .front-screen__masthead {
+    margin-top: 0;
+  }
+
+  /* Keeping the paper and the halftone off the type. Paint order and not a hole:
+     the type is lifted above those two layers, so the glyphs come out untouched
+     while the paper around them still takes the texture. The four blocks and not
+     the column, because the column also holds the photographs' slot and the two
+     are separately excluded. */
+  .front-screen__masthead,
+  .front-screen__intro,
+  .front-screen__listing {
+    position: relative;
+    z-index: var(--front-screen-type-z);
+  }
+
+  .front-screen__intro,
+  .front-screen__strip {
+    margin-top: var(--front-screen-space-m);
+  }
+
+  /* ---- the masthead ------------------------------------------------------ */
+  .front-screen__name {
+    margin: 0;
+    font-family: var(--face-label);
+    font-size: var(--front-screen-name-size);
+    font-weight: 400;
+    letter-spacing: var(--front-screen-name-tracking);
+    text-transform: lowercase;
+  }
+
+  .front-screen__meta {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: baseline;
+    column-gap: var(--front-screen-gutter);
+    margin-top: var(--front-screen-space-2xs);
+  }
+
+  .front-screen__location {
+    margin: 0;
+    font-family: var(--face-label);
+    font-size: var(--front-screen-label-size);
+    letter-spacing: var(--front-screen-label-tracking);
+    color: var(--front-screen-muted);
+  }
+
+  .front-screen__projects {
+    font-family: var(--face-label);
+    font-size: var(--front-screen-label-size);
+    letter-spacing: var(--front-screen-label-tracking);
+    color: var(--front-screen-muted);
+    text-decoration: none;
+    border-bottom: var(--front-screen-hairline) solid var(--front-screen-rule);
+    transition:
+      color var(--front-screen-hover-fade) ease,
+      border-color var(--front-screen-hover-fade) ease;
+  }
+
+  .front-screen__projects:hover,
+  .front-screen__projects:focus-visible {
+    color: var(--ink);
+    border-color: var(--ink);
+  }
+
+  /* ---- the bio ----------------------------------------------------------- */
+  .front-screen__lead {
+    margin: 0;
+    font-family: var(--face-lead);
+    font-size: var(--front-screen-lead-size);
+    font-style: italic;
+    line-height: var(--front-screen-lead-leading);
+  }
+
+  .front-screen__prose {
+    margin: var(--front-screen-space-s) 0 0;
+    color: var(--ink-soft);
+    text-indent: var(--front-screen-indent);
+  }
+
+  /* The remainder in the one-screen band, and nothing at all outside it. */
+  .front-screen__strip {
+    height: var(--front-screen-strip);
+  }
+
+  /* ---- work, education, contact ------------------------------------------ */
+  .front-screen__heading {
+    margin: 0 0 var(--front-screen-space-3xs);
+    font-family: var(--face-body);
+    font-size: var(--front-screen-heading-size);
+    font-weight: var(--front-screen-heading-weight);
+    letter-spacing: var(--front-screen-heading-tracking);
+  }
+
+  .front-screen__entry {
+    margin-bottom: var(--front-screen-space-xs);
+  }
+
+  .front-screen__entry:last-child {
+    margin-bottom: 0;
+  }
+
+  .front-screen__line {
+    display: flex;
+    align-items: baseline;
+    gap: var(--front-screen-gutter);
+    margin: 0;
+  }
+
+  /* The year column, and it exists for one property: old-style figures, so a date
+     does not read as loud as the organisation beside it. */
+  .front-screen__years {
+    margin-left: auto;
+    font-family: var(--face-year);
+    font-variant-numeric: oldstyle-nums;
+    font-style: normal;
+    color: var(--ink);
+    white-space: nowrap;
+  }
+
+  .front-screen__detail {
+    margin: var(--front-screen-space-4xs) 0 0;
+    font-size: var(--front-screen-detail-size);
+    font-style: italic;
+    color: var(--front-screen-muted);
+  }
+
+  .front-screen__contact {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .front-screen__contact li {
+    margin-top: var(--front-screen-space-3xs);
+  }
+
+  .front-screen__contact-first {
+    margin-bottom: var(--front-screen-space-xs);
+  }
+
+  .front-screen__contact a {
+    color: var(--ink);
+    text-decoration: none;
+    border-bottom: var(--front-screen-hairline) solid var(--front-screen-rule);
+    overflow-wrap: anywhere;
+    transition: border-color var(--front-screen-hover-fade) ease;
+  }
+
+  .front-screen__contact a:hover,
+  .front-screen__contact a:focus-visible {
+    border-color: var(--ink);
+  }
+
+  /* ---- the theme toggle, in the corner of the contact block --------------
+     Baseline alignment and not box alignment: the switch's word sits on the same
+     line as the last contact link, whatever either one's line height is. */
+  .front-screen__corner {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: end;
+    align-items: last baseline;
+    column-gap: var(--front-screen-gutter);
+  }
+
+  .front-screen__toggle {
+    justify-self: end;
+    display: inline-flex;
+    align-items: baseline;
+    gap: var(--front-screen-toggle-gap);
+    min-height: 1.5rem;
+    margin: 0;
+    padding: 0.2rem 0;
+    border: 0;
+    background: transparent;
+    color: var(--ink);
+    font-family: var(--face-label);
+    font-size: var(--front-screen-body-size);
+    font-weight: 400;
+    line-height: var(--front-screen-body-leading);
+    cursor: pointer;
+  }
+
+  /* Both words are in the markup and one of them is on screen. Which is decided
+     in tokens.css, because that is the Section's only stylesheet the compiler
+     does not narrow and so the only one that can be gated on the theme. */
+  .front-screen__word-paper {
+    display: var(--front-screen-word-paper);
+  }
+
+  .front-screen__word-dark {
+    display: var(--front-screen-word-dark);
+  }
+
+  /* A box with no text baselines aligns on its bottom edge, which drops the
+     pill's midline half its own height below the word's. The lift is measured
+     off the face rather than nudged in px, and lands halfway between the
+     x-height midline and the cap-height midline — no single lift is right for
+     both `dark`, which has no descender, and `light`, which has one. The first
+     declaration is the fallback where `cap` is not understood. */
+  .front-screen__track {
+    position: relative;
+    flex: none;
+    width: var(--front-screen-track-w);
+    height: var(--front-screen-track-h);
+    border: var(--front-screen-hairline) solid currentcolor;
+    border-radius: 1rem;
+    transform: translateY(calc(var(--front-screen-track-h) / 2 - 0.5ex));
+    transform: translateY(calc(var(--front-screen-track-h) / 2 - 0.25ex - 0.25cap));
+  }
+
+  .front-screen__thumb {
+    position: absolute;
+    top: 50%;
+    left: var(--front-screen-thumb-inset);
+    width: var(--front-screen-thumb);
+    height: var(--front-screen-thumb);
+    border-radius: 50%;
+    background: currentcolor;
+    transform: translate(var(--front-screen-thumb-at), -50%);
+    transition: transform var(--front-screen-thumb-travel) cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  /* ---- the Cut Title ----------------------------------------------------
+     Three boxes, each doing one job: the container the word's size is a
+     proportion OF, the cut, and the drawing. NOTES.md carries the rest. */
+  /* It takes the type's z and never gets `position` written on it here: it is
+     `absolute` in the one-screen band, and a `relative` from a later rule would
+     move it out of the corner rather than lift it out of the stack. */
+  .front-screen__cut {
+    container-type: inline-size;
+    position: relative;
+    z-index: var(--front-screen-type-z);
+    width: 100%;
+    max-width: var(--front-screen-measure);
+    margin: var(--front-screen-cut-gap) auto 0;
+  }
+
+  .front-screen__cut > a {
+    display: block;
+    /* clip and not hidden: hidden would make this a scroll container, which a
+       stray focus can scroll the cut word into view inside. */
+    overflow: clip;
+    height: calc(var(--front-screen-cut-show) * var(--front-screen-cut-slab));
+    color: var(--ink);
+    transition: box-shadow var(--front-screen-hover-fade) ease;
+  }
+
+  /* A display word gives nothing to underline — its baseline is below the cut —
+     so the site's hairline goes on the cut itself, as an inset shadow rather than
+     a border so it costs the clip box no height. */
+  .front-screen__cut > a:hover,
+  .front-screen__cut > a:focus-visible {
+    box-shadow: inset 0 -1px 0 currentcolor;
+  }
+
+  /* `top` and not a negative margin: in the one-screen band the link runs
+     `overflow: visible` and is no longer a block formatting context, so a margin
+     here would collapse into the link's own and the correction would vanish. */
+  .front-screen__cut-word {
+    display: block;
+    width: var(--front-screen-cut-ink);
+    height: auto;
+    margin-left: var(--front-screen-cut-lead);
+    position: relative;
+    top: calc(-1 * var(--front-screen-cut-overshoot) * var(--front-screen-cut-ink));
+  }
+
+  .front-screen__cut-text {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  .front-screen__projects:focus-visible,
+  .front-screen__toggle:focus-visible,
+  .front-screen__contact a:focus-visible,
+  .front-screen__cut > a:focus-visible {
+    outline: 1px solid currentcolor;
+    outline-offset: 3px;
+  }
+
+  /* ---- composing to one screen ------------------------------------------
+     The band, its two limits and what absorbs the difference are all in
+     NOTES.md. The two numbers are a viewport's and cannot be Tokens: a Token is
+     a value the Editor writes, not a breakpoint. */
+  @media (min-width: 1100px) and (min-height: 700px) {
+    .front-screen {
+      /* Out here the word is fitted to its own INK rather than to the advance box
+         a line of type would have carried, because it is no longer the last line
+         of the column but a word standing on the page's margin, and the margin is
+         exact. */
+      --front-screen-cut-ink: 100cqw;
+      --front-screen-cut-lead: 0px;
+      --front-screen-cut-fit: calc(
+        50vw - var(--front-screen-measure) / 2 - 2 * var(--front-screen-rhyme)
+      );
+      --front-screen-cut-clip: calc(
+        var(--front-screen-cut-show) * var(--front-screen-cut-cap-share) *
+          var(--front-screen-cut-fit)
+      );
+
+      height: var(--fold);
+      min-height: 0;
+      position: relative;
+      padding-bottom: calc(var(--front-screen-cut-gap) + var(--front-screen-cut-clip));
+    }
+
+    /* Past the strip's ceiling there is height left over that nothing wants, and
+       centring is what spends it at BOTH ends at once: half above the name, half
+       below the last contact line, so the page's one vertical rhyme survives on a
+       tall screen. Inert below the ceiling, where the strip has taken every pixel
+       of the free space and there is none left to distribute. */
+    .front-screen__col {
+      flex: 1 1 auto;
+      justify-content: center;
+      margin-bottom: 0;
+    }
+
+    .front-screen__col > .front-screen__strip {
+      flex: 1 1 auto;
+      height: auto;
+      min-height: 0;
+      max-height: var(--front-screen-strip-max);
+    }
+
+    .front-screen__cut {
+      position: absolute;
+      top: calc(100% - var(--front-screen-cut-clip));
+      left: var(--front-screen-rhyme);
+      width: var(--front-screen-cut-fit);
+      max-width: none;
+      margin: 0;
+    }
+
+    /* The clip comes off: the bottom of the window does the cutting here, and the
+       J's hook and the baseline are meant to be seen on the screen below. The BOX
+       stays the cap slab so the hover hairline still lands on the baseline. */
+    .front-screen__cut > a {
+      overflow: visible;
+      height: var(--front-screen-cut-slab);
+    }
+  }
+</style>

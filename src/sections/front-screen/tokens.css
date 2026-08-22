@@ -1,0 +1,73 @@
+/* The Front Screen's Tokens: the numbers and colours the author would plausibly
+   adjust, as plain custom properties on the Section's own root. NOTES.md is why
+   these are Tokens and the drawing's own measurements are not, what the two
+   colours are mixed out of, and why one rule here is gated on the theme. */
+.front-screen {
+  --front-screen-measure: 27rem;
+  --front-screen-side: 1.35rem;
+  --front-screen-rhyme: clamp(3rem, 9vh, 6.5rem);
+
+  --front-screen-space-4xs: 0.146rem;
+  --front-screen-space-3xs: 0.236rem;
+  --front-screen-space-2xs: 0.382rem;
+  --front-screen-space-xs: 0.618rem;
+  --front-screen-space-s: 1rem;
+  --front-screen-space-m: 1.618rem;
+
+  --front-screen-strip: 0rem;
+  --front-screen-strip-max: 24rem;
+
+  --front-screen-name-size: 0.78rem;
+  --front-screen-name-tracking: 0.06em;
+  --front-screen-label-size: 0.7rem;
+  --front-screen-label-tracking: 0.04em;
+  --front-screen-lead-size: 0.95rem;
+  --front-screen-lead-leading: 1.5;
+  --front-screen-body-size: 0.9rem;
+  --front-screen-body-leading: 1.55;
+  --front-screen-heading-size: 0.85rem;
+  --front-screen-heading-weight: 700;
+  --front-screen-heading-tracking: 0.01em;
+  --front-screen-detail-size: 0.86rem;
+  --front-screen-indent: 1.1rem;
+  --front-screen-gutter: 1rem;
+  --front-screen-hairline: 1px;
+
+  --front-screen-muted: color-mix(in oklab, var(--ink), var(--ground) 45%);
+  --front-screen-rule: color-mix(in oklab, var(--ink), var(--ground) 68%);
+
+  --front-screen-toggle-gap: 0.45rem;
+  --front-screen-track-w: 1.55rem;
+  --front-screen-track-h: 0.78rem;
+  --front-screen-thumb: 0.38rem;
+  --front-screen-thumb-inset: 0.14rem;
+  --front-screen-thumb-travel: 0.25s;
+  --front-screen-thumb-at: 0px;
+  --front-screen-hover-fade: 0.15s;
+
+  --front-screen-word-paper: inline;
+  --front-screen-word-dark: none;
+
+  --front-screen-cut-show: 0.62;
+
+  --front-screen-reveal: 0.9s;
+  --front-screen-reveal-rise: 8px;
+}
+
+/* The switch, on the dark paper: where the thumb stands, and which of its two
+   words is on screen. Gated on the theme rather than on the switch's own
+   aria-checked, so both are right at first paint instead of a script-load later —
+   the Shell writes data-theme before anything is drawn, and nothing here waits
+   for the toggle to be wired.
+   This rule is in this file for one mechanical reason and not because the Editor
+   wants it: a Section's scoped rules are narrowed with the component's own
+   attribute, which <html> does not carry, so `:root[…]` reaches nothing from
+   there. NOTES.md. */
+:root[data-theme='dark'] .front-screen {
+  --front-screen-thumb-at: calc(
+    var(--front-screen-track-w) - 2 * var(--front-screen-hairline) - var(--front-screen-thumb) -
+      2 * var(--front-screen-thumb-inset)
+  );
+  --front-screen-word-paper: none;
+  --front-screen-word-dark: inline;
+}

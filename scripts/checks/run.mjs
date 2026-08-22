@@ -31,13 +31,14 @@ import { chromium } from 'playwright';
 import { check as assets } from './checks/assets.mjs';
 import { check as consoleQuiet } from './checks/console.mjs';
 import { check as faces } from './checks/faces.mjs';
+import { check as frontScreen } from './checks/front-screen.mjs';
 import { check as ground } from './checks/ground.mjs';
 import { check as moments } from './checks/moments.mjs';
 import { check as unpublishable } from './checks/unpublishable.mjs';
 import { serve } from './lib/serve.mjs';
 
 /** In the order they are cheapest to read a failure from. */
-const CHECKS = [assets, consoleQuiet, faces, ground, moments, unpublishable];
+const CHECKS = [assets, consoleQuiet, faces, frontScreen, ground, moments, unpublishable];
 
 const repoRoot = fileURLToPath(new URL('../..', import.meta.url)).replace(/[\\/]+$/, '');
 const dist = `${repoRoot}/dist`;
