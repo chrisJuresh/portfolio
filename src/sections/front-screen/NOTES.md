@@ -176,6 +176,15 @@ The two snap ports and the landing go with it: they are properties of the page
 turn between two Sections rather than of this one, and there is no second Section
 to turn to.
 
+## The two links point at a fragment nothing answers yet
+
+The masthead's `Projects` and the Cut Title are one destination and it is Content:
+`#projects`, a fragment on this same document, which is what they are on the live
+page. Nothing on `/next` carries that id until #138 lands the Panel, so both are
+inert — a click leaves the reader where they are, which is the honest state for a
+link to a Section that does not exist. It is one Content field, so that ticket
+changes one line. Nothing fetches a fragment, so no Check sees it.
+
 ## The Turn crosses at this Section's foot, and is not marked here
 
 `data-turn` is not on the Front Screen, and this is the trap. The Kernel spans the
