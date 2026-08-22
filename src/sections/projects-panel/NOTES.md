@@ -55,12 +55,12 @@ The height ratio measures 0.5634:
 `--projects-panel-fit` is 0.5651, which is that plus a third of a percent of
 slack for sub-pixel rounding and for the copy's floor on a small window.
 
-**Two of those four terms are for things this folder does not contain yet**, and
-they are kept anyway. The alternative — fitting the drawing to the masthead and
-the copy alone — would make the Panel bigger now and smaller again the moment
-#139 lands the Frame, which is churn in the one number every other length reads.
-So the composition is already the size it will be, and row two is empty until the
-Frame arrives to fill it.
+**One of those four terms is for something this folder does not contain yet** —
+the Plinth, which is #140's — and it is counted anyway. The alternative, fitting
+the drawing to what is on the page today, would make the Panel bigger now and
+smaller again the moment the slab arrives, which is churn in the one number every
+other length reads. So the composition is already the size it will be. It was two
+of the four before the Frame landed, and the constant did not move.
 
 **Re-derive it** if you move the masthead or the subheading share, the Frame's
 columns or its aspect, or either of the Plinth's two depths. Those seven numbers
@@ -95,10 +95,11 @@ The head is bottom-aligned in row one and carries a negative bottom margin of
 exactly one subheading line, so its box ends after the **first** line and the
 second hangs below it — into row two, whose top edge is therefore the second
 line's top edge, at every window width and whatever set row one's height. That
-one trick is what will make the Frame's occlusion exact rather than lucky: #139
+one trick is what makes the Frame's occlusion exact rather than lucky: the Frame
 takes a positive drop from that same edge and lands a fixed fraction of the way
 down the letters. Nothing in the arithmetic goes through the head's total height,
-the copy's height, or the row's.
+the copy's height, or the row's — and the Check asserts the drop against that
+edge and against nothing else.
 
 Row one is `--projects-panel-mast-line` plus one subheading line and **not the
 taller of its two occupants**. It used to be `auto` on the live page, and the
