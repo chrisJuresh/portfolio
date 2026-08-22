@@ -38,6 +38,15 @@ const schema = z.object({
       .min(1),
   }),
   copy: z.array(z.string().min(1)).min(1),
+  /**
+   * The Frame's address field. Content and not a Token, because it is a fact
+   * about the project rather than a length: the photos site binds to loopback
+   * and is never deployed, so the only address that is not an invention is the
+   * one the recording was actually served from. The render's own field is empty —
+   * it was captured with no chrome — so there was nothing here to measure and
+   * this is authored.
+   */
+  frame: z.object({ address: z.string().min(1) }),
   /** In the Career Record's own ranking, which is why the markup is an <ol>. */
   points: z
     .array(
@@ -63,6 +72,7 @@ export const content = defineContent(schema, {
       { name: 'Record Engine' },
     ],
   },
+  frame: { address: '127.0.0.1:8770' },
   copy: [
     'Twenty years of photographs had turned into 1,374,328 file paths across ' +
       'overlapping backups. This is the system that turned them into one immutable ' +

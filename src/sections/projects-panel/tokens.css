@@ -70,3 +70,89 @@
   --projects-panel-stack-points-gap: 1.35;
   --projects-panel-stack-measure: 34em;
 }
+
+/* ---------------------------------------------------------------------------
+   THE FRAME: the browser window the recording stands inside.
+
+   Almost every number here is a share of the FRAME's own width rather than of
+   the composition's, and every one is a measurement rather than a choice. A
+   CENTRE and a WIDTH are what the design render gives up; the gap between two
+   glyphs is a consequence of both, and is computed in the component. NOTES.md
+   has the render's table and what the pair of them is for. */
+.projects-panel {
+  /* ---- the window ------------------------------------------------------- */
+  /* How far down the subheading's second line the Frame's top edge falls, as a
+     share of the line it bites into. NOTES.md does the arithmetic in ems. */
+  --projects-panel-frame-drop-share: 0.66;
+  /* The render's Frame measured 1430 x 735 including its titlebar. */
+  --projects-panel-frame-ratio: 1.945;
+  /* The titlebar's height, the corner every part of the window is cut to, and
+     the band between the recording and the window's edge. */
+  --projects-panel-frame-bar: 0.034583;
+  --projects-panel-frame-corner: 0.016333;
+  --projects-panel-frame-inset: 0.00816;
+
+  /* ---- the window's own colours ----------------------------------------- */
+  /* The body the glass stands on, and the rim round the whole window: the
+     render's outer edge peaks at 84 of 255 against a backdrop of 8. Both are FAR
+     ends, and the component crosses them with the rest of the Section. */
+  --projects-panel-frame-fill-far: #131518;
+  --projects-panel-frame-edge-far: rgba(242, 241, 238, 0.32);
+
+  /* ---- the material the titlebar is made of ----------------------------- */
+  /* #66's tint, and the one part of the settled material both the stylesheet and
+     the shader need — so it is declared once and glass.ts reads it back off the
+     Frame rather than carrying a copy. NOTES.md. */
+  --projects-panel-frame-tint: #fab2ff;
+  --projects-panel-frame-tint-alpha: 0.135;
+  /* The blurred rung's two measured rims, as fractions of white over the body:
+     the top rim peaks at 66 of 255 and the two ends at 90. The ends are the
+     TOTAL of both rings compositing, which the component solves. NOTES.md. */
+  --projects-panel-frame-rim: 0.104;
+  --projects-panel-frame-rim-ends: 0.222;
+  /* How far that rung softens what is behind it, as a share of the Frame. */
+  --projects-panel-frame-blur: 0.005;
+
+  /* ---- the chrome's ink ------------------------------------------------- */
+  /* One alpha for every enabled glyph — the back chevron's, the one stroke thick
+     enough that the render's blur does not eat it. The lights get their own,
+     because a filled disc can be measured honestly; `-off` is the forward
+     chevron, greyed out. */
+  --projects-panel-frame-ink: rgba(242, 241, 238, 0.55);
+  --projects-panel-frame-ink-off: rgba(242, 241, 238, 0.22);
+  --projects-panel-frame-light: rgba(242, 241, 238, 0.45);
+  --projects-panel-frame-address-bg: rgba(242, 241, 238, 0.12);
+  --projects-panel-frame-address-ink: rgba(242, 241, 238, 0.72);
+
+  /* ---- where every control's centre is, and how wide its ink is --------- */
+  /* The three lights follow from one pitch rather than being placed. */
+  --projects-panel-frame-light-w: 0.0095;
+  --projects-panel-frame-light-pitch: 0.0152;
+  --projects-panel-frame-light-centre: 0.0204;
+  --projects-panel-frame-sidebar-w: 0.0141;
+  --projects-panel-frame-sidebar-centre: 0.08;
+  /* Both chevrons are one width; only their centres differ. */
+  --projects-panel-frame-chevron-w: 0.0054;
+  --projects-panel-frame-back-centre: 0.1066;
+  --projects-panel-frame-fwd-centre: 0.1295;
+  /* The address field is DRAWN centred on the Frame rather than at the centre
+     measured here — which is still what the reload's clearance is solved from,
+     so it is declared. NOTES.md. */
+  --projects-panel-frame-address-w: 0.3945;
+  --projects-panel-frame-address-h: 0.0207;
+  --projects-panel-frame-address-centre: 0.5019;
+  --projects-panel-frame-address-corner: 0.0044;
+  --projects-panel-frame-reload-w: 0.0087;
+  --projects-panel-frame-reload-centre: 0.6915;
+  --projects-panel-frame-share-w: 0.012;
+  --projects-panel-frame-share-centre: 0.9222;
+  --projects-panel-frame-new-w: 0.0103;
+  --projects-panel-frame-new-centre: 0.9491;
+  --projects-panel-frame-tabs-w: 0.0136;
+  --projects-panel-frame-tabs-centre: 0.9752;
+
+  /* The one thing in the chrome that is a choice: the render's own field is
+     empty, so there was nothing to measure. 11.4px at a Frame 1200 wide. */
+  --projects-panel-frame-address-size: 0.0095;
+  --projects-panel-frame-address-tracking: 0.01em;
+}

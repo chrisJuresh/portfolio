@@ -35,11 +35,27 @@ import { check as faces } from './checks/faces.mjs';
 import { check as frontScreen } from './checks/front-screen.mjs';
 import { check as ground } from './checks/ground.mjs';
 import { check as moments } from './checks/moments.mjs';
+import { check as projectsPanel } from './checks/projects-panel.mjs';
 import { check as unpublishable } from './checks/unpublishable.mjs';
 import { serve } from './lib/serve.mjs';
 
 /** In the order they are cheapest to read a failure from. */
-const CHECKS = [assets, consoleQuiet, faces, frontScreen, ground, moments, unpublishable, editor];
+const CHECKS = [
+  assets,
+  consoleQuiet,
+  faces,
+  frontScreen,
+  projectsPanel,
+  ground,
+  moments,
+  unpublishable,
+  editor,
+];
+
+/** Wide enough for the longest name and a space. Measured rather than chosen:
+ *  the padding was a literal 14, and `projects-panel` is exactly 14 characters,
+ *  so its name and its title ran together with nothing between them. */
+const NAME_COLUMN = Math.max(...CHECKS.map((check) => check.name.length)) + 1;
 
 const repoRoot = fileURLToPath(new URL('../..', import.meta.url)).replace(/[\\/]+$/, '');
 const dist = `${repoRoot}/dist`;
@@ -146,7 +162,7 @@ try {
     results.push({ name: check.name, title: check.title, failures, notes });
 
     const mark = failures.length === 0 ? 'ok  ' : 'FAIL';
-    console.log(`  ${mark}  ${check.name.padEnd(14)}${check.title}`);
+    console.log(`  ${mark}  ${check.name.padEnd(NAME_COLUMN)}${check.title}`);
     for (const note of notes) console.log(`          · ${note}`);
     for (const failure of failures) console.log(`          ✗ ${failure}`);
   }

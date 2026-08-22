@@ -69,18 +69,19 @@ directory's `dist/`, on an ephemeral port so two features in flight never collid
 pane at all, which is the other half of the same rule: lazy mounting and motion
 cannot be verified there even by hand.
 
-## The eight Checks
+## The nine Checks
 
-| Check           | fails when                                                                  |
-| --------------- | --------------------------------------------------------------------------- |
-| `assets`        | anything the page fetches 404s or never answers, in either theme, with every Effect Stack layer lit |
-| `console`       | anything logs an error or a warning, or throws, including across a theme flip |
-| `faces`         | a declared `@font-face` will not load, or no face Token names a declared family |
-| `front-screen`  | the Front Screen's rhyme, its one-screen budget, the Cut Title's cut or its accessible name, the crossing's span, the switch's ARIA, or the type's place in the Effect Stack breaks |
-| `ground`        | paper is not light, or the Turn does not arrive dark, in either theme         |
-| `moments`       | a Timeline cannot be seeked, does not survive a scroll, moves nothing, or will not release |
-| `unpublishable` | a Section's words or its spoken attributes match the denylist                 |
-| `editor`        | the Editor cannot change a word on the real page, or the change does not reach the file, or a refusal does, or the Editor is in the built tree |
+| Check            | fails when                                                                  |
+| ---------------- | --------------------------------------------------------------------------- |
+| `assets`         | anything the page fetches 404s or never answers, in either theme, with every Effect Stack layer lit |
+| `console`        | anything logs an error or a warning, or throws, including across a theme flip |
+| `faces`          | a declared `@font-face` will not load, or no face Token names a declared family |
+| `front-screen`   | the Front Screen's rhyme, its one-screen budget, the Cut Title's cut or its accessible name, the crossing's span, the switch's ARIA, or the type's place in the Effect Stack breaks |
+| `projects-panel` | a control in the Frame leaves the centre its own Token names, the window and its titlebar are cut to two radii, the recording's box stops being inset on three sides, the occlusion of the subheading's second line moves or stops being painted, the titlebar reports a rung it is not made of, the chrome grows a control, or the small-Frame reduction starts asking about the window instead of the Frame |
+| `ground`         | paper is not light, or the Turn does not arrive dark, in either theme         |
+| `moments`        | a Timeline cannot be seeked, does not survive a scroll, moves nothing, or will not release |
+| `unpublishable`  | a Section's words or its spoken attributes match the denylist                 |
+| `editor`         | the Editor cannot change a word on the real page, or the change does not reach the file, or a refusal does, or the Editor is in the built tree |
 
 `front-screen` is the first Section-specific Check, and the pattern it sets is
 worth copying: it asserts only relationships between two things that have to stay
@@ -88,6 +89,21 @@ equal, and the Section's own `NOTES.md` records that every assertion has been
 shown to fail when the thing it guards is removed and to pass when a Token is set
 to something else. A Check nobody has tried to break is a Check nobody knows the
 strength of.
+
+`projects-panel` follows it, and it is where that record is worth reading before
+touching either file: `src/sections/projects-panel/NOTES.md` lists the twelve
+mutations it catches, the three Token moves it must not, and why its tolerance is
+three ten-thousandths of the Frame's width rather than something comfortable — at
+anything looser the one mutation it most exists for walked straight through it. It
+also names what it deliberately does not assert: the glass's own output, which is
+a picture and not a relationship.
+
+It is also the first Check to measure at a window chosen for a REGIME rather than
+for a size. The Frame's chrome sheds its small glyphs below a Frame of 520px and
+the gate is a container query, so the window that tells a container query from a
+media one is a short wide one — 1440x450, where the fit solves the Frame to 468
+while the viewport is nowhere near 520. Measured at DESK alone that whole
+mechanism could be a media query and nothing would say so.
 
 ## What a pass does not mean
 

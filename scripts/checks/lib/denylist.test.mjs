@@ -39,6 +39,11 @@ test('a private address is a leak, a public one and a version number are not', (
   assert.deepEqual(names(scan('reachable at 10.4.19.220', PATTERNS)), ['private-ip']);
   assert.deepEqual(names(scan('bound to 192.168.1.10:8080', PATTERNS)), ['private-ip']);
   assert.deepEqual(names(scan('172.16.0.3 answered', PATTERNS)), ['private-ip']);
+  // 127.0.0.1 names no host on anybody's network, and the Frame's address field
+  // draws it. Allowed — and only it: the rest of the loopback range is nothing
+  // anybody writes by accident, so it stays a leak.
+  assert.deepEqual(names(scan('served from 127.0.0.1:8770', PATTERNS)), []);
+  assert.deepEqual(names(scan('127.13.9.4 answered', PATTERNS)), ['private-ip']);
   assert.deepEqual(scan('resolved 8.8.8.8 fine', PATTERNS), []);
   assert.deepEqual(scan('pinned to astro 7.2.4 and gsap 3.15.0', PATTERNS), []);
   // 172.32 is public; only 172.16-172.31 are private.

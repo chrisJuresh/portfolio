@@ -62,6 +62,24 @@ export const PATTERNS = [
     why: 'an address on a private network',
     pattern:
       /\b(?:10|127)\.\d{1,3}\.\d{1,3}\.\d{1,3}\b|\b192\.168\.\d{1,3}\.\d{1,3}\b|\b172\.(?:1[6-9]|2\d|3[01])\.\d{1,3}\.\d{1,3}\b/g,
+    // 127.0.0.1 AND NOTHING ELSE IS ALLOWED, and it is an allowlist rather than
+    // a narrower pattern for the reason the ticket keys are: this file's rule is
+    // to exempt the legitimate case, not to loosen the shape.
+    //
+    // What the rest of this pattern catches is the SHAPE OF SOMEBODY'S NETWORK —
+    // 10.x, 192.168.x and 172.16–31.x each name a host on a private range, and a
+    // portfolio quoting one has taken it from somewhere it should not have.
+    // `127.0.0.1` names no host anywhere: it is every machine's own address, and
+    // the Projects Panel's Frame draws it because it is the origin the recording
+    // was served from and the only address there that would not be an invention.
+    // So the pattern as it stood made the honest answer the failing one.
+    //
+    // THE EXEMPTION IS THAT ONE STRING AND NOT THE /8. Everything else in
+    // 127.0.0.0/8 loops back too, and none of it is an address anybody writes by
+    // accident — `127.13.9.4` in a Section's words came from somewhere, and this
+    // is a leak Check rather than a correctness one, so the narrow exemption is
+    // the one to make.
+    allow: (match) => match === '127.0.0.1',
   },
   {
     name: 'credential',
