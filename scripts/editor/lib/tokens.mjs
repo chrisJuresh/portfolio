@@ -132,6 +132,16 @@ function readValue(source, at) {
   for (;;) {
     if (i >= source.length) throw new Refused(`a declaration at ${at} is never closed`);
     const ch = source[i];
+    // A quoted string is one token of the value, and a `;` or a `}` inside one
+    // does not end anything. No Token in the repository is quoted today — a font
+    // stack is the shape that would be — and the alternative to four lines here
+    // is a whole Section's controls refusing to load the day one is.
+    if (ch === "'" || ch === '"') {
+      const close = source.indexOf(ch, i + 1);
+      if (close === -1) throw new Refused(`a quote at ${i} is never closed`);
+      i = close + 1;
+      continue;
+    }
     if (depth === 0 && (ch === ';' || ch === '}')) break;
     if (ch === '(' || ch === '[') depth += 1;
     else if (ch === ')' || ch === ']') depth -= 1;

@@ -114,6 +114,18 @@ test('a Token is grouped under the comment above it, and carries the whole of it
   assert.equal(found.get('0:--stub-word').group, 'The palette.');
 });
 
+test('a quoted string in a value is one token of it, semicolon and all', () => {
+  // No Token in the repository is quoted today — a font stack is the shape that
+  // would be — and a parser that split on the `;` inside one would refuse a whole
+  // Section's controls rather than mis-read one value, which is loud but wrong.
+  const quoted = ".stub {\n  --stub-face: 'Weird; Font', serif;\n  --stub-rule: 1px;\n}\n";
+  const found = new Map(tokens(quoted).map((token) => [token.key, token.value]));
+
+  assert.equal(found.get('0:--stub-face'), "'Weird; Font', serif");
+  assert.equal(found.get('0:--stub-rule'), '1px');
+  assert.equal(write(quoted, '0:--stub-rule', '2px'), quoted.replace('1px', '2px'));
+});
+
 test('tokens refuses a file it cannot read as a flat list of rules', () => {
   assert.throws(() => tokens('@media (min-width: 40rem) { .stub { --stub-rule: 2px; } }'), Refused);
   assert.throws(() => tokens('.stub { --stub-rule: 1px;'), Refused);

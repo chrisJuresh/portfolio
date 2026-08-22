@@ -276,7 +276,9 @@ export class Tokens {
       const answer = await this.post('/tokens', { section, key: token.key, value });
       token.value = answer.value;
       this.rows.get(id)?.write(answer.value);
-      this.edited(`${section}.${token.property}`);
+      // The KEY and not the property: the same property declared on two rules is
+      // two Tokens, and counting them as one would under-report the session.
+      this.edited(`${section}.${token.key}`);
       const row = document.querySelector(`[data-editor-token="${id}"]`);
       row?.toggleAttribute('data-editor-moved', answer.value !== token.was);
       this.say(
