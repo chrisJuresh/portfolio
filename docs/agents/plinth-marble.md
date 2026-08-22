@@ -161,6 +161,13 @@ own docstring is the reference; what matters from outside it is:
   `?v=` in the file at the same time, which is the drift that went unnoticed for
   two bakes in #106–#114. It does not commit, and applying a stone is a change to
   `/portfolio`'s colour — run the capture contract before merging one.
+- **AND IT LEAVES `/next` ON THE OLD PLATE.** Since #140 the Plinth is drawn on
+  `/next` too, from `--projects-panel-plinth-src` in
+  `src/sections/projects-panel/tokens.css`, and this tool knows nothing about that
+  file. So an Apply changes one of the two sites. Copy the filename across by
+  hand — it is one line, and it carries no `?v=`, because Astro fingerprints a
+  `url()` it can see. The ticket that flips `/next` onto `/portfolio`'s route ends
+  the split by deleting the declaration this tool writes.
 - **The only thing it draws rather than renders is the window**: the **front
   face's** footprint laid on the photograph, from `build_photo_material()`'s own
   arithmetic. That answers `scale` and `offset` before paying for a bake, and it

@@ -1,4 +1,4 @@
-import { DESK, open, settle } from '../lib/page.mjs';
+import { DESK, open, settle, withoutOrigin } from '../lib/page.mjs';
 
 /**
  * The Frame's measured geometry, as assertions.
@@ -52,6 +52,20 @@ const CENTRE_TOLERANCE = 0.0003;
 /** Two lengths that are meant to be the same length, in px. */
 const LENGTH_TOLERANCE = 0.1;
 
+/** The Plinth's three depths, as shares of the Frame, and it is looser than the
+ *  chrome's for one stated reason: a depth is a share of a Frame width DERIVED
+ *  from the composition, which over-states the laid-out Frame by whatever the
+ *  Rail's floor costs — 2.4px at DESK, so every depth reads 0.26% high. On the
+ *  largest of the three that is 0.00023, and this is eight times it. The Section's
+ *  NOTES.md is explicit that the over-statement is inherited rather than a drift.
+ *
+ *  It is still tight enough for the mistakes that matter: a depth taken as a
+ *  share of the COMPOSITION instead of the Frame is 34% out, and `top` read as
+ *  `behind` — the pair whose confusion once made the whole top face read as a lit
+ *  strip — is 0.0027 out, nine times this. Everything HORIZONTAL is a percentage
+ *  of the stage and exact, so it is held to LENGTH_TOLERANCE instead. */
+const DEPTH_TOLERANCE = 0.002;
+
 /** The drop into the subheading's second line, in px. */
 const DROP_TOLERANCE = 0.5;
 
@@ -100,6 +114,8 @@ async function readPage(page) {
       const glass = document.querySelector('.projects-panel__glass');
       const content = document.querySelector('.projects-panel__content');
       const secondLine = document.querySelector('.projects-panel__sub span:last-child');
+      const plinth = document.querySelector('.projects-panel__plinth');
+      const mirror = document.querySelector('.projects-panel__mirror');
       const absent = [
         ['the Section', section],
         ['the stage', stage],
@@ -108,6 +124,8 @@ async function readPage(page) {
         ['the glass canvas', glass],
         ['the content box', content],
         ["the subheading's second line", secondLine],
+        ['the Plinth', plinth],
+        ['the reflection box', mirror],
       ].filter(([, found]) => !found);
       if (absent.length > 0) {
         return { missing: `the Frame is missing a part this Check reads: ${absent.map(([what]) => what).join(', ')}` };
@@ -171,6 +189,27 @@ async function readPage(page) {
 
       const stageStyle = getComputedStyle(stage);
 
+      // ---- the Plinth, the reflection and the recording --------------------
+      /** A Plinth Token off the Frame. Custom properties inherit, so the four
+       *  unitless shares read back here as plainly as the chrome's do. The three
+       *  DEPTHS are deliberately not read: they are lengths, so they would come
+       *  back as `calc(…)`, and asserting a length against itself would assert
+       *  nothing. Each is checked against the share it is made of instead. */
+      const slab = (name) => Number(style.getPropertyValue(`--projects-panel-plinth-${name}`));
+      const reflection = mirror.querySelector('.projects-panel__frame');
+      const pl = plinth.getBoundingClientRect();
+      const mi = mirror.getBoundingClientRect();
+      const re = reflection?.getBoundingClientRect() ?? null;
+      const plinthStyle = getComputedStyle(plinth);
+      const contactStyle = getComputedStyle(plinth, '::after');
+      // Just inside the Frame's foot, in the strip where the slab runs BEHIND the
+      // window. The marble there is drawn and then covered by the thing standing
+      // on it, which is the whole of why it is visible only at the two ends.
+      const behind =
+        fr.bottom > 1 && fr.bottom < window.innerHeight
+          ? document.elementFromPoint((fr.left + fr.right) / 2, fr.bottom - 1)
+          : null;
+
       return {
         viewport: { width: window.innerWidth, height: window.innerHeight },
         frame: { width: fr.width, height: fr.height, ratio: fr.width / fr.height },
@@ -227,6 +266,71 @@ async function readPage(page) {
           transform: stageStyle.transform,
           isolation: stageStyle.isolation,
         },
+        // Every one of these is a distance between the Frame's own edge and the
+        // slab's, as a share of the Frame's width — which is the only form any
+        // of the Plinth's numbers is stated in.
+        plinth: {
+          behind: (fr.bottom - pl.top) / fr.width,
+          depth: (pl.bottom - fr.bottom) / fr.width,
+          left: (fr.left - pl.left) / fr.width,
+          right: (pl.right - fr.right) / fr.width,
+          // What the stage measures, which is what the fit constant assumes: the
+          // slab costs the flow its depth and not the strip behind the window.
+          stageFoot: stage.getBoundingClientRect().bottom - fr.bottom,
+          plate: plinthStyle.backgroundImage,
+          sized: plinthStyle.backgroundSize,
+          covered: behind ? frame.contains(behind) : null,
+          coveredBy: behind ? behind.className || behind.tagName : null,
+        },
+        slabToken: {
+          behind: slab('behind'),
+          top: slab('top'),
+          front: slab('front'),
+          overhang: slab('overhang'),
+        },
+        mirror: {
+          // The contact line: the reflection starts at the Frame's foot, not at
+          // the slab's back edge, because the marble back there has a window
+          // standing on it rather than a reflection lying in it.
+          contact: mi.top - fr.bottom,
+          left: mi.left - fr.left,
+          right: mi.right - fr.right,
+          depth: mi.height / fr.width,
+          clips: getComputedStyle(mirror).overflow,
+          children: mirror.children.length,
+        },
+        reflection: re && {
+          // A mirror image is the SAME SIZE as the thing it reflects. Both of
+          // these are zero or the share was read as a scale and the whole window
+          // was squashed into the thirteen pixels that are the bottom 3.28% of it
+          // seen life-size.
+          width: re.width - fr.width,
+          height: re.height - fr.height,
+          // AFTER the fold, so it is the copy's TOP edge that has to land on the
+          // contact line: `scaleY(-1)` about the bottom origin turns the window's
+          // foot into the topmost row of the image and hangs its head downwards.
+          stands: re.top - fr.bottom,
+          folded: getComputedStyle(reflection).transform,
+          parts: reflection.querySelectorAll('*').length,
+        },
+        frameParts: frame.querySelectorAll('*').length,
+        contact: {
+          drawn: contactStyle.content,
+          height: parseFloat(contactStyle.height),
+          top: parseFloat(contactStyle.top),
+        },
+        clips: [...document.querySelectorAll('video.projects-panel__clip')].map((clip) => ({
+          inReflection: mirror.contains(clip),
+          loop: clip.loop,
+          muted: clip.muted,
+          autoplay: clip.autoplay,
+          inline: clip.playsInline,
+          poster: clip.getAttribute('poster') ?? '',
+          markupSrc: clip.getAttribute('src'),
+          sources: [...clip.querySelectorAll('source')].map((source) => source.getAttribute('src') ?? ''),
+          fit: getComputedStyle(clip).objectFit,
+          from: getComputedStyle(clip).objectPosition,
+        })),
         ladder: {
           tier: bar.dataset.glass ?? '',
           canvasShown: getComputedStyle(glass).display !== 'none',
@@ -445,6 +549,351 @@ function drawn(read) {
   return failures;
 }
 
+/**
+ * The Plinth: the marble the Frame stands on, measured off the Frame's own edges.
+ *
+ * Every number the slab is drawn from is a distance between one of the window's
+ * edges and one of the block's, and the whole of what this asserts is that they
+ * still are — the depths against the shares they are made of, the two overhangs
+ * against each other, and the slab's flow height against the depth the
+ * composition's fit constant has counted since before any of this was on the
+ * page. A Plinth stated against the composition instead of against the Frame
+ * draws a picture that looks right at one window and is 34% out at the next, and
+ * nothing on the page says so.
+ *
+ * `behind` and `top` are the pair worth naming: reading the first as zero is what
+ * once made the whole top face 31 render pixels instead of 67, and the block read
+ * as a lit strip rather than as a slab with a window standing on it.
+ */
+function stands(read) {
+  /** @type {string[]} */
+  const failures = [];
+  const where = atWindow(read);
+  const px = (share) => share * read.frame.width;
+
+  for (const [what, measured, wanted, why] of [
+    [
+      'runs behind the window',
+      read.plinth.behind,
+      read.slabToken.behind,
+      'the Frame stands ON the top face rather than at the back of it, and this strip is the marble ' +
+        'between the two — hidden under the window in the middle and visible at both ends',
+    ],
+    [
+      'costs the composition',
+      read.plinth.depth,
+      read.slabToken.top + read.slabToken.front,
+      'the top face and the front face together, which is the number --projects-panel-fit counts and ' +
+        'the whole reason the drawing solves onto one screen',
+    ],
+  ]) {
+    if (Math.abs(measured - wanted) > DEPTH_TOLERANCE) {
+      failures.push(
+        `at ${where} the Plinth ${what} ${measured.toFixed(5)} of the Frame's width and its Tokens ask for ` +
+          `${wanted.toFixed(5)} — ${px(measured - wanted).toFixed(2)}px. ${why}.`,
+      );
+    }
+  }
+
+  // The slab is symmetric about the window, which is the shortest way to say
+  // that the Frame sits in the middle of the stone it stands on. Both ends
+  // against the Token AND against each other: a rule that restated one and left
+  // the other is the failure this exists for, and it once left the window
+  // standing off the end of its own plinth.
+  for (const [end, measured] of [
+    ['left', read.plinth.left],
+    ['right', read.plinth.right],
+  ]) {
+    if (Math.abs(px(measured) - px(read.slabToken.overhang)) > LENGTH_TOLERANCE) {
+      failures.push(
+        `at ${where} the slab overhangs the Frame by ${px(measured).toFixed(2)}px on the ${end} and the ` +
+          `measured overhang asks for ${px(read.slabToken.overhang).toFixed(2)}px`,
+      );
+    }
+  }
+  if (Math.abs(px(read.plinth.left) - px(read.plinth.right)) > LENGTH_TOLERANCE) {
+    failures.push(
+      `at ${where} the slab overhangs ${px(read.plinth.left).toFixed(2)}px on the left and ` +
+        `${px(read.plinth.right).toFixed(2)}px on the right — a window standing off the end of its own plinth`,
+    );
+  }
+
+  // In flow, so the stage is as tall as the Frame PLUS the slab's depth. Placed
+  // out of flow at `top: 100%` it draws the same picture and the stage stays
+  // exactly as tall as the Frame, so the composition comes out short by the
+  // Plinth at every window size while the fit constant says otherwise.
+  if (Math.abs(read.plinth.stageFoot - px(read.plinth.depth)) > LENGTH_TOLERANCE) {
+    failures.push(
+      `at ${where} the stage ends ${read.plinth.stageFoot.toFixed(2)}px below the Frame's foot and the slab is ` +
+        `${px(read.plinth.depth).toFixed(2)}px deep — the Plinth is out of flow, so the composition is short ` +
+        'by exactly its depth and the fit constant is counting something that is not there',
+    );
+  }
+
+  // The plate, and the one declaration in the block that would be a bug if it
+  // were the usual thing: it is rendered at this box's aspect ratio, so
+  // stretching it to the box is an identity and `cover` would crop off either
+  // the far edge or the block's base.
+  if (!read.plinth.plate.startsWith('url(')) {
+    failures.push(
+      `at ${where} the Plinth's background-image is ${read.plinth.plate} — the marble is a rendered plate, ` +
+        'and without it the slab is a rectangle of nothing under the window',
+    );
+  }
+  if (read.plinth.sized !== '100% 100%') {
+    failures.push(
+      `at ${where} the plate is drawn at background-size: ${read.plinth.sized} — it is rendered at this box's ` +
+        'own aspect ratio, so anything but 100% 100% crops off the far edge or the block turning under at its base',
+    );
+  }
+
+  // Under the Frame. The marble behind the contact line is drawn and then
+  // covered by the window standing on it.
+  if (read.plinth.covered === false) {
+    failures.push(
+      `at ${where} what is painted just inside the Frame's foot is "${read.plinth.coveredBy}" and not the ` +
+        'window — the slab is painting OVER the thing standing on it',
+    );
+  }
+
+  return failures;
+}
+
+/**
+ * The reflection, and the contact shadow over it.
+ *
+ * THE ONE THING THIS EXISTS FOR is that the reflection is the Frame — the same
+ * width, the same height, folded through the contact line — rather than a picture
+ * of it. Both halves of that fail silently. A copy written out in the markup
+ * instead of cloned looks identical on the day it is written and drifts from the
+ * window the first time a glyph moves, which is a thing nobody sees for months;
+ * and a mirror image scaled to the depth of the marble rather than CUT to it
+ * draws thirty rows of chrome averaged into every row of stone, which reads as a
+ * grey band that changes when the clip changes rather than as a reflection.
+ *
+ * That the copy is not in the markup is asserted from the other end, in the pass
+ * with scripting turned off.
+ */
+function reflects(read) {
+  /** @type {string[]} */
+  const failures = [];
+  const where = atWindow(read);
+  const face = read.slabToken.top * read.frame.width;
+
+  // ---- the box: the top face and nothing else ----------------------------
+  if (Math.abs(read.mirror.contact) > LENGTH_TOLERANCE) {
+    failures.push(
+      `at ${where} the reflection starts ${read.mirror.contact.toFixed(2)}px from the Frame's foot — it lies in ` +
+        'the marble IN FRONT of the window, so its top edge is the contact line and not the slab\'s back edge',
+    );
+  }
+  for (const [end, measured] of [
+    ['left', read.mirror.left],
+    ['right', read.mirror.right],
+  ]) {
+    if (Math.abs(measured) > LENGTH_TOLERANCE) {
+      failures.push(
+        `at ${where} the reflection's ${end} edge is ${measured.toFixed(2)}px off the Frame's — the overhanging ` +
+          'marble at each end has no window above it to reflect, so the box is the window\'s width and not the slab\'s',
+      );
+    }
+  }
+  if (Math.abs(read.mirror.depth * read.frame.width - face) > LENGTH_TOLERANCE) {
+    failures.push(
+      `at ${where} the reflection is ${(read.mirror.depth * read.frame.width).toFixed(2)}px deep and the top face ` +
+        `is ${face.toFixed(2)}px — a reflection deeper than the face reaches the front, which is a vertical ` +
+        'surface and reflects nothing',
+    );
+  }
+  if (read.mirror.clips === 'visible') {
+    failures.push(
+      `at ${where} the reflection box does not clip — what cuts the copy to the marble available is this box's ` +
+        'own overflow, which is the front arris of the slab and is exactly the thing that cuts it in life',
+    );
+  }
+
+  // ---- the copy: the Frame, at the one magnification a mirror has ---------
+  if (!read.reflection) {
+    failures.push(
+      `at ${where} there is no Frame in the marble — mirror.ts clones the window into it, and a Plinth with ` +
+        'nothing lying in it is what a browser that never ran the script is meant to get, not this one',
+    );
+    return failures;
+  }
+  if (read.mirror.children !== 1) {
+    failures.push(
+      `at ${where} the reflection box holds ${read.mirror.children} children — the clone is made once, and a ` +
+        'second call that reflected the reflection would draw the same picture and cost a second recording',
+    );
+  }
+  for (const [axis, measured] of [
+    ['wide', read.reflection.width],
+    ['tall', read.reflection.height],
+  ]) {
+    if (Math.abs(measured) > LENGTH_TOLERANCE) {
+      failures.push(
+        `at ${where} the copy in the marble is ${measured.toFixed(2)}px ${axis === 'wide' ? 'wider' : 'taller'} ` +
+          'than the window — a planar mirror puts the image as far behind the surface as the object is in front ' +
+          'of it, so the two subtend the same angle and project to the same size. The strip is short because the ' +
+          'SLAB is short, and squashing the window into it averages thirty rows of chrome into every row of stone.',
+      );
+    }
+  }
+  if (Math.abs(read.reflection.stands) > LENGTH_TOLERANCE) {
+    failures.push(
+      `at ${where} the copy's foot is ${read.reflection.stands.toFixed(2)}px from the window's — the fold is ` +
+        'about the contact line, so the two feet meet there',
+    );
+  }
+  // `matrix(1, 0, 0, -1, 0, 0)` is scaleY(-1) resolved. Anything else is either
+  // no fold at all — a second window standing in the stone — or a scale.
+  if (!/^matrix\(1,\s*0,\s*0,\s*-1,\s*0,\s*0\)$/.test(read.reflection.folded)) {
+    failures.push(
+      `at ${where} the copy's transform is "${read.reflection.folded}" — a reflection is a fold about the ` +
+        'contact line and nothing else: no scale, because the image is life-size, and no translation, because ' +
+        'the fold is what puts it where it goes',
+    );
+  }
+  // Derived and not hand-kept. Two copies of a hundred lines of measured drawing
+  // is one copy that gets edited and one that does not, and the one that does
+  // not is the reflection.
+  if (read.reflection.parts !== read.frameParts) {
+    failures.push(
+      `at ${where} the window holds ${read.frameParts} elements and the copy in the marble holds ` +
+        `${read.reflection.parts} — the reflection is meant to BE the Frame, cloned, so the two cannot disagree ` +
+        'about what a window is made of',
+    );
+  }
+
+  // ---- the contact shadow ------------------------------------------------
+  // The cue the eye uses to decide whether two objects are touching at all. It
+  // sits on the top face and stops there: the front face is a vertical plane a
+  // Frame width away in the depth direction and the window occludes none of it.
+  if (read.contact.drawn === 'none') {
+    failures.push(
+      `at ${where} the Plinth draws no contact shadow — the Frame ends, the marble begins, and nothing happens ` +
+        'at the join, which is what a sticker on a photograph looks like',
+    );
+  }
+  if (Math.abs(read.contact.height - face) > LENGTH_TOLERANCE) {
+    failures.push(
+      `at ${where} the contact shadow is ${read.contact.height.toFixed(2)}px deep against the ${face.toFixed(2)}px ` +
+        'of top face — it belongs on the face the window stands on and nowhere else',
+    );
+  }
+
+  return failures;
+}
+
+/**
+ * The recording, and the copy of it lying in the stone.
+ *
+ * Two elements on one URL, both of them parsed with a poster and NO SOURCE — and
+ * that last one is the whole of the reduced-motion refusal, which is asserted at
+ * the other end in its own pass. A `src` written into the markup would fetch the
+ * clip before any script had a chance to decline, and nothing on the page would
+ * say so.
+ *
+ * `object-position` is the one assertion here that is about a number, and it is a
+ * safety property rather than a taste one: the clip is 1440x900 and the box it
+ * fills is not that shape, so something is cropped. Cropping from the top edge
+ * takes it all off the BOTTOM, and removing what the recording shows is the only
+ * direction the censored list is safe in — the list was signed against the
+ * frames the clip passes over, and re-centring the crop shows rows nobody
+ * reviewed.
+ */
+function records(read) {
+  /** @type {string[]} */
+  const failures = [];
+  const where = atWindow(read);
+  const clips = read.clips;
+
+  if (clips.length !== 2) {
+    failures.push(
+      `at ${where} the page holds ${clips.length} recording(s) — one in the window and one in the marble, and ` +
+        'the second is the reflection\'s: a still reflection under a moving clip reads as broken immediately',
+    );
+    return failures;
+  }
+  if (clips.filter((clip) => clip.inReflection).length !== 1) {
+    failures.push(
+      `at ${where} ${clips.filter((clip) => clip.inReflection).length} of the two recordings are in the marble ` +
+        '— one belongs to the window and one to its reflection',
+    );
+  }
+
+  for (const clip of clips) {
+    const which = clip.inReflection ? "the marble's" : "the window's";
+    for (const [attribute, set] of [
+      ['loop', clip.loop],
+      ['muted', clip.muted],
+      ['autoplay', clip.autoplay],
+      ['playsinline', clip.inline],
+    ]) {
+      if (!set) {
+        failures.push(
+          `at ${where} ${which} recording is not ${attribute} — ${
+            attribute === 'muted'
+              ? 'and muted is not decoration: it is what lets autoplay run at all, and the Portfolio never makes a sound'
+              : attribute === 'playsinline'
+                ? 'so a phone takes it fullscreen the moment it plays'
+                : 'the clip is a silent loop standing in a picture of a browser'
+          }`,
+        );
+      }
+    }
+    if (clip.markupSrc !== null) {
+      failures.push(
+        `at ${where} ${which} recording carries src="${clip.markupSrc}" in the markup — the element ships with a ` +
+          'poster and NO source so that a reader who asked for reduced motion never fetches the bytes, and an ' +
+          'attribute here fetches them before any script can decline',
+      );
+    }
+    if (clip.poster === '') {
+      failures.push(
+        `at ${where} ${which} recording has no poster — the poster is what a browser that plays neither file ` +
+          'shows, and it is the whole of what a reduced-motion reader is given',
+      );
+    }
+    if (clip.fit !== 'cover') {
+      failures.push(
+        `at ${where} ${which} recording is drawn with object-fit: ${clip.fit} — the clip and the content box are ` +
+          'not the same shape and cannot be reconciled by choosing better numbers, so something is cropped',
+      );
+    }
+    if (!/^\S+\s+0(px)?$/.test(clip.from)) {
+      failures.push(
+        `at ${where} ${which} recording is cropped from object-position: ${clip.from} — it has to be pinned to ` +
+          'the TOP, so the whole of the cut comes off the bottom. Removing what the clip shows is the only ' +
+          'direction the censored list is safe in; re-centring it shows rows nobody reviewed.',
+      );
+    }
+  }
+
+  // One URL, or the marble is showing a different film from the window.
+  const [first, second] = clips;
+  if (first.poster !== second.poster) {
+    failures.push(
+      `at ${where} the two recordings name different posters, "${first.poster}" and "${second.poster}" — the ` +
+        'reflection is a copy of the window and not a second recording',
+    );
+  }
+  if (first.sources.join('|') !== second.sources.join('|')) {
+    failures.push(
+      `at ${where} the two recordings were served different sources, [${first.sources}] and [${second.sources}] ` +
+        '— both are handed their sources from one list, which is what makes the marble show what the window shows',
+    );
+  }
+  if (first.sources.length === 0) {
+    failures.push(
+      `at ${where} neither recording was given a source — the elements are parsed without one and clip.ts is ` +
+        'what hands them over, so an empty pair is the module never having run',
+    );
+  }
+
+  return failures;
+}
+
 /** The occlusion: the Frame's top edge a measured fraction into the subheading's
  *  second line, and the window actually painting there. */
 function occludes(read) {
@@ -570,9 +1019,121 @@ function reduced(read, { expectShed }) {
   return failures;
 }
 
+/**
+ * What the page draws with no script at all.
+ *
+ * The reflection is a clone the page makes at runtime, and the trade that buys is
+ * stated in three files: a browser that never runs the script gets the marble and
+ * no reflection, which is deliberate rather than broken. This is the assertion
+ * that it IS that, and it does two jobs at once. It says the Plinth is whole
+ * without script — a slab at its full depth with the plate on it, not a hole
+ * where a composition should be — and it says the reflection is genuinely
+ * derived, because a second window written out in the markup would still be
+ * standing in the stone here.
+ *
+ * Nothing is settled, and nothing can be: no loader runs, so no Section mounts.
+ * Everything read is prerendered, which is exactly what is being asked about.
+ */
+async function withoutScript(browser, origin) {
+  const { context, page } = await open(browser, origin, { javaScriptEnabled: false });
+  try {
+    const read = await page.evaluate(() => {
+      const plinth = document.querySelector('.projects-panel__plinth');
+      const mirror = document.querySelector('.projects-panel__mirror');
+      if (!plinth || !mirror) return { missing: true };
+      const style = getComputedStyle(plinth);
+      return {
+        missing: false,
+        depth: plinth.getBoundingClientRect().height,
+        plate: style.backgroundImage,
+        reflections: mirror.children.length,
+        frames: document.querySelectorAll('.projects-panel__frame').length,
+        clips: document.querySelectorAll('video.projects-panel__clip').length,
+        sources: document.querySelectorAll('video.projects-panel__clip source').length,
+      };
+    });
+
+    /** @type {string[]} */
+    const failures = [];
+    if (read.missing) {
+      return ['with no script the Plinth is not in the document at all — the marble is markup and a stylesheet, ' +
+        'and only the reflection in it is script\'s'];
+    }
+    if (read.depth <= 0 || !read.plate.startsWith('url(')) {
+      failures.push(
+        `with no script the Plinth is ${read.depth.toFixed(1)}px deep and its plate is ${read.plate} — polished ` +
+          'stone with nothing in it is a plinth, and this is the reader who is meant to get one',
+      );
+    }
+    if (read.frames !== 1 || read.reflections !== 0) {
+      failures.push(
+        `with no script the page holds ${read.frames} Frame(s) and ${read.reflections} of them are in the marble ` +
+          '— the reflection is a CLONE, and a second copy of a hundred lines of measured drawing written out in ' +
+          'the markup is one copy that gets edited and one that does not',
+      );
+    }
+    if (read.clips !== 1 || read.sources !== 0) {
+      failures.push(
+        `with no script the page holds ${read.clips} recording(s) carrying ${read.sources} source(s) — the ` +
+          'element is parsed with a poster and nothing to fetch, and a browser that runs nothing keeps the poster',
+      );
+    }
+    return failures;
+  } finally {
+    await context.close();
+  }
+}
+
+/**
+ * What a reader who asked for reduced motion is not charged for.
+ *
+ * NOT A RULE AND NOT `preload="none"`. The promise is that the recording's bytes
+ * are never requested — not a range request, not a metadata probe — and no
+ * stylesheet can decline a fetch. The elements ship with no source and clip.ts
+ * asks the query before naming a file, so what this asserts is the one thing a
+ * person could never notice: that nothing went over the wire. A `src` that crept
+ * back into the markup, or a refusal that stopped being asked, both look
+ * identical on screen.
+ */
+async function withoutMotion(browser, origin) {
+  const { context, page, record } = await open(browser, origin, { reducedMotion: 'reduce' });
+  try {
+    // Not settle(): under this setting nothing scrubs, and the Section still
+    // mounts on approach. The scroll is what puts the Frame near the viewport,
+    // and networkidle is what gives a fetch time to have happened.
+    await page.evaluate(() => document.querySelector('.projects-panel')?.scrollIntoView());
+    await page.waitForLoadState('networkidle').catch(() => {});
+
+    /** @type {string[]} */
+    const failures = [];
+    const fetched = record.responses
+      .map(({ url }) => withoutOrigin(url, origin))
+      .filter((url) => /\.(webm|mp4)(\?|$)/.test(url));
+    if (fetched.length > 0) {
+      failures.push(
+        `a reader asking for reduced motion fetched ${[...new Set(fetched)].join(', ')} — the setting is asked ` +
+          'to save bandwidth as well as movement, and the only way to honour that is to never name the file',
+      );
+    }
+
+    const served = await page.evaluate(
+      () => document.querySelectorAll('video.projects-panel__clip source').length,
+    );
+    if (served > 0) {
+      failures.push(
+        `a reader asking for reduced motion was given ${served} source(s) — the refusal is written once, in ` +
+          'clip.ts, and it covers the reflection without knowing it exists',
+      );
+    }
+    return failures;
+  } finally {
+    await context.close();
+  }
+}
+
 export const check = {
   name: 'projects-panel',
-  title: "the Frame's measured geometry, its occlusion, its ladder and its reduction",
+  title: "the Frame and the Plinth: geometry, occlusion, reflection, ladder and reduction",
 
   /** @param {{ browser: import('playwright').Browser, origin: string }} ctx */
   async run({ browser, origin }) {
@@ -599,6 +1160,14 @@ export const check = {
         if (!expectShed) {
           failures.push(...drawn(read));
           failures.push(...honest(read));
+          failures.push(...stands(read));
+          failures.push(...reflects(read));
+          failures.push(...records(read));
+          notes.push(
+            `the slab: ${(read.plinth.depth * read.frame.width).toFixed(1)}px deep over a Frame ` +
+              `${read.frame.width.toFixed(0)}px wide, overhanging ${(read.plinth.left * read.frame.width).toFixed(1)}px ` +
+              `each end, with ${(read.mirror.depth * read.frame.width).toFixed(1)}px of the window lying in it`,
+          );
         }
         notes.push(
           `at ${viewport.width}x${viewport.height}: a Frame ${read.frame.width.toFixed(0)}px wide, titlebar ` +
@@ -608,6 +1177,11 @@ export const check = {
         await context.close();
       }
     }
+
+    failures.push(...(await withoutScript(browser, origin)));
+    notes.push('with no script: the marble is drawn and nothing is lying in it');
+    failures.push(...(await withoutMotion(browser, origin)));
+    notes.push('with reduced motion: the poster, and not one byte of the recording');
 
     return { failures, notes };
   },

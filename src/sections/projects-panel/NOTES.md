@@ -1,11 +1,10 @@
 # The Projects Panel
 
 The dark Section presenting one project at a time. This folder holds the Rail,
-the masthead and its two authored lines, the copy and the engineering points, and
-the **Frame** — the browser window with the glass titlebar that the recording
-stands inside. **The Plinth is #140's**, and it lands in this same folder; the
-holes it leaves are named below so it does not have to re-derive what the
-composition already assumes about it.
+the masthead and its two authored lines, the copy and the engineering points, the
+**Frame** — the browser window with the glass titlebar the recording stands
+inside — and the **Plinth** the Frame stands on, with the Frame's live reflection
+lying in it.
 
 It is a **port**. Every share, every colour and every word here is
 `portfolio/styles.css`'s and `portfolio/index.html`'s, carried over unchanged.
@@ -277,35 +276,21 @@ Three things about the stack:
   under that spaces four points exactly as far apart as the two lines of one, and
   the list reads as eight lines rather than four pairs.
 
-## What #140 takes out of this file
+## What is still nobody's
 
-- **The stage's left column is empty.** The stage is `2 / 3 / 3 / 13` — ten
-  columns of twelve, against the Frame's nine — and the Frame is indented one
-  column and one gutter inside it. That column is the Plinth's overhang, and it
-  is the whole reason the stage is a box at all rather than the Frame sitting in
-  the grid directly: the slab has to hang off the Frame's **foot**, which is a
-  length the grid knows and no sibling of the Frame could ask for.
-- **The Plinth's three depths are shares of the FRAME's width**, not of the
-  composition's, and nothing here states that length any more. It was stated for
-  one line and one line only — the window's corner radius — and that turned out
-  to be better expressed as a percentage of the Frame's own box (below), so
-  re-deriving it from the composition went with it. #140 wants
-  `calc((9 * var(--projects-panel-column) + 8 * var(--projects-panel-gutter-share)) *
-  var(--projects-panel-w))`, which is nine columns and the eight gutters inside
-  them, and should know that it over-states the laid-out Frame by whatever the
-  Rail's floor costs the composition — 3px at 1440x900. That is why the corner
-  does not use it.
-- **`--projects-panel-fit` already counts the Plinth** and is untouched by this
-  ticket. Three of its four terms are now on the page; the fourth is the slab.
-- **The reflection is a second Frame**, and `glass.ts` is already arranged for it:
-  the material is rendered once and blitted onto every other `.projects-panel__bar`
-  the page turns out to hold, which today is none. A clone brings its own canvas
-  with it — the canvas is in the markup here rather than created in script — so
-  #140 does not have to insert one.
-- **The Panel's own motion is nobody's yet.** The live page's exit treatments —
-  the text lifting, the Frame receding, the Plinth sinking, mixable, five numbers
-  each — are what the rework session chooses between, and Variants are the shape
-  that choice now has.
+- **The Panel's own motion.** The live page's exit treatments — the text lifting,
+  the Frame receding, the Plinth sinking, mixable, five numbers each — are what
+  the rework session chooses between, and Variants are the shape that choice now
+  has. `timeline.ts` exports nothing, which is how the loader is told there is
+  nothing to register.
+- **Which stone is drawn is settled in two places now, and only one of them is
+  maintained.** `design/plinth/plinth-studio.py` rewrites the declaration in
+  `portfolio/styles.css` when a stone is applied, and it knows nothing about
+  `tokens.css`. So a bake-off run after this ticket changes `/portfolio` and
+  leaves `/next` on the plate named here. It is one line, it is named in the
+  Token's own comment and in `docs/agents/plinth-marble.md`, and the route-flip
+  ticket ends it by deleting the other declaration. Until then: apply a stone in
+  the studio, then copy the filename across by hand.
 
 ## The Frame
 
@@ -578,13 +563,16 @@ Nothing about the SVG glyphs' own drawing either, only the box each is drawn in.
 
 Both at 1440x900, `/next` and `/portfolio` served from the same `dist/`.
 
-**The Plinth, and nothing else.** The composition is 617.9px tall here against the
-live page's 720.1. Adding the Plinth's own 0.0869 of the Frame's width brings it
-to 698.3, and the live page's 720.1 scaled to this composition's width is 698.1 —
-the same drawing to two tenths of a pixel. The width divergence behind that
-scaling is the one #138 already records: the live page at this window is inside
-its one-screen band, where the Rail leaves the grid and the fit constant is
-re-derived, and neither is portable without the Cut Title.
+**The drawing is now the same drawing, to half a pixel.** The composition
+measures 1238.97 × 698.63 here against the live page's 1278 × 720.06, and the
+live page's height scaled to this width is 698.07 — 0.08% apart. It read 617.9
+tall before the Plinth landed, which is exactly the slab: the fit constant had
+been counting it the whole time. The proportions the slab is drawn at agree to
+five decimal places — the plinth is 1.18944 Frame widths wide here and 1.18942
+there — and the width divergence behind the scaling is the one #138 already
+records: the live page at this window is inside its one-screen band, where the
+Rail leaves the grid and the fit constant is re-derived, and neither is portable
+without the Cut Title.
 
 **The sidebar toggle and both chevrons are 0.46px to the left of the live
 page's**, which is the flattened-gap correction above — the chevrons are chained
@@ -599,18 +587,294 @@ off the Section's type, has no mechanism in the Kernel yet and would be the
 Kernel's to add; and the print stylesheet hides the Panel outright, which belongs
 with whichever ticket gives `/next` a print sheet.
 
+## The Plinth
+
+The marble slab the Frame stands on, the Frame's live reflection lying in it, the
+contact shadow where the two meet, and the recording inside the window. It is the
+last quarter of the composition's height and the reason the fit constant is
+0.5651 rather than 0.5.
+
+### Every length is a share of the FRAME's width
+
+Not of the composition's, which is what everything else in this Section is
+measured in. The Plinth is a thing the Frame stands **on**: the render gives all
+three depths as distances from the window's own edges, the reflection has to be
+exactly as deep as the top face, and the plate is baked at an aspect ratio
+computed from the same numbers. Stated against the composition, all four would
+have to be converted back into Frame widths in four places to be checked in any
+of them.
+
+So the component states the Frame's width once, as `9c + 8g` times the
+composition's — nine columns of twelve and the eight gutters inside them — and
+the three depths are shares of that. **It over-states the laid-out Frame by
+whatever the Rail's floor costs the composition**, 2.4px at 1440×900, because
+`--projects-panel-w` is what the fit *asked* for and the grid caps the column at
+what is actually free. Every depth therefore reads 0.26% high, which is 0.05px on
+the top face. That is why the window's corner is a percentage of its own box
+instead of reading this length, and it is why the Plinth's tolerance in the Check
+is 0.002 of the Frame rather than the chrome's 0.0003.
+
+**Everything HORIZONTAL is exact, and is a percentage of the stage.** The slab's
+left edge, its width, the reflection's two edges and the contact shadow's are all
+`something / (10c + 9g) × 100%`, which resolves against the box the grid actually
+laid out rather than against the one the fit asked for. That is a change to
+#139's rule as well as an addition: **the Frame's own `margin-left` is now the
+same percentage**, where it was that share times the composition's width. The two
+differ by 0.36px, and while the Frame was alone in the stage nothing could tell.
+It is not alone now — the reflection is placed off the *slab* and the window off
+its own margin, so the two would have disagreed about where the window's edge is
+at every width, and the reflection would have lain half a pixel off the thing it
+reflects. Both read one box now.
+
+### The four numbers, and what each is
+
+Restated in `design/plinth/build-slab.py` as `NEAR_HALF`, `TOP_FACE`, `BEHIND`
+and `FRONT_FACE`, because the block has to be **rendered** at the shape it is
+drawn at and there is no third place to put them. There they also frame the
+camera, so a change made in one place and not the other does not stretch the
+picture: it moves the block.
+
+| | share | what it is |
+| ------- | -------- | ------------------------------------------------ |
+| behind  | 0.019597 | the marble between the slab's back edge and the Frame's foot |
+| top     | 0.016876 | the visible marble in front of the Frame — the whole of what the reflection lies in |
+| front   | 0.070024 | the front face, and the block turning under at its base |
+| overhang| 0.094719 | how far the slab hangs off the window at **each** end |
+
+**`behind` is the one that has already been got wrong.** The Frame stands *on*
+the top face rather than at the back of it, so the slab runs behind the window
+and is hidden under it in the middle and visible at both ends. Reading it as zero
+made the whole top face 31 render pixels instead of 67, and the block read as a
+lit strip rather than as a slab with a window standing on it.
+
+**`front` is a floor and not a height.** The render's own front face measures 83
+render pixels, 4.52% — but the picture is cut off there with the stone still at
+level 30, so 7% is what is drawn and the extra is the rest of a block.
+
+The four are unitless on purpose, and `top` is why: it is the depth of the top
+face **and** the share of the window that face is tall enough to show. Keeping it
+a bare number is what lets those be one constant rather than two kept equal by
+hand.
+
+### In flow, and pulled back up
+
+The slab is `position: relative` in the flow directly under the Frame, and not
+absolutely placed at `top: 100%` — which draws the same picture and is wrong. The
+fit constant that scales the whole drawing onto one screen counts the Plinth's
+depth, and an out-of-flow slab leaves the stage exactly as tall as the Frame while
+the constant says otherwise, so the composition comes out short by the Plinth at
+every window size. In flow, the stage measures what the arithmetic assumes.
+
+It also starts *above* the Frame's foot, by `behind`, and a negative top margin of
+the same length pulls it back. That is what keeps the arithmetic honest: the box
+is `depth + behind` tall and costs the flow only `depth`, which is the same
+0.0869 of a Frame width `--projects-panel-fit` has always counted. Nothing above
+the rule moves.
+
+`background-size: 100% 100%` and **not** `cover` is the one declaration in the
+block that would be a bug if it were the usual thing. The plate is rendered at
+exactly this box's aspect ratio, so stretching it to the box is an identity;
+`cover` would crop off either the far edge or the block's base.
+
+### The slab runs off the right of the page, and the Frame does not move
+
+The Frame is flush with the composition's right edge, so a slab that overhangs it
+symmetrically has nowhere on that side to do it. **Pulling the window left to make
+room was tried and is wrong**: it puts the Frame over the engineering points, 42px
+of live text behind it at 1600×1000. The Frame is allowed to occlude the
+subheading, which is set to be occluded; it is not allowed to eat the list. So the
+stone runs off the edge instead — which is what the render does, its own slab
+being cut off by the picture — and `overflow-x: clip` on the Section makes that
+safe rather than a scrollbar.
+
+### The reflection is a clone, and it is life-size
+
+`mirror.ts` copies the Frame into the marble and the stylesheet does everything
+after that. Two hand-kept copies of a hundred lines of measured drawing is one
+copy that gets edited and one that does not, and the one that does not is the
+reflection, where nobody would notice for months.
+
+**The clone runs before the other two scripts**, and that ordering is the design.
+`clip.ts` hands sources to every recording on the page and `glass.ts` blits its
+material onto every titlebar, so making the copy first is what lets both treat it
+as one more Frame instead of a special case. `glass.ts` was already written for
+it and said so before there was one to find.
+
+**A mirror image is the same size as the thing it reflects, and getting that
+wrong is the mistake this is most likely to be re-made into.** A planar mirror
+puts the image as far behind the surface as the object is in front of it, so
+object and image subtend the same angle at the eye and project to the same
+height. The strip is short because the **slab** is short, not because the image
+is. `top × ratio` is 3.28%, and 3.28% is the share of the window the box is tall
+enough to show — read as a *scale* and applied as one, the whole 476-pixel window
+is squashed into the sixteen pixels that are actually its bottom 3.28% seen
+life-size, and thirty rows of chrome, tabs and clip averaged into every row of
+stone is a grey band that changes when the clip changes. The transform is a plain
+fold; the clipping is the box's own `overflow`.
+
+Three more decisions inside it, each of which has an obvious wrong answer:
+
+- **No `filter: blur()`.** Roughness 0.07 at 82° of incidence spreads a reflection
+  by about a pixel over a strip sixteen deep, which is not worth a full-size
+  gaussian over a moving picture every frame. What the eye reads as softness is
+  the contact shadow above and the stone's own veining showing through.
+- **Plain alpha and not `screen`.** A reflection adds light, so `screen` is what a
+  reflection does — but the plate already carries the light: its top face ramps
+  from 31 to 80 because that is what the render measures, and that ramp *is* the
+  room reflected in the stone. Alpha also gets the dark half right for free: a
+  black tab bar reflected in polished stone makes the stone darker than the marble
+  beside it, which `screen` cannot do.
+- **The strength does not go out with distance.** Fresnel against the render's IOR
+  1.55 gives 0.526 at the contact line and 0.507 at the front arris — half the
+  light and all but flat. A reflection faded to nothing before the arris leaves a
+  band of stone at the very front reflecting nothing, which is the one place a
+  grazing eye sees the most, so the mask bottoms out at 0.62 rather than at
+  transparent.
+
+**A browser that never runs the script gets the marble and no reflection**, which
+is deliberate rather than broken and is the trade every script in this Section
+makes. Polished stone with nothing in it is a plinth, and nothing on the page says
+one was promised. The Check asserts that outcome in its own pass rather than
+leaving it to be believed — which is also how it asserts the copy is genuinely
+derived, because a second window written out in the markup would still be standing
+in the stone there.
+
+### The contact shadow
+
+The cue the eye uses to decide whether two objects are **touching** at all, and
+its absence was the loudest thing in the composition — the Frame ended, the marble
+began, and nothing happened at the join, which is what a sticker on a photograph
+looks like.
+
+It cannot come out of the plate: `build-slab.py` renders a bare block, and the
+thing standing on it is a live element whose foot lands wherever the composition
+scaled it to, so an occlusion baked in at one width is in the wrong place at every
+other. Drawn from the same two edges the reflection is, it follows the Frame for
+free.
+
+**It sits on the top face and stops there.** Not a soft shadow spilling down the
+front, which is the reflex: the front face is a vertical plane over a Frame width
+away in the depth direction and the light that fills it is in *front* of the
+block, so the window occludes none of it. **The ends fade** because the shadow
+belongs to the window and has to end where the window does, and a hard vertical
+edge at the Frame's corner reads as a drawn rectangle. **It is above the
+reflection**, which is a decision rather than an accident of order: an occlusion
+strictly darkens the diffuse term and leaves the specular alone, so a purist would
+paint it under — but what is occluded here is also most of the room the stone had
+to reflect, and a reflection at full strength right up to the foot of the thing
+casting it looks lit from underneath.
+
+### The recording, and the two elements showing it
+
+The photo vault's grid, scrolling, recorded against `design/censor/`'s capture
+origin — which serves each censored photograph as a mosaic of a handful of blocks,
+so no unobscured frame of one exists anywhere in the pipeline.
+
+**The element ships with a poster and no source at all, and that is the whole
+design.** `clip.ts` names the files, and only when the reader has not asked for
+reduced motion, so under that setting the poster is the whole of it and nothing is
+fetched — not a range request, not a metadata probe. A CSS rule cannot decline a
+fetch and neither can `preload="none"`, which still fetches the moment it plays.
+`<source media="…">` is written on each element too: two independent refusals,
+because a browser that ignores the attribute would fetch with nothing in the page
+able to find out that it did.
+
+`muted` is not decoration either — it is what lets `autoplay` run at all, and the
+Portfolio never makes a sound.
+
+**The clip and the box are not the same shape, and this is where that is settled
+rather than hidden.** The recording is 1440×900, which is not free to move:
+change it and the clip passes over photographs nobody reviewed. The render's Frame
+is 1430 by 735 including its titlebar, and 1430 of a 1.6 recording is 894 tall
+before a titlebar is added, so the picture alone is taller than the whole window.
+Something is cropped, and cropping the recording is a smaller lie than reshaping
+the window the whole design is drawn around. It is `cover` **from the top edge**,
+so the whole cut comes off the bottom — which keeps the vault's own toolbar hard
+against the top of the box, and is the only direction the censored list is safe
+in: removing what the clip shows can only ever remove, and re-centring the crop
+shows rows nobody reviewed.
+
+**The reflection's copy is served late, and that is why `clip.ts` is not a loop.**
+Both elements name one URL, and two media elements asking for it at the same
+instant are not reliably coalesced — the spec does not require it and engines
+differ. Waiting for the lead's first frame puts the response in the HTTP cache
+before the copy asks, which turns the second fetch into a cache hit everywhere.
+What it costs is that the marble is a still until the clip starts, and then
+catches up, which is the right way round.
+
+**A second element rather than a canvas fed from the first**, because painting
+frames out of one video into a canvas is one decode instead of two *and* a
+`requestAnimationFrame` loop for as long as the page is open — the per-frame cost
+this Section is built without. The compositor draws the reflection for free
+because it is drawing the copy anyway.
+
+### Which stone, and the one line that will go stale
+
+The plate is rendered, not procedural, and `docs/agents/plinth-marble.md` is the
+authority on which one is drawn — read it before touching `design/plinth/`. The
+standing constraint is that whatever is named is lit in the **dark** room: a
+surround fitted to a light stone pins a black ground at a flat 24 whatever the
+texture under it says, and that fault took three wrong diagnoses to find.
+
+**No `?v=` digest here, unlike the copy of the URL in `portfolio/styles.css`.**
+The build fingerprints anything it can see in a `url()`, so what ships is
+`/_astro/plinth-….<hash>.webp` and a re-rendered plate is a different filename by
+construction. The digest that sheet carries is doing this job by hand because
+nothing builds it. The recording's URLs go the other way and *do* carry one: they
+are assembled in script, where the build cannot see them.
+
+And `plinth-studio.py` does not rewrite the line in `tokens.css` — see *What is
+still nobody's* above.
+
+### What the Plinth's Check holds, and what it was shown to catch
+
+The same file as the Frame's, and the same rule: every assertion reads the Token
+it is about back off the page, so moving a measured share moves the slab **and**
+what is expected of it. What cannot change without failing is the relationship.
+
+It also runs two passes the Frame's half does not, and each asserts a promise that
+is invisible on screen: one with **scripting off**, where the marble has to be
+drawn at its full depth with nothing lying in it, and one with **reduced motion**,
+where not one byte of the recording may be requested.
+
+**Thirteen mutations, each applied on its own, rebuilt, and reverted.** Twelve
+were caught by the Check and one by the typecheck:
+
+| broken | caught by |
+| ------ | --------- |
+| `mirror.appendChild` commented out | no Frame in the marble |
+| the fold written as a `scaleY(top × ratio)` | the copy 460px shorter than the window |
+| the depths taken as shares of the composition | all three depths, and the stage's foot |
+| `top` and `behind` swapped | both depths, and the reflection's own depth |
+| the plate at `background-size: cover` | the plate no longer stretched to its own box |
+| the slab moved to `position: absolute; top: 100%` | the stage ending at the Frame's foot |
+| the contact shadow's `content` removed | the Plinth drawing no shadow |
+| a `src=` written onto the recording in the markup | the markup source, in both elements |
+| the crop re-centred to `50% 50%` | the object-position, in both elements |
+| the reduced-motion refusal disabled | two sources served to a reader who asked for stillness |
+| the reflection box set to `overflow: visible` | the box no longer clipping |
+| the slab given one overhang instead of two | the right overhang, and the two ends disagreeing |
+| a second Frame written into the marble in the markup | the copy's element count, and the no-script pass |
+| the `poster` attribute deleted | `astro check` — the import goes unused |
+
+**The depth tolerance is 0.002 of the Frame and the horizontal one is 0.1px**, and
+the split is the point: the depths inherit the Frame width's 0.26% over-statement
+and the horizontal lengths are exact percentages of a box that was actually laid
+out. 0.002 is eight times the largest inherited error and still nine times smaller
+than reading `top` as `behind`.
+
+**What it does not assert.** Nothing about the marble — which stone, how it is
+veined, how bright the room was — because that is the bake-off's, recorded in
+`docs/agents/plinth-marble.md` and judged by eye. Nothing about the reflection's
+opacity or the shadow's four stops either: both are Tokens the author may set to
+anything, and a Check measuring one against a number somebody chose is the failure
+mode `scripts/checks/NOTES.md` is written against.
+
 ## Where this does not match the live page yet, measured
 
-Three differences, all of them consequences of what has not landed rather than
+Two differences, both of them consequences of what has not landed rather than
 choices made here. The numbers are off `/next` and `/portfolio` served from the
 same `dist/`, at 1440×900.
-
-**The drawing is short by exactly the Plinth, and it floats.** The composition
-measures 617.9px tall here against the live page's 720.1 — see the Frame's own
-section above, which measures what the missing slab accounts for.
-`--projects-panel-fit` already counts it, so the *width* is right and the height
-fills in when #140 arrives; until then `align-self: center` puts the short drawing
-in the middle of the screen instead of hanging it off the top.
 
 **This is the base regime, not the landing.** The live page at 1440×900 is inside
 its one-screen band, where the Cut Title stands in the masthead's slot — and that
@@ -625,4 +889,7 @@ grid, the hanging second line, the copy at four lines, and the Rail's 10px floor
 
 **Below 1100px the two are the same drawing.** The stack was compared at 390×844
 and every size matches to the pixel — masthead 46.8, subheading 29.25, copy 14.82,
-Rail 11.31 — and the copy and the figures break on the same words.
+Rail 11.31 — and the copy and the figures break on the same words. The Plinth
+matches there too, and at 1024×800: the same Frame, the same slab at 1.18941 of
+its width, the same 32.84px of overhang at each end, and the reflection on the
+window's own two edges to a hundredth of a pixel in both trees.

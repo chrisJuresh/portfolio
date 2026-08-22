@@ -156,3 +156,102 @@
   --projects-panel-frame-address-size: 0.0095;
   --projects-panel-frame-address-tracking: 0.01em;
 }
+
+/* ---------------------------------------------------------------------------
+   THE PLINTH: the marble the Frame stands on, the Frame's reflection lying in
+   it, and the shadow where the two touch.
+
+   EVERY LENGTH HERE IS A SHARE OF THE FRAME'S WIDTH and not of the
+   composition's, which is what everything above is measured in. The reason is
+   that the Plinth is a thing the Frame stands ON: the render gives all three
+   depths as distances from the Frame's own edges, the reflection has to be
+   exactly as deep as the top face, and the plate is baked at an aspect ratio
+   computed from the same numbers. Stated against the composition they would have
+   to be converted back into Frame widths in four places to be checked in any of
+   them. The conversion happens ONCE, in the component.
+
+   The four shares are unitless on purpose, and `top` is why: it is the depth of
+   the top face AND the share of the window the top face is tall enough to show,
+   and keeping it a bare number is what lets those be one constant rather than
+   two kept equal by hand. design/plinth/build-slab.py states all four again —
+   NEAR_HALF, TOP_FACE, BEHIND, FRONT_FACE — because the block has to be RENDERED
+   at the shape it is drawn at, and there is no third place to put them. There
+   they also frame the camera, so a change made in one and not the other does not
+   stretch the picture: it moves the block. */
+.projects-panel {
+  /* behind  the marble between the block's back edge and the Frame's foot. THE
+              SLAB RUNS BEHIND THE WINDOW: the Frame stands ON the top face
+              rather than at the back of it, and this is the strip hidden under
+              the window in the middle and visible at both ends.
+     top     the visible marble IN FRONT of the Frame, and the whole of what the
+              reflection has to lie down in.
+     front   the block's front face. The render's own is 83px, 4.52% — but the
+              picture is CUT OFF there with the stone still at level 30, so that
+              is a floor and not a height. 7% is what is drawn, and the extra is
+              the rest of a block turning under at its base. */
+  --projects-panel-plinth-behind: 0.019597;
+  --projects-panel-plinth-top: 0.016876;
+  --projects-panel-plinth-front: 0.070024;
+  /* How far the slab hangs off the Frame at EACH end. Symmetric, which is the
+     shortest way to say that the window sits in the middle of the stone it
+     stands on — ten grid columns of marble against the Frame's nine. */
+  --projects-panel-plinth-overhang: 0.094719;
+
+  /* WHICH STONE. The plate is rendered, not procedural, and which one is drawn
+     is docs/agents/plinth-marble.md's to say — read it before touching
+     design/plinth/. The standing constraint is that whatever is named here is
+     lit in the DARK room: a surround fitted to a light stone pins a black ground
+     at a flat 24 whatever the texture under it says, and that fault took three
+     wrong diagnoses to find.
+
+     THE SOURCE BYTES ARE STILL /portfolio's, which is where every rendered plate
+     in this repository is written. `src/kernel/corners.ts` and the Front Screen's
+     photographs point at the same tree and say the same thing about it: the
+     ticket that flips the route moves the bytes and changes the constant.
+
+     NO `?v=` DIGEST, unlike the copy of this URL in portfolio/styles.css, and the
+     Effect Stack's textures settled why: the build fingerprints anything it can
+     see in a url(), so what ships is /_astro/plinth-….<hash>.webp and a
+     re-rendered plate is a different filename by construction. The digest that
+     sheet carries is doing this job by hand, because nothing builds it.
+
+     AND design/plinth/plinth-studio.py DOES NOT REWRITE THIS LINE. It rewrites
+     the one in portfolio/styles.css, which is the stone the live site draws, and
+     it knows nothing about this file. So applying a stone in the studio changes
+     /portfolio and leaves /next on the old plate. NOTES.md says what to do about
+     it, and the route-flip ticket is what ends it by deleting the other one. */
+  --projects-panel-plinth-src: url('/portfolio/img/tex/plinth-gemini-generated-image-zbkpg6zbkpg6zbkp-1-noir.webp');
+
+  /* ---- the reflection ---------------------------------------------------- */
+  /* How much of the window survives the stone, and it is a MEASUREMENT. The
+     reflectance of the top face is Fresnel at this camera's angle of incidence,
+     and Schlick against the IOR 1.55 the render's material is built at gives
+     0.526 at the contact line and 0.507 at the front arris — half the light, and
+     all but flat. */
+  --projects-panel-mirror-strength: 0.5;
+  /* ...and it does NOT go out with distance. Fresnel moves two points over the
+     whole strip, so a polished surface reflects the near end and the far end of
+     thirteen pixels equally well; a reflection faded to nothing before the front
+     arris leaves a band of stone at the very front reflecting nothing, which is
+     the one place a grazing eye sees the most. What is left is the small, honest
+     part — roughness scattering a little more of the image the further it has to
+     travel — so it bottoms out here rather than at transparent. */
+  --projects-panel-mirror-far: 0.62;
+
+  /* ---- the contact shadow ------------------------------------------------ */
+  /* Where the window meets the stone, and its absence was the loudest thing in
+     the composition: this is the cue the eye uses to decide whether two objects
+     are TOUCHING at all. It cannot come out of the plate — the thing standing on
+     the marble is a live element whose foot lands wherever the composition
+     scaled it to, so an occlusion baked in at one width is in the wrong place at
+     every other. Four stops down the top face, and the last few percent at each
+     end taken off: the shadow belongs to the window and has to end where the
+     window does, but a hard vertical edge at the Frame's corner reads as a drawn
+     rectangle, and light wraps round a foot rather than stopping at it. */
+  --projects-panel-contact-near: rgba(0, 0, 0, 0.66);
+  --projects-panel-contact-mid: rgba(0, 0, 0, 0.3);
+  --projects-panel-contact-mid-at: 38%;
+  --projects-panel-contact-far: rgba(0, 0, 0, 0.09);
+  --projects-panel-contact-far-at: 72%;
+  --projects-panel-contact-ends: 3%;
+}

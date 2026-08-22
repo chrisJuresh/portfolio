@@ -59,20 +59,38 @@ export function withoutOrigin(url, origin) {
  * comparable, and a composition fitted to one screen has regimes that are only
  * reachable at particular sizes.
  *
+ * `reducedMotion` and `javaScriptEnabled` are the two reader states the page
+ * behaves DIFFERENTLY in rather than merely more quietly, so a Check asking about
+ * either has to say so. Both default to the ordinary reader, and a Check that
+ * changes one is asserting about the promise that state carries: that the
+ * recording's bytes are never fetched, and that what the page draws without
+ * script is a whole composition rather than a hole where one should be. A Check
+ * in either state cannot `settle()` a Section's Timeline — nothing scrubs under
+ * the first and nothing mounts at all under the second.
+ *
  * @param {import('playwright').Browser} browser
  * @param {string} origin
- * @param {{ theme?: 'light' | 'dark', path?: string, fx?: string, viewport?: { width: number, height: number } }} [options]
+ * @param {{ theme?: 'light' | 'dark', path?: string, fx?: string, viewport?: { width: number, height: number }, reducedMotion?: 'reduce' | 'no-preference', javaScriptEnabled?: boolean }} [options]
  */
 export async function open(browser, origin, options = {}) {
-  const { theme = 'light', path = PAGE, fx, viewport = DESK } = options;
+  const {
+    theme = 'light',
+    path = PAGE,
+    fx,
+    viewport = DESK,
+    // Not `reduce`: a reader who asked for less motion gets the Section settled
+    // and nothing scrubbing, which is the one state where a Timeline's moments
+    // are not on screen. The Checks assert the default reader's experience unless
+    // one of them names this.
+    reducedMotion = 'no-preference',
+    javaScriptEnabled = true,
+  } = options;
 
   const context = await browser.newContext({
     viewport,
     deviceScaleFactor: 1,
-    // Not `reduce`: a reader who asked for less motion gets the Section settled
-    // and nothing scrubbing, which is the one state where a Timeline's moments
-    // are not on screen. The Checks assert the default reader's experience.
-    reducedMotion: 'no-preference',
+    reducedMotion,
+    javaScriptEnabled,
     colorScheme: theme,
   });
 

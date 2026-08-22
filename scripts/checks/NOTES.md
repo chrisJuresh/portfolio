@@ -78,7 +78,7 @@ cannot be verified there even by hand.
 | `console`        | anything logs an error or throws, including across a theme flip — warnings deliberately not, because on this page they are nearly always Chromium's own |
 | `faces`          | a declared `@font-face` will not load, or no face Token names a declared family |
 | `front-screen`   | the Front Screen's rhyme, its one-screen budget, the Cut Title's cut or its accessible name, the crossing's span, the switch's ARIA, or the type's place in the Effect Stack breaks |
-| `projects-panel` | a control in the Frame leaves the centre its own Token names, the window and its titlebar are cut to two radii, the recording's box stops being inset on three sides, the occlusion of the subheading's second line moves or stops being painted, the titlebar reports a rung it is not made of, the chrome grows a control, or the small-Frame reduction starts asking about the window instead of the Frame |
+| `projects-panel` | a control in the Frame leaves the centre its own Token names, the window and its titlebar are cut to two radii, the recording's box stops being inset on three sides, the occlusion of the subheading's second line moves or stops being painted, the titlebar reports a rung it is not made of, the chrome grows a control, the small-Frame reduction starts asking about the window instead of the Frame, the Plinth's depths stop being shares of the Frame or its slab stops being symmetric about it, the reflection stops being a life-size fold of the window, the marble stops being drawn without script, or a reader who asked for reduced motion is charged for the recording |
 | `ground`         | paper is not light, or the Turn does not arrive dark, in either theme         |
 | `moments`        | a Timeline cannot be seeked, does not survive a scroll, moves nothing, or will not release |
 | `unpublishable`  | a Section's words or its spoken attributes match the denylist                 |
@@ -98,6 +98,19 @@ three ten-thousandths of the Frame's width rather than something comfortable —
 anything looser the one mutation it most exists for walked straight through it. It
 also names what it deliberately does not assert: the glass's own output, which is
 a picture and not a relationship.
+
+It is also the first Check to open the page in a reader state the page behaves
+DIFFERENTLY in, rather than merely more quietly, and both of its two are promises
+that are invisible on screen. With **scripting off** the Plinth has to be drawn at
+its full depth with nothing lying in it — which is the trade the reflection's
+clone buys, and is also how the Check knows the copy is genuinely derived rather
+than a second window written out in the markup. With **reduced motion** not one
+byte of the recording may be requested: no stylesheet can decline a fetch, so the
+element ships with no source at all, and a `src` that crept back into the markup
+would look identical on screen while costing the reader the clip. `open()` takes
+`javaScriptEnabled` and `reducedMotion` for exactly these two, and **neither pass
+can `settle()`** — nothing scrubs under the first and nothing mounts at all under
+the second, so anything about a Timeline has to stay in the ordinary pass.
 
 It is also the first Check to measure at a window chosen for a REGIME rather than
 for a size. The Frame's chrome sheds its small glyphs below a Frame of 520px and

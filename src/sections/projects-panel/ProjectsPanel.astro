@@ -1,9 +1,14 @@
 ---
 // The Projects Panel: the Rail, the masthead and its two authored lines, the
-// copy, and the engineering points. NOTES.md carries the reasoning — what each
-// share was measured from, what the Frame and the Plinth are going to take out
-// of this file, and the two relationships the Cut Title is cut to.
+// copy, the engineering points, the Frame, and the Plinth it stands on.
+// NOTES.md carries the reasoning — what each share was measured from, and the
+// two relationships the Cut Title is cut to.
 import { content } from './content';
+// The recording's poster and its own pixels. Imported rather than written out
+// here so the module that fetches the clip and the element that shows it name
+// one URL between them — the same arrangement the theme toggle's key has in the
+// Front Screen.
+import { POSTER, RECORDING } from './clip';
 import './tokens.css';
 // variants.css is deliberately NOT imported. NOTES.md, and check-source.mjs if
 // this is ever undone.
@@ -65,10 +70,13 @@ const selected = (project: { href?: string }) => project.href === `#${here}`;
         </li>
       ))}
     </ol>
-    {/* The stage: the Frame, and the Plinth #140 stands it on — one grid item
-        holding two, because the two do not have the same left edge. Decorative,
-        so the whole box is out of the accessibility tree, and the attribute is on
-        the stage so #140's reflection inherits it. NOTES.md. */}
+    {/* The stage: the Frame, and the Plinth it stands on — one grid item holding
+        two, because the two do not have the same left edge and because the slab
+        has to hang off the Frame's FOOT, which is a length the grid knows and no
+        sibling of the Frame could ask for. Decorative, so the whole box is out of
+        the accessibility tree, and the attribute is on the stage rather than on
+        each half so the reflection inherits it: a screen reader offered the
+        window twice would be worse than being offered it once. NOTES.md. */}
     <div class="projects-panel__stage" aria-hidden="true">
       <div class="projects-panel__frame">
         {/* The titlebar. Its material is not markup: two of the three rungs are
@@ -171,8 +179,46 @@ const selected = (project: { href?: string }) => project.href === `#${here}`;
           </div>
         </div>
         {/* The window's content: inset from the window's edge on three sides.
-            Empty, and that is #140's hole. NOTES.md. */}
-        <div class="projects-panel__content"></div>
+            The crop happens here rather than on the Frame, because this box is
+            the shape the recording has to fill and it is not the Frame's. */}
+        <div class="projects-panel__content">
+          {/* NO `src` AND NO `<source>`, WHICH IS THE POINT. The sources are
+              given by clip.ts and only when the reader has not asked for reduced
+              motion, so under that setting the poster is the whole of it and the
+              files are never requested. `preload="none"` would not have done it
+              and neither would a CSS rule; clip.ts says why at length.
+              `muted` is not decoration either: it is what lets `autoplay` run at
+              all, and the Portfolio never makes a sound. */}
+          <video
+            class="projects-panel__clip"
+            poster={POSTER}
+            width={RECORDING.width}
+            height={RECORDING.height}
+            autoplay
+            loop
+            muted
+            playsinline
+            preload="none"></video>
+        </div>
+      </div>
+      {/* The marble the Frame stands on, and the live reflection of the Frame
+          lying in it.
+
+          EMPTY, AND BOTH HALVES OF IT ARE. The slab is one rendered plate — the
+          Plinth block below names it and design/plinth/build-slab.py is what
+          renders it — and the reflection is a copy of the Frame that mirror.ts
+          clones into the box, chrome, titlebar, recording and all. There is no
+          second copy of the window written out here, deliberately: two
+          hand-kept copies of a hundred lines of measured drawing is a drift
+          waiting to happen, and mirror.ts says why script is the right place.
+
+          A BROWSER THAT NEVER RUNS THAT SCRIPT GETS THE MARBLE AND NO
+          REFLECTION, which is deliberate rather than broken — the stance every
+          other script in this Section takes. Polished stone with nothing in it
+          is a plinth; it is only the window's own reflection that is missing,
+          and there is nothing on the page to say it was ever promised. */}
+      <div class="projects-panel__plinth">
+        <div class="projects-panel__mirror"></div>
       </div>
     </div>
   </div>
@@ -238,6 +284,45 @@ const selected = (project: { href?: string }) => project.href === `#${here}`;
     --projects-panel-column: calc((1 - 11 * var(--projects-panel-gutter-share)) / 12);
     --projects-panel-frame-drop: calc(
       var(--projects-panel-frame-drop-share) * var(--projects-panel-sub-line)
+    );
+
+    /* ---- and the two shares the Plinth is stated against ------------------
+       The Frame's nine columns and the eight gutters inside them, and the
+       stage's ten and nine. Both by PLACEMENT — nothing lays out from either,
+       the Frame's width is `auto` and the stage's is the grid's — so these exist
+       for the two things that have to know a width they cannot measure.
+       Neither is a Token: both are the grid, restated. */
+    --projects-panel-frame-share: calc(
+      9 * var(--projects-panel-column) + 8 * var(--projects-panel-gutter-share)
+    );
+    --projects-panel-stage-share: calc(
+      10 * var(--projects-panel-column) + 9 * var(--projects-panel-gutter-share)
+    );
+    /* The Frame's width as a plain length, which is what the Plinth's three
+       depths are shares OF. It OVER-STATES the laid-out Frame by whatever the
+       Rail's floor costs the composition — 3px at 1440x900 — because
+       --projects-panel-w is what the fit asked for and the grid caps it at what
+       is actually free. That is why the window's corner is a percentage of its
+       own box instead of reading this, and why the Plinth's horizontal geometry
+       below is a percentage of the stage: the only things that read this are the
+       three DEPTHS, where 3px of width is 0.05px of face. NOTES.md. */
+    --projects-panel-frame-w: calc(var(--projects-panel-frame-share) * var(--projects-panel-w));
+
+    /* ---- the Plinth's three depths, resolved ------------------------------
+       So no rule below multiplies by the Frame's width on its own. `depth` is
+       what the slab costs the composition and `back` is what it does not: the
+       two together are the box the plate is drawn in, and `depth` alone is the
+       flow height — which is the same 0.0869 of a Frame width the fit constant
+       has counted since before any of this was on the page. */
+    --projects-panel-plinth-face: calc(
+      var(--projects-panel-plinth-top) * var(--projects-panel-frame-w)
+    );
+    --projects-panel-plinth-back: calc(
+      var(--projects-panel-plinth-behind) * var(--projects-panel-frame-w)
+    );
+    --projects-panel-plinth-depth: calc(
+      (var(--projects-panel-plinth-top) + var(--projects-panel-plinth-front)) *
+        var(--projects-panel-frame-w)
     );
 
     /* ---- and the two the Cut Title is cut to ------------------------------ */
@@ -489,10 +574,23 @@ const selected = (project: { href?: string }) => project.href === `#${here}`;
 
   /* One column and one gutter in — the column the Plinth overhangs by. Width is
      left to `auto`, which is exactly the rest of the box. Scoped to the stage's
-     own child so #140's clone is not indented by it. */
+     own child so the reflection's clone is not indented by it.
+
+     A PERCENTAGE OF THE STAGE and not that share times the composition's width,
+     which is what it was and is 0.36px to the right of this at 1440x900. The two
+     differ because --projects-panel-w is what the FIT asked for and the grid
+     caps the column at what is actually free, so a length derived from it
+     over-states the laid-out box by whatever the Rail's floor cost — see
+     --projects-panel-frame-w. It did not matter while the Frame was the only
+     thing in the stage. It matters now: the Plinth is stated as a percentage of
+     the same box, so the two would disagree about where the window's edge is by
+     that 0.36px, and the reflection — which is placed off the SLAB — would lie
+     half a pixel off the window it reflects at every width. Both read the same
+     box now and the arithmetic is exact. */
   .projects-panel__stage > .projects-panel__frame {
     margin-left: calc(
-      (var(--projects-panel-column) + var(--projects-panel-gutter-share)) * var(--projects-panel-w)
+      (var(--projects-panel-column) + var(--projects-panel-gutter-share)) /
+        var(--projects-panel-stage-share) * 100%
     );
   }
 
@@ -785,8 +883,257 @@ const selected = (project: { href?: string }) => project.href === `#${here}`;
     border-radius: calc(
       (var(--projects-panel-frame-corner) - var(--projects-panel-frame-inset)) * 100cqw
     );
-    /* #140's crop has to happen somewhere, and the corners with it. */
+    /* The crop below has to happen somewhere, and the corners with it. */
     overflow: hidden;
+  }
+
+  /* ---- the recording -------------------------------------------------------
+     THE CLIP AND THE CONTENT BOX ARE NOT THE SAME SHAPE, and this is where that
+     is settled rather than hidden. The recording is 1440x900 — `record`'s
+     viewport, and the geometry the censored list was assembled at, so it is not
+     free to move: change it and the clip passes over photographs nobody
+     reviewed. They cannot be reconciled by choosing better numbers either: the
+     render's Frame is 1430 wide by 735 including its titlebar, and 1430 of a 1.6
+     recording is 894 tall before a titlebar is added at all. Something is
+     cropped, and it is the recording rather than the window the whole design is
+     drawn around.
+
+     `cover` FROM THE TOP EDGE, so all of the cut comes off the bottom. That
+     keeps the vault's own toolbar hard against the top of the box — the row that
+     says this is an application and not a wall of pictures, and where a real
+     window's content starts. It is also the only direction that is SAFE:
+     cropping the bottom of the viewport can only ever remove what the clip
+     shows, and what the clip shows is what the censored list was signed against.
+
+     NO `background` OF ITS OWN. The Frame's fill is behind it, and it is what
+     shows between the poster arriving and the first decoded frame — and all that
+     shows in a browser that plays neither. */
+  .projects-panel__clip {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: 50% 0;
+  }
+
+  /* ---- the Plinth ----------------------------------------------------------
+     THE MARBLE THE FRAME STANDS ON. One rendered plate, drawn in a box whose
+     aspect ratio design/plinth/build-slab.py frames its camera on — which is why
+     `background-size` is `100% 100%` and not `cover`: stretching the plate to
+     this box is an identity, and `cover` would crop off either the far edge or
+     the block's base. It is the one declaration in here that would be a bug if
+     it were the usual thing.
+
+     IN FLOW, DIRECTLY UNDER THE FRAME, and not absolutely placed at `top: 100%`
+     — which draws the same picture and is wrong. The slab is part of the
+     composition's height: the fit constant that scales the whole drawing onto
+     one screen counts it, and an out-of-flow slab would leave the stage exactly
+     as tall as the Frame while the constant said otherwise, so the composition
+     would come out short by the Plinth's depth at every window size. In flow,
+     the stage measures what the arithmetic assumes.
+
+     IT ALSO STARTS ABOVE THE FRAME'S FOOT. The Frame stands ON the top face
+     rather than at the back of it, so the box runs `back` higher than the
+     contact line and is pulled up by exactly that. The negative margin is what
+     keeps the arithmetic honest: the box is `depth + back` tall and costs the
+     flow only `depth`. Nothing above this rule moves.
+
+     AND IT RUNS OFF THE PAGE ON THE RIGHT. The Frame is flush with the
+     composition's right edge, so a slab that overhangs it symmetrically has
+     nowhere on that side to do it. The window is NOT moved left to make room —
+     that was tried, and it puts the Frame over the engineering points, 42px of
+     live text behind it at 1600x1000. The Frame is allowed to occlude the
+     subheading, which is set to be occluded; it is not allowed to eat the list.
+     So the stone runs off the edge instead, which is what the render does — its
+     own slab is cut off by the picture — and `overflow-x: clip` on the Section
+     is what makes that safe. */
+  .projects-panel__plinth {
+    position: relative;
+    /* Under the Frame, which carries `z-index: 1`. The marble behind the contact
+       line is drawn and then covered by the window standing on it, which is what
+       leaves it visible only at the two ends, where there is no window. */
+    z-index: 0;
+    /* Both a percentage of the STAGE, and both derived rather than written: the
+       Frame's own left edge, less one overhang, and the Frame plus two. The
+       Frame's margin above reads the same box, so the slab is symmetric about
+       the window by construction. */
+    margin-left: calc(
+      (
+          var(--projects-panel-column) + var(--projects-panel-gutter-share) -
+            var(--projects-panel-plinth-overhang) * var(--projects-panel-frame-share)
+        ) / var(--projects-panel-stage-share) * 100%
+    );
+    width: calc(
+      (1 + 2 * var(--projects-panel-plinth-overhang)) * var(--projects-panel-frame-share) /
+        var(--projects-panel-stage-share) * 100%
+    );
+    margin-top: calc(-1 * var(--projects-panel-plinth-back));
+    height: calc(var(--projects-panel-plinth-depth) + var(--projects-panel-plinth-back));
+    background-image: var(--projects-panel-plinth-src);
+    background-size: 100% 100%;
+    background-repeat: no-repeat;
+  }
+
+  /* ---- the reflection ------------------------------------------------------
+     THE FRAME AGAIN, UPSIDE DOWN AND LYING IN THE STONE. Not a picture of it:
+     the copy inside this box is a live clone of the real Frame — the same
+     chrome, the same titlebar, and a second recording playing in step with the
+     first — so what the stone shows moves with what the window shows. A still
+     reflection under a moving clip reads as broken immediately. mirror.ts makes
+     the copy and says why it is made in script rather than written out twice.
+
+     THIS BOX IS THE TOP FACE AND NOTHING ELSE. It starts at the contact line, it
+     is exactly `face` deep, and it clips — so no part of the reflection can
+     reach the front face, which is a vertical surface and reflects nothing. Its
+     left and right edges are the FRAME's: the overhanging marble at each end has
+     no window above it to reflect.
+
+     A MIRROR IMAGE IS THE SAME SIZE AS THE THING IT REFLECTS, and getting that
+     wrong is what made this read as a smear rather than as a reflection. A
+     planar mirror puts the image as far behind the surface as the object is in
+     front of it, so object and image subtend the same angle at the eye and
+     project to the same height. The visible strip is short because the SLAB is
+     short, not because the image is. The share was read as a SCALE and applied
+     as one, and the whole window was squashed into the thirteen pixels that are
+     actually the bottom 3.28% of it seen life-size — thirty rows of chrome, tabs
+     and clip averaged into every row of stone, a grey band that changes when the
+     clip changes. The transform is therefore a plain fold and the clipping is
+     this box's own `overflow`.
+
+     NO `filter: blur()`. Roughness 0.07 at 82 degrees of incidence spreads a
+     reflection by something on the order of a pixel over a strip thirteen deep,
+     which is not worth a full-size gaussian over a moving picture on every frame
+     — the per-frame cost this Section is built without. What the eye reads as
+     softness here is the contact shadow above and the stone's own veining
+     showing through, and both are free.
+
+     PLAIN ALPHA AND NOT `screen`, which is the physically-minded choice and the
+     wrong one. A reflection adds light, so `screen` is what a reflection does —
+     but the plate underneath already carries the light: its top face ramps from
+     31 to 80 because that is what the render measures there, and that ramp IS
+     the room reflected in the stone. Screening a second reflection over it puts
+     the light in twice. Alpha also gets the dark half right for free: a black
+     tab bar reflected in polished stone makes the stone DARKER than the marble
+     beside it, which `screen` cannot do. */
+  .projects-panel__mirror {
+    position: absolute;
+    /* THE CONTACT LINE, which is not this box's top edge: the slab runs `back`
+       behind the Frame, and the marble back there has a window standing on it
+       rather than a reflection lying in it. */
+    top: var(--projects-panel-plinth-back);
+    /* The Frame's own edges, on a slab centred about it. One expression for
+       both, which is the shortest way to say that the window sits in the middle
+       of the stone it stands on. */
+    left: calc(
+      var(--projects-panel-plinth-overhang) /
+        (1 + 2 * var(--projects-panel-plinth-overhang)) * 100%
+    );
+    right: calc(
+      var(--projects-panel-plinth-overhang) /
+        (1 + 2 * var(--projects-panel-plinth-overhang)) * 100%
+    );
+    height: var(--projects-panel-plinth-face);
+    overflow: hidden;
+    /* A stacking context, so the copy's own `z-index: 1` — it is a Frame and
+       carries the class's — stays inside this box instead of competing with the
+       real Frame's. */
+    isolation: isolate;
+    opacity: var(--projects-panel-mirror-strength);
+    -webkit-mask-image: linear-gradient(
+      to bottom,
+      #000,
+      rgb(0 0 0 / var(--projects-panel-mirror-far))
+    );
+    mask-image: linear-gradient(
+      to bottom,
+      #000,
+      rgb(0 0 0 / var(--projects-panel-mirror-far))
+    );
+    pointer-events: none;
+  }
+
+  /* The copy. `bottom: 100%` stands it directly ON the contact line — its own
+     bottom edge against this box's top — and the transform folds it back down
+     through that same line: a fold about the bottom origin sends a point h above
+     the origin to h below it, which is the whole of what a mirror is, at the one
+     magnification a mirror has.
+
+     NOTHING CLIPS IT HERE. The flipped copy is the Frame's full height and hangs
+     the whole way down through the slab and out of the composition; what cuts it
+     to the marble available is `overflow: hidden` on the box above, which is the
+     front arris of the slab and is exactly the thing that cuts it in life.
+
+     `left` AND `right` AND NO WIDTH, so the copy is the mirror's width, which is
+     the Frame's. A width stated here would be the same number written twice. */
+  .projects-panel__mirror > .projects-panel__frame {
+    position: absolute;
+    bottom: 100%;
+    left: 0;
+    right: 0;
+    transform: scaleY(-1);
+    transform-origin: bottom;
+  }
+
+  /* ---- the contact shadow --------------------------------------------------
+     WHERE THE WINDOW MEETS THE STONE, and its absence was the loudest thing in
+     the composition. Everything else on this Plinth is a question of how the
+     marble is lit or how the reflection is shaped; this is the cue the eye uses
+     to decide whether two objects are TOUCHING at all, and there was none — the
+     Frame ended, the marble began, and nothing happened at the join, which is
+     what a sticker on a photograph looks like.
+
+     IT SITS ON THE TOP FACE AND STOPS THERE. Not a soft shadow spilling down the
+     front, which is the reflex and is wrong: the front face is a vertical plane
+     over a Frame width away from the foot in the depth direction, and the light
+     that fills it is in FRONT of the block, so the window occludes none of it.
+     The height is therefore the top face exactly, and the two ends are the same
+     pair the reflection uses.
+
+     ABOVE THE REFLECTION, which is a decision rather than an accident of order.
+     An occlusion strictly darkens the diffuse term and leaves the specular
+     alone, so a purist would paint it under. But what is occluded here is also
+     most of the room the stone had to reflect in the first place, and a
+     reflection that stays at full strength right up to the foot of the thing
+     casting it looks lit from underneath. */
+  .projects-panel__plinth::after {
+    content: '';
+    position: absolute;
+    left: calc(
+      var(--projects-panel-plinth-overhang) /
+        (1 + 2 * var(--projects-panel-plinth-overhang)) * 100%
+    );
+    right: calc(
+      var(--projects-panel-plinth-overhang) /
+        (1 + 2 * var(--projects-panel-plinth-overhang)) * 100%
+    );
+    top: var(--projects-panel-plinth-back);
+    height: var(--projects-panel-plinth-face);
+    /* Over the reflection, which carries no z-index of its own. Still under the
+       Frame, which is a sibling of the whole Plinth at z-index 1, so the half of
+       this that falls under the window is covered by it — as it should be. */
+    z-index: 1;
+    pointer-events: none;
+    background: linear-gradient(
+      to bottom,
+      var(--projects-panel-contact-near) 0%,
+      var(--projects-panel-contact-mid) var(--projects-panel-contact-mid-at),
+      var(--projects-panel-contact-far) var(--projects-panel-contact-far-at),
+      rgb(0 0 0 / 0) 100%
+    );
+    -webkit-mask-image: linear-gradient(
+      to right,
+      transparent 0,
+      #000 var(--projects-panel-contact-ends),
+      #000 calc(100% - var(--projects-panel-contact-ends)),
+      transparent 100%
+    );
+    mask-image: linear-gradient(
+      to right,
+      transparent 0,
+      #000 var(--projects-panel-contact-ends),
+      #000 calc(100% - var(--projects-panel-contact-ends)),
+      transparent 100%
+    );
   }
 
   /* ---- one column, outside the band the composition is fitted to ---------
@@ -799,6 +1146,22 @@ const selected = (project: { href?: string }) => project.href === `#${here}`;
          given. The side margin is the page's horizontal one, not --inset, which
          is a vertical measure and reads as an error used across. */
       --projects-panel-w: calc(100vw - 2 * var(--projects-panel-side));
+      /* The Frame is the whole column here rather than nine twelfths of it, so
+         the Plinth's three depths — the only things that read this — are shares
+         of the stack's own width.
+
+         `100vw` INCLUDES A CLASSIC SCROLLBAR AND THIS BOX DOES NOT, which is the
+         one length in this block that is not exact. The stacked page always
+         scrolls, so on a platform that reserves a gutter the width above runs
+         about 15px over the box it describes. Nothing lays out FROM it — the
+         column is `1fr` and the Plinth's width below is a real percentage — so
+         the drawing is the right shape either way. What drifts is the three
+         depths, by 15 in 1055 at the top of this block's range. The fix is not a
+         smaller number: it is the stage becoming an inline-size container so the
+         slab can be stated in `cqw`, and it cannot be — layout containment makes
+         the stage a stacking context, which is the one thing the Frame's
+         occlusion of the subheading cannot survive. */
+      --projects-panel-frame-w: var(--projects-panel-w);
       --projects-panel-masthead-size: var(--projects-panel-masthead-stacked);
       --projects-panel-sub-size: var(--projects-panel-sub-stacked);
       --projects-panel-copy-size: var(--projects-panel-copy-stacked);
@@ -868,8 +1231,23 @@ const selected = (project: { href?: string }) => project.href === `#${here}`;
       margin-top: 0;
     }
 
+    /* The Frame is the whole column, so both of the numbers that placed it
+       inside the stage go — and the Plinth's two, which were shares of a stage
+       ten columns wide, become shares of a stage that is the Frame.
+
+       BOTH ARE ONE NUMBER EACH AND BOTH ARE THE RENDER'S. Restating only the
+       Frame's margin and leaving the slab's alone is the failure worth naming:
+       it overhangs by 9.47% on the left while ending 1.6% SHORT of the Frame's
+       right foot, which is a window standing off the end of its own plinth — and
+       the reflection inherits the error exactly, since it is placed off the
+       slab. */
     .projects-panel__stage > .projects-panel__frame {
       margin-left: 0;
+    }
+
+    .projects-panel__plinth {
+      margin-left: calc(-1 * var(--projects-panel-plinth-overhang) * 100%);
+      width: calc((1 + 2 * var(--projects-panel-plinth-overhang)) * 100%);
     }
 
     /* A multiple of the points' own size, and it has to beat the 0.35em inside
@@ -883,7 +1261,17 @@ const selected = (project: { href?: string }) => project.href === `#${here}`;
 </style>
 
 <script>
+  import { mountClip } from './clip';
   import { mountGlass } from './glass';
+  import { mountMirror } from './mirror';
 
+  /* THE ORDER IS THE DESIGN AND NOT THE ALPHABET. The reflection is made first,
+     so the two that follow each treat the copy as one more Frame on the page
+     instead of as a special case: `mountClip` hands sources to every recording
+     it finds, and `mountGlass` blits the material it rendered onto every
+     titlebar. Reverse it and both would have to go looking for a reflection they
+     know nothing about. mirror.ts says the same thing from the other end. */
+  mountMirror();
+  mountClip();
   mountGlass();
 </script>
