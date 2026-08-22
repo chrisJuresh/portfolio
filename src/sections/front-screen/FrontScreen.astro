@@ -435,7 +435,11 @@ const EAGER = 2;
      Outside the band this is a stated height — the live page's own clamp, with
      its floor and its ceiling. Inside the band it is the budget's remainder. */
   .front-screen__strip {
-    height: var(--front-screen-strip);
+    height: clamp(
+      var(--front-screen-strip-min),
+      var(--front-screen-strip-fill),
+      var(--front-screen-strip-max)
+    );
   }
 
   /* THE BLEED AND THE INSET ARE THE SAME PERCENTAGE OF THE SAME BOX, which is
@@ -539,7 +543,12 @@ const EAGER = 2;
      The two numbers are registered as <number>s so they can be transitioned. An
      unregistered custom property is a token stream to the cascade and
      interpolates in no useful way — the ramp below simply would not run, and
-     nothing would say so. */
+     nothing would say so.
+
+     THESE TWO REGISTRATIONS ARE DOCUMENT-GLOBAL and are the one global thing this
+     Section writes. Astro scopes selectors and `@property` has none, so scoping
+     does not reach it and `check-source.mjs` does not catch it. NOTES.md records
+     why it is here rather than in the Kernel and what makes it safe. */
   @property --front-screen-fade-l {
     syntax: '<number>';
     inherits: false;
@@ -929,12 +938,9 @@ const EAGER = 2;
     /* `min-height: 0` and NOT `--front-screen-strip-min`, which is the floor the
        stated height outside this band carries. Inside the band the slot is the
        one-screen budget's remainder, and a floor on the remainder is a budget
-       that can overflow — which on the live page is paid for by scaling the
-       page's whole type ladder down to make room. That scale is a rule on
-       `:root`, so it cannot be written here, and re-deriving it needs the
-       measured constant this Section exists to have deleted. NOTES.md says what
-       it would take; until then the photograph gets smaller on a short screen
-       rather than the composition overflowing. */
+       that can overflow. What pays for the floor in here instead is the Kernel
+       scaling the page's type — `src/kernel/faces.css` — so the remainder comes
+       out larger than the floor rather than being held above it. NOTES.md. */
     .front-screen__col > .front-screen__strip {
       flex: 1 1 auto;
       height: auto;

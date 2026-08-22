@@ -14,14 +14,12 @@
   --front-screen-space-s: 1rem;
   --front-screen-space-m: 1.618rem;
 
-  /* The photographs' slot. Outside the one-screen band it is this stated
-     height; inside it, it is the budget's remainder with `-strip-max` as the
-     ceiling and no floor — the component's `<style>` says why. */
-  --front-screen-strip: clamp(
-    var(--front-screen-strip-min),
-    var(--front-screen-strip-fill),
-    var(--front-screen-strip-max)
-  );
+  /* The photographs' slot: how short a photograph may be, what it would rather
+     be, and how tall it may get. Outside the one-screen band the component clamps
+     the three into a stated height; inside it, the slot is the budget's remainder
+     with `-strip-max` as the ceiling and no floor — the component says why. The
+     clamp is a relationship and is therefore the composition's rather than
+     Editor's; these three are the values. */
   --front-screen-strip-min: 15rem;
   --front-screen-strip-fill: 40vh;
   --front-screen-strip-max: 24rem;

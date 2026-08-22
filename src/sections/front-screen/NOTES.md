@@ -204,6 +204,19 @@ Tokens and are written by the Timeline:
   the slot's ceiling so the strip is dressed before any script runs, and the
   Timeline corrects it.
 
+**The two `@property` registrations are the one global thing this Section
+writes**, and that is a decision rather than an oversight. A custom property has
+to be registered to be transitioned, and registration is document-scoped by
+specification — Astro scopes selectors and an at-rule has none, so scoping does
+not reach it and `check-source.mjs` does not catch it either. The Kernel is where
+a Section's global would normally go, and `ground.css`'s `@property --turn` is the
+precedent; these two are here instead because they are this Section's numbers and
+the Kernel owning a Section's Tokens is the worse trade. What makes it safe is the
+naming rule the Editor's file is already held to: `--front-screen-…`, so nothing
+registered here can collide with, or inherit into, anything that is not this
+Section's. A Section wanting to register a property it does NOT own wants it in
+the Kernel.
+
 `--front-screen-fade-bend` is in the component's `<style>` and not in `tokens.css`
 because it is a derivation and not a taste: a colour-stop hint at a quarter of the
 ramp's width is the linear case, and 0.25 + 0.1036 is the power-of-two ease that

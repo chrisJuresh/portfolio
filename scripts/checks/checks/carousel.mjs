@@ -17,17 +17,16 @@ import { DESK, open, settle } from '../lib/page.mjs';
  * the strip's position would go on scrubbing and go on looking right while every
  * moment a Check or the Editor asked it for was a fiction.
  *
- * NOTHING IN HERE IS A NUMBER SOMEBODY CHOSE. Every assertion is a relationship:
- * the position at a moment against the position the Timeline's own progress
- * predicts, the first photograph against the column's left edge, the strip's
- * height against the floor the Section's own Token states, the dissolve's two
- * ends against its middle. Every Token can be set to anything without failing
- * this — the floor to zero, the dissolve's span to nothing, the settle to an
- * hour.
+ * NO ASSERTION IN HERE COMPARES AGAINST A NUMBER SOMEBODY CHOSE. Every one is a
+ * relationship: the position at a moment against the position the Timeline's own
+ * progress predicts, the first photograph against the column's left edge, the
+ * strip's height against the floor the Section's own Token states, the dissolve's
+ * two ends against its middle. Every Token can be set to anything without failing
+ * this — the floor to zero, the dissolve's span to nothing, the settle to an hour.
+ *
+ * The two WINDOWS are chosen, as every Check's are, and `SHORT` says why it is
+ * the one it is.
  */
-
-/** Inside the one-screen band, and the window the rest of the suite uses. */
-const GROWING = DESK;
 
 /**
  * The band's SHORT corner, and it is the one window this Check adds.
@@ -155,7 +154,7 @@ export const check = {
     const notes = [];
 
     // ---- the composition, at both ends of the band ------------------------
-    for (const viewport of [GROWING, SHORT]) {
+    for (const viewport of [DESK, SHORT]) {
       const { context, page } = await open(browser, origin, { viewport });
       try {
         failures.push(...(await settle(page)));
@@ -172,7 +171,7 @@ export const check = {
       }
     }
 
-    const { context, page } = await open(browser, origin, { viewport: GROWING });
+    const { context, page } = await open(browser, origin, { viewport: DESK });
     try {
       failures.push(...(await settle(page)));
       const read = await readStrip(page);

@@ -27,18 +27,51 @@ than a convenience.
 ## The page's own type size
 
 `faces.css` sets the root `font-size` inside the Front Screen's one-screen band,
-and that is the one thing in the Kernel whose reason lives in a Section. It is
-here because `:root` is here — a Section may not write a global rule, and the
-root's font-size is the most global rule there is — and the file itself carries the
-argument: the Front Screen's photograph strip is the one-screen budget's
-remainder, and at the reader's own size that remainder falls below a photograph on
-a short screen. The type gives way instead.
+and it is the one thing in the Kernel whose reason lives in a Section.
 
-Two consequences for anyone changing it. `--type-scale` is a measured number, not
-a derived one, and what keeps it honest is `carousel` asserting the strip clears
-its own floor at both ends of the band. And its media query is a SECOND COPY of
-the band in `src/sections/front-screen/FrontScreen.astro` — the two are one idea,
-and the same Check is what catches them drifting apart.
+Composing a Section to exactly one screen turns "does it fit" from a yes-or-no
+question into one with a SIZE for an answer: everything in a Section's ladder is
+in rem, so one number moves all of it at once, and whatever the composition cannot
+spend goes to whichever box is the remainder. The Front Screen's photograph strip
+is that box, and without this it collapses on a short screen — 27px of photograph
+at 1440x700 against 194px at 1440x900. A photograph that small is not a photograph
+of anything, which is the author's judgement and is recorded on the live page as a
+15rem floor under the strip. A floor on a remainder is a budget that can overflow,
+so the floor is paid for by the type giving way instead.
+
+**It is here because `:root` is here, and for no other reason.** A Section may not
+write a global rule and the root's font-size is the most global rule there is, so
+this is the decision this file's opening paragraph says adding one has to be.
+
+**`--type-scale` is measured, not derived.** The live sheet solves its own budget
+symbolically, which it can do because it holds `--cv-static` — one measured
+constant standing for "everything on the page that is not the strip", with a
+comment asking whoever changes the ladder to re-measure it. `/next` deliberately
+has no such constant, because layout does that arithmetic there, so there is
+nothing here to solve for. This number came from measuring the composition at the
+band's corners, and what keeps it honest is `carousel` asserting the strip clears
+the Section's own floor Token at both ends of the band. It lands within about 1% of
+the live page's own `0.782019 / 48.32`, which is a sanity signal rather than where
+it came from — the two compositions differ in what the cut word is fitted to. The
+1% is deliberate slack: a value landing exactly on the floor leaves the Check a
+pixel of margin, and slack is free here, because asking for a smaller rem than the
+budget allows only makes the remainder larger. Only a rem that is too BIG costs
+anything.
+
+**It is measured at one width.** The cut word is fitted to the gutter on `/next`,
+so the budget carries a width term and a 2560x700 window asks for a smaller rem
+than this. That costs a smaller photograph and never an overflowing page — the
+strip is the remainder, so it absorbs the difference — and it is the same extreme
+the live sheet names and composes for rather than optimises for.
+
+**Two things it is NOT, and both are worth stating rather than discovering.** Its
+media query is a second copy of the band in
+`src/sections/front-screen/FrontScreen.astro`; the two are one idea and the same
+Check is what catches them drifting apart. And it is a number the author will
+plausibly want to drag while it is not a **Token** and cannot be one: CONTEXT.md
+makes a Token a *Section's* named number and this is the Kernel's, so ADR 0004's
+surface cannot reach it. Whichever ticket gives the Kernel a Token story should
+take this with it.
 
 ## Two things a Check has to know
 
