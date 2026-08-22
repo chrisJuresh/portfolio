@@ -20,8 +20,10 @@ Agent-facing notes for this repo. Human-facing docs are in [README.md](README.md
 > takes the worktree, the local branch and the remote branch down, verifying each.
 > The Checks failing is the only gate, and `.githooks/pre-commit` runs them on
 > every commit too. `/feature-start` and `/feature-land` are the same two commands
-> as skills. **`scripts/feature/NOTES.md` is the authority**;
-> `docs/friction-log.md` is where a refusal goes.
+> as skills. If a lock survives the teardown, `land` says so and
+> `pnpm feature clean <name>` finishes it — the work is already landed by then.
+> **`scripts/feature/NOTES.md` is the authority**; `docs/friction-log.md` is where
+> a refusal goes.
 >
 > Everything below is still true about *worktrees* — one per change, and nothing
 > is ever written in the main checkout — and no longer true about pull requests,

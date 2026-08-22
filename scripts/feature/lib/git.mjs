@@ -81,6 +81,19 @@ export function git(sh, cwd) {
       return ok('worktree', 'add', path, '-b', branch, base);
     },
 
+    /**
+     * How many commits `ref` has that `base` does not.
+     *
+     * Asked of a named ref rather than of HEAD, because `feature clean` runs from
+     * the main checkout — which is standing on `development`, so a HEAD-relative
+     * answer would be about the wrong branch and would always be 0. That is the
+     * shape of mistake that makes a safety check pass vacuously.
+     */
+    aheadOf(base, ref) {
+      const counted = out('rev-list', '--count', `${base}..${ref}`);
+      return Number(counted) || 0;
+    },
+
     /** How many commits this branch is ahead of, and behind, the given ref. */
     againstBase(base) {
       const counted = out('rev-list', '--left-right', '--count', `${base}...HEAD`);

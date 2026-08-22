@@ -34,6 +34,22 @@ knowing:
 
 A refusal means nothing landed and nothing was taken down. Fix and run it again.
 
+## If it landed but the worktree survived
+
+It says so, and it says which of the three things is still standing. The usual one
+is the worktree: a build and a headless browser have just run in it, and something
+under `node_modules` is still holding a file. The work is on `development` either
+way, so this is tidying and not a failure:
+
+```bash
+pnpm feature clean <name>
+```
+
+Run that from the main checkout. Call `ExitWorktree` (`action: "keep"`) first — a
+session standing in the directory is itself something holding it. `clean` refuses
+if the worktree has uncommitted changes or the branch has commits `development`
+does not, so it cannot be pointed at live work by mistake.
+
 ## After it succeeds
 
 Two things it deliberately leaves to you:

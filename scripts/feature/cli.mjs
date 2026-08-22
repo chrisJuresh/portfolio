@@ -17,6 +17,7 @@
  * scripts/feature/NOTES.md is the rest of it.
  */
 
+import { clean } from './clean.mjs';
 import { land } from './land.mjs';
 import { session } from './lib/exec.mjs';
 import { git as gitOf } from './lib/git.mjs';
@@ -36,6 +37,10 @@ const USAGE = `feature — the change lifecycle (ADR 0005)
                                worktree, the branch and the remote branch down
       --no-check               skip the Checks. There is then no gate at all,
                                and it says so on every run.
+
+  pnpm feature clean <name>    finish a teardown something was holding — the work
+                               is already on development by then. It REFUSES if
+                               the branch has anything development does not.
 
   pnpm feature list            what is in flight, and on which port
   pnpm feature hooks           point this clone's git at .githooks, so the
@@ -84,6 +89,12 @@ try {
     }
   } else if (verb === 'land') {
     code = await land({ sh, cwd, check: !flag('no-check') });
+  } else if (verb === 'clean') {
+    if (words.length === 0) {
+      console.error(`feature: \`feature clean\` needs the name of a feature.\n\n${USAGE}`);
+    } else {
+      code = await clean({ sh, cwd, name: words.join(' ') });
+    }
   } else if (verb === 'list') {
     code = list(sh, cwd);
   } else if (verb === 'hooks') {

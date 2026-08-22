@@ -6,18 +6,14 @@
  * pulling `development` and looking at the running site. The Checks failing is
  * the only gate, and it is a real one — nothing below runs if they do not pass.
  *
- * The teardown VERIFIES itself rather than trusting three exit codes. A merged
- * branch left standing is a live push target after the thing that reviewed it
- * has closed, and `gh` is documented in this repository as reporting a deletion
- * it did not perform. So each of the three is asked about afterwards, and a
- * `feature land` that could not finish says which one is still there.
+ * The teardown itself is `lib/takedown.mjs`, shared with `feature clean` — which
+ * exists because a file lock can survive the moment `land` wants to delete the
+ * worktree, and the work has landed by then either way. Landing and taking down
+ * are two things, and only the first of them is irreversible.
  */
 
-import { existsSync } from 'node:fs';
 import { git as gitOf } from './lib/git.mjs';
-import { stop as stopServer } from './lib/server.mjs';
-import { load, lock, remove, save, statePath } from './lib/state.mjs';
-import { removeTree } from './lib/teardown.mjs';
+import { takeDown } from './lib/takedown.mjs';
 import { whichFailed } from './lib/verdict.mjs';
 
 const BASE = 'origin/development';
@@ -145,120 +141,11 @@ export async function land({ sh, cwd, check }) {
   );
 
   // ---------------------------------------------------------------- teardown
-  return await teardown({ sh, common, root, worktree, branch });
-}
-
-/**
- * Take down the server, the worktree, the local branch and the remote branch —
- * then ask about each of them.
- */
-async function teardown({ sh, common, root, worktree, branch }) {
-  const state = statePath(common);
-  const recorded = load(state).features.find((held) => held.branch === branch) ?? null;
-
-  console.log('\nfeature: taking it down…');
-
-  if (recorded?.port) {
-    const stopped = await stopServer({
-      pid: recorded.pid,
-      listener: recorded.listener ?? null,
-      port: recorded.port,
-    });
-    console.log(`  server     ${stopped.stopped ? 'stopped' : 'STILL RUNNING'} — ${stopped.said}`);
-    if (!stopped.stopped) {
-      // Named as friction because this is what makes the worktree removal below
-      // fail on Windows, and the fix is a change to something rather than a
-      // retry.
-      sh.note({
-        what: `stopping the dev server for ${branch} (pid ${recorded.pid}, port ${recorded.port})`,
-        gate: 'a process that would not stop',
-        refusal: stopped.said,
-        fix: 'find what is still listening on that port and stop it — a worktree cannot be removed while a process inside it holds a file',
-      });
-    }
-  }
-
-  // Nothing can remove the tree it is standing in, and on Windows nothing can
-  // remove a directory a process has as its working directory either.
-  process.chdir(root);
-  const mainGit = gitOf(sh, root);
-
-  // Git first, so its own bookkeeping is what happens in the ordinary case.
-  const listed = mainGit.worktrees().map((tree) => tree.path);
-  const removed = mainGit.removeWorktree(worktree);
-  let byHand = null;
-  if (removed.status !== 0) {
-    // And then by hand, because git fails on this every time a feature was
-    // installed: pnpm's store links go past 250 characters and Git for Windows
-    // gives up on them with `Directory not empty`, having already deleted
-    // everything shallower. teardown.mjs carries the guard and the measurements.
-    byHand = removeTree({ path: worktree, root, listed });
-  }
-  mainGit.pruneWorktrees();
-
-  const deleted = mainGit.deleteBranch(branch);
-  const remoteWas = mainGit.hasRemoteBranch(branch);
-  const unpushed = remoteWas ? mainGit.deleteRemoteBranch(branch) : { status: 0, stdout: '' };
-  mainGit.fetchPrune();
-
-  // ------------------------------------------------------------- verification
-  const left = [];
-  const stillThere = mainGit.hasWorktree(worktree) || existsSync(worktree);
-  const stillLocal = mainGit.hasLocalBranch(branch);
-  const stillRemote = mainGit.hasRemoteBranch(branch);
-
-  // How it went, not just whether: git failing and the by-hand removal saving it
-  // is the ordinary path here, and a line that hid that would make the next
-  // person think git had done it.
-  const how = byHand === null ? '' : byHand.removed ? ' (git could not; removed by hand)' : ` — ${byHand.why}`;
-  console.log(`  worktree   ${stillThere ? `STILL THERE at ${worktree}` : `gone${how}`}`);
-  console.log(`  branch     ${stillLocal ? `STILL THERE — ${branch}` : 'gone'}`);
+  const code = await takeDown({ sh, common, root, worktree, branch });
   console.log(
-    `  remote     ${stillRemote ? `STILL THERE — origin/${branch}` : remoteWas ? 'gone' : 'there was none'}`,
+    code === 0
+      ? '\nfeature: landed, and nothing is left standing.'
+      : '\nfeature: the work LANDED. What is listed above did not come down.',
   );
-
-  if (stillThere) {
-    // Not `git worktree remove --force`: that is what just failed, and on a
-    // tree with node_modules in it it will fail again. Deleting the directory
-    // and pruning is what works.
-    left.push(
-      `the worktree at ${worktree} — delete that directory, then \`git worktree prune\``,
-    );
-  }
-  if (stillLocal) left.push(`the branch ${branch} — \`git branch -D ${branch}\``);
-  if (stillRemote) {
-    left.push(
-      `origin/${branch} — \`git push origin --delete ${branch}\`, or ` +
-        `\`gh api -X DELETE repos/chrisJuresh/portfolio/git/refs/heads/${branch}\``,
-    );
-  }
-
-  // The record goes whatever happened: leaving a feature listed as in flight
-  // would hold its port against every later `feature start`.
-  const held = await lock(state);
-  try {
-    save(state, remove(load(state), branch));
-  } finally {
-    held.release();
-  }
-
-  if (left.length > 0) {
-    // The worktree removal failing is expected and handled, so it is only worth
-    // printing when the by-hand removal did not save it.
-    if (removed.status !== 0 && byHand?.removed !== true) {
-      console.error(`  ${(removed.stderr || removed.stdout).trim()}`);
-    }
-    for (const failure of [deleted, unpushed]) {
-      if (failure.status !== 0) console.error(`  ${(failure.stderr || failure.stdout).trim()}`);
-    }
-    console.error(
-      `\nfeature: the work LANDED, but ${left.length} thing(s) are still standing:\n` +
-        left.map((one) => `    ${one}`).join('\n'),
-    );
-    return 1;
-  }
-
-  console.log('\nfeature: landed, and nothing is left standing.');
-  return 0;
+  return code;
 }
-

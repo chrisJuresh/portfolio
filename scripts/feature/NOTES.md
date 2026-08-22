@@ -19,8 +19,48 @@ The Checks failing is the only gate. There is no reviewer: the author validates 
 pulling `development` and looking at the running site, which is what makes a pull
 request here a round trip that produces nothing.
 
-`pnpm feature list` says what is in flight and on which port. `pnpm feature hooks`
-points a fresh clone's git at `.githooks`, which `start` does anyway.
+```bash
+pnpm feature clean <name>
+```
+
+`clean` finishes a teardown that something was holding — see **Landing and taking
+down are two things** below. `pnpm feature list` says what is in flight and on
+which port. `pnpm feature hooks` points a fresh clone's git at `.githooks`, which
+`start` does anyway.
+
+## Landing and taking down are two things
+
+Only the first is irreversible, and treating them as one cost the first version
+of this its own teardown. `land` pushes, and then tries to delete a worktree in
+which a build and a headless browser have just run — and something under
+`node_modules` is sometimes still holding a file when it does. Measured: a
+removal that failed succeeded about a minute later with nothing done in between.
+
+So `removeTree` waits (twelve attempts a second apart), and when a wait ends the
+work is already on `development` and the only thing left is a directory.
+`pnpm feature clean <name>` finishes it, and `land` names that command in its own
+report rather than leaving the author to work out what is safe to delete.
+
+**What makes `clean` safe to have at all is that it refuses unless the work
+landed**, and it asks that twice, in this order:
+
+1. **Uncommitted changes in the worktree** — refuse, and name them. This comes
+   first because the commit count below is 0 for a worktree that has never
+   committed anything, which is exactly what one somebody is working in looks
+   like. The first version checked only commits, said "the work landed" about a
+   tree full of live edits, and went on to try to delete it. Nothing was lost, and
+   only because node's removal happened to fail on the top-level directory before
+   it recursed.
+2. **Commits `origin/development` does not have** — refuse, and say to land it. A
+   branch that is already gone needs no check: `land` deletes it only after
+   verifying the push.
+
+`clean` is also the answer for an **orphan** — a directory git no longer lists at
+all. `git worktree remove` unregisters the worktree and *then* deletes the files,
+so one that dies on a locked file leaves the whole tree on disk with nothing
+pointing at it. `deletable` takes an `orphan` flag for exactly that, and the flag
+is an exception to "git lists it" and to nothing else: the main checkout and
+anything outside `.claude/worktrees/` stay refused however it is set.
 
 ## Why it is `pnpm feature`, and also two skills
 
@@ -31,10 +71,32 @@ true` keeps even their descriptions out of context until they are invoked. Neith
 form has logic in it — both run `scripts/feature/cli.mjs` — because a rule that
 lives in two places is a rule that disagrees with itself within a month.
 
-## The five things that were wrong on the first attempt
+## The things that were wrong on the first attempt
 
 Each cost a wrong diagnosis while this was being built. None of them is visible
-from reading the code that replaced it.
+from reading the code that replaced it. The last three are the reason the
+teardown is a shared module with a guard rather than a few lines at the end of
+`land`.
+
+**"Contains modified or untracked files" is not "could not delete".** The two
+git failures look identical from an exit code and mean opposite things: one is
+git unable to finish a removal that should happen, the other is git protecting
+somebody's work. The by-hand removal ran over the top of the second, on a
+worktree full of live uncommitted edits. Nothing was lost, and only because
+node's `rmSync` happened to fail on the top-level `rmdir` before it recursed.
+`refusedForDirt` is the whole difference and is tested on its own.
+
+**A flag that is not named in a destructuring is a flag that is silently
+dropped.** `deletable` took `orphan`, `clean` passed it, and `removeTree` in
+between did not list it in its parameters — so the one case the flag exists for
+was the one case that did not work, and `feature clean` refused every orphan with
+"git does not list it as a worktree". Invisible from either end.
+
+**A safety check against HEAD is a safety check that passes vacuously.**
+`feature clean` runs from the main checkout, which is standing on `development`,
+so "is this branch ahead of `origin/development`" had to be asked about a *named*
+ref. `aheadOf(base, ref)` exists rather than reusing `againstBase`, which is
+HEAD-relative and would have answered 0 every time.
 
 **`git worktree remove` fails on every worktree this repository produces.**
 `start` installs, and pnpm's store links land at paths like
@@ -158,10 +220,13 @@ verifies it is gone, so pushing one by hand costs nothing later.
 
 `cli.mjs` dispatches and owns the exit codes — 0 done, 1 refused or failed, 2
 could not start, matching the Check runner's so a script can tell the three apart.
-`start.mjs` and `land.mjs` are the two commands. Everything under `lib/` is either
-a pure function with a test beside it — `names`, `ports`, `parse`, `friction`,
-`refusal`, `verdict`, `teardown`, `listeners`, `state` — or the one thin impure
-layer over it, `exec.mjs` and `git.mjs`.
+`start.mjs`, `land.mjs` and `clean.mjs` are the commands, and `lib/takedown.mjs`
+is the teardown the last two share — one implementation on purpose, because the
+verification is the valuable half and two copies of it would drift into one that
+verified less. Everything else under `lib/` is either a pure function with a test
+beside it — `names`, `ports`, `parse`, `friction`, `refusal`, `verdict`,
+`teardown`, `listeners`, `state` — or the one thin impure layer over it,
+`exec.mjs` and `git.mjs`.
 
 Put the decision in a pure function and the syscall in the layer under it. That
 split is why the four bugs above were findable at all: every one of them was in
