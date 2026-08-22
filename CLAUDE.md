@@ -198,3 +198,10 @@ exists yet, and that is the intended state: they are written lazily, by
 `/domain-modeling`, when a term or a decision actually gets resolved. Proceed
 silently when they are absent rather than flagging it. See
 `docs/agents/domain.md`.
+
+### Claude Code and Opus 5
+
+`docs/agents/claude-code-and-opus-5.md` is what the official docs say about
+running this repository well, with sources: which effort level suits which class
+of work, what invalidates the prompt cache, and why **one worktree per change
+means no two changes ever share a cache**. Read it before changing `.claude/`.
