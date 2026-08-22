@@ -87,3 +87,39 @@ leave the worktree by construction. Each refusal costs one call and one rewrite
 into separate commands, and there were three in one session. Worth fixing upstream
 before the count grows; until then, one command per call, and a pipe counts as
 complexity.
+
+## 2026-08-22T13:52:05.256Z — `pnpm feature land`
+
+**Attempted**: `git worktree remove C:/Users/Chris/Desktop/portfolio/.claude/worktrees/feature-lifecycle`
+
+**Refused by**: a file lock held by the operating system
+
+```
+error: failed to delete 'C:/Users/Chris/Desktop/portfolio/.claude/worktrees/feature-lifecycle': Directory not empty
+```
+
+**Fix**: run `pnpm feature clean <name>` from the main checkout once whatever is standing in the worktree has let go — `ExitWorktree` first if it is this session. The work has already landed by this point; only the directory is left. Both of these were exactly that, and `feature clean` was written in response to them.
+
+## 2026-08-22T14:03:41.033Z — `pnpm feature land`
+
+**Attempted**: `git worktree remove C:/Users/Chris/Desktop/portfolio/.claude/worktrees/finish-the-teardown`
+
+**Refused by**: a file lock held by the operating system
+
+```
+error: failed to delete 'C:/Users/Chris/Desktop/portfolio/.claude/worktrees/finish-the-teardown': Directory not empty
+```
+
+**Fix**: run `pnpm feature clean <name>` from the main checkout once whatever is standing in the worktree has let go — `ExitWorktree` first if it is this session. The work has already landed by this point; only the directory is left. Both of these were exactly that, and `feature clean` was written in response to them.
+
+## 2026-08-22T14:04:27.355Z — `pnpm feature land`
+
+**Attempted**: `git worktree remove C:/Users/Chris/Desktop/portfolio/.claude/worktrees/front-screen`
+
+**Refused by**: a file lock held by the operating system
+
+```
+error: failed to delete 'C:/Users/Chris/Desktop/portfolio/.claude/worktrees/front-screen': Directory not empty
+```
+
+**Fix**: run `pnpm feature clean <name>` from the main checkout once whatever is standing in the worktree has let go — `ExitWorktree` first if it is this session. The work has already landed by this point; only the directory is left. Both of these were exactly that, and `feature clean` was written in response to them.

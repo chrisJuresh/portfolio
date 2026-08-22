@@ -26,7 +26,12 @@ const KINDS = [
   {
     match: /being used by another process|EBUSY|EPERM|ETXTBSY|Directory not empty|ENOTEMPTY/i,
     gate: 'a file lock held by the operating system',
-    fix: 'find what is holding the path — the dev server, an editor, or a shell standing in the worktree — and stop it before the teardown; `feature land` stops the server it started, but not one started by hand',
+    // The commonest entry in the log by some distance, and it is usually not a
+    // problem: the work has landed, and what is holding the directory — the
+    // session standing in it, or something the build left behind — lets go. So
+    // the fix names the command that finishes the job rather than sending anybody
+    // hunting for a process.
+    fix: 'run `pnpm feature clean <name>` from the main checkout once whatever is standing in the worktree has let go — `ExitWorktree` first if it is this session. The work has already landed by this point; only the directory is left. A dev server started by hand is the one holder `feature land` does not stop itself.',
   },
   {
     match: /Permission denied|EACCES|Access is denied|Operation not permitted/i,

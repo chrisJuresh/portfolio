@@ -29,7 +29,11 @@ test('a file the operating system will not let go of is named as that', () => {
     "fatal: 'C:/repo/.claude/worktrees/a': the process cannot access the file because it is being used by another process",
   );
   assert.match(found.gate, /lock|operating system/i);
-  assert.match(found.fix, /holding/i);
+  // The fix names the command that finishes the job. This is the commonest entry
+  // in the log by some distance and it is usually not a problem — the work has
+  // landed and only the directory is left — so an entry that sent the reader
+  // hunting for a process would be the wrong advice most of the time.
+  assert.match(found.fix, /feature clean/);
 });
 
 test('EBUSY and EPERM are the same thing arriving from node', () => {
