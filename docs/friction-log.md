@@ -210,3 +210,63 @@ deciding the guard is right. And **a document that has to quote the phrase is
 written with the Write tool, not through a shell heredoc** — the mark is written
 off shell command strings, so the tool that writes files directly never trips it.
 That is why the phrase survives in `CLAUDE.md` and in the Contract at all.
+
+## 2026-08-23 — the spent mark lands on the session's worktree, not the one that merged
+
+**Attempted**: ending a session that had merged #158 correctly. One worktree
+(`dev-static-html`), one branch, one PR — merged, and fully taken down before the
+session tried to stop: tree removed, local branch deleted, remote branch deleted.
+
+**Refused by**: the **vendored worktree guard** (`Stop`), naming a *different*
+worktree — the session's own harness-created one, which held no commits, no branch
+that was ever pushed, and no PR:
+
+```
+This worktree recorded a merge (gh pr merge was run from this worktree) and is
+still standing. […] a merged branch is a push target after the PR that reviewed
+it has closed
+```
+
+It then asked for that tree to be removed and for `claude/objective-lalande-bc6509`
+— a branch with no pull request anywhere — to be deleted locally and on the remote.
+
+This is the entry above's root cause with a second face. There the mark was written
+for a merge that never ran; here the merge really ran, but from a worktree the
+command had `cd`-ed into, and the mark was filed against the **session's** tree
+instead. `spent_marker()` keys the file by the leaf name of the tree the hook
+resolves from the session, and `mark_spent()` records the branch from the same
+place — so one merge run in another worktree marks the wrong tree AND stamps it
+with a branch that never had a PR. `gh pr list --head
+claude/objective-lalande-bc6509 --state all` returned `[]`, which settled it, and
+`.git/claude-worktree-gate/spent/mattpocock-skills-70-4de7f1.json` was deleted.
+
+Two costs, not one. The Stop refusal is the visible one; the quiet one is that the
+tree the session actually merged from was *not* marked, so had it been left
+standing nothing would have reported it.
+
+**Fix**: **upstream, in `chrisJuresh/skills`.** The same parse the entry above asks
+for should also yield *where* the merge ran — the guard has the command string, so
+a leading `cd`/`Set-Location` into another worktree is recoverable from it, and the
+mark belongs on that tree. Failing that, key the mark off the branch the PR
+actually merged rather than off whatever branch the session's tree is sitting on; a
+mark whose branch has no PR at all is one the guard could decline to write.
+
+Until it lands: a session that works in a worktree **by path** rather than through
+`EnterWorktree` should expect its own tree to be marked at merge time, and settle
+it with the check `CLAUDE.md` already names before taking anything down.
+
+**A second denial, from writing this entry.** `docs/friction-log.md` lives in the
+main checkout by design — `scripts/feature/lib/friction.mjs` says so, because
+`feature land` deletes the worktree it runs in and entries are meant to land as an
+uncommitted change in the one tree that outlives every feature. But the guard
+denies tool edits there, so the script may write that file and an agent may not:
+
+```
+Denied: file edits are not made in the main checkout.
+```
+
+Not obviously wrong — the guard's rule is the rule — but worth naming, because the
+log's own header invites appending and the only route that works is a worktree and
+a PR, which is what this entry took. If entries are meant to arrive uncommitted,
+the guard needs an exemption for this one path; if they are meant to arrive as PRs,
+`friction.mjs`'s comment is describing a path agents cannot use.
