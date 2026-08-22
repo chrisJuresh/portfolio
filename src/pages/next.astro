@@ -1,0 +1,20 @@
+---
+// /next — the Portfolio's new foundation, deployed and visible and not yet
+// replacing anything. `/portfolio` goes on being the live document until the
+// ticket that flips this route; keeping both up is what lets every porting ticket
+// land without taking the site down.
+import Stub from '../sections/stub/Stub.astro';
+import Shell from '../shell/Shell.astro';
+---
+
+<Shell
+  title="Christian Juresh"
+  description="Software engineer in London."
+>
+  <Fragment slot="head">
+    {/* Nothing here is the live document yet, and nothing should index it as
+        though it were. */}
+    <meta name="robots" content="noindex" />
+  </Fragment>
+  <Stub />
+</Shell>

@@ -1,0 +1,94 @@
+/* The corner pictures: the plate bottom-left, the car top-right, the eye
+   bottom-right. Three baked photographs run in behind the opening composition,
+   scaled to --fold so they grow together, and graded in the file rather than by
+   a filter here.
+
+   Every number below was tuned by eye on a 1920x1080 frame; src/kernel/NOTES.md
+   says what each one is measured from and which of them the ladder in corners.ts
+   has to agree with. --*-src is set by corners.ts, once it knows how many real
+   pixels this display will draw each picture in. `none` until then, so a dead
+   network leaves the page up rather than blank. */
+
+:root {
+  --plate-opacity: 0.12;
+  --plate-fill: 0.863;
+  --plate-y: 0px;
+  --plate-band: calc(var(--fold) - var(--plate-y));
+  --plate-w: min(calc(var(--plate-fill) * var(--plate-band)), 2400px);
+  --plate-x: 0px;
+  --plate-crop: 0.15;
+  --plate-src: none;
+
+  --car-opacity: 0.135;
+  --car-fill: 0.497;
+  --car-w: min(calc(var(--car-fill) * var(--fold)), 2400px);
+  --car-x: -60px;
+  --car-y: -78px;
+  --car-crop: 0;
+  --car-src: none;
+
+  --eye-opacity: 0.131;
+  --eye-fill: 0.582;
+  --eye-w: min(calc(var(--eye-fill) * var(--fold)), 2400px);
+  --eye-x: 0px;
+  --eye-y: 0px;
+  --eye-crop: 0;
+  --eye-src: none;
+}
+
+:root[data-theme='dark'] {
+  --plate-opacity: 0.17;
+  --car-opacity: 0.17;
+  --eye-opacity: 0.17;
+}
+
+/* One band, the height of the first screen, at the top of the document. No
+   positioned ancestor on purpose: absolute against the initial containing block
+   puts this at the document origin rather than at the Shell's. */
+.kernel-corners {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: var(--fold);
+  z-index: -1;
+  pointer-events: none;
+  contain: paint;
+}
+
+.kernel-corners > * {
+  position: absolute;
+  left: 0;
+  right: 0;
+  background-repeat: no-repeat;
+}
+
+/* Width from the token, height auto from the file's own aspect — so the aspect
+   ratio lives in the file and the picture is never squeezed into a band it is
+   the wrong shape for. It overflows and the box does the cutting. */
+.kernel-corners .plate {
+  top: 0;
+  height: var(--plate-band);
+  background-image: var(--plate-src);
+  background-position: left var(--plate-x) bottom calc(-1 * var(--plate-crop) * var(--plate-w));
+  background-size: var(--plate-w) auto;
+  opacity: var(--plate-opacity);
+}
+
+.kernel-corners .car {
+  top: 0;
+  height: var(--fold);
+  background-image: var(--car-src);
+  background-position: right var(--car-x) top calc(var(--car-y) - var(--car-crop) * var(--car-w));
+  background-size: var(--car-w) auto;
+  opacity: var(--car-opacity);
+}
+
+.kernel-corners .eye {
+  top: 0;
+  height: calc(var(--fold) - var(--eye-y));
+  background-image: var(--eye-src);
+  background-position: right var(--eye-x) bottom calc(-1 * var(--eye-crop) * var(--eye-w));
+  background-size: var(--eye-w) auto;
+  opacity: var(--eye-opacity);
+}

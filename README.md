@@ -1,7 +1,13 @@
 # chrisj.uk
 
 Personal site and photo portfolio — hand-written HTML, CSS and vanilla
-JavaScript. No framework, no build step, no dependencies.
+JavaScript.
+
+The live pages are still exactly that: no framework, no build step, no
+dependencies. Beside them, at `/next`, is the foundation the Portfolio is being
+rebuilt on — Astro and TypeScript, every version pinned exactly, nothing updated
+on a schedule. It replaces nothing yet. See
+[The build, and /next](#the-build-and-next).
 
 **Live:** [chrisj.uk](https://chrisj.uk)
 
@@ -230,10 +236,41 @@ kept out of deploys by `.vercelignore`. `fonts/README.md` records why Computer
 Modern lost, measured rather than asserted. Neither folder affects a visitor; see
 [`design/README.md`](design/README.md) and [`fonts/README.md`](fonts/README.md).
 
+## The build, and /next
+
+Everything above is served exactly as it sits in the tree. `/next` is not:
+
+```bash
+pnpm install --frozen-lockfile
+pnpm build       # checks, typechecks, builds, assembles dist/
+pnpm preview     # serves that dist/ — of the tree it is run from
+pnpm dev         # Astro's dev server, with the static site beside it
+```
+
+`/next` is one document made of Sections. A **Section** owns its markup, styles,
+Tokens, Content, Timeline and assets in one folder and may read the **Kernel** and
+nothing else; the **Shell** carries the head, the Kernel and the Sections' mount
+points and no composition of its own. Two of those boundaries are the build's
+rather than a convention: a Section's styles are scoped by the compiler, and its
+Content is typed, so renaming a field stops the build instead of blanking the
+page. `pnpm check:sections` is the rest of it.
+
+Nothing at `/next` is live yet — it carries a stub Section, and `/portfolio` goes
+on being the document until the ticket that flips the route.
+
+Reading order for the detail: `CONTEXT.md` for the vocabulary, `docs/adr/` for the
+decisions, then `src/kernel/NOTES.md` and `src/sections/stub/NOTES.md`.
+
 ## Deployment
 
-The site deploys to Vercel as a plain static site — no framework preset,
-no build command. `vercel.json` enables clean URLs, 308s `/projects` to
+The live pages deploy to Vercel as a plain static site. The build adds one step
+rather than replacing that: `pnpm build` writes Astro's output to `dist/` and
+copies `index.html`, `portfolio/`, `projects/` and `fonts/` in beside it, byte for
+byte, and `dist/` is what gets served. A collision between the two halves fails
+the build rather than being merged, which is what keeps `/next` from ever landing
+on a path `/portfolio` answers on.
+
+`vercel.json` enables clean URLs, 308s `/projects` to
 `/portfolio#projects`, and sets a
 day-long `Cache-Control` (with a week of `stale-while-revalidate`) on the
 image directory, plus a year-long `immutable` one on `/fonts` and another on

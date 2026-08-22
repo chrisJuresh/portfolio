@@ -1,12 +1,22 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "cleanUrls": true,
+  "framework": null,
+  "installCommand": "pnpm install --frozen-lockfile",
+  "buildCommand": "pnpm build",
+  "outputDirectory": "dist",
   "redirects": [
     { "source": "/projects", "destination": "/portfolio#projects", "permanent": true },
     { "source": "/projects/", "destination": "/portfolio#projects", "permanent": true },
     { "source": "/projects/index.html", "destination": "/portfolio#projects", "permanent": true }
   ],
   "headers": [
+    {
+      "source": "/_astro/(.*)",
+      "headers": [
+        { "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }
+      ]
+    },
     {
       "source": "/portfolio/img/(.*)",
       "headers": [

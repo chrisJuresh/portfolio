@@ -22,10 +22,14 @@
 Thumbs.db
 *.log
 
-# node / vercel local artifacts (not used, kept out just in case)
+# the build's inputs and outputs. dist/ is what the deployment serves and is
+# assembled from scratch on every build — Astro's output plus the static tree
+# copied in beside it — so a committed copy could only ever be stale. .astro/ is
+# the types Astro generates for `astro check` and is regenerated the same way.
 node_modules/
 .vercel/
 dist/
+.astro/
 
 # where design/tools/check-capture-contract.py stages the profile repo's capture
 # script and the screenshots it takes. It lives beside design/tools/node_modules

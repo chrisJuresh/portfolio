@@ -1,0 +1,62 @@
+/* The page's ground, and the Turn across it.
+   Two independent things share this file because they share their endpoints:
+   the THEME picks which paper the page is printed on, and the TURN carries that
+   paper into dark as the reader scrolls. Neither belongs to a Section. */
+
+/* --turn is registered so it is a number rather than a token, which is what
+   lets GSAP interpolate it and what makes the calc() below legal. Without this
+   the custom property is an untyped string and the page just does not turn. */
+@property --turn {
+  syntax: '<number>';
+  inherits: true;
+  initial-value: 0;
+}
+
+:root {
+  /* the theme's two endpoints */
+  --paper: #fff;
+  --paper-ink: #1a1917;
+  --paper-ink-soft: #46433d;
+
+  /* where the Turn arrives, in both themes */
+  --dark: #0e0d0c;
+  --dark-ink: #eaeaea;
+  --dark-ink-soft: #b8b8b8;
+
+  /* 0 is paper, 1 is dark. The Turn's Timeline owns this and nothing else does. */
+  --turn: 0;
+
+  --ground: color-mix(in oklab, var(--paper), var(--dark) calc(var(--turn) * 100%));
+  --ink: color-mix(in oklab, var(--paper-ink), var(--dark-ink) calc(var(--turn) * 100%));
+  --ink-soft: color-mix(in oklab, var(--paper-ink-soft), var(--dark-ink-soft) calc(var(--turn) * 100%));
+
+  /* The datum every Kernel picture is measured against: the bottom of the page
+     before any scrolling. svh and not vh — the difference is a phone. */
+  --fold: 100svh;
+}
+
+:root[data-theme='dark'] {
+  --paper: #131211;
+  --paper-ink: #eaeaea;
+  --paper-ink-soft: #b8b8b8;
+}
+
+html {
+  background: var(--ground);
+  color: var(--ink);
+  color-scheme: light dark;
+}
+
+body {
+  margin: 0;
+  font-family: var(--face-body);
+  background: transparent;
+}
+
+/* A reader who has asked for less motion gets the Turn as a state rather than a
+   crossing: the Kernel still sets --turn, the Timeline just does not scrub. */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    scroll-behavior: auto;
+  }
+}

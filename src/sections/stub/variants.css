@@ -1,0 +1,23 @@
+/* The stub Section's Variants: complete alternative directions, all present at
+   once and selected by attribute, so several can be rendered side by side and
+   chosen by eye. A Variant restates Tokens and nothing else — same rule as
+   tokens.css, same guard.
+
+   Two here, and they exist so the attribute is real rather than described. The
+   Section renders under whichever Variant [data-variant] names; with none named
+   it renders the direction in tokens.css. */
+
+[data-variant='tight'] .stub {
+  --stub-measure: 26rem;
+  --stub-gap: 0.75rem;
+  --stub-heading-size: clamp(2rem, 6vmin, 4rem);
+  --stub-lead-leading: 1.4;
+}
+
+[data-variant='airy'] .stub {
+  --stub-measure: 42rem;
+  --stub-inset: 14vmin;
+  --stub-gap: 2.25rem;
+  --stub-heading-size: clamp(3rem, 12vmin, 8rem);
+  --stub-lead-leading: 1.75;
+}

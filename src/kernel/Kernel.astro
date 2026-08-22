@@ -1,0 +1,26 @@
+---
+// The Kernel: faces, the theme and the Turn, the Effect Stack, the corner
+// pictures and the Section loader. The only thing permitted to cross a Section
+// boundary, and the only place in the tree allowed to write a global selector.
+//
+// This is every part of it that has to stand BEFORE the Sections — the
+// stylesheets, the corner pictures that run in behind the opening composition,
+// and the client boot. The Effect Stack is the one part the Shell places itself,
+// at the foot of the body, because the layers have to paint over the Sections and
+// the one thing that would let them do it from up here is a z-index, which
+// breaks their blending outright. See effect-stack.css.
+import './faces.css';
+import './ground.css';
+import './corners.css';
+---
+
+{/* The corner pictures. Empty, decorative, and sized entirely in CSS. */}
+<div class="kernel-corners" aria-hidden="true">
+  <div class="plate"></div>
+  <div class="car"></div>
+  <div class="eye"></div>
+</div>
+
+<script>
+  import './kernel';
+</script>
