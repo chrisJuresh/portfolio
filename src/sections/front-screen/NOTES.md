@@ -180,25 +180,68 @@ to turn to.
 
 The masthead's `Projects` and the Cut Title are one destination and it is Content:
 `#projects`, a fragment on this same document, which is what they are on the live
-page. Nothing on `/next` carries that id until #138 lands the Panel, so both are
-inert — a click leaves the reader where they are, which is the honest state for a
-link to a Section that does not exist. It is one Content field, so that ticket
-changes one line. Nothing fetches a fragment, so no Check sees it.
+page. The Panel is on the page now, but it carries no such id — its `data-section`
+is its handle — so both links are inert: a click leaves the reader where they are.
+It is one Content field and one id, so connecting them is a line each, and it
+belongs with the landing below rather than on its own.
 
-## The Turn crosses at this Section's foot, and is not marked here
+## The Turn is marked nowhere, and that is the answer rather than an omission
 
-`data-turn` is not on the Front Screen, and this is the trap. The Kernel spans the
-crossing from the marked element's `top top` to its `bottom bottom`; on a Section
-that is exactly one screen tall those are **the same scroll position**. GSAP does
-not report that as an error — it reports 0 at the top of the page and 1 one pixel
-later, so the page still opens on paper and the only symptom is that the Turn is a
-flip rather than a crossing. Nobody would notice which.
+`data-turn` is not on this Section, and the reason is a trap worth stating. The
+Kernel spans the crossing from the marked element's `top top` to its `bottom
+bottom`; on a Section exactly one screen tall those are **the same scroll
+position**. GSAP does not report that as an error — it reports 0 at the top of the
+page and 1 one pixel later, so the page still opens on paper and the only symptom
+is that the Turn is a flip rather than a crossing. Nobody would notice which. The
+Panel is one screen too, so marking either of them is the same mistake.
 
-So the crossing spans the Section *after* this one, which begins at this one's
-foot, and the Cut Title crosses with everything else because it reads `--ink` and
-`--ink` is itself the mix. When the Panel lands, `data-turn` goes on it. The Check
-asserts the crossing takes at least half a screen of scroll, which is what
-actually breaks.
+With nothing marked the Kernel spans the document's whole scroll, and with two
+Sections of one screen each **that scroll IS the page turn** — which is exactly
+the crossing the live page makes. So the right answer is the Kernel's own default.
+It stops being the right answer the moment a third Section lands, and what says so
+is a Check: the crossing has to take at least half a screen of scroll, and it
+would still take a screen's worth spread over three.
+
+The Cut Title crosses with everything else because it reads `--ink`, and `--ink`
+is itself the mix.
+
+## What the landing still needs, and why it is not here
+
+On the live page the word PROJECTS is drawn twice and appears once. In the
+one-screen band the Cut Title stands in the Panel masthead's slot and
+`.panel-masthead` goes `visibility: hidden` underneath it — the word does not fly
+down, the Section comes up to meet it. Outside that band the live page shows both,
+which is worth knowing before reading the current state as a bug.
+
+**That landing is not built, and it is blocked on a decision rather than on work.**
+The word has to be cut to the Panel masthead's cap, and #138 left that as a named
+relationship — `--projects-panel-masthead-cap` — with the observation that a
+Section may read the Kernel and nothing else, so the two Sections cannot read each
+other's Tokens. How that length crosses is a Kernel question (most likely the
+Kernel owning the measure both Sections share, since CONTEXT.md makes the Kernel
+the only thing permitted to cross a Section boundary), and #138 declined to guess
+at it. Guessing here would be the same mistake one file later.
+
+So until it is decided, this Section does the one thing that keeps the page honest
+rather than half-landed: **the cut stays clipped by its own box inside the band as
+well as outside it.** One line in the band's block, marked. Letting the tail hang
+past the fold is only right when the masthead it lands on has gone invisible; with
+that masthead still drawing the same word, a hanging tail would cross it. Clipped,
+the two words stand apart — which is the live page's own behaviour at every size
+outside the band.
+
+What the landing needs, when it is taken:
+
+- the cross-Section cap length, however the Kernel comes to publish it
+- the two snap ports and `scroll-snap-type: y mandatory`, which are global rules
+  and therefore the Kernel's or the Shell's, not a Section's
+- `.projects-panel__masthead` going `visibility: hidden` in the band, and keeping
+  its box: it is row one's stated height, it is what the subheading's second line
+  hangs off, and it is the slot the word occupies
+- the Panel's two re-solved numbers, which #138 derived and parked: the Rail
+  standing in the page's own margin, and the fit constant at 0.5603
+- deleting the line in the band's block that keeps the clip on
+- `#projects` becoming an id something answers
 
 ## Keeping the paper and the halftone off the type
 
@@ -253,6 +296,10 @@ following the theme however it changed, including the system preference the Kern
 follows until the reader has chosen.
 
 ## What is deliberately not here yet
+
+**The landing** — see the section above. It is the one piece of this Section's
+composition that is not here, and it is blocked on a Kernel decision #138
+deliberately did not make.
 
 **The photo carousel — #137.** Its slot is held open and is what the one-screen
 budget spends its remainder on, so that ticket is a drop-in rather than a

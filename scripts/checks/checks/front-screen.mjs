@@ -183,14 +183,23 @@ function composed(read) {
         'The one-screen budget has overflowed.',
     );
   }
-  // Read off the DRAWING and not off the box that shows it, so that
-  // --front-screen-cut-show may legitimately be set anywhere from 0 to 1: at 1 the
-  // whole cap slab stands above the fold and it is the J's descender that hangs
-  // below, and this still holds.
-  if (!(read.cut.top <= read.viewport.height + 1 && read.word.bottom > read.viewport.height)) {
+  // The cut lands ON the page's own bottom edge, which is what makes it read as
+  // a cut rather than as a word with an odd baseline. Stated as the slice's
+  // bottom and not as the drawing's, so --front-screen-cut-show may legitimately
+  // be set anywhere from 0 to 1 — the slice is a different height at each, and
+  // its foot is on the fold at all of them.
+  if (Math.abs(read.cut.bottom - read.viewport.height) > 1) {
     failures.push(
-      `at ${where} the Cut Title is not cut by the fold: the slice starts at ${read.cut.top.toFixed(1)}px ` +
-        `and the drawing ends at ${read.word.bottom.toFixed(1)}px`,
+      `at ${where} the Cut Title's slice ends at ${read.cut.bottom.toFixed(1)}px rather than on the page's own ` +
+        'bottom edge — the cut has come off the fold',
+    );
+  }
+  // ...and there is more word below it than the slice shows, or nothing has been
+  // cut off at all.
+  if (!(read.word.bottom > read.cut.bottom)) {
+    failures.push(
+      `at ${where} the whole drawing fits inside the slice: it ends at ${read.word.bottom.toFixed(1)}px ` +
+        `against the slice's ${read.cut.bottom.toFixed(1)}px, so nothing is being cut`,
     );
   }
   if (read.section.left < -1 || read.section.right > read.viewport.width + 1) {

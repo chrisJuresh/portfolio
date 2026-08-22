@@ -558,12 +558,16 @@ const listings = [content.work, content.education];
       margin: 0;
     }
 
-    /* The clip comes off: the bottom of the window does the cutting here, and the
-       J's hook and the baseline are meant to be seen on the screen below. The BOX
-       stays the cap slab so the hover hairline still lands on the baseline. */
+    /* THE CLIP STAYS ON, and on the live page it does not. There, the bottom of
+       the window does the cutting and the rest of the letters stand on the screen
+       below — because the Panel's own masthead goes invisible underneath them and
+       the tail IS that masthead. That landing is not built yet (NOTES.md says
+       what it needs), and until it is, letting the tail hang would put it across
+       a masthead that is still drawing the same word. So the word is cut by its
+       own box here as well, which is what the live page does at every size
+       outside this band. One line to delete when the landing lands. */
     .front-screen__cut > a {
-      overflow: visible;
-      height: var(--front-screen-cut-slab);
+      height: calc(var(--front-screen-cut-show) * var(--front-screen-cut-slab));
     }
   }
 </style>
