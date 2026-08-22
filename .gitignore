@@ -26,6 +26,14 @@ dist/
 # the fetched script has to sit under the install rather than anywhere tidier.
 # Nothing in here is committed — the capture is fetched fresh every run, on
 # purpose, so a vendored copy cannot drift against a repo we do not own.
+#
+# This one rule already covers `runs/`, which grows a directory per --label and
+# is the largest regenerable thing in the repository. Do not add a second rule
+# for it. It is worth deleting by hand when it gets big: `grep -r` and any other
+# tool that does not read .gitignore walks every run directory in it, and a
+# --ref run used to leave a whole extracted copy of the tree behind, so a search
+# came back with two hits for everything. The script now takes that copy down
+# itself; the PNGs under `runs/<label>/out/` are what is meant to survive a run.
 design/tools/.capture-contract/
 
 # the confirmed photographs baked down to a handful of blocks each, by
@@ -44,7 +52,10 @@ design/censor/mosaic/
 design/record/runs/
 design/record/published/
 
-# python bytecode — design/og/build-og.py is the only Python here
+# python bytecode. Most of design/ is Python generators, and any of them that
+# imports a sibling module writes one of these next to it — design/effects/,
+# design/plate/ and design/plinth/ each grow one. Unanchored, so it matches at
+# every depth.
 __pycache__/
 *.pyc
 
