@@ -129,8 +129,7 @@ design/plinth/maps/
 # that still has this directory. Keep anything you care about elsewhere too.
 design/plinth/sources/
 
-# per-candidate plinth shots from 
-ender.mjs --stones. 1.4MB each and
+# per-candidate plinth shots from render.mjs --stones. 1.4MB each and
 # regenerable in a minute; what is committed is the contact sheet built from
 # them, design/shots/plinth-stones.jpg.
 design/shots/*__stone-*.png

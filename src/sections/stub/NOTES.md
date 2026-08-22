@@ -77,16 +77,23 @@ for the same reason read the other way: a sibling of a Section's root is another
 Section. Custom properties still have to be named `--stub-…`, since one that is
 not inherits down into everything below it.
 
-**`:root` is load-bearing, not a habit.** Astro narrows every compound of a
-scoped rule, and with the default strategy that narrowing is a bare attribute
-selector worth (0,1,0) *per compound* — so a scoped rule's weight grows with the
-length of its selector and a Variant would win or lose depending on how long the
-composition's selector happened to be. `.stub__points li` was an exact tie,
-settled by whichever stylesheet the bundler emitted second. `astro.config.mjs`
-therefore sets `scopedStyleStrategy: 'where'`, which selects identically and
-weighs nothing; `:root[data-variant='…']` in front of the same selector then
-outranks it by (0,2,0), always. Change either half and Variants start losing
-silently.
+**`:root` is load-bearing, not a habit** — and so is one line of
+`astro.config.mjs`. Astro narrows every compound of a scoped rule, and with the
+default strategy that narrowing is a bare attribute selector worth (0,1,0) *per
+compound*, so a scoped rule's weight grows with the length of its selector and a
+Variant would win or lose depending on how long the composition's selector
+happened to be. `.stub__points li` was an exact tie, settled by whichever
+stylesheet the bundler emitted second. `scopedStyleStrategy: 'where'` wraps the
+same narrowing in `:where()`, which selects identically and weighs nothing, so
+`:root[data-variant='…']` in front of the same selector outranks it by (0,2,0),
+always.
+
+Both halves are checked, and that is the point rather than a detail:
+`check-source.mjs` reads `astro.config.mjs` and fails the build if the strategy is
+missing or is anything else. This paragraph used to end "change either half and
+Variants start losing silently", which is exactly the wish ADR 0006 says to
+replace with an assertion — the failure it warns about is a Variant that renders
+as though it had not been selected, which nobody would notice.
 
 **Nothing imports `variants.css`.** That is the whole of "a Variant that is not
 selected costs the shipped page nothing" — the file is not part of the build, so
@@ -105,7 +112,21 @@ Section, in both themes, captioned with what it declares.
 
 A Variant is judged and then **kept**, whichever way the judgement went. The
 losers are the record of what was compared, which is why there are five in
-`variants.css` and one direction in `tokens.css`.
+`variants.css` and one direction in `tokens.css`. They are five different *kinds*
+of direction rather than five sizes of one: `tight` and `airy` restate Tokens,
+`split` changes the layout, `plate` changes the surface, and `drift` is invisible
+at rest — it is a distance `timeline.ts` moves through, so it and the unselected
+direction are the same picture at progress 0 and different ones everywhere else.
+The sheet marks a render that came back identical, and `--progress` is how you
+look at that one.
+
+**A Variant may not centre anything vertically here, and the reason is the
+Section's own height.** The stub is 240svh, because its Timeline is scrubbed by
+its own scroll, and the sheet shoots the first screen — which is what a reader
+arriving at the Section sees. So `align-items: center` on `.stub` centres the
+composition in that whole box and out of the frame, and the picture comes back as
+empty paper. `split`'s first draft did exactly that. The sheet was right; the
+Variant was wrong.
 
 **The imports** are checked too: a Section may import from its own folder and
 from `src/kernel/`, and nothing else. That is CONTEXT.md's "a Section may read
