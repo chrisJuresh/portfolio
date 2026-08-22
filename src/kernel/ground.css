@@ -41,10 +41,25 @@
   --paper-ink-soft: #b8b8b8;
 }
 
+/* THE DOCUMENT NEVER SCROLLS SIDEWAYS, and this is the Kernel's rule rather
+   than a Section's because it is a fact about the document.
+
+   A Section may bleed to the page's own edges — the Front Screen's photograph
+   strip does, so a photograph can travel off both of them — and the only length
+   that reaches those edges from inside a centred column is `vw`, which counts a
+   vertical scrollbar the layout does not get. So a full-bleed box overshoots by
+   half a scrollbar at each end, and without this the page grows a horizontal
+   scrollbar it has nothing to show in.
+
+   `clip` and not `hidden`: `hidden` would make the document a scroll container
+   on the axis it is applied to, and a stray focus inside a clipped box can then
+   scroll it. `clip` cannot be scrolled at all, by a script or by anything else,
+   which is the whole of what is wanted. */
 html {
   background: var(--ground);
   color: var(--ink);
   color-scheme: light dark;
+  overflow-x: clip;
 }
 
 body {

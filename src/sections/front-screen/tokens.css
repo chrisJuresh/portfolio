@@ -14,8 +14,95 @@
   --front-screen-space-s: 1rem;
   --front-screen-space-m: 1.618rem;
 
-  --front-screen-strip: 0rem;
+  /* The photographs' slot. Outside the one-screen band it is this stated
+     height; inside it, it is the budget's remainder with `-strip-max` as the
+     ceiling and no floor — the component's `<style>` says why. */
+  --front-screen-strip: clamp(
+    var(--front-screen-strip-min),
+    var(--front-screen-strip-fill),
+    var(--front-screen-strip-max)
+  );
+  --front-screen-strip-min: 15rem;
+  --front-screen-strip-fill: 40vh;
   --front-screen-strip-max: 24rem;
+
+  /* ---- the photographs ---------------------------------------------------
+     The strip's HEIGHT is not here: it is the one-screen budget's remainder,
+     which layout works out (NOTES.md). What is here is the shape of a
+     photograph, the air between two of them, and the strip's own scrollbar. */
+  /* A number and not `3 / 4`, so the same Token can multiply a length: it is the
+     photograph's width per unit of its height, and 0.75 is a 3:4 portrait. */
+  --front-screen-slide-ratio: 0.75;
+  --front-screen-slide-gap: 0.5rem;
+
+  --front-screen-bar-h: 2px;
+  --front-screen-bar-thumb-min: 1.5rem;
+
+  /* ---- the edge dissolve, in four numbers at each of its two ends ---------
+     The strip dissolves at both ends, and everything about the shape of that
+     dissolve is these eight numbers. They are the author's and were arrived at
+     with a slider on each; NOTES.md says what each one does and why there are
+     two sets rather than one.
+
+     AT REST — a photograph standing at the text edge with the dissolve reaching
+     in over its neighbour. This is the state the page loads in, and, mirrored,
+     the state the strip comes to rest in at the far end.
+       -x     where the dissolve begins, in photo-widths measured from the text
+              edge. 0 begins it exactly where the column of text ends; negative
+              pulls it left, in over the photographs.
+       -span  how far it travels before the paper is solid, in photo-widths.
+       -max   how far it gets. Below 1 the photographs never quite disappear.
+       -ease  the shape of the ramp. 0 is a straight line, 1 is flat at both
+              ends and steepest in the middle, negative inverts that. */
+  --front-screen-fade-x: -0.5;
+  --front-screen-fade-span: 0.51;
+  --front-screen-fade-max: 1;
+  --front-screen-fade-ease: 0;
+
+  /* ...and the same four ONE PHOTOGRAPH ALONG, which is where the Timeline has
+     travelled to by the time the dissolve is fully open. */
+  --front-screen-fade-x-open: 0;
+  --front-screen-fade-span-open: 0.5;
+  --front-screen-fade-max-open: 1;
+  --front-screen-fade-ease-open: 0;
+
+  /* How long each end takes to come on and off. Three, because the strip asks
+     for the dissolve back at three different urgencies: it arrives at its own
+     pace, it is withdrawn quickly when the reader asks to see the photographs,
+     and it is taken off in between when the strip is too short to wear it. */
+  --front-screen-fade-ramp: 1s;
+  --front-screen-fade-reveal: 0.4s;
+  --front-screen-fade-cramped: 0.6s;
+
+  /* ---- how the strip moves ------------------------------------------------
+     Read by timeline.ts and by nothing in CSS, which is the one case where a
+     Token is not a CSS value — it is the feel of the roulette wheel, and the
+     author judges it by spinning it. NOTES.md derives the closed form these
+     four describe.
+       -friction   what is left of the speed after one sixtieth of a second
+       -coast-min  the speed a spin is treated as finished at, in px per frame
+       -coast-max  the fastest a flick may leave the strip travelling
+       -fling      how far a released drag carries past the drag itself */
+  --front-screen-friction: 0.95;
+  --front-screen-coast-min: 0.35;
+  --front-screen-coast-max: 360;
+  --front-screen-fling: 3.2;
+
+  /* A lone wheel notch steps one photograph; notches that land while the strip
+     is still coasting compound, so a fast spin runs away.
+       -detent     px of wheel delta in one notch
+       -spin-gain  how hard stacked notches compound
+       -spin-max   and the ceiling on that
+       -step-gap   ms between notches below which they read as a spin */
+  --front-screen-detent: 100;
+  --front-screen-spin-gain: 0.8;
+  --front-screen-spin-max: 6;
+  --front-screen-step-gap: 120ms;
+
+  /* Coming to rest: how long the ease onto a photograph's resting place takes,
+     and how long after the last movement it is taken. */
+  --front-screen-settle: 0.32s;
+  --front-screen-settle-wait: 140ms;
 
   --front-screen-name-size: 0.78rem;
   --front-screen-name-tracking: 0.06em;
@@ -35,6 +122,9 @@
 
   --front-screen-muted: color-mix(in oklab, var(--ink), var(--ground) 45%);
   --front-screen-rule: color-mix(in oklab, var(--ink), var(--ground) 68%);
+  /* Softer than the rule: what a box looks like before its picture arrives, and
+     the strip's own scrollbar track. Both are surfaces rather than lines. */
+  --front-screen-soft: color-mix(in oklab, var(--ink), var(--ground) 92%);
 
   --front-screen-toggle-gap: 0.45rem;
   --front-screen-track-w: 1.55rem;

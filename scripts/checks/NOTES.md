@@ -69,11 +69,12 @@ directory's `dist/`, on an ephemeral port so two features in flight never collid
 pane at all, which is the other half of the same rule: lazy mounting and motion
 cannot be verified there even by hand.
 
-## The nine Checks
+## The ten Checks
 
 | Check            | fails when                                                                  |
 | ---------------- | --------------------------------------------------------------------------- |
 | `assets`         | anything the page fetches 404s or never answers, in either theme, with every Effect Stack layer lit |
+| `carousel`       | the photograph strip's Timeline is not where the strip is, either end of it comes off the text column, the arrow keys or the focus ring go, the dissolve stops following the Timeline, or the one-screen budget stops affording a photograph |
 | `console`        | anything logs an error or a warning, or throws, including across a theme flip |
 | `faces`          | a declared `@font-face` will not load, or no face Token names a declared family |
 | `front-screen`   | the Front Screen's rhyme, its one-screen budget, the Cut Title's cut or its accessible name, the crossing's span, the switch's ARIA, or the type's place in the Effect Stack breaks |
@@ -104,6 +105,25 @@ the gate is a container query, so the window that tells a container query from a
 media one is a short wide one — 1440x450, where the fit solves the Frame to 468
 while the viewport is nowhere near 520. Measured at DESK alone that whole
 mechanism could be a media query and nothing would say so.
+
+`carousel` is the first Check to assert a Section's CHOREOGRAPHY
+rather than the mechanism under it: `moments` says a Timeline can be seeked and
+that something moves, and this says the strip is where the Timeline's own progress
+puts it. Its own record of what it has been broken with is in
+`src/sections/front-screen/NOTES.md`. Two of the eleven mutations tried against it
+initially passed, and both are worth knowing about because both are the shape this
+file warns of:
+
+* **A focus ring cannot be asserted by asking whether one is drawn.** Every
+  focusable element gets the browser's own, so `outline-style` is never `none` for
+  a thing with a `tabindex` — the assertion passed with the Section's ring rule
+  deleted. What it does catch, and what is worth catching, is a ring that has been
+  SUPPRESSED: `outline: none` written to tidy up a focused box, which is the way
+  the ring actually gets lost.
+* **A mutation has to be placed where it wins.** The first attempt at that one put
+  `outline: none` earlier in the sheet than the rule it was meant to defeat, and
+  read as the Check being weak when it was the mutation being wrong. Check the
+  cascade before believing a Check is asleep.
 
 ## What a pass does not mean
 

@@ -25,6 +25,11 @@ is motion, and the toggle is a control. It is mounted from the component rather
 than by the loader because a control has to answer the first click, and the
 loader runs on approach.
 
+The photograph strip is the other way round and that is the same rule read from
+the other end: it is a control *and* it is the Section's motion, and both are in
+`timeline.ts` because the Timeline is what the gestures move. There is nothing for
+a second file to own — no gesture here does anything except set a progress.
+
 ## Which numbers are Tokens, and which are not
 
 ADR 0004 asks for anything the author will plausibly adjust to be a Token, and
@@ -39,7 +44,18 @@ fraction of the cap — and it is the one number about the Cut Title that is tas
 Every Token can be set to anything without failing a Check; that is asserted
 rather than hoped (see below).
 
-**The component's `<style>` — measurements, not choices.** Four of these:
+The strip adds three groups to it — the photograph's shape and the air between
+two of them, the dissolve's eight numbers and three durations, and the nine
+numbers that are how the roll FEELS. That last group is read by `timeline.ts` and
+by nothing in CSS, which is the one case where a Token is not a CSS value; the
+stub's `NOTES.md` sets that precedent and the reason here is stronger than usual.
+#137 says "preserve how it feels; the author judges that", and a judgement made by
+spinning the thing needs the numbers to be draggable. They are read per gesture
+rather than once at mount for the same reason.
+
+**The component's `<style>` — measurements, not choices.** Four of these, plus
+three the strip added (`--front-screen-edge`, `--front-screen-fade-bend`, and the
+two stand-ins the Timeline overwrites — see **The photographs** below):
 
 | constant                          | what it measures                                                |
 | --------------------------------- | --------------------------------------------------------------- |
@@ -112,6 +128,145 @@ switch in the last row hangs `--front-screen-contact-tail` below the ink the eye
 reads as the bottom of the column. `--front-screen-cut-gap` is
 `rhyme + half-leading − tail` for exactly that reason, and dropping either
 correction drifts the two margins about three pixels apart — which is a Check.
+
+## The photographs
+
+The strip, its dissolve and its motion, ported from `portfolio/app.js` and
+`portfolio/styles.css`. `timeline.ts`'s own header carries the motion — what the
+Timeline's progress means, and the closed form the per-frame friction loop became
+— and is the thing to read before changing how the strip moves. What is here is
+the composition around it.
+
+### The bleed and the inset agree by construction
+
+The strip runs edge to edge so a photograph can travel off both sides of the page,
+and the first and last photographs still stand on the text column's own edges.
+That is two lengths that have to be the same, and the live sheet writes them as
+two separate expressions in `vw` — a full-bleed margin of `50% - 50vw` and a
+padding of `max(--page-side, 50vw - --col / 2)`.
+
+Both overshoot, by half a vertical scrollbar each, because `vw` counts a scrollbar
+the layout does not get. Here the margin is the same `calc(50% - 50vw)` and the
+inset is `max(side, 50% - measure / 2)` — a percentage of the SAME box the margin
+took out to 100vw. So whatever `vw` does to one it does to the other and it
+cancels: the first photograph's left edge lands on the column's left edge exactly,
+at every window width, scrollbar or no scrollbar. Both ends are a Check.
+
+What the bleed costs is half a scrollbar of horizontal overflow at each end, and
+the answer to that is one declaration in the Kernel — `html { overflow-x: clip }`.
+It is there and not here for the reason it always is: a Section may not write a
+global rule, and "the document never scrolls sideways" is a fact about the
+document. `clip` and not `hidden`, so the axis cannot be scrolled by a stray focus.
+
+### The track is out of flow, and that is what gives a photograph a height
+
+A photograph's height is the slot's, so `height: 100%` is the obvious way to say
+it — and inside the one-screen band it resolves to nothing. The strip is a flex
+item whose height comes from the flex layout, so its own `height` computes to
+`auto`, and a percentage height against an `auto` containing block behaves as
+`auto` itself. The symptom is not a length that looks wrong, it is a 194px strip
+with a 10px picture in it, which reads as a broken image. `position: absolute`
+with `inset: 0` gives the track a definite height by construction and the
+percentages below it resolve, in both regimes.
+
+### `__track` was already taken
+
+The theme switch's pill is `.front-screen__track`, and the strip's scroller was
+called that too for one build. Astro's scoping does not help: both are this
+component's, so the switch's own `width` and `height` landed on the scroller and
+the scroller's `position` and `overflow` landed on the pill. The scroller is
+`.front-screen__photos`. Worth knowing before adding any part named for a generic
+mechanism — this Section already has a `__thumb`, a `__meta` and a `__line`.
+
+### The dissolve is a mask, not a veil
+
+It used to be two absolutely positioned divs carrying a gradient of the page
+colour, and that is the obvious way to do it right up to the moment anything else
+is behind the strip. The Kernel's corner plate is: it stands in the bottom-left
+gutter, and the left-hand dissolve reaches into that same gutter, because the
+photographs really do scroll out there and really do need covering. Paper painted
+over the strip is paper painted over the plate, and no z-order fixes it — the
+cover has to be above the photographs and the plate has to be below them, so
+whatever sits between gets covered. A mask takes the strip's own pixels away
+instead, so the photographs dissolve into whatever is actually behind them.
+
+Eight Tokens describe it, four at each of its two ends, and the component mixes
+between them on `--front-screen-fade-open`. Two of the values it reads are NOT
+Tokens and are written by the Timeline:
+
+* **`--front-screen-fade-open`** — where the strip is between its two rests, on a
+  smoothstep. It is a function of where the strip IS and not of when it moved,
+  which is why it runs backwards as smoothly as forwards.
+* **`--front-screen-slide-w`** — the photograph's width, measured. This one cannot
+  be derived: the dissolve's reach and span are stated in photo-widths, and inside
+  the band a photograph's height is the budget's remainder, which is a layout
+  result CSS has no way to read back. The component declares what it would be at
+  the slot's ceiling so the strip is dressed before any script runs, and the
+  Timeline corrects it.
+
+`--front-screen-fade-bend` is in the component's `<style>` and not in `tokens.css`
+because it is a derivation and not a taste: a colour-stop hint at a quarter of the
+ramp's width is the linear case, and 0.25 + 0.1036 is the power-of-two ease that
+matches a smoothstep. `--front-screen-fade-ease` slides between the two.
+
+**The reduced-motion answer zeroes the three duration Tokens rather than writing
+`transition: none`.** Three rules further down the sheet set `transition-duration`
+on its own — the cramped strip and the two ways a reader asks to see the
+photographs — and every one of them is later than the media block, so a shorthand
+there is overwritten by whichever applies and the ramp comes back at 0.4s for a
+reader who is merely hovering. That is a Check.
+
+### The strip's own scrollbar
+
+`.front-screen__bar`, in the text column rather than across the bleed: it says
+where the reader is in fifty-three photographs, which is a fact about the column's
+worth of them. Its thumb's width and offset are the Timeline's, for the same
+reason everything else here is — both are functions of where the strip is.
+
+It is `aria-hidden`, because the track it reports on is already a named region a
+reader reaches and operates. It is also a box in the one-screen column, so it
+spends two pixels and a gap of the budget; the strip absorbs that, as it absorbs
+everything else.
+
+### The resting places, and why neither end is stated
+
+The first photograph rests at progress 0 and every other one rests centred,
+clamped to the travel. That clamp is the whole of why the LAST photograph is
+right-aligned with the text rather than centred: its centre lies past the end of
+the travel, so the clamp stands it on the edge. One mechanism produces both ends,
+which is exactly why losing it is easy and invisible — and both ends are asserted.
+
+Centred on the STRIP's own middle and not the window's. The live page uses
+`innerWidth / 2`, which on a page with a vertical scrollbar is half a scrollbar to
+the right of the strip's centre — the same overshoot the bleed has, read one
+mechanism later.
+
+### The wheel arbitration is non-passive, and that is load-bearing
+
+A wheel gesture belongs to whatever it began on and keeps it until the wheel
+stops, which is what stops the strip hijacking a page scroll half way through. The
+listener that decides this is on the document, in the capture phase, and prevents
+nothing — and it has to be `passive: false` anyway.
+
+A passive wheel listener lets Chromium scroll on the compositor and deliver the
+event to the main thread afterwards, so the target has been hit-tested against a
+page that has already moved. Measured: one notch with the pointer over the
+masthead arrived with `window.scrollY` already at 120 and its target already an
+`<img>` in the strip — because the strip had slid up under a pointer that was
+nowhere near it when the scroll started. So the passive version prevented exactly
+the hijack it exists to prevent, on the first notch of every page scroll begun
+near the strip. The cost of the fix is that no wheel on this page is fast-pathed,
+which is what the live page has always paid for the same arbitration.
+
+### What is not ported
+
+**Touch stays native**, as it does on the live page: the browser scrolls the
+track and the Timeline adopts the result, so it goes on being the authority on
+where the strip is. Home, End and the page keys arrive the same way.
+
+**The `.veil` divs are gone rather than hidden.** The live page still writes them
+and the sheet still hides them; nothing here reads them, so nothing here writes
+them.
 
 ## The Cut Title
 
@@ -301,20 +456,25 @@ follows until the reader has chosen.
 composition that is not here, and it is blocked on a Kernel decision #138
 deliberately did not make.
 
-**The photo carousel — #137.** Its slot is held open and is what the one-screen
-budget spends its remainder on, so that ticket is a drop-in rather than a
-re-layout.
+**The page's own type scale is now in the Kernel, and it is not a Section's.**
+#137 needed it, for the reason the live sheet gives: the strip is the one-screen
+budget's remainder, and at the reader's own 16px the remainder falls to 194px at
+1440x900 and 27px at 1440x700 — below which a photograph is not a photograph of
+anything. A floor on the remainder is a budget that can overflow, so the floor is
+paid for by the type giving way instead. `src/kernel/faces.css` carries it and
+says why the Kernel is the only place it could go.
 
-**The page's own type scale, and this is the visible consequence.** The live sheet
-scales the root `font-size` inside the band, and it does so for exactly one
-reason: the photo strip has a floor of 15rem, below which a photograph is not a
-photograph of anything, so on a short screen the type has to give instead. There
-are no photographs here, the slot's floor is zero, and the composition fits every
-height in the band with the type at the reader's own size. So the scale is absent
-because the thing that needed it is absent. At 1440x900 that makes the type about
-10% larger than the live page's. **#137 brings the floor back and the scale with
-it**, and it cannot be ported here even if it were wanted: a Section may not write
-a global rule, and the root's font-size is the most global rule there is.
+Two things about it are worth knowing from here. `--type-scale` is MEASURED and
+not derived, because the derivation the live sheet does needs `--cv-static` —
+"everything on the page that is not the strip", the one measured constant this
+Section exists to have deleted. And its media query is a second copy of this
+Section's band, which has to be kept in step with the one in `FrontScreen.astro`;
+what catches them drifting is `carousel` measuring at the band's own short corner.
+
+The floor itself is `--front-screen-strip-min`, and it is applied OUTSIDE the band
+— where the strip is a stated height and the page scrolls, so a floor costs
+nothing — and not inside it, where the slot is the remainder. Inside the band it
+is what the Check holds the type scale to instead.
 
 **The `plate-wait` hold.** The live page holds the reveal for up to 1.5s while the
 corner pictures arrive, because the type is printed *on* the plate and type
@@ -334,6 +494,26 @@ It measures at **two** windows, and the second is not padding: the mechanism tha
 keeps the two margins equal on a tall screen is inert at every ordinary desktop
 height, so a Check that only ever looked at 1440x900 would pass with that
 mechanism deleted.
+
+`scripts/checks/checks/carousel.mjs` is the strip's, and it measures at the band's
+SHORT corner for the mirror-image reason: that is where the remainder runs out, and
+it is the only window in the suite that holds the Kernel's type scale to anything.
+The same rule applies to it — every assertion is a relationship, and every one has
+been shown to fail when the thing it guards is removed:
+
+| taken away                                            | what it said                                          |
+| ----------------------------------------------------- | ----------------------------------------------------- |
+| the Timeline's write of `scrollLeft`                   | the position at four moments, and both ends           |
+| the track's inset                                      | both ends have come off the column                    |
+| the focus ring, as `outline: none`                     | the strip takes focus and draws no ring               |
+| the reduced-motion durations                           | the dissolve still ramps over 0.4s                    |
+| the dissolve's write of `--front-screen-fade-open`     | it never opens across five moments                    |
+| what an arrow key does                                 | the key does not move it, nothing lands centred, and reduced motion cannot operate it |
+| the Kernel's type scale                                | the slot at both windows, against the floor Token     |
+| a photograph's alt text, and the same as its filename  | which photograph, by src                              |
+
+...and to pass with `--front-screen-fade-span` at 0.2, the settle at 0.05s, the gap
+at 2rem and the floor at 10rem.
 
 Every assertion has been shown to fail when the thing it guards is removed, and
 to pass when a Token is set to something else — including

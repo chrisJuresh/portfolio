@@ -29,6 +29,7 @@ import { fileURLToPath } from 'node:url';
 import { chromium } from 'playwright';
 
 import { check as assets } from './checks/assets.mjs';
+import { check as carousel } from './checks/carousel.mjs';
 import { check as consoleQuiet } from './checks/console.mjs';
 import { check as editor } from './checks/editor.mjs';
 import { check as faces } from './checks/faces.mjs';
@@ -44,6 +45,7 @@ const CHECKS = [
   assets,
   consoleQuiet,
   faces,
+  carousel,
   frontScreen,
   projectsPanel,
   ground,

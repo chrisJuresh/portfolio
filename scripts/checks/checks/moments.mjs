@@ -162,9 +162,30 @@ export const check = {
   },
 };
 
-/** Boxes are rounded to 2dp by the reader, so equality is the right comparison. */
+/**
+ * A box is in DOCUMENT coordinates, which is the viewport rect plus the scroll
+ * offset — so a read taken at the foot of the document and one taken at the top
+ * differ by whatever the browser rounds those two quantities to. Measured, that
+ * is hundredths of a pixel: 225.33 became 225.31 on an element nothing had
+ * touched, and exact equality read it as "something outside the Timeline is
+ * moving it".
+ *
+ * A tenth of a pixel is well under anything a recomputed Timeline could do — the
+ * failure this is guarding against moves an element tens or hundreds of pixels —
+ * and well over the rounding. Written as a named tolerance rather than a rounder
+ * because the two directions are not the same: it is used both to assert that
+ * something HAS moved and that something has NOT, and a coarser rounding would
+ * quietly weaken the first.
+ */
+const STILL = 0.1;
+
 function same(a, b) {
-  return a.x === b.x && a.y === b.y && a.width === b.width && a.height === b.height;
+  return (
+    Math.abs(a.x - b.x) <= STILL &&
+    Math.abs(a.y - b.y) <= STILL &&
+    Math.abs(a.width - b.width) <= STILL &&
+    Math.abs(a.height - b.height) <= STILL
+  );
 }
 
 function box(b) {

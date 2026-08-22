@@ -54,6 +54,74 @@
   font-display: swap;
 }
 
+/* ---- THE PAGE'S OWN SIZE, and why the Kernel is where it has to be ---------
+   Composing a Section to exactly one screen turns "does it fit" into a question
+   with a SIZE for an answer rather than a yes or a no: everything in a Section's
+   ladder is in rem, so one number moves all of it at once and whatever the
+   composition cannot spend goes to whichever box is the remainder.
+
+   The Front Screen is that Section and its photograph strip is that remainder,
+   and without this the strip collapses on a short screen — 27px of photograph at
+   1440x700 against 194px at 1440x900. A photograph that small is not a
+   photograph of anything, which is the author's own judgement, recorded on the
+   live page as a 15rem floor under the strip. A floor on the remainder is a
+   budget that can overflow, so the way the floor is paid for is here: the type
+   gives way instead, and the strip takes the difference.
+
+   IT IS IN THE KERNEL BECAUSE `:root` IS, and for no other reason. A Section may
+   not write a global rule, and the root's font-size is the most global rule there
+   is — src/kernel/NOTES.md makes this file the only place in src/ allowed a
+   global selector, and says that adding one is a decision rather than a
+   convenience. This is that decision.
+
+   `--type-scale` IS MEASURED, NOT DERIVED, and that is deliberate. The live sheet
+   derives its own constant by solving the budget symbolically, which it can do
+   because it holds `--cv-static` — one measured constant standing for
+   "everything on the page that is not the strip", with a comment asking whoever
+   changes the ladder to re-measure it. `/next` deliberately has no such constant
+   (the Front Screen's NOTES.md says why: layout does the arithmetic there, so
+   adding a paragraph to the bio cannot silently break the budget), so there is
+   nothing here to solve for. This number was arrived at by measuring the
+   composition at the band's corners instead — and what keeps it honest is not a
+   comment but `scripts/checks/checks/carousel.mjs`, which asserts that the strip
+   is at least its floor and the Section still exactly one screen at both ends of
+   the band. Drag this and a Check says so.
+
+   It comes out within about 1% of the live page's own 0.782019 / 48.32, which is
+   worth knowing as a sanity signal and is not where it came from: the two
+   compositions differ in what the cut word is fitted to, and the live derivation
+   substitutes a term this one does not have. The 1% is deliberate slack — the
+   value that lands EXACTLY on the floor at 1440x700 leaves the Check a pixel of
+   margin, and slack here is free for the reason the live sheet gives: ask for a
+   smaller rem than the budget allows and the remainder simply comes out larger.
+   Only a rem that is too BIG costs anything.
+
+   IT IS MEASURED AT ONE WIDTH, and a much wider short window is not covered. The
+   cut word is fitted to the gutter here, so the budget carries a width term and a
+   2560x700 window asks for a smaller rem than this. What that costs is a smaller
+   photograph and never an overflowing page — the strip is the remainder, so it
+   absorbs the difference — and it is the same extreme the live sheet names and
+   composes for rather than optimises for.
+
+   `min(1rem, …)` and not `min(16px, …)`: on the root's own font-size a rem is the
+   initial value, which is the READER's default. A tall screen therefore gets the
+   size they asked for, and this only ever makes type smaller.
+
+   THE GATE IS THE FRONT SCREEN'S BAND, and there are now two copies of it — this
+   one and the one in FrontScreen.astro. They are one idea and have to be kept in
+   step: outside the band the page is an ordinary scrolling column, nothing is a
+   remainder, and shrinking the type would buy nothing and cost legibility. What
+   catches them drifting apart is the Check measuring at the band's own corner. */
+:root {
+  --type-scale: 0.016;
+}
+
+@media (min-width: 1100px) and (min-height: 700px) {
+  :root {
+    font-size: min(1rem, calc(var(--type-scale) * 100vh));
+  }
+}
+
 :root {
   --face-body: Vollkorn, 'Sitka Text', Charter, 'Iowan Old Style', Georgia, serif;
   --face-label: Spectral, 'Sitka Text', Charter, 'Iowan Old Style', Georgia, serif;

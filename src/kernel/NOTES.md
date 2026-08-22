@@ -12,8 +12,8 @@ than a convenience.
 
 | file                        | owns                                                        |
 | --------------------------- | ----------------------------------------------------------- |
-| `faces.css`                 | the five families, six files, and the face Tokens            |
-| `ground.css`                | the theme's two papers, and the Turn across them             |
+| `faces.css`                 | the five families, six files, the face Tokens, and the page's own type size |
+| `ground.css`                | the theme's two papers, the Turn across them, and that the document never scrolls sideways |
 | `corners.css` / `corners.ts`| the plate, the car and the eye — geometry, and which rung    |
 | `effect-stack/`             | the nine layers, and the grain tile                          |
 | `theme.ts`                  | which paper, where it is stored, and who is told when it changes |
@@ -23,6 +23,22 @@ than a convenience.
 | `handles.ts`                | `window.portfolio`, and nothing else a Check may reach for   |
 | `content.ts`                | `defineContent` — how a Section's Content gets typed         |
 | `Kernel.astro`              | the part of the Kernel that stands before the Sections       |
+
+## The page's own type size
+
+`faces.css` sets the root `font-size` inside the Front Screen's one-screen band,
+and that is the one thing in the Kernel whose reason lives in a Section. It is
+here because `:root` is here — a Section may not write a global rule, and the
+root's font-size is the most global rule there is — and the file itself carries the
+argument: the Front Screen's photograph strip is the one-screen budget's
+remainder, and at the reader's own size that remainder falls below a photograph on
+a short screen. The type gives way instead.
+
+Two consequences for anyone changing it. `--type-scale` is a measured number, not
+a derived one, and what keeps it honest is `carousel` asserting the strip clears
+its own floor at both ends of the band. And its media query is a SECOND COPY of
+the band in `src/sections/front-screen/FrontScreen.astro` — the two are one idea,
+and the same Check is what catches them drifting apart.
 
 ## Two things a Check has to know
 
@@ -93,8 +109,11 @@ edge. `--car-fade` is 0 on the live page today, so nothing is missing from what
 ships; the mask is not written at all rather than written and inert.
 
 `--eye-x` diverges: on the live page it is measured inboard from the Front
-Screen's photo strip, which does not exist on `/next`, so here it is measured out
-from the right edge and parked at 0. It is re-tuned when the Front Screen lands.
+Screen's photo strip, which did not exist on `/next` when this was written, so
+here it is measured out from the right edge and parked at 0. The strip landed with
+#137, so the thing it was waiting for is there — and it is still parked, because
+where the eye stands against the photographs is a judgement made by looking and
+not a length anything here can derive.
 
 ## The build fingerprints anything it can see
 
