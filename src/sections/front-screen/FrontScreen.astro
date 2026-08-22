@@ -189,6 +189,16 @@ const listings = [content.work, content.education];
     }
   }
 
+  /* A reader who asked for less motion gets the composition arriving without
+     travelling: the fade stays, because it is what covers the faces resolving,
+     and the rise goes. The Token is what the keyframe reads, so this is one
+     declaration rather than a second pair of keyframes. */
+  @media (prefers-reduced-motion: reduce) {
+    .front-screen {
+      --front-screen-reveal-rise: 0px;
+    }
+  }
+
   /* margin-bottom auto, so on a screen the composition does not fill the slack
      ends up ABOVE the Cut Title and the cut stays on the page's own bottom edge. */
   .front-screen__col {

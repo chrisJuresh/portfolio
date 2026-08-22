@@ -44,6 +44,28 @@ const LIFT_TOLERANCE = 0.5;
  *  rasteriser's own rounding or the drawing is letterboxed inside its box. */
 const RATIO_TOLERANCE = 0.01;
 
+/**
+ * The reveal has to be over before anything is measured.
+ *
+ * It translates the whole Section 8px down for its first 0.9 seconds, and three
+ * of the assertions below are in viewport coordinates — a reading taken mid-fade
+ * puts the Cut Title 8px LOWER than it belongs, which makes "is it cut by the
+ * fold" easier to satisfy rather than harder. `settle()` usually outlasts the
+ * animation, and "usually" is how a Check comes to assert less than it says.
+ *
+ * The Section's own animations only, and bounded: `document.getAnimations()`
+ * would wait on anything infinite the Effect Stack is running, and an await that
+ * never resolves is a hang rather than a failure.
+ */
+async function revealed(page) {
+  await page.evaluate(async () => {
+    const section = document.querySelector('.front-screen');
+    if (!section) return;
+    const done = Promise.all(section.getAnimations().map((one) => one.finished.catch(() => {})));
+    await Promise.race([done, new Promise((give) => setTimeout(give, 2000))]);
+  });
+}
+
 /** Everything this Check reads off the page, in one round trip. */
 async function readPage(page) {
   return page.evaluate(() => {
@@ -200,6 +222,7 @@ export const check = {
       const { context, page } = await open(browser, origin, { viewport });
       try {
         failures.push(...(await settle(page)));
+        await revealed(page);
         const read = await readPage(page);
         if ('missing' in read) {
           failures.push(read.missing);
@@ -217,6 +240,7 @@ export const check = {
     const { context, page } = await open(browser, origin, { viewport: GROWING });
     try {
       failures.push(...(await settle(page)));
+      await revealed(page);
       const read = await readPage(page);
       if ('missing' in read) return { failures: [...failures, read.missing], notes };
 
