@@ -80,6 +80,16 @@ two sets of PNGs coexist. **Two runs sharing a label overwrite each other's
 images** — pass `--label` if you are running the same ref twice and want to keep
 both.
 
+The extracted tree is deleted once the server is down, so what a run leaves
+behind is `runs/<label>/out/`: the two preview PNGs under `assets/`, and the
+`README.md` the upstream capture writes into its cwd. The JSON report is printed,
+not saved — pass `--json` to see it. It used to
+leave the tree as well, which meant a complete second copy of the repository
+inside the repository — invisible to `rg`, which reads `.gitignore`, and walked
+by `grep -r`, which does not, so a search came back with two hits for
+everything. `runs/` is still worth emptying by hand when it gets large; nothing
+reads an old run.
+
 ## Traps this script exists to avoid
 
 - **`preview_start` serves the main checkout**, never the worktree the edit is
