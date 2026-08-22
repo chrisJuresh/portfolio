@@ -52,10 +52,10 @@ design/censor/mosaic/
 design/record/runs/
 design/record/published/
 
-# python bytecode. Most of design/ is Python generators, and any of them that
-# imports a sibling module writes one of these next to it — design/effects/,
-# design/plate/ and design/plinth/ each grow one. Unanchored, so it matches at
-# every depth.
+# python bytecode. Most of design/ is Python generators — eighteen of them — and
+# every directory holding one grows a __pycache__ as soon as anything imports it,
+# which `python -m compileall design/` alone is enough to do in eight of them. So
+# no list here: unanchored, matching at every depth, deliberately.
 __pycache__/
 *.pyc
 

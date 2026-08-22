@@ -388,8 +388,18 @@ def main() -> int:
         # enough to make a search return two hits for everything. The PNGs under
         # out/ are the part worth keeping. This is the outer `finally` because a
         # run that fails to serve is the one least likely to be tidied up by hand.
+        #
+        # `ignore_errors` for the same reason `stop` never raises: this runs while
+        # a capture error may be unwinding, and failing to tidy up must not replace
+        # the actual reason the run is ending. But it must not be *silent* either —
+        # a cleanup that quietly failed puts the second copy back with nothing
+        # saying so, which is the whole bug. `stop` kills without waiting after ten
+        # seconds, so a handle outliving it is the way this happens.
         if args.ref:
             shutil.rmtree(served, ignore_errors=True)
+            if served.exists():
+                print(f"WARN  could not remove {served} - delete it by hand; "
+                      "`grep -r` walks it.", file=sys.stderr)
 
     print(f"served     {args.ref if args.ref else served}")
     print(f"capture    {CAPTURE_REPO}/{CAPTURE_PATH} @ {sha[:12]}")

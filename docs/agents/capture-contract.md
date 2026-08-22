@@ -81,7 +81,9 @@ images** — pass `--label` if you are running the same ref twice and want to ke
 both.
 
 The extracted tree is deleted once the server is down, so what a run leaves
-behind is `runs/<label>/out/`: three files, the PNGs and the report. It used to
+behind is `runs/<label>/out/`: the two preview PNGs under `assets/`, and the
+`README.md` the upstream capture writes into its cwd. The JSON report is printed,
+not saved — pass `--json` to see it. It used to
 leave the tree as well, which meant a complete second copy of the repository
 inside the repository — invisible to `rg`, which reads `.gitignore`, and walked
 by `grep -r`, which does not, so a search came back with two hits for
