@@ -75,7 +75,7 @@ cannot be verified there even by hand.
 | ---------------- | --------------------------------------------------------------------------- |
 | `assets`         | anything the page fetches 404s or never answers, in either theme, with every Effect Stack layer lit |
 | `carousel`       | the photograph strip's Timeline is not where the strip is, either end of it comes off the text column, the arrow keys or the focus ring go, the dissolve stops following the Timeline, or the one-screen budget stops affording a photograph |
-| `console`        | anything logs an error or a warning, or throws, including across a theme flip |
+| `console`        | anything logs an error or throws, including across a theme flip — warnings deliberately not, because on this page they are nearly always Chromium's own |
 | `faces`          | a declared `@font-face` will not load, or no face Token names a declared family |
 | `front-screen`   | the Front Screen's rhyme, its one-screen budget, the Cut Title's cut or its accessible name, the crossing's span, the switch's ARIA, or the type's place in the Effect Stack breaks |
 | `projects-panel` | a control in the Frame leaves the centre its own Token names, the window and its titlebar are cut to two radii, the recording's box stops being inset on three sides, the occlusion of the subheading's second line moves or stops being painted, the titlebar reports a rung it is not made of, the chrome grows a control, or the small-Frame reduction starts asking about the window instead of the Frame |
