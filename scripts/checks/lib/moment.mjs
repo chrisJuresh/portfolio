@@ -7,10 +7,10 @@
  * asserting nothing about choreography at all.
  *
  * `hold()` FIRST, AND IT IS NOT OPTIONAL. A scrubbed Timeline is recomputed from
- * the scroll position on the next tick, so a bare seek survives about one frame
- * and a Check that reads geometry after it is a coin toss — src/kernel/NOTES.md
- * records the wrong diagnosis that cost. Every read below happens inside one
- * hold, and the hold is released even when a seek throws.
+ * the scroll position, so a bare seek survives about one frame and a Check that
+ * reads geometry after it is a coin toss — src/kernel/NOTES.md records the wrong
+ * diagnosis that cost. Every read below happens inside one hold, the page is put
+ * back where it was found, and the hold is released even when a seek throws.
  */
 
 /**
@@ -27,22 +27,25 @@
 
 /**
  * @typedef {object} Moment
- * @property {number} at        the progress that was asked for
- * @property {Record<string, Box | null>} boxes  one box per selector, null if it is not on the page
+ * @property {number} at   the progress that was asked for
+ * @property {{ [selector: string]: Box | null }} boxes  one box per selector, null if it is not on the page
  */
 
 /**
- * Read the boxes of `selectors` at each progress in `at`, from one held page.
+ * The one thing that runs in the page, and the only place the reader and the
+ * hold/restore dance are written.
+ *
+ * Both exports below are this function with different arguments. They were two
+ * copies of it once, twenty duplicated lines each, which is a poor place for a
+ * copy: a fix to the coordinate handling in one is a silent disagreement between
+ * two Checks.
  *
  * @param {import('playwright').Page} page
- * @param {string} timeline  the name the Timeline is registered under
- * @param {number[]} at      progresses, in the order they should be visited
- * @param {string[]} selectors
- * @returns {Promise<{ moments: Moment[] } | { missing: string }>}
+ * @param {{ timeline: string, selectors: string[], progresses: number[], thenScroll: boolean }} asking
  */
-export async function atMoments(page, timeline, at, selectors) {
+function seekAndRead(page, asking) {
   return page.evaluate(
-    ([name, progresses, wanted]) => {
+    async ([name, wanted, progresses, thenScroll]) => {
       const kernel = window.portfolio;
       if (!kernel) return { missing: 'window.portfolio is not there — the Kernel never booted' };
       const tl = kernel.timelines.get(name);
@@ -74,26 +77,50 @@ export async function atMoments(page, timeline, at, selectors) {
         return boxes;
       };
 
-      const was = tl.progress();
+      const was = { progress: tl.progress(), scroll: window.scrollY };
       kernel.hold?.();
       try {
-        return {
-          moments: progresses.map((progress) => {
-            tl.progress(progress);
-            return { at: progress, boxes: read() };
-          }),
-        };
+        const moments = progresses.map((progress) => {
+          tl.progress(progress);
+          return { at: progress, boxes: read() };
+        });
+        if (!thenScroll) return { moments };
+
+        // The foot of the document: as far from a moment in the middle as the
+        // scroll can put it, so anything still listening reports a progress that
+        // is unmistakably not the one that was asked for.
+        window.scrollTo(0, document.body.scrollHeight);
+        for (let frame = 0; frame < 6; frame += 1) {
+          await new Promise((next) => requestAnimationFrame(next));
+        }
+        return { moments, after: read(), held: tl.progress() };
       } finally {
-        // Put the page back where it was found, then hand the scroll back. A
-        // Check that left a Timeline parked would only matter to the next read on
-        // the same page, but that is exactly the kind of failure this file exists
-        // to stop being possible.
-        tl.progress(was);
+        window.scrollTo(0, was.scroll);
+        tl.progress(was.progress);
         kernel.release?.();
       }
     },
-    [timeline, at, selectors],
+    [asking.timeline, asking.selectors, asking.progresses, asking.thenScroll],
   );
+}
+
+/**
+ * Read the boxes of `selectors` at each progress in `at`, from one held page.
+ *
+ * @param {import('playwright').Page} page
+ * @param {string} timeline  the name the Timeline is registered under
+ * @param {number[]} at      progresses, in the order they should be visited
+ * @param {string[]} selectors
+ * @returns {Promise<{ moments: Moment[] } | { missing: string }>}
+ */
+export async function atMoments(page, timeline, at, selectors) {
+  const read = await seekAndRead(page, {
+    timeline,
+    selectors,
+    progresses: at,
+    thenScroll: false,
+  });
+  return 'missing' in read ? read : { moments: read.moments };
 }
 
 /**
@@ -108,71 +135,29 @@ export async function atMoments(page, timeline, at, selectors) {
  * when the SCROLL moves and not when a frame passes — so reading the same moment
  * twice in a row passes just as happily with `hold()` stubbed out to do nothing.
  *
- * And what is asserted is the Timeline's OWN PROGRESS, not the geometry. A
+ * And what is judged is the Timeline's OWN PROGRESS, not the geometry. A
  * staggered tween saturates: with six elements at `stagger: 0.05` the first one
  * finishes its own tween at progress 0.8, so a recompute from 1 to 0.857 moves
  * the Timeline and moves that element not at all. A geometry-only assertion
- * passed a completely stubbed `hold()` for exactly that reason. The boxes are
- * still read and returned, because they are what a caller wants to see, but the
- * hold is judged on the number that cannot absorb it.
+ * passed a completely stubbed `hold()`. The boxes are still read and returned,
+ * because they are what a caller wants to see, but the hold is judged on the
+ * number that cannot absorb it.
  *
  * @param {import('playwright').Page} page
  * @param {string} timeline
  * @param {number} at  a moment away from either end, so a recompute has somewhere to go
  * @param {string[]} selectors
- * @returns {Promise<{ asked: number, held: number, before: Record<string, Box | null>, after: Record<string, Box | null> } | { missing: string }>}
+ * @returns {Promise<{ asked: number, held: number, before: { [selector: string]: Box | null }, after: { [selector: string]: Box | null } } | { missing: string }>}
  */
 export async function heldThroughAScroll(page, timeline, at, selectors) {
-  return page.evaluate(
-    async ([name, progress, wanted]) => {
-      const kernel = window.portfolio;
-      if (!kernel) return { missing: 'window.portfolio is not there — the Kernel never booted' };
-      const tl = kernel.timelines.get(name);
-      if (!tl) return { missing: `no Timeline is registered as "${name}"` };
-
-      const round = (n) => Math.round(n * 100) / 100;
-      const read = () => {
-        const boxes = {};
-        for (const selector of wanted) {
-          const element = document.querySelector(selector);
-          if (!element) {
-            boxes[selector] = null;
-            continue;
-          }
-          const box = element.getBoundingClientRect();
-          boxes[selector] = {
-            x: round(box.x + window.scrollX),
-            y: round(box.y + window.scrollY),
-            width: round(box.width),
-            height: round(box.height),
-          };
-        }
-        return boxes;
-      };
-      const frames = async (n) => {
-        for (let i = 0; i < n; i += 1) await new Promise((next) => requestAnimationFrame(next));
-      };
-
-      const was = { progress: tl.progress(), scroll: window.scrollY };
-      kernel.hold?.();
-      try {
-        tl.progress(progress);
-        const before = read();
-        // The foot of the document: as far from a moment in the middle as the
-        // scroll can put it, so anything still listening reports a progress that
-        // is unmistakably not the one that was asked for.
-        window.scrollTo(0, document.body.scrollHeight);
-        await frames(6);
-        const after = read();
-        return { asked: progress, held: tl.progress(), before, after };
-      } finally {
-        window.scrollTo(0, was.scroll);
-        tl.progress(was.progress);
-        kernel.release?.();
-      }
-    },
-    [timeline, at, selectors],
-  );
+  const read = await seekAndRead(page, {
+    timeline,
+    selectors,
+    progresses: [at],
+    thenScroll: true,
+  });
+  if ('missing' in read) return read;
+  return { asked: at, held: read.held, before: read.moments[0].boxes, after: read.after };
 }
 
 /**
@@ -182,6 +167,12 @@ export async function heldThroughAScroll(page, timeline, at, selectors) {
  * A Section names what its Timeline moves — the stub uses `data-stub-rise` — so
  * this reads the convention off the page rather than holding a list that every
  * new Section has to be added to.
+ *
+ * ONE SELECTOR PER MARK, not per element, and the boundary is worth stating: the
+ * reader takes the first match, so a Section that marks six elements and wires up
+ * only the first still satisfies "something moves". That is a composition the
+ * author would see; what this catches is a Timeline wired to nothing at all,
+ * which they would not.
  *
  * @param {import('playwright').Page} page
  * @param {string} section

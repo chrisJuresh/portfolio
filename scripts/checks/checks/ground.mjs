@@ -1,5 +1,5 @@
 import { hex, luminance } from '../lib/colour.mjs';
-import { open, settle } from '../lib/page.mjs';
+import { inBothThemes, settle } from '../lib/page.mjs';
 
 /**
  * The page is paper where it should be paper, and dark where it should be dark —
@@ -42,95 +42,104 @@ export const check = {
   async run({ browser, origin }) {
     /** @type {string[]} */
     const failures = [];
-    /** @type {Record<string, { rgb: number[], light: number }>} */
-    const measured = {};
+    /** @type {Reading[]} */
+    const measured = [];
 
-    for (const theme of /** @type {const} */ (['light', 'dark'])) {
-      const { context, page } = await open(browser, origin, { theme });
-      try {
-        failures.push(...(await settle(page)).map((why) => `${theme}: ${why}`));
+    await inBothThemes(browser, origin, {}, async ({ theme, page }) => {
+      failures.push(...(await settle(page)).map((why) => `${theme}: ${why}`));
 
-        const read = await page.evaluate(() => {
-          const kernel = window.portfolio;
-          const turn = kernel?.timelines.get('turn');
-          if (!turn) return { missing: 'no Timeline is registered as "turn" — the Turn never built' };
+      const read = await page.evaluate(() => {
+        const kernel = window.portfolio;
+        const turn = kernel?.timelines.get('turn');
+        if (!turn) return { missing: 'no Timeline is registered as "turn" — the Turn never built' };
 
-          const root = document.documentElement;
-          const canvas = document.createElement('canvas');
-          canvas.width = canvas.height = 1;
-          const ink = canvas.getContext('2d');
-          if (!ink) return { missing: 'no 2d context — the ground cannot be rasterised' };
+        const root = document.documentElement;
+        const canvas = document.createElement('canvas');
+        canvas.width = canvas.height = 1;
+        const ink = canvas.getContext('2d');
+        if (!ink) return { missing: 'no 2d context — the ground cannot be rasterised' };
 
-          const sample = () => {
-            ink.clearRect(0, 0, 1, 1);
-            ink.fillStyle = getComputedStyle(root).backgroundColor;
-            ink.fillRect(0, 0, 1, 1);
-            const [r, g, b] = ink.getImageData(0, 0, 1, 1).data;
-            return [r, g, b];
-          };
+        // THE ALPHA IS READ AS WELL AS THE THREE CHANNELS, and it is what stops
+        // the dark assertions from passing vacuously. A page whose stylesheet
+        // never arrived computes `backgroundColor` to `rgba(0,0,0,0)`, which this
+        // canvas rasterises to #000000 — so "the ground is dark" was satisfied by
+        // a ground that was not painted at all, and a dark-theme regression would
+        // have been invisible. An unpainted ground is its own failure below.
+        const sample = () => {
+          ink.clearRect(0, 0, 1, 1);
+          ink.fillStyle = getComputedStyle(root).backgroundColor;
+          ink.fillRect(0, 0, 1, 1);
+          const [r, g, b, a] = ink.getImageData(0, 0, 1, 1).data;
+          return { rgb: [r, g, b], opaque: a === 255 };
+        };
 
-          const was = turn.progress();
-          kernel.hold?.();
-          try {
-            turn.progress(0);
-            const paper = sample();
-            turn.progress(1);
-            const arrived = sample();
-            return { theme: root.dataset.theme, paper, arrived };
-          } finally {
-            turn.progress(was);
-            kernel.release?.();
-          }
-        });
-
-        if ('missing' in read) {
-          failures.push(`${theme}: ${read.missing}`);
-          continue;
+        const was = turn.progress();
+        kernel.hold?.();
+        try {
+          turn.progress(0);
+          const paper = sample();
+          turn.progress(1);
+          const arrived = sample();
+          return { theme: root.dataset.theme, paper, arrived };
+        } finally {
+          turn.progress(was);
+          kernel.release?.();
         }
-        if (read.theme !== theme) {
-          failures.push(
-            `${theme}: the page came up as data-theme="${read.theme}" — the Shell's inline script ignored both storage and the media query`,
-          );
-        }
+      });
 
-        measured[`${theme} at the start of the Turn`] = { rgb: read.paper, light: luminance(read.paper) };
-        measured[`${theme} at the end of the Turn`] = { rgb: read.arrived, light: luminance(read.arrived) };
-      } finally {
-        await context.close();
+      if ('missing' in read) {
+        failures.push(`${theme}: ${read.missing}`);
+        return;
+      }
+      if (read.theme !== theme) {
+        failures.push(
+          `${theme}: the page came up as data-theme="${read.theme}" — the Shell's inline script ignored both storage and the media query`,
+        );
+      }
+
+      measured.push(reading(theme, 'start', read.paper));
+      measured.push(reading(theme, 'end', read.arrived));
+    });
+
+    const at = (theme, end) => measured.find((one) => one.theme === theme && one.end === end);
+
+    for (const one of measured) {
+      if (!one.opaque) {
+        failures.push(
+          `${where(one)} is not painted at all — the computed background is transparent, so the Kernel's ground.css did not arrive`,
+        );
       }
     }
-
-    const at = (key) => measured[key];
-    const say = (key) => {
-      const found = at(key);
-      return found ? `${hex(found.rgb)} (luminance ${found.light.toFixed(3)})` : '(not measured)';
-    };
 
     // Light theme, before the crossing: this is the one a reader arrives on, and
     // the one whose failure looks like the author's own preview going black.
-    const paper = at('light at the start of the Turn');
+    const paper = at('light', 'start');
     if (paper && paper.light < PAPER_AT_LEAST) {
       failures.push(
-        `light theme is not on paper at the start of the Turn: ${say('light at the start of the Turn')}, wanted luminance >= ${PAPER_AT_LEAST}`,
+        `${where(paper)} is not on paper: ${describe(paper)}, wanted luminance >= ${PAPER_AT_LEAST}`,
       );
     }
 
-    for (const key of [
-      'light at the end of the Turn',
-      'dark at the start of the Turn',
-      'dark at the end of the Turn',
-    ]) {
-      const found = at(key);
-      if (found && found.light > DARK_AT_MOST) {
-        failures.push(`${key} is not dark: ${say(key)}, wanted luminance <= ${DARK_AT_MOST}`);
+    // Everything else is somewhere the page has to be dark: dark theme at either
+    // end, and light theme once the Turn has arrived.
+    for (const one of measured) {
+      if (one === paper) continue;
+      if (one.light > DARK_AT_MOST) {
+        failures.push(`${where(one)} is not dark: ${describe(one)}, wanted luminance <= ${DARK_AT_MOST}`);
       }
     }
 
-    const arrived = at('light at the end of the Turn');
+    const arrived = at('light', 'end');
     if (paper && arrived && paper.light - arrived.light < APART_AT_LEAST) {
       failures.push(
-        `the Turn barely moves the ground: ${say('light at the start of the Turn')} to ` +
-          `${say('light at the end of the Turn')}, wanted them >= ${APART_AT_LEAST} apart in luminance`,
+        `the Turn barely moves the ground: ${describe(paper)} to ${describe(arrived)}, ` +
+          `wanted them >= ${APART_AT_LEAST} apart in luminance`,
+      );
+    }
+
+    if (measured.length < 4) {
+      failures.push(
+        `only ${measured.length} of 4 readings were taken — the ground was not measured in both themes at both ends`,
       );
     }
 
@@ -139,7 +148,25 @@ export const check = {
     // author sees it happened is a passing run that still prints the numbers.
     return {
       failures,
-      notes: Object.entries(measured).map(([key, found]) => `${key}: ${hex(found.rgb)} (luminance ${found.light.toFixed(3)})`),
+      notes: measured.map((one) => `${where(one)}: ${describe(one)}`),
     };
   },
 };
+
+/** @typedef {{ theme: 'light' | 'dark', end: 'start' | 'end', rgb: number[], opaque: boolean, light: number }} Reading */
+
+/** @returns {Reading} */
+function reading(theme, end, sampled) {
+  return { theme, end, rgb: sampled.rgb, opaque: sampled.opaque, light: luminance(sampled.rgb) };
+}
+
+/** Named by what was measured, and not by a sentence. The sentences were the keys
+ *  of a lookup once, and a typo in one read as "(not measured)" rather than as a
+ *  failure — a Check silently asserting three things instead of four. */
+function where(one) {
+  return `${one.theme} theme at the ${one.end} of the Turn`;
+}
+
+function describe(one) {
+  return `${hex(one.rgb)} (luminance ${one.light.toFixed(3)})`;
+}

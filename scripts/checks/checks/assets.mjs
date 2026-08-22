@@ -1,12 +1,21 @@
-import { open, settle } from '../lib/page.mjs';
+import { inBothThemes, settle, withoutOrigin } from '../lib/page.mjs';
 
 /**
  * Every asset the page reaches for arrives.
  *
- * Run twice, and with the whole Effect Stack lit, because a reference that is
- * never followed is a reference this Check cannot see: the corner pictures fetch
- * the ladder for the theme ON SCREEN, so a broken dark rung is invisible from
- * light, and a layer's texture is only referenced once that layer is named.
+ * Run in both themes, and with the whole Effect Stack lit, because a reference
+ * that is never followed is a reference this Check cannot see: the corner
+ * pictures fetch the ladder for the theme ON SCREEN, so a broken dark rung is
+ * invisible from light, and a layer's texture is only referenced once that layer
+ * is named.
+ *
+ * WHERE THIS STOPS, stated so nobody reads more into a pass than is there: it
+ * asserts that everything the page FETCHED arrived. A file that exists in the
+ * tree, is named in the source, and is not fetched in this run — the 1300px rung
+ * of a corner picture at this viewport and this pixel ratio — is not covered.
+ * Widening it means either walking the CSS for `url()`s or rendering the whole
+ * rung grid, and both are more machinery than the failure is worth: a missing
+ * rung shows up the moment a display asks for it, and `assets` catches it then.
  */
 
 /** Every layer, so both Effect Stack textures are actually fetched. */
@@ -29,13 +38,13 @@ export const check = {
 
   /** @param {{ browser: import('playwright').Browser, origin: string }} ctx */
   async run({ browser, origin }) {
-    /** @type {string[]} */
-    const failures = [];
-
-    for (const theme of /** @type {const} */ (['light', 'dark'])) {
-      const { context, page, record } = await open(browser, origin, { theme, fx: ALL_LAYERS });
-      try {
-        failures.push(...(await settle(page)).map((why) => `${theme}: ${why}`));
+    const found = await inBothThemes(
+      browser,
+      origin,
+      { fx: ALL_LAYERS },
+      async ({ theme, page, record }) => {
+        /** @type {string[]} */
+        const failures = (await settle(page)).map((why) => `${theme}: ${why}`);
 
         const reported = new Set();
         for (const { status, url } of record.responses) {
@@ -43,7 +52,7 @@ export const check = {
           if (UNTUNED_DARK_RUNG.test(url)) continue;
           if (reported.has(url)) continue;
           reported.add(url);
-          failures.push(`${theme}: ${status} for ${path(url, origin)}`);
+          failures.push(`${theme}: ${status} for ${withoutOrigin(url, origin)}`);
         }
         for (const { url, failure } of record.failed) {
           if (UNTUNED_DARK_RUNG.test(url)) continue;
@@ -51,7 +60,7 @@ export const check = {
           // and one broken file is one thing to fix rather than two lines to read.
           if (reported.has(url)) continue;
           reported.add(url);
-          failures.push(`${theme}: ${path(url, origin)} never answered — ${failure}`);
+          failures.push(`${theme}: ${withoutOrigin(url, origin)} never answered — ${failure}`);
         }
 
         // A page that fetched almost nothing is a page whose stylesheet did not
@@ -61,15 +70,11 @@ export const check = {
             `${theme}: only ${record.responses.length} response(s) — the document fetched nothing, so nothing was checked`,
           );
         }
-      } finally {
-        await context.close();
-      }
-    }
 
-    return failures;
+        return failures;
+      },
+    );
+
+    return found.flat();
   },
 };
-
-function path(url, origin) {
-  return url.startsWith(origin) ? url.slice(origin.length) : url;
-}

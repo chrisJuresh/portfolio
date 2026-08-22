@@ -64,15 +64,17 @@ export const PATTERNS = [
       /\b(?:10|127)\.\d{1,3}\.\d{1,3}\.\d{1,3}\b|\b192\.168\.\d{1,3}\.\d{1,3}\b|\b172\.(?:1[6-9]|2\d|3[01])\.\d{1,3}\.\d{1,3}\b/g,
   },
   {
-    name: 'cloud-secret',
-    why: 'a credential or the name of a private cloud resource',
-    pattern:
-      /\b(?:AKIA|ASIA)[0-9A-Z]{16}\b|\barn:aws[\w-]*:[\w-]*:/gi,
+    name: 'credential',
+    why: 'the shape of an access key or a private key',
+    // Case-SENSITIVE, and split from the `arn:` pattern below for that reason
+    // alone: these shapes are upper case by definition, and an /i on them makes
+    // twenty lower-case letters after "akia" a credential.
+    pattern: /\b(?:AKIA|ASIA)[0-9A-Z]{16}\b|\bgh[pousr]_[A-Za-z0-9]{36,}\b|-----BEGIN [A-Z ]*PRIVATE KEY-----/g,
   },
   {
-    name: 'cloud-secret',
-    why: 'a credential or the name of a private cloud resource',
-    pattern: /\bgh[pousr]_[A-Za-z0-9]{36,}\b|-----BEGIN [A-Z ]*PRIVATE KEY-----/g,
+    name: 'cloud-resource',
+    why: 'the name of a cloud resource, which is infrastructure and not a portfolio',
+    pattern: /\barn:aws[\w-]*:[\w-]*:/gi,
   },
   {
     name: 'record-internal',

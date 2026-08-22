@@ -221,11 +221,19 @@ could not start. It is the gate a ticket's "every Check passes" means, and it
 serves the tree it is invoked from — `preview_start` serves the main checkout and
 would report on `development` while looking like it reported on your branch.
 
+`pnpm install` does **not** download a browser — the `playwright` package carries
+the driver and not the binaries, and pnpm blocks install scripts. Once per
+machine:
+
+```bash
+pnpm exec playwright install chromium
+```
+
 **Read `scripts/checks/NOTES.md` before adding or changing a Check.** It carries
-what a Check may assert and what it may never (nothing aesthetic, ever), how to
-add one, and four traps that each cost a wrong answer while it was being built —
-including the two that make a motion assertion silently vacuous, and why the
-denylist of unpublishable terms is shapes rather than names.
+what a Check may assert and what it may never (nothing aesthetic, ever), what a
+passing run does *not* mean, how to add one, and six traps that each cost a wrong
+answer while it was being built — three of which make a Check silently assert
+nothing while reading as though it asserts something.
 
 `pnpm check -- --no-build --only ground,moments` while iterating. `pnpm test` runs
 the runner's own unit tests on their own; `pnpm check` runs them first anyway.

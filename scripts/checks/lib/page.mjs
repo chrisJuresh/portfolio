@@ -6,16 +6,47 @@
  * theme flip, a held Timeline, a fully-lit Effect Stack — can reach the next one.
  */
 
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+
 /** The route the Portfolio's new foundation is served at until the ticket that flips it. */
 export const PAGE = '/next';
 
 /** The same window the /portfolio checks in design/tools/ use, so the two agree about one drawing. */
 export const DESK = { width: 1440, height: 900 };
 
-const THEME_KEY = 'portfolio-theme';
+/**
+ * Where the theme is stored, READ OUT OF THE KERNEL rather than written down here.
+ *
+ * `src/kernel/theme.ts` owns the name and exports it, but this is a plain `.mjs`
+ * script and Node will not import a `.ts` module — so the constant is lifted out
+ * of the source instead of copied. Copied, it would go stale on a rename with one
+ * symptom: the Checks priming a key nothing reads, both themes coming up as
+ * whatever the media query said, and only ground's `data-theme` line to say so.
+ * Failing here instead names the file.
+ */
+const THEME_KEY = (() => {
+  const file = fileURLToPath(new URL('../../../src/kernel/theme.ts', import.meta.url));
+  const found = /THEME_KEY\s*=\s*['"]([^'"]+)['"]/.exec(readFileSync(file, 'utf8'));
+  if (!found) throw new Error(`page.mjs: no THEME_KEY in ${file} — the Kernel renamed it`);
+  return found[1];
+})();
+
+/** A URL with the throwaway origin taken off, so a failure reads as a path. */
+export function withoutOrigin(url, origin) {
+  return String(url).startsWith(origin) ? String(url).slice(origin.length) : String(url);
+}
 
 /**
- * @typedef {object} Record
+ * What the browser did while the page loaded.
+ *
+ * `Recording` and not `Record`: the latter shadows TypeScript's built-in
+ * `Record<K, V>` for every annotation in this file, and the two Checks that
+ * annotate a `Record<string, …>` would silently resolve it to this object
+ * instead. `Check` is taken too — CONTEXT.md gives it a meaning and every Check
+ * module exports it.
+ *
+ * @typedef {object} Recording
  * @property {{ status: number, url: string }[]} responses  every response the page received
  * @property {{ url: string, failure: string }[]} failed     requests that never got one
  * @property {{ type: string, text: string, at: string }[]} logged  console messages
@@ -54,7 +85,7 @@ export async function open(browser, origin, options = {}) {
     `);
   }
 
-  /** @type {Record} */
+  /** @type {Recording} */
   const record = { responses: [], failed: [], logged: [], thrown: [] };
 
   const page = await context.newPage();
@@ -79,6 +110,39 @@ export async function open(browser, origin, options = {}) {
   await page.goto(origin + path, { waitUntil: 'load' });
 
   return { context, page, record };
+}
+
+/**
+ * Run `visit` against the page in each theme, and close each context whatever
+ * happens inside it.
+ *
+ * Three Checks need both themes — the corner pictures fetch the ladder for the
+ * theme on screen, and the ground is a different colour in each — and the `try`
+ * / `finally` that closes the context is the part it is possible to forget. A
+ * leaked context holds its Chromium target open for the rest of the run.
+ *
+ * `visit` is handed `{ theme, page, record }` and whatever it returns is
+ * collected, in theme order.
+ *
+ * @template T
+ * @param {import('playwright').Browser} browser
+ * @param {string} origin
+ * @param {{ fx?: string, path?: string }} options
+ * @param {(seen: { theme: 'light' | 'dark', page: import('playwright').Page, record: Recording }) => Promise<T>} visit
+ * @returns {Promise<T[]>}
+ */
+export async function inBothThemes(browser, origin, options, visit) {
+  /** @type {T[]} */
+  const seen = [];
+  for (const theme of /** @type {const} */ (['light', 'dark'])) {
+    const { context, page, record } = await open(browser, origin, { ...options, theme });
+    try {
+      seen.push(await visit({ theme, page, record }));
+    } finally {
+      await context.close();
+    }
+  }
+  return seen;
 }
 
 /**

@@ -16,6 +16,17 @@ not start. `--no-build` runs against the `dist/` that is already there, which is
 for iterating and nothing else — a Check reporting on a stale build is the one
 failure this suite cannot catch about itself.
 
+**On a fresh clone, download the browser once.** `pnpm install` does not: the
+`playwright` package carries the driver and not the binaries, and pnpm blocks
+install scripts anyway.
+
+```bash
+pnpm exec playwright install chromium
+```
+
+The runner says so itself rather than throwing about a missing executable, but
+that is one wasted run.
+
 ## What a Check is, and what it may never be
 
 **A headless assertion about a Section that a person would not notice failing.**
@@ -69,6 +80,28 @@ cannot be verified there even by hand.
 | `moments`       | a Timeline cannot be seeked, does not survive a scroll, moves nothing, or will not release |
 | `unpublishable` | a Section's words or its spoken attributes match the denylist                 |
 
+## What a pass does not mean
+
+Three boundaries, stated because a green run is otherwise read as more than it is.
+None is a gap to be closed casually — each would cost more machinery than the
+failure it would catch.
+
+**`assets` covers what the page fetched, not every file it names.** A rung of a
+corner picture that exists in the tree and is not asked for at this viewport and
+this pixel ratio is not checked. Widening it means walking the CSS for `url()`s or
+rendering the whole rung grid; a missing rung surfaces the moment a display asks
+for it, and `assets` catches it then.
+
+**`moments` reads the first element behind each mark.** A Section that marks six
+elements and wires up only the first still satisfies "something moves". What this
+catches is a Timeline wired to nothing at all — the failure the author would not
+see. Partial wiring is one they would.
+
+**`unpublishable` reads Sections, not the whole document.** Text outside every
+`[data-section]` is not scanned, which is deliberate: the Shell holds no
+composition and the words that come from Content are inside a Section. A leak in
+the Shell's own head is a different thing and has no Check.
+
 ## Adding one
 
 A Check is a module in `checks/` exporting `{ name, title, run(ctx) }`. `run`
@@ -85,7 +118,7 @@ Every failure string names the thing that broke: the URL, the family, the
 selector, the measured number and the wanted one. "something is wrong" costs a
 diagnosis session; "404 for /_astro/vollkorn-regular.Dnyk-4Dy.woff2" costs nothing.
 
-## Four traps, each of which cost a wrong answer here
+## Six traps, each of which cost a wrong answer here
 
 **`hold()` before you seek, and it is not enough to seek twice.** A scrubbed
 Timeline is recomputed from the scroll position, so a bare seek survives about a
@@ -110,6 +143,17 @@ text nodes and joins them with newlines instead.
 one, and the whole suite then fails as `net::ERR_UNSAFE_PORT` — about one run in a
 few hundred, with nothing to do with the tree. `lib/serve.mjs` asks for another
 port; the list is in it.
+
+**A transparent ground rasterises to black.** A page whose stylesheet never
+arrived computes `backgroundColor` to `rgba(0,0,0,0)`, and a 1x1 canvas reads that
+back as `#000000` — so "the ground is dark" was satisfied, three times over, by a
+ground that was not painted at all. `ground` reads the alpha as well, and an
+unpainted ground is its own named failure.
+
+Two more names that are taken and should not be reused: `Check`, which CONTEXT.md
+defines and every module in `checks/` exports, and `Record`, which is TypeScript's
+own — a local `@typedef Record` shadows `Record<K, V>` for every annotation in the
+file that declares it, silently.
 
 ## The denylist is shapes, and the names are not committed
 

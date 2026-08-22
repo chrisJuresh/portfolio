@@ -10,8 +10,10 @@
  * assertion is a luminance band and not an equality.
  */
 
-/** @param {number[]} rgb */
-function check(rgb) {
+/** Not `check`: CONTEXT.md gives that word a meaning, and every module in
+ *  ../checks/ exports it as the Check itself.
+ *  @param {number[]} rgb */
+function assertChannels(rgb) {
   if (!Array.isArray(rgb) || rgb.length !== 3) {
     throw new TypeError(`expected three channels, got ${JSON.stringify(rgb)}`);
   }
@@ -24,7 +26,7 @@ function check(rgb) {
 
 /** @param {number[]} rgb @returns {string} */
 export function hex(rgb) {
-  check(rgb);
+  assertChannels(rgb);
   return `#${rgb.map((c) => Math.round(c).toString(16).padStart(2, '0')).join('')}`;
 }
 
@@ -38,7 +40,7 @@ export function hex(rgb) {
  * @param {number[]} rgb @returns {number}
  */
 export function luminance(rgb) {
-  check(rgb);
+  assertChannels(rgb);
   const [r, g, b] = rgb.map((channel) => {
     const s = channel / 255;
     return s <= 0.04045 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4;

@@ -46,12 +46,21 @@ test('a private address is a leak, a public one and a version number are not', (
 });
 
 test('a credential or a cloud resource name is a leak', () => {
-  assert.deepEqual(names(scan('key AKIAIOSFODNN7EXAMPLE rotated', PATTERNS)), ['cloud-secret']);
-  assert.deepEqual(names(scan('arn:aws:s3:::some-bucket', PATTERNS)), ['cloud-secret']);
-  assert.deepEqual(names(scan('-----BEGIN RSA PRIVATE KEY-----', PATTERNS)), ['cloud-secret']);
+  assert.deepEqual(names(scan('key AKIAIOSFODNN7EXAMPLE rotated', PATTERNS)), ['credential']);
+  assert.deepEqual(names(scan('-----BEGIN RSA PRIVATE KEY-----', PATTERNS)), ['credential']);
   assert.deepEqual(names(scan('token ghp_0123456789abcdefghijklmnopqrstuvwxyz', PATTERNS)), [
-    'cloud-secret',
+    'credential',
   ]);
+  assert.deepEqual(names(scan('arn:aws:s3:::some-bucket', PATTERNS)), ['cloud-resource']);
+  assert.deepEqual(names(scan('ARN:AWS:S3:::some-bucket', PATTERNS)), ['cloud-resource']);
+});
+
+test('a credential pattern is case-sensitive, so lower-case prose is not a key', () => {
+  // The access-key shapes are upper case by definition. Sharing an /i with the
+  // arn: pattern made twenty lower-case letters after "akia" a credential, which
+  // is a blocking Check firing on prose.
+  assert.deepEqual(scan('akiaabcdefghijklmnopq was not a key', PATTERNS), []);
+  assert.deepEqual(scan('asiaabcdefghijklmnopq either', PATTERNS), []);
 });
 
 test("the private record's own field names are a leak", () => {

@@ -66,20 +66,23 @@ if (only) {
  * are what several Checks below decide with, and a runner that reported on the
  * page while its own matching was broken would be worse than no runner.
  */
-if (build) {
-  // The glob is quoted and passed through, not expanded by a shell: PowerShell
-  // does not expand one, and handing `--test` a bare directory makes it try to
-  // require the directory itself.
-  const tested = spawnSync(
-    process.execPath,
-    ['--test', '--test-reporter=dot', 'scripts/checks/lib/**/*.test.mjs'],
-    { cwd: repoRoot, stdio: 'inherit' },
-  );
-  if (tested.status !== 0) {
-    console.error("\nchecks: the runner's own unit tests fail, so it has not been run.");
-    process.exit(1);
-  }
+// Outside the --no-build guard on purpose: --no-build is the iterating path, and
+// iterating is exactly when the matching logic is being changed.
+//
+// The glob is quoted and passed through, not expanded by a shell: PowerShell does
+// not expand one, and handing `--test` a bare directory makes it try to require
+// the directory itself.
+const tested = spawnSync(
+  process.execPath,
+  ['--test', '--test-reporter=dot', 'scripts/checks/lib/**/*.test.mjs'],
+  { cwd: repoRoot, stdio: 'inherit' },
+);
+if (tested.status !== 0) {
+  console.error("\nchecks: the runner's own unit tests fail, so no Check has been run.");
+  process.exit(1);
+}
 
+if (build) {
   console.log('checks: building this tree…\n');
   const built = spawnSync('pnpm', ['build'], { cwd: repoRoot, stdio: 'inherit', shell: true });
   if (built.status !== 0) {
@@ -96,7 +99,23 @@ try {
 }
 
 const served = await serve(dist);
-const browser = await chromium.launch();
+
+// `pnpm install` does not fetch a browser. Playwright's npm package carries the
+// driver and not the binaries, and pnpm blocks install scripts anyway — so on a
+// fresh clone `launch()` throws about an executable nobody has been told to
+// download, and the whole suite fails with something that reads like a broken
+// Check. Naming the one command is the difference between a diagnosis and a
+// paste.
+let browser;
+try {
+  browser = await chromium.launch();
+} catch (error) {
+  await served.close();
+  console.error(`checks: Chromium will not start.\n\n  ${String(error?.message ?? error).split('\n')[0]}\n`);
+  console.error('  If this is a fresh clone, the browser has not been downloaded yet:\n');
+  console.error('      pnpm exec playwright install chromium\n');
+  process.exit(2);
+}
 
 console.log(`checks: serving ${dist}`);
 console.log(`checks: on ${served.origin}\n`);
