@@ -3,7 +3,9 @@
 // has to be; nothing behavioural is decided in this file.
 import { content } from './content';
 import './tokens.css';
-import './variants.css';
+// variants.css is deliberately NOT imported: an unselected Variant has to cost
+// the shipped page nothing, so the sheet is not part of the build at all and the
+// render tool injects it. NOTES.md, and check-source.mjs if this is ever undone.
 ---
 
 {/* data-section is the loader's handle: it names the Section whose timeline.ts

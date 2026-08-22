@@ -190,6 +190,20 @@ Timeline, and one mount point per Section. `scripts/check-source.mjs` is what
 turns those rules into build failures rather than hopes — it runs first in
 `pnpm build`, and on its own as `pnpm check:sections`.
 
+A Section's alternative directions are its **Variants**, and choosing between
+them is looking rather than describing:
+
+```bash
+pnpm variants
+```
+
+That renders every Variant of every Section into `design/sheets/index.html`,
+captioned with what each one declares. Two things about them are easy to get
+wrong and silent when you do — `:root` in a Variant's selector is what makes it
+outrank the composition it argues with, and nothing imports `variants.css`,
+because an unselected Variant has to cost the shipped page nothing.
+`docs/agents/variants.md` is the authority; read it before writing one.
+
 `IntersectionObserver` never delivers in the in-app browser pane, for the same
 reason `requestAnimationFrame` never ticks there: the pane does not run the
 rendering steps. Lazy mounting and motion have to be verified in a real headless
