@@ -4,6 +4,11 @@
     "CLAUDE_CODE_MAX_CONCURRENT_SUBAGENTS": "4"
   },
   "permissions": {
+    "allow": [
+      "Bash(pnpm feature start:*)",
+      "Bash(pnpm feature land)",
+      "Bash(pnpm feature clean:*)"
+    ],
     "deny": [
       "Read(./.env)",
       "Read(./.env.*)"

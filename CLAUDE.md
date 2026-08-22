@@ -25,9 +25,28 @@ Agent-facing notes for this repo. Human-facing docs are in [README.md](README.md
 > **`scripts/feature/NOTES.md` is the authority**; `docs/friction-log.md` is where
 > a refusal goes.
 >
+> **Do not call `EnterWorktree`.** `start` prints the `cd`, and that is the whole
+> instruction: work in the tree by path, from a session that was never isolated
+> into it. `EnterWorktree` turns on Claude Code's own worktree isolation, which is
+> a *second* gate on top of the vendored guard and buys nothing here — the guard
+> already judges the path a write targets, so a session in the main checkout
+> cannot write there whether it is isolated or not. What the isolation does buy is
+> refusals: it rejects every compound shell command it cannot statically verify —
+> a heredoc, a pipe, a `for` loop over two `curl` calls — and every `cd` to the
+> main checkout, including the legitimate one that removes a sibling worktree.
+> Three entries in `docs/friction-log.md` are that gate — five refusals between
+> them — and every one is avoided by not entering the tree in the first place.
+>
+> The guard's own `SessionStart` message says to call `EnterWorktree`, and will
+> keep saying it: that is upstream's protocol, vendored along with the guard, and
+> this repository is not upstream. Where the two disagree — `EnterWorktree`, the
+> pull request, `gh pr merge`, the by-hand teardown — ADR 0005 and the two
+> commands win.
+>
 > Everything below is still true about *worktrees* — one per change, and nothing
 > is ever written in the main checkout — and no longer true about pull requests,
-> `gh pr merge`, or taking a worktree down by hand. #147 rewrites this file.
+> `gh pr merge`, `EnterWorktree`, or taking a worktree down by hand. #147 rewrites
+> this file.
 
 Every change is made in its own git worktree, on its own branch, and reaches
 `development` as a merged pull request. **Nothing is ever written in the main
@@ -37,7 +56,9 @@ checkout** — not a one-line fix, not a typo, not "just this once". A committed
 **`/worktree-per-change` is the protocol and the authority on it.** Below is only
 what is specific to this repository. Where the two ever disagree the skill is
 right, because it is the thing that gets maintained — this file is a copy that
-drifted once already.
+drifted once already. **Except against ADR 0005**, which is the one place this
+repository has deliberately left the skill behind: the two commands, no pull
+request, and no `EnterWorktree`.
 
 `development` is the integration branch; it reaches `main` separately. Never
 open a PR into `main`.
