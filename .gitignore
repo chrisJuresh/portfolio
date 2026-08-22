@@ -1,12 +1,19 @@
-# local tooling / editor. `.claude/` is ignored except the four files every worktree
-# needs: the three that carry the worktree-per-change rule, and the launch config the
-# preview starts the static server from. A worktree only gets a file if git puts it
-# there, so anything ignored here is missing from the tree every change is made in.
+# local tooling / editor. `.claude/` is ignored except what every worktree needs: the
+# three files that carry the worktree-per-change rule, the launch config the preview
+# starts the static server from, and the four directories Claude Code reads project
+# skills, subagents, commands and scripts from. A worktree only gets a file if git puts
+# it there, so anything ignored here is missing from the tree every change is made in —
+# which is why the config directories have to be listed even while they are empty. See
+# docs/agents/claude-code-and-opus-5.md.
 .claude/*
 !.claude/settings.json
 !.claude/worktree-per-change.json
 !.claude/hooks/
 !.claude/launch.json
+!.claude/skills/
+!.claude/agents/
+!.claude/commands/
+!.claude/scripts/
 .openai/
 .agents/
 .codex/
