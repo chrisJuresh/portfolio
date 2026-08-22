@@ -3,6 +3,7 @@
 // replacing anything. `/portfolio` goes on being the live document until the
 // ticket that flips this route; keeping both up is what lets every porting ticket
 // land without taking the site down.
+import FrontScreen from '../sections/front-screen/FrontScreen.astro';
 import Stub from '../sections/stub/Stub.astro';
 import Shell from '../shell/Shell.astro';
 ---
@@ -16,5 +17,8 @@ import Shell from '../shell/Shell.astro';
         though it were. */}
     <meta name="robots" content="noindex" />
   </Fragment>
+  {/* The Front Screen stands first and carries no data-turn: the crossing into
+      dark spans the Section after it, which begins at this one's foot. */}
+  <FrontScreen />
   <Stub />
 </Shell>

@@ -54,15 +54,20 @@ export function withoutOrigin(url, origin) {
  */
 
 /**
+ * `viewport` is DESK unless a Check names another one, and a Check that does had
+ * better say why: the same window for every Check is what makes two failures
+ * comparable, and a composition fitted to one screen has regimes that are only
+ * reachable at particular sizes.
+ *
  * @param {import('playwright').Browser} browser
  * @param {string} origin
- * @param {{ theme?: 'light' | 'dark', path?: string, fx?: string }} [options]
+ * @param {{ theme?: 'light' | 'dark', path?: string, fx?: string, viewport?: { width: number, height: number } }} [options]
  */
 export async function open(browser, origin, options = {}) {
-  const { theme = 'light', path = PAGE, fx } = options;
+  const { theme = 'light', path = PAGE, fx, viewport = DESK } = options;
 
   const context = await browser.newContext({
-    viewport: DESK,
+    viewport,
     deviceScaleFactor: 1,
     // Not `reduce`: a reader who asked for less motion gets the Section settled
     // and nothing scrubbing, which is the one state where a Timeline's moments
