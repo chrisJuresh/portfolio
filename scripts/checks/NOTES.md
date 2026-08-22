@@ -82,7 +82,7 @@ cannot be verified there even by hand.
 | `ground`         | paper is not light, or the Turn does not arrive dark, in either theme         |
 | `moments`        | a Timeline cannot be seeked, does not survive a scroll, moves nothing, or will not release |
 | `unpublishable`  | a Section's words or its spoken attributes match the denylist                 |
-| `editor`         | the Editor cannot change a word on the real page, or the change does not reach the file, or a refusal does, or the Editor is in the built tree |
+| `editor`         | the Editor cannot change a word or drag a Token on the real page, or the change does not reach the file, or a refusal does, or a drag writes on every frame, or a Timeline cannot be scrubbed and held, or the Editor is in the built tree |
 
 `front-screen` is the first Section-specific Check, and the pattern it sets is
 worth copying: it asserts only relationships between two things that have to stay
@@ -166,13 +166,21 @@ catches is a Timeline wired to nothing at all — the failure the author would n
 see. Partial wiring is one they would.
 
 **`editor` is one smoke Check and is not where the Editor is tested.** The Editor's
-tests are at its write boundary, on the bytes — `scripts/editor/lib/*.test.mjs`,
-run by `pnpm test` — because that is where a bug corrupts a source file. What the
+tests are at its two write boundaries, on the bytes — `scripts/editor/lib/*.test.mjs`,
+run by `pnpm test` — because that is where a bug corrupts a source file. What a
 boundary cannot see is whether the surface is WIRED to it, and that is all this
-Check is for. It writes to a temporary copy of every Section's Content and
-compares the real files before and after: it runs from the pre-commit hook, and a
-Check that edited the tree it was gating would put a file it wrote into the commit
-it was checking. `scripts/editor/NOTES.md` is the authority.
+Check is for. It writes to a temporary copy of every Section's Content and Tokens
+and compares the real files before and after: it runs from the pre-commit hook, and
+a Check that edited the tree it was gating would put a file it wrote into the commit
+it was checking. `scripts/editor/NOTES.md` is the authority, and it is where this
+Check's mutation record lives — nine of them, four for Content and five for the
+Tokens and Timeline halves #144 added.
+
+One thing it asserts in two halves rather than one, because they are two claims: a
+Token's value is baked into the served build's stylesheet, so a drag has to move
+the PAGE without writing the FILE, and a release has to write the file. A surface
+that wrote on every frame of a drag, and one that wrote the file and left the page
+alone, fail one half each.
 
 **`unpublishable` reads Sections, not the whole document.** Text outside every
 `[data-section]` is not scanned, which is deliberate: the Shell holds no

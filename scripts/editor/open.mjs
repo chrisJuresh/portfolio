@@ -68,7 +68,7 @@ console.log(`  open       ${served.origin}${PAGE}`);
 console.log(`  serving    ${dist}`);
 console.log(`  writing    src/sections/*/{content.ts,tokens.css}   ${build ? '' : '(against a dist this did not build)'}`);
 console.log('\n  Click any text to change it. Enter commits, Escape puts it back.');
-console.log('  The Tokens tab drags every Token a Section declares; Motion scrubs its Timeline.');
+console.log('  The Tokens surface drags every Token a Section declares; Motion scrubs its Timeline.');
 console.log('  Publish commits and pushes — the Checks run on the commit, so it takes a minute.');
 console.log('\n  Ctrl-C to stop.');
 

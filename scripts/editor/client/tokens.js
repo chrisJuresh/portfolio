@@ -32,7 +32,7 @@
  * bundled stylesheet still holds the old value until the next build.
  */
 
-import { amount, colour, control } from './lib/tokens.mjs';
+import { amount, asValue, colour, control } from './lib/tokens.mjs';
 
 /** Where a Section's Tokens are declared, so a preview can name it. */
 const previewSheet = () => {
@@ -66,12 +66,25 @@ export class Tokens {
     this.edited = edited;
     /** `${section} ${key}` -> the value this surface is showing. */
     this.live = new Map();
-    /** The row for each Token, so a write can update the one it came from. */
+    /** `${section} ${key}` -> { token, shape, row, show } for every control. */
     this.rows = new Map();
   }
 
+  /**
+   * Remember a control, and put the file's current value into it.
+   *
+   * One place rather than the tail of each of `row()`'s three branches: what
+   * differs between a number, a colour and a text box is the controls, and what
+   * is the same is that a write has to be able to find them again.
+   */
+  remember(id, token, shape, row, show) {
+    this.rows.set(id, { token, shape, row, show });
+    show(token.value);
+    return row;
+  }
+
   /** Every Token, grouped by Section and then by the comment above it. */
-  mount(pane) {
+  mount(surface) {
     for (const { section, tokens } of this.sections) {
       const holder = document.createElement('details');
       holder.dataset.editorTokens = section;
@@ -115,7 +128,7 @@ export class Tokens {
         }
         into.append(this.row(section, token));
       }
-      pane.append(holder);
+      surface.append(holder);
     }
   }
 
@@ -175,14 +188,12 @@ export class Tokens {
       const unit = document.createElement('small');
       unit.textContent = shape.unit || '×';
       row.append(slider, exact, unit, back);
-      this.rows.set(id, { token, shape, write: (value) => {
+      return this.remember(id, token, shape, row, (value) => {
         const read = control(value);
         if (read.kind !== 'number') return;
         slider.value = String(read.number);
         exact.value = String(read.number);
-      } });
-      this.rows.get(id).write(token.value);
-      return row;
+      });
     }
 
     if (shape.kind === 'colour') {
@@ -193,7 +204,7 @@ export class Tokens {
       alpha.type = 'range';
       alpha.min = '0';
       alpha.max = '1';
-      alpha.step = '0.01';
+      alpha.step = String(shape.step);
       const seen = document.createElement('small');
 
       const compose = () => colour(swatch.value, Number(alpha.value));
@@ -212,15 +223,13 @@ export class Tokens {
       alpha.addEventListener('change', () => void this.set(section, token, compose()));
 
       row.append(swatch, alpha, seen, back);
-      this.rows.set(id, { token, shape, write: (value) => {
+      return this.remember(id, token, shape, row, (value) => {
         const read = control(value);
         if (read.kind !== 'colour') return;
         swatch.value = read.hex;
         alpha.value = String(read.alpha);
         show(value);
-      } });
-      this.rows.get(id).write(token.value);
-      return row;
+      });
     }
 
     const box = document.createElement('input');
@@ -235,11 +244,9 @@ export class Tokens {
       }
     });
     row.append(box, back);
-    this.rows.set(id, { token, shape, write: (value) => {
+    return this.remember(id, token, shape, row, (value) => {
       box.value = value;
-    } });
-    this.rows.get(id).write(token.value);
-    return row;
+    });
   }
 
   /**
@@ -253,6 +260,15 @@ export class Tokens {
    */
   preview(section, token, value) {
     const id = `${section} ${token.key}`;
+    // The same question the boundary asks, asked here because this sheet is
+    // written by hand: a `}` typed into a text box would break the whole of it on
+    // the way to a write the server was going to refuse anyway. Nothing is shown
+    // rather than something wrong, and the refusal says why a moment later.
+    try {
+      asValue(token.key, value);
+    } catch {
+      return;
+    }
     if (value === token.was) this.live.delete(id);
     else this.live.set(id, value);
 
@@ -275,12 +291,12 @@ export class Tokens {
     try {
       const answer = await this.post('/tokens', { section, key: token.key, value });
       token.value = answer.value;
-      this.rows.get(id)?.write(answer.value);
+      const held = this.rows.get(id);
+      held?.show(answer.value);
       // The KEY and not the property: the same property declared on two rules is
       // two Tokens, and counting them as one would under-report the session.
       this.edited(`${section}.${token.key}`);
-      const row = document.querySelector(`[data-editor-token="${id}"]`);
-      row?.toggleAttribute('data-editor-moved', answer.value !== token.was);
+      held?.row.toggleAttribute('data-editor-moved', answer.value !== token.was);
       this.say(
         answer.changed
           ? `${back ? 'put back' : 'wrote'} ${token.property} = ${answer.value} in ${answer.file}`
@@ -289,7 +305,7 @@ export class Tokens {
     } catch (error) {
       // The page goes back to what it was showing, because the file did.
       this.preview(section, token, showing);
-      this.rows.get(id)?.write(showing);
+      this.rows.get(id)?.show(showing);
       this.say(`refused: ${error.message}`, true);
     }
   }
@@ -318,23 +334,31 @@ export class Motion {
   constructor({ say }) {
     this.say = say;
     this.held = false;
-    this.pane = null;
+    this.surface = null;
+    /** The names this surface has a scrub for, so a rebuild is skipped when the
+     *  register has not actually changed under it. */
+    this.showing = [];
   }
 
   get handles() {
     return window.portfolio;
   }
 
-  mount(pane) {
-    this.pane = pane;
-    pane.innerHTML = `
+  /** One named Timeline out of the register, or nothing. */
+  timeline(name) {
+    return this.handles?.timelines?.get(name);
+  }
+
+  mount(surface) {
+    this.surface = surface;
+    surface.innerHTML = `
       <div data-editor-hold>
         <button type="button" data-editor-holding aria-pressed="false">hold</button>
         <small>holding stops the scroll driving every Timeline, so a moment stays put</small>
       </div>
       <div data-editor-timelines></div>`;
 
-    pane.querySelector('[data-editor-holding]').addEventListener('click', () => this.hold(!this.held));
+    surface.querySelector('[data-editor-holding]').addEventListener('click', () => this.hold(!this.held));
     // A Section mounts on approach, so the list grows as the author scrolls — and
     // while nothing is held, the scroll is where each playhead comes from, so the
     // readouts follow it rather than needing a button of their own.
@@ -352,23 +376,22 @@ export class Motion {
     this.held = on;
     if (on) handles.hold();
     else handles.release();
-    const button = this.pane?.querySelector('[data-editor-holding]');
+    const button = this.surface?.querySelector('[data-editor-holding]');
     if (button) {
       button.textContent = on ? 'release' : 'hold';
       button.setAttribute('aria-pressed', String(on));
     }
-    this.pane?.toggleAttribute('data-editor-held', on);
+    this.surface?.toggleAttribute('data-editor-held', on);
     this.say(on ? 'held — the scroll no longer drives a Timeline' : 'released — the scroll drives them again');
   }
 
   /** One scrub per registered Timeline, rebuilt from the register. */
   refresh() {
-    const into = this.pane?.querySelector('[data-editor-timelines]');
+    const into = this.surface?.querySelector('[data-editor-timelines]');
     if (!into) return;
-    const timelines = this.handles?.timelines ?? new Map();
 
-    const wanted = [...timelines.keys()].sort();
-    if (wanted.join(',') === (this.showing ?? []).join(',')) return this.read();
+    const wanted = [...(this.handles?.timelines?.keys() ?? [])].sort();
+    if (wanted.join(',') === this.showing.join(',')) return this.read();
     this.showing = wanted;
     into.textContent = '';
 
@@ -397,8 +420,7 @@ export class Motion {
         // Holding is what makes the seek survive the next tick, so it is not a
         // separate thing the author has to remember to do first.
         if (!this.held) this.hold(true);
-        const timeline = this.handles?.timelines?.get(name);
-        timeline?.progress(Number(scrub.value));
+        this.timeline(name)?.progress(Number(scrub.value));
         at.textContent = Number(scrub.value).toFixed(3);
       });
       row.append(label, scrub, at);
@@ -410,8 +432,8 @@ export class Motion {
   /** Put each scrub where its Timeline actually is. */
   read() {
     if (this.held) return;
-    for (const scrub of this.pane?.querySelectorAll('[data-editor-scrub]') ?? []) {
-      const timeline = this.handles?.timelines?.get(scrub.dataset.editorScrub);
+    for (const scrub of this.surface?.querySelectorAll('[data-editor-scrub]') ?? []) {
+      const timeline = this.timeline(scrub.dataset.editorScrub);
       if (!timeline) continue;
       const at = timeline.progress();
       scrub.value = String(at);

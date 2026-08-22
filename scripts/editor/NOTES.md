@@ -24,12 +24,16 @@ still a sentence written to an agent by hand.
 
 ## The shape, and why it is this shape
 
-**A write boundary, with a browser on top** (ADR 0004). There are two boundaries
-and they are siblings rather than one generalised over two formats:
+**A write boundary, with a browser on top** (ADR 0004). There are two of them, and
+they are siblings rather than one parser generalised over two formats:
 `lib/content.mjs` turns a Section's `content.ts`, a key and a value into the
-file's bytes, and `lib/tokens.mjs` does the same for `tokens.css`. Everything
-above them — the server, the surfaces, the panel — is a way of calling one of
-those two functions. The tests are on the functions, at the bytes, because these
+file's bytes, and `lib/tokens.mjs` does the same for `tokens.css`. What IS shared
+is the plumbing around them — `lib/sections.mjs`'s `place()` resolves the path,
+reads, calls whichever boundary it was handed and writes, and `put` and `putToken`
+are that function with one of the two file names bound. Sharing the plumbing is
+free; sharing the parser would mean one function that understood neither format
+exactly. Everything above them — the server, the surfaces, the panel — is a way of
+calling one of those two boundaries. The tests are on the functions, at the bytes, because these
 are the two components in the repository whose bugs corrupt source files instead
 of appearing on screen.
 

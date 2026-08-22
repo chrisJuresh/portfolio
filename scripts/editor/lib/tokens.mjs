@@ -267,6 +267,17 @@ export function tokens(source) {
  *          | { kind: 'colour', hex: string, alpha: number }
  *          | { kind: 'text' }}
  */
+/** How many digits a written number keeps after its point. What the file holds is
+ *  the precision that has to survive being read and written back — a share
+ *  measured to four places is not the same number three places from now. */
+function decimals(text) {
+  return (String(text).split('.')[1] ?? '').replace(/[^0-9]/g, '').length;
+}
+
+/** Ten to the `n`, without the float noise. `10 ** -4` is 0.00009999999999999999,
+ *  which is what would end up in a control's `step` attribute and in the panel. */
+const power = (n) => Number(`1e${n}`);
+
 export function control(value) {
   const text = String(value ?? '').trim();
 
@@ -285,20 +296,22 @@ export function control(value) {
       unit: measured[2].toLowerCase(),
       min: number < 0 ? -span : 0,
       max: span,
-      // Fine enough to move the last digit the file holds: a share written to
-      // four places needs a thousandth, and a font weight does not.
-      step: 10 ** Math.floor(Math.log10(span / 1000)),
+      // TWO THINGS DECIDE THE STEP, and the second one is not optional. A
+      // thousandth of the range is a slider a finger can use; the value's OWN
+      // precision is what the file already holds, and a step coarser than that
+      // rounds a digit away the first time the control is touched.
+      // `--projects-panel-fit: 0.5651` is the case: a thousandth writes 0.565
+      // back, and the composition's solved width moves because a slider was
+      // nudged. Whichever is finer wins.
+      step: Math.min(power(-decimals(measured[1])), power(Math.floor(Math.log10(span / 1000)))),
     };
   }
 
   const hex = /^#([0-9a-f]{3,8})$/i.exec(text);
   if (hex && [3, 4, 6, 8].includes(hex[1].length)) {
     const digits = hex[1].length <= 4 ? [...hex[1]].map((d) => d + d).join('') : hex[1];
-    return {
-      kind: 'colour',
-      hex: `#${digits.slice(0, 6).toLowerCase()}`,
-      alpha: digits.length === 8 ? Number((Number.parseInt(digits.slice(6), 16) / 255).toFixed(3)) : 1,
-    };
+    const alpha = digits.length === 8 ? Number((Number.parseInt(digits.slice(6), 16) / 255).toFixed(3)) : 1;
+    return { kind: 'colour', hex: `#${digits.slice(0, 6).toLowerCase()}`, alpha, step: alphaStep(alpha) };
   }
 
   const rgb = /^rgba?\(\s*([^)]*)\)$/i.exec(text);
@@ -307,16 +320,22 @@ export function control(value) {
     const numbers = parts.map(Number);
     if ((parts.length === 3 || parts.length === 4) && numbers.every(Number.isFinite)) {
       const byte = (n) => Math.max(0, Math.min(255, Math.round(n))).toString(16).padStart(2, '0');
+      const alpha = parts.length === 4 ? numbers[3] : 1;
       return {
         kind: 'colour',
         hex: `#${byte(numbers[0])}${byte(numbers[1])}${byte(numbers[2])}`,
-        alpha: parts.length === 4 ? numbers[3] : 1,
+        alpha,
+        step: alphaStep(parts.length === 4 ? parts[3] : '1'),
       };
     }
   }
 
   return { kind: 'text' };
 }
+
+/** An alpha slider's step: a hundredth is enough to drag, and finer when the file
+ *  holds finer — for the same reason a number's step is. */
+const alphaStep = (written) => Math.min(0.01, power(-decimals(written)));
 
 /**
  * A number and its unit, as the bytes to put in the file.
@@ -359,7 +378,7 @@ function nearest(rule, available) {
 }
 
 /**
- * Everything a Token's value may not be.
+ * `value`, trimmed, if it is one CSS value — and a `Refused` saying why if not.
  *
  * The list is short and every entry is the same worry: a text box that reaches a
  * stylesheet must not be able to write anything but a value. A `;` starts a
@@ -367,8 +386,13 @@ function nearest(rule, available) {
  * one, a comment marker can take the rest of the file with it, and `!important`
  * is a value that outranks the composition rather than one that belongs to it.
  * All refusals, none escaped: escaping would mean deciding what the author meant.
+ *
+ * Exported because the SURFACE needs the same answer before it previews. Its
+ * preview is a stylesheet it writes by hand, so a `}` typed into a text box would
+ * break the whole sheet on the way to a write the server was going to refuse
+ * anyway — and asking here is one spelling of the rule rather than two.
  */
-function refuse(key, value) {
+export function asValue(key, value) {
   if (typeof value !== 'string') {
     throw new Refused(`${key}: a Token is a CSS value, and this is ${value === null ? 'null' : `a ${typeof value}`}`);
   }
@@ -421,7 +445,7 @@ export function write(source, key, value) {
       `"${key}" is not a Token key — a key is a rule’s number and a property, as in 0:--stub-height`,
     );
   }
-  const text = refuse(key, value);
+  const text = asValue(key, value);
 
   const before = tokens(source);
   const target = before.find((token) => token.key === key);

@@ -238,14 +238,14 @@ class Editor {
         <button type="button" data-editor-fold aria-expanded="true">fold</button>
       </header>
       <div data-editor-body>
-        <nav data-editor-tabs>
-          <button type="button" data-editor-tab="content" aria-pressed="true">Content</button>
-          <button type="button" data-editor-tab="tokens" aria-pressed="false">Tokens</button>
-          <button type="button" data-editor-tab="motion" aria-pressed="false">Motion</button>
+        <nav data-editor-surfaces>
+          <button type="button" data-editor-choose="content" aria-pressed="true">Content</button>
+          <button type="button" data-editor-choose="tokens" aria-pressed="false">Tokens</button>
+          <button type="button" data-editor-choose="motion" aria-pressed="false">Motion</button>
         </nav>
-        <div data-editor-pane="content"><div data-editor-fields></div></div>
-        <div data-editor-pane="tokens" hidden></div>
-        <div data-editor-pane="motion" hidden></div>
+        <div data-editor-surface="content"><div data-editor-fields></div></div>
+        <div data-editor-surface="tokens" hidden></div>
+        <div data-editor-surface="motion" hidden></div>
         <div data-editor-publish>
           <input type="text" data-editor-message placeholder="what changed (optional)" />
           <button type="button" data-editor-go>Publish</button>
@@ -300,13 +300,16 @@ class Editor {
         this.count();
       },
     });
-    this.tokens.mount(panel.querySelector('[data-editor-pane="tokens"]'));
+    this.tokens.mount(panel.querySelector('[data-editor-surface="tokens"]'));
 
     this.motion = new Motion({ say: (text, bad) => this.say(text, bad) });
-    this.motion.mount(panel.querySelector('[data-editor-pane="motion"]'));
+    this.motion.mount(panel.querySelector('[data-editor-surface="motion"]'));
 
-    for (const tab of panel.querySelectorAll('[data-editor-tab]')) {
-      tab.addEventListener('click', () => this.show(tab.dataset.editorTab));
+    // `surface` and not `tab`: CONTEXT.md's Rail — the list naming what can be
+    // shown and marking which is selected — lists `tabs` under Avoid, and this
+    // strip is that shape. The prose calls them surfaces, so the code does.
+    for (const choose of panel.querySelectorAll('[data-editor-choose]')) {
+      choose.addEventListener('click', () => this.show(choose.dataset.editorChoose));
     }
 
     panel.querySelector('[data-editor-fold]').addEventListener('click', (event) => {
@@ -326,11 +329,11 @@ class Editor {
   /** Which surface is in front. One at a time, because three at once is the wall
    *  this panel exists to not be. */
   show(which) {
-    for (const tab of this.panel?.querySelectorAll('[data-editor-tab]') ?? []) {
-      tab.setAttribute('aria-pressed', String(tab.dataset.editorTab === which));
+    for (const choose of this.panel?.querySelectorAll('[data-editor-choose]') ?? []) {
+      choose.setAttribute('aria-pressed', String(choose.dataset.editorChoose === which));
     }
-    for (const pane of this.panel?.querySelectorAll('[data-editor-pane]') ?? []) {
-      pane.toggleAttribute('hidden', pane.dataset.editorPane !== which);
+    for (const surface of this.panel?.querySelectorAll('[data-editor-surface]') ?? []) {
+      surface.toggleAttribute('hidden', surface.dataset.editorSurface !== which);
     }
     if (which === 'motion') this.motion?.refresh();
   }

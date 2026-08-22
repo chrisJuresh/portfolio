@@ -158,21 +158,60 @@ test('a negative number gets a range on both sides of nothing', () => {
   assert.equal(lean.max, 2);
 });
 
-test('a step is fine enough to move the last digit the file holds', () => {
-  assert.ok(control('0.5651').step <= 0.001, 'a four-decimal share needs a step of 0.001 or finer');
-  assert.ok(control('0.0095').step <= 0.0001);
+test('a value survives being read and written back, to the digit', () => {
+  // The assertion that matters, and the one the first version of this got wrong
+  // by asserting a bound on the step instead. A step coarser than the value's own
+  // precision rounds a digit away the first time the control is touched — and
+  // `--projects-panel-fit: 0.5651` is a measured constant the composition's whole
+  // width is solved from, so a slider nudge would move the layout by dropping a
+  // digit nobody asked it to drop.
+  for (const value of [
+    '0.5651',
+    '0.0095',
+    '0.00668',
+    '0.972',
+    '0.146rem',
+    '1.55',
+    '-0.5',
+    '34rem',
+    '240svh',
+    '140ms',
+    '0.32s',
+    '0px',
+    '400',
+    '45%',
+  ]) {
+    const shape = control(value);
+    assert.equal(amount(shape.number, shape.unit, shape.step), value, `${value} did not survive`);
+  }
+});
+
+test('a step has no float noise in it, because it is written into the control', () => {
+  // `10 ** -4` is 0.00009999999999999999, and that is what a `step` attribute and
+  // the panel beside it would have read.
+  assert.equal(control('0.5651').step, 0.0001);
+  assert.equal(control('0.0095').step, 0.00001);
   assert.equal(control('400').step, 1);
 });
 
 test('control reads a colour, hex or rgba, as a colour and an alpha', () => {
-  assert.deepEqual(control('#f2f1ee'), { kind: 'colour', hex: '#f2f1ee', alpha: 1 });
-  assert.deepEqual(control('#000'), { kind: 'colour', hex: '#000000', alpha: 1 });
+  assert.deepEqual(control('#f2f1ee'), { kind: 'colour', hex: '#f2f1ee', alpha: 1, step: 0.01 });
+  assert.deepEqual(control('#000'), { kind: 'colour', hex: '#000000', alpha: 1, step: 0.01 });
   assert.deepEqual(control('rgba(242, 241, 238, 0.16)'), {
     kind: 'colour',
     hex: '#f2f1ee',
     alpha: 0.16,
+    step: 0.01,
   });
-  assert.deepEqual(control('rgb(0, 0, 0)'), { kind: 'colour', hex: '#000000', alpha: 1 });
+  assert.deepEqual(control('rgb(0, 0, 0)'), { kind: 'colour', hex: '#000000', alpha: 1, step: 0.01 });
+});
+
+test('an alpha finer than a hundredth gets a step that can hold it', () => {
+  // Same rule as a number's step, and the same failure without it: an alpha
+  // slider stepping by a hundredth writes 0.14 over a Token that said 0.135.
+  const fine = control('rgba(242, 241, 238, 0.135)');
+  assert.equal(fine.step, 0.001);
+  assert.equal(colour(fine.hex, fine.alpha), 'rgba(242, 241, 238, 0.135)');
 });
 
 test('a relationship is text, not a slider', () => {

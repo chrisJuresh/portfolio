@@ -189,13 +189,13 @@ export const check = {
 
       // ---- Tokens ---------------------------------------------------------
 
-      await page.locator('[data-editor-tab="tokens"]').click();
+      await page.locator('[data-editor-choose="tokens"]').click();
       // Every group collapsed is how the panel opens — a hundred and sixty
       // controls otherwise — so this opens them all rather than naming one, for
       // the same reason the Content half takes the first bound field it finds: a
       // Check that named a Token would fail the day the composition renamed it.
       await page.evaluate(() => {
-        for (const group of document.querySelectorAll('[data-editor-pane="tokens"] details')) {
+        for (const group of document.querySelectorAll('[data-editor-surface="tokens"] details')) {
           group.open = true;
         }
       });
@@ -301,7 +301,7 @@ export const check = {
 
       // ---- a Timeline, scrubbed -------------------------------------------
 
-      await page.locator('[data-editor-tab="motion"]').click();
+      await page.locator('[data-editor-choose="motion"]').click();
       if ((await page.locator('[data-editor-scrub="turn"]').count()) === 0) {
         failures.push(
           'the Editor listed no Timeline for the Turn — it is registered at boot, so the register is not being read',
@@ -312,7 +312,7 @@ export const check = {
           input.dispatchEvent(new Event('input', { bubbles: true }));
         });
         const held = await page.evaluate(
-          () => document.querySelector('[data-editor-pane="motion"]')?.hasAttribute('data-editor-held') ?? false,
+          () => document.querySelector('[data-editor-surface="motion"]')?.hasAttribute('data-editor-held') ?? false,
         );
         if (!held) {
           failures.push(

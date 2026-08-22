@@ -141,13 +141,13 @@
 
 /* ---- the tab strip, and the three surfaces behind it -------------------- */
 
-[data-editor-tabs] {
+[data-editor-surfaces] {
   display: flex;
   gap: 4px;
   margin: 0 0 8px;
 }
 
-[data-editor-tab][aria-pressed='true'] {
+[data-editor-choose][aria-pressed='true'] {
   border-color: var(--editor-live);
   color: var(--editor-live);
 }
@@ -239,7 +239,7 @@
   opacity: 0.5;
 }
 
-[data-editor-pane='motion'][data-editor-held] [data-editor-holding] {
+[data-editor-surface='motion'][data-editor-held] [data-editor-holding] {
   border-color: var(--editor-live);
   color: var(--editor-live);
 }
