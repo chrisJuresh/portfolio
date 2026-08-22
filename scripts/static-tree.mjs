@@ -84,6 +84,29 @@ export function resolveFile(baseDir, pathname, fs) {
   return null;
 }
 
+/**
+ * True when the static tree is the thing that should answer `pathname`.
+ *
+ * Two conditions, and the second exists only for the dev server. The path has to
+ * be one STATIC_ROOTS owns, AND no route Astro actually has may claim it.
+ *
+ * The second is what keeps `astro dev` honest. The middleware that serves this
+ * tree runs BEFORE Astro's own — it has to, because Astro answers an unmatched
+ * HTML request with its 404 instead of calling next(), so anything registered
+ * behind it is never reached — and running first means it would happily shadow a
+ * real page. Asking Astro which paths it has is what puts the route back in
+ * front. In a built dist/ the same guarantee is assemble-dist.mjs refusing to
+ * copy a static root over a path the build wrote.
+ *
+ * @param {string} pathname
+ * @param {RegExp[]} astroRoutes  patterns for the routes Astro's own pages have,
+ *   and only those — see astro.config.mjs for why its internal ones are dropped.
+ */
+export function servedFromStaticTree(pathname, astroRoutes = []) {
+  if (!isStaticPath(pathname)) return false;
+  return !astroRoutes.some((pattern) => pattern.test(pathname));
+}
+
 /** True when `pathname` is one of the paths STATIC_ROOTS owns. */
 export function isStaticPath(pathname) {
   const first = pathname.replace(/^\/+/, '').split('/')[0];
