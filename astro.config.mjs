@@ -45,6 +45,20 @@ export default defineConfig({
   // /next, not /next/index.html — vercel.json's cleanUrls serves the directory
   // form at the bare path.
   build: { format: 'directory' },
+  // Astro scopes a component's rules by narrowing every compound in them, and
+  // the DEFAULT strategy narrows with a bare attribute selector — which adds
+  // (0,1,0) of specificity per compound. That makes a scoped rule's weight grow
+  // with the length of its selector, and a Variant, which is one fixed gate in
+  // front of the same selector, then wins or loses depending on how many
+  // compounds the composition happened to write. `.stub__points li` was an exact
+  // tie, settled by whichever stylesheet the bundler emitted second.
+  //
+  // `where` wraps the same attribute in :where(), so it selects identically and
+  // weighs nothing. Scoped rules keep the specificity they are written with, and
+  // `:root[data-variant='…']` in front of one always outranks it by (0,2,0) —
+  // which is the whole mechanism a Variant is selected by. See
+  // src/sections/stub/NOTES.md.
+  scopedStyleStrategy: 'where',
   devToolbar: { enabled: false },
   vite: { plugins: [servesTheExistingSite()] },
 });

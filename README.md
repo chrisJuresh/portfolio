@@ -245,6 +245,7 @@ pnpm install --frozen-lockfile
 pnpm build       # checks, typechecks, builds, assembles dist/
 pnpm preview     # serves that dist/ — of the tree it is run from
 pnpm dev         # Astro's dev server, with the static site beside it
+pnpm variants    # renders every Variant of every Section into one sheet
 ```
 
 `/next` is one document made of Sections. A **Section** owns its markup, styles,
@@ -255,11 +256,22 @@ rather than a convention: a Section's styles are scoped by the compiler, and its
 Content is typed, so renaming a field stops the build instead of blanking the
 page. `pnpm check:sections` is the rest of it.
 
+A Section can also carry **Variants**: several complete alternative directions,
+all present in the source at once and selected by an attribute, so that choosing
+between them is looking rather than describing. `pnpm variants` renders the whole
+matrix — every Variant of every Section, both themes — into one sheet at
+`design/sheets/index.html`, each picture captioned with what that Variant
+declares. The rejected ones stay in the source as the record of what was
+compared, and cost a reader nothing: nothing imports them, so they are not in the
+build at all. This is the general form of the typographic comparison in `design/`
+described above.
+
 Nothing at `/next` is live yet — it carries a stub Section, and `/portfolio` goes
 on being the document until the ticket that flips the route.
 
 Reading order for the detail: `CONTEXT.md` for the vocabulary, `docs/adr/` for the
 decisions, then `src/kernel/NOTES.md` and `src/sections/stub/NOTES.md`.
+`docs/agents/variants.md` is the Variants and the sheet.
 
 ## Deployment
 

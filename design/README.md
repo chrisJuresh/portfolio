@@ -3,6 +3,15 @@
 Dev-only. Nothing here is served by the site; `.vercelignore` keeps the whole
 folder out of deployments. The site itself stays dependency-free and build-free.
 
+**Two things called variants live here, and they are not the same thing.**
+`variants.css` and `tools/render.mjs` are the typographic comparison this folder
+was built for: eight variants of one type stack, across `/portfolio`, which is a
+plain static tree with no Sections in it. They are kept as that comparison was
+judged. `tools/render-variants.mjs` is the general mechanism it became — a
+**Variant** is any complete alternative direction for a Section, declared in that
+Section's own `variants.css`, and `pnpm variants` renders them all into
+`sheets/index.html`. See [`../docs/agents/variants.md`](../docs/agents/variants.md).
+
 **Outcome: `sitka` won**, with two exceptions the lab shows too — the year column,
 kept in Georgia because its old-style figures reach 78% of the cap height beside
 them where Sitka's lining figures stand to 84%, and the italic lead paragraph,
@@ -27,7 +36,9 @@ now stands relative to a base that has moved.
 
 ```
 design/
-  variants.css       every variant, defined ONCE — the source of truth
+  variants.css       every TYPE variant, defined ONCE — the source of truth.
+                     Not the same thing as a Section's Variants: see the note
+                     under this tree
   type-lab.html      interactive: flip variants on the real pages in a browser
   type-tuner.html    interactive: free-form size/spacing/font sliders + CSS export
   layout-tuner.html  interactive: drag and resize every box in the Projects Panel
@@ -35,6 +46,14 @@ design/
                      export says where each box ended up in pixels, in shares of
                      --panel-w, and on the composition's own grid lines
   shots/             committed renders + index.html contact sheet
+  sheets/            the Variant sheet — /next's Sections rendered under every
+                     Variant they declare, captioned with what each one changes.
+                     Written by tools/render-variants.mjs, wiped on every run and
+                     not committed
+  tools/
+    render-variants.mjs  `pnpm variants`. The general form of render.mjs below:
+                     any Section, any number of Variants, layout and palette and
+                     motion rather than only type. docs/agents/variants.md
   plate/
     build-plate.py   develops a source into portfolio/img/<stem>-*.webp — the grade
     plate-tuner.html interactive: the same pipeline on sliders + Python/CSS export

@@ -103,6 +103,13 @@ photos/
 # every run, and nothing serves it.
 portfolio/img/tex/paper-seam-proof.png
 
+# the Variant sheet, and the renders it is assembled from. design/tools/
+# render-variants.mjs wipes and rewrites this directory on every run, and what it
+# holds is a picture of the source it was run against — so a committed copy could
+# only ever be a picture of a Variant that has since been rewritten, captioned
+# with the declarations it used to have. `pnpm variants` is a minute.
+design/sheets/
+
 # secrets — never commit
 .env
 .env.*
@@ -122,7 +129,8 @@ design/plinth/maps/
 # that still has this directory. Keep anything you care about elsewhere too.
 design/plinth/sources/
 
-# per-candidate plinth shots from ender.mjs --stones. 1.4MB each and
+# per-candidate plinth shots from 
+ender.mjs --stones. 1.4MB each and
 # regenerable in a minute; what is committed is the contact sheet built from
 # them, design/shots/plinth-stones.jpg.
 design/shots/*__stone-*.png
