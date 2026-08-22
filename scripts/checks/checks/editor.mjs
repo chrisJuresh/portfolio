@@ -2,8 +2,9 @@ import { cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
-import { PAGE, start } from '../../editor/server.mjs';
 import { discover } from '../../editor/lib/sections.mjs';
+import { start } from '../../editor/server.mjs';
+import { PAGE, open } from '../lib/page.mjs';
 
 /**
  * The Editor, driven end to end: open it, click a piece of text, change it, and
@@ -24,6 +25,11 @@ import { discover } from '../../editor/lib/sections.mjs';
  * tree it was gating would put a file it wrote into the commit it was checking.
  * The real files are compared before and after anyway: a Check nobody can be sure
  * about is worse than none.
+ *
+ * IT OPENS THE PAGE THROUGH `lib/page.mjs`, like every other Check, and the one
+ * thing it hands that helper differently is the ORIGIN: the Editor's own, not the
+ * suite's. So the response, console and throw recording is the shared one rather
+ * than a second hand-rolled copy of it.
  *
  * IT DOES NOT SETTLE THE PAGE, which is the one place this Check disagrees with
  * every other one. `settle()` exists because a Section mounts on approach, so its
@@ -72,18 +78,19 @@ export const check = {
     let context;
     try {
       served = await start({ dist, sectionsRoot: to, repoRoot, canPublish: false });
-      context = await browser.newContext({ viewport: { width: 1440, height: 900 } });
-      const page = await context.newPage();
+      // The Editor's origin, through the suite's own opener.
+      const opened = await open(browser, served.origin, { path: PAGE });
+      context = opened.context;
+      const { page, record } = opened;
 
-      /** @type {string[]} */
-      const thrown = [];
-      page.on('pageerror', (error) => thrown.push(String(error?.message ?? error)));
-
-      await page.goto(served.origin + PAGE, { waitUntil: 'load' });
       await page.waitForSelector('aside[data-editor]', { timeout: 15_000 });
 
       const bound = await page.$$eval('[data-editor-bound]', (elements) =>
-        elements.map((element) => element.dataset.editorKey),
+        elements.map((element) => ({
+          key: element.dataset.editorKey,
+          section: element.dataset.editorSection,
+          field: element.dataset.editorField,
+        })),
       );
       if (bound.length === 0) {
         failures.push(
@@ -95,10 +102,10 @@ export const check = {
       notes.push(`${bound.length} element(s) bound to Content`);
 
       // Any bound field will do, and taking the first rather than naming one
-      // keeps this Check from failing the day a Section's words change.
-      const key = bound[0];
-      const [section, ...rest] = key.split('.');
-      const field = rest.join('.');
+      // keeps this Check from failing the day a Section's words change. The
+      // Section and the field come off their own attributes: a field key holds
+      // dots of its own, so splitting the composite one would be a guess.
+      const { key, section, field } = bound[0];
       const element = page.locator(`[data-editor-key="${key}"]`).first();
       const before = (await element.textContent()) ?? '';
 
@@ -106,11 +113,20 @@ export const check = {
       await page.keyboard.press('ControlOrMeta+A');
       await page.keyboard.type(MARKER);
       await page.keyboard.press('Enter');
-      await page.waitForFunction(
-        (wanted) => document.querySelector('[data-editor-said]')?.textContent?.includes(wanted),
-        'wrote',
-        { timeout: 10_000 },
-      ).catch(() => {});
+      // A wait that times out is its own failure. Swallowing it would leave the
+      // assertions below to notice, which they do — but ten seconds later and
+      // without saying that the surface never reported anything at all.
+      const reported = await page
+        .waitForFunction(
+          (wanted) => document.querySelector('[data-editor-said]')?.textContent?.includes(wanted),
+          'wrote',
+          { timeout: 10_000 },
+        )
+        .then(() => true)
+        .catch(() => false);
+      if (!reported) {
+        failures.push(`the Editor never reported writing ${key} — the surface did not answer the click`);
+      }
 
       const after = ((await element.textContent()) ?? '').trim();
       if (after !== MARKER) {
@@ -136,11 +152,15 @@ export const check = {
       const input = page.locator(`[data-editor-input="${section} ${field}"]`);
       await input.fill('   ');
       await input.press('Enter');
-      await page.waitForFunction(
-        () => document.querySelector('[data-editor-said]')?.hasAttribute('data-editor-bad'),
-        undefined,
-        { timeout: 10_000 },
-      ).catch(() => {});
+      const complained = await page
+        .waitForFunction(
+          () => document.querySelector('[data-editor-said]')?.hasAttribute('data-editor-bad'),
+          undefined,
+          { timeout: 10_000 },
+        )
+        .then(() => true)
+        .catch(() => false);
+      if (!complained) failures.push('the Editor never reported the refusal of an empty value');
 
       const said = (await page.textContent('[data-editor-said]')) ?? '';
       if (!said.startsWith('refused')) {
@@ -170,7 +190,7 @@ export const check = {
         failures.push('the Editor accepted a write with no handshake header — any page in any tab could edit the repository');
       }
 
-      if (thrown.length > 0) failures.push(`the Editor threw: ${thrown.join(' / ')}`);
+      if (record.thrown.length > 0) failures.push(`the Editor threw: ${record.thrown.join(' / ')}`);
     } finally {
       await context?.close();
       await served?.close();

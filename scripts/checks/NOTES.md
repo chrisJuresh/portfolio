@@ -126,8 +126,9 @@ A Check is a module in `checks/` exporting `{ name, title, run(ctx) }`. `run`
 gets `{ browser, origin, repoRoot, dist }` and returns either an array of failure
 strings or `{ failures, notes }`. Register it in the `CHECKS` array in `run.mjs`.
 
-`editor` is the one Check that does not settle, and the reason is worth knowing
-before copying it: `settle()` exists because a Section's TIMELINE mounts on
+`editor` opens the Editor's own origin rather than the suite's — `open()` takes an
+origin, so that needs no exception — and it is the one Check that does not settle.
+That reason is worth knowing before copying it: `settle()` exists because a Section's TIMELINE mounts on
 approach, but the markup and every word in it are prerendered and present at load,
 and the Editor binds to words. Anything asserting about a Section's motion, its
 mount state or its geometry still has to settle.

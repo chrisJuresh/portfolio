@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
 import { Refused } from './content.mjs';
-import { publish } from './publish.mjs';
+import { contentAmong, publish } from './publish.mjs';
 
 /**
  * Publish: commit what the Editor wrote, push it, and say what it did.
@@ -187,4 +187,36 @@ test('it reads a renamed and a staged Content file as changed', async () => {
   const done = await run(git);
 
   assert.deepEqual(done.files, ['src/sections/front-screen/content.ts']);
+});
+
+test('what counts as a Content path is the Section-name pattern, not a looser copy', () => {
+  // The name half comes from sections.mjs so that the two files cannot disagree.
+  // These four are what a hand-written `[a-z][a-z0-9-]*` would have let through.
+  assert.deepEqual(
+    contentAmong(
+      [
+        'src/sections/front-screen/content.ts',
+        'src/sections/a--b/content.ts',
+        'src/sections/trailing-/content.ts',
+        'src/sections/-leading/content.ts',
+        'src/sections/front-screen/nested/content.ts',
+        'src/sections/front-screen/tokens.css',
+        'src/sections/front-screen/content.ts.bak',
+        'design/legacy/front-screen/content.ts',
+      ],
+      'src/sections',
+    ),
+    ['src/sections/front-screen/content.ts'],
+  );
+});
+
+test('a Windows path separator is read as a path separator', () => {
+  // git reports forward slashes, so the normalisation in contentAmong is
+  // defensive — but it is there, so it is asserted. Built rather than written as
+  // a literal: a backslash in a path in a test in a heredoc is four layers of
+  // escaping and the last version of this test asserted a mangled string.
+  const sep = String.fromCharCode(92);
+  const windows = ['src', 'sections', 'front-screen', 'content.ts'].join(sep);
+
+  assert.deepEqual(contentAmong([windows], 'src/sections'), [windows]);
 });

@@ -23,7 +23,7 @@ import { spawnSync } from 'node:child_process';
 import { statSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
-import { start } from './server.mjs';
+import { PAGE, start } from './server.mjs';
 
 const repoRoot = fileURLToPath(new URL('../..', import.meta.url)).replace(/[\\/]+$/, '');
 const dist = `${repoRoot}/dist`;
@@ -58,7 +58,7 @@ try {
 const served = await start({ dist, sectionsRoot, repoRoot, port });
 
 console.log('editor: the Portfolio, editable.\n');
-console.log(`  open       ${served.origin}/next`);
+console.log(`  open       ${served.origin}${PAGE}`);
 console.log(`  serving    ${dist}`);
 console.log(`  writing    src/sections/*/content.ts   ${build ? '' : '(against a dist this did not build)'}`);
 console.log('\n  Click any text to change it. Enter commits, Escape puts it back.');

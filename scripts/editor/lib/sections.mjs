@@ -24,8 +24,10 @@ import { Refused, fields, write } from './content.mjs';
 /** The one file name the Editor writes. Not a parameter, anywhere. */
 export const CONTENT = 'content.ts';
 
-/** A Section's folder name: lower case, digits and single dashes. */
-const NAME = /^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/;
+/** A Section's folder name: lower case, digits and single dashes. Exported
+ *  because Publish has to recognise a Content path, and a second, looser copy of
+ *  this pattern there would be a path shape two files disagreed about. */
+export const NAME = /^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/;
 
 /**
  * The Sections under `sectionsRoot` that hold a Content file, sorted.

@@ -95,9 +95,12 @@ trailing space back on the way out. The panel's input carries the raw value
 instead, spaces included, because there the author is looking at the string
 itself.
 
-`data-editor-key` on a bound element names its field. Nothing on the page needs
-it; it is how the smoke Check names an element, and how `$0.dataset` in devtools
-answers "what am I looking at".
+A bound element carries three attributes, and three rather than one composite is
+the point: `data-editor-key` is `section.field` and reads well in devtools, while
+`data-editor-section` and `data-editor-field` are what anything downstream
+actually consumes. A field key holds dots of its own —
+`work.entries.0.org` — so anything handed only the composite has to guess where the
+Section name ends. Nothing on the page needs any of them.
 
 ## Publish
 
@@ -146,6 +149,14 @@ tree's Content while looking at another's. **Never open the Editor through
 
 ## Two traps
 
+**The Section-name pattern lives in `sections.mjs` and is exported.** Publish has
+to recognise a Content path in `git status` output, and the first version of it
+hand-wrote `[a-z][a-z0-9-]*` — looser than the real pattern, so `a--b/content.ts`
+and `trailing-/content.ts` would both have been committed as Sections. Two files
+disagreeing about what a Section is called is the kind of thing that decides what
+gets committed, so there is one pattern and `contentAmong` builds its shape from
+it.
+
 **`getSelection().selectAllChildren` and then `Control+A`.** The surface selects
 the element's text when it becomes editable, but a driver still has to press
 select-all before typing — Playwright's `type` appends otherwise, and the
@@ -156,13 +167,25 @@ it in words, but it means the Editor's own page is not console-clean after a
 refusal. The `console` Check is unaffected — it runs against `dist/` without the
 Editor — and the smoke Check does not assert console cleanliness for that reason.
 
+## One object, and not four modules
+
+`client/editor.js` is one `Editor` class doing binding, in-place editing, the
+panel, publishing and listening, and its own dividers mark those seams — a fair
+reading is that it wants splitting. It is not split because the seams share one
+piece of state: the field index that binds an element is the same index the panel
+renders and the same one a write updates, and there is exactly one instance of it.
+Splitting would mean either shipping a bundler for a dev-only tool or serving
+three more routes and hand-wiring the imports, both of which are more machinery
+than the thing being organised. If it grows a second surface — Tokens, #144 —
+that calculus changes.
+
 ## The tests
 
 | file | asserts |
 | ---- | ------- |
 | `lib/content.test.mjs` | the bytes: what moved, what did not, and every refusal |
 | `lib/sections.test.mjs` | that a request cannot name a file |
-| `lib/publish.test.mjs` | which arguments git is handed |
+| `lib/publish.test.mjs` | which arguments git is handed, and what counts as a Content path |
 | `scripts/checks/checks/editor.mjs` | one smoke Check: click, type, find it in the file |
 
 `pnpm test` runs the first three; `pnpm check` runs them and then the Check.

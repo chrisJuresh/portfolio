@@ -25,7 +25,7 @@
  */
 
 import { Refused } from './content.mjs';
-import { CONTENT } from './sections.mjs';
+import { CONTENT, NAME } from './sections.mjs';
 
 /** One line of words, long enough to say what changed. */
 const LONGEST_MESSAGE = 300;
@@ -36,7 +36,7 @@ const lines = (text) =>
     .map((line) => line.trimEnd())
     .filter((line) => line !== '');
 
-const said = (result) => lines(result?.stderr).concat(lines(result?.stdout)).join(' / ') || 'no output';
+const outputOf = (result) => lines(result?.stderr).concat(lines(result?.stdout)).join(' / ') || 'no output';
 
 /**
  * `git status --porcelain` is two status columns, a space, then the path — and a
@@ -51,10 +51,17 @@ export function changed(porcelain) {
   });
 }
 
-/** The Content files under `sections`, and nothing that merely looks like one. */
+/**
+ * The Content files under `sections`, and nothing that merely looks like one.
+ *
+ * The Section-name half comes from `sections.mjs`'s own pattern rather than a
+ * second spelling of it: this decides what gets committed, and a looser copy here
+ * would be two files disagreeing about what a Section is called.
+ */
 export function contentAmong(paths, sections) {
   const root = sections.replace(/\\/g, '/').replace(/\/+$/, '');
-  const shape = new RegExp(`^${root}/[a-z][a-z0-9-]*/${CONTENT.replace('.', '\\.')}$`);
+  const name = NAME.source.replace(/^\^/, '').replace(/\$$/, '');
+  const shape = new RegExp(`^${root}/(?:${name})/${CONTENT.replace('.', '\\.')}$`);
   return paths.filter((path) => shape.test(path.replace(/\\/g, '/')));
 }
 
@@ -70,7 +77,7 @@ export function contentAmong(paths, sections) {
  */
 export async function publish({ run, sections, message }) {
   const status = run(['status', '--porcelain']);
-  if (status.status !== 0) throw new Refused(`git status failed — ${said(status)}`);
+  if (status.status !== 0) throw new Refused(`git status failed — ${outputOf(status)}`);
 
   const dirty = changed(status.stdout);
   const files = contentAmong(dirty, sections);
@@ -98,7 +105,7 @@ export async function publish({ run, sections, message }) {
   // is why it takes a minute and why a broken tree cannot be published.
   const committed = run(['commit', '-m', wanted, '--', ...files]);
   if (committed.status !== 0) {
-    throw new Refused(`nothing was committed — ${said(committed)}`);
+    throw new Refused(`nothing was committed — ${outputOf(committed)}`);
   }
 
   const branch = lines(run(['rev-parse', '--abbrev-ref', 'HEAD']).stdout)[0] ?? '(unknown)';
@@ -112,6 +119,6 @@ export async function publish({ run, sections, message }) {
     left: dirty.filter((path) => !files.includes(path)),
     message: wanted,
     pushed: pushed.status === 0,
-    ...(pushed.status === 0 ? {} : { why: said(pushed) }),
+    ...(pushed.status === 0 ? {} : { why: outputOf(pushed) }),
   };
 }

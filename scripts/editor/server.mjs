@@ -36,7 +36,11 @@ import { put, readAll } from './lib/sections.mjs';
 
 const here = fileURLToPath(new URL('.', import.meta.url));
 
-/** The route the Portfolio's new foundation is served at, as the Checks have it. */
+/**
+ * The route the Portfolio's new foundation is served at, until the ticket that
+ * flips it. `scripts/checks/lib/page.mjs` holds the Checks' own copy — this one
+ * is the tool's, so the Editor does not depend on the test harness for it.
+ */
 export const PAGE = '/next';
 
 /** Where the Editor's own two files answer, and the prefix nothing in dist uses. */
@@ -136,7 +140,6 @@ export async function start({ dist, sectionsRoot, repoRoot, port = 0, canPublish
 
   /** Current values from disk, paired with what the build put on the page. */
   const state = () => ({
-    page: PAGE,
     sections: readAll(sectionsRoot).map(({ section, fields }) => ({
       section,
       fields: fields.map(({ key, value }) => ({
@@ -172,6 +175,12 @@ export async function start({ dist, sectionsRoot, repoRoot, port = 0, canPublish
         return sendJson(response, 200, state());
       }
 
+      // An unknown route is a 404 before it is a wrong method, or a mistyped
+      // GET comes back as "POST only" and reads like a route that exists.
+      if (rest !== '/content' && rest !== '/publish') {
+        return send(response, 404, `no such Editor route: ${rest}`);
+      }
+
       // Everything that changes something needs the handshake header.
       if (request.method !== 'POST') return send(response, 405, 'POST only');
       if (request.headers[HANDSHAKE] !== '1') {
@@ -198,7 +207,6 @@ export async function start({ dist, sectionsRoot, repoRoot, port = 0, canPublish
         return sendJson(response, 200, await publish({ run: git, sections: sectionsRelative, message }));
       }
 
-      return send(response, 404, `no such Editor route: ${rest}`);
     }
 
     if (request.method !== 'GET' && request.method !== 'HEAD') return send(response, 405, 'GET only');

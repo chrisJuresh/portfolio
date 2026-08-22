@@ -115,8 +115,10 @@ chosen by eye. The losers stay as the record of what was judged.
 _Avoid_: version, option, theme, experiment
 
 **Check**:
-A headless assertion about a Section that a person would not notice failing.
-Checks never assert whether something looks good.
+A headless, blocking assertion about the served Portfolio, or about a tool that
+writes it. Most guard something a person would not notice failing — a face
+falling back, a 404 on a rung nothing draws, dark theme drifting light — and that
+is what keeps the suite small. Checks never assert whether something looks good.
 _Avoid_: test, spec, lint, validation
 
 **Agent Contract**:

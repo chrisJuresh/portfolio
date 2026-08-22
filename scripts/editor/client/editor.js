@@ -130,10 +130,14 @@ class Editor {
         this.bound.set(element, { section, key: field.key });
         this.byKey.set(id, (this.byKey.get(id) ?? []).concat(element));
         element.dataset.editorBound = '';
-        // Which field this element draws. Nothing on the page needs it; it is
-        // how the smoke Check names an element, and how a `$0.dataset` in
-        // devtools answers "what am I looking at".
+        // Which field this element draws. Nothing on the page needs these; they
+        // are how the smoke Check names an element, and how a `$0.dataset` in
+        // devtools answers "what am I looking at". Three attributes and not one
+        // composite: a field key holds dots of its own, so anything handed
+        // `front-screen.work.entries.0.org` has to guess where the Section ends.
         element.dataset.editorKey = `${section}.${field.key}`;
+        element.dataset.editorSection = section;
+        element.dataset.editorField = field.key;
         // The build's words are on the page; the current ones are what to show.
         if (field.value !== field.built) element.textContent = field.value;
       }
@@ -170,6 +174,14 @@ class Editor {
     element.removeAttribute('contenteditable');
     delete element.dataset.editorEditing;
 
+    // Collapsed, and this is not a convenience: an element's textContent carries
+    // the MARKUP's whitespace, so a heading authored over two source lines reads
+    // back with a newline in it that the author never typed — and the boundary
+    // refuses control characters, so without this an ordinary edit of an
+    // ordinary element would be refused. Joining a pasted paragraph is the same
+    // rule applied to the same character, and it is the right answer for the
+    // same reason: a Content string is one run of words, and a paragraph break
+    // is a new array entry.
     const typed = (element.textContent ?? '').replace(/\s+/g, ' ').trim();
     const held = edges(this.field(at.section, at.key)?.value ?? '');
     const wanted = held.before + typed + held.after;
@@ -206,7 +218,7 @@ class Editor {
   // The panel
   // -------------------------------------------------------------------------
 
-  build() {
+  mountPanel() {
     const panel = document.createElement('aside');
     panel.dataset.editor = '';
     panel.innerHTML = `
@@ -356,5 +368,5 @@ class Editor {
 const state = await fetch(`${API}/state`).then((response) => response.json());
 const editor = new Editor(state);
 editor.bind();
-editor.build();
+editor.mountPanel();
 editor.listen();
