@@ -228,7 +228,7 @@
      and Schlick against the IOR 1.55 the render's material is built at gives
      0.526 at the contact line and 0.507 at the front arris — half the light, and
      all but flat. */
-  --projects-panel-mirror-strength: 0.5;
+  --projects-panel-reflection-strength: 0.5;
   /* ...and it does NOT go out with distance. Fresnel moves two points over the
      whole strip, so a polished surface reflects the near end and the far end of
      thirteen pixels equally well; a reflection faded to nothing before the front
@@ -236,7 +236,7 @@
      the one place a grazing eye sees the most. What is left is the small, honest
      part — roughness scattering a little more of the image the further it has to
      travel — so it bottoms out here rather than at transparent. */
-  --projects-panel-mirror-far: 0.62;
+  --projects-panel-reflection-far: 0.62;
 
   /* ---- the contact shadow ------------------------------------------------ */
   /* Where the window meets the stone, and its absence was the loudest thing in

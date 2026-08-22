@@ -26,11 +26,11 @@
  * The setting is read once. A reader who changes it mid-visit is not chased —
  * the preference is about how a page behaves when it arrives.
  *
- * THERE ARE TWO OF THEM, AND THE SECOND IS THE REFLECTION. `mirror.ts` clones
+ * THERE ARE TWO OF THEM, AND THE SECOND IS THE REFLECTION. `reflection.ts` clones
  * the whole window into the stone, so the copy contains a second clip, and it is
  * this file that decides whether either of them ever fetches anything. That is
  * the point of serving all of them from one place rather than teaching the
- * mirror to fetch: the refusal above is written once and covers the reflection
+ * reflection to fetch: the refusal above is written once and covers it
  * without knowing it exists, so the marble freezes with the poster because there
  * was never a decision to get wrong.
  *

@@ -689,7 +689,7 @@ safe rather than a scrollbar.
 
 ### The reflection is a clone, and it is life-size
 
-`mirror.ts` copies the Frame into the marble and the stylesheet does everything
+`reflection.ts` copies the Frame into the marble and the stylesheet does everything
 after that. Two hand-kept copies of a hundred lines of measured drawing is one
 copy that gets edited and one that does not, and the one that does not is the
 reflection, where nobody would notice for months.
@@ -816,6 +816,17 @@ standing constraint is that whatever is named is lit in the **dark** room: a
 surround fitted to a light stone pins a black ground at a flat 24 whatever the
 texture under it says, and that fault took three wrong diagnoses to find.
 
+**It is a Token and CONTEXT.md says a Token is a number or a colour**, so this is
+worth arguing rather than leaving to be noticed. A plate is an asset, and assets
+are Content — except that the whole of what makes the CSS home right is that **the
+build fingerprints anything it can see in a `url()`**. Move the plate into
+`content.ts` and it becomes a runtime string the build cannot see, and the
+hand-kept digest comes back; the Kernel's Effect Stack made exactly this call for
+its two textures and says so where it declares them. Both homes are the Editor's
+to write, so the part of the glossary's definition that carries weight — that a
+Token is what the Editor may change directly — is satisfied either way. If that
+trade is ever re-decided, this line and the Kernel's two move together.
+
 **No `?v=` digest here, unlike the copy of the URL in `portfolio/styles.css`.**
 The build fingerprints anything it can see in a `url()`, so what ships is
 `/_astro/plinth-….<hash>.webp` and a re-rendered plate is a different filename by
@@ -823,8 +834,22 @@ construction. The digest that sheet carries is doing this job by hand because
 nothing builds it. The recording's URLs go the other way and *do* carry one: they
 are assembled in script, where the build cannot see them.
 
+**What is not ported, and it is not an omission.** The live sheet carries four
+`.panel[data-marble="nero"|"portoro"|"marquina"|"grey"]` rules beside the default
+declaration. They are #69's tuner's seam — a `dataset.marble =` and nothing else —
+and this Section has no tuner: choosing a stone here is the Editor setting the
+Token, which reaches every plate in `design/plinth/slab.json` rather than the four
+somebody once wrote a rule for. It is the same call #139 made about the glass's
+`marble` and `clip` backdrops and the `window.panelGlass` seam, for the same
+reason: a seam with no consumer is a second surface that agrees with the shipped
+one only while somebody keeps checking.
+
 And `plinth-studio.py` does not rewrite the line in `tokens.css` — see *What is
-still nobody's* above.
+still nobody's* above. **That one IS asserted**, which is the difference between
+the two: the Check reads the live sheet's own declaration and fails if the two
+trees have stopped standing on the same stone. Documenting a drift and then
+leaving it unguarded is how the acceptance criterion most exposed to it ends up
+being the only one with nothing behind it.
 
 ### What the Plinth's Check holds, and what it was shown to catch
 
@@ -837,12 +862,20 @@ is invisible on screen: one with **scripting off**, where the marble has to be
 drawn at its full depth with nothing lying in it, and one with **reduced motion**,
 where not one byte of the recording may be requested.
 
-**Thirteen mutations, each applied on its own, rebuilt, and reverted.** Twelve
+And it reaches outside the served page exactly once, to `portfolio/styles.css`,
+for the one thing no reading of `/next` alone could tell: whether the two trees
+still draw the same stone. It compares the STEM rather than the filename, because
+the build fingerprints the plate into `plinth-….<hash>.webp`. If the live sheet is
+ever gone — the route flip — the assertion returns clean rather than failing,
+because at that point there is only one declaration left and nothing to disagree
+with.
+
+**Sixteen mutations, each applied on its own, rebuilt, and reverted.** Fifteen
 were caught by the Check and one by the typecheck:
 
 | broken | caught by |
 | ------ | --------- |
-| `mirror.appendChild` commented out | no Frame in the marble |
+| `reflection.ts`'s `appendChild` commented out | no Frame in the marble |
 | the fold written as a `scaleY(top × ratio)` | the copy 460px shorter than the window |
 | the depths taken as shares of the composition | all three depths, and the stage's foot |
 | `top` and `behind` swapped | both depths, and the reflection's own depth |
@@ -855,6 +888,9 @@ were caught by the Check and one by the typecheck:
 | the reflection box set to `overflow: visible` | the box no longer clipping |
 | the slab given one overhang instead of two | the right overhang, and the two ends disagreeing |
 | a second Frame written into the marble in the markup | the copy's element count, and the no-script pass |
+| `tokens.css` pointed at a different stone from the live sheet | the two trees no longer standing on one plate |
+| the shared top face given the slab's ends instead of the Frame's | both edges, on the reflection and the shadow |
+| the shared top face made the whole slab deep | the contact line, the depth, and the shadow with them |
 | the `poster` attribute deleted | `astro check` — the import goes unused |
 
 **The depth tolerance is 0.002 of the Frame and the horizontal one is 0.1px**, and

@@ -1,3 +1,6 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+
 import { DESK, open, settle, withoutOrigin } from '../lib/page.mjs';
 
 /**
@@ -115,7 +118,7 @@ async function readPage(page) {
       const content = document.querySelector('.projects-panel__content');
       const secondLine = document.querySelector('.projects-panel__sub span:last-child');
       const plinth = document.querySelector('.projects-panel__plinth');
-      const mirror = document.querySelector('.projects-panel__mirror');
+      const reflection = document.querySelector('.projects-panel__reflection');
       const absent = [
         ['the Section', section],
         ['the stage', stage],
@@ -125,7 +128,7 @@ async function readPage(page) {
         ['the content box', content],
         ["the subheading's second line", secondLine],
         ['the Plinth', plinth],
-        ['the reflection box', mirror],
+        ['the reflection box', reflection],
       ].filter(([, found]) => !found);
       if (absent.length > 0) {
         return { missing: `the Frame is missing a part this Check reads: ${absent.map(([what]) => what).join(', ')}` };
@@ -196,10 +199,10 @@ async function readPage(page) {
        *  back as `calc(…)`, and asserting a length against itself would assert
        *  nothing. Each is checked against the share it is made of instead. */
       const slab = (name) => Number(style.getPropertyValue(`--projects-panel-plinth-${name}`));
-      const reflection = mirror.querySelector('.projects-panel__frame');
+      const copy = reflection.querySelector('.projects-panel__frame');
       const pl = plinth.getBoundingClientRect();
-      const mi = mirror.getBoundingClientRect();
-      const re = reflection?.getBoundingClientRect() ?? null;
+      const rf = reflection.getBoundingClientRect();
+      const re = copy?.getBoundingClientRect() ?? null;
       const plinthStyle = getComputedStyle(plinth);
       const contactStyle = getComputedStyle(plinth, '::after');
       // Just inside the Frame's foot, in the strip where the slab runs BEHIND the
@@ -288,18 +291,18 @@ async function readPage(page) {
           front: slab('front'),
           overhang: slab('overhang'),
         },
-        mirror: {
+        reflection: {
           // The contact line: the reflection starts at the Frame's foot, not at
           // the slab's back edge, because the marble back there has a window
           // standing on it rather than a reflection lying in it.
-          contact: mi.top - fr.bottom,
-          left: mi.left - fr.left,
-          right: mi.right - fr.right,
-          depth: mi.height / fr.width,
-          clips: getComputedStyle(mirror).overflow,
-          children: mirror.children.length,
+          contact: rf.top - fr.bottom,
+          left: rf.left - fr.left,
+          right: rf.right - fr.right,
+          depth: rf.height / fr.width,
+          clips: getComputedStyle(reflection).overflow,
+          children: reflection.children.length,
         },
-        reflection: re && {
+        copy: re && {
           // A mirror image is the SAME SIZE as the thing it reflects. Both of
           // these are zero or the share was read as a scale and the whole window
           // was squashed into the thirteen pixels that are the bottom 3.28% of it
@@ -310,8 +313,8 @@ async function readPage(page) {
           // contact line: `scaleY(-1)` about the bottom origin turns the window's
           // foot into the topmost row of the image and hangs its head downwards.
           stands: re.top - fr.bottom,
-          folded: getComputedStyle(reflection).transform,
-          parts: reflection.querySelectorAll('*').length,
+          folded: getComputedStyle(copy).transform,
+          parts: copy.querySelectorAll('*').length,
         },
         frameParts: frame.querySelectorAll('*').length,
         contact: {
@@ -320,7 +323,7 @@ async function readPage(page) {
           top: parseFloat(contactStyle.top),
         },
         clips: [...document.querySelectorAll('video.projects-panel__clip')].map((clip) => ({
-          inReflection: mirror.contains(clip),
+          inReflection: reflection.contains(clip),
           loop: clip.loop,
           muted: clip.muted,
           autoplay: clip.autoplay,
@@ -681,15 +684,15 @@ function reflects(read) {
   const face = read.slabToken.top * read.frame.width;
 
   // ---- the box: the top face and nothing else ----------------------------
-  if (Math.abs(read.mirror.contact) > LENGTH_TOLERANCE) {
+  if (Math.abs(read.reflection.contact) > LENGTH_TOLERANCE) {
     failures.push(
-      `at ${where} the reflection starts ${read.mirror.contact.toFixed(2)}px from the Frame's foot — it lies in ` +
+      `at ${where} the reflection starts ${read.reflection.contact.toFixed(2)}px from the Frame's foot — it lies in ` +
         'the marble IN FRONT of the window, so its top edge is the contact line and not the slab\'s back edge',
     );
   }
   for (const [end, measured] of [
-    ['left', read.mirror.left],
-    ['right', read.mirror.right],
+    ['left', read.reflection.left],
+    ['right', read.reflection.right],
   ]) {
     if (Math.abs(measured) > LENGTH_TOLERANCE) {
       failures.push(
@@ -698,14 +701,14 @@ function reflects(read) {
       );
     }
   }
-  if (Math.abs(read.mirror.depth * read.frame.width - face) > LENGTH_TOLERANCE) {
+  if (Math.abs(read.reflection.depth * read.frame.width - face) > LENGTH_TOLERANCE) {
     failures.push(
-      `at ${where} the reflection is ${(read.mirror.depth * read.frame.width).toFixed(2)}px deep and the top face ` +
+      `at ${where} the reflection is ${(read.reflection.depth * read.frame.width).toFixed(2)}px deep and the top face ` +
         `is ${face.toFixed(2)}px — a reflection deeper than the face reaches the front, which is a vertical ` +
         'surface and reflects nothing',
     );
   }
-  if (read.mirror.clips === 'visible') {
+  if (read.reflection.clips === 'visible') {
     failures.push(
       `at ${where} the reflection box does not clip — what cuts the copy to the marble available is this box's ` +
         'own overflow, which is the front arris of the slab and is exactly the thing that cuts it in life',
@@ -713,22 +716,22 @@ function reflects(read) {
   }
 
   // ---- the copy: the Frame, at the one magnification a mirror has ---------
-  if (!read.reflection) {
+  if (!read.copy) {
     failures.push(
-      `at ${where} there is no Frame in the marble — mirror.ts clones the window into it, and a Plinth with ` +
+      `at ${where} there is no Frame in the marble — reflection.ts clones the window into it, and a Plinth with ` +
         'nothing lying in it is what a browser that never ran the script is meant to get, not this one',
     );
     return failures;
   }
-  if (read.mirror.children !== 1) {
+  if (read.reflection.children !== 1) {
     failures.push(
-      `at ${where} the reflection box holds ${read.mirror.children} children — the clone is made once, and a ` +
+      `at ${where} the reflection box holds ${read.reflection.children} children — the clone is made once, and a ` +
         'second call that reflected the reflection would draw the same picture and cost a second recording',
     );
   }
   for (const [axis, measured] of [
-    ['wide', read.reflection.width],
-    ['tall', read.reflection.height],
+    ['wide', read.copy.width],
+    ['tall', read.copy.height],
   ]) {
     if (Math.abs(measured) > LENGTH_TOLERANCE) {
       failures.push(
@@ -739,17 +742,17 @@ function reflects(read) {
       );
     }
   }
-  if (Math.abs(read.reflection.stands) > LENGTH_TOLERANCE) {
+  if (Math.abs(read.copy.stands) > LENGTH_TOLERANCE) {
     failures.push(
-      `at ${where} the copy's foot is ${read.reflection.stands.toFixed(2)}px from the window's — the fold is ` +
+      `at ${where} the copy's foot is ${read.copy.stands.toFixed(2)}px from the window's — the fold is ` +
         'about the contact line, so the two feet meet there',
     );
   }
   // `matrix(1, 0, 0, -1, 0, 0)` is scaleY(-1) resolved. Anything else is either
   // no fold at all — a second window standing in the stone — or a scale.
-  if (!/^matrix\(1,\s*0,\s*0,\s*-1,\s*0,\s*0\)$/.test(read.reflection.folded)) {
+  if (!/^matrix\(1,\s*0,\s*0,\s*-1,\s*0,\s*0\)$/.test(read.copy.folded)) {
     failures.push(
-      `at ${where} the copy's transform is "${read.reflection.folded}" — a reflection is a fold about the ` +
+      `at ${where} the copy's transform is "${read.copy.folded}" — a reflection is a fold about the ` +
         'contact line and nothing else: no scale, because the image is life-size, and no translation, because ' +
         'the fold is what puts it where it goes',
     );
@@ -757,10 +760,10 @@ function reflects(read) {
   // Derived and not hand-kept. Two copies of a hundred lines of measured drawing
   // is one copy that gets edited and one that does not, and the one that does
   // not is the reflection.
-  if (read.reflection.parts !== read.frameParts) {
+  if (read.copy.parts !== read.frameParts) {
     failures.push(
       `at ${where} the window holds ${read.frameParts} elements and the copy in the marble holds ` +
-        `${read.reflection.parts} — the reflection is meant to BE the Frame, cloned, so the two cannot disagree ` +
+        `${read.copy.parts} — the reflection is meant to BE the Frame, cloned, so the two cannot disagree ` +
         'about what a window is made of',
     );
   }
@@ -802,6 +805,17 @@ function reflects(read) {
  * frames the clip passes over, and re-centring the crop shows rows nobody
  * reviewed.
  */
+/** Why each of the recording's four attributes is on it. Beside the list rather
+ *  than inside the loop: `muted` and `playsinline` are there for reasons that
+ *  have nothing to do with the other two, and a failure that does not say which
+ *  is a failure that reads as boilerplate. */
+const WHY_SET = {
+  loop: 'the clip is a silent loop standing in a picture of a browser, and it ends after one pass without this',
+  muted: 'and muted is not decoration: it is what lets autoplay run at all, and the Portfolio never makes a sound',
+  autoplay: 'so the window stands there showing a poster of something that was meant to be moving',
+  playsinline: 'so a phone takes the recording fullscreen the moment it plays',
+};
+
 function records(read) {
   /** @type {string[]} */
   const failures = [];
@@ -830,17 +844,7 @@ function records(read) {
       ['autoplay', clip.autoplay],
       ['playsinline', clip.inline],
     ]) {
-      if (!set) {
-        failures.push(
-          `at ${where} ${which} recording is not ${attribute} — ${
-            attribute === 'muted'
-              ? 'and muted is not decoration: it is what lets autoplay run at all, and the Portfolio never makes a sound'
-              : attribute === 'playsinline'
-                ? 'so a phone takes it fullscreen the moment it plays'
-                : 'the clip is a silent loop standing in a picture of a browser'
-          }`,
-        );
-      }
+      if (!set) failures.push(`at ${where} ${which} recording is not ${attribute} — ${WHY_SET[attribute]}`);
     }
     if (clip.markupSrc !== null) {
       failures.push(
@@ -1039,14 +1043,14 @@ async function withoutScript(browser, origin) {
   try {
     const read = await page.evaluate(() => {
       const plinth = document.querySelector('.projects-panel__plinth');
-      const mirror = document.querySelector('.projects-panel__mirror');
-      if (!plinth || !mirror) return { missing: true };
+      const reflection = document.querySelector('.projects-panel__reflection');
+      if (!plinth || !reflection) return { missing: true };
       const style = getComputedStyle(plinth);
       return {
         missing: false,
         depth: plinth.getBoundingClientRect().height,
         plate: style.backgroundImage,
-        reflections: mirror.children.length,
+        reflections: reflection.children.length,
         frames: document.querySelectorAll('.projects-panel__frame').length,
         clips: document.querySelectorAll('video.projects-panel__clip').length,
         sources: document.querySelectorAll('video.projects-panel__clip source').length,
@@ -1131,12 +1135,77 @@ async function withoutMotion(browser, origin) {
   }
 }
 
+/**
+ * The two trees draw the same stone.
+ *
+ * `/next` names its plate in `tokens.css` and `/portfolio` names it in
+ * `styles.css`, and `design/plinth/plinth-studio.py` rewrites only the second —
+ * so applying a stone in the studio changes one of the two sites and says
+ * nothing. That is the one acceptance criterion of this Section's Plinth with
+ * the most room to go wrong quietly: both pages keep rendering, both keep
+ * passing every other assertion, and the two simply stop being the same
+ * drawing.
+ *
+ * So it is asserted rather than documented. This reads the served page's own
+ * computed plate — not the source, so it also covers the build having
+ * fingerprinted it into a different filename — and looks for the basename the
+ * live sheet's default declaration names.
+ *
+ * IT IS NOT AN ASSERTION ABOUT WHICH STONE IS RIGHT. Point both declarations at
+ * another plate and this passes; point one of them at another plate and it does
+ * not. The choice is the bake-off's, recorded in docs/agents/plinth-marble.md
+ * and made by eye.
+ *
+ * The regex is anchored the way the studio's own is, on a declaration with
+ * nothing but indent before it, so it cannot match the `[data-marble="…"]`
+ * candidate rules further down that sheet — those carry a selector on the line.
+ */
+function oneStone(read, repoRoot) {
+  /** @type {string[]} */
+  const failures = [];
+  const sheet = join(repoRoot, 'portfolio', 'styles.css');
+
+  /** @type {string} */
+  let live;
+  try {
+    live = readFileSync(sheet, 'utf8');
+  } catch {
+    // The live sheet going away is the route flip, which deletes the other
+    // declaration and with it the reason this exists. Not a failure.
+    return failures;
+  }
+
+  const declared = [...live.matchAll(/^[ 	]*--panel-plinth-src:[ 	]*url\("([^"]+)"\)/gm)];
+  if (declared.length !== 1) {
+    failures.push(
+      `portfolio/styles.css holds ${declared.length} default --panel-plinth-src declarations and this expects ` +
+        'exactly one — the sheet has moved under design/plinth/plinth-studio.py as well as under this Check',
+    );
+    return failures;
+  }
+
+  /* THE STEM AND NOT THE FILENAME. The build fingerprints the plate into
+     `plinth-….<hash>.webp`, so what survives from the source name is everything
+     up to the extension — which is also the part the studio writes. */
+  const named = (declared[0][1].split('?')[0] ?? '').split('/').pop() ?? '';
+  const wanted = named.replace(/\.[a-z0-9]+$/i, '');
+  if (!wanted) return failures;
+  if (!read.plinth.plate.includes(wanted)) {
+    failures.push(
+      `the Plinth draws ${read.plinth.plate} and portfolio/styles.css draws ${named} — the two trees have ` +
+        'stopped standing on the same stone. plinth-studio.py rewrites the live sheet and knows nothing about ' +
+        'src/sections/projects-panel/tokens.css, so applying a stone changes one site and says nothing.',
+    );
+  }
+  return failures;
+}
+
 export const check = {
   name: 'projects-panel',
   title: "the Frame and the Plinth: geometry, occlusion, reflection, ladder and reduction",
 
-  /** @param {{ browser: import('playwright').Browser, origin: string }} ctx */
-  async run({ browser, origin }) {
+  /** @param {{ browser: import('playwright').Browser, origin: string, repoRoot: string }} ctx */
+  async run({ browser, origin, repoRoot }) {
     /** @type {string[]} */
     const failures = [];
     /** @type {string[]} */
@@ -1163,10 +1232,11 @@ export const check = {
           failures.push(...stands(read));
           failures.push(...reflects(read));
           failures.push(...records(read));
+          failures.push(...oneStone(read, repoRoot));
           notes.push(
             `the slab: ${(read.plinth.depth * read.frame.width).toFixed(1)}px deep over a Frame ` +
               `${read.frame.width.toFixed(0)}px wide, overhanging ${(read.plinth.left * read.frame.width).toFixed(1)}px ` +
-              `each end, with ${(read.mirror.depth * read.frame.width).toFixed(1)}px of the window lying in it`,
+              `each end, with ${(read.reflection.depth * read.frame.width).toFixed(1)}px of the window lying in it`,
           );
         }
         notes.push(

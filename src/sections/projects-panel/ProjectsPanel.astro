@@ -206,11 +206,11 @@ const selected = (project: { href?: string }) => project.href === `#${here}`;
 
           EMPTY, AND BOTH HALVES OF IT ARE. The slab is one rendered plate — the
           Plinth block below names it and design/plinth/build-slab.py is what
-          renders it — and the reflection is a copy of the Frame that mirror.ts
+          renders it — and the reflection is a copy of the Frame that reflection.ts
           clones into the box, chrome, titlebar, recording and all. There is no
           second copy of the window written out here, deliberately: two
           hand-kept copies of a hundred lines of measured drawing is a drift
-          waiting to happen, and mirror.ts says why script is the right place.
+          waiting to happen, and reflection.ts says why script is the right place.
 
           A BROWSER THAT NEVER RUNS THAT SCRIPT GETS THE MARBLE AND NO
           REFLECTION, which is deliberate rather than broken — the stance every
@@ -218,7 +218,7 @@ const selected = (project: { href?: string }) => project.href === `#${here}`;
           is a plinth; it is only the window's own reflection that is missing,
           and there is nothing on the page to say it was ever promised. */}
       <div class="projects-panel__plinth">
-        <div class="projects-panel__mirror"></div>
+        <div class="projects-panel__reflection"></div>
       </div>
     </div>
   </div>
@@ -323,6 +323,15 @@ const selected = (project: { href?: string }) => project.href === `#${here}`;
     --projects-panel-plinth-depth: calc(
       (var(--projects-panel-plinth-top) + var(--projects-panel-plinth-front)) *
         var(--projects-panel-frame-w)
+    );
+    /* And the Frame's own two edges as a share of the SLAB, which is what the
+       two boxes lying on the top face are placed by. Symmetric, so it is one
+       number rather than two — the shortest way to say that the window sits in
+       the middle of the stone it stands on — and derived here rather than
+       written out at each of the four sites that read it. */
+    --projects-panel-plinth-inset: calc(
+      var(--projects-panel-plinth-overhang) /
+        (1 + 2 * var(--projects-panel-plinth-overhang)) * 100%
     );
 
     /* ---- and the two the Cut Title is cut to ------------------------------ */
@@ -979,7 +988,7 @@ const selected = (project: { href?: string }) => project.href === `#${here}`;
      the copy inside this box is a live clone of the real Frame — the same
      chrome, the same titlebar, and a second recording playing in step with the
      first — so what the stone shows moves with what the window shows. A still
-     reflection under a moving clip reads as broken immediately. mirror.ts makes
+     reflection under a moving clip reads as broken immediately. reflection.ts makes
      the copy and says why it is made in script rather than written out twice.
 
      THIS BOX IS THE TOP FACE AND NOTHING ELSE. It starts at the contact line, it
@@ -1015,39 +1024,38 @@ const selected = (project: { href?: string }) => project.href === `#${here}`;
      the light in twice. Alpha also gets the dark half right for free: a black
      tab bar reflected in polished stone makes the stone DARKER than the marble
      beside it, which `screen` cannot do. */
-  .projects-panel__mirror {
+  /* THE TOP FACE, STATED ONCE, because both boxes that lie on it ARE it — the
+     reflection and the shadow are the same rectangle, and keeping two copies of
+     it equal by hand is how one of them ends up on a face the other is not on.
+     Its top edge is THE CONTACT LINE and not the slab's, which runs `back`
+     further behind the Frame: the marble back there has a window standing on it
+     rather than anything lying in it. Its ends are the Frame's, because the
+     overhanging marble has no window above it to reflect or to be shadowed by. */
+  .projects-panel__reflection,
+  .projects-panel__plinth::after {
     position: absolute;
-    /* THE CONTACT LINE, which is not this box's top edge: the slab runs `back`
-       behind the Frame, and the marble back there has a window standing on it
-       rather than a reflection lying in it. */
     top: var(--projects-panel-plinth-back);
-    /* The Frame's own edges, on a slab centred about it. One expression for
-       both, which is the shortest way to say that the window sits in the middle
-       of the stone it stands on. */
-    left: calc(
-      var(--projects-panel-plinth-overhang) /
-        (1 + 2 * var(--projects-panel-plinth-overhang)) * 100%
-    );
-    right: calc(
-      var(--projects-panel-plinth-overhang) /
-        (1 + 2 * var(--projects-panel-plinth-overhang)) * 100%
-    );
+    left: var(--projects-panel-plinth-inset);
+    right: var(--projects-panel-plinth-inset);
     height: var(--projects-panel-plinth-face);
+  }
+
+  .projects-panel__reflection {
     overflow: hidden;
     /* A stacking context, so the copy's own `z-index: 1` — it is a Frame and
        carries the class's — stays inside this box instead of competing with the
        real Frame's. */
     isolation: isolate;
-    opacity: var(--projects-panel-mirror-strength);
+    opacity: var(--projects-panel-reflection-strength);
     -webkit-mask-image: linear-gradient(
       to bottom,
       #000,
-      rgb(0 0 0 / var(--projects-panel-mirror-far))
+      rgb(0 0 0 / var(--projects-panel-reflection-far))
     );
     mask-image: linear-gradient(
       to bottom,
       #000,
-      rgb(0 0 0 / var(--projects-panel-mirror-far))
+      rgb(0 0 0 / var(--projects-panel-reflection-far))
     );
     pointer-events: none;
   }
@@ -1063,9 +1071,9 @@ const selected = (project: { href?: string }) => project.href === `#${here}`;
      to the marble available is `overflow: hidden` on the box above, which is the
      front arris of the slab and is exactly the thing that cuts it in life.
 
-     `left` AND `right` AND NO WIDTH, so the copy is the mirror's width, which is
+     `left` AND `right` AND NO WIDTH, so the copy is the reflection box's width, which is
      the Frame's. A width stated here would be the same number written twice. */
-  .projects-panel__mirror > .projects-panel__frame {
+  .projects-panel__reflection > .projects-panel__frame {
     position: absolute;
     bottom: 100%;
     left: 0;
@@ -1097,17 +1105,6 @@ const selected = (project: { href?: string }) => project.href === `#${here}`;
      casting it looks lit from underneath. */
   .projects-panel__plinth::after {
     content: '';
-    position: absolute;
-    left: calc(
-      var(--projects-panel-plinth-overhang) /
-        (1 + 2 * var(--projects-panel-plinth-overhang)) * 100%
-    );
-    right: calc(
-      var(--projects-panel-plinth-overhang) /
-        (1 + 2 * var(--projects-panel-plinth-overhang)) * 100%
-    );
-    top: var(--projects-panel-plinth-back);
-    height: var(--projects-panel-plinth-face);
     /* Over the reflection, which carries no z-index of its own. Still under the
        Frame, which is a sibling of the whole Plinth at z-index 1, so the half of
        this that falls under the window is covered by it — as it should be. */
@@ -1263,15 +1260,15 @@ const selected = (project: { href?: string }) => project.href === `#${here}`;
 <script>
   import { mountClip } from './clip';
   import { mountGlass } from './glass';
-  import { mountMirror } from './mirror';
+  import { mountReflection } from './reflection';
 
   /* THE ORDER IS THE DESIGN AND NOT THE ALPHABET. The reflection is made first,
      so the two that follow each treat the copy as one more Frame on the page
      instead of as a special case: `mountClip` hands sources to every recording
      it finds, and `mountGlass` blits the material it rendered onto every
      titlebar. Reverse it and both would have to go looking for a reflection they
-     know nothing about. mirror.ts says the same thing from the other end. */
-  mountMirror();
+     know nothing about. reflection.ts says the same thing from the other end. */
+  mountReflection();
   mountClip();
   mountGlass();
 </script>

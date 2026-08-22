@@ -2,7 +2,7 @@
  * The Frame's reflection in the marble.
  *
  * ALL THIS FILE DOES IS COPY THE FRAME INTO THE STONE. It clones the window into
- * `.projects-panel__mirror`, and the stylesheet does everything after that: the
+ * `.projects-panel__reflection`, and the stylesheet does everything after that: the
  * copy is stood on the contact line, folded through it, and cut to the depth of
  * the marble in front of the window. The reflection block in `ProjectsPanel.astro`
  * is where the geometry is and why.
@@ -51,14 +51,14 @@
  * Nothing here is required for the Plinth to render, and this returning early is
  * the same outcome as it never being called.
  */
-export function mountMirror(): void {
-  const mirror = document.querySelector<HTMLElement>('.projects-panel__mirror');
+export function mountReflection(): void {
+  const box = document.querySelector<HTMLElement>('.projects-panel__reflection');
   /* The stage's own Frame and not any Frame: run twice — a hot reload, a second
      mount — the second call would otherwise reflect the reflection. */
   const frame = document.querySelector<HTMLElement>(
     '.projects-panel__stage > .projects-panel__frame',
   );
-  if (!mirror || !frame || mirror.firstElementChild) return;
+  if (!box || !frame || box.firstElementChild) return;
 
-  mirror.appendChild(frame.cloneNode(true));
+  box.appendChild(frame.cloneNode(true));
 }
