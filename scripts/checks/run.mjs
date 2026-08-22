@@ -59,12 +59,15 @@ if (only) {
 }
 
 /**
- * The runner's own pure logic, before the browser is started.
+ * The pure logic under `scripts/`, before the browser is started.
  *
- * Not a Check — nothing here is an assertion about a Section — but it runs from
- * the same command on purpose: the denylist's patterns and the luminance bands
+ * Not Checks — nothing here is an assertion about a Section — but they run from
+ * the same command on purpose. The denylist's patterns and the luminance bands
  * are what several Checks below decide with, and a runner that reported on the
- * page while its own matching was broken would be worse than no runner.
+ * page while its own matching was broken would be worse than no runner. The same
+ * argument covers `scripts/feature/`: `pnpm check` is what the pre-commit hook
+ * and `pnpm feature land` are, so the lifecycle's own naming, port choice and
+ * teardown verification are gated by the command that gates everything else.
  */
 // Outside the --no-build guard on purpose: --no-build is the iterating path, and
 // iterating is exactly when the matching logic is being changed.
@@ -74,7 +77,7 @@ if (only) {
 // the directory itself.
 const tested = spawnSync(
   process.execPath,
-  ['--test', '--test-reporter=dot', 'scripts/checks/lib/**/*.test.mjs'],
+  ['--test', '--test-reporter=dot', 'scripts/**/*.test.mjs'],
   { cwd: repoRoot, stdio: 'inherit' },
 );
 if (tested.status !== 0) {

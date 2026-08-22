@@ -4,6 +4,29 @@ Agent-facing notes for this repo. Human-facing docs are in [README.md](README.md
 
 ## Branching and merging
 
+> **Two commands now, and no pull request.** ADR 0005 supersedes the fifteen-call
+> protocol below, and #135 built it:
+>
+> ```bash
+> pnpm feature start <name>
+> ```
+>
+> ```bash
+> pnpm feature land
+> ```
+>
+> `start` cuts the worktree from the fetched `origin/development`, installs it and
+> serves it on a free port. `land` runs the Checks, lands on `development`, and
+> takes the worktree, the local branch and the remote branch down, verifying each.
+> The Checks failing is the only gate, and `.githooks/pre-commit` runs them on
+> every commit too. `/feature-start` and `/feature-land` are the same two commands
+> as skills. **`scripts/feature/NOTES.md` is the authority**;
+> `docs/friction-log.md` is where a refusal goes.
+>
+> Everything below is still true about *worktrees* — one per change, and nothing
+> is ever written in the main checkout — and no longer true about pull requests,
+> `gh pr merge`, or taking a worktree down by hand. #147 rewrites this file.
+
 Every change is made in its own git worktree, on its own branch, and reaches
 `development` as a merged pull request. **Nothing is ever written in the main
 checkout** — not a one-line fix, not a typo, not "just this once". A committed

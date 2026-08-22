@@ -8,10 +8,11 @@
     "build": "node scripts/check-source.mjs && astro check && astro build && node scripts/assemble-dist.mjs",
     "preview": "node scripts/serve-dist.mjs",
     "variants": "node design/tools/render-variants.mjs",
+    "feature": "node scripts/feature/cli.mjs",
     "check": "node scripts/checks/run.mjs",
     "check:sections": "node scripts/check-source.mjs",
     "check:types": "astro check",
-    "test": "node --test \"scripts/checks/lib/**/*.test.mjs\""
+    "test": "node --test \"scripts/**/*.test.mjs\""
   },
   "engines": {
     "node": "22.x"
