@@ -120,8 +120,12 @@ export function git(sh, cwd) {
       return run('pull', '--ff-only', 'origin', 'development');
     },
 
+    /** `expected`, because this failing is the ordinary case rather than a gate
+     *  that should not have been there: pnpm's store links go past what Git for
+     *  Windows can delete, `pnpm feature clean` finishes what it could not, and
+     *  an entry in the friction log for it would be written on every land. */
     removeWorktree(path) {
-      return run('worktree', 'remove', path);
+      return sh.run('git', ['worktree', 'remove', path], { cwd, expected: true });
     },
 
     pruneWorktrees() {

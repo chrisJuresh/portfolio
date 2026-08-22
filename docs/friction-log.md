@@ -17,6 +17,17 @@ Everything below the entries written by hand is worth the same attention: a
 denial that cost a turn is a denial that will cost every future turn until the
 cause is changed.
 
+**Resolved, and deliberately no longer recorded**: `git worktree remove` refused
+by a file lock at the end of `pnpm feature land`. It happened on the first three
+lands, including one from an unrelated session, always for the same reason — a
+build and a headless browser had just run in that worktree. The work has landed by
+that point and only a directory is left, so `pnpm feature clean <name>` finishes
+it, the removal now waits for the lock, and `git.removeWorktree` is marked
+`expected` so it stops writing an entry. It was writing an identical one on every
+single land, into the main checkout, uncommitted — which then blocked the *next*
+land's `pull --ff-only` on a locally modified file. A log that restates a fixed
+problem until it breaks something else is worse than no log.
+
 ## 2026-08-22 — the grilling session that produced #129
 
 **Attempted**: pushing a branch to `origin`.
@@ -87,39 +98,3 @@ leave the worktree by construction. Each refusal costs one call and one rewrite
 into separate commands, and there were three in one session. Worth fixing upstream
 before the count grows; until then, one command per call, and a pipe counts as
 complexity.
-
-## 2026-08-22T13:52:05.256Z — `pnpm feature land`
-
-**Attempted**: `git worktree remove C:/Users/Chris/Desktop/portfolio/.claude/worktrees/feature-lifecycle`
-
-**Refused by**: a file lock held by the operating system
-
-```
-error: failed to delete 'C:/Users/Chris/Desktop/portfolio/.claude/worktrees/feature-lifecycle': Directory not empty
-```
-
-**Fix**: run `pnpm feature clean <name>` from the main checkout once whatever is standing in the worktree has let go — `ExitWorktree` first if it is this session. The work has already landed by this point; only the directory is left. Both of these were exactly that, and `feature clean` was written in response to them.
-
-## 2026-08-22T14:03:41.033Z — `pnpm feature land`
-
-**Attempted**: `git worktree remove C:/Users/Chris/Desktop/portfolio/.claude/worktrees/finish-the-teardown`
-
-**Refused by**: a file lock held by the operating system
-
-```
-error: failed to delete 'C:/Users/Chris/Desktop/portfolio/.claude/worktrees/finish-the-teardown': Directory not empty
-```
-
-**Fix**: run `pnpm feature clean <name>` from the main checkout once whatever is standing in the worktree has let go — `ExitWorktree` first if it is this session. The work has already landed by this point; only the directory is left. Both of these were exactly that, and `feature clean` was written in response to them.
-
-## 2026-08-22T14:04:27.355Z — `pnpm feature land`
-
-**Attempted**: `git worktree remove C:/Users/Chris/Desktop/portfolio/.claude/worktrees/front-screen`
-
-**Refused by**: a file lock held by the operating system
-
-```
-error: failed to delete 'C:/Users/Chris/Desktop/portfolio/.claude/worktrees/front-screen': Directory not empty
-```
-
-**Fix**: run `pnpm feature clean <name>` from the main checkout once whatever is standing in the worktree has let go — `ExitWorktree` first if it is this session. The work has already landed by this point; only the directory is left. Both of these were exactly that, and `feature clean` was written in response to them.

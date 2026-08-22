@@ -54,9 +54,16 @@ export function session({ command, now = () => new Date() }) {
    *
    * @param {string} file
    * @param {string[]} args
-   * @param {{ cwd?: string, shell?: boolean, inherit?: boolean, input?: string }} [options]
+   * @param {object} [options]
+   * @param {string} [options.cwd]
+   * @param {boolean} [options.shell]
+   * @param {boolean} [options.inherit]
+   * @param {string} [options.input]
+   * @param {boolean} [options.expected] this command failing is an ordinary step
+   *   of the flow with a handled outcome, so do not record it as friction. See
+   *   `finish` below for why that distinction is worth having.
    */
-  function run(file, args, { cwd, shell = false, inherit = false, input } = {}) {
+  function run(file, args, { cwd, shell = false, inherit = false, input, expected = false } = {}) {
     const shown = [file, ...args].join(' ');
     const result = spawnSync(file, args, {
       cwd,
@@ -80,7 +87,7 @@ export function session({ command, now = () => new Date() }) {
       String(result.error?.message ?? (result.signal ? `killed by ${result.signal}` : ''));
     const out = { status, stdout: result.stdout ?? '', stderr, shown };
 
-    if (status !== 0) {
+    if (status !== 0 && !expected) {
       const refused = classify(stderr, out.stdout);
       if (refused) {
         note({ what: shown, gate: refused.gate, refusal: `${stderr}\n${out.stdout}`, fix: refused.fix });
@@ -153,6 +160,15 @@ export function session({ command, now = () => new Date() }) {
    * The path is passed in here rather than at construction because it is not
    * known until git has been asked where the main checkout is — and asking git
    * is itself something that can be refused.
+   *
+   * WHAT DOES NOT BELONG IN THE LOG. A refusal is worth an entry when the gate
+   * should not have been there. `git worktree remove` failing on a locked
+   * directory is not that: it is an ordinary step of this flow with a documented
+   * completion, and `pnpm feature clean` finishes it. Logging it anyway wrote an
+   * identical entry on every single land, into the main checkout, uncommitted —
+   * which then blocked the NEXT land's `pull --ff-only` on a locally modified
+   * file. A log that restates a fixed problem until it breaks something else is
+   * worse than no log. Callers mark those `expected: true`.
    *
    * @param {string} frictionLog absolute path
    * @returns {number} how many entries were written

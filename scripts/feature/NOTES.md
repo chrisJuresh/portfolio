@@ -203,6 +203,16 @@ recording is the remote branch delete, which happens after the point of no retur
 The flush also comes after the main checkout is pulled, so it cannot be the
 uncommitted file that makes that pull fail.
 
+**A command whose failure is an ordinary step passes `expected: true` and writes
+nothing.** `git worktree remove` is the one that does. It was the log's whole
+content for a while: an identical entry on every single land, in the main
+checkout, uncommitted — which then blocked the *next* land's `pull --ff-only` on a
+locally modified file. The distinction is not tidiness. An entry earns its place
+when the gate should not have been there; this one has a documented completion in
+`feature clean`, so recording it made the log restate a fixed problem until it
+broke something else. Use the flag sparingly and for that reason only: a refusal
+nobody has decided about yet belongs in the log.
+
 ## What it deliberately does not do
 
 **It does not close the issue.** `Closes #n` never fires here — GitHub
