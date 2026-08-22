@@ -1,0 +1,18 @@
+/* The stub Section's Tokens. Plain custom properties on the Section's own root,
+   and the only style file the Editor writes.
+   Every name is prefixed with the Section's, and there is nothing here but
+   custom properties — scripts/check-source.mjs fails the build otherwise, which
+   is what stops this file from quietly becoming a second stylesheet. */
+.stub {
+  --stub-height: 240svh;
+  --stub-measure: 34rem;
+  --stub-inset: 8vmin;
+  --stub-gap: 1.25rem;
+  --stub-heading-size: clamp(2.5rem, 9vmin, 6rem);
+  --stub-heading-weight: 400;
+  --stub-lead-size: 1.05rem;
+  --stub-lead-leading: 1.55;
+  --stub-point-size: 0.9rem;
+  --stub-rule: 1px;
+  --stub-rise: 8px;
+}

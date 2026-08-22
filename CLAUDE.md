@@ -145,6 +145,56 @@ is line endings — and leaves a `settings.json.*.bak` to delete.
 a file if git puts it there, so anything ignored is missing from every tree the
 work is actually done in.
 
+## The build, and /next
+
+This repository is two sites in one tree, and which one you are looking at
+decides everything else about how to work in it.
+
+`/portfolio` is the live document, and it is still plain files with no build step:
+`portfolio/index.html`, `portfolio/styles.css` and the scripts beside them. It is
+served exactly as it sits. Nothing below applies to it.
+
+`/next` is the Portfolio's new foundation — an Astro and TypeScript tree under
+`src/`, built to a temporary route so `/portfolio` keeps working through every
+porting ticket. A later ticket flips the route. ADRs 0001–0006 in `docs/adr/` are
+binding on it, and `CONTEXT.md` is the vocabulary: **Shell**, **Kernel**,
+**Section**, **Turn**, **Timeline**, **Token**, **Content**, **Variant**,
+**Check**. Where a name in `portfolio/` disagrees, the glossary wins.
+
+```bash
+pnpm install --frozen-lockfile
+```
+
+```bash
+pnpm build
+```
+
+`pnpm dev` runs Astro's dev server and serves the existing static site beside it,
+so `/portfolio` and `/next` both answer on one origin. `pnpm build` runs the
+source checks, typechecks, builds, and assembles `dist/` — Astro's output plus
+`index.html`, `portfolio/`, `projects/` and `fonts/` copied in. `pnpm preview`
+serves that `dist/`, **of the tree it is run from**, which is why it exists rather
+than `preview_start`: the in-app preview serves the main checkout and would report
+on `development` while looking like it reported on your branch.
+
+Every dependency version is pinned exactly and nothing is updated on a schedule
+(ADR 0002). pnpm's settings live in `pnpm-workspace.yaml`, not `.npmrc` — pnpm 11
+ignores `.npmrc` for `saveExact`, and the failure mode is a caret quietly
+reappearing in `package.json`.
+
+**Read `src/kernel/NOTES.md` before touching the Kernel, and
+`src/sections/stub/NOTES.md` before adding a Section.** Between them they carry
+the folder convention, what the build actually enforces about it, and the two
+things that have already cost a wrong diagnosis: `hold()` before you seek a
+Timeline, and one mount point per Section. `scripts/check-source.mjs` is what
+turns those rules into build failures rather than hopes — it runs first in
+`pnpm build`, and on its own as `pnpm check:sections`.
+
+`IntersectionObserver` never delivers in the in-app browser pane, for the same
+reason `requestAnimationFrame` never ticks there: the pane does not run the
+rendering steps. Lazy mounting and motion have to be verified in a real headless
+browser, never in the preview.
+
 ## Verifying a change to /portfolio
 
 `/portfolio` has a consumer outside this repository: the author's GitHub profile

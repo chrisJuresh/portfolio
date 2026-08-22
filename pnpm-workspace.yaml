@@ -1,0 +1,14 @@
+# pnpm's own settings live here rather than in .npmrc: pnpm 11 reads its
+# configuration from this file, and a `save-exact=true` written into .npmrc is
+# silently ignored — which is worth saying out loud, because the failure mode is
+# a caret quietly reappearing in package.json.
+#
+# saveExact is ADR 0002's rule made mechanical: `pnpm add x` writes `1.2.3`, not
+# `^1.2.3`, so an install two years from now resolves to the same bytes.
+saveExact: true
+
+# esbuild ships a platform binary it fetches in a postinstall script. pnpm blocks
+# build scripts by default and asks; naming it here answers once. Nothing else in
+# the tree is allowed to run one.
+onlyBuiltDependencies:
+  - esbuild

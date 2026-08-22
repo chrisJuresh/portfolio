@@ -1,0 +1,62 @@
+---
+// The Shell: the head, the Kernel, and the Sections' mount points. It holds no
+// composition of its own — every length, colour and word on the page belongs to
+// a Section or to the Kernel, and anything that looks like design being decided
+// here is a bug.
+import EffectStack from '../kernel/effect-stack/EffectStack.astro';
+import Kernel from '../kernel/Kernel.astro';
+import { THEME_KEY } from '../kernel/theme';
+
+interface Props {
+  title: string;
+  description: string;
+  /** The Effect Stack's layers, by name. Written here so the page opens already
+   *  treated instead of flashing untreated a script-load later. */
+  fx?: string;
+}
+
+const { title, description, fx = 'halftone paper' } = Astro.props;
+---
+
+<!doctype html>
+<html lang="en" data-fx={fx}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <meta name="author" content="Christian Juresh" />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:type" content="profile" />
+    <meta property="og:site_name" content="Christian Juresh" />
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2032%2032'%3E%3Ctext%20x='16'%20y='23'%20font-family='Sitka%20Text,Charter,Iowan%20Old%20Style,Georgia,serif'%20font-size='19'%20text-anchor='middle'%20fill='%231a1917'%3Ecj%3C/text%3E%3C/svg%3E"
+    />
+    {/* The theme, before first paint. Inline and blocking on purpose: every
+        other script on the page is a deferred module, and a deferred module
+        means the reader sees the light page flash before the dark one arrives.
+        This is the whole reason the Shell has any inline script at all. */}
+    <script is:inline define:vars={{ THEME_KEY }}>
+      (() => {
+        let theme = 'light';
+        let stored = null;
+        try {
+          stored = localStorage.getItem(THEME_KEY);
+        } catch {}
+        if (stored === 'dark' || stored === 'light') theme = stored;
+        else if (window.matchMedia?.('(prefers-color-scheme: dark)').matches) theme = 'dark';
+        document.documentElement.setAttribute('data-theme', theme);
+      })();
+    </script>
+    <slot name="head" />
+  </head>
+  <body>
+    <Kernel />
+    <slot />
+    {/* Last in the body, and the position is load-bearing — see the note in
+        Kernel.astro. */}
+    <EffectStack />
+  </body>
+</html>

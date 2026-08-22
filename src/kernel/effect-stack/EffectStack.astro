@@ -1,0 +1,21 @@
+---
+// The nine layers, in paint order. Empty, decorative, and inert until the layer
+// is named in <html data-fx>. effect-stack.css is what each one does.
+import './effect-stack.css';
+
+const LAYERS = [
+  'paper',
+  'halftone',
+  'film',
+  'grain',
+  'grille',
+  'scan',
+  'roll',
+  'tube',
+  'vignette',
+] as const;
+---
+
+<div class="fx" aria-hidden="true">
+  {LAYERS.map((layer) => <div class={`fx-${layer}`}></div>)}
+</div>
