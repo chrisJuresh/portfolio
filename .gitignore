@@ -31,6 +31,13 @@ node_modules/
 dist/
 .astro/
 
+# The author's own denylist of unpublishable terms — the clients, colleagues and
+# hostnames a Section's words may not contain. It is NOT committed, and that is
+# the point: a list of the names in a public repository is the leak the Check
+# exists to prevent. scripts/checks/lib/denylist.mjs holds the shapes, which are
+# the half that is safe to publish.
+scripts/checks/lib/denylist.local.txt
+
 # where design/tools/check-capture-contract.py stages the profile repo's capture
 # script and the screenshots it takes. It lives beside design/tools/node_modules
 # because ESM resolves `playwright` from the running script's own directory, so
