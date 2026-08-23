@@ -50,7 +50,44 @@ test('a fresh file holds no Overrides', () => {
 });
 
 test('every property the boundary will write is one it names', () => {
-  assert.deepEqual(PROPERTIES, ['display', 'translate', 'width', 'height']);
+  assert.deepEqual(PROPERTIES, ['display', 'font-size', 'translate', 'width', 'height']);
+});
+
+test('a text size is written, and round-trips like every other length', () => {
+  const bytes = write(EMPTY, { ...moved, declarations: { 'font-size': '1.4rem', width: '4rem' } });
+  // The order is this module's and not the request's, which is what makes two
+  // writes of the same geometry the same bytes.
+  assert.match(bytes, /\n {2}font-size: 1\.4rem !important;\n {2}width: 4rem !important;\n}/);
+  assert.deepEqual(parse(bytes)[0].declarations, [
+    { property: 'font-size', value: '1.4rem' },
+    { property: 'width', value: '4rem' },
+  ]);
+  assert.equal(render(parse(bytes)), bytes);
+});
+
+test('a text size is still only a value, so nothing can ride out on one', () => {
+  for (const value of ['1rem; color: red', '2rem !important', '1rem } body {', '/* 1rem */']) {
+    assert.throws(
+      () => write(EMPTY, { ...moved, declarations: { 'font-size': value } }),
+      Refused,
+      value,
+    );
+  }
+});
+
+test('a property outside the list is refused by name, and says what the list is', () => {
+  for (const property of ['line-height', 'letter-spacing', 'font-weight', 'color', 'transform']) {
+    assert.throws(
+      () => write(EMPTY, { ...moved, declarations: { [property]: '1rem' } }),
+      (error) => {
+        assert.ok(error instanceof Refused);
+        assert.match(error.message, new RegExp(`"${property}" is not something an Override sets`));
+        assert.match(error.message, /font-size/);
+        return true;
+      },
+      property,
+    );
+  }
 });
 
 test('display takes one value, because it is here to make an inline box measurable', () => {

@@ -251,11 +251,16 @@ pnpm editor
 That opens the real page locally with the Editor over it — click any text, type,
 Enter; drag a Token and watch the page move; press Re-bake and watch the asset
 change — and Publish commits and pushes. Where a change is neither a word nor a
-Token, the **Measure** surface moves and resizes anything at all and hands back
-an **Annotation** to paste to an agent, and will write an **Override** into
-`src/overrides.css` so the page looks right while the composition is corrected
-later. It writes Content, Tokens, a Bake's parameters and that one stylesheet,
-and nothing else (ADR 0004), and
+Token, the **Measure** surface is the inspector: click anything, shift-click a
+series, climb to a parent with the breadcrumb or `↑`, then drag it, drag a corner,
+or scrub any of the five rows — the box's four and the **text size**. A row backed
+by a Token writes that Token on release, which is most of them; a row backed by
+nothing stays a measurement and hands back an **Annotation** to paste to an agent,
+or writes an **Override** into `src/overrides.css` so the page looks right while
+the composition is corrected later. That asymmetry is ADR 0004 and not an
+unfinished half: a Token is a named number the author may move, a coordinate in a
+composition is not. It writes Content, Tokens, a Bake's parameters and that one
+stylesheet, and nothing else (ADR 0004), and
 [`scripts/editor/NOTES.md`](scripts/editor/NOTES.md) is the authority: read it
 before touching `scripts/editor/`. Six things there are easy to get wrong and
 expensive to rediscover — **the Content and Tokens boundaries replace one span's

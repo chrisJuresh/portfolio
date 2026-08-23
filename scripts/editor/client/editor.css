@@ -376,9 +376,11 @@
   opacity: 0.55;
 }
 
-[data-editor-measuring][aria-pressed='true'] {
-  border-color: var(--editor-live);
-  color: var(--editor-live);
+[data-editor-measuring] kbd {
+  padding: 0 3px;
+  border: 1px solid var(--editor-line);
+  border-radius: 3px;
+  font: inherit;
 }
 
 [data-editor-picked] {
@@ -386,19 +388,64 @@
   color: var(--editor-live);
 }
 
+[data-editor-also] {
+  margin: 0 0 4px;
+  opacity: 0.55;
+}
+
+/* The ancestors of what is picked, outermost first. A click lands on the deepest
+   element under the pointer, which is almost never the box the author means — so
+   the chain is drawn rather than hunted for, and the last crumb is the one that
+   is picked. */
+[data-editor-crumbs] {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px;
+  margin: 0 0 6px;
+}
+
+[data-editor-crumb] {
+  padding: 0 4px;
+  opacity: 0.6;
+}
+
+[data-editor-crumb] + [data-editor-crumb]::before {
+  content: '› ';
+  margin-right: 2px;
+  opacity: 0.5;
+}
+
+[data-editor-crumb][aria-pressed='true'] {
+  border-color: var(--editor-live);
+  color: var(--editor-live);
+  opacity: 1;
+}
+
 /* One axis: its name, the number it is at, and what it was. Same shape as a
    Token's row, for the same reason — the number box is the exact value and the
    drag on the page is the feel of it. */
 [data-editor-axis] {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 6px;
   margin: 3px 0;
 }
 
-[data-editor-axis] > span {
-  flex: 0 0 4rem;
+/* The label is the scrub handle, which is why it has a cursor and no wrap: a row
+   backed by a Token writes it on release, so the number and the constant it moves
+   are one thing under one pointer. */
+[data-editor-axis] > [data-editor-scrub] {
+  flex: 0 0 5rem;
   opacity: 0.7;
+  cursor: ew-resize;
+  user-select: none;
+  white-space: nowrap;
+}
+
+[data-editor-axis][data-editor-governed] > [data-editor-scrub]::after {
+  content: ' •';
+  color: var(--editor-live);
 }
 
 [data-editor-axis][data-editor-moved] > span {
@@ -416,23 +463,26 @@
   opacity: 0.55;
 }
 
-[data-editor-measure-buttons] {
-  display: flex;
-  gap: 6px;
-  margin: 8px 0 4px;
-}
-
-/* Where a measurement landed on a Token, and the offer to write it. */
-[data-editor-offer] {
-  margin: 4px 0;
+/* Where the row landed on a Token, on the row rather than in a list under it:
+   "in one place" is the whole of #166, and a number and the constant it writes
+   are one thing to read. Its own line, because the sentence is longer than the
+   three cells above it. */
+[data-editor-axis] > [data-editor-offer] {
+  flex: 1 0 100%;
   padding-left: 8px;
   border-left: 1px solid var(--editor-line);
   opacity: 0.8;
 }
 
-[data-editor-write-token] {
+[data-editor-axis][data-editor-moved] > [data-editor-offer] {
   color: var(--editor-live);
-  border-color: var(--editor-live);
+  opacity: 1;
+}
+
+[data-editor-measure-buttons] {
+  display: flex;
+  gap: 6px;
+  margin: 8px 0 4px;
 }
 
 [data-editor-annotation] {
@@ -504,6 +554,14 @@
   outline: 1px solid #7fb3ff;
   outline-offset: 0;
   box-shadow: 0 0 0 1px rgb(0 0 0 / 35%);
+}
+
+/* The rest of a series: picked, changed with the primary, and without the four
+   corners — five elements have five opposite corners, so one handle under the
+   pointer would be five different anchors. Dashed, so which one the rows are
+   about is never a guess. */
+[data-editor-marquee][data-editor-also] {
+  outline-style: dashed;
 }
 
 /* One per corner. Each sits half outside the marquee so a thin box still has

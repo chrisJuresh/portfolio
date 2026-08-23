@@ -18,8 +18,9 @@ Enter. Escape puts it back. The panel at the bottom right has five surfaces:
 speaks without drawing is reached; **Tokens**, a control per Token, of every
 Section AND of every part of the Kernel that has a Tokens file; **Motion**, a
 scrub per Timeline; **Bakes**, the five Python generators and every number each is
-run with; and **Measure**, which moves and resizes anything at all and hands back
-an **Annotation** — and, if asked, writes an **Override**.
+run with; and **Measure**, which picks anything at all — or its parent — moves it,
+resizes it, changes its text size, and hands back an **Annotation** — and, if
+asked, writes an **Override**.
 
 ADR 0004 gives the Editor Content and Tokens, and it now has both. #146 gave it
 the Bakes as well, which is a THIRD kind of thing and not a loosening of that
@@ -252,8 +253,99 @@ The fourth surface, and the one that exists because the other three cannot expre
 everything. Content is words and a Token is a named number; where a box stands and
 how big it is belongs to the composition, and ADR 0004 says a tool that moved
 boxes freely would destroy the relationship rather than edit it. So this one
-**measures**: press *measure*, click anything, drag it, drag one of its four
-corners, or type its numbers, and press *Annotation*.
+**measures**: click anything, drag it, drag one of its four corners, scrub a row,
+or type its numbers.
+
+### It is an inspector, and #166 is why
+
+The surface measured well and was slow to reach, and the complaint was one
+sentence: *click a series of text, or its parents, resize them and change the text
+size, in one place, without pressing a bunch of buttons.* Four things came out of
+it, and each one is a press or a hunt that is no longer there.
+
+**Being on this surface IS being armed.** `editor.js`'s `show()` arms it as the
+surface comes forward and disarms as it leaves. There was a *measure* press for
+this, and it was a second gate on a decision the author had already made by
+choosing the surface — the thing it protected against, a click picking instead of
+editing a word, is what the report line says on arrival. Both halves matter and
+the smoke Check asserts them separately: a surface that armed and never disarmed
+would leave the whole Editor unable to change text, with nothing to turn off.
+
+**The ancestors are drawn.** A click lands on the DEEPEST element under the
+pointer, which is almost never the box the author means — the box is a parent of
+the word they clicked. `crumbs()` lists the chain, named the way the read-out is
+named, each crumb picking its own element; `↑` and `↓` walk the same chain from the
+keyboard, and `↓` goes back to whatever the last `↑` climbed away from rather than
+guessing among the children. The keyboard stands down while the focus is inside the
+panel, because an arrow key in a number box belongs to the box. `Escape` drops the
+selection without leaving the surface.
+
+**A row is scrubbed, and letting go writes the Token.** Its label is the handle.
+The scrub previews through the same inline styles a drag on the page uses, and the
+release lands it — which is the button that is not there. Typing a number and
+committing it is the same deliberate change and lands the same way.
+
+**And the fifth row is the text size**, which is the one thing the author kept
+reaching for and could not touch. It is beside the box's four and not among them:
+`lib/annotations.mjs` exports `TEXT` for it and keeps it out of `AXES`, because a
+text size has no share of a parent, no opposite corner and no sign to get wrong,
+so folding it in would put it through arithmetic that means nothing for it.
+
+### A row backed by a Token writes; a row backed by nothing does not
+
+This asymmetry is the whole shape of the surface, and it is ADR 0004 rather than an
+unfinished half. **A Token is a named number the author is entitled to move. A
+coordinate in a composition is not.** So scrubbing a `width` that is declared
+`var(--projects-panel-frame-width)` writes that constant on release; scrubbing one
+that is a literal moves the page and writes nothing, and leaves by the Annotation
+as it always did.
+
+**What makes that worth having rather than a technicality is the census:
+seventeen of the nineteen `font-size` declarations under `src/` are exactly
+`var(--…)`.** Scrubbing a text size therefore writes a real Token almost every
+time, and the two that do not — the `calc()`-built ones — are what `font-size` was
+added to `lib/overrides.mjs`'s properties for. That census is the reason this
+surface could be given the text size at all without loosening anything.
+
+The write goes through the Tokens surface's own `writeKey`, so the page, the
+control, the preview sheet and the file move together — and then the measurement is
+reset by `repick()`, because the page has moved and keeping the inline styles would
+show the change twice. **That reset is also why the offer is read off the ROW and
+not off a list afterwards**: a Check that looked for the offer after the write
+found nothing, correctly, because there was nothing left to offer. The row carries
+`data-editor-governed` from the moment the element is picked, which is when the
+author is deciding.
+
+### A selection, not an element
+
+`this.selection` is a list, primary first. Shift-click adds; shift-clicking
+something already in it takes it out again, so a wrong pick is corrected with the
+same gesture rather than started over. The rows show the PRIMARY's numbers, and
+every change is made to all of them.
+
+**An absolute size, and the same distance moved.** A width, a height and a text
+size are given to every member as the number the row says — a series of text set to
+one size is the point of the feature. A left and a top are measured off the primary
+and given to the rest as a DISTANCE, because a series moved to one coordinate would
+be a stack.
+
+**The corners are the primary's alone.** `lib/corners.mjs` resizes from the corner
+opposite the one dragged, and five elements have five opposite corners — so a
+handle on each would be five different anchors under one pointer. Resizing a series
+is what the rows are for. The other members get a dashed marquee and no handles,
+so which one the rows are about is never a guess.
+
+**A selection sharing one Token is one write; a selection that does not is none.**
+Five sizes governed by `--projects-panel-copy-size` are one constant, so writing it
+five times would be five posts saying the same thing and four of them reporting no
+change. Where the members are governed by DIFFERENT Tokens nothing is written and
+the report says so: which of several constants moved is a judgement, and this
+surface's rule everywhere else is to report a judgement rather than take one.
+
+**An Override, by contrast, is one per element.** The boundary's whole guarantee is
+that a record addresses the element the author was looking at, so five elements are
+five records with five selectors and five discards. What is shared is the geometry,
+which is what the rows already made the same.
 
 **A corner resizes from the corner opposite it, and that is the whole rule.**
 `lib/corners.mjs` is the arithmetic, and it is a file rather than four signs in a
@@ -266,10 +358,11 @@ far edge where it always was; and the sizes are resolved once, at pointerdown,
 because `wanted.width` is null until something asks for one and reading the
 fallback off the last measured box on every frame made a slow drag compound and
 outrun the pointer. It is a `translate` and never a `left`, which is what keeps a
-resize inside the four properties an Override may write.
+resize inside the five properties an Override may write.
 
 **A drag is an inline style, and reaches no file at all.** Moving and resizing
-happens in the DOM — `translate`, `width` and `height` on the one element — so
+happens in the DOM — `translate`, `width`, `height` and `font-size` on the one
+element — so
 "anything can be moved and resized without writing to the source" holds by
 construction rather than by care. *put back* restores exactly the inline values
 the page had, which are usually none.
@@ -376,12 +469,19 @@ belongs to a composition. An Override's job is the reverse: to outrank the rule 
 argues with, from outside it, until an agent folds it in. Saying so at the bytes is
 also what makes the file greppable as debt.
 
-**`translate` and not `transform`**, plus `width` and `height`, and nothing else.
-`translate` is a property of its own that composes with whatever GSAP writes into
-`transform`, so an Override can never freeze a Timeline. A resize writes both sides,
-because a corner moves both and half a box is not a measurement anybody took —
-and it writes `translate` too whenever the corner dragged was not the bottom
-right, because holding the anchor still IS a move.
+**`translate` and not `transform`**, plus `width`, `height` and `font-size`, and
+nothing else. `translate` is a property of its own that composes with whatever GSAP
+writes into `transform`, so an Override can never freeze a Timeline. A resize
+writes both sides, because a corner moves both and half a box is not a measurement
+anybody took — and it writes `translate` too whenever the corner dragged was not
+the bottom right, because holding the anchor still IS a move.
+
+`font-size` joined that list for #166, and it is the LAST resort rather than the
+first: the Measure surface offers the Token governing a text size before it
+offers this, and seventeen of the nineteen `font-size` declarations under `src/`
+have one. It is here for the two that are built out of a `calc()`. Like the other
+three it is a measured length and not a relationship, and like them it is debt the
+moment it is written.
 
 **A selector is built out of the page and checked against it.** The shortest chain
 upwards that matches this element and nothing else, made of tags, ids, authored

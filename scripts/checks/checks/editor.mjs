@@ -546,10 +546,18 @@ export const check = {
       const standing = snapshot(root);
       const overridesWere = readFileSync(overridesFile, 'utf8');
 
+      // Choosing the surface IS arming it (#166). There is no press for this any
+      // more, and the pair is the assertion: on the surface a click picks, off it a
+      // click edits a word again — a surface that armed and never disarmed would
+      // leave the whole Editor unable to change text with nothing to turn off.
       await page.locator('[data-editor-choose="measure"]').click();
-      await page.locator('[data-editor-measuring]').click();
       const armed = await page.evaluate(() => document.documentElement.hasAttribute('data-editor-armed'));
-      if (!armed) failures.push('pressing measure did not arm the surface — a click on the page still edits text');
+      if (!armed) failures.push('choosing the Measure surface did not arm it — a click on the page still edits text');
+      await page.locator('[data-editor-choose="content"]').click();
+      if (await page.evaluate(() => document.documentElement.hasAttribute('data-editor-armed'))) {
+        failures.push('leaving the Measure surface left it armed — clicking text would never edit it again');
+      }
+      await page.locator('[data-editor-choose="measure"]').click();
 
       // A Section's own mount point: always there, always a block, and named by
       // the loader rather than by a composition.
@@ -712,8 +720,10 @@ export const check = {
       // the only way to adjust an Override would be to discard it first. Nothing
       // about that failure looks like a bug from the outside, which is why it is
       // asserted here rather than trusted.
-      await page.locator('[data-editor-measuring]').click();
-      await page.locator('[data-editor-measuring]').click();
+      // Off the surface and back on: the same thing the two presses used to do,
+      // which is drop the selection and start again.
+      await page.locator('[data-editor-choose="content"]').click();
+      await page.locator('[data-editor-choose="measure"]').click();
       await page.evaluate((name) => {
         const element = document.querySelector(`[data-section="${name}"]`);
         const at = (type) => element.dispatchEvent(new PointerEvent(type, { bubbles: true, cancelable: true }));
@@ -803,8 +813,8 @@ export const check = {
       if (!anInline) {
         notes.push('no inline box on the page, so the promotion is not asserted');
       } else {
-        await page.locator('[data-editor-measuring]').click();
-        await page.locator('[data-editor-measuring]').click();
+        await page.locator('[data-editor-choose="content"]').click();
+        await page.locator('[data-editor-choose="measure"]').click();
         const drifted = await page.evaluate(() => {
           const element = document.querySelector('[data-editor-check-inline]');
           const box = element.getBoundingClientRect();
@@ -826,8 +836,8 @@ export const check = {
           notes.push(`dragged an inline <${anInline.tag.toLowerCase()}>, promoted so it could move`);
         }
         await page.locator('[data-editor-measure="restore"]').click();
-        await page.locator('[data-editor-measuring]').click();
-        await page.locator('[data-editor-measuring]').click();
+        await page.locator('[data-editor-choose="content"]').click();
+        await page.locator('[data-editor-choose="measure"]').click();
         await page.evaluate(() =>
           document.querySelector('[data-editor-check-inline]')?.removeAttribute('data-editor-check-inline'),
         );
@@ -963,9 +973,9 @@ export const check = {
         await page.locator('[data-editor-measure="restore"]').click();
       }
       if (cornered.length === 4) notes.push(`resized by dragging all four corners (${cornered.join(', ')})`);
-      await page.locator('[data-editor-measuring]').click();
+      await page.locator('[data-editor-choose="content"]').click();
       await page.evaluate(() => document.getElementById('editor-check-corners')?.remove());
-      await page.locator('[data-editor-measuring]').click();
+      await page.locator('[data-editor-choose="measure"]').click();
 
       // ---- a measurement that lands on a Token ----------------------------
       //
@@ -1015,13 +1025,13 @@ export const check = {
           },
           [picked.section, governs.property],
         );
-        // Off and on again before picking, because what governs a length is read
-        // ONCE, when the element is picked — a pointerdown on what is already
-        // picked starts a drag rather than picking it afresh, which is the right
-        // answer for an author's finger and the wrong one for a Check that has
-        // just changed the stylesheet under it.
-        await page.locator('[data-editor-measuring]').click();
-        await page.locator('[data-editor-measuring]').click();
+        // Off the surface and back on before picking, because what governs a
+        // length is read ONCE, when the element is picked — a pointerdown on what
+        // is already picked starts a drag rather than picking it afresh, which is
+        // the right answer for an author's finger and the wrong one for a Check
+        // that has just changed the stylesheet under it.
+        await page.locator('[data-editor-choose="content"]').click();
+        await page.locator('[data-editor-choose="measure"]').click();
         await page.evaluate((name) => {
           const element = document.querySelector(`[data-section="${name}"]`);
           const at = (type) => element.dispatchEvent(new PointerEvent(type, { bubbles: true, cancelable: true }));
@@ -1029,44 +1039,341 @@ export const check = {
           at('pointerup');
         }, picked.section);
 
+        const tokenPath = join(to.sections, governs.owner, 'tokens.css');
+        const held = readFileSync(tokenPath, 'utf8');
+        // The row names the constant it will write BEFORE anything is changed,
+        // which is the other half of "in one place": a number that moves a Token
+        // has to say which Token while the author is deciding, not afterwards.
+        // Read here rather than after the write, because a write RESETS the
+        // measurement — the page has moved by then, so the offer is legitimately
+        // gone and reading it there would assert the wrong moment.
+        const names = await page.locator('[data-editor-axis="width"]').getAttribute('data-editor-governed');
+        if (names !== governs.property) {
+          failures.push(
+            `the width row is marked as governed by "${names}" rather than ${governs.property} — the number and` +
+              ' the constant it writes have to be one thing to read',
+          );
+        }
         const width = await page.locator('[data-editor-nudge="width"]').inputValue();
+        // NO SECOND PRESS AFTER THIS ONE, and that is the assertion (#166).
+        // Committing the row IS the write, where a Token governs it — the button
+        // that used to stand between the two was the "bunch of buttons" the ticket
+        // is about.
         await page.locator('[data-editor-nudge="width"]').fill(String(Math.round(Number(width) * 0.8)));
         await page.locator('[data-editor-nudge="width"]').press('Enter');
 
-        const offer = page.locator('[data-editor-write-token="width"]');
-        if ((await offer.count()) === 0) {
-          const said = await page.locator('[data-editor-offer]').allTextContents();
+        const wroteToken = await page
+          .waitForFunction(
+            (property) => document.querySelector('[data-editor-said]')?.textContent?.includes(property),
+            governs.property,
+            { timeout: 10_000 },
+          )
+          .then(() => true)
+          .catch(() => false);
+        if (!wroteToken) {
           failures.push(
-            `resizing something whose width is declared as var(${governs.property}) offered no Token to write` +
-              ` — the surface is not reading the page's own stylesheets. It said: ${said.join(' / ') || 'nothing'}`,
+            `resizing something whose width is declared as var(${governs.property}) never wrote it — the surface` +
+              " is not reading the page's own stylesheets, or the row is not landing",
           );
-        } else {
-          const offered = (await offer.textContent()) ?? '';
-          const tokenPath = join(to.sections, governs.owner, 'tokens.css');
-          const held = readFileSync(tokenPath, 'utf8');
-          await offer.click();
-          const wroteToken = await page
-            .waitForFunction(
-              (property) => document.querySelector('[data-editor-said]')?.textContent?.includes(property),
-              governs.property,
-              { timeout: 10_000 },
-            )
-            .then(() => true)
-            .catch(() => false);
-          if (!wroteToken) failures.push(`pressing "${offered}" never reported writing ${governs.property}`);
-          if (readFileSync(tokenPath, 'utf8') === held) {
-            failures.push(
-              `pressing "${offered}" wrote nothing to ${governs.owner}/tokens.css — the offer is not reaching` +
-                ' the Tokens surface’s own control',
-            );
-          }
-          notes.push(`offered and wrote ${governs.property} from a measurement (${offered})`);
         }
+        if (readFileSync(tokenPath, 'utf8') === held) {
+          failures.push(
+            `committing the width row wrote nothing to ${governs.owner}/tokens.css — the row is not reaching` +
+              ' the Tokens surface’s own control',
+          );
+        }
+        if (wroteToken) notes.push(`committed the width row and it wrote ${governs.property}, with no second press`);
 
         await page.evaluate(() => document.getElementById('editor-check-governs')?.remove());
       }
 
-      await page.locator('[data-editor-measuring]').click();
+      // ---- the text size, which is the fifth row and the reason for #166 ---
+      //
+      // Same mechanism as the width above and a different property, so what this
+      // adds is the wiring: `font-size` has to be in `GOVERNED`, the row has to be
+      // drawn, and `restate` has to be given a context WITHOUT the parent and
+      // without the element's own font — a `%` font-size is a share of the
+      // parent's size and an `em` one is a share of the number being changed, so
+      // either would be restated wrong rather than refused.
+      //
+      // On an element of its own, because a Token declared as a Section's width is
+      // any length at all and putting a 680px font-size on a composition would
+      // measure the reflow rather than the row.
+      const type = lengths.find(
+        (token) =>
+          /^-?\d*\.?\d+px$/.test(token.value) &&
+          Number.parseFloat(token.value) >= 4 &&
+          Number.parseFloat(token.value) <= 64 &&
+          lengths.filter((other) => other.property === token.property).length === 1,
+      );
+      if (!type) {
+        notes.push('no Section declares a plain px Token of a plausible size, so the text-size row is not asserted');
+      } else {
+        // INSIDE the element the Token is declared on, and that is the assertion
+        // rather than the setting: a Token's preview is a declaration written under
+        // the selector it came from, so an element outside that selector inherits
+        // nothing and the page never follows the write. This one is a descendant,
+        // so what is asserted is the whole chain — row, Token, preview sheet, page.
+        const hosted = await page.evaluate(
+          ([property, selector]) => {
+            const host = document.querySelector(selector);
+            if (!host) return false;
+            const element = document.createElement('div');
+            element.id = 'editor-check-type';
+            element.textContent = 'Aa';
+            // Fixed and clipped: the Token behind this may be any length, and what
+            // is being measured is the row rather than the reflow.
+            element.style.cssText =
+              'position: fixed; left: 12px; bottom: 12px; width: 40px; height: 24px; overflow: hidden;';
+            host.append(element);
+            const style = document.createElement('style');
+            style.id = 'editor-check-type-sheet';
+            style.textContent = `#editor-check-type { font-size: var(${property}); }`;
+            document.head.append(style);
+            return true;
+          },
+          [type.property, type.selector],
+        );
+        if (!hosted) {
+          failures.push(`nothing on the page matches "${type.selector}", which is where ${type.property} is declared`);
+        }
+        await page.locator('[data-editor-choose="content"]').click();
+        await page.locator('[data-editor-choose="measure"]').click();
+        await page.evaluate(() => {
+          const element = document.getElementById('editor-check-type');
+          const at = (kind) => element.dispatchEvent(new PointerEvent(kind, { bubbles: true, cancelable: true }));
+          at('pointerdown');
+          at('pointerup');
+        });
+
+        const row = page.locator('[data-editor-nudge="text size"]');
+        if ((await row.count()) === 0) {
+          failures.push('there is no text-size row on a picked element — the one thing #166 asked for');
+        } else {
+          const typePath = join(to.sections, type.owner, 'tokens.css');
+          const typeHeld = readFileSync(typePath, 'utf8');
+          const was = Number(await row.inputValue());
+          const wanted = Math.round((was + 4) * 10) / 10;
+          const names = await page.locator('[data-editor-axis="text size"]').getAttribute('data-editor-governed');
+          if (names !== type.property) {
+            failures.push(`the text-size row is marked as governed by "${names}" rather than ${type.property}`);
+          }
+          // DRAGGED, and not typed. The width above is the typed half; this is the
+          // gesture #166 is actually about, and it is a different path — a
+          // pointerdown on the row's label, a move, and a release that lands it.
+          // The label is destroyed and rebuilt on every frame of the drag, because
+          // every change repaints the read-out; the listeners are on `document`, so
+          // that is survivable, and asserting it here is what says so.
+          await page.evaluate((by) => {
+            const label = document.querySelector('[data-editor-scrub="text size"]');
+            const box = label.getBoundingClientRect();
+            const x = Math.round(box.left + 2);
+            const y = Math.round(box.top + 2);
+            const at = (kind, clientX) =>
+              label.dispatchEvent(
+                new PointerEvent(kind, { bubbles: true, cancelable: true, clientX, clientY: y }),
+              );
+            at('pointerdown', x);
+            document.dispatchEvent(
+              new PointerEvent('pointermove', { bubbles: true, cancelable: true, clientX: x + by, clientY: y }),
+            );
+            document.dispatchEvent(
+              new PointerEvent('pointerup', { bubbles: true, cancelable: true, clientX: x + by, clientY: y }),
+            );
+          }, Math.round((wanted - was) / 0.5));
+          const wroteType = await page
+            .waitForFunction(
+              (property) => document.querySelector('[data-editor-said]')?.textContent?.includes(property),
+              type.property,
+              { timeout: 10_000 },
+            )
+            .then(() => true)
+            .catch(() => false);
+          if (!wroteType || readFileSync(typePath, 'utf8') === typeHeld) {
+            failures.push(
+              `a text size declared as var(${type.property}) did not write it — ${type.owner}/tokens.css is` +
+                ' unchanged',
+            );
+          } else {
+            // The file, and then the PAGE — and after the write rather than before
+            // it, because the drag's inline styles are dropped the moment a Token
+            // lands. What is showing 18.4px by now is the Token's own preview,
+            // which is the only thing worth looking at: a row that moved the page
+            // and wrote nothing, and a row that wrote the file and moved nothing,
+            // are two different bugs that read the same from either side alone.
+            const shown = await page.evaluate(() =>
+              Number.parseFloat(getComputedStyle(document.getElementById('editor-check-type')).fontSize),
+            );
+            if (Math.abs(shown - wanted) > 1) {
+              failures.push(
+                `writing ${type.property} from the text-size row left the element at ${shown}px rather than` +
+                  ` ${wanted}px — the file moved and the page did not`,
+              );
+            } else {
+              notes.push(`scrubbed the text size and it wrote ${type.property}, with no second press`);
+            }
+          }
+        }
+        await page.evaluate(() => {
+          document.getElementById('editor-check-type')?.remove();
+          document.getElementById('editor-check-type-sheet')?.remove();
+        });
+      }
+
+      // ---- reaching a parent, and picking a series -------------------------
+      //
+      // A click lands on the DEEPEST element under the pointer, which is almost
+      // never the box the author means — so the ancestors are drawn as a
+      // breadcrumb and `↑`/`↓` walk the same chain (#166). Both are asserted,
+      // because the strip and the keys are two paths to one method and either can
+      // be wired wrong on its own.
+      // On a nest of its own, injected and taken back out, for the same reason the
+      // four corners are: what is being asserted is the chain and the keys, and a
+      // composition's own nesting is a shape that can be renamed. The crumb COUNT
+      // is what the climb is read off — two elements of a composition can honestly
+      // have the same name, so comparing the read-out's words would be a false
+      // failure waiting for one.
+      await page.evaluate(() => {
+        const outer = document.createElement('div');
+        outer.id = 'editor-check-nest';
+        outer.style.cssText = 'position: fixed; left: 260px; bottom: 40px; width: 120px; height: 60px;';
+        const middle = document.createElement('div');
+        middle.style.cssText = 'width: 100px; height: 40px;';
+        const inner = document.createElement('div');
+        inner.id = 'editor-check-nest-inner';
+        inner.style.cssText = 'width: 60px; height: 20px;';
+        middle.append(inner);
+        outer.append(middle);
+        document.body.append(outer);
+      });
+      await page.locator('[data-editor-choose="content"]').click();
+      await page.locator('[data-editor-choose="measure"]').click();
+      await page.evaluate(() => {
+        const element = document.getElementById('editor-check-nest-inner');
+        const at = (kind) => element.dispatchEvent(new PointerEvent(kind, { bubbles: true, cancelable: true }));
+        at('pointerdown');
+        at('pointerup');
+      });
+      const crumbs = await page.locator('[data-editor-crumb]').count();
+      if (crumbs !== 3) {
+        failures.push(`a three-deep element's breadcrumb listed ${crumbs} crumbs — the chain is not being drawn`);
+      }
+      if ((await page.locator('[data-editor-crumb]').last().getAttribute('aria-pressed')) !== 'true') {
+        failures.push('the last crumb is not marked as the picked one, so the strip says nothing about where you are');
+      }
+      // The keyboard, dispatched on the BODY: the handler stands down while the
+      // focus is inside the panel, because an arrow key in a number box belongs to
+      // the box.
+      const arrow = (key) =>
+        page.evaluate(
+          (which) => document.body.dispatchEvent(new KeyboardEvent('keydown', { key: which, bubbles: true })),
+          key,
+        );
+      await arrow('ArrowUp');
+      const afterUp = await page.locator('[data-editor-crumb]').count();
+      if (afterUp !== crumbs - 1) {
+        failures.push(`↑ left ${afterUp} crumbs where climbing one level should leave ${crumbs - 1}`);
+      }
+      await arrow('ArrowDown');
+      const afterDown = await page.locator('[data-editor-crumb]').count();
+      if (afterDown !== crumbs) {
+        failures.push(`↓ left ${afterDown} crumbs — it did not come back to where ↑ started`);
+      }
+      // Clicking a crumb reaches the same place, which is the pointer half of the
+      // same method.
+      await page.locator('[data-editor-crumb]').first().click();
+      const byCrumb = await page.locator('[data-editor-crumb]').count();
+      if (byCrumb !== 1) {
+        failures.push(`clicking the outermost crumb left ${byCrumb} crumbs rather than one`);
+      }
+      // Escape drops the selection without leaving the surface, which is the other
+      // thing there is no button for.
+      await arrow('Escape');
+      if ((await page.locator('[data-editor-crumb]').count()) !== 0) {
+        failures.push('Escape did not drop the selection');
+      }
+      if (!await page.evaluate(() => document.documentElement.hasAttribute('data-editor-armed'))) {
+        failures.push('Escape disarmed the surface as well as dropping the selection');
+      }
+      notes.push('climbed to a parent by the breadcrumb and by the keyboard, and dropped it with Escape');
+      await page.evaluate(() => document.getElementById('editor-check-nest')?.remove());
+
+      // A series: shift-click adds, and one row moves all of them. This is the
+      // whole of "click a series of text and resize them", so the assertion is
+      // that BOTH elements followed one number — not that the read-out counted
+      // them.
+      await page.evaluate(() => {
+        // Two boxes of this Check's own, again: a composition's box may be held to
+        // a size by something else, and a row that asked for a smaller one would
+        // then get the size it had — the honest answer for a page and a false
+        // failure for a Check about a selection.
+        for (const [at, left] of [
+          [0, 420],
+          [1, 560],
+        ]) {
+          const element = document.createElement('div');
+          element.dataset.editorCheckSeries = String(at);
+          element.style.cssText = `position: fixed; left: ${left}px; bottom: 40px; width: 100px; height: 30px;`;
+          document.body.append(element);
+        }
+      });
+      await page.locator('[data-editor-choose="content"]').click();
+      await page.locator('[data-editor-choose="measure"]').click();
+      await page.evaluate(() => {
+        const at = (element, kind, shift) =>
+          element.dispatchEvent(new PointerEvent(kind, { bubbles: true, cancelable: true, shiftKey: shift }));
+        const one = document.querySelector('[data-editor-check-series="0"]');
+        const two = document.querySelector('[data-editor-check-series="1"]');
+        at(one, 'pointerdown', false);
+        at(one, 'pointerup', false);
+        at(two, 'pointerdown', true);
+        at(two, 'pointerup', true);
+      });
+      const also = await page.locator('[data-editor-marquee][data-editor-also]').count();
+      if (also !== 1) {
+        failures.push(`shift-clicking a second element drew ${also} secondary marquees rather than one`);
+      }
+      const narrow = 64;
+      await page.locator('[data-editor-nudge="width"]').fill(String(narrow));
+      await page.locator('[data-editor-nudge="width"]').press('Enter');
+      const landed = await page.evaluate(() =>
+        [...document.querySelectorAll('[data-editor-check-series]')].map((element) =>
+          Math.round(element.getBoundingClientRect().width),
+        ),
+      );
+      if (landed.some((width) => Math.abs(width - narrow) > 2)) {
+        failures.push(
+          `one row set to ${narrow}px left the series at ${landed.join(', ')}px — a change made to a series has` +
+            ' to reach every element in it',
+        );
+      } else {
+        notes.push('shift-clicked a series, and one row resized both');
+      }
+      // And shift-clicking one of them again takes it back out, which is what makes
+      // a wrong pick correctable without starting over.
+      await page.evaluate(() => {
+        const two = document.querySelector('[data-editor-check-series="1"]');
+        const at = (kind) =>
+          two.dispatchEvent(new PointerEvent(kind, { bubbles: true, cancelable: true, shiftKey: true }));
+        at('pointerdown');
+        at('pointerup');
+      });
+      const stillAlso = await page.locator('[data-editor-marquee][data-editor-also]').count();
+      if (stillAlso !== 0) {
+        failures.push(`shift-clicking a picked element again left ${stillAlso} secondary marquees rather than none`);
+      }
+      const putBack = await page.evaluate(() =>
+        Math.round(document.querySelector('[data-editor-check-series="1"]').getBoundingClientRect().width),
+      );
+      if (Math.abs(putBack - 100) > 2) {
+        failures.push(`taking an element out of the series left it at ${putBack}px rather than back at 100px`);
+      }
+      await page.locator('[data-editor-measure="restore"]').click();
+      await page.evaluate(() => {
+        for (const element of document.querySelectorAll('[data-editor-check-series]')) element.remove();
+      });
+
+      await page.locator('[data-editor-choose="content"]').click();
 
       // Publishing is off for this Check, and it has to say so rather than run.
       const publish = await fetch(`${served.origin}/__editor/publish`, {

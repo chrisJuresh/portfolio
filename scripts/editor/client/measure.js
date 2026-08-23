@@ -30,15 +30,50 @@
  * terms over; an element's own `section__part` class is matched against them. Where
  * there is no term the Annotation says so instead of inventing one — which is the
  * honest answer and also a nudge towards putting the word in the glossary.
+ *
+ * AND IT IS AN INSPECTOR, WHICH IS WHAT #166 CHANGED. Four things, and all four are
+ * the same complaint: the tool measured well and was slow to reach.
+ *
+ *   - BEING ON THIS SURFACE IS BEING ARMED. `editor.js` arms it as the surface
+ *     comes forward. There was a press for this, and it was a second gate on a
+ *     decision the author had already made by choosing the surface.
+ *   - A SELECTION, NOT AN ELEMENT. `this.selection` is a list, primary first;
+ *     shift-click adds and removes. Every change is made to all of them — the same
+ *     absolute size, the same distance moved — because "click a series of text and
+ *     resize them" is what was asked for.
+ *   - THE ANCESTORS ARE DRAWN. A click lands on the deepest element under the
+ *     pointer, which is almost never the box the author means. `crumbs()` lists the
+ *     chain and `↑`/`↓` walk it.
+ *   - A ROW IS SCRUBBED, AND LETTING GO WRITES THE TOKEN. Five rows now: the box's
+ *     four and the TEXT SIZE, which is the one thing the author kept reaching for
+ *     and could not touch. Seventeen of the nineteen `font-size` declarations under
+ *     `src/` are exactly `var(--…)`, so scrubbing one almost always writes a real
+ *     Token through the Tokens surface's own control — and `font-size` joined the
+ *     Override's properties for the two that are built out of a `calc()`.
+ *
+ * WHAT DID NOT CHANGE IS THE ASYMMETRY, and it is ADR 0004 rather than an
+ * unfinished half: a row backed by a Token writes on release, and a row backed by
+ * nothing stays a measurement however hard it is scrubbed. A Token is a named
+ * number the author is entitled to move. A coordinate in a composition is not.
  */
 
-import { AXES, annotate, list, name, nudge, restate } from './lib/annotations.mjs';
+import { AXES, TEXT, annotate, list, name, nudge, restate } from './lib/annotations.mjs';
 import { CORNERS, label as cornerLabel, resize } from './lib/corners.mjs';
 import { DISPLAY, asSelector, rule as ruleFor } from './lib/overrides.mjs';
 
 /** Which of the parent's two sides each axis is measured down. `AXES` itself is
  *  the Annotation's, imported rather than spelled again. */
 const DOWN = { left: 'x', width: 'x', top: 'y', height: 'y' };
+
+/** Everything this surface draws a row for: the box's four, and the text size
+ *  beside them rather than among them. */
+const MEASURES = [...AXES, TEXT];
+
+/** How far the pointer travels for one unit of a scrubbed row, and the finer step
+ *  a held Shift asks for. A text size wants tenths where a box wants pixels, so
+ *  the coarse step is the row's and not the surface's. */
+const SCRUB = { [TEXT]: 0.5, default: 1 };
+const FINE = 0.1;
 
 /**
  * Which authored properties could be the one that governs an axis, in the order
@@ -81,6 +116,11 @@ const GOVERNED = {
     // governs its height would be wrong about the one thing that does.
     ['aspect-ratio', 1],
   ],
+  // One property and one sign, because a text size is set one way. It earns a
+  // place here rather than a lookup of its own so that everything downstream —
+  // the offer, the Annotation's paragraph, the refusals — is the code that
+  // already worked for a length (#166).
+  [TEXT]: [['font-size', 1]],
 };
 
 /** The properties that BOUND a size rather than being it. A box may sit anywhere
@@ -300,10 +340,29 @@ export class Measure {
     this.say = say;
     this.standing = standing ?? (() => {});
     this.armed = false;
-    this.picked = null;
+    /**
+     * What is picked, primary first.
+     *
+     * A LIST and not one element (#166): "click a series of text and resize them"
+     * is the thing the author asked for, and a series is what shift-click builds.
+     * The first is the PRIMARY — its numbers are the ones in the rows, its
+     * ancestors are the ones in the breadcrumb — and every change made to it is
+     * made to the rest as well: the same absolute size, or the same distance
+     * moved. One element is the ordinary case and is a list of one, so there is no
+     * second code path for it.
+     */
+    this.selection = [];
+    /** Where `↓` goes back to: the element the last `↑` climbed away from. */
+    this.came = null;
     this.panel = null;
-    this.marquee = null;
+    this.marquees = [];
     this.dragging = null;
+  }
+
+  /** The primary — whose numbers the rows show, and whose ancestors the
+   *  breadcrumb lists. */
+  get picked() {
+    return this.selection[0] ?? null;
   }
 
   // -------------------------------------------------------------------------
@@ -370,7 +429,7 @@ export class Measure {
    */
   governing(element) {
     const found = {};
-    for (const axis of AXES) {
+    for (const axis of MEASURES) {
       for (const [property, sign] of GOVERNED[axis]) {
         const declaration = authored(element, property);
         if (!declaration) continue;
@@ -410,15 +469,20 @@ export class Measure {
     };
   }
 
-  pick(element) {
-    if (this.picked) this.restore(false);
-    const selector = selectorFor(element);
+  /** The element's own text size, in px. Computed, because that is the number the
+   *  reader is looking at whatever the file says. */
+  typeSize(element) {
+    return round(Number.parseFloat(getComputedStyle(element).fontSize));
+  }
+
+  /** Everything this surface tracks about one element, ready to be dragged. */
+  record(element) {
     const parent = element.parentElement;
     const computed = getComputedStyle(element);
-    this.picked = {
+    const held = {
       element,
       named: this.describe(element),
-      selector,
+      selector: selectorFor(element),
       parent: parent
         ? { phrase: this.describe(parent).phrase, ...this.box(parent) }
         : { phrase: 'the page', width: innerWidth, height: innerHeight },
@@ -436,45 +500,117 @@ export class Measure {
       promoted: computed.display === 'inline',
       before: this.box(element),
       after: this.box(element),
-      wanted: { dx: 0, dy: 0, width: null, height: null },
+      // The text size, tracked beside the box rather than in it: it has no share
+      // of a parent and no opposite corner, so `lib/annotations.mjs` keeps it out
+      // of `AXES` and so does this.
+      type: { before: this.typeSize(element), after: this.typeSize(element) },
+      wanted: { dx: 0, dy: 0, width: null, height: null, size: null },
       was: {
         display: element.style.display,
+        'font-size': element.style.fontSize,
         translate: element.style.translate,
         width: element.style.width,
         height: element.style.height,
       },
       governs: this.governing(element),
     };
-    if (this.picked.promoted) {
+    if (held.promoted) {
       element.style.setProperty('display', DISPLAY, 'important');
-      this.picked.before = this.box(element);
-      this.picked.after = this.box(element);
+      held.before = this.box(element);
+      held.after = this.box(element);
     }
+    return held;
+  }
+
+  /**
+   * Pick an element, or add it to what is already picked.
+   *
+   * `add` is shift-click, and it is the whole of the multi-selection: a second
+   * click on something already in the selection takes it out again, so a series is
+   * built and corrected with one gesture rather than a mode.
+   */
+  pick(element, add = false) {
+    if (!add) {
+      this.clear();
+      this.selection = [this.record(element)];
+    } else {
+      const at = this.selection.findIndex((held) => held.element === element);
+      if (at !== -1) {
+        // Out again — restoring only this one, because the rest are still picked.
+        this.put(this.selection[at]);
+        this.selection.splice(at, 1);
+        this.paintPicked();
+        this.say(
+          this.selection.length === 0
+            ? 'nothing is picked'
+            : `dropped it — ${this.selection.length} still picked`,
+        );
+        return;
+      }
+      if (this.selection.length === 0) this.selection = [this.record(element)];
+      else this.selection.push(this.record(element));
+    }
+    this.came = null;
     this.paintPicked();
+    if (this.selection.length > 1) {
+      return this.say(
+        `${this.selection.length} picked — the rows are ${this.picked.named.phrase}’s, and every change is made` +
+          ' to all of them',
+      );
+    }
+    const { selector, named, promoted } = this.picked;
     this.say(
       selector === null
-        ? `picked ${this.picked.named.phrase} — nothing here can address it uniquely, so an Annotation can be` +
+        ? `picked ${named.phrase} — nothing here can address it uniquely, so an Annotation can be` +
             ' taken but an Override cannot be written'
-        : `picked ${this.picked.named.phrase}${
-            this.picked.promoted ? ` — an inline box, so it is measured as ${DISPLAY}` : ''
-          } — drag it, drag a corner to resize it, or type its numbers`,
+        : `picked ${named.phrase}${promoted ? ` — an inline box, so it is measured as ${DISPLAY}` : ''} —` +
+            ' drag it, drag a corner, scrub a row, or shift-click to pick more',
       selector === null,
     );
   }
 
-  /** Put the element back the way the page had it — including a promotion this
-   *  surface made in order to be able to measure it at all. */
-  restore(report = true) {
-    if (!this.picked) return;
-    const { element, was } = this.picked;
-    for (const [property, held] of Object.entries(was)) {
-      element.style.removeProperty(property);
-      if (held !== '') element.style.setProperty(property, held);
-    }
-    this.picked.wanted = { dx: 0, dy: 0, width: null, height: null };
-    this.picked.after = this.box(element);
+  /** Pick the same elements again, from where the page now is. What a Token write
+   *  needs: the page has moved under the selection, so every `before` is stale. */
+  repick() {
+    const elements = this.selection.map((held) => held.element);
+    this.clear();
+    this.selection = elements.map((element) => this.record(element));
     this.paintPicked();
-    if (report) this.say(`${this.picked.named.phrase} is back where the page had it`);
+  }
+
+  /** Put one element back the way the page had it — including a promotion this
+   *  surface made in order to be able to measure it at all. */
+  put(held) {
+    for (const [property, was] of Object.entries(held.was)) {
+      held.element.style.removeProperty(property);
+      if (was !== '') held.element.style.setProperty(property, was);
+    }
+    held.wanted = { dx: 0, dy: 0, width: null, height: null, size: null };
+    held.after = this.box(held.element);
+    held.type.after = this.typeSize(held.element);
+  }
+
+  /** Every picked element back where the page had it, still picked. */
+  restore(report = true) {
+    if (this.selection.length === 0) return;
+    for (const held of this.selection) this.put(held);
+    this.paintPicked();
+    if (report) this.say(`${this.spoken()} back where the page had it`);
+  }
+
+  /** Nothing picked, and nothing left behind on the page. */
+  clear() {
+    for (const held of this.selection) this.put(held);
+    this.selection = [];
+    this.came = null;
+  }
+
+  /** What to call the selection in a report line. */
+  spoken() {
+    if (this.selection.length === 0) return 'nothing';
+    return this.selection.length === 1
+      ? `${this.picked.named.phrase} is`
+      : `all ${this.selection.length} picked are`;
   }
 
   /**
@@ -486,19 +622,26 @@ export class Measure {
    * measurement of anything already overridden moves nothing and reports
    * "unchanged" — so a standing Override would quietly make its own element
    * unmeasurable, and the only way to adjust one would be to discard it first.
+   *
+   * Every picked element, because the selection is what a change is made to.
    */
   apply() {
-    const { element, wanted, base } = this.picked;
+    for (const held of this.selection) this.applyTo(held);
+    this.paintPicked();
+  }
+
+  applyTo(held) {
+    const { element, wanted, base } = held;
     const set = (property, value) => {
       element.style.removeProperty(property);
       if (value === null) {
-        if (this.picked.was[property] !== '') element.style.setProperty(property, this.picked.was[property]);
+        if (held.was[property] !== '') element.style.setProperty(property, held.was[property]);
       } else {
         element.style.setProperty(property, value, 'important');
       }
     };
-    if (this.picked.promoted) set('display', DISPLAY);
-    // base + delta, and never the delta alone: see the note on `base` in pick().
+    if (held.promoted) set('display', DISPLAY);
+    // base + delta, and never the delta alone: see the note on `base` in record().
     set(
       'translate',
       wanted.dx === 0 && wanted.dy === 0 && base.x === 0 && base.y === 0
@@ -507,11 +650,13 @@ export class Measure {
     );
     set('width', wanted.width === null ? null : `${wanted.width}px`);
     set('height', wanted.height === null ? null : `${wanted.height}px`);
+    set('font-size', wanted.size === null ? null : `${wanted.size}px`);
     // MEASURED and not computed: a flex child whose width is capped ends up
-    // somewhere other than where it was dragged to, and the number the author
-    // wants in the Annotation is where it actually is.
-    this.picked.after = this.box(element);
-    this.paintPicked();
+    // somewhere other than where it was dragged to, and a text size the page
+    // clamps lands somewhere other than where it was scrubbed. The number the
+    // author wants in the Annotation is where it actually is.
+    held.after = this.box(element);
+    held.type.after = this.typeSize(element);
   }
 
   /**
@@ -524,21 +669,36 @@ export class Measure {
     return { axis, property: governed.property, token, selector, section, key, was, wants: wants ?? null, why: why ?? null };
   }
 
-  /** The whole measurement, as `annotate()` wants it. */
-  measurement() {
-    const { element, before, after, governs } = this.picked;
+  /**
+   * The whole measurement of one picked element, as `annotate()` wants it.
+   *
+   * Defaults to the primary, because that is what the rows and the read-out are
+   * about — and takes a record, because an Annotation over a selection is one of
+   * these per member.
+   */
+  measurement(of = this.picked) {
+    const { element, before, after, governs, type } = of;
     const root = Number.parseFloat(getComputedStyle(document.documentElement).fontSize);
     const font = Number.parseFloat(getComputedStyle(element).fontSize);
     const viewport = { width: innerWidth, height: innerHeight };
-    const parent = { width: this.picked.parent.width, height: this.picked.parent.height };
+    const parent = { width: of.parent.width, height: of.parent.height };
 
     const tokens = [];
-    for (const axis of AXES) {
-      const by = round(after[axis] - before[axis]);
+    for (const axis of MEASURES) {
+      const type_ = axis === TEXT;
+      const from = type_ ? type.before : before[axis];
+      const to = type_ ? type.after : after[axis];
+      const by = round(to - from);
       if (by === 0) continue;
       const governed = governs[axis];
       if (!governed) continue;
-      const ctx = { root, font, parent, viewport, axis: DOWN[axis] };
+      // A text size gets NEITHER `parent` NOR `font`, and both omissions are the
+      // honest answer rather than an oversight. A `%` font-size is a share of the
+      // PARENT's font-size and an `em` one is a share of the same thing — so the
+      // parent's width would be the wrong base and the element's own size is the
+      // very number being changed. `asUnit` answers null without them, and a
+      // relationship this cannot restate is reported instead of guessed.
+      const ctx = type_ ? { root, viewport } : { root, font, parent, viewport, axis: DOWN[axis] };
 
       if (governed.token === null) {
         // Two different answers, and telling them apart is most of the value of
@@ -602,11 +762,13 @@ export class Measure {
       // page — worse than offering none, because an offer reads as certainty.
       const onTheBound =
         !BOUND.has(governed.property) ||
-        (Number.isFinite(governed.computed) && Math.abs(governed.computed - before[axis]) < 0.5);
+        (Number.isFinite(governed.computed) && Math.abs(governed.computed - from) < 0.5);
+      // A size is restated to what it now is; a position is nudged by how far it
+      // went. A text size is a size.
       const wants = !onTheBound
         ? null
-        : axis === 'width' || axis === 'height'
-          ? restate(token.value, after[axis], ctx)
+        : type_ || axis === 'width' || axis === 'height'
+          ? restate(token.value, to, ctx)
           : nudge(token.value, by * governed.sign, ctx);
       tokens.push(
         this.governor(axis, governed, {
@@ -620,28 +782,29 @@ export class Measure {
             ? wants === null
               ? `${token.value} is not a plain length, so restating it would destroy it`
               : null
-            : `it is a ${governed.property} and the box is not standing on it — ${px(before[axis])} against a` +
+            : `it is a ${governed.property} and the box is not standing on it — ${px(from)} against a` +
               ` bound of ${px(governed.computed)} — so writing the measured size there would not move the page`,
         }),
       );
     }
 
     return {
-      named: this.picked.named,
-      selector: this.picked.selector ?? '(nothing on this page addresses it uniquely)',
+      named: of.named,
+      selector: of.selector ?? '(nothing on this page addresses it uniquely)',
       viewport,
       root,
-      parent: this.picked.parent,
+      parent: of.parent,
       before,
       after,
+      text: { before: type.before, after: type.after },
       // The absolute translate the page is showing, base included: an Override
       // REPLACES the composition's own, so the delta alone would move the element
       // back to zero and then out again by however far it was dragged.
       translate: {
-        x: round(this.picked.base.x + this.picked.wanted.dx),
-        y: round(this.picked.base.y + this.picked.wanted.dy),
+        x: round(of.base.x + of.wanted.dx),
+        y: round(of.base.y + of.wanted.dy),
       },
-      promoted: this.picked.promoted,
+      promoted: of.promoted,
       tokens,
     };
   }
@@ -654,16 +817,16 @@ export class Measure {
     this.panel = into;
     into.innerHTML = `
       <div data-editor-arm>
-        <button type="button" data-editor-measuring aria-pressed="false">measure</button>
-        <small>then click anything on the page. Dragging moves it, any of its four corners resizes
-        it from the opposite one, and nothing here writes to a Section — see below for what it
-        hands back.</small>
+        <small data-editor-measuring>Click anything on the page. Shift-click picks more,
+        <kbd>↑</kbd> and <kbd>↓</kbd> climb to a parent and back, dragging moves it, a corner
+        resizes it from the opposite one, and scrubbing a row writes the Token that governs it
+        where there is one. <kbd>Esc</kbd> drops the selection.</small>
       </div>
       <div data-editor-measured></div>
       <div data-editor-annotation>
         <label><span>Annotations</span>
           <textarea data-editor-annotations rows="8" readonly
-            placeholder="nothing measured yet — pick something and drag it, then press Annotation"></textarea>
+            placeholder="nothing measured yet — a change no Token expresses leaves by here: pick something, move it, then press Annotation"></textarea>
         </label>
         <div data-editor-annotation-buttons>
           <button type="button" data-editor-copy>copy</button>
@@ -672,7 +835,6 @@ export class Measure {
       </div>
       <div data-editor-overrides-list></div>`;
 
-    into.querySelector('[data-editor-measuring]').addEventListener('click', () => this.arm(!this.armed));
     into.querySelector('[data-editor-copy]').addEventListener('click', () => this.copy());
     into.querySelector('[data-editor-forget]').addEventListener('click', () => {
       this.annotations().value = '';
@@ -688,24 +850,28 @@ export class Measure {
     return this.panel.querySelector('[data-editor-annotations]');
   }
 
-  /** Arm or disarm. While armed the page is a measuring surface and not a page:
-   *  a click picks rather than following a link or editing a word. */
+  /**
+   * Arm or disarm. While armed the page is a measuring surface and not a page: a
+   * click picks rather than following a link or editing a word.
+   *
+   * NOBODY PRESSES THIS. Being on this surface IS being armed — `editor.js` calls
+   * it as the surface comes to the front and again as it leaves (#166). The press
+   * that used to be here was a second gate on a decision the author had already
+   * made by choosing the surface, and the thing it protected against — a click
+   * picking instead of editing a word — is what the report line says on arrival.
+   */
   arm(on) {
+    if (on === this.armed) return;
     this.armed = on;
     document.documentElement.toggleAttribute('data-editor-armed', on);
-    const button = this.panel?.querySelector('[data-editor-measuring]');
-    if (button) {
-      button.setAttribute('aria-pressed', String(on));
-      button.textContent = on ? 'stop measuring' : 'measure';
-    }
     if (!on) {
-      this.restore(false);
-      this.picked = null;
+      this.clear();
       this.paintPicked();
     }
     this.say(
       on
-        ? 'measuring — click anything on the page. Clicking text no longer edits it.'
+        ? 'measuring — click anything on the page, and shift-click to pick a series. Clicking text no' +
+            ' longer edits it.'
         : 'not measuring — clicking text edits it again',
     );
   }
@@ -719,7 +885,7 @@ export class Measure {
       this.paintMarquee();
       return;
     }
-    const { named, before, after } = this.picked;
+    const { named, before, after, type } = this.picked;
     const open = new Set(
       [...into.querySelectorAll('[data-editor-nudge]')].filter((input) => input === document.activeElement),
     );
@@ -727,25 +893,75 @@ export class Measure {
 
     const title = document.createElement('p');
     title.dataset.editorPicked = '';
-    title.textContent = named.phrase;
+    title.textContent =
+      this.selection.length === 1 ? named.phrase : `${named.phrase}, and ${this.selection.length - 1} more`;
     into.append(title);
 
-    for (const axis of AXES) {
+    if (this.selection.length > 1) {
+      const rest = document.createElement('p');
+      rest.dataset.editorAlso = '';
+      rest.textContent = `also picked: ${list(this.selection.slice(1).map((held) => held.named.phrase))}`;
+      into.append(rest);
+    }
+
+    into.append(this.crumbs());
+
+    // Which Token, if any, each row would write. Read once for the whole paint:
+    // it decides whether a row is a Token control or a measurement, and asking
+    // per row would walk every stylesheet five times.
+    const offers = new Map(this.measurement().tokens.map((found) => [found.axis, found]));
+
+    for (const axis of MEASURES) {
+      const text = axis === TEXT;
+      const from = text ? type.before : before[axis];
+      const to = text ? type.after : after[axis];
       const row = document.createElement('div');
       row.dataset.editorAxis = axis;
+
+      // The label is the scrub handle. A row with a Token behind it says so on the
+      // handle, because that is where the pointer already is.
       const label = document.createElement('span');
+      label.dataset.editorScrub = axis;
       label.textContent = axis;
+      const offered = offers.get(axis);
+      const governed = this.picked.governs[axis];
+      if (governed?.token) {
+        label.title = `${governed.property} is ${governed.token} — scrubbing this writes it`;
+        row.dataset.editorGoverned = governed.token;
+      } else {
+        label.title = `nothing the Editor can see declares ${axis} here — scrubbing this measures it`;
+      }
+
       const box = document.createElement('input');
       box.type = 'number';
-      box.step = '1';
+      box.step = text ? '0.1' : '1';
       box.dataset.editorNudge = axis;
-      box.value = String(after[axis]);
-      box.addEventListener('change', () => this.want(axis, Number(box.value)));
+      box.value = String(to);
+      // Typing a number is the same deliberate change as scrubbing one, so it
+      // lands the same way: preview, then write whatever the row is backed by.
+      box.addEventListener('change', () => {
+        this.want(axis, Number(box.value));
+        void this.land(axis);
+      });
+
       const moved = document.createElement('small');
-      const by = round(after[axis] - before[axis]);
-      moved.textContent = by === 0 ? `was ${before[axis]}` : `was ${before[axis]}, ${by > 0 ? '+' : ''}${by}`;
+      const by = round(to - from);
+      moved.textContent = by === 0 ? `was ${from}` : `was ${from}, ${by > 0 ? '+' : ''}${by}`;
       if (by !== 0) row.dataset.editorMoved = '';
+
       row.append(label, box, moved);
+      // The offer, on the row rather than in a list underneath it: "in one place"
+      // is the whole of #166, and a number and the constant it writes are one
+      // thing to read.
+      if (offered) {
+        const said = document.createElement('small');
+        said.dataset.editorOffer = axis;
+        said.textContent =
+          offered.wants === null || offered.section === null
+            ? `${offered.token} — ${offered.why}`
+            : `${offered.token}: ${offered.was} → ${offered.wants}`;
+        row.append(said);
+      }
       into.append(row);
     }
 
@@ -765,88 +981,195 @@ export class Measure {
     }
     into.append(buttons);
 
-    // Where a change maps onto a Token, say so here as well as in the Annotation
-    // — and offer it, because an offer the author has to read a paragraph to find
-    // is not an offer.
-    for (const found of this.measurement().tokens) {
-      const row = document.createElement('p');
-      row.dataset.editorOffer = found.axis;
-      if (found.wants === null || found.section === null) {
-        row.textContent = `${found.axis} is ${found.token} — ${found.why}`;
-        into.append(row);
-        continue;
-      }
-      row.textContent = `${found.axis} is ${found.token} (${found.was})`;
-      const write = document.createElement('button');
-      write.type = 'button';
-      write.dataset.editorWriteToken = found.axis;
-      write.textContent = `write ${found.wants}`;
-      write.addEventListener('click', () => void this.writeToken(found));
-      row.append(' ', write);
-      into.append(row);
-    }
-
     for (const input of into.querySelectorAll('[data-editor-nudge]')) {
       if ([...open].some((was) => was.dataset.editorNudge === input.dataset.editorNudge)) input.focus();
     }
     this.paintMarquee();
   }
 
-  /** Where an axis should be. A width and a height are sizes; a left and a top
-   *  are where the box stands, so those move the translate. */
+  /**
+   * The primary's ancestors, nearest last, each one a button that picks it.
+   *
+   * A click picks the deepest element under the pointer, which is almost never the
+   * box the author means — the box is a parent of the word they clicked. So the
+   * chain is drawn rather than hunted for, named the way the read-out is named,
+   * and `↑`/`↓` walk the same chain from the keyboard (#166).
+   */
+  crumbs() {
+    const strip = document.createElement('div');
+    strip.dataset.editorCrumbs = '';
+    const chain = [];
+    for (
+      let node = this.picked.element;
+      node && node !== document.body && node !== document.documentElement;
+      node = node.parentElement
+    ) {
+      chain.unshift(node);
+    }
+    for (const node of chain) {
+      const crumb = document.createElement('button');
+      crumb.type = 'button';
+      crumb.dataset.editorCrumb = '';
+      crumb.textContent = this.describe(node).phrase.replace(/^the /, '');
+      if (node === this.picked.element) crumb.setAttribute('aria-pressed', 'true');
+      crumb.addEventListener('click', () => this.pick(node));
+      strip.append(crumb);
+    }
+    return strip;
+  }
+
+  /** Climb to the parent, or back down to whatever the last climb came from. */
+  climb(up) {
+    if (!this.picked) return;
+    const from = this.picked.element;
+    if (up) {
+      const to = from.parentElement;
+      if (!to || to === document.body || to === document.documentElement) {
+        return this.say('nothing above that but the page itself');
+      }
+      this.pick(to);
+      // AFTER the pick, because picking clears it: `↓` has to know where `↑` came
+      // from, and there is nothing else on the page that records it.
+      this.came = from;
+      return;
+    }
+    // Back to where the last climb started, if that is still inside — otherwise
+    // the first element child, which is the only unambiguous descent there is.
+    const back = this.came && from.contains(this.came) && this.came !== from ? this.came : null;
+    const to = back ?? from.firstElementChild;
+    if (!to) return this.say('nothing inside that to go into');
+    this.pick(to);
+  }
+
+  /**
+   * Where an axis should be. A width, a height and a text size are sizes; a left
+   * and a top are where the box stands, so those move the translate.
+   *
+   * The primary is told the number, and everything else in the selection is told
+   * the same thing: an absolute size, because a series of text set to one size is
+   * the point, and the same DISTANCE for a position, because a series moved to one
+   * coordinate would be a stack.
+   */
   want(axis, to) {
     if (!this.picked || !Number.isFinite(to)) return;
-    const { before, wanted } = this.picked;
-    if (axis === 'width' || axis === 'height') wanted[axis] = Math.max(0, to);
-    else if (axis === 'left') wanted.dx = round(to - before.left);
-    else wanted.dy = round(to - before.top);
+    // Measured off the PRIMARY, once, and given to all of them — which is what
+    // makes a left a distance rather than a coordinate.
+    const dx = round(to - this.picked.before.left);
+    const dy = round(to - this.picked.before.top);
+    for (const { wanted } of this.selection) {
+      if (axis === TEXT) wanted.size = Math.max(0, to);
+      else if (axis === 'width' || axis === 'height') wanted[axis] = Math.max(0, to);
+      else if (axis === 'left') wanted.dx = dx;
+      else wanted.dy = dy;
+    }
     this.apply();
   }
 
-  /** The box drawn over what is picked, and the four corners that resize it. */
+  /**
+   * A box drawn over every picked element, and the four corners on the primary.
+   *
+   * The corners are the primary's alone, and that is a decision rather than a
+   * shortcut: `lib/corners.mjs` resizes from the corner opposite the one dragged,
+   * and five elements have five opposite corners, so a handle on each would be
+   * five different anchors under one pointer. Resizing a series is the rows —
+   * which set an absolute size and mean the same thing for all of them.
+   */
   paintMarquee() {
-    if (!this.picked) {
-      this.marquee?.remove();
-      this.marquee = null;
-      return;
-    }
-    if (!this.marquee) {
-      this.marquee = document.createElement('div');
-      // NOT data-editor: that attribute carries the panel's whole paint, and this
-      // is a box drawn over the page. Nothing needs it either — while this exists
-      // the surface is armed, and everything that would have looked for it is
-      // already standing down on data-editor-measuring.
-      this.marquee.dataset.editorMarquee = '';
-      // One per corner, and each one carries WHICH corner it is — the arithmetic
-      // that follows is different for all four, and `lib/corners.mjs` is told the
-      // name rather than working it out from where the pointer went down.
-      for (const corner of CORNERS) {
-        const handle = document.createElement('button');
-        handle.type = 'button';
-        handle.dataset.editorHandle = corner;
-        handle.setAttribute('aria-label', cornerLabel(corner));
-        this.marquee.append(handle);
+    for (const stale of this.marquees.slice(this.selection.length)) stale.remove();
+    this.marquees.length = Math.min(this.marquees.length, this.selection.length);
+    this.selection.forEach((held, at) => {
+      let marquee = this.marquees[at];
+      if (!marquee) {
+        marquee = document.createElement('div');
+        // NOT data-editor: that attribute carries the panel's whole paint, and this
+        // is a box drawn over the page. Nothing needs it either — while this exists
+        // the surface is armed, and everything that would have looked for it is
+        // already standing down on data-editor-measuring.
+        marquee.dataset.editorMarquee = '';
+        if (at === 0) {
+          // One per corner, and each one carries WHICH corner it is — the
+          // arithmetic that follows is different for all four, and
+          // `lib/corners.mjs` is told the name rather than working it out from
+          // where the pointer went down.
+          for (const corner of CORNERS) {
+            const handle = document.createElement('button');
+            handle.type = 'button';
+            handle.dataset.editorHandle = corner;
+            handle.setAttribute('aria-label', cornerLabel(corner));
+            marquee.append(handle);
+          }
+        } else {
+          marquee.dataset.editorAlso = '';
+        }
+        document.body.append(marquee);
+        this.marquees[at] = marquee;
       }
-      document.body.append(this.marquee);
+      const rect = held.element.getBoundingClientRect();
+      marquee.style.left = `${rect.left}px`;
+      marquee.style.top = `${rect.top}px`;
+      marquee.style.width = `${rect.width}px`;
+      marquee.style.height = `${rect.height}px`;
+    });
+  }
+
+  // -------------------------------------------------------------------------
+  // Landing a change: the Token where there is one, and nothing where there is not
+  // -------------------------------------------------------------------------
+
+  /**
+   * What happens when a row is let go of.
+   *
+   * THIS IS THE BUTTON THAT IS NOT THERE. A scrub previews through inline styles,
+   * exactly as a drag on the page does; letting go writes the TOKEN that governs
+   * the row, if one does — which is #166's "in one place, without pressing a bunch
+   * of buttons", and it is a real change to the composition rather than debt.
+   * Where nothing governs the row the drag stays what it always was, a
+   * measurement, and the Annotation and the Override are still how it leaves. That
+   * asymmetry is ADR 0004 and not a half-finished feature: a Token is a named
+   * number the author is entitled to move, and a coordinate is not.
+   *
+   * A SELECTION SHARING ONE TOKEN IS ONE WRITE. Five sizes governed by
+   * `--projects-panel-copy-size` are one constant, so writing it five times would
+   * be five posts saying the same thing and four of them reporting no change.
+   * Where the members do NOT share it, nothing is written and the report says so:
+   * which of several constants moved is a judgement, and this surface's rule
+   * everywhere else is to report a judgement rather than take one.
+   */
+  async land(axis) {
+    if (!this.picked) return;
+    const found = this.measurement().tokens.find((one) => one.axis === axis);
+    if (!found || found.wants === null || found.section === null || found.key === null) return;
+    if (this.selection.length > 1) {
+      const theirs = this.selection.map((held) => held.governs[axis]?.token ?? null);
+      if (theirs.some((token) => token !== found.token)) {
+        return this.say(
+          `${axis} is ${found.token} on ${this.picked.named.phrase}, and something else on the rest of the` +
+            ' selection — so nothing was written. Take the Annotation, or pick them one at a time.',
+          true,
+        );
+      }
     }
-    const rect = this.picked.element.getBoundingClientRect();
-    this.marquee.style.left = `${rect.left}px`;
-    this.marquee.style.top = `${rect.top}px`;
-    this.marquee.style.width = `${rect.width}px`;
-    this.marquee.style.height = `${rect.height}px`;
+    await this.writeToken(found);
   }
 
   // -------------------------------------------------------------------------
   // The two things it hands back
   // -------------------------------------------------------------------------
 
+  /** One Annotation per picked element, because each is its own instruction. */
   annotation() {
     if (!this.picked) return;
-    const { text } = annotate(this.measurement());
     const box = this.annotations();
-    box.value = box.value === '' ? text : `${box.value}\n${'-'.repeat(78)}\n\n${text}`;
+    for (const held of this.selection) {
+      const { text } = annotate(this.measurement(held));
+      box.value = box.value === '' ? text : `${box.value}\n${'-'.repeat(78)}\n\n${text}`;
+    }
     box.scrollTop = box.scrollHeight;
-    this.say('Annotation taken — copy it and paste it to an agent');
+    this.say(
+      this.selection.length === 1
+        ? 'Annotation taken — copy it and paste it to an agent'
+        : `${this.selection.length} Annotations taken — copy them and paste them to an agent`,
+    );
   }
 
   async copy() {
@@ -863,43 +1186,59 @@ export class Measure {
     }
   }
 
+  /**
+   * An Override per picked element, because an Override names one element.
+   *
+   * A selection is not one Override with five selectors: the boundary's whole
+   * guarantee is that a record addresses the element the author was looking at, so
+   * five elements are five records with five selectors and five discards. What is
+   * shared is the geometry, which is what the rows already made the same.
+   */
   async override() {
-    if (!this.picked) return;
-    const { selector, named, element } = this.picked;
-    if (selector === null) {
-      return this.say('nothing on this page addresses that element uniquely, so no Override can name it', true);
+    if (this.selection.length === 0) return;
+    const wrote = [];
+    const missed = [];
+    const unnamed = [];
+    for (const held of this.selection) {
+      const { selector, named, element } = held;
+      if (selector === null) {
+        unnamed.push(named.phrase);
+        continue;
+      }
+      const measured = this.measurement(held);
+      const { declarations, note } = annotate(measured);
+      // `display` alone is not a change the author asked for: it is the promotion
+      // this surface made in order to measure an inline box at all, so on its own
+      // it would write an Override for having looked at something.
+      if (Object.keys(declarations).filter((property) => property !== 'display').length === 0) continue;
+      const wanted = { ...measured.after };
+      try {
+        const answer = await this.post('/overrides', { selector, name: named.phrase, note, declarations });
+        this.overrides = answer.overrides;
+        this.paint();
+        // The inline styles go, because from here the page is moved by what the
+        // file says — through this surface's own stylesheet until the next build.
+        this.put(held);
+        // And then it is CHECKED. An Override that lost to the composition would
+        // otherwise be a file with a rule in it and a page that never moved.
+        const landed = this.box(element);
+        const off = AXES.filter((axis) => Math.abs(landed[axis] - wanted[axis]) > 1);
+        if (off.length > 0) missed.push(`${named.phrase} on ${list(off)}`);
+        else wrote.push(named.phrase);
+      } catch (error) {
+        return this.say(`refused: ${error.message}`, true);
+      }
     }
-    const measured = this.measurement();
-    const { declarations, note } = annotate(measured);
-    // `display` alone is not a change the author asked for: it is the promotion
-    // this surface made in order to measure an inline box at all, so on its own it
-    // would write an Override for having looked at something.
-    if (Object.keys(declarations).filter((property) => property !== 'display').length === 0) {
+    this.paintPicked();
+    if (wrote.length === 0 && missed.length === 0 && unnamed.length === 0) {
       return this.say('nothing has moved, so there is no Override to write');
     }
-    const wanted = { ...measured.after };
-    try {
-      const answer = await this.post('/overrides', { selector, name: named.phrase, note, declarations });
-      this.overrides = answer.overrides;
-      this.paint();
-      // The inline styles go, because from here the page is moved by what the
-      // file says — through this surface's own stylesheet until the next build.
-      this.restore(false);
-      // And then it is CHECKED. An Override that lost to the composition would
-      // otherwise be a file with a rule in it and a page that never moved.
-      const landed = this.box(element);
-      const off = AXES.filter((axis) => Math.abs(landed[axis] - wanted[axis]) > 1);
-      this.say(
-        off.length === 0
-          ? `wrote an Override on ${named.phrase} in ${answer.file} — ${Object.keys(declarations).join(', ')}`
-          : `wrote the Override, but the page did not follow on ${off.join(' and ')} — something on the page` +
-              ' outranks it, so this one needs the Annotation and an agent',
-        off.length > 0,
-      );
-      this.paintPicked();
-    } catch (error) {
-      this.say(`refused: ${error.message}`, true);
-    }
+    const said = [
+      wrote.length > 0 && `wrote ${wrote.length} Override(s) into src/overrides.css`,
+      missed.length > 0 && `the page did not follow on ${list(missed)} — something on it outranks the Override`,
+      unnamed.length > 0 && `${list(unnamed)} cannot be addressed uniquely, so no Override can name it`,
+    ].filter(Boolean);
+    this.say(list(said), missed.length > 0 || unnamed.length > 0);
   }
 
   /** Write the Token a measurement landed on, through the control that owns it. */
@@ -911,8 +1250,7 @@ export class Measure {
       // one's inline styles would double the change. Dropping them and measuring
       // again from where the page now is means the next drag starts from the
       // truth rather than from a stack of two.
-      this.restore(false);
-      this.pick(this.picked.element);
+      this.repick();
       this.say(`wrote ${found.token} = ${found.wants} — measured again from where the page now is`);
     } catch (error) {
       this.say(`refused: ${error.message}`, true);
@@ -985,6 +1323,26 @@ export class Measure {
       (event) => {
         if (!this.armed) return;
         const handle = event.target.closest?.('[data-editor-handle]');
+        // A row's label is the scrub handle, and it IS inside the panel — so it is
+        // taken before the panel is stood down on, and nothing else in there is.
+        const scrub = event.target.closest?.('[data-editor-scrub]');
+        if (scrub) {
+          if (!this.picked) return;
+          event.preventDefault();
+          const axis = scrub.dataset.editorScrub;
+          this.dragging = {
+            how: 'scrub',
+            axis,
+            x: event.clientX,
+            step: SCRUB[axis] ?? SCRUB.default,
+            // Where the row stands now, resolved once for the same reason a
+            // corner's sizes are: reading it back off `after` every frame reads a
+            // box the previous frame already moved, and the drag outruns the
+            // pointer.
+            from: axis === TEXT ? this.picked.type.after : this.picked.after[axis],
+          };
+          return;
+        }
         if (!handle && event.target.closest?.('[data-editor]')) return;
         event.preventDefault();
         event.stopPropagation();
@@ -1011,7 +1369,14 @@ export class Measure {
         }
         const element = event.target;
         if (!(element instanceof Element) || element === document.body) return;
-        if (this.picked?.element !== element) this.pick(element);
+        // Shift is the series: it adds to the selection, or takes back out
+        // something already in it, and never starts a drag — a shift-click that
+        // also dragged would move the thing it was picking.
+        if (event.shiftKey) {
+          this.pick(element, true);
+          return;
+        }
+        if (!this.selection.some((held) => held.element === element)) this.pick(element);
         this.dragging = { how: 'move', x: event.clientX, y: event.clientY, from: { ...this.picked.wanted } };
       },
       true,
@@ -1025,16 +1390,25 @@ export class Measure {
         const dx = event.clientX - this.dragging.x;
         const dy = event.clientY - this.dragging.y;
         const { from } = this.dragging;
-        if (this.dragging.how === 'move') {
-          this.picked.wanted.dx = round(from.dx + dx);
-          this.picked.wanted.dy = round(from.dy + dy);
-        } else {
-          // A resize moves the box as well as sizing it, unless the corner under
-          // the pointer is the bottom right — the corner OPPOSITE the one being
-          // dragged has to stay where it is, and that is the whole of
-          // `lib/corners.mjs`.
-          Object.assign(this.picked.wanted, resize(this.dragging.corner, { dx, dy }, from));
+        if (this.dragging.how === 'scrub') {
+          // A held Shift is the fine step, because a text size is chosen in tenths
+          // and a pointer is not that precise over sixteen pixels.
+          const step = event.shiftKey ? FINE : this.dragging.step;
+          return this.want(this.dragging.axis, round(from + dx * step));
         }
+        // Worked out from the PRIMARY and given to every picked element, which is
+        // what `want()` does for a typed number and for the same reason: an
+        // absolute size means the same thing for all of them, a coordinate does
+        // not.
+        const wanted =
+          this.dragging.how === 'move'
+            ? { dx: round(from.dx + dx), dy: round(from.dy + dy) }
+            : // A resize moves the box as well as sizing it, unless the corner
+              // under the pointer is the bottom right — the corner OPPOSITE the one
+              // being dragged has to stay where it is, and that is the whole of
+              // `lib/corners.mjs`.
+              resize(this.dragging.corner, { dx, dy }, from);
+        for (const held of this.selection) Object.assign(held.wanted, wanted);
         this.apply();
       },
       true,
@@ -1043,14 +1417,47 @@ export class Measure {
     for (const done of ['pointerup', 'pointercancel']) {
       document.addEventListener(
         done,
-        () => {
+        (event) => {
           if (!this.dragging) return;
+          const { how, axis } = this.dragging;
           this.dragging = null;
-          if (this.picked) this.say(`${this.picked.named.phrase}: ${annotate(this.measurement()).headline}`);
+          if (!this.picked) return;
+          // A scrub is a deliberate change to the value the row names, so letting
+          // go of one lands it. A drag on the page is exploration, and stays a
+          // measurement until the author says otherwise — `land()` is the whole
+          // note on why the two differ.
+          if (how === 'scrub' && event.type === 'pointerup') return void this.land(axis);
+          this.say(`${this.picked.named.phrase}: ${annotate(this.measurement()).headline}`);
         },
         true,
       );
     }
+
+    // The keyboard, which is the other half of "click its parents": the chain is
+    // in the breadcrumb and this walks it without the pointer leaving the page.
+    document.addEventListener(
+      'keydown',
+      (event) => {
+        if (!this.armed || !this.picked) return;
+        if (event.metaKey || event.ctrlKey || event.altKey) return;
+        // Not while a number is being typed, and not while anything else in the
+        // panel has the focus: an arrow key in a number box belongs to the box.
+        const inside = event.target instanceof Element && event.target.closest('[data-editor]');
+        if (inside) return;
+        if (event.key === 'ArrowUp' || event.key === 'ArrowDown') {
+          event.preventDefault();
+          this.climb(event.key === 'ArrowUp');
+          return;
+        }
+        if (event.key === 'Escape') {
+          event.preventDefault();
+          this.clear();
+          this.paintPicked();
+          this.say('nothing is picked — still measuring, so a click picks again');
+        }
+      },
+      true,
+    );
 
     // The box drawn over what is picked is in fixed coordinates, so it follows
     // the page rather than the document.

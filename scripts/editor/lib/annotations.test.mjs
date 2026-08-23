@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 
-import { annotate, asUnit, name, nudge, restate, terms } from './annotations.mjs';
+import { TEXT, annotate, asUnit, name, nudge, restate, terms } from './annotations.mjs';
 
 /**
  * The Annotation, as text.
@@ -226,6 +226,84 @@ test('translate is the absolute value the page shows, not the delta that was dra
     width: '720px',
     height: '420px',
   });
+});
+
+// ---------------------------------------------------------------------------
+// The text size, which is the fifth thing and not the fifth axis
+// ---------------------------------------------------------------------------
+
+test('a text size is reported in px, as a multiple of the root, and in the headline', () => {
+  const { text, headline } = annotate({
+    ...MEASURED,
+    after: { ...MEASURED.before },
+    text: { before: 16, after: 20 },
+  });
+  assert.ok(headline.includes('its text size changed'), headline);
+  assert.ok(text.includes(TEXT), text);
+  assert.ok(text.includes('16px → 20px'), text);
+  assert.ok(text.includes('+4px'), 'the change');
+  // The root multiple, because a type ladder is written in rem and the unit is
+  // the change an agent has to make.
+  assert.ok(text.includes('1 → 1.25'), text);
+});
+
+test('a measurement that looked at no text says nothing about a text size', () => {
+  const { text, headline, declarations } = annotate(MEASURED);
+  assert.ok(!text.includes(TEXT), text);
+  assert.ok(!headline.includes('text size'), headline);
+  assert.ok(!('font-size' in declarations));
+});
+
+test('a text size that did not move is measured, not reported as a change', () => {
+  const { headline, declarations } = annotate({
+    ...MEASURED,
+    after: { ...MEASURED.before },
+    text: { before: 16, after: 16 },
+  });
+  assert.ok(headline.includes('unchanged'), headline);
+  assert.ok(!('font-size' in declarations));
+});
+
+test('an Override carries the measured text size, absolute and in this module’s order', () => {
+  const { declarations } = annotate({ ...MEASURED, promoted: true, text: { before: 16, after: 20 } });
+  assert.equal(declarations['font-size'], '20px');
+  // The same order `lib/overrides.mjs` writes them in, so the two never disagree
+  // about what a re-write of the same measurement looks like.
+  assert.deepEqual(Object.keys(declarations), ['display', 'font-size', 'translate', 'width', 'height']);
+});
+
+test('a text size with no Token behind it is named among what nothing declares', () => {
+  const { text } = annotate({
+    ...MEASURED,
+    after: { ...MEASURED.before },
+    text: { before: 16, after: 20 },
+    tokens: [],
+  });
+  assert.ok(/no Token/i.test(text), text);
+  assert.ok(text.includes(TEXT), text);
+});
+
+test('a text size that maps onto a Token is offered like any other length', () => {
+  const { text } = annotate({
+    ...MEASURED,
+    after: { ...MEASURED.before },
+    text: { before: 16, after: 20 },
+    tokens: [
+      {
+        axis: TEXT,
+        property: 'font-size',
+        token: '--front-screen-lead-size',
+        selector: '.front-screen',
+        section: 'front-screen',
+        key: '0:--front-screen-lead-size',
+        was: '1rem',
+        wants: '1.25rem',
+      },
+    ],
+  });
+  assert.ok(text.includes('--front-screen-lead-size'), text);
+  assert.ok(text.includes('1.25rem'), text);
+  assert.ok(text.includes(`${TEXT} maps onto a Token`), text);
 });
 
 test('an inline box that had to be promoted to be measured says so in the declarations', () => {

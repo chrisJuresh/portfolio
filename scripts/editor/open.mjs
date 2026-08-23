@@ -82,7 +82,7 @@ console.log(
 );
 console.log('\n  Click any text to change it. Enter commits, Escape puts it back.');
 console.log('  Tokens drags every Token a Section and the Kernel declare; Motion scrubs a Timeline.');
-console.log('  Measure moves and resizes anything and hands back an Annotation to paste to an agent.');
+console.log('  Measure picks anything — or its parent, or a series — and moves, resizes and retypes it.');
 console.log('  Bakes runs the five generators — a re-bake rebuilds this tree, so the page shows it.');
 console.log('  Publish commits and pushes — the Checks run on the commit, so it takes a minute.');
 console.log('\n  Ctrl-C to stop.');

@@ -386,6 +386,11 @@ class Editor {
     }
     if (which === 'motion') this.motion?.refresh();
     if (which === 'bakes') void this.bakes?.refresh();
+    // Being on the Measure surface IS being armed (#166). The press that used to
+    // do this was a second gate on a decision the author had already made by
+    // choosing the surface — and leaving disarms, so a click goes back to editing
+    // a word without anything to remember to turn off.
+    this.measure?.arm(which === 'measure');
   }
 
   count() {

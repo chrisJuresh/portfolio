@@ -24,11 +24,19 @@
  * it argues with, from outside it, until an agent folds it in. Saying so at the
  * bytes is also what makes this file greppable as debt.
  *
- * WHAT IT WILL WRITE IS THREE PROPERTIES. Moving and resizing is what the Editor
- * cannot express (#145), so `translate`, `width` and `height` are the whole list
- * and anything else is refused by name. `translate` rather than `transform`
- * deliberately: it is a property of its own that composes with whatever GSAP
- * writes into `transform`, so an Override cannot freeze a Timeline.
+ * WHAT IT WILL WRITE IS FOUR PROPERTIES. Moving and resizing is what the Editor
+ * cannot express (#145), so `translate`, `width` and `height` are three of them
+ * and anything outside the list is refused by name. `translate` rather than
+ * `transform` deliberately: it is a property of its own that composes with
+ * whatever GSAP writes into `transform`, so an Override cannot freeze a Timeline.
+ *
+ * THE FOURTH IS `font-size`, and it is here because a text size is the one thing
+ * the author reached for most and could not touch (#166). It is not a loosening:
+ * seventeen of the nineteen `font-size` declarations under `src/` are exactly
+ * `var(--…)`, so the surface's Token offer answers almost every one of them and
+ * this property is the FALLBACK for the two that are built out of a `calc()`. Like
+ * the other three it is a measured length and not a relationship, and like them it
+ * is debt the moment it is written.
  *
  * `scripts/editor/NOTES.md` is the rest of the reasoning.
  */
@@ -47,8 +55,14 @@ import { asValue } from './tokens.mjs';
  * Override has to carry that promotion or the page would not look the way it was
  * measured. Any other value is refused by name: this is the one box-model change
  * the tool is allowed to make, not an opening.
+ *
+ * `font-size` is here because #166 asked for the text size the author kept
+ * reaching for and could not touch, and it is a last resort rather than a first:
+ * the surface offers the TOKEN governing a size before it offers this, and almost
+ * every size on this page has one. Like the other three it is a measured length,
+ * and like them it is debt the moment it is written.
  */
-export const PROPERTIES = ['display', 'translate', 'width', 'height'];
+export const PROPERTIES = ['display', 'font-size', 'translate', 'width', 'height'];
 
 /** The only value `display` may be given, and why is above. */
 export const DISPLAY = 'inline-block';
@@ -224,7 +238,8 @@ function asDeclarations(declarations) {
     if (!PROPERTIES.includes(property)) {
       throw new Refused(
         `"${property}" is not something an Override sets — moving and resizing is translate, width and height,` +
-          ' and anything else is a change to the composition rather than a measurement of one',
+          ' a text size is font-size, and anything else is a change to the composition rather than a' +
+          ' measurement of one',
       );
     }
   }

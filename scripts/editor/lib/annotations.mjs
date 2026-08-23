@@ -40,6 +40,21 @@ const MEASURED = /^(-?(?:\d+\.?\d*|\.\d+))([a-z]+|%)$/i;
  *  Exported because the measuring surface walks the same four. */
 export const AXES = ['left', 'top', 'width', 'height'];
 
+/**
+ * The fifth thing a measurement can carry, which is NOT one of the four.
+ *
+ * A text size has no share of a parent, no opposite corner and no sign to get
+ * wrong, so folding it into `AXES` would put it through arithmetic that means
+ * nothing for it. It travels beside them instead: its own line in the report, its
+ * own governor in `tokens`, and one name here so the surface and the sentence
+ * spell it the same way (#166).
+ */
+export const TEXT = 'text size';
+
+/** How wide the label column in the report is. Wide enough for `TEXT`, which is
+ *  the longest of the five. */
+const COLUMN = 10;
+
 /** Which of the parent's two sides an axis is a share of. */
 const ALONG = { left: 'width', width: 'width', top: 'height', height: 'height' };
 
@@ -251,6 +266,9 @@ function paragraph(text, width = 88) {
  * @param {{ phrase: string, width: number, height: number }} measured.parent
  * @param {{ left: number, top: number, width: number, height: number }} measured.before
  * @param {{ left: number, top: number, width: number, height: number }} measured.after
+ * @param {{ before: number, after: number } | null} [measured.text]  the element's
+ *   font-size in px, before and after. Absent where the caller did not look at the
+ *   type, which is not the same as a size that did not change.
  * @param {Array<{ axis: string, property: string, token: string, selector: string,
  *                 section: string | null, key: string | null, was: string,
  *                 wants: string | null, why?: string | null }>} measured.tokens
@@ -268,7 +286,17 @@ export function annotate(measured) {
   const moved = by.left !== 0 || by.top !== 0;
   const resized = by.width !== 0 || by.height !== 0;
 
-  const what = moved && resized ? 'moved and resized' : moved ? 'moved' : resized ? 'resized' : 'unchanged';
+  // The text size, if the caller measured one. Absent is an ordinary answer: the
+  // four axes are a box's and every caller has them, and a caller that did not
+  // look at the type says nothing about it rather than reporting a zero.
+  const text = measured.text ?? null;
+  const grew = text ? text.after - text.before : 0;
+  // A hundredth of a pixel, because that is what `px()` prints to: a difference
+  // that rounds away would read as a change and report as none.
+  const retyped = text !== null && Math.abs(grew) >= 0.005;
+
+  const did = [moved && 'moved', resized && 'resized', retyped && 'its text size changed'].filter(Boolean);
+  const what = did.length === 0 ? 'unchanged' : list(did);
   const headline = `${named.phrase} — ${what}`;
 
   const lines = [
@@ -280,7 +308,12 @@ export function annotate(measured) {
 
   for (const axis of AXES) {
     lines.push(
-      `  ${axis.padEnd(8)}${`${px(before[axis])} → ${px(after[axis])}`.padEnd(24)}${signed(by[axis])}`,
+      `  ${axis.padEnd(COLUMN)}${`${px(before[axis])} → ${px(after[axis])}`.padEnd(24)}${signed(by[axis])}`,
+    );
+  }
+  if (text) {
+    lines.push(
+      `  ${TEXT.padEnd(COLUMN)}${`${px(text.before)} → ${px(text.after)}`.padEnd(24)}${signed(grew)}`,
     );
   }
 
@@ -293,8 +326,19 @@ export function annotate(measured) {
     for (const axis of AXES) {
       const base = along[ALONG[axis]];
       if (!(base > 0)) continue;
-      lines.push(`    ${axis.padEnd(8)}${figure(before[axis] / base, 3)} → ${figure(after[axis] / base, 3)}`);
+      lines.push(`    ${axis.padEnd(COLUMN)}${figure(before[axis] / base, 3)} → ${figure(after[axis] / base, 3)}`);
     }
+  }
+
+  // The text size as a multiple of the root, because that is the unit a type
+  // ladder is written in: a size in rem moves with the page and a size in px does
+  // not, and which of the two this is, is the change an agent has to make.
+  if (retyped && measured.root > 0) {
+    lines.push(
+      '',
+      `  as a multiple of the root font-size (${px(measured.root)}):`,
+      `    ${TEXT.padEnd(COLUMN)}${figure(text.before / measured.root, 3)} → ${figure(text.after / measured.root, 3)}`,
+    );
   }
 
   lines.push('', `  on the page: ${measured.selector}`);
@@ -324,7 +368,7 @@ export function annotate(measured) {
     );
   }
 
-  const changed = AXES.filter((axis) => by[axis] !== 0);
+  const changed = [...AXES.filter((axis) => by[axis] !== 0), ...(retyped ? [TEXT] : [])];
   if (tokens.length === 0) {
     lines.push(
       '',
@@ -378,20 +422,23 @@ export function annotate(measured) {
   const at = measured.translate ?? { x: by.left, y: by.top };
   const declarations = {};
   if (measured.promoted) declarations.display = 'inline-block';
+  // The measured size and not the delta, for the same reason `translate` is
+  // absolute: an Override declares it `!important` and therefore replaces whatever
+  // the composition had, rather than adding to it.
+  if (retyped) declarations['font-size'] = px(text.after);
   if (moved) declarations.translate = `${px(at.x)} ${px(at.y)}`;
   if (resized) {
     declarations.width = px(after.width);
     declarations.height = px(after.height);
   }
 
+  const said = [
+    moved && `moved by ${px(by.left)}, ${px(by.top)}`,
+    resized && `resized to ${px(after.width)} × ${px(after.height)}`,
+    retyped && `text set to ${px(text.after)}`,
+  ].filter(Boolean);
   const note = [
-    moved && resized
-      ? `moved by ${px(by.left)}, ${px(by.top)} and resized to ${px(after.width)} × ${px(after.height)}`
-      : moved
-        ? `moved by ${px(by.left)}, ${px(by.top)}`
-        : resized
-          ? `resized to ${px(after.width)} × ${px(after.height)}`
-          : 'measured, and neither moved nor resized',
+    said.length === 0 ? 'measured, and neither moved nor resized' : list(said),
     `measured in the Editor at ${figure(viewport.width, 0)}×${figure(viewport.height, 0)}`,
   ];
 
