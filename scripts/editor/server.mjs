@@ -131,6 +131,7 @@ const CLIENT = {
   '/lib/bakes.mjs': { file: 'lib/bakes.mjs', type: 'text/javascript; charset=utf-8' },
   '/lib/content.mjs': { file: 'lib/content.mjs', type: 'text/javascript; charset=utf-8' },
   '/lib/annotations.mjs': { file: 'lib/annotations.mjs', type: 'text/javascript; charset=utf-8' },
+  '/lib/corners.mjs': { file: 'lib/corners.mjs', type: 'text/javascript; charset=utf-8' },
   '/lib/overrides.mjs': { file: 'lib/overrides.mjs', type: 'text/javascript; charset=utf-8' },
 };
 

@@ -833,6 +833,140 @@ export const check = {
         );
       }
 
+      // ---- the four corners -----------------------------------------------
+      //
+      // Resizing used to be one handle in the bottom right, which needed no
+      // arithmetic: the top left never moved. Four corners is four different
+      // sums, because three of them MOVE the box as well as sizing it — the
+      // corner OPPOSITE the one under the pointer is the anchor, and that is the
+      // whole rule. `scripts/editor/lib/corners.mjs` is the arithmetic and is
+      // asserted in node; what cannot be asserted there is the wiring from a
+      // handle to it, so this drags all four on a real page.
+      //
+      // On an element of its own, injected and taken back out. A composition's
+      // box may be held to a size by something else, and then a corner that asks
+      // for a smaller one gets the size it had — which is the honest answer for a
+      // page and a false failure for a Check about signs.
+      await page.evaluate(() => {
+        const element = document.createElement('div');
+        element.id = 'editor-check-corners';
+        element.style.cssText = 'position: fixed; left: 200px; top: 200px; width: 240px; height: 160px;';
+        document.body.append(element);
+      });
+      // A corner has to be VISIBLE to be dragged, and every assertion below this
+      // one dispatches its pointer events straight at an element — so all of them
+      // pass on a marquee that is not drawn at all. That is not hypothetical: one
+      // unclosed rule earlier in `client/editor.css` made the parser drop every
+      // rule after it, and the entire measuring section — the marquee, the
+      // handles, the cursors — was dead while this Check went on passing. So the
+      // computed styles are read once, here, and it is the truncation this
+      // catches rather than the look.
+      const drawn = await page.evaluate(() => {
+        const element = document.getElementById('editor-check-corners');
+        const box = element.getBoundingClientRect();
+        const at = (type) =>
+          element.dispatchEvent(
+            new PointerEvent(type, {
+              bubbles: true,
+              cancelable: true,
+              clientX: Math.round(box.left + box.width / 2),
+              clientY: Math.round(box.top + box.height / 2),
+            }),
+          );
+        at('pointerdown');
+        at('pointerup');
+        const marquee = document.querySelector('[data-editor-marquee]');
+        return {
+          marquee: marquee === null ? null : getComputedStyle(marquee).position,
+          handles: [...document.querySelectorAll('[data-editor-handle]')].map((handle) => {
+            const computed = getComputedStyle(handle);
+            return [handle.dataset.editorHandle, computed.position, computed.cursor];
+          }),
+        };
+      });
+      if (drawn.marquee !== 'fixed') {
+        failures.push(
+          `the marquee over a picked element computes to position: ${drawn.marquee} — it is not being drawn over` +
+            ' the page, so nothing here can be grabbed by hand',
+        );
+      }
+      for (const [corner, position, cursor] of drawn.handles) {
+        if (position !== 'absolute' || !cursor.endsWith('-resize')) {
+          failures.push(
+            `the ${corner} handle computes to position: ${position} and cursor: ${cursor} — it is not sitting on` +
+              " its corner, so the Editor's stylesheet is not reaching it",
+          );
+        }
+      }
+      await page.locator('[data-editor-measure="restore"]').click();
+
+      const anchors = { nw: ['right', 'bottom'], ne: ['left', 'bottom'], sw: ['right', 'top'], se: ['left', 'top'] };
+      const cornered = [];
+      // Every corner dragged INWARDS, so all four take the same 40x25 off the box
+      // and one comparison reads for all of them.
+      for (const [corner, dx, dy] of [
+        ['nw', 40, 25],
+        ['ne', -40, 25],
+        ['sw', 40, -25],
+        ['se', -40, -25],
+      ]) {
+        const dragged = await page.evaluate(
+          ([which, byX, byY]) => {
+            const element = document.getElementById('editor-check-corners');
+            const at = (target, type, x, y) =>
+              target.dispatchEvent(new PointerEvent(type, { bubbles: true, cancelable: true, clientX: x, clientY: y }));
+            const start = element.getBoundingClientRect();
+            const mid = [Math.round(start.left + start.width / 2), Math.round(start.top + start.height / 2)];
+            at(element, 'pointerdown', ...mid);
+            at(element, 'pointerup', ...mid);
+            const handle = document.querySelector(`[data-editor-handle="${which}"]`);
+            if (!handle) return null;
+            const grip = handle.getBoundingClientRect();
+            const x = Math.round(grip.left + grip.width / 2);
+            const y = Math.round(grip.top + grip.height / 2);
+            at(handle, 'pointerdown', x, y);
+            at(handle, 'pointermove', x + byX, y + byY);
+            at(handle, 'pointerup', x + byX, y + byY);
+            const box = ({ left, top, right, bottom, width, height }) => ({
+              left: Math.round(left),
+              top: Math.round(top),
+              right: Math.round(right),
+              bottom: Math.round(bottom),
+              width: Math.round(width),
+              height: Math.round(height),
+            });
+            return { before: box(start), after: box(element.getBoundingClientRect()) };
+          },
+          [corner, dx, dy],
+        );
+        if (dragged === null) {
+          failures.push(`the marquee has no ${corner} handle — that corner cannot be dragged at all`);
+          continue;
+        }
+        const { before, after } = dragged;
+        if (Math.abs(before.width - after.width - 40) > 2 || Math.abs(before.height - after.height - 25) > 2) {
+          failures.push(
+            `dragging the ${corner} corner inwards by 40x25 took ${before.width - after.width}x` +
+              `${before.height - after.height} off the box`,
+          );
+        }
+        const drifted = anchors[corner].filter((edge) => Math.abs(after[edge] - before[edge]) > 2);
+        if (drifted.length > 0) {
+          failures.push(
+            `dragging the ${corner} corner moved the ${anchors[corner].join(' and ')} of the box` +
+              ` (${drifted.map((edge) => `${edge} ${before[edge]} → ${after[edge]}`).join(', ')}) — the corner` +
+              ' opposite the one being dragged is the anchor and does not move',
+          );
+        } else {
+          cornered.push(corner);
+        }
+        await page.locator('[data-editor-measure="restore"]').click();
+      }
+      if (cornered.length === 4) notes.push(`resized by dragging all four corners (${cornered.join(', ')})`);
+      await page.locator('[data-editor-measuring]').click();
+      await page.evaluate(() => document.getElementById('editor-check-corners')?.remove());
+      await page.locator('[data-editor-measuring]').click();
+
       // ---- a measurement that lands on a Token ----------------------------
       //
       // The Editor offers to write a Token when the length that moved is declared

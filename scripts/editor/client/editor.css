@@ -348,6 +348,8 @@
 
 [data-editor-token] select {
   flex: 1 1 3rem;
+}
+
 /* ---- measuring ---------------------------------------------------------- */
 
 /* How many Overrides are standing, beside the edit count and in the same place
@@ -504,10 +506,13 @@
   box-shadow: 0 0 0 1px rgb(0 0 0 / 35%);
 }
 
+/* One per corner. Each sits half outside the marquee so a thin box still has
+   something to grab, and each names the corner it is — the resize arithmetic is
+   different for all four, and `lib/corners.mjs` is told which by this attribute.
+   pointer-events: auto against the marquee's none: the box is a drawing, and
+   these four are the only part of it that is a surface. */
 [data-editor-handle] {
   position: absolute;
-  right: -6px;
-  bottom: -6px;
   width: 12px;
   height: 12px;
   padding: 0;
@@ -515,5 +520,28 @@
   border-radius: 2px;
   background: #7fb3ff;
   pointer-events: auto;
+}
+
+[data-editor-handle='nw'] {
+  left: -6px;
+  top: -6px;
+  cursor: nwse-resize;
+}
+
+[data-editor-handle='ne'] {
+  right: -6px;
+  top: -6px;
+  cursor: nesw-resize;
+}
+
+[data-editor-handle='sw'] {
+  left: -6px;
+  bottom: -6px;
+  cursor: nesw-resize;
+}
+
+[data-editor-handle='se'] {
+  right: -6px;
+  bottom: -6px;
   cursor: nwse-resize;
 }

@@ -33,6 +33,7 @@
  */
 
 import { AXES, annotate, list, name, nudge, restate } from './lib/annotations.mjs';
+import { CORNERS, label as cornerLabel, resize } from './lib/corners.mjs';
 import { DISPLAY, asSelector, rule as ruleFor } from './lib/overrides.mjs';
 
 /** Which of the parent's two sides each axis is measured down. `AXES` itself is
@@ -456,7 +457,7 @@ export class Measure {
             ' taken but an Override cannot be written'
         : `picked ${this.picked.named.phrase}${
             this.picked.promoted ? ` — an inline box, so it is measured as ${DISPLAY}` : ''
-          } — drag it, or type its numbers`,
+          } — drag it, drag a corner to resize it, or type its numbers`,
       selector === null,
     );
   }
@@ -654,8 +655,9 @@ export class Measure {
     into.innerHTML = `
       <div data-editor-arm>
         <button type="button" data-editor-measuring aria-pressed="false">measure</button>
-        <small>then click anything on the page. Dragging moves it, the corner resizes it, and
-        nothing here writes to a Section — see below for what it hands back.</small>
+        <small>then click anything on the page. Dragging moves it, any of its four corners resizes
+        it from the opposite one, and nothing here writes to a Section — see below for what it
+        hands back.</small>
       </div>
       <div data-editor-measured></div>
       <div data-editor-annotation>
@@ -801,7 +803,7 @@ export class Measure {
     this.apply();
   }
 
-  /** The box drawn over what is picked, and the corner that resizes it. */
+  /** The box drawn over what is picked, and the four corners that resize it. */
   paintMarquee() {
     if (!this.picked) {
       this.marquee?.remove();
@@ -815,11 +817,16 @@ export class Measure {
       // the surface is armed, and everything that would have looked for it is
       // already standing down on data-editor-measuring.
       this.marquee.dataset.editorMarquee = '';
-      const handle = document.createElement('button');
-      handle.type = 'button';
-      handle.dataset.editorHandle = '';
-      handle.setAttribute('aria-label', 'resize');
-      this.marquee.append(handle);
+      // One per corner, and each one carries WHICH corner it is — the arithmetic
+      // that follows is different for all four, and `lib/corners.mjs` is told the
+      // name rather than working it out from where the pointer went down.
+      for (const corner of CORNERS) {
+        const handle = document.createElement('button');
+        handle.type = 'button';
+        handle.dataset.editorHandle = corner;
+        handle.setAttribute('aria-label', cornerLabel(corner));
+        this.marquee.append(handle);
+      }
       document.body.append(this.marquee);
     }
     const rect = this.picked.element.getBoundingClientRect();
@@ -984,7 +991,22 @@ export class Measure {
 
         if (handle) {
           if (!this.picked) return;
-          this.dragging = { how: 'resize', x: event.clientX, y: event.clientY, from: { ...this.picked.wanted } };
+          this.dragging = {
+            how: 'resize',
+            corner: handle.dataset.editorHandle,
+            x: event.clientX,
+            y: event.clientY,
+            // The sizes are RESOLVED here rather than each frame. `wanted.width`
+            // is null until something has asked for one, and reading the fallback
+            // off `after` on every move would read a box the previous frame had
+            // already resized — so a slow drag compounded and outran the pointer.
+            from: {
+              dx: this.picked.wanted.dx,
+              dy: this.picked.wanted.dy,
+              width: this.picked.wanted.width ?? this.picked.after.width,
+              height: this.picked.wanted.height ?? this.picked.after.height,
+            },
+          };
           return;
         }
         const element = event.target;
@@ -1007,8 +1029,11 @@ export class Measure {
           this.picked.wanted.dx = round(from.dx + dx);
           this.picked.wanted.dy = round(from.dy + dy);
         } else {
-          this.picked.wanted.width = Math.max(0, round((from.width ?? this.picked.after.width) + dx));
-          this.picked.wanted.height = Math.max(0, round((from.height ?? this.picked.after.height) + dy));
+          // A resize moves the box as well as sizing it, unless the corner under
+          // the pointer is the bottom right — the corner OPPOSITE the one being
+          // dragged has to stay where it is, and that is the whole of
+          // `lib/corners.mjs`.
+          Object.assign(this.picked.wanted, resize(this.dragging.corner, { dx, dy }, from));
         }
         this.apply();
       },

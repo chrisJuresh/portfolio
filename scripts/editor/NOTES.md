@@ -252,8 +252,21 @@ The fourth surface, and the one that exists because the other three cannot expre
 everything. Content is words and a Token is a named number; where a box stands and
 how big it is belongs to the composition, and ADR 0004 says a tool that moved
 boxes freely would destroy the relationship rather than edit it. So this one
-**measures**: press *measure*, click anything, drag it or type its numbers, and
-press *Annotation*.
+**measures**: press *measure*, click anything, drag it, drag one of its four
+corners, or type its numbers, and press *Annotation*.
+
+**A corner resizes from the corner opposite it, and that is the whole rule.**
+`lib/corners.mjs` is the arithmetic, and it is a file rather than four signs in a
+`pointermove` because three of the four MOVE the box as well as sizing it: the
+anchor has to stay exactly where it is, so a west edge that takes 40px off the
+width also translates the box 40px right. Two things fall out of writing it that
+way and both are asserted in `corners.test.mjs` — the size is clamped at zero
+FIRST and the move derived from it, so a box dragged through itself stops with its
+far edge where it always was; and the sizes are resolved once, at pointerdown,
+because `wanted.width` is null until something asks for one and reading the
+fallback off the last measured box on every frame made a slow drag compound and
+outrun the pointer. It is a `translate` and never a `left`, which is what keeps a
+resize inside the four properties an Override may write.
 
 **A drag is an inline style, and reaches no file at all.** Moving and resizing
 happens in the DOM — `translate`, `width` and `height` on the one element — so
@@ -366,7 +379,9 @@ also what makes the file greppable as debt.
 **`translate` and not `transform`**, plus `width` and `height`, and nothing else.
 `translate` is a property of its own that composes with whatever GSAP writes into
 `transform`, so an Override can never freeze a Timeline. A resize writes both sides,
-because the handle moves both and half a box is not a measurement anybody took.
+because a corner moves both and half a box is not a measurement anybody took —
+and it writes `translate` too whenever the corner dragged was not the bottom
+right, because holding the anchor still IS a move.
 
 **A selector is built out of the page and checked against it.** The shortest chain
 upwards that matches this element and nothing else, made of tags, ids, authored
@@ -680,10 +695,11 @@ elsewhere.
 | `lib/overrides.test.mjs` | the bytes of the Overrides file, the round trip that lets it re-serialise, and every refusal |
 | `lib/annotations.test.mjs` | the Annotation's own text — the glossary read out of the real `CONTEXT.md`, what an element is called, and every number restated |
 | `lib/bakes.test.mjs` | the bytes of a Bake's parameters, the argv a Bake is run with, and every refusal |
+| `lib/corners.test.mjs` | the corner arithmetic: per corner, that the opposite one does not move — through the clamp as well |
 | `lib/runs.test.mjs` | whether a run is in flight, how it ended, and what it says when it did not end well |
 | `lib/sections.test.mjs` | that a request cannot name a file, against every resolver and all three families |
 | `lib/publish.test.mjs` | which arguments git is handed, and what counts as one of the Editor's paths |
-| `scripts/checks/checks/editor.mjs` | one smoke Check: click, type, drag, scrub, measure, override, discard, and find each in the file |
+| `scripts/checks/checks/editor.mjs` | one smoke Check: click, type, drag, scrub, measure, resize by every corner, override, discard, and find each in the file |
 
 `pnpm test` runs everything but the last; `pnpm check` runs them and then the
 Check. `lib/runs.test.mjs` drives a fake child process rather than a real
@@ -724,8 +740,21 @@ styles standing on the element, a discard that does not write, a stylesheet walk
 that reads a style rule as a group and therefore finds nothing, one that reads a
 `@media` whose condition does not hold, a drag written without `!important` so a
 standing Override freezes its own element, and an inline box that is not promoted
-and therefore cannot be dragged at all.
+and therefore cannot be dragged at all; and, for #162, a handle that does not know
+which corner it is, a resize that treats every corner as the bottom right, and a
+`client/editor.css` that stops parsing before the measuring section.
 
 Four of those nine were real bugs rather than invented mutations, and none of them
 showed as anything but a silence — which is the argument for reading what the tool
 actually SAYS and not only whether it is green.
+
+**A dispatched pointer event does not need the element to be drawn, and that is
+the blind spot this Check had.** Every assertion above dispatches straight at an
+element, so all of them pass on a marquee with no styling at all — and one
+unclosed rule in `client/editor.css` (`[data-editor-token] select`, missing its
+`}`) made the parser drop EVERY rule after it, which was the whole measuring
+section: the marquee, the handles and their cursors. Nothing failed, and the only
+symptom was an author who could not grab anything and had to type digits, which is
+what #162 was filed about. So the Check now reads the computed `position` of the
+marquee and of all four handles before it drags any of them. It is not asserting
+that they look good — it is asserting that the stylesheet reached them at all.
