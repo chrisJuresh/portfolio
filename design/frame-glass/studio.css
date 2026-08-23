@@ -22,7 +22,11 @@
      0 at the paper end and 1 in the dark, matching the Kernel's. */
   --turn: 1;
   --paper: #f2f1ee;
-  --dark: #0a0a0c;
+  /* PURE black, not a near-black: #164 landed on the commit this branch is cut
+     from, and the `ground` Check now reads #000000 at the end of the Turn. A
+     material judged against a #0a0a0c ground is judged against a page that no
+     longer exists — and the far end is where the reader actually arrives. */
+  --dark: #000000;
 }
 
 * {
