@@ -80,6 +80,7 @@ than described. It is one document, served statically from Vercel.
 ├── index.html          # portal at / — hand-written, served verbatim
 ├── vercel.json         # clean URLs, the /projects redirect, the deep links, cache headers
 ├── astro.config.mjs    # the build, and the dev server's stand-in for the deployment
+├── run.bat             # serves the repo root for design/ — NOT the site, that is `pnpm dev`
 ├── src/
 │   ├── pages/
 │   │   └── portfolio.astro     # the document
@@ -143,6 +144,12 @@ pnpm dev         # Astro's dev server, standing in for the deployment
 routes, the four paths served verbatim, and the deep-link rewrites. `pnpm build`
 then `pnpm preview` serves the real `dist/` instead, which is what the Checks
 drive.
+
+`run.bat` is **not** this, though it used to be. It serves the repository root as
+plain files, which since the site became a build answers `/portfolio` with a
+directory listing of the pictures. What it is still for is the one thing `pnpm
+dev` will not serve: the dev-only instruments under `design/`, which are plain
+HTML reaching for `../portfolio/img/` by relative path.
 
 ## Editing the site
 

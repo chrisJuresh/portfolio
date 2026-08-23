@@ -20,8 +20,13 @@ reverse.
 python -m http.server 8000
 ```
 
-...from the repository root, then `localhost:8000/design/legacy/<page>.html`. The
-studio is the exception, because it is a page and a server together:
+...from the repository root, then `localhost:8000/design/legacy/<page>.html`. On
+Windows, `run.bat` in the repository root is that server with a free port found
+for it and the browser opened — it exists for exactly this, and **not** for
+running the site, which is `pnpm dev`. `pnpm dev` will not do here: it serves the
+built routes and the four verbatim paths, and `design/` is not among them.
+
+The studio is the exception, because it is a page and a server together:
 
 ```bash
 python design/legacy/plinth-studio.py

@@ -1,12 +1,18 @@
 @echo off
-rem Double-click this file to serve the repo root locally. This is what the
-rem tuners under design/ are opened through: they are plain HTML and they reach
-rem for ../portfolio/img/ and the rest by relative path, which only resolves
-rem under the server root.
+rem Double-click this file to serve the repo ROOT locally. That is all it does.
 rem
-rem IT DOES NOT SERVE THE SITE. /portfolio is built now - `pnpm dev`, or `pnpm
-rem build` then `pnpm preview`, and README.md's "The build" says which is for
-rem what. Close the window or press Ctrl+C to stop.
+rem IT IS NOT HOW YOU RUN THE SITE. /portfolio is an Astro build now, so this
+rem answers that path with a directory listing of the pictures. `pnpm dev` is
+rem the site - the built routes, the four verbatim paths and the deep links off
+rem one origin - and `pnpm editor` is how Content, Tokens and a Bake's
+rem parameters get changed. README.md's "Running locally" and "Editing the
+rem site" say which is for what.
+rem
+rem What still needs this: the instruments under design/ - the type lab and the
+rem tuners beside it, and the five the Editor replaced, now in design/legacy/.
+rem They are plain HTML reaching for ../portfolio/img/ and the rest by relative
+rem path, and `pnpm dev` does not serve design/ at all, so only a server rooted
+rem here resolves them. Close the window or press Ctrl+C to stop.
 
 setlocal EnableDelayedExpansion
 cd /d "%~dp0"
