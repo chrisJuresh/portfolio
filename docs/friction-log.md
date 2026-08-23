@@ -12,20 +12,24 @@ three of the entries below did.
 
 Four things, because a fix needs all four: **what was attempted**, **which gate
 refused**, **the exact refusal**, and **the change that would prevent it**. The
-gate matters most, and there are four of them here, with four different fixes:
+gate matters most, and there are five of them here, with five different fixes:
 
 | gate | how it is fixed | how it is recognised |
 | --- | --- | --- |
 | the auto-mode permission classifier | an allow rule, or `bypassPermissions` | a permission prompt, or a refusal naming no hook |
 | a project `PreToolUse` hook — the vendored worktree guard | **upstream**, in `chrisJuresh/skills`; never in the copy here | its own voice: the main checkout, the integration branch, a spent worktree |
+| the vendored skill's `Stop` gate | **upstream**, same as the guard — its SUBSTANCE is this repository's too, and only its steps are not | it counts the commits the worktree holds that `origin/development` does not, then prescribes a pull request and `ExitWorktree` |
 | Claude Code's built-in worktree isolation | not fixable from either repository — **don't call `EnterWorktree`** | "This session is isolated in the worktree …" |
 | the operating system, or the remote | the thing itself | a lock, a 403, a server-side hook |
 
-The middle two are the pair that get confused, and confusing them cost the three:
-the guard is a file this repository vendors and could in principle change, and the
-isolation is the harness's own and cannot be changed by anybody here. Grep the
-refusal against `.claude/hooks/worktree-guard.py` before writing "fix it
-upstream" — if the words are not in that file, the guard did not say them.
+The second and the fourth are the pair that get confused, and confusing them cost
+the three: the guard is a file this repository vendors and could in principle
+change, and the isolation is the harness's own and cannot be changed by anybody
+here. Grep the refusal against `.claude/hooks/worktree-guard.py` before writing
+"fix it upstream" — if the words are not in that file, the guard did not say them.
+**The third is neither, and it is the one that fires last**: a `Stop` hook is not a
+`PreToolUse` hook and does not live in the guard, so grepping the guard for its
+words finds nothing and proves nothing.
 
 `pnpm feature start` and `pnpm feature land` append to this file themselves, in
 this format, whenever something refuses them. See `scripts/feature/NOTES.md`.
@@ -304,3 +308,49 @@ read as tokens. What the instruction is missing is the one sentence that makes i
 actionable: **`cd` into the worktree once, in a call of its own, with the path
 written out in full — never through a variable, and never joined to the git
 command with `&&`.** A variable is the trap, not the `cd`.
+
+## 2026-08-23 — the session that made the Panel's paragraph arrive
+
+**Attempted**: stopping with the work committed on the feature branch and
+unlanded, having asked the user whether to land it — the change being an aesthetic
+one they had asked to be "the most pleasing", so worth their eye first.
+
+**Refused by**: a `Stop` hook — **not** the worktree guard, and not any of the four
+gates in this file's header. None of them is a `Stop` hook, so this is a fifth, and
+naming it as one of those four would have sent the next session to the wrong file.
+It is the vendored `worktree-per-change` skill's stop gate, and its refusal is
+recognisable by its own voice: it counts the commits the worktree holds that
+`origin/development` does not.
+
+```
+This worktree is holding 1 commit(s) not in origin/development. A branch that
+exists only on this disk is not a delivered change …
+
+Finish it before stopping:
+1. `git add <paths> && git commit -m "..."`
+2. `git push -u origin HEAD`
+3. `gh pr create --base development --fill`
+4. `gh pr merge --squash --delete-branch`
+…
+2. `ExitWorktree` with `action: "keep"` …
+```
+
+**Its substance is right and its instructions are all wrong here.** The substance —
+a branch that exists only on this disk is not a delivered change — is exactly
+`scripts/feature/NOTES.md`'s own position. The five steps are upstream's protocol:
+this repository opens no pull request (ADR 0005), lands with `pnpm feature land`,
+and `CLAUDE.md` tells a session **not** to call `EnterWorktree`, which makes step 2
+of its teardown unreachable by construction. So the gate fires correctly and then
+hands over a recipe that contradicts three of this repository's own decisions, and
+the cost is a session deciding which of the two to believe. `CLAUDE.md` already
+answers that — "where the two disagree, ADR 0005 and the two commands win" — but it
+answers it about the guard's `SessionStart` message, not about this.
+
+**Fix**: **upstream**, in `chrisJuresh/skills`, and the same fix as the
+`SessionStart` message next to it: the stop gate should state the invariant and let
+the repository name the command, rather than hard-coding a pull request and
+`ExitWorktree`. Failing that, this file and `CLAUDE.md` are where a session is told
+to read the refusal's substance and ignore its steps — which is what this entry is
+for. **What was done**: `pnpm feature land`, which is the answer to the substance,
+and the question to the user was asked in the same reply rather than instead of
+landing.
