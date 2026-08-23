@@ -270,3 +270,37 @@ log's own header invites appending and the only route that works is a worktree a
 a PR, which is what this entry took. If entries are meant to arrive uncommitted,
 the guard needs an exemption for this one path; if they are meant to arrive as PRs,
 `friction.mjs`'s comment is describing a path agents cannot use.
+
+## 2026-08-23 — the grilling session about the Frame's material
+
+**Attempted**: staging the new `design/frame-glass/` files, from a session that was
+never isolated into the worktree — first as `cd $W && git add design/frame-glass`,
+then as `git -C "$W" add design/frame-glass`, where `W` was a shell variable
+holding the worktree's absolute path.
+
+**Refused by**: a project `PreToolUse` hook — the vendored worktree guard.
+
+```
+Denied: `git add` does not run in the main checkout.
+```
+
+**Not a wrong denial, and the guard says so itself.** `worktree-guard.py:513`
+names this exact case in its own docstring — a directory argument "this hook
+cannot read, `git -C "$W" switch` being the standing example". `where()` composes
+`cd` and `-C` left to right by reading the *tokens*, so an argument that is a
+shell variable is unreadable and the hook falls back to the Bash tool's cwd, which
+resets to the main checkout between calls. Both spellings therefore looked like
+`git add` in the main checkout, which is precisely what the guard exists to stop.
+
+**What worked**: `cd` to the worktree as a command **on its own**, with a literal
+path and no `&&`. The Bash tool's cwd persists across calls, so the next call's
+`git add` resolved inside the tree and passed.
+
+**Fix**: documentation here, not the guard. `CLAUDE.md` tells a session to "work in
+the tree by path, from a session that was never isolated into it" — which is right
+for the Write and Edit tools, and silently untrue for git: there is no by-path
+spelling of `git add` that satisfies the guard, because `-C` and `cd` are both
+read as tokens. What the instruction is missing is the one sentence that makes it
+actionable: **`cd` into the worktree once, in a call of its own, with the path
+written out in full — never through a variable, and never joined to the git
+command with `&&`.** A variable is the trap, not the `cd`.

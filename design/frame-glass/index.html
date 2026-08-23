@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Frame glass studio — the Projects Panel's titlebar</title>
+    <!-- The SHIPPED Tokens, read off the Section's own file rather than copied
+         into this one. Every share of the window on this page is that file's. -->
+    <link rel="stylesheet" href="/src/sections/projects-panel/tokens.css" />
+    <link rel="stylesheet" href="./studio.css" />
+  </head>
+  <!-- tokens.css declares the Section's Tokens on `.projects-panel`, not on
+       `:root` — so the studio has to BE one for them to inherit down to the
+       Frames. That is the same reason the Editor's preview does it. -->
+  <body class="projects-panel">
+    <div class="top">
+      <h1>Frame glass</h1>
+      <label class="field"
+        >Turn
+        <input id="turn" type="range" min="0" max="1" step="0.01" value="1" />
+      </label>
+      <label class="field"
+        >Composed width
+        <input id="size" type="range" min="420" max="1240" step="10" value="1033" />
+      </label>
+      <label class="field"
+        >Reload clearance /1000
+        <input id="pad" type="range" min="0" max="24" step="0.5" value="8" />
+      </label>
+      <button id="fallback" aria-pressed="false" type="button">Force fallback</button>
+      <span class="rung" id="rung"></span>
+    </div>
+
+    <main>
+      <div class="composer"></div>
+    </main>
+
+    <script type="module" src="./studio.js"></script>
+  </body>
+</html>

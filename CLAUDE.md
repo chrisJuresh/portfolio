@@ -72,6 +72,18 @@ nothing past it.
 
 ### While you are in the worktree
 
+**Git is the one thing "by path" does not work for.** Write and Edit are judged on
+the path they target, so a session in the main checkout can edit a worktree's
+files. `git` is judged on the *directory the command runs in*, and the guard works
+that out by reading the command's tokens — so a `cd` or a `-C` whose argument is a
+shell **variable** is unreadable, the hook falls back to the Bash tool's cwd, and
+`git add` is denied as though it were in the main checkout. `git -C "$W" switch` is
+the guard's own worked example of this, at `worktree-guard.py:513`. So: **`cd` into
+the worktree once, in a call of its own, with the path written out in full** — not
+through a variable, and not joined to the git command with `&&`. The Bash tool's
+cwd persists across calls, so every later `git` in that session resolves inside
+the tree.
+
 Stage paths by name. **Never `git add -A`**, and **never `git stash`**:
 `refs/stash` is one stack for the whole repository, so a push in one worktree
 renumbers every other worktree's entries.
