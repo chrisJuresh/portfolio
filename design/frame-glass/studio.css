@@ -235,15 +235,33 @@ section.axis > p {
   --band: var(--projects-panel-frame-inset);
 }
 
-/* The window's rim. A ring and not a border: a border would take a pixel off
-   every child's box and put the window's edge INSIDE the titlebar. */
-.frame[data-rim="bar"],
-.frame[data-rim="none"] {
+/* THE WINDOW'S RIM IS AN OVERLAY AND NOT AN INSET SHADOW ON THE FRAME. An inset
+   box-shadow paints on the element's own background and therefore UNDER every
+   child, so with the band at 0 — the recording flush to the window's edge — the
+   ring is completely covered and `bar` and `none` render identically. That is not
+   a tie between two directions, it is one of them not being drawn.
+
+   It also has to sit above the TITLEBAR, not just the recording. NOTES.md's
+   reason for the bar drawing no rim of its own is that "the Frame's ring already
+   runs round the whole window and shows through at this alpha" — which holds at
+   the shipped 0.135 and does not hold at 0.75. A tint that heavy is a wall, so
+   the ring has to be in front of it or the window has an outline on three sides
+   and a gap along the top. z-index 2: above the content (auto) and above the bar
+   (1). Inert, like everything else in the window. */
+.frame > .rim {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  border-radius: inherit;
+  corner-shape: inherit;
   box-shadow: inset 0 0 0 1px var(--frame-edge);
+  pointer-events: none;
 }
 
-.frame[data-rim="none"] {
-  box-shadow: none;
+.frame[data-rim="none"] > .rim,
+.frame[data-rim="one"] > .rim,
+.frame[data-rim="whole"] > .rim {
+  display: none;
 }
 
 /* One glass object: the window's rim is the material's own Fresnel ring rather

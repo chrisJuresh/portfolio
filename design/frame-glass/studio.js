@@ -198,6 +198,11 @@ const TINTS = {
   'white-22': { name: 'White 0.22', note: 'Enough that the glyphs need no ground of their own.', v: { r: 255, g: 255, b: 255, a: 0.22 } },
   'black-32': { name: 'Black 0.32', note: "Photos' own count-pane tint: darkened glass rather than lightened.", v: { r: 16, g: 16, b: 21, a: 0.32 } },
   'black-55': { name: 'Black 0.55', note: 'Heavily smoked. The recording under it is a suggestion.', v: { r: 10, g: 10, b: 12, a: 0.55 } },
+  'black-75': {
+    name: 'Black 0.75',
+    note: 'Chosen. Nearly a solid strip: the recording reads through it as movement rather than as pictures, and the refraction survives only where the bevel concentrates it, at the rim. It is also why the window’s ring has to be drawn IN FRONT of the bar rather than showing through it.',
+    v: { r: 8, g: 8, b: 10, a: 0.75 },
+  },
   'magenta-135': { name: "Magenta 0.135 (today's)", note: "#66's #fab2ff at its shipped alpha — the hue the brief calls out as not matching the rim.", v: { r: 250, g: 178, b: 255, a: 0.135 } },
   'magenta-05': { name: 'Magenta 0.05', note: 'The same hue kept only as a trace, as a signature rather than a colour.', v: { r: 250, g: 178, b: 255, a: 0.05 } },
   'paper-10': { name: 'Paper 0.10', note: "The page's own paper, #f2f1ee — the pane tinted with the ink of the document it sits in.", v: { r: 242, g: 241, b: 238, a: 0.1 } },
@@ -305,6 +310,7 @@ function makeFrame(opts) {
 
   frame.innerHTML =
     '<div class="fill"></div>' +
+    '<div class="rim"></div>' +
     '<div class="stone"></div>' +
     '<div class="content">' +
     (o.theme === 'none'
