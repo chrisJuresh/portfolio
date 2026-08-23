@@ -69,6 +69,19 @@
   --projects-panel-stack-rail-rows: 0.5em;
   --projects-panel-stack-points-gap: 1.35;
   --projects-panel-stack-measure: 34em;
+
+  /* ---- the copy's arrival, drawn against the Turn -------------------------
+     Where in the crossing the paragraph starts to ink in, where it is finished —
+     short of the landing, so it is standing still by the time the page is — and
+     the share of that arrival the hairline in its margin has to itself, so the
+     page is ruled before it is written. All three are the CROSSING's own
+     fractions and not lengths or times: NOTES.md says why the arrival is a
+     function of --turn rather than an animation, and the arithmetic that spends
+     these is in the component's landing block, because the arrival belongs to the
+     landing and not to the composition. */
+  --projects-panel-copy-arrive-from: 0.32;
+  --projects-panel-copy-arrive-to: 0.94;
+  --projects-panel-copy-rule-lead: 0.35;
 }
 
 /* ---------------------------------------------------------------------------

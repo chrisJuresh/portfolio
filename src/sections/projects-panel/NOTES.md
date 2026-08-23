@@ -158,6 +158,107 @@ four of the Panel's terms to solve the width, and a restated number that drifts
 draws the word at a size nobody can see is wrong, because the masthead it stands
 in for is invisible.
 
+## The copy arrives with the page turn
+
+Inside the band this Section's box begins above the fold — by the cut the word is
+shown at plus `--landing-mast-top`, 39px at 1440x900 — and that is the device
+rather than an overshoot: the strip is exactly where the Cut Title stands. What
+that costs is that **anything drawn in row one is drawn on the screen above.** The
+masthead there is invisible and the subheading hangs below it, so the paragraph in
+columns seven to twelve was the one thing left, and it showed as two lines of small
+type in the white beside the word, answering a question the reader had not been
+asked yet.
+
+So it arrives instead. Three Tokens say when — `--projects-panel-copy-arrive-from`
+and `-to` are the two points of the crossing it runs between, and
+`--projects-panel-copy-rule-lead` is the share of that arrival the hairline in its
+margin has to itself, so the page is ruled before it is written. They are
+fractions of the crossing and not times, because what drives the arrival is
+`--turn`.
+
+**The lead is honestly a detail rather than a gesture, and that is the palette's
+number and not this rule's to change.** `--projects-panel-rule-far` is a sixth of
+an alpha, so the hairline finishes arriving over a ground that is still mid-grey
+and only becomes legible as the page reaches black — on a filmstrip at 1440x900 it
+is visible from about 0.85 of the crossing, which is after it has finished being
+ruled. It is kept because it is one Token and four lines, because it is the right
+relationship if the rule is ever brightened, and because the alternative is the two
+arriving together for no reason. What the reader actually watches is the paragraph:
+at the numbers above it inks in over roughly the last quarter of the crossing —
+230ms of the turn's 800, landing 170ms before the page comes to rest — and
+`-arrive-from` is the dial for that.
+
+**Drawn against the Turn, which is what makes it a function and not an
+animation.** `--turn` is the Kernel's number for this exact crossing and already
+what every colour on the page is mixed out of, so the arrival is a function of the
+scroll position: it inherits the page turn's quintic ease for nothing, it is exact
+at both resting places and at a deep link, and a reader who asked for less motion
+gets it as a state rather than as a movement, because their turn is a jump rather
+than a travel. It is also still seekable through the seam ADR 0003 asks for —
+`timelines.get('turn').seek(…)` moves it, which is what the Check reads and what
+the Editor scrubs. **It does not give this Section a Timeline**; how the rest of
+the composition arrives is still the later ticket `timeline.ts` describes.
+
+**It is the ink that arrives and not the box, and that is measured rather than
+preferred.** The obvious two ways to write it both cost the page something at the
+far end:
+
+| written as | what it costs at the landing |
+| ---------- | ---------------------------- |
+| `opacity` ramping to 1 | nothing, as long as it lands exactly on 1 — which is why the Check permits it |
+| `mask-image` sweeping down the block | the paragraph stays on its own compositing layer forever, and composited text is rasterised without subpixel antialiasing: **up to 136 levels on a channel** against the same type painted directly, over 17% of the block |
+| a `transform` that settles | the same layer, plus the one thing this device may not do |
+
+The mask was the first version and the wipe was the nicer picture — one front
+travelling down the block in reading order, with the border-left carried along by
+it. It was measured against the unmasked paragraph at the landing and dropped for
+that number. Mixing the two colours towards `transparent` instead composites
+nothing: the arrived paragraph is byte-identical to the paragraph with the rule
+deleted, which was checked the same way and came back at 0 across 660x105 px at
+1440x900 — against a control of two screenshots with nothing changed between them,
+which is also 0. The 136 was measured over 620x80.
+
+**And nothing travels, for the same reason the word does not.** This Section is
+the far end of a page turn whose whole claim is that the type stands still and the
+document moves. A paragraph that slid into place would be arguing with the thing
+it arrived on.
+
+**A browser that runs nothing gets the paragraph.** Nothing would ever drive
+`--turn` for it, so an arrival left at its start would be a paragraph deleted
+rather than one waiting. The component answers `@media (scripting: none)`, and it
+has to be the query rather than a flag a script sets: a flag is set by a deferred
+module, a frame or two after the first paint, so every reader would watch the
+paragraph appear and then be taken away. This is the same reader the Plinth is
+drawn at full depth for, and `projects-panel` asserts both in its scripting-off
+pass.
+
+### What the Check holds, and what it was shown to catch
+
+The `turn` Check, because the arrival belongs to the landing rather than to the
+composition. It reads how much the paragraph actually PAINTS — the alpha of its
+ink times its own opacity, rasterised into a 1x1 rather than compared as a string
+— and asserts four things: nothing is painted at the top of the document; at the
+landing both the ink and the hairline are the palette's own two colours and not a
+fraction of them; the box is the same at every moment of the crossing, which is
+the assertion the word already carries; and nothing is left standing between the
+type and the page once it has arrived.
+
+**Six mutations, each applied on its own, rebuilt, and reverted.** Four fail and
+two pass, and which is which is the point:
+
+| broken | caught by |
+| ------ | --------- |
+| the ink's mix replaced by the palette's own colour | 1.00 painted at the top of the document |
+| the `@media (scripting: none)` block deleted | 0.00 painted with no script, in `projects-panel` |
+| a `filter: blur()` that resolves to `blur(0px)` | 1.00 at the top, AND `blur(0px)` left at the landing |
+| a `transform` that settles to the identity | the box moving at 0.4 of the crossing, AND `matrix(1, 0, 0, 1, 0, 0)` at the landing |
+| the arrival written as `opacity` instead | **nothing — and correctly.** An opacity that lands on exactly 1 costs the resting page nothing, so a Check that failed it would be mandating a mechanism rather than asserting an invariant |
+| all three Tokens moved (0.08, 0.61, 0.8) | **nothing.** They are the author's, and the Editor's |
+
+`blur(0px)` and `inset(0)` are the two worth knowing about: both read as though
+they were nothing and both keep the layer, which is why the assertion compares
+against `none` rather than against a length.
+
 ## The palette crosses; it does not switch
 
 The five `-far` Tokens are what the Section **is** once the page has turned, and

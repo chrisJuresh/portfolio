@@ -1136,6 +1136,16 @@ function reduced(read, { expectShed }) {
  * derived, because a second window written out in the markup would still be
  * standing in the stone here.
  *
+ * IT ALSO ASKS FOR THE COPY, and that one is the opposite trade. The paragraph in
+ * the Panel's first row arrives with the page turn, drawn against --turn — and
+ * with no script nothing ever drives --turn, so an arrival that were merely left
+ * at its start would be a paragraph deleted rather than a paragraph waiting. The
+ * component answers `@media (scripting: none)` for exactly this reader, and it has
+ * to be the QUERY: a flag set by a deferred module lands a frame or two after the
+ * first paint, so every reader would watch the paragraph appear and be taken away.
+ * This is the assertion that the query is still there, and it is silent both ways
+ * — the reader who loses the paragraph is the one who cannot report it.
+ *
  * Nothing is settled, and nothing can be: no loader runs, so no Section mounts.
  * Everything read is prerendered, which is exactly what is being asked about.
  */
@@ -1145,7 +1155,20 @@ async function withoutScript(browser, origin) {
     const read = await page.evaluate(() => {
       const plinth = document.querySelector('.projects-panel__plinth');
       const reflection = document.querySelector('.projects-panel__reflection');
-      if (!plinth || !reflection) return { missing: true };
+      const copy = document.querySelector('.projects-panel__copy');
+      if (!plinth || !reflection || !copy) return { missing: true };
+      // How much of the copy's ink is painted, rasterised rather than compared as
+      // a string: it is a colour-mix of a colour-mix either way.
+      const canvas = document.createElement('canvas');
+      canvas.width = canvas.height = 1;
+      const ink = canvas.getContext('2d');
+      const painted = (colour) => {
+        if (!ink) return -1;
+        ink.clearRect(0, 0, 1, 1);
+        ink.fillStyle = colour;
+        ink.fillRect(0, 0, 1, 1);
+        return (ink.getImageData(0, 0, 1, 1).data[3] ?? 0) / 255;
+      };
       const style = getComputedStyle(plinth);
       return {
         missing: false,
@@ -1155,14 +1178,15 @@ async function withoutScript(browser, origin) {
         frames: document.querySelectorAll('.projects-panel__frame').length,
         clips: document.querySelectorAll('video.projects-panel__clip').length,
         sources: document.querySelectorAll('video.projects-panel__clip source').length,
+        copyInk: painted(getComputedStyle(copy).color),
       };
     });
 
     /** @type {string[]} */
     const failures = [];
     if (read.missing) {
-      return ['with no script the Plinth is not in the document at all — the marble is markup and a stylesheet, ' +
-        'and only the reflection in it is script\'s'];
+      return ['with no script the Plinth or the copy is not in the document at all — the marble and the ' +
+        'paragraph are both markup and a stylesheet, and only the reflection in the stone is script\'s'];
     }
     if (read.depth <= 0 || !read.plate.startsWith('url(')) {
       failures.push(
@@ -1175,6 +1199,13 @@ async function withoutScript(browser, origin) {
         `with no script the page holds ${read.frames} Frame(s) and ${read.reflections} of them are in the marble ` +
           '— the reflection is a CLONE, and a second copy of a hundred lines of measured drawing written out in ' +
           'the markup is one copy that gets edited and one that does not',
+      );
+    }
+    if (read.copyInk < 0.99) {
+      failures.push(
+        `with no script the Panel's copy is painted at ${read.copyInk.toFixed(2)} — the paragraph arrives with ` +
+          'the page turn, nothing here drives the Turn it is drawn against, and this is the one reader who is ' +
+          'better off with it simply there. The component answers `@media (scripting: none)` for them.',
       );
     }
     if (read.clips !== 1 || read.sources !== 0) {
@@ -1293,7 +1324,7 @@ export const check = {
     }
 
     failures.push(...(await withoutScript(browser, origin)));
-    notes.push('with no script: the marble is drawn and nothing is lying in it');
+    notes.push('with no script: the marble is drawn, nothing is lying in it, and the copy is simply there');
     failures.push(...(await withoutMotion(browser, origin)));
     notes.push('with reduced motion: the poster, and not one byte of the recording');
 

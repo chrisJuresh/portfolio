@@ -1460,6 +1460,92 @@ const selected = (project: { href?: string }) => project.href === `#${here}`;
       visibility: hidden;
     }
 
+    /* THE PARAGRAPH ARRIVES WITH THE PAGE, AND NOTHING ABOUT IT MOVES TO DO IT.
+
+       WHAT IT FIXES. This Section begins above the fold, so its first row stands
+       on the screen ABOVE — which is the whole point, because that strip is where
+       the word is cut. Everything else in that row is accounted for: the masthead
+       is invisible by the rule above and the subheading hangs below it. This
+       paragraph was what was left, and it showed as two lines of small type in the
+       white to the right of the word, answering a question the reader had not been
+       asked yet.
+
+       DRAWN AGAINST THE TURN, which is what makes it a function and not an
+       animation. --turn is the Kernel's number for this exact crossing and already
+       what every colour on the page is mixed out of, so the arrival inherits the
+       page turn's quintic ease for nothing, is exact at both resting places and at
+       a deep link, and reaches a reader who asked for less motion as a state
+       rather than as a movement, because their turn is a jump. It is also still
+       seekable through the seam ADR 0003 asks for: `timelines.get('turn').seek(…)`
+       moves it, which is what the `turn` Check reads and what the Editor scrubs.
+       THIS DOES NOT GIVE THE PANEL A TIMELINE — how the rest of the composition
+       arrives is a later ticket, and timeline.ts says so.
+
+       IT IS THE INK THAT ARRIVES, AND NOT THE BOX. `mask-image` was the first
+       version of this and the wipe was the nicer picture — one front travelling
+       down the block in reading order, carrying the hairline with it — and it was
+       dropped on a measurement: a mask keeps the paragraph on its own compositing
+       layer FOREVER, and composited text is text rasterised without subpixel
+       antialiasing, up to 136 levels on a channel against the same type painted
+       directly. This page is meant to be UNCHANGED once it has arrived. `opacity`
+       is the one honest alternative — it costs the resting page nothing as long as
+       it lands back on exactly 1, which is a condition that is easy to lose and
+       silent when it goes, and the `turn` Check permits it and asserts the
+       condition. A transform is neither: it is the one thing this device may not
+       do, because this Section is the far end of a page turn whose whole claim is
+       that the type stands still and the document moves. Mixing the ink towards
+       `transparent` instead composites nothing at any moment — at the landing the
+       two mixes below are the palette's own two colours, and not one pixel of the
+       resting page is this rule's.
+
+       THE HAIRLINE LEADS THE WORDS by the share its Token names, because that is
+       what a printed page does: the margin is ruled and then it is written in.
+       The rule is the border the base sheet already put there, so the lead is one
+       more mix rather than anything new on the page. */
+    .projects-panel__copy {
+      --projects-panel-copy-arrive: clamp(
+        0,
+        calc(
+          (var(--turn) - var(--projects-panel-copy-arrive-from)) /
+            (var(--projects-panel-copy-arrive-to) - var(--projects-panel-copy-arrive-from))
+        ),
+        1
+      );
+      --projects-panel-copy-ruled: clamp(
+        0,
+        calc(var(--projects-panel-copy-arrive) / var(--projects-panel-copy-rule-lead)),
+        1
+      );
+
+      color: color-mix(
+        in oklab,
+        var(--projects-panel-ink-soft),
+        transparent calc((1 - var(--projects-panel-copy-arrive)) * 100%)
+      );
+      /* The colour alone, so the sheet's own `border-left: 1px solid` — its width
+         and its style, which are the composition's — is not restated here. */
+      border-left-color: color-mix(
+        in oklab,
+        var(--projects-panel-rule),
+        transparent calc((1 - var(--projects-panel-copy-ruled)) * 100%)
+      );
+    }
+
+    /* A BROWSER THAT RUNS NOTHING GETS THE PARAGRAPH, because nothing would ever
+       drive --turn for it and the arrival would be a paragraph deleted rather than
+       a paragraph waiting. It is the one state on the page that is better off with
+       the leak, and it is the same reader the Plinth's full depth is drawn for —
+       `projects-panel` asserts both in its scripting-off pass. THE QUERY AND NOT A
+       SCRIPT-SET FLAG: a flag is set by a deferred module, a frame or two after
+       first paint, so every reader would watch the paragraph appear and then be
+       taken away. This is decided before the first paint instead. */
+    @media (scripting: none) {
+      .projects-panel__copy {
+        --projects-panel-copy-arrive: 1;
+        --projects-panel-copy-ruled: 1;
+      }
+    }
+
     /* THE RAIL MOVES OUT INTO THE PAGE'S MARGIN, which is what "the composition
        starts where the word starts" costs. In the grid it holds the first column
        and everything after it — the masthead included — is pushed right by its

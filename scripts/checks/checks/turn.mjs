@@ -40,6 +40,14 @@ import { open, settle } from '../lib/page.mjs';
  *   * A notch begun on the photographs belongs to the photographs. Without the
  *     arbitration the page turns out from under a reader who is spinning the
  *     strip, which is the loudest of these and still easy to reintroduce.
+ *   * The Panel's copy is painted at neither end by accident. It sits in the row
+ *     the Panel begins above the fold with, so at the top of the document it is
+ *     standing on the Front Screen beside the cut word unless something takes it
+ *     away, and at the landing it has to be the palette's own two colours and not
+ *     a fraction of them. It arrives without moving, like the word — and with
+ *     nothing composited over the type, because a paragraph on its own layer is
+ *     rasterised without subpixel antialiasing and the resting page is meant to be
+ *     one the arrival never touched. Every one of them is silent on screen.
  *
  * IT ASSERTS NOTHING ABOUT THE CURVE. How the turn is eased and how fast is the
  * author's, and so is the stagger; what is asserted is that a notch arrives.
@@ -289,6 +297,154 @@ export const check = {
         notes.push(
           `the morph: ${opening.letters} letters, ${opening.box[0]?.toFixed(1)}x${opening.box[1]?.toFixed(1)} at ` +
             `x ${opening.box[2]?.toFixed(1)} at every moment of the crossing`,
+        );
+      }
+
+      // ---- the paragraph that arrives with the crossing -------------------
+      // The Panel begins above the fold, so its first row is drawn on the screen
+      // ABOVE — which is the device, because that strip is where the word is cut.
+      // The masthead in that row is invisible and the subheading hangs below it,
+      // so the copy is the one thing up there that has to ARRIVE rather than
+      // simply be, and it is drawn against this same Turn.
+      const arriving = await page.evaluate(async () => {
+        const copy = document.querySelector('.projects-panel__copy');
+        const turn = window.portfolio?.timelines?.get('turn');
+        if (!copy || !turn) return { missing: "the Panel's copy or the Turn is not on the page" };
+
+        // The ink is a colour-mix of a colour-mix, so how much of it is actually
+        // painted is not a string comparison. Rasterised into a 1x1 and read back
+        // instead, which is how `ground` reads the page's own ground and for the
+        // same reason.
+        const canvas = document.createElement('canvas');
+        canvas.width = canvas.height = 1;
+        const ink = canvas.getContext('2d');
+        if (!ink) return { missing: "no 2d context — the copy's ink cannot be rasterised" };
+        const painted = (colour) => {
+          ink.clearRect(0, 0, 1, 1);
+          ink.fillStyle = colour;
+          ink.fillRect(0, 0, 1, 1);
+          return (ink.getImageData(0, 0, 1, 1).data[3] ?? 0) / 255;
+        };
+
+        // WHAT THE ARRIVAL IS FINISHED AGAINST IS THE PALETTE AND NOT THE NUMBER
+        // 1. The hairline's own colour is a sixth of an alpha at the far end, so
+        // "arrived" for it is the Section's own rule and nothing brighter — spent
+        // on a throwaway element the same way the landing measures above are, and
+        // re-read at every step because the palette crosses with the Turn too.
+        const probe = document.createElement('div');
+        probe.style.position = 'absolute';
+        probe.style.visibility = 'hidden';
+        const wants = () => {
+          copy.append(probe);
+          probe.style.color = 'var(--projects-panel-ink-soft)';
+          const wantInk = painted(getComputedStyle(probe).color);
+          probe.style.color = 'var(--projects-panel-rule)';
+          const wantRule = painted(getComputedStyle(probe).color);
+          probe.remove();
+          return { wantInk, wantRule };
+        };
+
+        // WHAT THE PARAGRAPH ACTUALLY PAINTS IS THE INK TIMES THE BOX, and reading
+        // both is deliberate. Fading the ink is how the arrival IS written, and
+        // fading the box is the other legitimate way to write it — `opacity` costs
+        // the resting page nothing as long as it lands back on 1 — so an assertion
+        // that read only the colour would fail an implementation that was fine and
+        // would say the wrong thing while doing it. Everything else CSS could hide
+        // the paragraph with (a mask, a filter, a clip) cannot be conditional on a
+        // number, so it survives to the landing, where `between` catches it.
+
+        window.portfolio?.hold?.();
+        /** @type {{ at: number, ink: number, rule: number, dim: number, wantInk: number, wantRule: number, box: number[], between: string }[]} */
+        const sampled = [];
+        for (let step = 0; step <= 10; step += 1) {
+          const at = step / 10;
+          turn.progress(at);
+          await new Promise((next) => requestAnimationFrame(next));
+          const style = getComputedStyle(copy);
+          const rect = copy.getBoundingClientRect();
+          sampled.push({
+            at,
+            ink: painted(style.color),
+            rule: painted(style.borderLeftColor),
+            dim: Number(style.opacity) || 0,
+            ...wants(),
+            // The whole box, and the top as well as the left: the scroll is held,
+            // so anything here that moves is the arrival moving it.
+            box: [rect.width, rect.height, rect.left, rect.top],
+            // The five ways an arrival gets written that would leave the paragraph
+            // on its own compositing layer once it has arrived.
+            between: [style.opacity, style.transform, style.maskImage, style.filter, style.clipPath].join(
+              ' ',
+            ),
+          });
+        }
+        turn.progress(0);
+        window.portfolio?.release?.();
+        return { sampled };
+      });
+      if (arriving.missing) return { failures: [...failures, arriving.missing], notes };
+
+      const arrival = arriving.sampled ?? [];
+      const atTop = arrival[0];
+      const atLanding = arrival[arrival.length - 1];
+      if (!atTop || !atLanding) {
+        failures.push("the crossing could not be sampled for the Panel's copy");
+      } else {
+        const paints = (frame) => [frame.ink * frame.dim, frame.rule * frame.dim];
+        const [topInk, topRule] = paints(atTop);
+        if (topInk > 0.01 || topRule > 0.01) {
+          failures.push(
+            `at the top of the document the Panel's copy paints at ${topInk.toFixed(2)} and its rule at ` +
+              `${topRule.toFixed(2)} — the Section begins above the fold, so anything painted in its first ` +
+              'row is standing on the Front Screen beside the cut word, and that word is the one thing the ' +
+              'strip is for',
+          );
+        }
+        const [landedInk, landedRule] = paints(atLanding);
+        if (
+          Math.abs(landedInk - atLanding.wantInk) > 0.01 ||
+          Math.abs(landedRule - atLanding.wantRule) > 0.01
+        ) {
+          failures.push(
+            `at the landing the Panel's copy paints at ${landedInk.toFixed(2)} and its rule at ` +
+              `${landedRule.toFixed(2)}, against the palette's own ${atLanding.wantInk.toFixed(2)} and ` +
+              `${atLanding.wantRule.toFixed(2)} — the paragraph is still arriving at the place the turn comes ` +
+              'to rest, so the reader is left reading it through the arrival',
+          );
+        }
+        // NEITHER MOVES NOR RESIZES, which is the assertion the word already
+        // carries and for the same reason: this Section is the far end of a device
+        // whose whole claim is that the type stands still and the document moves.
+        for (const frame of arrival) {
+          const off = frame.box.map((value, index) => Math.abs(value - (atTop.box[index] ?? 0)));
+          if (off.some((away) => away > STILL)) {
+            failures.push(
+              `at ${frame.at.toFixed(1)} of the crossing the Panel's copy is ${frame.box[0]?.toFixed(2)}x` +
+                `${frame.box[1]?.toFixed(2)} at ${frame.box[2]?.toFixed(2)},${frame.box[3]?.toFixed(2)}, ` +
+                `against ${atTop.box[0]?.toFixed(2)}x${atTop.box[1]?.toFixed(2)} at ` +
+                `${atTop.box[2]?.toFixed(2)},${atTop.box[3]?.toFixed(2)} at the start — the paragraph is ` +
+                'travelling or resizing into place, and it may do neither',
+            );
+            break;
+          }
+        }
+        // AND NOTHING STANDS BETWEEN THE TYPE AND THE PAGE ONCE IT HAS ARRIVED.
+        // Every one of those four composites the paragraph, and composited text is
+        // text rasterised without subpixel antialiasing — measured at up to 136
+        // levels on a channel against the same type painted directly. The page the
+        // reader comes to rest on is meant to be one the arrival never touched.
+        if (atLanding.between !== '1 none none none none') {
+          failures.push(
+            `at the landing the Panel's copy is drawn through \`${atLanding.between}\` rather than ` +
+              '`1 none none none none` (opacity, transform, mask, filter, clip) — each of those leaves the ' +
+              'paragraph on its own compositing layer and costs the type its subpixel antialiasing, so the ' +
+              'page the reader rests on is not the page the composition drew. `blur(0px)` and `inset(0)` are ' +
+              'this failure too, and read as though they were nothing.',
+          );
+        }
+        notes.push(
+          `the copy arrives: painted ${topInk.toFixed(2)} at the top and ${landedInk.toFixed(2)} at the ` +
+            `landing, ${atTop.box[0]?.toFixed(1)}x${atTop.box[1]?.toFixed(1)} at every moment between`,
         );
       }
 

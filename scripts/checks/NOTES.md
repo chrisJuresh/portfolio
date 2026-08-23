@@ -78,9 +78,9 @@ cannot be verified there even by hand.
 | `console`        | anything logs an error or throws, including across a theme flip — warnings deliberately not, because on this page they are nearly always Chromium's own |
 | `faces`          | a declared `@font-face` will not load, or no face Token names a declared family |
 | `front-screen`   | the Front Screen's rhyme, its one-screen budget, the Cut Title's cut or its accessible name, the crossing's span, the switch's ARIA, or the type's place in the Effect Stack breaks |
-| `projects-panel` | a control in the Frame leaves the centre its own Token names, the window and its titlebar are cut to two radii, the recording's box stops being inset on three sides, the occlusion of the subheading's second line moves or stops being painted, the titlebar reports a rung it is not made of, the chrome grows a control, the small-Frame reduction starts asking about the window instead of the Frame, the Plinth's depths stop being shares of the Frame, its slab stops being symmetric about it or its bottom-right corner comes off the page's, the reflection stops being a life-size fold of the window, the marble stops being drawn without script, or a reader who asked for reduced motion is charged for the recording |
+| `projects-panel` | a control in the Frame leaves the centre its own Token names, the window and its titlebar are cut to two radii, the recording's box stops being inset on three sides, the occlusion of the subheading's second line moves or stops being painted, the titlebar reports a rung it is not made of, the chrome grows a control, the small-Frame reduction starts asking about the window instead of the Frame, the Plinth's depths stop being shares of the Frame, its slab stops being symmetric about it or its bottom-right corner comes off the page's, the reflection stops being a life-size fold of the window, the marble stops being drawn without script, a reader who asked for reduced motion is charged for the recording, or a reader who runs no script at all loses the copy that arrives with the page turn |
 | `ground`         | paper is not light, or the Turn does not arrive dark, in either theme         |
-| `turn`           | the Kernel's published landing measure — cap, drop or the stone the width branch leaves room for — disagrees with the Panel's own arithmetic, the Panel's masthead is visible or has lost its box, the Cut Title is not standing in that masthead's slot, the word moves or resizes across the crossing, either end of the morph is not the outline the Bake wrote, a wheel notch does not turn the page or bring it back, or a notch begun on the photographs turns it |
+| `turn`           | the Kernel's published landing measure — cap, drop or the stone the width branch leaves room for — disagrees with the Panel's own arithmetic, the Panel's masthead is visible or has lost its box, the Cut Title is not standing in that masthead's slot, the word moves or resizes across the crossing, either end of the morph is not the outline the Bake wrote, a wheel notch does not turn the page or bring it back, a notch begun on the photographs turns it, or the paragraph that arrives with the crossing is painted at the top of the document, is still arriving at the landing, moves to get there, or is left on its own compositing layer once it has |
 | `moments`        | a Timeline cannot be seeked, does not survive a scroll, moves nothing, or will not release |
 | `deep-links`     | a Section on the page carries no id, or its `/portfolio/<id>` does not answer, or answers with something that is not the document, or opens it somewhere other than where that Section asks to be put |
 | `unpublishable`  | a Section's words or its spoken attributes match the denylist                 |
@@ -102,14 +102,18 @@ also names what it deliberately does not assert: the glass's own output, which i
 a picture and not a relationship.
 
 It is also the first Check to open the page in a reader state the page behaves
-DIFFERENTLY in, rather than merely more quietly, and both of its two are promises
-that are invisible on screen. With **scripting off** the Plinth has to be drawn at
-its full depth with nothing lying in it — which is the trade the reflection's
-clone buys, and is also how the Check knows the copy is genuinely derived rather
-than a second window written out in the markup. With **reduced motion** not one
-byte of the recording may be requested: no stylesheet can decline a fetch, so the
-element ships with no source at all, and a `src` that crept back into the markup
-would look identical on screen while costing the reader the clip. `open()` takes
+DIFFERENTLY in, rather than merely more quietly, and every one of its three is a
+promise that is invisible on screen. With **scripting off** the Plinth has to be
+drawn at its full depth with nothing lying in it — which is the trade the
+reflection's clone buys, and is also how the Check knows the copy is genuinely
+derived rather than a second window written out in the markup — and the Panel's
+paragraph has to be simply THERE, because it arrives with the page turn and
+nothing under this reader drives the Turn it is drawn against. Those two pull
+opposite ways on purpose: one says what a scriptless reader is not given, the
+other what they may not be deprived of. With **reduced motion** not one byte of
+the recording may be requested: no stylesheet can decline a fetch, so the element
+ships with no source at all, and a `src` that crept back into the markup would
+look identical on screen while costing the reader the clip. `open()` takes
 `javaScriptEnabled` and `reducedMotion` for exactly these two, and **neither pass
 can `settle()`** — nothing scrubs under the first and nothing mounts at all under
 the second, so anything about a Timeline has to stay in the ordinary pass.
