@@ -78,7 +78,7 @@ cannot be verified there even by hand.
 | `console`        | anything logs an error or throws, including across a theme flip — warnings deliberately not, because on this page they are nearly always Chromium's own |
 | `faces`          | a declared `@font-face` will not load, or no face Token names a declared family |
 | `front-screen`   | the Front Screen's rhyme, its one-screen budget, the Cut Title's cut or its accessible name, the crossing's span, the switch's ARIA, or the type's place in the Effect Stack breaks |
-| `projects-panel` | a control in the Frame leaves the centre its own Token names, the window and its titlebar are cut to two radii, the recording's box stops being inset on three sides, the occlusion of the subheading's second line moves or stops being painted, the titlebar reports a rung it is not made of, the chrome grows a control, the small-Frame reduction starts asking about the window instead of the Frame, the Plinth's depths stop being shares of the Frame, its slab stops being symmetric about it or its bottom-right corner comes off the page's, the reflection stops being a life-size fold of the window, the marble stops being drawn without script, a reader who asked for reduced motion is charged for the recording, or a reader who runs no script at all loses the copy that arrives with the page turn |
+| `projects-panel` | a control in the Frame leaves the centre its own Token names, the window and its titlebar are cut to two radii, the recording's box stops being inset on three sides, the occlusion of the subheading's second line moves or stops being painted, the titlebar reports a rung it is not made of, the chrome grows a control, the small-Frame reduction starts asking about the window instead of the Frame, the Plinth's depths stop being shares of the Frame, its slab stops being symmetric about it, its bottom-right corner comes off the page's on either branch of the fit, or the Frame moves towards the engineering points instead of away from them, the reflection stops being a life-size fold of the window, the marble stops being drawn without script, a reader who asked for reduced motion is charged for the recording, or a reader who runs no script at all loses the copy that arrives with the page turn |
 | `ground`         | paper is not light, or the Turn does not arrive dark, in either theme         |
 | `turn`           | the Kernel's published landing measure — cap, drop or the stone the width branch leaves room for — disagrees with the Panel's own arithmetic, the Panel's masthead is visible or has lost its box, the Cut Title is not standing in that masthead's slot, the word moves or resizes across the crossing, either end of the morph is not the outline the Bake wrote, a wheel notch does not turn the page or bring it back, a notch begun on the photographs turns it, or the paragraph that arrives with the crossing is painted at the top of the document, is still arriving at the landing, moves to get there, or is left on its own compositing layer once it has |
 | `moments`        | a Timeline cannot be seeked, does not survive a scroll, moves nothing, or will not release |
@@ -259,6 +259,41 @@ mechanism holding the margins equal is *inert* at every ordinary desktop height.
 Measured at DESK alone, `front-screen` passed with that mechanism deleted. It
 measures at two heights now. Any Check on a composition with a ceiling in it
 should ask which side of that ceiling its window is on.
+
+**A VIEWPORT AS TALL AS A SCREEN IS NOT A WINDOW.** The same trap again, and it
+shipped a bug, so it gets its own paragraph. The Panel's composition is fitted to
+the smaller of what the page has across and what its height will carry, and which
+of the two binds is a property of the window — at 1440×900 it is the width. So
+every window whose *height* bound was unmeasured, and the mechanism that answers
+for those was never exercised. That is not an exotic band: **a maximised browser
+gives up about 100px of its screen to its own chrome**, so 1920×980 is the ordinary
+case and 1920×1080 is nobody's. The Plinth is solved to stand in the page's
+bottom-right corner; at 1920×980 it stopped 119px short while twelve Checks called
+the corner exact. `projects-panel` measures at `MAXIMISED` now. **Pick viewport
+heights a browser actually has, and if a Check reports which branch of a fit bound,
+read it — the same branch at every window means one route is untested.**
+
+**AND IT HAS A SCROLLBAR.** Playwright passes `--hide-scrollbars` in headless by
+default, so `100vw` and the client width were equal in every Check this suite has
+ever run, and every full-bleed box landed exactly where its arithmetic said. Real
+browsers reserve the gutter. The same Plinth was read off `100vw` and ended 15px
+**past** the page's right edge on every window with a scrollbar — clipped by the
+Section, so invisible in a screenshot and invisible here. `run.mjs` undoes the flag
+now, which moves every horizontal measurement in the suite by the gutter; that is
+the point, because those are the numbers the reader gets. Nothing else in the suite
+depended on the gutter being absent, which is worth knowing before anyone puts it
+back.
+
+Two smaller lessons came out of the same bug, and both generalise. **A tolerance
+written to accommodate a known-wrong case is that case's hiding place**: the
+corner's overrun allowance was 20px *because* of the scrollbar, so it would have
+let the regression through even had the suite been able to see it. When the cause
+is fixed, tighten the tolerance in the same commit. And **a self-correcting system
+can absorb the regression you are trying to catch**: reverting the width branch to
+`100vw` left the corner exact, because the stage's reach silently shifted the
+window 15px the other way — into the gutter the engineering points sit behind. The
+assertion that caught it was not about the corner at all but about that gutter. When
+a fix makes something land, ask what it moved to get there, and assert *that*.
 
 **A degenerate ScrollTrigger is not an error, it is a flip.** `data-turn` on a
 Section exactly one screen tall leaves `top top` and `bottom bottom` at the same

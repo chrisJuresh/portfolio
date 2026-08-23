@@ -647,6 +647,8 @@ reverted:
 | the fall added to the stage and not to the second line | the drop into the second line |
 | the restated stone drifting from the drawn overhang | the Kernel and the Panel disagreeing in px, and the slab's corner |
 | a padding back on the Section's right or foot | the slab's corner, across and down |
+| the reach dropped, so a height-capped drawing leaves the stone short | the slab's corner at 1920x980, and nothing at 1440x900 |
+| the width branch back on `100vw`, so the reach goes negative | the gutter the engineering points sit behind, closing to 0.59px |
 | `aria-hidden` off the stage | the chrome back in the accessibility tree |
 | a button added to the chrome | a focusable thing inside an aria-hidden subtree |
 | the canvas hidden while the shader had drawn | the tier and the canvas disagreeing |
@@ -814,10 +816,69 @@ between this and nudging the stage. `stone` is `--landing-plinth-share`, the
 overhang restated in the Kernel because the Kernel may not ask a Section, and the
 `turn` Check holds it to the Panel's own answer in px.
 
-`overflow-x: clip` on the Section stays and still matters. Outside the landing
-band nothing solves for the stone, and `100vw` counts a classic scrollbar that the
-box the drawing was laid out in does not — so the far end can still land a few
-pixels over, which is what the render itself does with its own slab.
+**The page across is `--page-across` and not `100vw`.** `100vw` includes a classic
+scrollbar's gutter and the boxes the drawing is laid out in do not, so read off
+`100vw` the stone landed **15px past** the edge on every real browser — clipped by
+the Section, so what the reader saw was the block's end cut off flat rather than
+its corner meeting the page's. `src/kernel/ground.css` owns that length and says
+why it cannot be a viewport unit and why it has to be a registered property.
+
+`overflow-x: clip` on the Section stays and still matters: outside the landing band
+nothing solves for the stone, so there the slab runs off the edge as it always did
+— which is what the render itself does with its own slab.
+
+### And where the drawing cannot be wide enough: the reach
+
+The width branch can only put the stone on the page's edge when the **width** is
+what bound. Where the composition's height caps it, the drawing is narrower than
+the page has room for and the stone ends with it. So the stage carries the Frame
+and the slab out to the edge together:
+
+```
+  left = --page-across − inset − (1 + stone) × W
+```
+
+which is that branch's own equation rearranged, and therefore **exactly 0 whenever
+the width branch was the one that bound**. It cannot go negative either: `W` is the
+smaller of the two branches, so `(1 + stone) × W` can only be less than the page
+across. It is a degradation path, not a second thing to keep in step.
+
+**Right is the safe direction and left is the forbidden one**, and that is the
+whole reason this is allowed where the nudge above is not. Moving right opens the
+gutter the engineering points sit behind — 20px to 139px at 1920×980 — where left
+closes it. That failure is no longer a matter of judgement: the `projects-panel`
+Check measures the gutter against the composition's own and fails if the window has
+moved *towards* the list. It fires at 0.59px of gutter if the width branch and the
+reach are ever given different ideas of how wide the page is.
+
+What it costs is that the Frame stops being flush with the composition's right
+edge on a height-capped window: at 1920×980 the window ends 119px past the right
+edge of the copy paragraph above it. That was chosen over letting the slab go
+asymmetric, and over leaving the stone short.
+
+### The heights this was got wrong at
+
+The first version of this called the height-capped case an ultrawide's problem and
+asserted the corner only on the width branch. It is not an ultrawide's problem. **A
+viewport 900, 1080 or 1440 tall is a screen, not a window** — a maximised browser
+gives up about 100px of it to its own chrome — and at the heights a browser
+actually has, the height branch binds nearly everywhere:
+
+| viewport | branch | stone was short by |
+| --- | --- | --- |
+| 1920×980 | height | 119px |
+| 1920×955 | height | 165px |
+| 1536×760 | height | 136px |
+| 2560×1300 | height | 162px |
+| 1440×790 | width | −14px (overshoot: the scrollbar) |
+
+Twelve Checks passed while the marble was clipped on the author's own screen, for
+two compounding reasons: the suite measured at 1440×900 only, where the width
+branch binds, and it ran with `--hide-scrollbars`, where `100vw` and the client
+width are equal. Both are closed — `MAXIMISED` is a Check viewport now and
+`run.mjs` keeps the gutter — and the lesson is the one worth carrying: **measure
+the band at heights a browser actually has, with the scrollbar a reader actually
+gets.**
 
 ### And its foot is on the page's bottom edge: the fall
 
@@ -854,14 +915,10 @@ the screen less **one** margin. Subtracting the second one was what left the sto
 115px short at 1600×900 — the branch that bound was solving for a bottom margin
 that no longer exists.
 
-**On an ultrawide the stone stops with the drawing**, and that is the honest
-answer rather than a missed case. At 3440×1440 the height branch wins, the
-composition is genuinely narrower than the page has room for, and it starts at the
-page's left margin because that is where the word stands; a slab dragged out to the
-edge on its own would be a slab that had come off its drawing. 2560×1440 is still
-on the width branch. The `projects-panel` Check asks for the corner across only
-where the width branch bound, reports the shortfall either way, and asks for it
-down unconditionally — the fall lands the foot on both branches.
+The `projects-panel` Check asks for the corner on **both** axes and **both**
+branches, at 1440×900 where the width binds and at 1920×980 where the height does,
+and reports which branch each window took — a run that named the same branch twice
+would mean one of the two routes to the corner had stopped being exercised.
 
 ### The reflection is a clone, and it is life-size
 

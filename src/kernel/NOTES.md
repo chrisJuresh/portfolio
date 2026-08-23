@@ -65,6 +65,22 @@ at ordinary window sizes, because the branch that bound was solving for a bottom
 margin that no longer exists. `src/sections/projects-panel/NOTES.md` has the other
 half, which is the Panel's own.
 
+**The page across is `--page-across`, which `ground.css` owns, and not `100vw`.**
+`vw` counts a classic scrollbar's gutter and the boxes the page is laid out in do
+not — half a gutter at each end for anything centred, which nothing notices, and
+the whole ballgame for anything solved to LAND on an edge. It is a registered
+`<length>` fed by `100cqw` off the root, declared on the **body**, and every one of
+those three words is load-bearing: that file says why. A Section that needs to
+reach the page's own edge reads it; one that only needs to bleed past it can go on
+using `vw`.
+
+**Where the height branch wins, the Kernel cannot finish the job and says so.** The
+composition is then capped short and the Panel's stage carries the window and its
+stone out to the edge — the reach, in the Panel's landing block, written as this
+solve's residue so it is exactly 0 on the other branch. That is the one place the
+landing measure and a Section share a responsibility rather than a number, and it
+is why the equation above is worth reading before touching either.
+
 **This is the "short list of names shared where two Sections must agree" that
 CONTEXT.md allows**, and it should stay short. A third Section wanting to join it
 is a decision, not a convenience.

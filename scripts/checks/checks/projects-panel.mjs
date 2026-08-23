@@ -36,6 +36,26 @@ import { DESK, open, settle, withoutOrigin } from '../lib/page.mjs';
  *  so this Check cannot drift away from the window the others measure at. */
 const SHORT = { width: DESK.width, height: 450 };
 
+/** A MAXIMISED BROWSER, which is the window DESK is not.
+ *
+ *  The composition is fitted to the smaller of what the page has across and what
+ *  its height will carry, so which of the two branches binds is a property of the
+ *  window — and at DESK it is the width. Every window whose HEIGHT binds was
+ *  therefore unmeasured, and that is not an exotic corner: a viewport 900, 1080 or
+ *  1440 tall is a SCREEN, and a maximised browser gives up about 100px of it to
+ *  its own chrome. 1920x980 is the ordinary case, and there the height branch
+ *  binds by 194px.
+ *
+ *  It cost a shipped bug. The Plinth is solved to stand in the page's bottom-right
+ *  corner, the width branch is what puts it there, and on this window it cannot —
+ *  the drawing is capped short, and the stage's reach is what carries the stone
+ *  out to the edge instead. Measured only at DESK, that whole mechanism could be
+ *  missing and the suite would pass: the marble stopped 119px short on the
+ *  author's own screen while twelve Checks said the corner was exact.
+ *
+ *  Inside the landing band, deliberately — the reach only exists there. */
+const MAXIMISED = { width: 1920, height: 980 };
+
 /** A share of the Frame's width, and it is TIGHT ON PURPOSE. 0.0003 is 0.28px at
  *  DESK, which is fifteen times the largest disagreement the chrome actually
  *  shows (2e-5 of the Frame) and three times the worst case of Chromium's own
@@ -76,12 +96,18 @@ const DROP_TOLERANCE = 0.5;
  *  down at DESK, and the smallest gap a reader could see is a whole one. */
 const CORNER_SLACK = 0.5;
 
-/** And how far it may run past, which is a different question with a different
- *  answer. The width branch reads `100vw`, which includes a classic scrollbar
- *  where the box the drawing was laid out in does not — so on a platform that
- *  reserves that gutter the far end lands about 15px over, clipped by the
- *  Section and invisible. Anything past that is not a scrollbar. */
-const CORNER_OVERRUN = 20;
+/** And how far it may run PAST the page, which was a different question with a
+ *  different answer and is no longer. It used to allow 20px, because the width
+ *  branch read `100vw` and a classic scrollbar put the far end about 15px over —
+ *  clipped by the Section, so invisible in a screenshot and shipped.
+ *
+ *  That slack was the bug's hiding place twice over: it let the overshoot through,
+ *  and the suite ran with `--hide-scrollbars` so the overshoot never appeared
+ *  anyway. Both are closed — run.mjs keeps the gutter now and the branch reads
+ *  --page-across — so this goes back to being the same question as falling short,
+ *  and gets the same answer. A slab 15px past the edge is a slab whose corner the
+ *  reader cannot see. */
+const CORNER_OVERRUN = CORNER_SLACK;
 
 /** Every control, by the pair of Tokens that places it: where its centre is and
  *  how wide its ink is. This list IS the render's table — the CSS computes each
@@ -220,6 +246,10 @@ async function readPage(page) {
       const inset = spend('var(--landing-inset)');
       const landingW = spend('var(--landing-w)');
       const stone = spend('calc(var(--landing-plinth-share) * var(--landing-w))');
+      const pageAcross = spend('var(--page-across)');
+      // The engineering points, for the one thing asked about them: that the
+      // window has not come to stand on top of them.
+      const points = document.querySelector('.projects-panel__points');
 
       // ---- the Plinth, the reflection and the recording --------------------
       /** A Plinth Token off the Frame. Custom properties inherit, so the four
@@ -321,21 +351,29 @@ async function readPage(page) {
           // the black sliver this exists to catch.
           cornerX: pl.right - section.getBoundingClientRect().right,
           cornerY: pl.bottom - section.getBoundingClientRect().bottom,
-          // WHICH BRANCH OF THE SOLVE BOUND, because only one of them can put
-          // the stone on the page's right edge. Where the composition's width is
-          // capped by its HEIGHT the drawing is narrower than the page has room
-          // for, it starts at the page's left margin because that is where the
-          // word stands, and the marble ends with it — an ultrawide, and the one
-          // window in the band where the corner is not a promise. The vertical
-          // half holds either way.
+          // WHICH BRANCH OF THE SOLVE BOUND. It gates nothing — the corner is
+          // asked about on both — and it is read so the note can SAY which one,
+          // because the two get there by different routes: on the width branch the
+          // solve puts the stone on the edge and the stage's reach is 0, and on the
+          // height branch the drawing is capped short and the reach is what carries
+          // it out. A run that reported the same branch at every window would mean
+          // one of those routes had stopped being exercised.
           //
-          // The width branch is mirrored here rather than spent as a probe, and
-          // that is the lesser of two evils: a probe would restate the expression
-          // and a restated expression that drifts turns the assertion OFF without
-          // saying so. This way the shortfall is reported either way, and only
-          // whether it is a failure or a note depends on the mirror.
-          widthBound: (window.innerWidth - inset) / (1 + stone / landingW) <= landingW + 1,
-          shortfall: window.innerWidth - (inset + landingW + stone),
+          // Against --page-across and not `innerWidth`, which is the whole point
+          // of that length: `innerWidth` counts a classic scrollbar and the boxes
+          // do not, so the two disagree by 15px on exactly the platforms where
+          // this used to be wrong.
+          widthBound: (pageAcross - inset) / (1 + stone / landingW) <= landingW + 1,
+          // ---- and the gutter the list sits behind -------------------------
+          // THE FRAME IS ALLOWED TO OCCLUDE THE SUBHEADING AND NOT THE LIST, and
+          // until now nothing asked. Both files say it in as many words — it is
+          // why the window is never pulled left to make room for the stone — and
+          // it is exactly the invariant the stage's reach could break, because a
+          // reach that came out NEGATIVE would walk the window into the points
+          // instead of away from them. Measured against the composition's own
+          // gutter, which is where the Frame's left edge starts out.
+          gutter: frame.getBoundingClientRect().left - points.getBoundingClientRect().right,
+          gutterToken: spend('var(--projects-panel-gutter)'),
           plate: plinthStyle.backgroundImage,
           sized: plinthStyle.backgroundSize,
           covered: behind ? frame.contains(behind) : null,
@@ -709,17 +747,20 @@ function stands(read) {
   // there is no landing, the Section is a scrolling stack, and "the corner of the
   // page" is not a place.
   //
-  // ACROSS IS ASKED ONLY WHERE THE WIDTH BRANCH BOUND. On an ultrawide the height
-  // branch wins, the drawing is narrower than the page has room for, and the
-  // marble ends with the drawing rather than at the edge — documented in
-  // src/kernel/landing.css and not a fault. DOWN is asked either way: the fall
-  // puts the foot on the page's bottom edge on both branches.
+  // BOTH AXES, ON BOTH BRANCHES, and the second half of that sentence is the one
+  // worth keeping. This Check used to ask about `across` only where the width
+  // branch bound, on the belief that a height-capped drawing was an ultrawide's
+  // problem. It is not: a maximised browser gives up about 100px of its screen to
+  // its own chrome, so 1920x980 is the ordinary window and the height branch binds
+  // there by 194px. The reach in the Section's landing block is what carries the
+  // stage out to the edge on that branch, and asking about it only on the other
+  // one is how a Check comes to certify the case that works.
   if (read.landing) {
-    for (const [axis, measured, off, asked] of [
-      ['across', read.plinth.cornerX, "short of the page's right edge", read.plinth.widthBound],
-      ['down', read.plinth.cornerY, "above the page's foot", true],
+    for (const [axis, measured, off] of [
+      ['across', read.plinth.cornerX, "short of the page's right edge"],
+      ['down', read.plinth.cornerY, "above the page's foot"],
     ]) {
-      if (asked && measured < -CORNER_SLACK) {
+      if (measured < -CORNER_SLACK) {
         failures.push(
           `at ${where} the slab stops ${Math.abs(measured).toFixed(2)}px ${off} — inside the landing band it ` +
             `sits square in the corner, and ${axis} it does not`,
@@ -727,10 +768,26 @@ function stands(read) {
       }
       if (measured > CORNER_OVERRUN) {
         failures.push(
-          `at ${where} the slab runs ${measured.toFixed(2)}px past the page ${axis} — a few pixels are the ` +
-            'scrollbar 100vw does not know about, but this is the drawing having come off its own solve',
+          `at ${where} the slab runs ${measured.toFixed(2)}px past the page ${axis} — the corner is meant to ` +
+            'land ON the edge, and a slab past it is one whose corner the reader cannot see',
         );
       }
+    }
+
+    // AND THE WINDOW HAS NOT WALKED INTO THE LIST. The Frame's left edge starts
+    // one gutter clear of the engineering points, and the stage's reach is the
+    // only thing that moves it: out to the page's edge where the drawing was
+    // capped short, which opens the gutter, and never the other way. A reach that
+    // came out negative would close it instead — which is what a width branch and
+    // a reach disagreeing about how wide the page is would do, silently, while the
+    // corner above still landed. Both files call eating the list the one thing the
+    // Frame may not do; this is the sentence that holds them to it.
+    if (read.plinth.gutter < read.plinth.gutterToken - LENGTH_TOLERANCE) {
+      failures.push(
+        `at ${where} the Frame stands ${read.plinth.gutter.toFixed(2)}px from the engineering points and the ` +
+          `composition's own gutter is ${read.plinth.gutterToken.toFixed(2)}px — the window has moved TOWARDS ` +
+          'the list. It is allowed to occlude the subheading, which is set to be occluded, and never this',
+      );
     }
   }
 
@@ -1280,6 +1337,7 @@ export const check = {
 
     for (const [viewport, expectShed] of [
       [DESK, false],
+      [MAXIMISED, false],
       [SHORT, true],
     ]) {
       const { context, page } = await open(browser, origin, { viewport });

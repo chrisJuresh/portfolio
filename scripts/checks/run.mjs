@@ -133,9 +133,20 @@ const served = await serve(dist);
 // download, and the whole suite fails with something that reads like a broken
 // Check. Naming the one command is the difference between a diagnosis and a
 // paste.
+// AND IT KEEPS ITS SCROLLBARS, which is not a detail. Playwright passes
+// `--hide-scrollbars` in headless by default, and a page with no scrollbar has no
+// gutter — so `100vw` and the client width are equal, every full-bleed box lands
+// exactly where the arithmetic says, and the whole suite measures a window nobody
+// has. It cost a shipped bug: the Plinth is solved to end on the page's right edge
+// and, read off `100vw`, ended 15px past it on every real browser. Twelve Checks
+// passed and the marble was clipped on the author's own screen.
+//
+// Undoing the flag is what makes the default window a REAL one. It moves every
+// horizontal measurement in the suite by the gutter, which is the point: those
+// are the numbers the reader gets.
 let browser;
 try {
-  browser = await chromium.launch();
+  browser = await chromium.launch({ ignoreDefaultArgs: ['--hide-scrollbars'] });
 } catch (error) {
   await served.close();
   console.error(`checks: Chromium will not start.\n\n  ${String(error?.message ?? error).split('\n')[0]}\n`);

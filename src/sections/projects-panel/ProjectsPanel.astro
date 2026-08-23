@@ -964,11 +964,19 @@ const selected = (project: { href?: string }) => project.href === `#${here}`;
      whole drawing is the move that costs the gutter nothing, because the gutter
      narrows with it.
 
+     THE STAGE DOES MOVE RIGHT, THOUGH, and the two are not the same thing. Where
+     the composition's HEIGHT caps its width the drawing is narrower than the page
+     and this solve cannot reach the edge, so the stage carries the window and the
+     stone out together — the reach, in the landing block, which is 0 whenever the
+     width branch is the one that bound and can never be negative. Right is the
+     safe direction: it moves away from the list rather than into it.
+
      `overflow-x: clip` on the Section stays, and still matters: outside the
-     landing band nothing solves for the stone, and a classic scrollbar makes
-     `100vw` about 15px wider than the box the drawing was laid out in — so the
-     far end can still land a few pixels past the edge, which is what the render
-     itself does with its own slab. */
+     landing band nothing solves for the stone, so there the slab still runs off
+     the edge as it always did — which is what the render does with its own slab.
+     Inside the band the length is --page-across and NOT `100vw`, which is what
+     stopped the far end landing 15px past the edge on every window with a classic
+     scrollbar. ground.css owns that distinction. */
   .projects-panel__plinth {
     position: relative;
     /* Under the Frame, which carries `z-index: 1`. The marble behind the contact
@@ -1442,6 +1450,52 @@ const selected = (project: { href?: string }) => project.href === `#${here}`;
 
     .projects-panel__stage {
       margin-top: calc(var(--projects-panel-frame-drop) + var(--projects-panel-fall));
+
+      /* ---- AND ACROSS, THE REACH -------------------------------------------
+         WHAT THE DRAWING CANNOT DO BY BEING WIDER, THE WINDOW AND ITS STONE DO BY
+         MOVING. The width branch solves the composition so the slab's far end is
+         the page's right edge, and on a window where the HEIGHT binds instead it
+         cannot: the drawing is capped by what its height will carry, so it is
+         narrower than the page and the stone ends with it. That is not an
+         ultrawide — a maximised browser on a 1080p screen is about 980px of
+         viewport once its chrome is out, and the stone came up 119px short there.
+         So the stage carries the Frame and the slab out to the edge together.
+
+         ZERO WHEN THE WIDTH BRANCH BINDS, and that is the whole reason this is
+         safe rather than a second thing to keep in step. The branch solves
+         `inset + (1 + stone) x W = --page-across`, so this expression IS that
+         equation's residue: it is exactly 0 there, by construction and not by
+         tuning, and it only opens up by however much the height cap cost the
+         drawing. It also cannot go negative — W is the SMALLER of the two
+         branches, so `(1 + stone) x W` can only be less than the page across.
+
+         WHICH IS WHY IT MOVES RIGHT AND NOT LEFT. A leftward nudge is the thing
+         NOTES.md forbids: it walks the Frame into the gutter the engineering
+         points sit behind, 42px of live text at 1600x1000 when it was tried by
+         moving the window, and quietly at every width when tried on the stage.
+         This one moves AWAY from the list — the gutter at 1920x980 goes from 20px
+         to 139px — and the Frame's right edge still stops one overhang short of
+         the page, because that overhang is what lands on it.
+
+         WHAT IT COSTS, stated because it is a real cost and was chosen over two
+         alternatives: the Frame stops being flush with the composition's right
+         edge, so on a height-capped window the window ends past the right edge of
+         the copy paragraph above it — 119px at 1920x980. The slab stays symmetric
+         about the window, which is what buys that: the two ends are one number,
+         the reflection and the contact shadow are one percentage of the slab, and
+         the render's camera is still centred on the stone it drew.
+
+         A RELATIVE OFFSET AND NOT A TRANSFORM. `transform` would make the stage a
+         stacking context, which traps the Frame's z-index inside it and stops the
+         window painting over the type it occludes — the `projects-panel` Check
+         asserts all five of the properties that would do it. `left` on a box that
+         is already `position: relative` moves the paint and leaves the layout
+         alone, so the slab's percentages, the stage's measured height and the
+         fall above it are all untouched. */
+      left: calc(
+        var(--page-across) - var(--landing-inset) -
+          (1 + var(--landing-plinth-share)) * var(--projects-panel-w)
+      );
     }
 
     /* WHY THE MASTHEAD STAYS IN THE MARKUP AND ONLY GOES INVISIBLE. Its box is

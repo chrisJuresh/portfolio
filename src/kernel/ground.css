@@ -12,6 +12,41 @@
   initial-value: 0;
 }
 
+/* THE PAGE ACROSS, WITHOUT THE SCROLLBAR — the horizontal counterpart of
+   --fold, and the one length `vw` cannot give.
+
+   `100vw` is the viewport INCLUDING a classic scrollbar's gutter, and the boxes
+   the page is laid out in are the client width, which excludes it. For anything
+   centred or bled that costs half a gutter at each end and nothing notices. For
+   anything that has to LAND on the page's right edge it is the whole ballgame:
+   the Projects Panel's Plinth is solved to end exactly there, and read off
+   `100vw` it ended 15px past it on every window with a scrollbar — clipped, so
+   what the reader saw was the block's end cut off flat instead of its corner
+   meeting the page's.
+
+   IT IS REGISTERED, AND THAT IS THE POINT. A custom property is a token
+   sequence, so an unregistered `100cqw` would be substituted and resolved
+   wherever it is USED — against the nearest container of that element, which
+   inside the Frame is the Frame (948px at DESK, not 1425). `syntax: '<length>'`
+   makes it compute where it is DECLARED and inherit as a length, so the unit
+   cannot travel. Both Sections hold inline-size containers; without the
+   registration this would be a trap rather than a measure.
+
+   AND IT IS DECLARED ON THE BODY, NOT THE ROOT, because an element is not its
+   own container: `100cqw` at `:root` has no ancestor container to resolve
+   against and falls back to the viewport — 1440 again, silently. One level down
+   it resolves against the root and reads 1425.
+
+   The fallback is what the page had before, so a browser without container
+   queries gets the old overshoot rather than a collapsed drawing: with
+   `syntax: '<length>'` an unsupported `100cqw` would compute to the initial
+   value, and a zero page across is not a smaller drawing, it is no drawing. */
+@property --page-across {
+  syntax: '<length>';
+  inherits: true;
+  initial-value: 0px;
+}
+
 :root {
   /* the theme's two endpoints */
   --paper: #fff;
@@ -54,7 +89,9 @@
    that reaches those edges from inside a centred column is `vw`, which counts a
    vertical scrollbar the layout does not get. So a full-bleed box overshoots by
    half a scrollbar at each end, and without this the page grows a horizontal
-   scrollbar it has nothing to show in.
+   scrollbar it has nothing to show in. **A box that has to land ON an edge
+   rather than past it reads --page-across instead**, which is that same
+   difference measured rather than tolerated.
 
    `clip` and not `hidden`: `hidden` would make the document a scroll container
    on the axis it is applied to, and a stray focus inside a clipped box can then
@@ -86,6 +123,29 @@ body {
   position: relative;
   font-family: var(--face-body);
   background: transparent;
+
+  /* The page across, on the body because the root cannot resolve the container
+     query it is the container for. This is the fallback — what the page did
+     before, gutter and all — and the @supports below is the measure. Declared in
+     THIS rule rather than one of its own because check-source.mjs reads the first
+     `body` block in this file to pin `position: relative`, and a second one above
+     it is a rule that shadows nothing and fails the build. */
+  --page-across: 100vw;
+}
+
+/* @supports RATHER THAN BARE, so a browser with no container queries gets the
+   fallback above instead of no drawing at all: with `syntax: '<length>'` an
+   unsupported `100cqw` computes to the registered initial value, and a page
+   across of 0 is not a smaller composition, it is nothing. The gate names the
+   property the query length comes from, so the two cannot come apart. */
+@supports (container-type: inline-size) {
+  html {
+    container-type: inline-size;
+  }
+
+  body {
+    --page-across: 100cqw;
+  }
 }
 
 /* A reader who has asked for less motion gets the Turn as a state rather than a

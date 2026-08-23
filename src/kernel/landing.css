@@ -32,7 +32,13 @@
    1100 x 700 there is no landing, no page turn, and the two words stand apart. */
 
 @media (min-width: 1100px) and (min-height: 700px) {
-  :root {
+  /* ON THE BODY AND NOT THE ROOT, which is not a preference. The width branch
+     reads --page-across, and that is declared on the body — an element is not its
+     own container, so the root cannot resolve the container query it is the
+     container FOR. Everything that reads these is a Section, and every Section is
+     inside the body, so nothing loses sight of them. ground.css has the whole of
+     why the measure cannot be `100vw`. */
+  body {
     /* The Panel composition's width, re-solved for the landing. Two terms move
        against the Panel's own base solve: the Rail leaves the grid to stand in
        the page's margin, so the width branch is the page's own margin ONCE rather
@@ -45,10 +51,15 @@
        the composition PLUS that overhang — which is why the margin appears once
        and the answer is divided by one plus the stone's share rather than the
        page across being handed to the composition alone. Solve
-       `inset + W + stone x W = 100vw` for W and this is it, and what it buys is
-       the marble's right end landing ON the page's right edge instead of running
-       off it. The overhang is a share of the composition, so the stone scales
-       with the drawing and the equation holds at every width.
+       `inset + W + stone x W = --page-across` for W and this is it, and what it
+       buys is the marble's right end landing ON the page's right edge instead of
+       running off it. The overhang is a share of the composition, so the stone
+       scales with the drawing and the equation holds at every width.
+
+       --page-across AND NOT `100vw`, and that is the difference between landing
+       on the edge and 15px past it on every window with a classic scrollbar:
+       `100vw` counts the gutter and the box this is laid out in does not.
+       ground.css owns that length and says why it cannot be a viewport unit.
 
        THE HEIGHT BRANCH SPENDS THE MARGIN ONCE FOR THE SAME REASON. The drawing
        runs from the page's top margin to the page's bottom EDGE — the Plinth
@@ -59,15 +70,23 @@
        short of the corner at 1600x900: the branch that bound was solving for a
        bottom margin that no longer exists.
 
-       WHERE THE HEIGHT BRANCH STILL WINS THE STONE STOPS SHORT, and that is the
-       honest answer rather than a missed case. Inside the band it takes an
-       ultrawide to get there — 3440x1440 does, 2560x1440 does not — and there the
-       composition is genuinely narrower than the page has room for: it starts at
-       the page's left margin because that is where the word stands, and a slab
-       dragged out to the right edge on its own would be a slab that had come off
-       its drawing. */
+       WHERE THE HEIGHT BRANCH WINS, THIS BRANCH CANNOT REACH THE EDGE AND THE
+       PANEL FINISHES THE JOB. The composition is then capped by what its height
+       will carry, so it is narrower than the page has room for and it starts at
+       the page's left margin because that is where the word stands. The Panel's
+       stage carries the Frame and the slab out to the edge together — see the
+       reach in ProjectsPanel.astro's landing block, which is exactly this
+       equation's residue and therefore exactly 0 whenever the branch above is the
+       one that bound.
+
+       THAT IS THE COMMON CASE AND NOT AN EDGE ONE, which is worth writing down
+       because it was got wrong once by measuring at the wrong heights. A viewport
+       whose height is a whole screen — 900, 1080, 1440 — is not a window anybody
+       has: a maximised browser gives up about 100px of it to its own chrome, and
+       at 1920x980 the height branch binds by 194px. Measure the band at heights a
+       browser actually has. */
     --landing-w: min(
-      calc((100vw - var(--landing-inset)) / (1 + var(--landing-plinth-share))),
+      calc((var(--page-across) - var(--landing-inset)) / (1 + var(--landing-plinth-share))),
       calc((var(--fold) - var(--landing-inset) - var(--landing-name-lead)) / var(--landing-fit))
     );
     --landing-mast-size: calc(var(--landing-mast-share) * var(--landing-w));
