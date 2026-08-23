@@ -617,6 +617,16 @@ const selected = (project: { href?: string }) => project.href === `#${here}`;
        against the height, or the corner is an ellipse. NOTES.md. */
     border-radius: calc(var(--projects-panel-frame-corner) * 100%) /
       calc(var(--projects-panel-frame-corner) * var(--projects-panel-frame-ratio) * 100%);
+    /* THE WINDOW'S CORNER IS DECLARED HERE, ON THE WINDOW, and every box cut to
+       it says `inherit` — the titlebar, the rim, the content box. It was on the
+       titlebar alone, so the strip drew a squircle while the rim and the crop
+       drew `border-radius`'s own arc at the same radius: two corners on the same
+       pixel, the round one reading as a slightly tighter corner laid over the
+       other. lens.ts writes --lens-shape as the LOGARITHM of the exponent Token
+       and writes it HERE for the same reason; the default of 1 is the circular
+       corner, so an engine without corner-shape and a page whose script never
+       ran agree. NOTES.md. */
+    corner-shape: superellipse(var(--lens-shape, 1));
     /* A ring and not a `border`: a border would put the window's edge inside
        the titlebar. NOTES.md. */
     box-shadow: inset 0 0 0 1px var(--projects-panel-frame-edge);
@@ -650,12 +660,12 @@ const selected = (project: { href?: string }) => project.href === `#${here}`;
     /* Above the recording: the Lens is a lens, and a lens is in front of what it
        bends. The recording is a sibling, so source order alone would not do it. */
     z-index: 1;
-    /* The window's own top corners, and the only two the Frame has. The shape is
-       written by lens.ts as the LOGARITHM of the exponent Token, and the default
-       here is 1 — the circular corner border-radius draws anyway, so an engine
-       without corner-shape and a page whose script never ran agree. */
+    /* The window's own top corners, and the only two the Frame has. The RADIUS is
+       restated because the two bottom corners are square and the window's are
+       not; the SHAPE is inherited, because a corner the window and its titlebar
+       state separately is a corner they can disagree about — and did. */
     border-radius: var(--projects-panel-frame-radius) var(--projects-panel-frame-radius) 0 0;
-    corner-shape: superellipse(var(--lens-shape, 1));
+    corner-shape: inherit;
     /* A stacking context of its own, so the two rings sit over the strip's own
        backdrop rather than over whatever the Frame has behind it. */
     isolation: isolate;
@@ -917,6 +927,10 @@ const selected = (project: { href?: string }) => project.href === `#${here}`;
     position: absolute;
     inset: var(--projects-panel-frame-band);
     border-radius: inherit;
+    /* AND THE SHAPE WITH IT. `border-radius` alone left the crop cutting the
+       recording on a circular arc under a titlebar drawn as a squircle, which is
+       the same disagreement the rim had. NOTES.md. */
+    corner-shape: inherit;
     /* The crop below has to happen somewhere, and the corners with it. */
     overflow: hidden;
   }

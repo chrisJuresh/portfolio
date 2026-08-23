@@ -448,7 +448,7 @@ type Pane = {
   draw(): 'refracting' | 'frosted';
 };
 
-function mountPane(bar: HTMLElement, frame: Element, refracting: boolean): Pane {
+function mountPane(bar: HTMLElement, frame: HTMLElement, refracting: boolean): Pane {
   const base = `projects-panel-lens-${++seq}`;
   let filter: SVGFilterElement | null = null;
   let version = 0;
@@ -487,8 +487,14 @@ function mountPane(bar: HTMLElement, frame: Element, refracting: boolean): Pane 
        shipped 4 would paint an exponent of 16 — a corner with almost no curve
        left in it — while the map went on refracting the arc it was asked for.
        The stylesheet's own default is 1, so an engine with no `corner-shape`
-       draws the circular corner `border-radius` gives it anyway. */
-    bar.style.setProperty('--lens-shape', String(round(Math.log2(clamp(s.roundness, 2, 7)), 3)));
+       draws the circular corner `border-radius` gives it anyway.
+
+       ON THE FRAME AND NOT ON THE PANE, which is the whole of the fix for the
+       double corner: the window's rim and the crop over the recording are cut to
+       the window's shape by `inherit`, and a property written on the strip never
+       reaches either of them. So the strip drew the squircle and its two
+       neighbours drew the arc at the same radius, one corner over the other. */
+    frame.style.setProperty('--lens-shape', String(round(Math.log2(clamp(s.roundness, 2, 7)), 3)));
 
     if (width < 2 || height < 2) return 'frosted';
 
@@ -572,7 +578,7 @@ export function mountLens(): void {
   if (bars.length === 0) return;
 
   const panes = bars.map((bar) => {
-    const frame = bar.closest('.projects-panel__frame') ?? bar.parentElement;
+    const frame = bar.closest<HTMLElement>('.projects-panel__frame') ?? bar.parentElement;
     if (!frame) return null;
     /* The clone in the marble is a pane and a half a pixel of bevel. See the
        header: it gets the rings and the tint and nothing that costs a canvas. */

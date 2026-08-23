@@ -551,7 +551,9 @@ the same flat fill — the Lens had nothing to bend. So `border-radius: inherit`
 rather than the old `corner − inset` subtraction: the box is coincident with the
 window, its corner is the window's, and the window's is the two-value form that
 keeps the curve from being an ellipse on a box of this aspect. Restating it here
-in one value draws a circle.
+in one value draws a circle. **And `corner-shape: inherit` beside it**, or the
+crop cuts the recording on an arc under a titlebar drawn as a squircle — the
+Lens's bullets below say what that looked like.
 
 **The white margin is still there, and it is `record`'s to remove.** Trimming the
 encoded frame leaves the app's layout untouched, so the camera sees strictly
@@ -622,7 +624,7 @@ declaring the strip's backdrop filter without the slots and resizing to make
 "driven and read back at 1440x900, with the upper rungs suppressed in the harness
 rather than predicted".
 
-**Three things about it are easy to get wrong and silent when you do.**
+**Four things about it are easy to get wrong and silent when you do.**
 
 - **The glare is a function of the surface NORMAL, not of the direction from the
   centre**, and those are the same thing only on a square. The strip is 36px tall
@@ -639,6 +641,17 @@ rather than predicted".
   exponent of 16, a corner with almost no curve left, while the map goes on
   refracting the arc it was asked for. The stylesheet's own default is 1, so an
   engine with no `corner-shape` and a page whose script never ran agree.
+- **The shape is declared on the FRAME, and every box cut to it says `inherit`.**
+  The window's corner is the window's: the titlebar restates the RADIUS, because
+  its two bottom corners are square and the window's are not, but the shape is
+  one declaration in one place. It was on the strip alone, and `--lens-shape` was
+  written there too, so the rim and the crop over the recording — both of which
+  reach for the window's corner with `inherit` — got `round` while the strip got
+  the squircle. Same radius, two curves, **two corners painted on the same pixel
+  at the top left and the top right**, the arc reading as a slightly tighter
+  corner laid over the squircle. It is exactly as visible as it sounds and it
+  survived a commit, because the strip on its own looks right and nothing about
+  a corner is asserted anywhere.
 - **The map's radius is the PAINTED radius, read off the pane.** Upstream owns its
   own blob and lets one setting decide both; here the corner is
   `--projects-panel-frame-corner`, a share of the window, and the window and its
