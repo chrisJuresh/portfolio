@@ -80,7 +80,8 @@ than described. It is one document, served statically from Vercel.
 ├── index.html          # portal at / — hand-written, served verbatim
 ├── vercel.json         # clean URLs, the /projects redirect, the deep links, cache headers
 ├── astro.config.mjs    # the build, and the dev server's stand-in for the deployment
-├── run.bat             # serves the repo root for design/ — NOT the site, that is `pnpm dev`
+├── site.bat            # double-click to see the site — builds, then serves the build
+├── run.bat             # double-click to serve the repo root for design/ — NOT the site
 ├── src/
 │   ├── pages/
 │   │   └── portfolio.astro     # the document
@@ -145,11 +146,27 @@ routes, the four paths served verbatim, and the deep-link rewrites. `pnpm build`
 then `pnpm preview` serves the real `dist/` instead, which is what the Checks
 drive.
 
-`run.bat` is **not** this, though it used to be. It serves the repository root as
-plain files, which since the site became a build answers `/portfolio` with a
-directory listing of the pictures. What it is still for is the one thing `pnpm
-dev` will not serve: the dev-only instruments under `design/`, which are plain
-HTML reaching for `../portfolio/img/` by relative path.
+### Or double-click one of the two `.bat` files
+
+No terminal, and the two of them are not interchangeable:
+
+| file | what it serves | for |
+| --- | --- | --- |
+| `site.bat` | builds the tree, then serves that `dist/` | seeing the site |
+| `run.bat` | the repository root as plain files | the instruments under `design/` |
+
+`site.bat` is `pnpm build` and `pnpm preview` with a free port found and the
+browser opened, so it shows the article that deploys and takes about fifteen
+seconds to get there. It builds rather than running `pnpm dev` because `astro
+dev` daemonises — a double-clicked window cannot own that process, so closing
+the window would leave it running. `pnpm dev` is still the one to *work* in.
+
+`run.bat` is **not** the site, though it used to be. Since `/portfolio` became a
+build, serving the root as plain files answers that path with a directory listing
+of the pictures — which is why it opens at `/design/` and says so on the console.
+What it is for is the one thing `pnpm dev` will not serve: the dev-only
+instruments under `design/`, which are plain HTML reaching for
+`../portfolio/img/` by relative path.
 
 ## Editing the site
 

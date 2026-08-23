@@ -10,7 +10,11 @@
  * `cleanUrls`, as the deployment does, so a path that works here works there.
  *
  *   pnpm preview            — port 4321
- *   pnpm preview -- 4400    — or wherever
+ *   pnpm preview 4400       — or wherever
+ *
+ * No `--` before the port. pnpm 11 forwards it through as a literal argument,
+ * so argv[2] is "--", the port is NaN and node throws ERR_SOCKET_BAD_PORT
+ * before anything is served. `PORT=4400 pnpm preview` works too.
  */
 
 import { createReadStream, statSync } from 'node:fs';
