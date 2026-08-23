@@ -96,16 +96,16 @@ second hangs below it — into row two, whose top edge is therefore the second
 line's top edge, at every window width and whatever set row one's height. That
 one trick is what makes the Frame's occlusion exact rather than lucky: the Frame
 takes a positive drop from that same edge and lands a fixed fraction of the way
-down the letters.
+down the letters. Nothing in the arithmetic goes through the head's total height,
+the copy's height, or the row's — and the Check asserts the drop against that
+edge and against nothing else.
 
 Inside the landing band the second line takes the **fall** as a top margin and
 the negative bottom margin grows by the same length, so the margin box the row
 still places is where it was — which is what keeps the masthead in the slot the
 Cut Title stands in, and nothing may move that. The drop between the line and the
 Frame is untouched, because both moved by the same length. See *And its foot is on
-the page's bottom edge* under the Plinth. Nothing in the arithmetic goes through the head's total height,
-the copy's height, or the row's — and the Check asserts the drop against that
-edge and against nothing else.
+the page's bottom edge* under the Plinth.
 
 Row one is `--projects-panel-mast-line` plus one subheading line and **not the
 taller of its two occupants**. It used to be `auto` on the live page, and the
