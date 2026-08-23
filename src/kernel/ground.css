@@ -18,8 +18,13 @@
   --paper-ink: #1a1917;
   --paper-ink-soft: #46433d;
 
-  /* where the Turn arrives, in both themes */
-  --dark: #0e0d0c;
+  /* Where the Turn arrives, in both themes. PURE BLACK, and that is a decision
+     rather than a rounding: the Projects Panel paints no ground of its own on
+     the page-turn layout, so this token IS that Section's background, and it is
+     also the far end --projects-panel-bg-far already held. The two agreeing is
+     what keeps one crossing one colour — ProjectsPanel.astro says what it cost
+     when they did not. */
+  --dark: #000000;
   --dark-ink: #eaeaea;
   --dark-ink-soft: #b8b8b8;
 

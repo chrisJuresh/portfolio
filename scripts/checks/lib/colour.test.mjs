@@ -15,7 +15,10 @@ test('luminance puts the two papers where the eye does', () => {
   assert.equal(luminance([255, 255, 255]), 1);
   assert.equal(luminance([0, 0, 0]), 0);
   assert.ok(luminance([19, 18, 17]) < 0.02, 'dark paper #131211 is near black');
-  assert.ok(luminance([14, 13, 12]) < 0.02, 'the Turn arrives at #0e0d0c, near black');
+  // The Turn arrives at #000000, which the exact zero above already pins. This
+  // is the near miss either side of it: a ground a shade off black still has to
+  // read as dark, so the band is not secretly an equality.
+  assert.ok(luminance([14, 13, 12]) < 0.02, '#0e0d0c, a shade off the arrival, is still dark');
 });
 
 test('luminance is the sRGB-linearised one, not the channel mean', () => {
