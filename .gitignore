@@ -43,7 +43,13 @@ scripts/checks/lib/denylist.local.txt
 # for rather than replayed here, and docs/agents/external-capture.md says why —
 # but the rule stays for a while: a tree that ran it before pulling this has a
 # directory of run output in it, and an ignore that outlives its writer costs
-# nothing while an accidentally committed 300 MB of PNGs costs a rewrite.
+# nothing while an accidentally committed vendored copy of another repo's script
+# costs a rewrite.
+#
+# DELETE THIS RULE once no checkout has the directory. `ls -d
+# design/tools/.capture-contract` across the main checkout and every worktree is
+# the whole test; the main checkout had 20K of it on 2026-08-23. Nothing writes
+# it any more, so the day it is gone everywhere it is gone for good.
 design/tools/.capture-contract/
 
 # the confirmed photographs baked down to a handful of blocks each, by

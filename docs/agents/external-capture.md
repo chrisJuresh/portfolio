@@ -27,11 +27,11 @@ caused it, on the commit that caused it. ADR 0006 is the decision.
 
 `ground` is narrower than the mean luminance of a whole picture, and knowing which
 way is the point of saying so. It reads the one element every other colour on the
-page is mixed against, which is the failure that turns the profile into a slab —
-and it says nothing about a hardcoded hex on some descendant, or a photograph that
-stopped decoding. Those are visible on screen, and the author is looking at the
-running site; a Check for them would be a Check on how the page looks, which
-`scripts/checks/NOTES.md` forbids.
+page is mixed against, which is the failure that turns the profile into a slab. A
+photograph that stopped arriving is the `assets` Check's, not this one's. What
+neither covers is a colour painted somewhere else entirely — a hardcoded hex on
+some descendant — and that is deliberate rather than a gap: it is visible on
+screen, and the author is looking at the running site.
 
 A change here that breaks the crop therefore breaks it **over there**, loudly, on
 the next capture somebody asks for — and the fix is over there too. The job's
@@ -72,7 +72,14 @@ the Section already has:
 | --- | --- |
 | `.front-screen__col` | the text measure, and the side gutter it is centred in |
 | `.front-screen__slide` and `.front-screen__photos`' gap | the photograph's shape and the air between two |
-| the `.front-screen__listing` headed `Work Experience`, its second `.front-screen__entry` | the crop's bottom edge, one gutter below the second role |
+| the **first** `.front-screen__listing`, and its second `.front-screen__entry` | the crop's bottom edge, one gutter below the second role |
+
+The listing is taken by position and not by its heading. Its heading is
+**Content** — the author can change it in the Editor and publish it (ADR 0004) —
+so a capture that looked for the words `Work Experience` would die on a rename
+nobody made wrongly. Position is markup, so a reorder is a composition change and
+fails loudly instead; the capture reports which heading it actually cropped
+against so a reorder is legible in the run log.
 
 From those it solves a capture width that puts one full photograph, one gap and
 three quarters of the second between the column's left edge and the picture's
@@ -85,9 +92,13 @@ picture rather than to the site:
 - **The Effect Stack is turned off**, by emptying `data-fx` and reading back that
   all nine layers stopped painting. The preview is resampled to a fraction of its
   captured width and sits on GitHub's paper, where a texture meant to be felt at
-  full size reads as compression noise. `?fx=` used to do this and no longer
-  exists; the capture does it itself, which is the right side of the boundary for
-  it to be done on.
+  full size reads as compression noise. `?fx=` used to do this; the flip left
+  nothing in `src/` reading `searchParams`, so the query is inert and the capture
+  does it itself — which is the right side of the boundary for it to be done on
+  either way. (`README.md` still offers `?fx=film paper` to a reader, and
+  `astro.config.mjs` still preserves the query for it. Both are #141's debt and
+  neither is this page's to settle: whether that switch comes back is the
+  author's.)
 - **GitHub's paper and ink are forced over the theme's** — `--paper`,
   `--paper-ink`, `--paper-ink-soft`, and `--turn` pinned to 0. Those three plus the
   Turn are the whole surface: every other colour the page paints is mixed out of
@@ -103,19 +114,29 @@ Measured on `development` at 2026-08-23, at the capture's own 1000px probe heigh
 | `captureWidth` | 592 |
 | all four gutters | 80 (bottom 80.3) |
 | `cropHeight` | 842 |
-| mean luminance, light / dark | 187.7 / 46.4 |
 
-They are here so a drift is legible, not so anything holds them. Only one is
+The first three the capture prints itself. Mean luminance it does not print and
+nothing asserts — the ground Check covers that half now — so if you want the
+number the old contract reported, read it off the two PNGs the capture leaves:
+
+```bash
+python -c "from PIL import Image, ImageStat; import glob; print({p: round(ImageStat.Stat(Image.open(p).convert('L')).mean[0], 1) for p in glob.glob('assets/portfolio-preview-*.png')})"
+```
+
+It was 187.7 / 46.4 on 2026-08-23, against 188.4 / 46.1 for the hand-written page.
+
+The numbers are here so a drift is legible, not so anything holds them. Only one is
 load-bearing and it is load-bearing **in the other repository**: 592 is the
 divisor of the capture's `deviceScaleFactor` (`846 * 3 / 592`), so a change to the
 text measure or the photograph's shape that moved the solved width would resample
-the preview's type. The capture checks its own solution against 592 and fails
-rather than shipping a soft picture. Recompute both together over there.
+the preview's type. The capture requires its own solution to be **exactly** 592
+and fails otherwise: the point of the number is an exact 3:1 source-to-display
+ratio, and a tolerance around it would admit the fractional resampling the check
+exists to prevent. Recompute both together over there.
 
-The flip left every one of them within a point or two of what the hand-written
-page measured — 592, 80, 852, 188.4 / 46.1 — which is a fact about the two
-compositions sharing their proportions and not about anything being preserved on
-purpose.
+That it is still 592, and the gutters still 80, is a fact about the two
+compositions sharing their proportions — the hand-written page measured 592, 80
+and 852 — and not about anything being held still on purpose.
 
 ## Why the runner is Windows
 

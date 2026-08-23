@@ -15,16 +15,22 @@ Prose in the source competes for room with the work.
 ## Consequences
 
 The load-bearing knowledge gets *more* reliable, not less. A comment saying "do
-not break this" is a wish; a Check that fails is a guarantee. The capture
-geometry, the arc a light must stay inside to read as a highlight, "the stone
-stays" — each becomes an assertion.
+not break this" is a wish; a Check that fails is a guarantee. The arc a light
+must stay inside to read as a highlight, "the stone stays" — each becomes an
+assertion.
+
+The capture geometry was the third example here, and #148 settled it the other
+way: it became an assertion in the repository that *depends* on it rather than a
+Check here, because it is that consumer's crop and not this composition's
+invariant. What became a Check here is the half the capture could never see.
 
 Checks **block** a commit rather than reporting. An advisory check inside an agent
 loop is one that gets read and stepped over. The price is that a false positive
 costs the author a prompt, so the suite stays small and asserts only things that
 cannot fire on a legitimate change.
 
-The hourly external capture of the Portfolio is retired. It asserted geometry
+The external capture of the Portfolio comes off its schedule — a five-minute
+poll, described as hourly everywhere until #148 measured it. It asserted geometry
 hard and colour not at all, so a theme regression broke it silently; it now runs
-when the author asks for it, and the check that goes with it asserts the ground's
+when the author asks for it, and the Check that goes with it asserts the ground's
 luminance in both themes so that failure is loud.

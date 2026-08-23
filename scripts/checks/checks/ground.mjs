@@ -8,9 +8,9 @@ import { inBothThemes, settle } from '../lib/page.mjs';
  * WHY THE GROUND AND NOT THE INK. The ground is the one colour every other one on
  * the page is mixed against, it is painted by a single element, and it is what the
  * silent failure looks like: a theme regression that turns the whole document
- * black is invisible to every other Check here and to the build. ADR 0006 retired
- * the hourly external capture partly because it asserted geometry hard and colour
- * not at all, and asked for this in its place.
+ * black is invisible to every other Check here and to the build. ADR 0006 asked
+ * for this Check by name, and #148 is what it replaced —
+ * docs/agents/external-capture.md, which also records what this does NOT cover.
  *
  * WHY A BAND AND NOT AN EQUALITY. The two papers and the Turn's arrival are the
  * author's to choose; a Check pinned to `#ffffff` would fail the moment a warmer
