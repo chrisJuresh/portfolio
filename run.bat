@@ -4,9 +4,10 @@ rem
 rem IT IS NOT HOW YOU RUN THE SITE. /portfolio is an Astro build now, so this
 rem answers that path with a directory listing of the pictures. site.bat beside
 rem this one is the site - it builds the tree and serves the build - and `pnpm
-rem dev` is the one to WORK in, reloading as you edit. `pnpm editor` is how
-rem Content, Tokens and a Bake's parameters get changed. README.md's "Running
-rem locally" and "Editing the site" say which is for what.
+rem dev` is the one to WORK in, reloading as you edit. `pnpm editor` - or
+rem editor.bat, the same thing double-clicked - is how Content, Tokens and a
+rem Bake's parameters get changed. README.md's "Running locally" and "Editing the
+rem site" say which is for what.
 rem
 rem What still needs this: the instruments under design/ - the type lab and the
 rem tuners beside it, and the five the Editor replaced, now in design/legacy/.

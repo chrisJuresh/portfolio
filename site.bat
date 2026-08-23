@@ -8,9 +8,11 @@ rem reloads as you edit. But `astro dev` runs as a background daemon, which a
 rem double-clicked window cannot own or stop, so this file builds and serves
 rem instead - one process, ended by closing the window.
 rem
-rem run.bat is the OTHER server, and it is not this one: the repo root as plain
-rem files, for the dev-only instruments under design/. It cannot serve the site,
-rem because /portfolio is a build and not a folder.
+rem The other two windows beside this one are not this one. editor.bat builds and
+rem serves the same way but puts the Editor over the page, which is how the site's
+rem words and numbers get CHANGED rather than read. run.bat serves the repo root
+rem as plain files, for the dev-only instruments under design/, and cannot serve
+rem the site at all, because /portfolio is a build and not a folder.
 
 setlocal EnableDelayedExpansion
 cd /d "%~dp0"

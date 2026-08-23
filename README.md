@@ -81,6 +81,7 @@ than described. It is one document, served statically from Vercel.
 ├── vercel.json         # clean URLs, the /projects redirect, the deep links, cache headers
 ├── astro.config.mjs    # the build, and the dev server's stand-in for the deployment
 ├── site.bat            # double-click to see the site — builds, then serves the build
+├── editor.bat          # double-click to edit the site — the same build, with the Editor on it
 ├── run.bat             # double-click to serve the repo root for design/ — NOT the site
 ├── src/
 │   ├── pages/
@@ -146,13 +147,14 @@ routes, the four paths served verbatim, and the deep-link rewrites. `pnpm build`
 then `pnpm preview` serves the real `dist/` instead, which is what the Checks
 drive.
 
-### Or double-click one of the two `.bat` files
+### Or double-click one of the three `.bat` files
 
-No terminal, and the two of them are not interchangeable:
+No terminal, and none of the three is interchangeable with another:
 
 | file | what it serves | for |
 | --- | --- | --- |
 | `site.bat` | builds the tree, then serves that `dist/` | seeing the site |
+| `editor.bat` | the same build, with the Editor over it | changing what it says |
 | `run.bat` | the repository root as plain files | the instruments under `design/` |
 
 `site.bat` is `pnpm build` and `pnpm preview` with a free port found and the
@@ -160,6 +162,12 @@ browser opened, so it shows the article that deploys and takes about fifteen
 seconds to get there. It builds rather than running `pnpm dev` because `astro
 dev` daemonises — a double-clicked window cannot own that process, so closing
 the window would leave it running. `pnpm dev` is still the one to *work* in.
+
+`editor.bat` is `pnpm editor` the same way: the same build, on a free port, with
+the Editor over it — so it is **Editing the site** below without a terminal.
+Because the build runs in front of the server it waits for the port to answer
+rather than for a guessed number of seconds, and if the build fails no browser
+opens and the window says so.
 
 `run.bat` is **not** the site, though it used to be. Since `/portfolio` became a
 build, serving the root as plain files answers that path with a directory listing
@@ -181,6 +189,9 @@ It writes Content and Tokens and nothing else, a limit that is a mechanism rathe
 than a promise: the only files it can name are a Section's `content.ts` and
 `tokens.css`, and the only thing it can do to one is replace a single value's
 bytes. `scripts/editor/NOTES.md` is the rest of it.
+
+On Windows, double-clicking **`editor.bat`** is that command with a free port
+found and the browser opened for you.
 
 Everything else — layout, palette, motion — is a Section's own folder, and
 `src/sections/stub/NOTES.md` is the convention every one of them follows.
