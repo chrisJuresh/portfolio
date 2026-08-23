@@ -2,7 +2,8 @@
 
 The small set of things every Section may rely on, and the only thing permitted
 to cross a Section boundary: the faces, the theme and the Turn, the Effect Stack,
-the corner pictures, and the Section loader.
+the corner pictures, the Section loader, and the page turn between the Sections
+along with the landing it arrives at.
 
 It is also the only place in `src/` allowed to write a global selector. A Section
 that wants something global wants it in here, and adding it is a decision rather
@@ -17,12 +18,75 @@ than a convenience.
 | `corners.css` / `corners.ts`| the plate, the car and the eye — geometry, and which rung    |
 | `effect-stack/`             | the nine layers, and the grain tile                          |
 | `theme.ts`                  | which paper, where it is stored, and who is told when it changes |
-| `turn.ts`                   | the Turn, as one named seekable Timeline                     |
+| `turn.ts`                   | the Turn, as one named seekable Timeline, and `onTurn()` for anything drawn against it that CSS cannot draw |
+| `landing.css` / `tokens/landing.css` | the landing band, the measure two Sections share across it, and the two resting places |
+| `page-turn.ts`              | one wheel notch between those resting places, and a link into a Section going the same way |
+| `wheel.ts`                  | who owns a wheel gesture — the page, or a roll inside it     |
 | `loader.ts`                 | mounting a Section as it approaches the viewport             |
 | `motion.ts`                 | `hold()` / `release()` — see below                            |
 | `handles.ts`                | `window.portfolio`, and nothing else a Check may reach for   |
 | `content.ts`                | `defineContent` — how a Section's Content gets typed         |
 | `Kernel.astro`              | the part of the Kernel that stands before the Sections       |
+
+## The landing, and why the measure is the Kernel's
+
+`src/kernel/landing.css` is the far end of the page turn: inside the band the
+Front Screen's Cut Title stands in the Projects Panel masthead's slot, that
+masthead goes invisible underneath it, and the word neither travels nor resizes to
+get there — **the Section comes up to the word.** Each Section's own half is in
+its own component; what is here is the part neither could own.
+
+**Two Sections have to agree about one length.** The word is drawn at the Panel
+masthead's cap, and the Panel's composition is solved for the height the Front
+Screen gives up — and a Section may read only the Kernel. So the width both are
+functions of is solved here, once, and each Section reads the answer:
+`--landing-w`, `--landing-cap`, `--landing-mast-top`, `--landing-top`.
+`tokens/landing.css` holds the four terms it is solved from and names the Section
+each was taken from. Three of them are restated rather than shared, which is what
+the `turn` Check exists for: it compares the Kernel's published cap and drop
+against the Panel's own arithmetic, because a drift there draws the word at a size
+nobody can see is wrong.
+
+**This is the "short list of names shared where two Sections must agree" that
+CONTEXT.md allows**, and it should stay short. A third Section wanting to join it
+is a decision, not a convenience.
+
+**One cycle to not write.** `--landing-w` must never come to depend on anything
+the Cut Title computes. That is why the landing's fit constant substitutes the
+masthead's own drop out of the equation rather than referring to the word.
+
+## The page turn, and who owns a notch
+
+Inside the band the document is **two ports and nothing between** — a zero-height
+box at the top and every Section after the first — so a mandatory snap means the
+scroller must come to rest on one of them.
+
+`page-turn.ts` is why the turn is a script and not the browser's own snap fling:
+that fling owns the scroller for as long as it flies, and a notch the other way
+taken while it is in the air is filtered out, so the turn back cannot be taken
+until it has landed. Here one notch picks the port its direction is heading for
+and eases the window onto it, and a notch the other way retargets the ease
+mid-flight. Three things in that file are easy to get wrong and are written out in
+it: the ports are read off `scroll-snap-align` and never off `scroll-snap-type`,
+which the ease itself switches off; the snapping has to come off for the length of
+the ease, or every intermediate frame is pulled back onto the port it left; and
+the curve carries the speed AND the acceleration already on the page, which is
+what makes a reversal continuous.
+
+**A Check or the Editor that wants the page placed between two ports has to ask
+for the snapping to be lifted** — `window.portfolio.snapping(false)`, and `true`
+to put it back. Without it a scroll sweep reads a document that jumps rather than
+one that crosses, and the `front-screen` Check's crossing sweep found the Turn at
+0 in forty of its forty-one samples.
+
+`wheel.ts` settles which of two claimants a gesture belongs to, because there are
+two: the Front Screen's photograph strip and the page turn. A gesture belongs to
+whatever it began on and keeps it until the wheel stops. It listens in the capture
+phase and it is deliberately **not passive** even though it never prevents
+anything — a passive wheel listener lets Chromium scroll on the compositor and
+deliver the event afterwards, so the target is hit-tested against a page that has
+already moved, and the strip took the first notch of every page scroll begun near
+it.
 
 ## The page's own type size
 

@@ -97,10 +97,16 @@ async function readPage(page) {
     probe.style.position = 'absolute';
     probe.style.paddingTop = 'var(--front-screen-half-leading)';
     probe.style.paddingBottom = 'var(--front-screen-contact-tail)';
+    // ...and the two the landing spends: the slice of the word that hangs below
+    // the fold, and the drop the Panel's masthead needs above its own top edge.
+    probe.style.marginTop = 'var(--front-screen-cut-clip)';
+    probe.style.marginBottom = 'var(--landing-mast-top)';
     section.append(probe);
     const spent = getComputedStyle(probe);
     const halfLeading = parseFloat(spent.paddingTop);
     const tail = parseFloat(spent.paddingBottom);
+    const clip = parseFloat(spent.marginTop);
+    const mastTop = parseFloat(spent.marginBottom);
     probe.remove();
 
     const rect = (element) => {
@@ -135,6 +141,9 @@ async function readPage(page) {
       word: rect(word),
       halfLeading,
       tail,
+      clip,
+      mastTop,
+      show: Number(getComputedStyle(section).getPropertyValue('--front-screen-cut-show')),
       overshoot: Number(getComputedStyle(section).getPropertyValue('--front-screen-cut-overshoot')),
       viewBox: { wide: Number(viewBox[2]), tall: Number(viewBox[3]) },
       drawingHidden: word.getAttribute('aria-hidden') === 'true',
@@ -170,10 +179,17 @@ function composed(read) {
     );
   }
 
-  if (Math.abs(read.section.height - read.viewport.height) > 1) {
+  // ONE SCREEN LESS WHAT THE LANDING TAKES, which is the band's definition now
+  // that there is a Section below to land on: the Front Screen gives up the slice
+  // of the word standing below the fold and the drop the Panel's masthead needs
+  // above it, so the Panel begins above the fold and the word stands in that
+  // masthead's slot. Both terms are read off the page, so this asserts that the
+  // composition spends exactly the budget and not that the budget is any number.
+  if (Math.abs(read.section.height + read.clip + read.mastTop - read.viewport.height) > 1) {
     failures.push(
-      `at ${where} the Front Screen is ${read.section.height.toFixed(1)}px tall — inside the one-screen band ` +
-        'it is exactly one screen',
+      `at ${where} the Front Screen is ${read.section.height.toFixed(1)}px tall and gives ` +
+        `${(read.clip + read.mastTop).toFixed(1)}px to the landing, which is not the ` +
+        `${read.viewport.height}px screen the band composes to`,
     );
   }
   if (read.lastListing.bottom > read.cut.top) {
@@ -183,23 +199,27 @@ function composed(read) {
         'The one-screen budget has overflowed.',
     );
   }
-  // The cut lands ON the page's own bottom edge, which is what makes it read as
-  // a cut rather than as a word with an odd baseline. Stated as the slice's
-  // bottom and not as the drawing's, so --front-screen-cut-show may legitimately
-  // be set anywhere from 0 to 1 — the slice is a different height at each, and
-  // its foot is on the fold at all of them.
-  if (Math.abs(read.cut.bottom - read.viewport.height) > 1) {
+  // THE CUT LANDS ON THE PAGE'S OWN BOTTOM EDGE, which is what makes it read as
+  // a cut rather than as a word with an odd baseline. Inside the band the BOX is
+  // the whole cap slab and the WINDOW does the cutting — the rest of the letters
+  // stand on the screen below, in the Panel masthead's slot — so what has to land
+  // on the fold is the cut LINE: --front-screen-cut-show of the slab down from
+  // the cap top. Stated that way rather than as the box's foot, so
+  // --front-screen-cut-show may legitimately be set anywhere from 0 to 1 and the
+  // cut is on the fold at all of them.
+  const cutLine = read.cut.top + read.show * read.cut.height;
+  if (Math.abs(cutLine - read.viewport.height) > 1) {
     failures.push(
-      `at ${where} the Cut Title's slice ends at ${read.cut.bottom.toFixed(1)}px rather than on the page's own ` +
-        'bottom edge — the cut has come off the fold',
+      `at ${where} the Cut Title is cut at ${cutLine.toFixed(1)}px rather than on the page's own bottom ` +
+        `edge at ${read.viewport.height}px — the cut has come off the fold`,
     );
   }
-  // ...and there is more word below it than the slice shows, or nothing has been
+  // ...and there is more word below the cut than it shows, or nothing has been
   // cut off at all.
-  if (!(read.word.bottom > read.cut.bottom)) {
+  if (!(read.word.bottom > cutLine)) {
     failures.push(
-      `at ${where} the whole drawing fits inside the slice: it ends at ${read.word.bottom.toFixed(1)}px ` +
-        `against the slice's ${read.cut.bottom.toFixed(1)}px, so nothing is being cut`,
+      `at ${where} the whole drawing fits above the cut: it ends at ${read.word.bottom.toFixed(1)}px ` +
+        `against a cut at ${cutLine.toFixed(1)}px, so nothing is being cut`,
     );
   }
   if (read.section.left < -1 || read.section.right > read.viewport.width + 1) {
@@ -349,6 +369,13 @@ export const check = {
         const root = document.documentElement;
         const turn = () => Number(getComputedStyle(root).getPropertyValue('--turn'));
         const travel = document.body.scrollHeight - window.innerHeight;
+        // THE SNAPPING COMES OFF FIRST, or this sweep reads a document that jumps
+        // rather than one that crosses. Inside the landing band the page is two
+        // ports and nothing between (src/kernel/landing.css), so every scrollTo in
+        // between is pulled straight back onto the port it left — and the sweep
+        // would find --turn at 0 at forty of its forty-one samples and report the
+        // crossing as a flip, which is exactly the failure it exists to catch.
+        window.portfolio?.snapping?.(false);
         /** @type {{ y: number, turn: number }[]} */
         const sampled = [];
         for (let step = 0; step <= 40; step += 1) {
@@ -358,6 +385,7 @@ export const check = {
           sampled.push({ y, turn: turn() });
         }
         window.scrollTo(0, 0);
+        window.portfolio?.snapping?.(true);
         const leaves = sampled.find((one) => one.turn > 0.01);
         const arrives = sampled.find((one) => one.turn > 0.99);
         return {

@@ -13,6 +13,12 @@ export interface Handles {
   toggleTheme?: () => 'light' | 'dark';
   hold?: () => void;
   release?: () => void;
+  /** Lift the landing's mandatory snapping, or put it back — see page-turn.ts.
+   *  A Check or the Editor needs this to place the page between two ports; with
+   *  the snapping on, every scroll in between is pulled straight back onto one. */
+  snapping?: (on: boolean) => void;
+  /** The resting places the page turn moves between, in document pixels. */
+  ports?: () => number[];
 }
 
 declare global {

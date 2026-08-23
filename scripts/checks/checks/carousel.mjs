@@ -81,10 +81,19 @@ async function readStrip(page) {
     const probe = document.createElement('div');
     probe.style.position = 'absolute';
     probe.style.visibility = 'hidden';
-    probe.style.height = 'var(--front-screen-strip-min)';
-    section.append(probe);
-    const floor = probe.getBoundingClientRect().height;
-    probe.remove();
+    const resolve = (length) => {
+      probe.style.height = length;
+      section.append(probe);
+      const height = probe.getBoundingClientRect().height;
+      probe.remove();
+      return height;
+    };
+    const floor = resolve('var(--front-screen-strip-min)');
+    // What the Section gives up to the landing: the slice of the word standing
+    // below the fold, and the drop the Panel's masthead needs to begin above it.
+    const landing = resolve(
+      'calc(var(--front-screen-cut-clip) + var(--landing-mast-top))',
+    );
 
     const box = (element) => {
       const rect = element.getBoundingClientRect();
@@ -95,6 +104,7 @@ async function readStrip(page) {
       slides: slides.length,
       travel: photos.scrollWidth - photos.clientWidth,
       floor,
+      landing,
       section: box(section),
       strip: box(strip),
       viewport: { width: window.innerWidth, height: window.innerHeight },
@@ -113,19 +123,27 @@ async function readStrip(page) {
  * The composition, with photographs in it.
  *
  * Two assertions and they are the pair that pins the page's type scale: the
- * Section is still exactly one screen, and the slot is at least as tall as the
+ * Section still stands inside one screen, and the slot is at least as tall as the
  * Section's own floor Token says a photograph may be. Neither is a number chosen
  * here — the first is the band's definition and the second is the Token's.
+ *
+ * ONE SCREEN LESS WHAT THE LANDING TAKES. Inside the band the Section gives up
+ * the slice of the Cut Title that hangs below the fold and the drop the Panel's
+ * masthead needs above it, so that the word can stand in that masthead's slot —
+ * src/kernel/landing.css. Both terms are read off the page rather than restated,
+ * so the assertion is that the composition spends exactly the budget and not that
+ * the budget is any particular number.
  */
 function composed(read) {
   /** @type {string[]} */
   const failures = [];
   const where = `${read.viewport.width}x${read.viewport.height}`;
 
-  if (Math.abs(read.section.height - read.viewport.height) > 1) {
+  if (Math.abs(read.section.height + read.landing - read.viewport.height) > 1) {
     failures.push(
-      `at ${where} the Front Screen is ${read.section.height.toFixed(1)}px tall against a ` +
-        `${read.viewport.height}px screen — the photographs have pushed the composition off one screen`,
+      `at ${where} the Front Screen is ${read.section.height.toFixed(1)}px tall and gives ` +
+        `${read.landing.toFixed(1)}px to the landing, against a ${read.viewport.height}px screen — the ` +
+        'photographs have pushed the composition off one screen',
     );
   }
   if (read.strip.height + 0.5 < read.floor) {

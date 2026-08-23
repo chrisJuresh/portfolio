@@ -48,8 +48,9 @@ def main():
     ap.add_argument("--repo", type=pathlib.Path, required=True,
                     help="the worktree to write faces.json into")
     ap.add_argument("--site", type=pathlib.Path, default=None,
-                    help="a file with the cut-morph:data markers in it, to write "
-                         "the chosen face into. Nothing has them today")
+                    help="where to write the chosen face. A .json path is the "
+                         "Section's asset; anything else is written into that "
+                         "file's cut-morph:data markers")
     args = ap.parse_args()
 
     friz, top, bot = curated.reference()
@@ -86,6 +87,19 @@ def main():
              f"  var FRIZ = {json.dumps(friz_true, separators=(',', ':'))};\n"
              f"  var FACE = {json.dumps(site, separators=(',', ':'))};\n"
              f"  {END}")
+
+    # The Section imports its own asset, so the answer is a file rather than a
+    # block inside one - which also keeps 35 KB of path data out of a source file
+    # nobody would want to open.
+    if args.site.suffix == ".json":
+        args.site.parent.mkdir(parents=True, exist_ok=True)
+        args.site.write_text(json.dumps(dict(friz=friz_true, face=site),
+                                        separators=(",", ":")), encoding="utf-8")
+        print(f"wrote {args.site}  "
+              f"({len(args.site.read_bytes())/1024:.0f} KB, face: {pick['name']})")
+        print(f"  score {pick['score']:.3f}   weight {pick['wght']}   "
+              f"tracking {pick['track_em']:+.4f} em   kerned {pick['kerned']}/7")
+        return
 
     js = args.site
     src = js.read_text(encoding="utf-8")

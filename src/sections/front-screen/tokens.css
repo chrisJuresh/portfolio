@@ -138,6 +138,14 @@
 
   --front-screen-cut-show: 0.62;
 
+  /* How much of its own transition each letter of the morph waits out before
+     starting, as a fraction of the crossing. At 0 the eight change together and
+     the word switches; at 0.05 each has 0.65 of the crossing to travel in, which
+     is slow enough to read as the word turning. Read by cut-morph.ts and by
+     nothing in CSS — the same case the strip's four numbers are, and NOTES.md
+     says why that is still a Token. */
+  --front-screen-cut-stagger: 0.05;
+
   --front-screen-reveal: 0.9s;
   --front-screen-reveal-rise: 8px;
 }

@@ -1,0 +1,40 @@
+/* The landing's numbers: the four terms the page turn's far end is solved from,
+   apart from the arithmetic that spends them — src/kernel/landing.css is that,
+   and src/kernel/NOTES.md says why the solve is the Kernel's rather than either
+   Section's.
+
+   THESE ARE THE ONE PLACE TWO SECTIONS AGREE ABOUT A LENGTH. The Cut Title is
+   drawn at the Projects Panel masthead's cap, and the Panel's composition is
+   solved for the height the landing leaves it. Neither Section may read the
+   other (CONTEXT.md), so the measure they share is the Kernel's, and these are
+   its inputs. The `landing` Check asserts that each still agrees with the
+   Section it was taken from, which is what keeps a restated number from
+   drifting into a wrong one. */
+
+:root {
+  /* The page's own top and bottom margin, and the half-leading above the Front
+     Screen's name. Both are restated from a Section — the first is
+     --front-screen-rhyme and --projects-panel-inset, which are the same clamp,
+     and the second is --front-screen-half-leading. The landing's height budget
+     is a function of both and cannot be written without them. */
+  --landing-inset: clamp(3rem, 9vh, 6.5rem);
+  --landing-name-lead: calc(0.294 * 0.78rem);
+
+  /* The Panel composition's height as a share of its width, RE-SOLVED for the
+     landing. Outside the landing the Panel spends the screen less two margins
+     and the constant is 0.5651; here the Section begins above the fold by the
+     masthead's own drop, which collects onto the left of the same equation:
+
+       0.5634 W - 0.080 x 0.0598 W = --fold - 2 x --landing-inset - --landing-name-lead
+       0.558616 W                  = ...
+
+     plus the same third of a per cent of slack the base constant carries.
+     RE-DERIVE THE TWO TOGETHER: 0.5634 is the composition's own height ratio and
+     is shared by both. src/sections/projects-panel/NOTES.md has the derivation. */
+  --landing-fit: 0.5603;
+
+  /* The masthead's size as a share of the composition's width — the Panel's
+     --projects-panel-masthead-share, restated here because the cap the Cut Title
+     is cut to is a fraction of it and the Front Screen cannot ask the Panel. */
+  --landing-mast-share: 0.0598;
+}

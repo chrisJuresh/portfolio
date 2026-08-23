@@ -1,12 +1,14 @@
 {
   "title": "The cut title's face",
-  "note": "Which of the twenty-four faces the cut title morphs INTO. THERE IS NO MORPH ON THE SITE TODAY: it was the hand-written page's, and #141 deleted that tree without porting it - the Front Screen ships the cut title as one baked picture and never morphs it. So this Bake writes the shortlist the tuner reads and holds the choice; whichever ticket brings the morph back points build-site.py's --site at the file it lands in, and the face named here is the one it will carry.",
+  "note": "Which of the twenty-four faces the cut title morphs INTO. The Front Screen ships the word as one baked Friz outline and cut-morph.ts swaps it for the same outlines split into eight, tweened against the Turn; this Bake writes both the shortlist the sheet reads and the one face the page carries, into src/sections/front-screen/assets/cut-morph.json.",
   "needs": "the font files, which are not in this repository - run it beside friz/, gf/ and fsf/ as design/cut-title/morph/README.md describes. Without them there is nothing to build from and the run stops before it writes anything.",
   "run": [
     "python",
     "design/cut-title/morph/build-site.py",
     "--repo",
-    "."
+    ".",
+    "--site",
+    "src/sections/front-screen/assets/cut-morph.json"
   ],
   "shows": [
     "design/cut-title/morph/faces.json"

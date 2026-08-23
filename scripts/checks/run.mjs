@@ -38,6 +38,7 @@ import { check as frontScreen } from './checks/front-screen.mjs';
 import { check as ground } from './checks/ground.mjs';
 import { check as moments } from './checks/moments.mjs';
 import { check as projectsPanel } from './checks/projects-panel.mjs';
+import { check as turn } from './checks/turn.mjs';
 import { check as unpublishable } from './checks/unpublishable.mjs';
 import { serve } from './lib/serve.mjs';
 
@@ -50,6 +51,7 @@ const CHECKS = [
   frontScreen,
   projectsPanel,
   ground,
+  turn,
   moments,
   deepLinks,
   unpublishable,

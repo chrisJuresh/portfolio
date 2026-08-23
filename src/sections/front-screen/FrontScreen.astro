@@ -914,18 +914,51 @@ const EAGER = 2;
          exact. */
       --front-screen-cut-ink: 100cqw;
       --front-screen-cut-lead: 0px;
-      --front-screen-cut-fit: calc(
-        50vw - var(--front-screen-measure) / 2 - 2 * var(--front-screen-rhyme)
-      );
+
+      /* THE WORD IS DRAWN AT THE MASTHEAD IT IS ABOUT TO BE. The drawing is
+         fitted to whatever width puts its cap on --landing-cap, which is the
+         Section below's masthead cap published by the Kernel — so the same word
+         at the same size is cut by the fold on this screen and printed as the
+         Projects Panel's masthead on the next, and the morph between them is a
+         change of letterform and nothing else.
+
+         WHAT IT COSTS IS THE TWO EQUAL MARGINS, retired here rather than quietly
+         broken. The white to the LEFT of the word — page edge to the P — and the
+         white to its right used to be the same measure, and the word was sized to
+         make them so. That was the right rule while the word answered to nothing
+         but the corner it stood in. It answers to the composition below it now,
+         and the two cannot both hold: the gutter is a function of the window's
+         WIDTH and the masthead is a function of whichever of width and height
+         binds the drawing. The word is still set flush to the left margin; the
+         white on its right is whatever is left.
+
+         --landing-cap is declared under this same band and no other, so there is
+         no regime where this reads a property nothing published. */
+      --front-screen-cut-fit: calc(var(--landing-cap) / var(--front-screen-cut-cap-share));
       --front-screen-cut-clip: calc(
         var(--front-screen-cut-show) * var(--front-screen-cut-cap-share) *
           var(--front-screen-cut-fit)
       );
 
-      height: var(--fold);
+      /* THE SECTION GIVES UP THE HEIGHT THE LANDING NEEDS, so the Section below
+         can begin above the fold and stand its masthead's slot under this word.
+         The word's cap top is at --fold less the cut, forever; the Panel's
+         masthead sits --landing-mast-top below the Panel's own top edge; so the
+         Panel has to begin exactly that much above the word's cap, and this is
+         where that height comes from.
+
+         NOT A NEGATIVE MARGIN ON THE PANEL, which is the other way to write it
+         and is worse: the Panel's box would then overlap this one's and this
+         Section's own paper would be painted over. Giving the height up is the
+         honest form, and it moves nothing in the column — the strip absorbs it.
+
+         The padding pays the same debt at the other end: the column still stops
+         --front-screen-cut-gap above the word's cap top, which is now
+         --landing-mast-top nearer this Section's own foot than it was. */
+      height: calc(var(--fold) - var(--front-screen-cut-clip) - var(--landing-mast-top));
       min-height: 0;
       position: relative;
-      padding-bottom: calc(var(--front-screen-cut-gap) + var(--front-screen-cut-clip));
+      padding-bottom: calc(var(--front-screen-cut-gap) - var(--landing-mast-top));
     }
 
     /* Past the strip's ceiling there is height left over that nothing wants, and
@@ -952,25 +985,51 @@ const EAGER = 2;
       max-height: var(--front-screen-strip-max);
     }
 
+    /* PINNED TO THE FOLD, and to the fold rather than to this Section's own
+       height: the Section gives the landing its last few pixels above, so `100%`
+       would take the word down with them. `top` and not `bottom`, so the offset
+       holds the cap top on that line whatever the box's height turns out to be.
+
+       Positioned rather than laid out because the word is a flex item of neither
+       Section: as this one's it would be pushed up by the height given away, and
+       as the Panel's it could not stand above its own top edge, which is exactly
+       where it has to stand. Pinned to the fold it is in neither, which is also
+       the truth of it — it lands in the same place the flow put it, because the
+       strip is sized so the column plus the gap reaches exactly that line.
+
+       NOTHING TRANSFORMS IT. The box has a document position that does not move
+       with the scroll and is not asked to: the window moves past it, and that is
+       the whole of the travel. */
     .front-screen__cut {
       position: absolute;
-      top: calc(100% - var(--front-screen-cut-clip));
+      top: var(--fold);
       left: var(--front-screen-rhyme);
       width: var(--front-screen-cut-fit);
       max-width: none;
       margin: 0;
     }
 
-    /* THE CLIP STAYS ON, and on the live page it does not. There, the bottom of
-       the window does the cutting and the rest of the letters stand on the screen
-       below — because the Panel's own masthead goes invisible underneath them and
-       the tail IS that masthead. That landing is not built yet (NOTES.md says
-       what it needs), and until it is, letting the tail hang would put it across
-       a masthead that is still drawing the same word. So the word is cut by its
-       own box here as well, which is what the live page does at every size
-       outside this band. One line to delete when the landing lands. */
+    /* THE CLIP COMES OFF: the bottom of the window does the cutting here, and the
+       J's hook and the baseline are meant to be seen on the screen below, where
+       the Panel's own masthead has gone `visibility: hidden` and the tail IS that
+       masthead.
+
+       But the BOX stays the cap slab rather than being left to `auto`. Two things
+       depend on it: the hover underline, which lands on the box's bottom edge and
+       so on the baseline, where a descender's worth of extra box would put it
+       under the J; and the lift below, which is a fraction of this same slab.
+
+       The lift is the cut, and it is the same expression the flow regime cuts
+       with — the box is pinned to the fold and the word is raised
+       --front-screen-cut-show of its own cap back above it, so the cap top lands
+       on the line the landing wants. A negative margin rather than an offset on
+       `top`, so the box's own top edge stays the thing being positioned; it
+       cannot collapse through the container, which establishes an independent
+       formatting context, and nothing there clips it. */
     .front-screen__cut > a {
-      height: calc(var(--front-screen-cut-show) * var(--front-screen-cut-slab));
+      overflow: visible;
+      height: var(--front-screen-cut-slab);
+      margin-top: calc(-1 * var(--front-screen-cut-show) * var(--front-screen-cut-slab));
     }
   }
 </style>

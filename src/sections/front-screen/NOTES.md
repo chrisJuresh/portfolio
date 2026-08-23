@@ -15,10 +15,12 @@ or a colour is a Token or a Content edit and needs none of it.
 The Section convention is `src/sections/stub/NOTES.md`. Two files here are beyond
 it:
 
-| file                     | what it is                                                     |
-| ------------------------ | -------------------------------------------------------------- |
-| `theme-toggle.ts`        | the switch's behaviour, mounted from the component's `<script>` |
-| `assets/cut-title.svg`   | the Cut Title's word, as one baked outline                      |
+| file                       | what it is                                                       |
+| -------------------------- | ---------------------------------------------------------------- |
+| `theme-toggle.ts`          | the switch's behaviour, mounted from the component's `<script>`   |
+| `cut-morph.ts`             | the Cut Title's morph, mounted from `timeline.ts`                 |
+| `assets/cut-title.svg`     | the Cut Title's word, as one baked outline                        |
+| `assets/cut-morph.json`    | the same word split into eight letters, and the face it turns into — written by the `morph` Bake |
 
 `theme-toggle.ts` is not `timeline.ts` and the split is deliberate: the Timeline
 is motion, and the toggle is a control. It is mounted from the component rather
@@ -29,6 +31,13 @@ The photograph strip is the other way round and that is the same rule read from
 the other end: it is a control *and* it is the Section's motion, and both are in
 `timeline.ts` because the Timeline is what the gestures move. There is nothing for
 a second file to own — no gesture here does anything except set a progress.
+
+`cut-morph.ts` is a third answer again: it is motion, but not this Section's
+Timeline's — the word is drawn against the **Turn**, which is the Kernel's. So it
+is mounted from `timeline.ts` (which is where the Section's motion is set up) and
+registers nothing; seeking the Turn is what moves it. It is mounted before the
+strip's own guard, so a Section with too few photographs to be a strip still turns
+its word.
 
 ## Which numbers are Tokens, and which are not
 
@@ -337,26 +346,38 @@ of `--front-screen-cut-show` reaches the hook. Cut, the word reads `PRO|ECTS`. I
 comes back whole in the band, where the descender has somewhere to hang. That is
 a property of the drawing, not a number to tune.
 
-**What is not ported: the word's measure is the column's, not the Panel
-masthead's.** On the live page the word's cap height *is*
-`--panel-masthead-size`'s cap, so that the same word at the same size is cut by
-the fold on the first screen and printed as the Projects Panel's masthead on the
-second. There was no Panel on the page yet. `--front-screen-cut-fit` is the left
-gutter here — the page's margin on both sides of it, which is what the live sheet
-did before that relationship existed — and **#138 re-points it at the masthead**,
-which is what that ticket means by preserving the relationship as a relationship.
-The two snap ports and the landing go with it: they are properties of the page
-turn between two Sections rather than of this one, and there is no second Section
-to turn to.
+**The word's measure IS the Panel masthead's cap, in the band.** The same word at
+the same size is cut by the fold on the first screen and printed as the Projects
+Panel's masthead on the second, which is the whole reason the two Sections can
+share one PROJECTS. A Section may read only the Kernel, so the cap crosses as a
+Kernel measure — `--landing-cap`, solved in `src/kernel/landing.css` from the four
+terms in `src/kernel/tokens/landing.css` — and `--front-screen-cut-fit` is
+whatever width puts the drawing's own cap on it:
+`--landing-cap / --front-screen-cut-cap-share`.
 
-## The two links point at a fragment nothing answers yet
+What that cost was **the two equal margins**, and the rule is retired rather than
+quietly broken. The white to the left of the word — page edge to the P — and the
+white to its right used to be the same measure, and the word was sized to make
+them so. That was right while the word answered to nothing but the corner it stood
+in. It answers to the composition below it now, and the two cannot both hold: the
+gutter is a function of the window's WIDTH and the masthead is a function of
+whichever of width and height binds the drawing. The word is still flush to the
+left margin; the white on its right is whatever is left.
+
+**One cycle to not write.** `--landing-w` must never come to depend on anything
+the Cut Title computes — which is why the landing's fit constant substitutes the
+masthead's own drop out of the equation rather than referring to the word.
+
+## The two links go through the page turn
 
 The masthead's `Projects` and the Cut Title are one destination and it is Content:
-`#projects`, a fragment on this same document, which is what they are on the live
-page. The Panel is on the page now, but it carries no such id — its `data-section`
-is its handle — so both links are inert: a click leaves the reader where they are.
-It is one Content field and one id, so connecting them is a line each, and it
-belongs with the landing below rather than on its own.
+`#projects`, a fragment on this same document. The Panel answers to that id now,
+so both work — and neither is wired up here. The Kernel routes any in-document
+link that names a Section through the same ease a wheel notch takes
+(`src/kernel/page-turn.ts`), so a click is the turn rather than a jump, and a
+notch taken while it is in the air retargets it instead of fighting a second
+listener. Outside the band, and for a reader who asked for no movement, the anchor
+does its own job and `scroll-margin-top` puts the landing where it belongs.
 
 ## The Turn is marked nowhere, and that is the answer rather than an omission
 
@@ -378,43 +399,57 @@ would still take a screen's worth spread over three.
 The Cut Title crosses with everything else because it reads `--ink`, and `--ink`
 is itself the mix.
 
-## What the landing still needs, and why it is not here
+## The landing, and the morph across it
 
-On the live page the word PROJECTS is drawn twice and appears once. In the
-one-screen band the Cut Title stands in the Panel masthead's slot and
-`.panel-masthead` goes `visibility: hidden` underneath it — the word does not fly
-down, the Section comes up to meet it. Outside that band the live page shows both,
-which is worth knowing before reading the current state as a bug.
+On the page PROJECTS is drawn twice and appears once. In the landing band the Cut
+Title stands in the Panel masthead's slot and `.projects-panel__masthead` goes
+`visibility: hidden` underneath it — **the word does not fly down, the Section
+comes up to meet it.** Outside the band both are shown, which is worth knowing
+before reading that as a bug.
 
-**That landing is not built, and it is blocked on a decision rather than on work.**
-The word has to be cut to the Panel masthead's cap, and #138 left that as a named
-relationship — `--projects-panel-masthead-cap` — with the observation that a
-Section may read the Kernel and nothing else, so the two Sections cannot read each
-other's Tokens. How that length crosses is a Kernel question (most likely the
-Kernel owning the measure both Sections share, since CONTEXT.md makes the Kernel
-the only thing permitted to cross a Section boundary), and #138 declined to guess
-at it. Guessing here would be the same mistake one file later.
+`src/kernel/landing.css` is the device and the measure; what this Section owes it
+is three things, all in the band's block:
 
-So until it is decided, this Section does the one thing that keeps the page honest
-rather than half-landed: **the cut stays clipped by its own box inside the band as
-well as outside it.** One line in the band's block, marked. Letting the tail hang
-past the fold is only right when the masthead it lands on has gone invisible; with
-that masthead still drawing the same word, a hanging tail would cross it. Clipped,
-the two words stand apart — which is the live page's own behaviour at every size
-outside the band.
+- the drawing fitted to `--landing-cap`, so the word is the masthead's size;
+- the Section's height, one screen less the slice of the word standing below the
+  fold and less `--landing-mast-top`, so the Panel can begin above the fold with
+  its masthead's slot under the word. **Not a negative margin on the Panel**,
+  which is the other way to write it and is worse: the boxes would overlap and
+  this Section's paper would be painted over. The padding pays the same debt at
+  the other end, so the column still stops `--front-screen-cut-gap` above the cap;
+- the clip coming off, the box staying the whole cap slab, and the word lifted
+  `--front-screen-cut-show` of that slab so its cap top lands on the fold less the
+  cut. `top: var(--fold)` and not `100%`: the Section gives its last pixels away,
+  and `100%` would take the word down with them.
 
-What the landing needs, when it is taken:
+**The morph.** `cut-morph.ts` swaps the one baked Friz outline for the same
+outlines split into eight and tweens them against the Turn, so the word turns out
+of Friz Quadrata and into Host Grotesk exactly as the page crosses. It neither
+moves nor resizes — it is drawn at the landing's size from the start and stands
+still while the document scrolls past it, and the `turn` Check asserts the drawn
+box is the same width, height and x at every moment of the crossing. Three things
+about it are easy to get wrong:
 
-- the cross-Section cap length, however the Kernel comes to publish it
-- the two snap ports and `scroll-snap-type: y mandatory`, which are global rules
-  and therefore the Kernel's or the Shell's, not a Section's
-- `.projects-panel__masthead` going `visibility: hidden` in the band, and keeping
-  its box: it is row one's stated height, it is what the subheading's second line
-  hangs off, and it is the slot the word occupies
-- the Panel's two re-solved numbers, which #138 derived and parked: the Rail
-  standing in the page's own margin, and the fit constant at 0.5603
-- deleting the line in the band's block that keeps the clip on
-- `#projects` becoming an id something answers
+- **Nothing on the page depends on that file.** A browser that never runs it gets
+  the Cut Title as this Section ships it — one baked outline, on screen at first
+  paint. That is the same stance the Effect Stack's grain takes.
+- **Both ends are the real typeface**; only the middle is polygons, and the
+  correspondence they encode is `design/cut-title/morph/`'s, chosen through the
+  `morph` Bake. The `turn` Check reads `assets/cut-morph.json` back and asserts
+  the two ends are exactly what the Bake wrote — "is it a polygon" cannot be asked
+  of the shape, because a sans E is one either way.
+- **It is drawn against the Turn and not against the scroll.** `onTurn()` in
+  `src/kernel/turn.ts` is called from the Timeline's own `onUpdate`, so seeking
+  the Turn redraws the letters — which is what makes the morph assertable through
+  the seam ADR 0003 asks for, and what lets the Editor scrub it without moving the
+  page.
+
+**What the landing exposes and the live page covered.** The Panel begins the
+word's cut above the fold, so at rest the first line or two of the Panel's copy —
+which sits at the top of row one, level with the masthead's cap — shows below the
+Front Screen. On the live page the arrival treatment held the composition out
+until the turn began; that is the Panel's rework and is not ported. It is one
+Section's `--enter` away and belongs with that work, not here.
 
 ## Keeping the paper and the halftone off the type
 
@@ -470,9 +505,9 @@ follows until the reader has chosen.
 
 ## What is deliberately not here yet
 
-**The landing** — see the section above. It is the one piece of this Section's
-composition that is not here, and it is blocked on a Kernel decision #138
-deliberately did not make.
+**The Panel's arrival treatment**, which is the Panel's and not this Section's:
+see the last paragraph of the landing section above for the one thing its absence
+shows here.
 
 **The page's own type scale is now in the Kernel, and it is not a Section's.**
 #137 needed it, for the reason the live sheet gives: the strip is the one-screen
@@ -512,6 +547,14 @@ It measures at **two** windows, and the second is not padding: the mechanism tha
 keeps the two margins equal on a tall screen is inert at every ordinary desktop
 height, so a Check that only ever looked at 1440x900 would pass with that
 mechanism deleted.
+
+`scripts/checks/checks/turn.mjs` is the landing's and the morph's, and it is the
+Kernel's Check as much as this Section's — the measure it asserts crosses a
+boundary. What it holds: the Kernel's published cap against the Panel's own
+arithmetic, the Panel's masthead invisible and still carrying its box, the word
+standing in that masthead's slot, the drawn box unchanged at every moment of the
+crossing, both ends of the tween exactly what the Bake wrote, one wheel notch each
+way, and a notch begun on the photographs staying the photographs'.
 
 `scripts/checks/checks/carousel.mjs` is the strip's, and it measures at the band's
 SHORT corner for the mirror-image reason: that is where the remainder runs out, and

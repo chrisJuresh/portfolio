@@ -69,7 +69,7 @@ directory's `dist/`, on an ephemeral port so two features in flight never collid
 pane at all, which is the other half of the same rule: lazy mounting and motion
 cannot be verified there even by hand.
 
-## The eleven Checks
+## The twelve Checks
 
 | Check            | fails when                                                                  |
 | ---------------- | --------------------------------------------------------------------------- |
@@ -80,6 +80,7 @@ cannot be verified there even by hand.
 | `front-screen`   | the Front Screen's rhyme, its one-screen budget, the Cut Title's cut or its accessible name, the crossing's span, the switch's ARIA, or the type's place in the Effect Stack breaks |
 | `projects-panel` | a control in the Frame leaves the centre its own Token names, the window and its titlebar are cut to two radii, the recording's box stops being inset on three sides, the occlusion of the subheading's second line moves or stops being painted, the titlebar reports a rung it is not made of, the chrome grows a control, the small-Frame reduction starts asking about the window instead of the Frame, the Plinth's depths stop being shares of the Frame or its slab stops being symmetric about it, the reflection stops being a life-size fold of the window, the marble stops being drawn without script, or a reader who asked for reduced motion is charged for the recording |
 | `ground`         | paper is not light, or the Turn does not arrive dark, in either theme         |
+| `turn`           | the Kernel's published landing measure disagrees with the Panel's own arithmetic, the Panel's masthead is visible or has lost its box, the Cut Title is not standing in that masthead's slot, the word moves or resizes across the crossing, either end of the morph is not the outline the Bake wrote, a wheel notch does not turn the page or bring it back, or a notch begun on the photographs turns it |
 | `moments`        | a Timeline cannot be seeked, does not survive a scroll, moves nothing, or will not release |
 | `deep-links`     | a Section on the page carries no id, or its `/portfolio/<id>` does not answer, or answers with something that is not the document, or opens it somewhere other than where that Section asks to be put |
 | `unpublishable`  | a Section's words or its spoken attributes match the denylist                 |
@@ -226,7 +227,7 @@ Every failure string names the thing that broke: the URL, the family, the
 selector, the measured number and the wanted one. "something is wrong" costs a
 diagnosis session; "404 for /_astro/vollkorn-regular.Dnyk-4Dy.woff2" costs nothing.
 
-## Eight traps, each of which cost a wrong answer here
+## Ten traps, each of which cost a wrong answer here
 
 **`hold()` before you seek, and it is not enough to seek twice.** A scrubbed
 Timeline is recomputed from the scroll position, so a bare seek survives about a
@@ -263,6 +264,23 @@ the crossing has simply stopped being a crossing. The first version of
 `front-screen` asserted `--turn` is 0 at the top and greater than 0 further down,
 and that mutation walked straight through it. What catches it is the SPAN: sample
 the document and assert the crossing takes at least half a screen of scroll.
+
+**A mandatory snap makes a scroll sweep read as a document that jumps.** Inside
+the landing band the page is two ports and nothing between, so every `scrollTo` in
+between is pulled straight back onto the port it left — and `front-screen`'s
+crossing sweep found `--turn` at 0 in forty of its forty-one samples and reported
+the crossing as a flip, which is the exact failure that sweep exists to catch. A
+Check that places the page anywhere a reader could not rest asks the Kernel to
+lift the snapping first: `window.portfolio.snapping(false)`, and `true` after.
+It is a different handle from `hold()` and both may be needed — `hold()` stops the
+scroll driving the Timelines, and this stops the browser moving the scroll.
+
+**"Is it a polygon" cannot be asked of a shape.** The Cut Title's morph tweens
+between two real outlines through polygons, so the obvious assertion at either end
+is "this letter carries a curve" — and a sans E is straight lines either way, so
+two of the eight letters failed a Check that was measuring the wrong thing. `turn`
+reads `assets/cut-morph.json` off disk and compares the drawn `d` against exactly
+what the Bake wrote instead.
 
 **Chromium refuses to fetch from certain ports.** An ephemeral port can land on
 one, and the whole suite then fails as `net::ERR_UNSAFE_PORT` — about one run in a

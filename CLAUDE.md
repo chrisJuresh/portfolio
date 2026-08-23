@@ -187,6 +187,18 @@ production does. A Section is deep-linkable by carrying an `id`, and the
 requires a working link for each — so a Section added without its rewrite fails
 the build rather than shipping a URL that 404s.
 
+**Above 1100x700 the document is a PAGE TURN and not a scroll.** Two Sections,
+two resting places and nothing between them: one wheel notch carries the reader
+from one to the other, and the Front Screen's cut PROJECTS stands in the Projects
+Panel masthead's slot and morphs out of Friz Quadrata into the sans as the page
+crosses — the word never moves and never resizes, the document moves past it.
+`src/kernel/landing.css` is the device and the one measure the two Sections share;
+`src/kernel/page-turn.ts` is the notch and `src/kernel/wheel.ts` is who owns it.
+Read `src/kernel/NOTES.md` before touching any of the three. **A Check or a script
+that needs the page placed between the two resting places has to lift the snapping
+first** — `window.portfolio.snapping(false)` — or every `scrollTo` in between is
+pulled straight back onto the port it left, silently.
+
 Every dependency version is pinned exactly and nothing is updated on a schedule
 (ADR 0002). pnpm's settings live in `pnpm-workspace.yaml`, not `.npmrc` — pnpm 11
 ignores `.npmrc` for `saveExact`, and the failure mode is a caret quietly

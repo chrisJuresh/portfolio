@@ -116,8 +116,8 @@ is, on top of the one hanging line the points have to clear.
 
 ## The masthead, the Cut Title, and why this is a relationship
 
-The word **PROJECTS** is drawn twice on the live page and appears once: in the
-one-screen band the Cut Title — the word cut as a picture at the Front Screen's
+The word **PROJECTS** is drawn twice and appears once: in the one-screen band the
+Cut Title — the word cut as a picture at the Front Screen's
 foot — stands in this masthead's slot, and the masthead goes `visibility: hidden`
 underneath it. The word does not fly down to the Section; **the Section comes up
 to the word.**
@@ -140,12 +140,16 @@ margin names — not with the Section's box edge on it. That is the same
 relationship the live page's landing writes, one term shorter because the term it
 drops belongs to the Front Screen's name.
 
-**#136 is where the other half lands.** The Cut Title is the Front Screen's, and
+**The Kernel is how the length crosses.** The Cut Title is the Front Screen's, and
 a Section may read the Kernel and nothing else, so the two Sections cannot read
-each other's Tokens: whichever ticket lands the word has to decide how this
-length crosses — most likely by the Kernel publishing it, which is a decision
-rather than a convenience and is not made here on a guess. What #138 owes it is a
-named relationship rather than a number, and that is what these two are.
+each other's Tokens. `src/kernel/landing.css` solves the composition's width for
+the landing and publishes `--landing-cap` and `--landing-mast-top` from it; this
+Section takes its own width from `--landing-w` inside the band, so the two above
+follow from the Kernel's answer through the shares in `tokens.css` and agree with
+it by construction. The `turn` Check asserts that they do — the Kernel restates
+four of the Panel's terms to solve the width, and a restated number that drifts
+draws the word at a size nobody can see is wrong, because the masthead it stands
+in for is invisible.
 
 ## The palette crosses; it does not switch
 
@@ -909,16 +913,28 @@ Two differences, both of them consequences of what has not landed rather than
 choices made here. The numbers are off `/next` and `/portfolio` served from the
 same `dist/`, at 1440×900.
 
-**This is the base regime, not the landing.** The live page at 1440×900 is inside
-its one-screen band, where the Cut Title stands in the masthead's slot — and that
-regime re-solves two of the numbers here: the Rail leaves the grid to stand in the
+**The landing has landed, and the base regime is what is left below the band.**
+Inside the band the two numbers that used to be parked here are in the landing
+block at the foot of the component: the Rail leaves the grid to stand in the
 page's own margin (so the width branch loses the 0.972), and the fit constant is
-re-derived to 0.5603 for the height the Section gives up to the landing. The
-masthead comes out 76.42px there against 74.28px here, 2.9% larger, and the Rail
-stands at x 0..81 rather than inside the composition at x 81..96. **Neither is
-portable without the Cut Title**, which is #136's, and both are one block of
-overrides when it lands. Everything else agrees: the type scale, the two-row
-grid, the hanging second line, the copy at four lines, and the Rail's 10px floor.
+re-derived to 0.5603 for the height the Section gives up above the fold. Both come
+from `--landing-w`, so neither is written here. The masthead comes out 76.42px in
+the band against 74.28px outside it, 2.9% larger, and the Rail stands at x 0..81
+rather than inside the composition at x 81..96 — which is the live page's own
+pair of figures. Everything else is the same drawing in both: the type scale, the
+two-row grid, the hanging second line, the copy at four lines, and the Rail's 10px
+floor.
+
+Three more things the landing block does, each for a reason that is not obvious:
+the composition stands at the Section's own top edge rather than centred in what
+is left, because the landing measures the masthead's drop from that edge and a
+centred composition sits ten pixels lower than the arithmetic says; the masthead
+goes invisible and **keeps its box**, which is row one's stated height, the line
+the subheading hangs off and the slot the word occupies; and the Section paints no
+ground of its own, because the document has one, because an opaque ground here
+would paint over the corner pictures' last strip, and because two mixes of two
+different far ends came out a shade apart mid-Turn and put a seam straight across
+the word.
 
 **Below 1100px the two are the same drawing.** The stack was compared at 390×844
 and every size matches to the pixel — masthead 46.8, subheading 29.25, copy 14.82,

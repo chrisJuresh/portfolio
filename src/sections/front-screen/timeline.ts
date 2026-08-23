@@ -1,5 +1,8 @@
 import gsap from 'gsap';
 
+import { claimWheel, rollOwnsWheel, wheelDelta } from '../../kernel/wheel';
+import mountCutMorph from './cut-morph';
+
 /**
  * The Front Screen's Timeline: the photograph strip's travel, end to end.
  *
@@ -73,13 +76,16 @@ const FRAME = 60;
  */
 const FLICK_WINDOW = 80;
 
-/** A pause in the wheel this long ends the gesture, and the next notch starts a new one. */
-const GESTURE_GAP = 200;
-
 /** Two px of travel is "already there", for a resting place and for either end. */
 const SLACK = 2;
 
 export default function frontScreenTimeline(root: HTMLElement): gsap.core.Timeline | void {
+  // The Cut Title's morph, and it is mounted BEFORE the guard below rather than
+  // beside the strip: the word is drawn against the Turn and knows nothing about
+  // the photographs, so a Section with too few of them to be a strip still turns
+  // its word. cut-morph.ts says what it is.
+  mountCutMorph(root);
+
   const stripFound = root.querySelector<HTMLElement>('.front-screen__strip');
   const trackFound = root.querySelector<HTMLElement>('.front-screen__photos');
   const bar = root.querySelector<HTMLElement>('.front-screen__bar');
@@ -542,53 +548,23 @@ export default function frontScreenTimeline(root: HTMLElement): gsap.core.Timeli
 
   /**
    * A wheel gesture belongs to whatever it began on, and keeps it until the wheel
-   * stops.
+   * stops — the strip holds one begun on it even after running out of travel, so
+   * the notch that reaches the end cannot also turn the page.
    *
-   * Begun on the strip, the strip holds it even after running out of travel, so
-   * the notch that reaches the end cannot also scroll the page — stop, and scroll
-   * again, to leave the roll. Begun on the page, the page holds it, so a scroll
-   * is never hijacked half way through by the strip arriving under a pointer that
-   * was nowhere near it when the scroll started.
+   * THE ARBITRATION IS THE KERNEL'S and not this file's, because it has two
+   * claimants and the strip is only one of them: the page turn takes the same
+   * notch to carry the reader into the Section below (src/kernel/page-turn.ts),
+   * and which of the two should have it is not a question either can answer
+   * alone. src/kernel/wheel.ts is the answer, and this registers as a claimant.
    *
-   * On the document and in the CAPTURE phase because it has to settle the owner
-   * before the strip's own handler runs, for events the strip never sees. It
-   * listens and does not act: nothing here is prevented, and the page scrolls as
-   * it always did.
-   *
-   * `passive: false` ON A LISTENER THAT NEVER PREVENTS ANYTHING, and it is the
-   * whole reason the arbitration works. A passive wheel listener lets Chromium
-   * scroll on the compositor and deliver the event to the main thread AFTERWARDS
-   * — so the target has been hit-tested against a page that has already moved.
-   * Measured: a notch taken with the pointer over the masthead arrived with
-   * `window.scrollY` already at 120 and its target already an `<img>` in the
-   * strip, because the strip had slid up under a pointer that was nowhere near it
-   * when the scroll started. Which is precisely the hijack this listener exists to
-   * prevent, so the passive version prevented nothing and the strip took the
-   * first notch of every page scroll begun near it. Non-passive, Chromium has to
-   * ask the main thread first, and the hit-test is taken where the pointer
-   * actually was. The cost is that no wheel on this page is fast-pathed, which is
-   * what the live page has always paid for the same arbitration.
+   * `spent` is the one thing that lets the page have a gesture that started over
+   * the strip: a notch that could not move the strip anyway was never the
+   * strip's.
    */
-  let lastWheel = -Infinity;
-  let owner: 'strip' | 'page' | null = null;
-
-  const wheelDelta = (event: WheelEvent) =>
-    Math.abs(event.deltaY) >= Math.abs(event.deltaX) ? event.deltaY : event.deltaX;
-
   const spent = (delta: number) =>
     (delta < 0 && timeline.progress() <= 0) || (delta > 0 && timeline.progress() >= 1);
 
-  document.addEventListener(
-    'wheel',
-    (event) => {
-      if (event.timeStamp - lastWheel > GESTURE_GAP) owner = null;
-      lastWheel = event.timeStamp;
-      if (owner) return;
-      const inside = event.target instanceof Node && track.contains(event.target);
-      owner = inside && !spent(wheelDelta(event)) ? 'strip' : 'page';
-    },
-    { capture: true, passive: false },
-  );
+  claimWheel(track, spent);
 
   /** The photograph and the air after it: what one notch is worth. */
   function pitch(): number {
@@ -602,7 +578,7 @@ export default function frontScreenTimeline(root: HTMLElement): gsap.core.Timeli
   track.addEventListener(
     'wheel',
     (event) => {
-      if (owner !== 'strip') return;
+      if (!rollOwnsWheel(track)) return;
       event.preventDefault();
       const delta = wheelDelta(event);
       if (spent(delta)) return; // out of travel, but still the strip's gesture

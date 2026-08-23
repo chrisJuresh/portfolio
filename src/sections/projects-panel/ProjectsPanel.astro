@@ -1255,6 +1255,114 @@ const selected = (project: { href?: string }) => project.href === `#${here}`;
       row-gap: calc(var(--projects-panel-stack-points-gap) * var(--projects-panel-small-size));
     }
   }
+
+  /* ---- the landing ------------------------------------------------------
+     THE WORD DOES NOT COME DOWN TO THIS SECTION; THIS SECTION COMES UP TO THE
+     WORD. Inside the landing band the Front Screen's Cut Title stands in this
+     masthead's slot, the masthead itself goes invisible underneath it, and the
+     page turn between the two screens is what carries the reader here.
+     src/kernel/landing.css is the whole of the device and the measure both
+     Sections read; this block is the half of it that is the composition's.
+
+     LAST IN THE SHEET, not up in the base block it argues with. A media query
+     buys no specificity, and every rule here overrides one of the same weight —
+     moved earlier they all silently lose and the Section comes out looking as
+     though the landing had never been written. Same gate as the Front Screen's
+     own block, deliberately: the three are one idea and have to stay in step. */
+  @media (min-width: 1100px) and (min-height: 700px) {
+    .projects-panel {
+      /* The composition's width, RE-SOLVED for the landing and taken from the
+         Kernel rather than restated: the Rail leaves the grid below, so the width
+         branch is the whole of what the page has across, and the height branch
+         has to answer for the Section beginning above the fold. The masthead, the
+         cap the word is cut to and the drop the landing is measured by all follow
+         from it through the shares in tokens.css, so nothing else in the Section
+         has to know the landing exists. */
+      --projects-panel-w: var(--landing-w);
+
+      /* The port the turn comes to rest on, which is the word's landing and not
+         this Section's own edge: the cap top lands on the same line the Front
+         Screen's name starts on, one screen up. The base rule says the same thing
+         one term shorter, for a Section whose top edge IS the fold. */
+      scroll-margin-top: calc(var(--landing-top) - var(--projects-panel-mast-top));
+
+      /* Exactly what the Section takes and no more, so the document is two
+         screens: the Front Screen's height plus this is the fold plus the
+         landing. That is what makes the crossing finish exactly as the scroll
+         does. The padding it used to spend at the top is spent by the landing. */
+      min-height: calc(var(--fold) - var(--landing-top) + var(--landing-mast-top));
+      padding-top: 0;
+
+      /* ONE COLUMN. The Rail is out of flow below, so the composition's own left
+         edge is the Section's content edge — the page's margin, which is exactly
+         where the word stands. `start` and not `center`: the drawing hangs off the
+         word, and on a window where the width binds rather than the height the
+         leftover has to go under the composition rather than half of it above,
+         which would push the subheading off the word's line. */
+      grid-template-columns: minmax(0, var(--projects-panel-w));
+      justify-content: start;
+      align-items: start;
+
+      /* NO GROUND OF ITS OWN, because the document has one and it is the
+         Kernel's. Two things need this rather than tolerate it. The Section's box
+         begins above the fold, so an opaque ground here would paint over the last
+         strip of the three corner pictures, which stand behind the page and end
+         at the fold. And one ground painted once cannot disagree with itself
+         part-way through a crossing, which two elements holding two mixes of two
+         different far ends demonstrably can: --projects-panel-bg-far is pure
+         black and the Kernel's is not, so mid-Turn the two came out a shade apart
+         and the seam ran straight across the word.
+
+         The Token stays what it was and is still what the Frame's glass is
+         rendered against — what comes off is only this Section painting it. */
+      background: none;
+    }
+
+    /* THE COMPOSITION STANDS AT THE SECTION'S OWN TOP EDGE, and that is what puts
+       the masthead's line box under the word: the landing measures the drop from
+       the Section's edge, so a composition centred in whatever height is left
+       over sits ten pixels lower than the arithmetic says and the word no longer
+       stands in its slot. The leftover goes under the drawing instead, which is
+       the same answer the one-column grid above gives for the width. */
+    .projects-panel__inner {
+      align-self: start;
+    }
+
+    /* WHY THE MASTHEAD STAYS IN THE MARKUP AND ONLY GOES INVISIBLE. Its box is
+       load-bearing three times over: it is row one's stated height, it is what
+       the subheading's second line hangs off — which is what makes the Frame's
+       bite exact — and it is the slot the word now occupies. Take the box out and
+       row one collapses onto the subheading, the paragraph beside it becomes what
+       sizes the row, and the subheading sinks away from the word it is supposed
+       to be the next line of. `visibility: hidden` keeps every one of those and
+       draws nothing. It also keeps the accessible name, which this Section's
+       `aria-labelledby` points at — a directly-referenced hidden element still
+       supplies one — where `display: none` would not.
+       Unconditional, and not gated on a script having run: there is no state to
+       be in, so a browser that runs nothing gets this. */
+    .projects-panel__masthead {
+      visibility: hidden;
+    }
+
+    /* THE RAIL MOVES OUT INTO THE PAGE'S MARGIN, which is what "the composition
+       starts where the word starts" costs. In the grid it holds the first column
+       and everything after it — the masthead included — is pushed right by its
+       width and a gutter, so the word and this Section's own title could not be
+       set to the same line. Out of flow and standing in the margin instead: it is
+       one line of vertical type, the margin is exactly the white the page already
+       leaves there, and an index in the margin is a thing a printed page does.
+       The insets are against the Section's padding box, which is its whole box —
+       absolute insets ignore padding — so `left: 0` is the window's edge and the
+       width IS the margin, with the items' own centring putting the type down the
+       middle of it. */
+    .projects-panel__rail {
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: var(--projects-panel-inset);
+      width: var(--projects-panel-inset);
+    }
+  }
 </style>
 
 <script>
