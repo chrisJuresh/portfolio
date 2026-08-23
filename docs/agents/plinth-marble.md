@@ -145,7 +145,8 @@ Then:
 
 `python design/legacy/plinth-studio.py`, then open what it prints. It is the
 whole pipeline behind one page: drop an image, move every slider a stone has,
-bake, look at it standing under the real Frame, write it into `styles.css`. Its
+bake, look at it standing under the real Frame, write it into the Panel's
+Tokens. Its
 own docstring is the reference; what matters from outside it is:
 
 - **It serves the tree it is started in**, like `render.mjs` and unlike
@@ -156,18 +157,19 @@ own docstring is the reference; what matters from outside it is:
   bake of one photograph at a different `scale` is fifteen seconds of Cycles and
   not another fifty megabytes of PNG — which is the one thing `add-stone.py`
   cannot do, because it is a one-shot and rebuilds them every run.
-- **It writes `portfolio/styles.css`** when Apply is pressed, and nothing else
-  outside `design/plinth/` and `portfolio/img/tex/`. It restamps every plinth
-  `?v=` in the file at the same time, which is the drift that went unnoticed for
-  two bakes in #106–#114. It does not commit, and applying a stone is a change to
-  `/portfolio`'s colour — run the capture contract before merging one.
-- **AND IT LEAVES `/next` ON THE OLD PLATE.** Since #140 the Plinth is drawn on
-  `/next` too, from `--projects-panel-plinth-src` in
-  `src/sections/projects-panel/tokens.css`, and this tool knows nothing about that
-  file. So an Apply changes one of the two sites. Copy the filename across by
-  hand — it is one line, and it carries no `?v=`, because Astro fingerprints a
-  `url()` it can see. The ticket that flips `/next` onto `/portfolio`'s route ends
-  the split by deleting the declaration this tool writes.
+- **It writes `--projects-panel-plinth-src` in
+  `src/sections/projects-panel/tokens.css`** when Apply is pressed, and nothing
+  else outside `design/plinth/` and `portfolio/img/tex/`. One declaration's bytes
+  and no re-serialising, the same rule the Editor obeys on that file, which is
+  what keeps its paragraphs. It does not commit; run `pnpm check` before landing
+  a stone.
+- **There is no `?v=` on it any more, and that is the fix rather than an
+  omission.** The hand-written page had no build, so its stylesheet carried the
+  plates' digest by hand and it drifted unnoticed for two bakes in #106–#114.
+  Astro fingerprints a `url()` it can see, so the plate ships as
+  `/_astro/plinth-….<hash>.webp` and a re-bake is a different filename by
+  construction. #141 deleted the second declaration, so there is one place the
+  stone is named and nothing to keep in step.
 - **The only thing it draws rather than renders is the window**: the **front
   face's** footprint laid on the photograph, from `build_photo_material()`'s own
   arithmetic. That answers `scale` and `offset` before paying for a bake, and it
@@ -466,17 +468,20 @@ do not pick a stone off it. Nothing generates it; it was assembled by hand, and
 re-shooting it is its own job.
 `design/shots/*__stone-*.png` are gitignored — 1.4 MB each and regenerable.
 
-The capture contract (`python design/tools/check-capture-contract.py`) passes and
-is unaffected: nothing here touches `/portfolio`'s markup, layout, spacing or
-colour. It stays a gate for any change that points the stylesheet at a new stone.
+The capture contract was the gate for a change that pointed the old stylesheet at
+a new stone. #141 deleted the page it measured, and #148 is what replaces it.
+`pnpm check` is the gate now, and it says nothing about which stone is right —
+that is still made by eye, here.
 
 ---
 
 ## Still open
 
-- ~~**Nothing ships yet.**~~ **`gemini-noir` ships.** `--panel-plinth-src` in
-  `portfolio/styles.css` points at `plinth-gemini-noir.webp?v=96a08f8f` — the
-  user's pick, made in the tuner. The `?v=` had drifted while nothing shipped:
+- ~~**Nothing ships yet.**~~ **`gemini-noir` ships.** It is named once, by
+  `--projects-panel-plinth-src` in `src/sections/projects-panel/tokens.css` —
+  the user's pick, made in the tuner. It was `--panel-plinth-src` in
+  `portfolio/styles.css` at the time, with a `?v=` that had drifted while nothing
+  shipped:
   the stylesheet still carried `de287c12` from #106 while two further bakes (#108
   and #114) had moved `slab.json`'s `version` to `912aa827`, so every plate URL
   on the deployment was a day-stale name for a file that had changed twice. All

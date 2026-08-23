@@ -13,10 +13,10 @@
   --fx-fade: 0;
 
   /* film — Texturelabs 185XL, one frame over the whole band, never tiled.
-     No ?v= digest, unlike the copy of these URLs in portfolio/styles.css: the
-     build fingerprints anything it can see in a url(), so what ships is
+     No ?v= digest, unlike the hand-written page's copy of these URLs: the build
+     fingerprints anything it can see in a url(), so what ships is
      /_astro/film-1600.<hash>.webp and a re-bake is a different filename by
-     construction. The digest that sheet carries is doing this job by hand. */
+     construction. That sheet had no build and carried the digest by hand. */
   --fx-film-src: image-set(
     url('/portfolio/img/tex/film-1600.webp') 1x,
     url('/portfolio/img/tex/film-2600.webp') 2x

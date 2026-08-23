@@ -13,7 +13,7 @@ export { z };
  * against schema, and component against either — because `data` is typed as the
  * schema's own input. The parse catches what a type cannot: a value that is the
  * right shape and the wrong thing, and any drift in a file TypeScript was not
- * asked about. `/next` is prerendered, so the parse runs at BUILD time; a Section
+ * asked about. `/portfolio` is prerendered, so the parse runs at BUILD time; a Section
  * whose Content does not satisfy its schema fails `pnpm build` rather than
  * shipping.
  *

@@ -1,0 +1,47 @@
+---
+// /portfolio — the Portfolio. One document, and the only one: the hand-written
+// tree that used to answer here is gone, and this is what a reader arrives at.
+//
+// `/portfolio/<section>` is this same document, rewritten onto this path by the
+// deployment (ADR 0001) and opened at the Section the last segment names. The
+// rewrites are declared in vercel.json, the local servers mirror them out of
+// that same file, and the Shell makes the jump.
+import FrontScreen from '../sections/front-screen/FrontScreen.astro';
+import ProjectsPanel from '../sections/projects-panel/ProjectsPanel.astro';
+import Shell from '../shell/Shell.astro';
+
+/** The social card, which is a photograph off this page rather than a rendering
+ *  of it — the same one the page it replaces named, so a link already shared
+ *  keeps its picture. */
+const CARD = 'https://chrisj.uk/portfolio/img/1100328.jpg';
+const HERE = 'https://chrisj.uk/portfolio';
+---
+
+<Shell
+  title="Christian Juresh"
+  description="Software engineer in London."
+>
+  <Fragment slot="head">
+    {/* CANONICAL FOR EVERY DEEP LINK, not only for this path. A rewrite serves
+        this document at `/portfolio/<section>` as well, so without this the same
+        page is indexed once per Section. */}
+    <link rel="canonical" href={HERE} />
+    <meta property="og:url" content={HERE} />
+    <meta property="og:image" content={CARD} />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:image" content={CARD} />
+  </Fragment>
+  {/* Nothing carries data-turn, and that is now the right answer rather than an
+      omission: with two Sections of one screen each the document's whole scroll
+      IS the page turn, which is exactly what the Kernel spans when nothing is
+      marked. Marking either Section instead would put `top top` and `bottom
+      bottom` on the same scroll position and make the crossing a flip — see the
+      Front Screen's NOTES.md, and the Check that asserts the span.
+
+      The stub is off the page. It was here to carry data-turn while the thing
+      above the Panel did not exist; the Front Screen is that thing now. Its
+      folder stays, because src/sections/stub/NOTES.md is still the authority on
+      the Section convention and rehoming that is not this ticket's. */}
+  <FrontScreen />
+  <ProjectsPanel />
+</Shell>

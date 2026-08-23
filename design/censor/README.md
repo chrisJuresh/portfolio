@@ -137,9 +137,9 @@ ffmpeg -i <run>/scroll-peek.webm \
 
 The WebM, the MP4 and a poster extracted from the first frame go to
 `portfolio/video/`, committed raw. **Re-cutting the clip means changing the
-`?v=` stamp**, which lives in exactly two places — the `poster` attribute in
-`portfolio/index.html` and `VERSION` in `portfolio/panel-clip.js`. `grep` the old
-one to be sure. `vercel.json` caches that directory as immutable, so a re-cut
+`?v=` stamp**, which lives in exactly one place now — `VERSION` in
+`src/sections/projects-panel/clip.ts`, which the poster and both sources are
+built from. `grep` the old one to be sure. `vercel.json` caches that directory as immutable, so a re-cut
 clip under an unchanged URL is served from cache for a year.
 
 ```bash

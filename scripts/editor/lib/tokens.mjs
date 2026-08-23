@@ -36,7 +36,7 @@
  * `scripts/editor/NOTES.md` is the rest of the reasoning.
  */
 
-import { Refused } from './content.mjs';
+import { Refused, unprintable } from './content.mjs';
 
 /** Long enough for the longest `color-mix()` in the repository, short enough
  *  that a runaway paste is caught before it reaches a file. */
@@ -44,21 +44,6 @@ const LONGEST = 300;
 
 /** A custom property, which is the only thing this file may address. */
 const PROPERTY = /^--[a-z0-9-]+$/;
-
-/**
- * The first character in `value` that is not printable, or null.
- *
- * A code-point walk rather than a character class, because a Token edit has to
- * stay a one-line diff and the thing being looked for is precisely the
- * characters a regex literal cannot be trusted to carry through a tool chain.
- */
-function unprintable(value) {
-  for (const ch of value) {
-    const code = ch.codePointAt(0);
-    if (code < 0x20 || (code >= 0x7f && code <= 0x9f)) return ch;
-  }
-  return null;
-}
 
 // ---------------------------------------------------------------------------
 // Reading the file

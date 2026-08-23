@@ -1,16 +1,73 @@
-// The part of the repository that is already a served site, named once.
+// What the deployment does with a path, spelled once so every local server can
+// do the same thing.
 //
-// `/next` is built by Astro into dist/; everything the site serves today is
-// plain files at the repository root and is not built by anything. Two things
-// need to agree about which those are — the dev server, which serves them
-// alongside /next, and the assemble step, which copies them into dist/ after a
-// build — so the list lives here rather than in both.
-//
-// Deliberately a whitelist of the four served paths and not "everything that is
-// not source". README.md, CONTEXT.md, docs/ and run.bat are uploaded to the
-// deployment today and nothing links them.
+// Two halves. The paths the build does not produce — the portal, the pictures,
+// the recordings, the faces — which are plain files at the repository root, laid
+// into dist/ after Astro has written it; and the routing rules from vercel.json,
+// which are the deployment's and which a local server has to mirror or it is
+// answering a different question from the one production answers.
 
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+
+/**
+ * The paths that are served verbatim rather than built.
+ *
+ * `portfolio` is on this list AND is a route the build writes, and that overlap
+ * is the shape of the site rather than an accident: `/portfolio` is the document
+ * Astro renders, and `/portfolio/img/`, `/portfolio/video/` are its assets, which
+ * no build step produces. assemble-dist.mjs is what merges the two, and it
+ * refuses on a FILE that both sides own rather than on a directory.
+ *
+ * Deliberately a whitelist of the four served paths and not "everything that is
+ * not source". README.md, CONTEXT.md, docs/ and run.bat are uploaded to the
+ * deployment today and nothing links them.
+ */
 export const STATIC_ROOTS = ['index.html', 'portfolio', 'projects', 'fonts'];
+
+/**
+ * The deployment's rewrites, READ OUT OF vercel.json rather than written down
+ * here.
+ *
+ * A deep link is `/portfolio/<section>` served as `/portfolio` (ADR 0001), and
+ * the file that decides it is vercel.json, because that is the one the
+ * deployment reads. A second list here would be a second thing to keep in step,
+ * and the failure it would cause is silent: the Checks passing against a rewrite
+ * production does not have. So this reads the same file, and the Checks assert
+ * that every Section on the page has one.
+ *
+ * @type {{ source: string, destination: string }[]}
+ */
+const REWRITES = (() => {
+  const file = fileURLToPath(new URL('../vercel.json', import.meta.url));
+  const config = JSON.parse(readFileSync(file, 'utf8'));
+  return Array.isArray(config.rewrites) ? config.rewrites : [];
+})();
+
+/**
+ * Where the deployment would serve `pathname` from, or null when it is served
+ * from `pathname` itself.
+ *
+ * Literal sources only, which is what vercel.json holds: a `:param` pattern
+ * would answer for paths nothing on the page names, and a deep link that 404s is
+ * a better failure than one that serves the document under any spelling.
+ *
+ * REWRITES ARE THE LAST THING VERCEL TRIES, after a file that exists — so this
+ * is only ever asked about a path that resolved to nothing, and `/portfolio/img/…`
+ * can never be taken by one.
+ *
+ * @param {string} pathname  request path, still URL-encoded
+ * @param {{ source: string, destination: string }[]} [rewrites]
+ * @returns {string | null}
+ */
+export function rewriteTarget(pathname, rewrites = REWRITES) {
+  const path = pathname.split('?')[0].split('#')[0];
+  // `cleanUrls` serves `/portfolio/projects/` as `/portfolio/projects`; the
+  // rewrite has to see the same path either way.
+  const bare = path.length > 1 ? path.replace(/\/+$/, '') : path;
+  const found = rewrites.find((rewrite) => rewrite.source === bare);
+  return found ? found.destination : null;
+}
 
 const MIME = {
   '.html': 'text/html; charset=utf-8',
@@ -82,6 +139,27 @@ export function resolveFile(baseDir, pathname, fs) {
     if (stat.isFile()) return full;
   }
   return null;
+}
+
+/**
+ * The file the DEPLOYMENT would answer `pathname` with, out of a built `dist/`.
+ *
+ * `resolveFile` is the filesystem half and this is the whole of it: a path that
+ * matches no file falls through to the rewrites, exactly as it does in
+ * production. Every local server that stands in for the deployment — `pnpm
+ * preview`, the Check runner, the Editor — goes through here, so a deep link is
+ * verified rather than assumed.
+ *
+ * @param {string} baseDir
+ * @param {string} pathname  request path, still URL-encoded
+ * @param {{ statSync: (p: string) => { isDirectory(): boolean, isFile(): boolean } }} fs
+ * @returns {string | null}
+ */
+export function deployedFile(baseDir, pathname, fs) {
+  const direct = resolveFile(baseDir, pathname, fs);
+  if (direct) return direct;
+  const rewritten = rewriteTarget(pathname);
+  return rewritten === null ? null : resolveFile(baseDir, rewritten, fs);
 }
 
 /**

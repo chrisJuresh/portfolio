@@ -36,7 +36,7 @@ them to be in, and the silhouette comes out of the alpha channel instead of bein
 assumed.
 
 THE CAMERA IS SOLVED FROM THE RENDER, NOT CHOSEN. IMG_20260815_153956.jpg is not
-in this repository — see the .panel block in portfolio/styles.css for why — so
+in this repository — see the Projects Panel's NOTES.md for why — so
 these are constants of the composition, but they are measurements and the camera
 that reproduces them is arithmetic:
 
@@ -109,10 +109,11 @@ everything, gives two different sha256s. The OptiX denoiser is the suspect
 (`use_denoising` on a GPU device), and it is not worth turning off to buy a
 property nothing here needs.
 
-What it costs is that digest() moves on EVERY bake, so the ?v= in
-portfolio/styles.css has to be re-pasted after any render whether or not the
-stone changed, and a changed digest is not evidence that anything changed. If you
-want to know whether a stone actually moved, compare the plates.
+What it costs is that digest() moves on EVERY bake, so a changed digest is not
+evidence that anything changed. If you want to know whether a stone actually
+moved, compare the plates. Nothing has to be re-pasted after a render any more:
+the plate is named by a url() the build can see, so it is fingerprinted by
+content — plinth-studio.py writes the filename and no digest.
 """
 
 from __future__ import annotations
@@ -1047,9 +1048,16 @@ BUILT_IN_PROC = list(CANDIDATES)
 # out of the built-ins alone. The room is a parameter of the stone instead.
 def tuned_stone():
     sys.path.insert(0, os.path.join(ROOT, "design", "bake"))
-    import tuning
-
-    held = tuning.bake("plinth")
+    try:
+        import tuning
+        held = tuning.bake("plinth")
+    except (ImportError, FileNotFoundError) as why:
+        # A tree without design/bake/ still renders every built-in. This door is
+        # the Editor's, and a missing one is a Bake nobody can run rather than a
+        # generator nobody can run - which is the difference between losing a
+        # feature and losing the eight plates the comparison was judged from.
+        print("! no design/bake/plinth (%s) - built-ins only" % why)
+        return {}
     key = held.text("stone").strip()
     if key in CANDIDATES or key in PHOTO_CANDIDATES or key in PROC_ROOMS:
         print("! design/bake/plinth names %s, which this file already defines - "

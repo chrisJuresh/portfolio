@@ -46,8 +46,8 @@ this is the decision this file's opening paragraph says adding one has to be.
 **`--type-scale` is measured, not derived.** The live sheet solves its own budget
 symbolically, which it can do because it holds `--cv-static` — one measured
 constant standing for "everything on the page that is not the strip", with a
-comment asking whoever changes the ladder to re-measure it. `/next` deliberately
-has no such constant, because layout does that arithmetic there, so there is
+comment asking whoever changes the ladder to re-measure it. This tree deliberately
+has no such constant, because layout does that arithmetic here, so there is
 nothing here to solve for. This number came from measuring the composition at the
 band's corners, and what keeps it honest is `carousel` asserting the strip clears
 the Section's own floor Token at both ends of the band. It lands within about 1% of
@@ -58,8 +58,8 @@ pixel of margin, and slack is free here, because asking for a smaller rem than t
 budget allows only makes the remainder larger. Only a rem that is too BIG costs
 anything.
 
-**It is measured at one width.** The cut word is fitted to the gutter on `/next`,
-so the budget carries a width term and a 2560x700 window asks for a smaller rem
+**It is measured at one width.** The cut word is fitted to the gutter here, so
+the budget carries a width term and a 2560x700 window asks for a smaller rem
 than this. That costs a smaller photograph and never an overflowing page — the
 strip is the remainder, so it absorbs the difference — and it is the same extreme
 the live sheet names and composes for rather than optimises for.
@@ -98,8 +98,8 @@ the symptom is a flat grey wash that reads as "the strengths are too high", whic
 is a day spent tuning the wrong numbers. `scripts/check-source.mjs` fails the
 build on it; `effect-stack.css` carries the measurement.
 
-Nine layers, and the names are CONTEXT.md's. That is one divergence from
-`portfolio/styles.css`, deliberately: the sheet gates the grille, the scan, the
+Nine layers, and the names are CONTEXT.md's. That is one divergence from the
+hand-written page's stylesheet, deliberately: it gated the grille, the scan, the
 roll and the tube on one token called `crt`, and here each is named separately
 because the glossary lists four layers rather than one. Turning all four on is
 `data-fx="… grille scan roll tube"`.
@@ -129,10 +129,10 @@ against that. Cheap, and the honest alternative — remembering the failure — 
 also remember a network blip. Worth knowing before reading a resize storm in a
 network panel as a bug.
 
-**`LADDER_BASE` is the one line in `src/` pointing at the old tree.** The files
-are still the ones `design/plate/build-plate.py` writes into `portfolio/img/`,
-because `/next` is not replacing `/portfolio` yet. The ticket that flips the route
-moves the bytes and changes that constant; nothing else knows where they live.
+**`LADDER_BASE` is the one line in `src/` that knows where the ladder is.** The
+files are the ones `design/plate/build-plate.py` writes into `portfolio/img/`,
+which the build does not produce and `scripts/assemble-dist.mjs` lays into
+`dist/portfolio/` beside the document. Nothing else here knows where they live.
 
 Two things the live page does that are **not** here yet, both because they belong
 to the Front Screen's composition rather than to the Kernel: the `plate-wait`
@@ -142,7 +142,7 @@ edge. `--car-fade` is 0 on the live page today, so nothing is missing from what
 ships; the mask is not written at all rather than written and inert.
 
 `--eye-x` diverges: on the live page it is measured inboard from the Front
-Screen's photo strip, which did not exist on `/next` when this was written, so
+Screen's photo strip, which did not exist here when this was written, so
 here it is measured out from the right edge and parked at 0. The strip landed with
 #137, so the thing it was waiting for is there — and it is still parked, because
 where the eye stands against the photographs is a judgement made by looking and
@@ -152,12 +152,12 @@ not a length anything here can derive.
 
 The fonts and the two Effect Stack textures are referenced from CSS `url()`, so
 Vite emits them into `/_astro/` under a content hash and rewrites the references.
-That is why there is no `?v=` digest here where `portfolio/styles.css` has one —
-the hash does that job by construction, and `vercel.json` caches `/_astro/`
-immutably.
+That is why there is no `?v=` digest here where the hand-written page's
+stylesheet carried one by hand — the hash does that job by construction, and
+`vercel.json` caches `/_astro/` immutably.
 
-The cost is that those bytes ship twice while both trees are deployed, about
-1.1 MB. It ends when `/next` replaces `/portfolio`.
+Those bytes used to ship twice, about 1.1 MB, while both trees were deployed.
+#141 deleted the other one.
 
 The corner pictures are **not** fingerprinted, because their URLs are built in
 script rather than written in CSS and the bundler cannot see them. They keep the

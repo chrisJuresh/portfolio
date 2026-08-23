@@ -1,10 +1,12 @@
 @echo off
-rem Double-click this file to preview the site locally.
-rem Serves the repo root so /portfolio resolves like it does on chrisj.uk (it
-rem sets an absolute <base href>). Not everything matches: this server does not
-rem read vercel.json, so /projects lists a directory instead of redirecting to
-rem /portfolio#projects, and it serves /portfolio/ where Vercel's cleanUrls
-rem serves /portfolio. Close the window or press Ctrl+C to stop.
+rem Double-click this file to serve the repo root locally. This is what the
+rem tuners under design/ are opened through: they are plain HTML and they reach
+rem for ../portfolio/img/ and the rest by relative path, which only resolves
+rem under the server root.
+rem
+rem IT DOES NOT SERVE THE SITE. /portfolio is built now - `pnpm dev`, or `pnpm
+rem build` then `pnpm preview`, and README.md's "The build" says which is for
+rem what. Close the window or press Ctrl+C to stop.
 
 setlocal EnableDelayedExpansion
 cd /d "%~dp0"

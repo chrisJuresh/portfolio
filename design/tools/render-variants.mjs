@@ -76,9 +76,8 @@ const SECTIONS = join(ROOT, 'src', 'sections');
 
 /* ---- the matrix --------------------------------------------------------- */
 
-/** The route the Sections are on. Temporary by construction — /portfolio is
- *  still the live document, and the ticket that flips the route moves this. */
-const ROUTE = '/next';
+/** The route the Sections are on. */
+const ROUTE = '/portfolio';
 
 const VIEWPORTS = {
   desktop: { width: 1280, height: 900 },
@@ -156,7 +155,7 @@ const out = resolve(ROOT, OUT_REL);
 for (const key of viewKeys) if (!VIEWPORTS[key]) fail(`unknown viewport "${key}" — have: ${Object.keys(VIEWPORTS).join(', ')}`);
 for (const p of progresses) if (!Number.isFinite(p) || p < 0 || p > 1) fail(`--progress takes numbers from 0 to 1, not "${p}"`);
 if (turn !== null && (!Number.isFinite(turn) || turn < 0 || turn > 1)) fail('--turn takes a number from 0 to 1');
-/* Git Bash rewrites a lone `/next` into a Windows path on the way in, and the
+/* Git Bash rewrites a lone `/portfolio` into a Windows path on the way in, and the
    error that comes out the far end is Chromium's `Cannot navigate to invalid
    URL` against a mangled origin, which reads as anything but a shell problem. */
 if (!route.startsWith('/')) fail(`--route must begin with "/" — got "${route}". A POSIX shell on Windows may have rewritten it`);

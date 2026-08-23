@@ -148,18 +148,20 @@ session to fix a repository that cannot fix it — three entries did exactly tha
 **Grep the refusal against `.claude/hooks/worktree-guard.py` before writing "fix
 it upstream": if the words are not in that file, the guard did not say them.**
 
-## The build, and /next
+## The build
 
-This repository is two sites in one tree, and which one you are looking at decides
-everything else about how to work in it.
+`/portfolio` is the Portfolio, and it is an Astro and TypeScript tree under
+`src/`. There is no second site: #141 deleted the hand-written page that used to
+answer here and took `/next`, the temporary route the port was built at, down
+with it.
 
-`/portfolio` is the live document, and it is still plain files with no build step:
-`portfolio/index.html`, `portfolio/styles.css` and the scripts beside them. It is
-served exactly as it sits. Nothing below applies to it.
-
-`/next` is the Portfolio's new foundation — an Astro and TypeScript tree under
-`src/`, built to a temporary route so `/portfolio` keeps working through every
-porting ticket. A later ticket flips the route.
+Four paths are still served verbatim rather than built — the portal at `/`, the
+pictures and recordings under `/portfolio/`, `/projects/` and the faces under
+`/fonts/`. `scripts/static-tree.mjs` names them once, the dev server serves them
+alongside Astro's routes, and `scripts/assemble-dist.mjs` lays them into `dist/`
+after a build. `dist/portfolio/` is therefore both the document Astro rendered
+and the pictures it reaches for, which is why that step judges a collision per
+file rather than per directory.
 
 ```bash
 pnpm install --frozen-lockfile
@@ -169,13 +171,21 @@ pnpm install --frozen-lockfile
 pnpm build
 ```
 
-`pnpm dev` runs Astro's dev server and serves the existing static site beside it,
-so `/portfolio` and `/next` both answer on one origin. `pnpm build` runs the
-source checks, typechecks, builds, and assembles `dist/` — Astro's output plus
-`index.html`, `portfolio/`, `projects/` and `fonts/` copied in. `pnpm preview`
-serves that `dist/`, **of the tree it is run from**, which is why it exists rather
-than the in-app preview: that serves the main checkout and would report on
-`development` while looking like it reported on your branch.
+`pnpm dev` runs Astro's dev server with those four paths and the deep-link
+rewrites answered beside it, so one origin behaves as the deployment does.
+`pnpm build` runs the source checks, typechecks, builds, and assembles `dist/`.
+`pnpm preview` serves that `dist/`, **of the tree it is run from**, which is why
+it exists rather than the in-app preview: that serves the main checkout and would
+report on `development` while looking like it reported on your branch.
+
+**`/portfolio/<section>` is the same document, rewritten onto that path and
+opened at the Section the last segment names** (ADR 0001). The rewrites are
+declared in `vercel.json` and NOWHERE ELSE: `static-tree.mjs` reads that file, so
+`pnpm preview`, the Check runner and the Editor all answer a deep link the way
+production does. A Section is deep-linkable by carrying an `id`, and the
+`deep-links` Check asks the served document which Sections it is made of and
+requires a working link for each — so a Section added without its rewrite fails
+the build rather than shipping a URL that 404s.
 
 Every dependency version is pinned exactly and nothing is updated on a schedule
 (ADR 0002). pnpm's settings live in `pnpm-workspace.yaml`, not `.npmrc` — pnpm 11
@@ -253,7 +263,7 @@ browser, never in the preview. **Never open the Editor through the in-app previe
 either**: it serves the main checkout, so in a worktree it would let a Content
 edit be made against one tree while looking at another.
 
-## Verifying a change to /next
+## Verifying a change
 
 ```bash
 pnpm check
@@ -281,29 +291,23 @@ make a Check silently assert nothing while reading as though it asserts somethin
 `pnpm check -- --no-build --only ground,moments` while iterating. `pnpm test` runs
 the runner's own unit tests on their own; `pnpm check` runs them first anyway.
 
-## Verifying a change to /portfolio
+## The external capture is broken, and #148 is what mends it
 
 `/portfolio` has a consumer outside this repository: the author's GitHub profile
 README is an hourly screenshot of it, taken by `chrisJuresh/chrisJuresh`. It
-asserts hard on structure and geometry, so it breaks loudly, and asserts nothing
-about colour, so a theme regression breaks it silently for an hour. Before landing
-anything that touches `/portfolio`'s markup, layout, spacing or colour:
+asserts hard on the hand-written page's structure and geometry — `.page`, `.col`,
+`.slide`, a `.listing` whose `h2` is exactly `Work Experience` — and #141 deleted
+that page. **The job therefore throws every hour and the profile keeps its last
+preview**, which is the sequencing the author chose: #148 is blocked on #141 and
+is where the capture is made to work against the flipped `/portfolio` and taken
+off its schedule.
 
-```bash
-python design/tools/check-capture-contract.py
-```
-
-It serves the tree it is invoked from, fetches the profile repo's capture script
-at run time, and reports `captureWidth` (592), `cropHeight` (852), the four
-gutters (80) and the mean luminance of both renders. Exit `0` passes, `1` is a
-broken contract, `2` means it could not run.
-
-**Do not verify this with the in-app preview** — it serves the main checkout, not
-the worktree the edit is in, so it measures `development` while looking like it
-measured your branch. [`docs/agents/capture-contract.md`](docs/agents/capture-contract.md)
-has the rest of the traps, the baseline comparison recipe, and which of the four
-numbers may legitimately move. #148 retires this consumer; until it lands, the
-contract holds.
+`python design/tools/check-capture-contract.py` cannot pass in the meantime and
+is not a gate on anything. Nothing in this repository is constrained by that
+consumer any more; `pnpm check` is the gate.
+[`docs/agents/capture-contract.md`](docs/agents/capture-contract.md) is still the
+account of what the capture asserts and which traps it exists to avoid, which is
+what #148 needs.
 
 ## Domain docs
 

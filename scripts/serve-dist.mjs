@@ -16,7 +16,7 @@
 import { createReadStream, statSync } from 'node:fs';
 import { createServer } from 'node:http';
 import { fileURLToPath } from 'node:url';
-import { contentType, resolveFile } from './static-tree.mjs';
+import { contentType, deployedFile } from './static-tree.mjs';
 
 const dist = fileURLToPath(new URL('../dist', import.meta.url));
 const port = Number(process.argv[2] ?? process.env.PORT ?? 4321);
@@ -29,7 +29,7 @@ try {
 }
 
 createServer((request, response) => {
-  const file = resolveFile(dist, request.url ?? '/', { statSync });
+  const file = deployedFile(dist, request.url ?? '/', { statSync });
   if (!file) {
     response.statusCode = 404;
     response.end('not found\n');
@@ -42,5 +42,5 @@ createServer((request, response) => {
     .on('error', () => response.destroy())
     .pipe(response);
 }).listen(port, () => {
-  console.log(`serve-dist: ${dist}\nserve-dist: http://localhost:${port}/next`);
+  console.log(`serve-dist: ${dist}\nserve-dist: http://localhost:${port}/portfolio`);
 });

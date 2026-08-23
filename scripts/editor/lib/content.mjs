@@ -33,6 +33,26 @@ export class Refused extends Error {
   }
 }
 
+/**
+ * The first character in `value` that is not printable, or null.
+ *
+ * A code-point walk rather than a character class, because the thing being
+ * looked for is precisely the set a regex literal cannot be trusted to carry
+ * through a tool chain — and every one of the Editor's boundaries has to refuse
+ * it. A Token holding one is a stylesheet with a control character in it; a
+ * Bake's parameter holding one reaches an argument list.
+ *
+ * Here, and not in each of them, because two spellings of "what may not be
+ * written" is exactly the disagreement this repository pays for elsewhere.
+ */
+export function unprintable(value) {
+  for (const ch of value) {
+    const code = ch.codePointAt(0);
+    if (code < 0x20 || (code >= 0x7f && code <= 0x9f)) return ch;
+  }
+  return null;
+}
+
 /** A Content string is one run of words, so a newline or a tab is a refusal. */
 const CONTROL = /[\u0000-\u001f\u007f-\u009f]/;
 

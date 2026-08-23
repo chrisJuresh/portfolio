@@ -3,12 +3,12 @@ import { DESK, open, settle } from '../lib/page.mjs';
 /**
  * The Front Screen's former invariants, as assertions.
  *
- * Every one of these was a paragraph in `portfolio/styles.css` saying "do not
- * break this", and every one of them fails in a way a person looking at the
- * running page would not notice: a word that is a picture losing the text a
- * screen reader announces, a drawing cut two and a half per cent of a capital
- * too high, the two margins the composition is built on drifting apart by four
- * pixels, a switch whose ARIA stops agreeing with the paper it is on.
+ * Every one of these was a paragraph in the hand-written page's stylesheet
+ * saying "do not break this", and every one of them fails in a way a person
+ * looking at the running page would not notice: a word that is a picture losing
+ * the text a screen reader announces, a drawing cut two and a half per cent of a
+ * capital too high, the two margins the composition is built on drifting apart
+ * by four pixels, a switch whose ARIA stops agreeing with the paper it is on.
  *
  * None of them is aesthetic. The sizes, the gaps and the colours are the
  * author's, exercised through Tokens; what is asserted here is only ever a

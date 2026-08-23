@@ -140,7 +140,7 @@ function list(sh, cwd) {
         ? 'no server'
         : held.pid === null
           ? `port ${held.port}, nothing serving it`
-          : `http://127.0.0.1:${held.port}/next`;
+          : `http://127.0.0.1:${held.port}/portfolio`;
     console.log(`  ${held.branch.padEnd(30)} ${where.padEnd(34)} ${held.path}`);
   }
   return 0;

@@ -50,7 +50,7 @@
  * `scripts/editor/NOTES.md` is the rest of the reasoning.
  */
 
-import { Refused } from './content.mjs';
+import { Refused, unprintable } from './content.mjs';
 
 /** The two file names a Bake holds. Neither is a parameter, anywhere. */
 export const RECIPE = 'recipe.json';
@@ -66,18 +66,6 @@ const LONGEST = 300;
 
 /** A flag, as a generator's own argument parser spells one. */
 const FLAG = /^--[a-z0-9][a-z0-9-]*$/;
-
-/** The first character in `value` that is not printable, or null. A code-point
- *  walk rather than a character class, for the reason `tokens.mjs` gives: these
- *  are exactly the characters a regex literal cannot be trusted to carry through
- *  a tool chain, and here they reach an argument list. */
-function unprintable(value) {
-  for (const ch of value) {
-    const code = ch.codePointAt(0);
-    if (code < 0x20 || (code >= 0x7f && code <= 0x9f)) return ch;
-  }
-  return null;
-}
 
 const isNumber = (text) => text.trim() !== '' && Number.isFinite(Number(text));
 

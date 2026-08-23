@@ -69,7 +69,7 @@ directory's `dist/`, on an ephemeral port so two features in flight never collid
 pane at all, which is the other half of the same rule: lazy mounting and motion
 cannot be verified there even by hand.
 
-## The ten Checks
+## The eleven Checks
 
 | Check            | fails when                                                                  |
 | ---------------- | --------------------------------------------------------------------------- |
@@ -78,9 +78,10 @@ cannot be verified there even by hand.
 | `console`        | anything logs an error or throws, including across a theme flip — warnings deliberately not, because on this page they are nearly always Chromium's own |
 | `faces`          | a declared `@font-face` will not load, or no face Token names a declared family |
 | `front-screen`   | the Front Screen's rhyme, its one-screen budget, the Cut Title's cut or its accessible name, the crossing's span, the switch's ARIA, or the type's place in the Effect Stack breaks |
-| `projects-panel` | a control in the Frame leaves the centre its own Token names, the window and its titlebar are cut to two radii, the recording's box stops being inset on three sides, the occlusion of the subheading's second line moves or stops being painted, the titlebar reports a rung it is not made of, the chrome grows a control, the small-Frame reduction starts asking about the window instead of the Frame, the Plinth's depths stop being shares of the Frame or its slab stops being symmetric about it, the reflection stops being a life-size fold of the window, the marble stops being drawn without script, a reader who asked for reduced motion is charged for the recording, or `/next` and `/portfolio` stop standing on the same stone |
+| `projects-panel` | a control in the Frame leaves the centre its own Token names, the window and its titlebar are cut to two radii, the recording's box stops being inset on three sides, the occlusion of the subheading's second line moves or stops being painted, the titlebar reports a rung it is not made of, the chrome grows a control, the small-Frame reduction starts asking about the window instead of the Frame, the Plinth's depths stop being shares of the Frame or its slab stops being symmetric about it, the reflection stops being a life-size fold of the window, the marble stops being drawn without script, or a reader who asked for reduced motion is charged for the recording |
 | `ground`         | paper is not light, or the Turn does not arrive dark, in either theme         |
 | `moments`        | a Timeline cannot be seeked, does not survive a scroll, moves nothing, or will not release |
+| `deep-links`     | a Section on the page carries no id, or its `/portfolio/<id>` does not answer, or answers with something that is not the document, or opens it somewhere other than where that Section asks to be put |
 | `unpublishable`  | a Section's words or its spoken attributes match the denylist                 |
 | `editor`         | the Editor cannot change a word or drag a Token on the real page, or the change does not reach the file, or a refusal does, or a drag writes on every frame, or a Timeline cannot be scrubbed and held, or the Editor is in the built tree |
 
@@ -112,15 +113,16 @@ would look identical on screen while costing the reader the clip. `open()` takes
 can `settle()`** — nothing scrubs under the first and nothing mounts at all under
 the second, so anything about a Timeline has to stay in the ordinary pass.
 
-It is also the first Check to read a file out of the repo rather than only the
-served page, and the case is worth knowing before copying it: the Plinth's plate
-is declared in `/next`'s Tokens **and** in `portfolio/styles.css`, and the tool
-that picks a stone rewrites only the second. Nothing about either page renders
-wrongly when they diverge — both keep passing everything else — so the only place
-the disagreement exists is between two files, and that is where it has to be
-read. `run(ctx)` hands over `repoRoot` for exactly this. It is still an assertion
-about a relationship and not about which stone is right: point both declarations
-somewhere else and it passes.
+It used to be the only Check to read a file out of the repo rather than only the
+served page, and the case is worth knowing because the shape recurs: the Plinth's
+plate was declared in the Section's Tokens **and** in the hand-written page's
+stylesheet, and the tool that picks a stone rewrote only the second. Nothing
+about either page rendered wrongly when they diverged — both kept passing
+everything else — so the only place the disagreement existed was between two
+files, and that is where it had to be read. #141 deleted the second declaration
+and the assertion went with it; `run(ctx)` still hands over `repoRoot` for the
+next one of these. **A Check may read the repository, and should, when the thing
+that can break is an agreement between two files rather than anything on screen.**
 
 It is also the first Check to measure at a window chosen for a REGIME rather than
 for a size. The Frame's chrome sheds its small glyphs below a Frame of 520px and
@@ -128,6 +130,16 @@ the gate is a container query, so the window that tells a container query from a
 media one is a short wide one — 1440x450, where the fit solves the Frame to 468
 while the viewport is nowhere near 520. Measured at DESK alone that whole
 mechanism could be a media query and nothing would say so.
+
+`deep-links` is the one Check that derives its own subject from the page. Every
+other Check knows what it is asserting about before it opens anything; this one
+asks the served document which Sections it is made of and then requires a working
+`/portfolio/<id>` for each. The direction matters and is worth copying when it
+fits: reading vercel.json and asserting those paths work would pass a deployment
+that had a rewrite for every Section it USED to have. It also does not assert a
+bare zero for where an arrival lands — a Section may declare a
+`scroll-margin-top`, and the Projects Panel does, so what is compared is the
+Section's top edge against the inset the Section itself asked for.
 
 `carousel` is the first Check to assert a Section's CHOREOGRAPHY
 rather than the mechanism under it: `moments` says a Timeline can be seeked and

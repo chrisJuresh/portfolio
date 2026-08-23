@@ -1,7 +1,7 @@
 {
   "title": "The cut title's face",
-  "note": "PROJECTS at the foot of the page is a picture of type rather than type: one set of outlines, no font on the wire. The morph runs from Friz Quadrata to a second face, and this is which face. All twenty-four were previewable in the tuner and exactly one ships, because faces.json is 700 KB and the page carries one face's outlines inline.",
-  "needs": "the font files, which are not in this repository, and design/cut-title/morph/faces.json - which is. Without the fonts the run stops before it writes anything.",
+  "note": "Which of the twenty-four faces the cut title morphs INTO. THERE IS NO MORPH ON THE SITE TODAY: it was the hand-written page's, and #141 deleted that tree without porting it - the Front Screen ships the cut title as one baked picture and never morphs it. So this Bake writes the shortlist the tuner reads and holds the choice; whichever ticket brings the morph back points build-site.py's --site at the file it lands in, and the face named here is the one it will carry.",
+  "needs": "the font files, which are not in this repository - run it beside friz/, gf/ and fsf/ as design/cut-title/morph/README.md describes. Without them there is nothing to build from and the run stops before it writes anything.",
   "run": [
     "python",
     "design/cut-title/morph/build-site.py",
@@ -9,7 +9,7 @@
     "."
   ],
   "shows": [
-    "portfolio/cut-morph.js"
+    "design/cut-title/morph/faces.json"
   ],
   "groups": [
     {
@@ -47,7 +47,7 @@
             "sora",
             "outfit"
           ],
-          "note": "The face the word morphs INTO. At t = 0 every one of them is identical, because they are all Friz there."
+          "note": "The face the word morphs INTO. At t = 0 every one of the twenty-four is identical, because they are all Friz there. Host Grotesk is OFL; the twelve Fontshare faces are free for commercial use and are not, so choosing one of those reopens a licensing question."
         }
       ]
     }

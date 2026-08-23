@@ -44,11 +44,10 @@
  */
 
 /**
- * Where the recording's bytes are, and one of the three lines in `/next` that
- * point at the old tree — `src/kernel/corners.ts` and the Front Screen's
- * photographs are the others. The files are still the ones `/portfolio` serves,
- * because `/next` is not replacing it yet; the ticket that flips the route moves
- * the bytes and changes this constant.
+ * Where the recording's bytes are, and one of the three lines in the tree that
+ * know — `src/kernel/corners.ts` and the Front Screen's photographs are the
+ * others. `/portfolio/video/` is not built by anything: it is laid into dist/
+ * beside the document by scripts/assemble-dist.mjs.
  */
 const RECORDING_BASE = '/portfolio/video/';
 

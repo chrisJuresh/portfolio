@@ -1,7 +1,7 @@
 /* The Projects Panel's Variants — none yet, deliberately.
 
-   This ticket is a port: the Panel reads on `/next` as it reads today, and every
-   number in `tokens.css` is the live sheet's own. Its text, its sizes, its
+   The Panel arrived here as a port: it reads as the hand-written page's did, and
+   every number in `tokens.css` is that sheet's own. Its text, its sizes, its
    positioning and its motion are all due a rework, and that rework is a later
    session by design — once the Editor exists, so the alternatives can be judged
    by eye against the real page rather than argued in prose. A direction invented

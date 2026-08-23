@@ -16,12 +16,10 @@ is not an inconsistency.
 ## In use — Vollkorn, Spectral, Source Serif 4
 
 `/portfolio` is set in these. They replaced the Sitka stack, which named system
-faces and shipped no files; the `@font-face` blocks are at the top of
-`portfolio/styles.css` rather than in a stylesheet of their own, because every
-word on the page needs one of these faces and a second `<link>` would block the
-first paint.
-
-`/projects` is untouched and still runs its own stack.
+faces and shipped no files; the `@font-face` blocks are in `src/kernel/faces.css`
+rather than in a stylesheet of their own, because every word on the page needs
+one of these faces and a second `<link>` would block the first paint. They were
+at the top of `portfolio/styles.css` while the page was hand-written.
 
 | File | Size | Slot | Used for |
 |---|---|---|---|
@@ -95,8 +93,8 @@ python -m fontTools.subset _vk400.ttf \
 ```
 
 The subset is deliberately the same wide one Latin Modern got, rather than the
-handful of glyphs the current text needs. `portfolio/content.js` is written to be
-hand-edited — its own header says so — and the year strings are prose
+handful of glyphs the current text needs. A Section's `content.ts` is written to
+be edited — `pnpm editor` is how — and the year strings are prose
 (`"2024–Present"`), not digits. A subset cut to today's characters would fail on
 the next content edit, and fail as a missing glyph rather than as an error.
 
@@ -160,16 +158,15 @@ design number rather than a measured one and say so in the comment.
 ## In use — Host Grotesk
 
 The Projects Panel at the foot of `/portfolio` is set in this, and nothing above
-it is. Its `@font-face` pair sits with the other five at the top of
-`portfolio/styles.css`, and `--sans-panel` is the slot.
+it is. Its `@font-face` pair sits with the other five in `src/kernel/faces.css`.
 
 **It is not a sixth reading face and it is not an inconsistency.** The page is two
 compositions: a CV set as a printed page, and — past the cut title and the
 doorway — one project shown as an interface. The cut title is the hinge between
-them, and it *morphs into Host Grotesk* as the page scrolls
-(`design/cut-title/morph`, `portfolio/cut-morph.js`). Setting the Panel in
-anything else would mean the word arrives in one face and the section it titles is
-set in another.
+them, and it *morphed into Host Grotesk* as the page scrolled
+(`design/cut-title/morph`, and the runtime that did it went with the hand-written
+page). Setting the Panel in anything else would mean the word arrives in one face
+and the section it titles is set in another.
 
 | File | Size | wght | Used for |
 |---|---|---|---|
@@ -274,7 +271,8 @@ derived from the design render as a share of the viewport rather than borrowed
 from the column above.
 
 Ascender minus descender is **1.330 em** (1015 / −315 at 1000 upem), and that
-number is load-bearing in `portfolio/styles.css`: `--panel-frame-drop` derives
+number is load-bearing in the Projects Panel: `--projects-panel-frame-drop-share`
+derives
 the Frame's overlap of the subheading's second line from the half-leading it
 implies at `line-height: 1`. **Re-derive it if this face is ever replaced** — the
 comment on that property has the whole arithmetic.
@@ -321,7 +319,7 @@ directly usable as web fonts.
 |---|---|---|
 | `lmroman10-regular.woff2` | 21 KB | body and titles |
 | `lmroman10-italic.woff2` | 25 KB | italics |
-| `lmroman10-bold.woff2` | 20 KB | `font-weight: 700` (portfolio/styles.css) |
+| `lmroman10-bold.woff2` | 20 KB | `font-weight: 700` |
 | `lmroman9-regular.woff2` | 21 KB | small text, optional |
 | `lmroman8-regular.woff2` | 21 KB | smallest text, optional |
 | `lmroman12-regular.woff2` | 21 KB | large headings, optional |
@@ -487,8 +485,8 @@ Vollkorn's is only 4% below it, not the 11.6% Latin Modern needs).
 Ernst Friz's 1973 face, in Adobe's Std cut. It set exactly one word — the cut
 title at the foot of `/portfolio` — and **it is no longer here.** Four files were
 deleted (`frizquadrata-{regular,bold}.woff2` and the `-fixedmetrics` pair built
-from them), along with the `@font-face` blocks in `portfolio/styles.css` and in
-`fonts.css`, and the `--serif-display` family name. Nothing on this site names,
+from them), along with the `@font-face` blocks that served it and the
+`--serif-display` family name. Nothing on this site names,
 serves or falls back to the face.
 
 ### Why, and what took its place
@@ -497,15 +495,16 @@ Serving it meant redistributing a commercial Adobe/ITC cut from `chrisj.uk`, and
 a file sitting in `/fonts` is served whether or not a page links it. So the word
 stopped being type and became a picture of type: `design/cut-title/build-cut-title.py`
 sets PROJECTS once, at the tracking it was always set at, and bakes the eight
-glyphs to a single SVG path that `portfolio/app.js` carries inline. The result is
+glyphs to a single SVG path, `src/sections/front-screen/assets/cut-title.svg`,
+which the Section compiles inline into its own markup. The result is
 vector, so it is exact at any size and any pixel density — and it was checked
 rather than assumed, by rasterising the baked path and the live font side by side
 and comparing them: the outlines coincide at scale 1.000 with the residual
 confined to antialiasing along the letters' edges.
 
 Everything the page needed the font's metrics for is now derived from the
-outlines and printed by the build script. See the cut title section of
-`portfolio/styles.css`.
+outlines and printed by the build script. See the `--front-screen-cut-*` block in
+`FrontScreen.astro`.
 
 ### To re-bake it
 

@@ -341,7 +341,7 @@ a property of the drawing, not a number to tune.
 masthead's.** On the live page the word's cap height *is*
 `--panel-masthead-size`'s cap, so that the same word at the same size is cut by
 the fold on the first screen and printed as the Projects Panel's masthead on the
-second. There is no Panel on `/next` yet. `--front-screen-cut-fit` is the left
+second. There was no Panel on the page yet. `--front-screen-cut-fit` is the left
 gutter here — the page's margin on both sides of it, which is what the live sheet
 did before that relationship existed — and **#138 re-points it at the masthead**,
 which is what that ticket means by preserving the relationship as a relationship.

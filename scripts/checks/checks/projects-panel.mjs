@@ -1,6 +1,3 @@
-import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
-
 import { DESK, open, settle, withoutOrigin } from '../lib/page.mjs';
 
 /**
@@ -1135,77 +1132,12 @@ async function withoutMotion(browser, origin) {
   }
 }
 
-/**
- * The two trees draw the same stone.
- *
- * `/next` names its plate in `tokens.css` and `/portfolio` names it in
- * `styles.css`, and `design/legacy/plinth-studio.py` rewrites only the second —
- * so applying a stone in the studio changes one of the two sites and says
- * nothing. That is the one acceptance criterion of this Section's Plinth with
- * the most room to go wrong quietly: both pages keep rendering, both keep
- * passing every other assertion, and the two simply stop being the same
- * drawing.
- *
- * So it is asserted rather than documented. This reads the served page's own
- * computed plate — not the source, so it also covers the build having
- * fingerprinted it into a different filename — and looks for the basename the
- * live sheet's default declaration names.
- *
- * IT IS NOT AN ASSERTION ABOUT WHICH STONE IS RIGHT. Point both declarations at
- * another plate and this passes; point one of them at another plate and it does
- * not. The choice is the bake-off's, recorded in docs/agents/plinth-marble.md
- * and made by eye.
- *
- * The regex is anchored the way the studio's own is, on a declaration with
- * nothing but indent before it, so it cannot match the `[data-marble="…"]`
- * candidate rules further down that sheet — those carry a selector on the line.
- */
-function oneStone(read, repoRoot) {
-  /** @type {string[]} */
-  const failures = [];
-  const sheet = join(repoRoot, 'portfolio', 'styles.css');
-
-  /** @type {string} */
-  let live;
-  try {
-    live = readFileSync(sheet, 'utf8');
-  } catch {
-    // The live sheet going away is the route flip, which deletes the other
-    // declaration and with it the reason this exists. Not a failure.
-    return failures;
-  }
-
-  const declared = [...live.matchAll(/^[ 	]*--panel-plinth-src:[ 	]*url\("([^"]+)"\)/gm)];
-  if (declared.length !== 1) {
-    failures.push(
-      `portfolio/styles.css holds ${declared.length} default --panel-plinth-src declarations and this expects ` +
-        'exactly one — the sheet has moved under design/legacy/plinth-studio.py as well as under this Check',
-    );
-    return failures;
-  }
-
-  /* THE STEM AND NOT THE FILENAME. The build fingerprints the plate into
-     `plinth-….<hash>.webp`, so what survives from the source name is everything
-     up to the extension — which is also the part the studio writes. */
-  const named = (declared[0][1].split('?')[0] ?? '').split('/').pop() ?? '';
-  const wanted = named.replace(/\.[a-z0-9]+$/i, '');
-  if (!wanted) return failures;
-  if (!read.plinth.plate.includes(wanted)) {
-    failures.push(
-      `the Plinth draws ${read.plinth.plate} and portfolio/styles.css draws ${named} — the two trees have ` +
-        'stopped standing on the same stone. plinth-studio.py rewrites the live sheet and knows nothing about ' +
-        'src/sections/projects-panel/tokens.css, so applying a stone changes one site and says nothing.',
-    );
-  }
-  return failures;
-}
-
 export const check = {
   name: 'projects-panel',
   title: "the Frame and the Plinth: geometry, occlusion, reflection, ladder and reduction",
 
-  /** @param {{ browser: import('playwright').Browser, origin: string, repoRoot: string }} ctx */
-  async run({ browser, origin, repoRoot }) {
+  /** @param {{ browser: import('playwright').Browser, origin: string }} ctx */
+  async run({ browser, origin }) {
     /** @type {string[]} */
     const failures = [];
     /** @type {string[]} */
@@ -1232,7 +1164,6 @@ export const check = {
           failures.push(...stands(read));
           failures.push(...reflects(read));
           failures.push(...records(read));
-          failures.push(...oneStone(read, repoRoot));
           notes.push(
             `the slab: ${(read.plinth.depth * read.frame.width).toFixed(1)}px deep over a Frame ` +
               `${read.frame.width.toFixed(0)}px wide, overhanging ${(read.plinth.left * read.frame.width).toFixed(1)}px ` +

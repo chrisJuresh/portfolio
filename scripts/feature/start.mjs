@@ -155,7 +155,7 @@ function report({ chosen, port, listener, root }) {
     // — `lsof` missing, say. Printing it as a pid would be printing a lie.
     const who = listener > 0 ? `pid ${listener}` : 'pid unknown';
     lines.push(
-      `  serving    http://127.0.0.1:${port}/next   (${who}, log ${logPath(chosen.path)})`,
+      `  serving    http://127.0.0.1:${port}/portfolio   (${who}, log ${logPath(chosen.path)})`,
     );
   } else if (port !== null) {
     lines.push(`  serving    nothing — the server did not start; log ${logPath(chosen.path)}`);

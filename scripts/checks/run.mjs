@@ -31,6 +31,7 @@ import { chromium } from 'playwright';
 import { check as assets } from './checks/assets.mjs';
 import { check as carousel } from './checks/carousel.mjs';
 import { check as consoleQuiet } from './checks/console.mjs';
+import { check as deepLinks } from './checks/deep-links.mjs';
 import { check as editor } from './checks/editor.mjs';
 import { check as faces } from './checks/faces.mjs';
 import { check as frontScreen } from './checks/front-screen.mjs';
@@ -50,6 +51,7 @@ const CHECKS = [
   projectsPanel,
   ground,
   moments,
+  deepLinks,
   unpublishable,
   editor,
 ];

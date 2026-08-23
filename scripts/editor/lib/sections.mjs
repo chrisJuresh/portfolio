@@ -317,14 +317,25 @@ function bakeFile(roots, bake, file) {
 /** A Bake's declaration, read and validated. */
 export const recipeOf = (roots, bake) => recipe(readFileSync(bakeFile(roots, bake, RECIPE), 'utf8'));
 
-/** What has been tuned away from that Bake's defaults, or nothing. */
+/**
+ * What has been tuned away from that Bake's defaults, or nothing.
+ *
+ * A file that is NOT THERE is nothing tuned, which is the state most Bakes are
+ * in. Anything else — a file that cannot be read, a file that is not JSON — is
+ * thrown, because the alternative is a Bake that reads as untuned, is then
+ * written, and has lost whatever it held.
+ */
 export function paramsOf(roots, bake) {
-  const path = bakeFile(roots, bake, PARAMS);
+  return values(readParams(bakeFile(roots, bake, PARAMS)));
+}
+
+/** A Bake's parameters file, or '' if there is no such file. */
+function readParams(path) {
   try {
-    return values(readFileSync(path, 'utf8'));
+    return readFileSync(path, 'utf8');
   } catch (error) {
-    if (error instanceof Refused) throw error;
-    return {};
+    if (error.code === 'ENOENT') return '';
+    throw new Refused(`cannot read ${path} — ${error.message}`);
   }
 }
 
@@ -340,12 +351,7 @@ export function paramsOf(roots, bake) {
 export function putParam(roots, bake, key, value) {
   const path = bakeFile(roots, bake, PARAMS);
   const read = recipeOf(roots, bake);
-  let source = '';
-  try {
-    source = readFileSync(path, 'utf8');
-  } catch {
-    source = '';
-  }
+  const source = readParams(path);
   const bytes = writeParam(source, read, key, value);
   const now = values(bytes)[key];
   const held = { file: path, key, value: now ?? read.params.find((param) => param.key === key).value };

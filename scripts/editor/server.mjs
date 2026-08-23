@@ -50,7 +50,7 @@ import { createServer } from 'node:http';
 import { join, relative, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { contentType, resolveFile } from '../static-tree.mjs';
+import { contentType, deployedFile } from '../static-tree.mjs';
 import { command, effective, moved } from './lib/bakes.mjs';
 import { Refused } from './lib/content.mjs';
 import { publish } from './lib/publish.mjs';
@@ -69,11 +69,11 @@ import {
 const here = fileURLToPath(new URL('.', import.meta.url));
 
 /**
- * The route the Portfolio's new foundation is served at, until the ticket that
- * flips it. `scripts/checks/lib/page.mjs` holds the Checks' own copy — this one
- * is the tool's, so the Editor does not depend on the test harness for it.
+ * The route the Portfolio is served at. `scripts/checks/lib/page.mjs` holds the
+ * Checks' own copy — this one is the tool's, so the Editor does not depend on
+ * the test harness for it.
  */
-export const PAGE = '/next';
+export const PAGE = '/portfolio';
 
 /** Where the Editor's own two files answer, and the prefix nothing in dist uses. */
 const MOUNT = '/__editor';
@@ -468,7 +468,7 @@ export async function start({ dist, roots, repoRoot, port = 0, canPublish = true
 
     if (request.method !== 'GET' && request.method !== 'HEAD') return send(response, 405, 'GET only');
 
-    const file = resolveFile(dist, path, { statSync });
+    const file = deployedFile(dist, path, { statSync });
     if (!file) return send(response, 404, 'not found\n');
 
     const type = contentType(file);
