@@ -469,7 +469,7 @@ re-shooting it is its own job.
 `design/shots/*__stone-*.png` are gitignored — 1.4 MB each and regenerable.
 
 The capture contract was the gate for a change that pointed the old stylesheet at
-a new stone. #141 deleted the page it measured, and #148 is what replaces it.
+a new stone. #141 deleted the page it measured and #148 deleted the contract;
 `pnpm check` is the gate now, and it says nothing about which stone is right —
 that is still made by eye, here.
 

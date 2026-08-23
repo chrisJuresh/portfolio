@@ -38,20 +38,12 @@ dist/
 # the half that is safe to publish.
 scripts/checks/lib/denylist.local.txt
 
-# where design/tools/check-capture-contract.py stages the profile repo's capture
-# script and the screenshots it takes. It lives beside design/tools/node_modules
-# because ESM resolves `playwright` from the running script's own directory, so
-# the fetched script has to sit under the install rather than anywhere tidier.
-# Nothing in here is committed — the capture is fetched fresh every run, on
-# purpose, so a vendored copy cannot drift against a repo we do not own.
-#
-# This one rule already covers `runs/`, which grows a directory per --label and
-# is the largest regenerable thing in the repository. Do not add a second rule
-# for it. It is worth deleting by hand when it gets big: `grep -r` and any other
-# tool that does not read .gitignore walks every run directory in it, and a
-# --ref run used to leave a whole extracted copy of the tree behind, so a search
-# came back with two hits for everything. The script now takes that copy down
-# itself; the PNGs under `runs/<label>/out/` are what is meant to survive a run.
+# where check-capture-contract.py used to stage the profile repo's capture script
+# and the screenshots it took. #148 deleted that script — the capture is asked
+# for rather than replayed here, and docs/agents/external-capture.md says why —
+# but the rule stays for a while: a tree that ran it before pulling this has a
+# directory of run output in it, and an ignore that outlives its writer costs
+# nothing while an accidentally committed 300 MB of PNGs costs a rewrite.
 design/tools/.capture-contract/
 
 # the confirmed photographs baked down to a handful of blocks each, by

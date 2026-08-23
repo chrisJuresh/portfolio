@@ -300,23 +300,24 @@ make a Check silently assert nothing while reading as though it asserts somethin
 `pnpm check -- --no-build --only ground,moments` while iterating. `pnpm test` runs
 the runner's own unit tests on their own; `pnpm check` runs them first anyway.
 
-## The external capture is broken, and #148 is what mends it
+## The external capture runs on request
 
-`/portfolio` has a consumer outside this repository: the author's GitHub profile
-README is an hourly screenshot of it, taken by `chrisJuresh/chrisJuresh`. It
-asserts hard on the hand-written page's structure and geometry — `.page`, `.col`,
-`.slide`, a `.listing` whose `h2` is exactly `Work Experience` — and #141 deleted
-that page. **The job therefore throws every hour and the profile keeps its last
-preview**, which is the sequencing the author chose: #148 is blocked on #141 and
-is where the capture is made to work against the flipped `/portfolio` and taken
-off its schedule.
+`/portfolio` has one consumer outside this repository: the author's GitHub profile
+README is a picture of it, taken by `chrisJuresh/chrisJuresh`. #148 took that job
+off its five-minute schedule and re-cut its crop against the flipped
+`/portfolio`, so it now runs only when somebody asks.
 
-`python design/tools/check-capture-contract.py` cannot pass in the meantime and
-is not a gate on anything. Nothing in this repository is constrained by that
-consumer any more; `pnpm check` is the gate.
-[`docs/agents/capture-contract.md`](docs/agents/capture-contract.md) is still the
-account of what the capture asserts and which traps it exists to avoid, which is
-what #148 needs.
+**Nothing in this repository is constrained by it.** There is no pre-merge gate
+and no geometry to hold still — `design/tools/check-capture-contract.py` is
+deleted — and `pnpm check` is the gate. The half that capture could never see is
+covered here instead: it asserted geometry hard and colour not at all, so a theme
+regression broke it silently, and the `ground` Check is what replaced that blind
+spot (ADR 0006). A change here that breaks the crop breaks it over there, loudly,
+on the next capture somebody asks for, and the fix is over there too.
+
+[`docs/agents/external-capture.md`](docs/agents/external-capture.md) has the two
+commands that ask for one, what it cuts and from which elements, and why the
+runner is still Windows.
 
 ## Domain docs
 
@@ -329,6 +330,6 @@ Everything agent-facing that is not in this file lives in `docs/agents/`:
 | `issue-tracker.md` | issues are GitHub issues in `chrisJuresh/portfolio`, driven by `gh`; includes the closing comment |
 | `triage-labels.md` | the five canonical roles, and the one command that creates the four that do not exist on the repo yet |
 | `variants.md` | Variants and the sheet |
-| `capture-contract.md` | the external capture of `/portfolio` |
+| `external-capture.md` | the profile README's picture of `/portfolio` — how to ask for one, and why nothing here answers to it |
 | `plinth-marble.md` | the Projects Panel's plinth — two generators, two rooms, and a bake-off. Read before touching `design/plinth/`. It carries the rule that cost three wrong diagnoses: **a light reads as a highlight or as a veil depending on its ANGULAR size against the ±14° arc the front face sweeps**, so anything wider than about a third of a model unit is a wall however dim it is made |
 | `domain.md` | how `CONTEXT.md` and `docs/adr/` are maintained — lazily, by `/domain-modeling`, when a term or a decision actually gets resolved |

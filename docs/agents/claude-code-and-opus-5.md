@@ -118,7 +118,7 @@ the dial's positions mean.
 | Reviewing a diff | `low` or `medium` | Explicitly supported: on Opus 5 code-review "accuracy holds at lower effort settings, which supports a fast pass at review time and a more thorough pass later". |
 | Writing and triaging tickets, closing issues, fixing labels, editing a doc, running a Check and reading its output | `low` or `medium` | "use `low` and `medium` liberally as your primary control for token cost and response time". `low`'s documented use case is "Simpler tasks that need the best speed and lowest costs, such as subagents". By count this is most of what happens in this repository. |
 | Anything a subagent does | `low` | The docs name subagents as `low`'s example case. Set it in the subagent's frontmatter, not on the session. |
-| A change where being wrong is expensive and hard to see — a confidentiality Check, the capture contract | `max` | "when a task justifies unconstrained token spending". Reserve it; the docs warn about overthinking and diminishing returns. |
+| A change where being wrong is expensive and hard to see — a confidentiality Check, a denylist, the colour bands a theme regression is caught by | `max` | "when a task justifies unconstrained token spending". Reserve it; the docs warn about overthinking and diminishing returns. |
 
 **Two mechanics that decide how this is actually used.**
 

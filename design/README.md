@@ -117,11 +117,12 @@ design/
   tools/
     render.mjs       Playwright: serves the repo, walks the matrix, writes shots/
     package.json     dev dependency (playwright) — not the site's
-    check-capture-contract.py
-                     replays the GitHub profile README's hourly screenshot of
-                     /portfolio against a local tree. It asserts on the deleted
-                     page's structure, so it cannot pass and is a gate on
-                     nothing until #148. See docs/agents/capture-contract.md
+    (check-capture-contract.py is gone too. It replayed the GitHub profile
+     README's screenshot of /portfolio against a local tree so a change here
+     could be cleared against it before landing. #148 took that capture off its
+     schedule and made it something the author asks for, which leaves nothing
+     here to clear: docs/agents/external-capture.md is why, and `pnpm check` is
+     the gate.)
     (the four per-ticket harnesses that used to sit here - check-panel-clip,
      check-panel-nav, check-crossing and check-panel-exit - are gone with the
      page they drove. Each proved one closed ticket's criteria against the

@@ -147,9 +147,14 @@ python -c "import hashlib;h=hashlib.sha256();[h.update(open(f,'rb').read()) for 
 ```
 
 ```bash
-node design/tools/check-panel-clip.mjs        # does it behave the way #65 asks?
-python design/tools/check-capture-contract.py # is the profile README still safe?
+pnpm check
 ```
+
+Both harnesses that used to be named here are gone with the page they drove —
+`check-panel-clip.mjs` with #141, `check-capture-contract.py` with #148. The
+blocking suite answers for the clip now, and the profile README's picture of
+`/portfolio` is asked for rather than cleared against
+(`docs/agents/external-capture.md`).
 
 ## Why the decision is a person's
 
