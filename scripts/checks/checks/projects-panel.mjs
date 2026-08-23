@@ -1139,7 +1139,7 @@ async function withoutMotion(browser, origin) {
  * The two trees draw the same stone.
  *
  * `/next` names its plate in `tokens.css` and `/portfolio` names it in
- * `styles.css`, and `design/plinth/plinth-studio.py` rewrites only the second —
+ * `styles.css`, and `design/legacy/plinth-studio.py` rewrites only the second —
  * so applying a stone in the studio changes one of the two sites and says
  * nothing. That is the one acceptance criterion of this Section's Plinth with
  * the most room to go wrong quietly: both pages keep rendering, both keep
@@ -1179,7 +1179,7 @@ function oneStone(read, repoRoot) {
   if (declared.length !== 1) {
     failures.push(
       `portfolio/styles.css holds ${declared.length} default --panel-plinth-src declarations and this expects ` +
-        'exactly one — the sheet has moved under design/plinth/plinth-studio.py as well as under this Check',
+        'exactly one — the sheet has moved under design/legacy/plinth-studio.py as well as under this Check',
     );
     return failures;
   }

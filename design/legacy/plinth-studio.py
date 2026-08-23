@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """The plinth, end to end, in a browser: photograph in, stone on the site out.
 
-    python design/plinth/plinth-studio.py
+    python design/legacy/plinth-studio.py
 
 ...then open what it prints. It serves the repository, so the studio page, the
 plates and the real /portfolio all come off one origin and the preview is the
@@ -75,24 +75,29 @@ import time
 import urllib.parse
 import webbrowser
 
+# MOVED. This page and its server lived in design/plinth/ until #146 absorbed the
+# five tuners into the Editor; they are kept, working, because "the Editor is
+# better" is a judgement the author gets to reverse. The generators did NOT move,
+# so HERE is design/legacy/ and PLINTH is where everything it drives still is.
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(os.path.dirname(HERE))
-sys.path.insert(0, HERE)
+PLINTH = os.path.join(ROOT, "design", "plinth")
+sys.path.insert(0, PLINTH)
 
 # Both are hyphenated, so neither is reachable by `import` - see the same note
 # in add-stone.py, which is where the two helpers taken from it are documented.
 maps_mod = importlib.import_module("build-portoro-maps")
 add_stone = importlib.import_module("add-stone")
 
-SOURCES = os.path.join(HERE, "sources")
-MAPS_DIR = os.path.join(HERE, "maps")
-STONES_DIR = os.path.join(HERE, "stones")
-SIDECAR = os.path.join(HERE, "slab.json")
-BUILD_SLAB = os.path.join(HERE, "build-slab.py")
+SOURCES = os.path.join(PLINTH, "sources")
+MAPS_DIR = os.path.join(PLINTH, "maps")
+STONES_DIR = os.path.join(PLINTH, "stones")
+SIDECAR = os.path.join(PLINTH, "slab.json")
+BUILD_SLAB = os.path.join(PLINTH, "build-slab.py")
 PLATES = os.path.join(ROOT, "portfolio", "img", "tex")
 STYLESHEET = os.path.join(ROOT, "portfolio", "styles.css")
 CONTRACT = os.path.join(ROOT, "design", "tools", "check-capture-contract.py")
-STUDIO_PAGE = "/design/plinth/plinth-studio.html"
+STUDIO_PAGE = "/design/legacy/plinth-studio.html"
 
 # The surrounds build-slab.py's ROOMS defines. Stated here because ROOMS lives
 # behind `import bpy` and cannot be read without Blender; a name that is not one

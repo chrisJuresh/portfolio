@@ -71,6 +71,17 @@ from scipy.ndimage import gaussian_filter
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 OUT_DIR = os.path.join(ROOT, "portfolio", "img", "tex")
 
+# design/bake/ is a sibling of this folder and is not a package, so it is put on
+# the path rather than imported through a name that does not exist. The constants
+# marked TUNING below are DECLARED in design/bake/effects/recipe.json, with their
+# ranges and the paragraph saying what each does, and read here - one value in one
+# place, reachable from the Editor and from this script alike. See
+# design/bake/tuning.py.
+sys.path.insert(0, os.path.join(ROOT, "design", "bake"))
+import tuning  # noqa: E402
+
+TUNING = tuning.bake("effects")
+
 
 # ---------------------------------------------------------------------------
 # shared
@@ -185,7 +196,7 @@ FILM_SRC = os.path.join(ROOT, "Texturelabs_Film_185XL.jpg")
 # read as a frame drawn round the CV once it is stretched to `cover`. Trimmed as
 # a share of each side rather than in pixels, so re-shooting the plate at another
 # size does not silently change what is cut.
-FILM_INSET = 0.035
+FILM_INSET = TUNING.num("FILM_INSET")
 
 # Two rungs, handed to CSS image-set() by resolution rather than picked in
 # script. The film is drawn with `cover` over a box that is always the viewport,
@@ -211,7 +222,7 @@ FILM_RUNGS = [1600, 2600]
 #
 # A fortieth is 65px, so this is still above every mark the plate carries, and
 # the falloff it no longer flattens was never visible at these opacities anyway.
-FILM_SIGMA_FRAC = 0.035
+FILM_SIGMA_FRAC = TUNING.num("FILM_SIGMA_FRAC")
 
 # ...and the OTHER end of the pass, which is the constant that costs the most
 # bytes and is the one to move if this asset ever has to get smaller. A plain
@@ -237,16 +248,16 @@ FILM_SIGMA_FRAC = 0.035
 # The division of labour still holds and is why this is 1.2 rather than 0.8: the
 # per-pixel band under it is the paper's, it costs 1.2 MB across the two rungs to
 # carry it here, and it would then be on the page twice.
-FILM_FINE = 1.2
+FILM_FINE = TUNING.num("FILM_FINE")
 
-FILM_GAIN = 4.6         # the band's own std is ~7 levels once the grain is out
+FILM_GAIN = TUNING.num("FILM_GAIN")   # the band's own std is ~7 levels once the grain is out
                         # of it; x4.6 puts it near 32, a legible tooth at the
                         # opacities the stylesheet actually uses (0.05-0.14)
-FILM_GAMMA = 0.8        # open, and more open than the paper's: what is left in
+FILM_GAMMA = TUNING.num("FILM_GAMMA")  # open, and more open than the paper's: what is left in
                         # this band after FILM_FINE is mostly faint — the loud
                         # marks are a few dozen scratches — so the curve is doing
                         # real work here rather than trimming
-FILM_QUALITY = 68       # lossy: a full-frame wash at <=18% opacity, where
+FILM_QUALITY = TUNING.integer("FILM_QUALITY")  # lossy: a full-frame wash at <=18% opacity,
                         # lossless costs about 3x the bytes for a difference
                         # nothing at that opacity could show. Measured against a
                         # re-bake with no webp step at all and the two are hard
@@ -303,7 +314,7 @@ PAPER_SRC = os.path.join(ROOT, "Texturelabs_Paper_349XL.jpg")
 # mottle and a scatter of the dark specks, and while the high-pass removes the
 # first, the second survives and a speck in a tile is a speck every 300px across
 # the whole page. This corner is the quietest square on the plate.
-PAPER_CROP = (0.60, 0.12)
+PAPER_CROP = TUNING.words("PAPER_CROP", 2)
 
 # The source square, and the tile it becomes. 2048 → 512 is the scaling the
 # texture needs on its own terms, not a size convenience: at 1:1 this paper's
@@ -311,17 +322,17 @@ PAPER_CROP = (0.60, 0.12)
 # rather than as a sheet. A quarter of that puts the fibre just under a pixel of
 # CSS, which is the size at which paper stops being visible as texture and
 # starts being visible as tooth.
-PAPER_SRC_SIZE = 2048
-PAPER_TILE = 512                # the tile's size in CSS pixels
+PAPER_SRC_SIZE = TUNING.integer("PAPER_SRC_SIZE")
+PAPER_TILE = TUNING.integer("PAPER_TILE")  # the tile's size in CSS pixels
 PAPER_RUNGS = [512, 1024]       # ...and in device pixels, via image-set()
 
 # 1.6px at the 1024 rung. Tight, because the only thing this has to remove is
 # whatever drift is left across half a metre of paper — everything the tile is
 # FOR is finer than two pixels.
-PAPER_SIGMA = 1.6
+PAPER_SIGMA = TUNING.num("PAPER_SIGMA")
 
-PAPER_GAIN = 2.6
-PAPER_GAMMA = 0.9
+PAPER_GAIN = TUNING.num("PAPER_GAIN")
+PAPER_GAMMA = TUNING.num("PAPER_GAMMA")
 
 PAPER_QUALITY = 0       # unused: the tile is lossless — see build_paper
 

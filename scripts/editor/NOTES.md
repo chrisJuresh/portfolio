@@ -13,31 +13,38 @@ pnpm editor -- --no-build --port 8790
 ```
 
 It builds this tree, serves that `dist/`, and prints a URL. Click any text, type,
-Enter. Escape puts it back. The panel at the bottom right has three surfaces:
+Enter. Escape puts it back. The panel at the bottom right has four surfaces:
 **Content**, every Content field of every Section, which is how anything the page
-speaks without drawing is reached; **Tokens**, a control per Token; and
-**Motion**, a scrub per Timeline.
+speaks without drawing is reached; **Tokens**, a control per Token, of every
+Section AND of every part of the Kernel that has a Tokens file; **Motion**, a
+scrub per Timeline; and **Bakes**, the five Python generators and every number
+each is run with.
 
-ADR 0004 gives the Editor Content and Tokens, and it now has both. What it still
-does not have is an Annotation or an Override — a change it cannot express is
-still a sentence written to an agent by hand.
+ADR 0004 gives the Editor Content and Tokens, and it now has both. #146 gave it
+the Bakes as well, which is a THIRD kind of thing and not a loosening of that
+rule — a Bake writes no composition, it writes the parameters of a generator that
+produces an asset. What the Editor still does not have is an Annotation or an
+Override — a change it cannot express is still a sentence written to an agent by
+hand.
 
 ## The shape, and why it is this shape
 
-**A write boundary, with a browser on top** (ADR 0004). There are two of them, and
-they are siblings rather than one parser generalised over two formats:
+**A write boundary, with a browser on top** (ADR 0004). There are THREE of them
+now, and they are siblings rather than one parser generalised over three formats:
 `lib/content.mjs` turns a Section's `content.ts`, a key and a value into the
-file's bytes, and `lib/tokens.mjs` does the same for `tokens.css`. What IS shared
-is the plumbing around them — `lib/sections.mjs`'s `place()` resolves the path,
-reads, calls whichever boundary it was handed and writes, and `put` and `putToken`
-are that function with one of the two file names bound. Sharing the plumbing is
-free; sharing the parser would mean one function that understood neither format
+file's bytes; `lib/tokens.mjs` does the same for a `tokens.css`; and
+`lib/bakes.mjs` does it for a Bake's `params.json`. What IS shared is the plumbing
+around them — `lib/sections.mjs` resolves the path, reads, calls whichever
+boundary it was handed and writes, and `put`, `putToken` and `putParam` are that
+plumbing with one of the file names bound. Sharing the plumbing is free; sharing
+the parser would mean one function that understood none of the three formats
 exactly. Everything above them — the server, the surfaces, the panel — is a way of
-calling one of those two boundaries. The tests are on the functions, at the bytes, because these
-are the two components in the repository whose bugs corrupt source files instead
-of appearing on screen.
+calling one of those three boundaries. The tests are on the functions, at the
+bytes, because these are the components in the repository whose bugs corrupt
+source files instead of appearing on screen.
 
-**Each replaces a span; neither re-serialises.** A Section's Content is
+**Two of the three replace a span; the third re-serialises, and the difference is
+the file rather than the discipline.** A Section's Content is
 TypeScript carrying comments, a schema, authored line breaks and long strings
 written as a sum of literals; a Section's Tokens are mostly the paragraphs that
 say what each number does and where it was measured. Reading either into an
@@ -66,21 +73,40 @@ the rest of the file with it, and `!important` is a value that outranks the
 composition rather than one belonging to it. All refusals, none escaped — escaping
 would mean deciding what the author meant. The boundary never writes a property
 name, a selector or a rule either, so `scripts/check-source.mjs`'s grammar for
-that file — Tokens only, on the Section's own root — holds by construction.
+that file — Tokens only, on the holder's own root — holds by construction.
+
+**A Bake's parameters re-serialise, because there is nothing in that file to
+keep.** `params.json` holds a flat object of strings and nothing else: no comment,
+no ordering, no formatting. Everything a `tokens.css` is protected FOR — the label,
+the range, the paragraph saying what a number does — is in the Bake's
+`recipe.json`, which is authored, committed and never written by anything here.
+So the writable file is written back sorted, two-space, one trailing newline, and
+two sessions that tuned the same two numbers produce the same bytes. The self-check
+is still there: the output is read back and required to hold exactly the pairs
+that were meant to be in it.
 
 ## What it will and will not write
 
 `lib/sections.mjs` is the only thing in the Editor that turns anything off the
-wire into a filesystem path, and **it takes a Section NAME rather than a path.**
-There are exactly two file names, both constants, and **which of the two a
-request gets is decided by the route it arrived on**: `/content` reaches
-`content.ts` and `/tokens` reaches `tokens.css`. Neither name is a parameter
+wire into a filesystem path, and **it takes a NAME rather than a path.** Every
+file name is a constant of that module, and **which kind a request gets is decided
+by the route it arrived on**: `/content` reaches a `content.ts`, `/tokens` reaches
+a `tokens.css`, `/bake` reaches a `params.json`. No file name is a parameter
 anywhere, so there is no argument to any of this that could make the Editor write
-a component, a Variant sheet or a script — not a traversal, not an encoding, not a
-malformed name — and no way to ask a Content edit to land in a stylesheet. A
-Section not on disk is refused before any path handling runs.
+a component, a Variant sheet, a script or a Bake's recipe — not a traversal, not
+an encoding, not a malformed name — and no way to ask a Content edit to land in a
+stylesheet. A name not on disk is refused before any path handling runs.
 
-`sections.test.mjs` is that assertion, spelled ten ways, against both resolvers.
+**There are three families of name**, and they cannot collide. A Section is its
+folder under `src/sections`. A part of the Kernel is `kernel-<stem>`, which
+resolves to `src/kernel/tokens/<stem>.css` — and a Section folder beginning
+`kernel-` is not discovered as a Section at all, which the build already makes
+unreachable and `sections.test.mjs` asserts anyway, because this is the function
+that decides which file a write lands in. A Bake is its folder under
+`design/bake`, and only one of its two files is writable.
+
+`sections.test.mjs` is that assertion, spelled seventeen ways, against every
+resolver.
 
 ## How a click finds a Content key
 
@@ -127,11 +153,22 @@ Section name ends. Nothing on the page needs any of them.
 
 ## How a Token finds its control
 
-**Nothing lists them.** A Token's control comes from the Section's own
-`tokens.css` being parsed, so a Section that promotes a new number gets a control
-for free and there is no list anywhere to forget to add it to. That is the same
-mechanism as the Section folder glob in `src/kernel/loader.ts`, applied to a file
-rather than a folder.
+**Nothing lists them.** A Token's control comes from a `tokens.css` being parsed,
+so a holder that promotes a new number gets a control for free and there is no
+list anywhere to forget to add it to. That is the same mechanism as the Section
+folder glob in `src/kernel/loader.ts`, applied to a file rather than a folder.
+
+**And the Kernel has them too.** The Effect Stack's hundred numbers and the three
+corner pictures' placement are Tokens by every part of `CONTEXT.md`'s definition
+except the word *Section*, and #146 is the ticket that had to reach them: they are
+what two of the five tuners it absorbed were for. So the Kernel keeps its Tokens
+in `src/kernel/tokens/`, one file per part, `@import`ed first by the stylesheet
+that draws from them — first, because the one narrow-window correction the Effect
+Stack carries is a `@media` and has to stand after the value it corrects. They
+answer to `kernel-<stem>` and are discovered exactly as a Section is.
+`scripts/check-source.mjs` runs the Editor's own parser over each of them, so a
+declaration slipped into one is a build failure rather than a surface that takes
+every control in the file down.
 
 **A key names the rule as well as the property**, as `<rule index>:<property>`.
 `--front-screen-thumb-at` is declared twice — once on the Section's root and once
@@ -215,6 +252,116 @@ the Kernel's loader already dispatches. Only the Turn is there at boot. While
 nothing is held, each readout follows the scroll, because that is where the
 playhead actually comes from.
 
+## The Bakes, which are the second speed
+
+`pnpm editor`'s fourth surface, and #146's whole reason for existing: one editing
+surface instead of six. The plate, plinth, plinth-studio, morph and effects tuners
+each drove a Python generator rather than a stylesheet, which is why they were
+separate — and absorbing them needed a second speed rather than a fourth panel.
+
+**A Token moves the page in the frame it is dragged in. A baked parameter moves
+nothing until a generator has run.** A Token is a custom property, so a stylesheet
+of this tool's own can hold it; a baked parameter is in a photograph's grade or a
+marble's veining, and the only thing that can apply it is fifteen seconds of
+Cycles or two minutes of Pillow. So the Bakes surface writes on release exactly as
+the Tokens surface does, and then does nothing at all until Re-bake is pressed.
+
+**A Bake is a folder under `design/bake/` holding two files, and only one of them
+is ever written.** `recipe.json` is the declaration — what the Bake is, what it
+needs that this repository does not carry, the command, and every parameter with
+its default, its label, its range and the paragraph saying what it does. It is
+authored and committed, and nothing here writes it, which is what lets it hold the
+prose. `params.json` is what has MOVED off those defaults, and nothing else.
+
+**The generator reads that file too, and that is the point.** Every one of the five
+tuners ended by printing a block of Python to paste back by hand, and a paste that
+was not made is a shipped asset nothing in the tree describes — the plate tuner
+says so of itself, and so does the plinth studio about its `?v=` digest. A
+generator that reads `design/bake/<name>/recipe.json` through `design/bake/tuning.py`
+is run the same way from the Editor and from a shell. There is nothing to paste
+and nothing to drift, which is also the whole of how "every generator still runs
+standalone" survived being absorbed.
+
+**A parameter reaches the generator one of two ways, and the recipe says which.**
+A `{key}` in the command is substituted; a parameter declaring `arg` becomes that
+flag; everything else reaches `params.json` and is read there. The split is not a
+preference — it is what each generator already had a door for. `add-stone.py` takes
+every one of its parameters as a flag and always has, and putting those in a file
+as well would be a second way to say the same thing that a shell run would not
+agree with.
+
+**Nothing is previewed, and not previewing is the honest answer.** Every one of
+the five tuners drew something before the bake — a canvas transcription of the
+grade, a GLSL twin of the marble, a rectangle showing which part of a photograph
+lands on the block — and every one then had to say at length where its picture
+parted company with the real one. The plinth studio put it best: what it can show
+you before a bake is the WINDOW, which answers two parameters and is honest about
+answering nothing else. A second transcription of each pipeline is a second thing
+to keep in step with the first. What this surface shows instead is the exact
+argument list Re-bake will run, so it can be read before it is pressed and typed
+into a shell instead.
+
+**A run is polled.** `/bake/run` answers as soon as the generator has started and
+the surface asks `/bakes` how it is going until it stops — holding a request open
+for two minutes is a request that times out somewhere and a page that says
+nothing. One run at a time PER BAKE and not overall: two generators writing two
+different sets of files is fine, and two runs of one generator race for the same
+output paths.
+
+**A failure keeps the tail of what the generator printed**, because that is where
+the reason is. A Python traceback ends with the exception, Blender ends with what
+it could not open, and Pillow ends with the file it wanted; the first kilobyte of
+any of them is a banner. `outcome()` names the one case a status code cannot:
+`python` not being on PATH reads as a broken Editor if it is reported as an exit
+code and as a machine without Python if it is reported as itself.
+
+**Every one of the five needs something this repository deliberately does not
+carry** — a raw frame, two 12 MB JPEGs, Blender, a font. So a failure is not an
+error case here, it is the ordinary answer on a fresh checkout, and the recipe's
+`needs` is printed above the button rather than after it.
+
+### A success rebuilds, and the recapture is the part that is not optional
+
+The server runs `pnpm build` after a bake and only then reports the run done.
+
+**The whole build and not a copy**, because a baked asset reaches the page two
+different ways and only one of them survives copying the static tree in: the
+corner pictures are fetched at run time by `corners.ts`, while the two Texturelabs
+plates are named in a `url()` and are fingerprinted into the bundle. Assembling
+alone would show the new plate for one of those and the old one for the other,
+which is the quietest possible wrong answer.
+
+**And then both baselines are recaptured.** The Content baseline is *what the
+served build says*, and the whole binding of an element to a Content key is made
+against it — so a rebuild that left the old baseline standing would report every
+field edited this session as not found on the page. Rebuilding and recapturing are
+one operation for that reason.
+
+The page is then reloaded rather than an element swapped, because a baked asset is
+not in the DOM to swap.
+
+### The recorded marble comparison is not re-run
+
+`blender -b -P design/plinth/build-slab.py -- all` re-renders every plate,
+including the four gemini ones and the four procedural ones the marble bake-off
+was judged from. So the plinth Bake renders ONE STONE and never a built-in: its
+parameters ARE a stone, `build-slab.py`'s `tuned_stone()` reads them into an
+ordinary `CANDIDATES` entry, and a name the file already defines is refused rather
+than shadowed — the same rule, and the same wording, as `load_added_stones()`
+beside it. `BUILT_IN_PROC` is what keeps the `proc` group meaning the four
+built-ins after that merge; a group that quietly grew to include whatever the
+Editor last tuned would make the command that reproduces the comparison mean
+something different every time it was run.
+
+### Where the five went
+
+`design/legacy/`, working. "The Editor is better than the six" is a judgement the
+author gets to reverse, so every one of them still opens: the paths that were
+relative to the generator beside them now name that folder, and `plinth-studio.py`
+moved with its own page because the page is nothing without its server.
+
+The generators did not move, and none of them lost a flag.
+
 ## Publish
 
 Two things about the commit are load-bearing.
@@ -282,12 +429,25 @@ it in words, but it means the Editor's own page is not console-clean after a
 refusal. The `console` Check is unaffected — it runs against `dist/` without the
 Editor — and the smoke Check does not assert console cleanliness for that reason.
 
+**The rebuild is SPAWNED and not `spawnSync`.** A build is ten to twenty seconds,
+and running it synchronously blocks this server's whole event loop for that long
+— so the surface's poll goes unanswered, the keep-alive it is on times out the
+moment the loop is given back, and the page sees `ECONNRESET` rather than
+"baking". It also just freezes the Editor while the author watches it. This one
+was written the wrong way first and found by driving a bake end to end, which is
+the only way it shows: every unit test of the runner passes either way.
+
+**A re-bake takes a build with it, so it is a minute even when the generator is
+seconds.** That is the rebuild above rather than a slow generator, and it is why
+the run's report separates "the generator finished" from what happened next: a
+bake that worked and a build that did not is one sentence saying both.
+
 **A stale dist is loud about Content and quiet about Tokens.** A field the Editor
 cannot find on the page is reported; a Token whose control is right while the page
 under it is a build old looks like nothing at all. `pnpm editor` builds first, and
 that is the reason.
 
-## Two files on the client, and why the split is here
+## Three files on the client, and why the splits are there
 
 `client/editor.js` is one `Editor` class doing Content binding, in-place editing,
 the field list, publishing and listening. It said of itself that it wanted
@@ -295,13 +455,19 @@ splitting and was not split because its seams share one piece of state — the f
 index that binds an element is the index the panel renders and the index a write
 updates — and that the calculus would change if the Editor grew a second surface.
 
-It has, and it did. `client/tokens.js` is the Tokens surface and the Timeline
-scrub, and the split is at a real seam rather than a tidy one: a Token is addressed
-by a rule and a property and is bound to no element at all, so it shares none of
-that field index. What is shared is the panel, the one report line and Publish, and
-those are passed in — which is why "3 edited" and "refused: …" mean the same thing
-whichever surface produced them. The cost was one entry in the server's `CLIENT`
-map rather than a bundler, because the surface was already a module.
+It has, twice, and it did. `client/tokens.js` is the Tokens surface and the
+Timeline scrub; `client/bakes.js` is the Bakes. Both splits are at real seams
+rather than tidy ones: a Token is addressed by a rule and a property and is bound
+to no element at all, and a Bake's parameter is not on the page in any form until
+a generator has run — so neither shares that field index. What is shared is the
+panel, the one report line and Publish, and those are passed in, which is why "3
+edited" and "refused: …" mean the same thing whichever surface produced them. The
+cost was one entry in the server's `CLIENT` map each rather than a bundler,
+because both surfaces were already modules.
+
+The Bakes surface reads itself from the server rather than out of `state`, and
+that is not a third pattern: it POLLS while a generator runs, and `/state`
+re-reads every Content and Tokens file in the tree.
 
 **The surface imports the boundary.** `lib/tokens.mjs` has no node imports — only
 `Refused` out of `lib/content.mjs`, which has none either — so it is served to the
@@ -317,11 +483,16 @@ elsewhere.
 | ---- | ------- |
 | `lib/content.test.mjs` | the bytes of a Content file: what moved, what did not, and every refusal |
 | `lib/tokens.test.mjs` | the bytes of a Tokens file, what control a value asks for, and every refusal |
-| `lib/sections.test.mjs` | that a request cannot name a file, against both resolvers |
+| `lib/bakes.test.mjs` | the bytes of a Bake's parameters, the argv a Bake is run with, and every refusal |
+| `lib/runs.test.mjs` | whether a run is in flight, how it ended, and what it says when it did not end well |
+| `lib/sections.test.mjs` | that a request cannot name a file, against every resolver and all three families |
 | `lib/publish.test.mjs` | which arguments git is handed, and what counts as one of the Editor's paths |
 | `scripts/checks/checks/editor.mjs` | one smoke Check: click, type, drag, scrub, and find it in the file |
 
-`pnpm test` runs the first four; `pnpm check` runs them and then the Check.
+`pnpm test` runs everything but the last; `pnpm check` runs them and then the
+Check. `lib/runs.test.mjs` drives a fake child process rather than a real
+generator, for the reason above: every one of the five needs something this
+repository does not carry, so a test that ran one would be asserting the machine.
 
 The Check writes to a **temporary copy** of every Section's Content and Tokens and
 compares the real files before and after. That matters more than it sounds: it runs

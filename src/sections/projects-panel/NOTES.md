@@ -284,7 +284,7 @@ Three things about the stack:
   has. `timeline.ts` exports nothing, which is how the loader is told there is
   nothing to register.
 - **Which stone is drawn is settled in two places now, and only one of them is
-  maintained.** `design/plinth/plinth-studio.py` rewrites the declaration in
+  maintained.** `design/legacy/plinth-studio.py` rewrites the declaration in
   `portfolio/styles.css` when a stone is applied, and it knows nothing about
   `tokens.css`. So a bake-off run after this ticket changes `/portfolio` and
   leaves `/next` on the plate named here. It is one line, it is named in the

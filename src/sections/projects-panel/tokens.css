@@ -215,7 +215,7 @@
      re-rendered plate is a different filename by construction. The digest that
      sheet carries is doing this job by hand, because nothing builds it.
 
-     AND design/plinth/plinth-studio.py DOES NOT REWRITE THIS LINE. It rewrites
+     AND design/legacy/plinth-studio.py DOES NOT REWRITE THIS LINE. It rewrites
      the one in portfolio/styles.css, which is the stone the live site draws, and
      it knows nothing about this file. So applying a stone in the studio changes
      /portfolio and leaves /next on the old plate. NOTES.md says what to do about

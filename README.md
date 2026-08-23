@@ -62,7 +62,7 @@ of images, served statically from Vercel.
   it has been resampled into a README. Almost all of it is CSS — the layers are
   composited quads, and the only things that animate are off by default. The
   textures are baked by
-  `design/effects/build-textures.py` and tuned in `design/effects/effects-tuner.html`.
+  `design/effects/build-textures.py` and tuned in `design/legacy/effects-tuner.html`.
   The trick that makes one asset serve both themes is in **THE LEVELS STAGE** in
   `portfolio/styles.css`.
 - **Flash-free dark mode.** An inline script applies the saved or OS theme

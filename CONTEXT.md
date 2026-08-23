@@ -98,6 +98,13 @@ Tokens in place, and re-bakes generated assets. It writes Content and Tokens and
 nothing else.
 _Avoid_: dashboard, CMS, tuner, admin, studio
 
+**Bake**:
+A generator and the numbers it is run with, declared in one folder the Editor
+reads and the generator reads too. A Token moves the page in the frame it is
+dragged in; a baked parameter moves nothing until the generator has run, which is
+what makes it a second kind of thing rather than another Token.
+_Avoid_: preset, pipeline, job, recipe on its own, build
+
 **Annotation**:
 The Editor's output when a wanted change is not expressible as a Token: a
 measured instruction, in words and numbers, for an agent to apply.

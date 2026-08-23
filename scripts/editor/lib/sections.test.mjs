@@ -5,7 +5,19 @@ import { join } from 'node:path';
 import { after, test } from 'node:test';
 
 import { Refused } from './content.mjs';
-import { CONTENT, TOKENS, contentFile, discover, tokensFile } from './sections.mjs';
+import {
+  CONTENT,
+  KERNEL_TOKENS,
+  TOKENS,
+  contentFile,
+  discover,
+  discoverBakes,
+  discoverKernel,
+  paramsOf,
+  putParam,
+  recipeOf,
+  tokensFile,
+} from './sections.mjs';
 
 /**
  * The half of "the Editor writes Content and Tokens and nothing else" that is a
@@ -36,6 +48,34 @@ mkdirSync(join(root, 'not-a-section'), { recursive: true });
 // if a name were ever allowed to carry a `..` in it.
 writeFileSync(join(root, TOKENS), '.x { --x-rule: 1px; }');
 
+// The Kernel's Tokens, which are the second family of holders (#146): one file
+// per part, under one constant directory, answering to `kernel-<stem>`.
+const kernel = mkdtempSync(join(tmpdir(), 'editor-kernel-'));
+after(() => rmSync(kernel, { recursive: true, force: true }));
+mkdirSync(join(kernel, KERNEL_TOKENS), { recursive: true });
+writeFileSync(join(kernel, KERNEL_TOKENS, 'effects.css'), ':root { --fx-grain-size: 600px; }');
+writeFileSync(join(kernel, KERNEL_TOKENS, 'corners.css'), ':root { --plate-opacity: 0.12; }');
+// Not a stylesheet, so not one of them: the discovery is by extension and the
+// directory is a constant, so a README beside them is not a holder.
+writeFileSync(join(kernel, KERNEL_TOKENS, 'README.md'), 'not a Tokens file');
+
+// And the third family: a Bake, which is a folder holding a recipe.
+const bakes = mkdtempSync(join(tmpdir(), 'editor-bakes-'));
+after(() => rmSync(bakes, { recursive: true, force: true }));
+mkdirSync(join(bakes, 'plate'), { recursive: true });
+writeFileSync(
+  join(bakes, 'plate', 'recipe.json'),
+  JSON.stringify({
+    title: 'The corner pictures',
+    run: ['python', 'design/plate/build-plate.py', '{source}'],
+    groups: [{ name: 'a', params: [{ key: 'source', value: 'photos/dome.rw2' }] }],
+  }),
+);
+// A folder with no recipe is not a Bake, whatever else is in it.
+mkdirSync(join(bakes, 'not-a-bake'), { recursive: true });
+
+const roots = { sections: root, kernel, bakes };
+
 /** Both resolvers, so every refusal below is asserted of each. */
 const resolvers = [
   ['contentFile', contentFile],
@@ -47,14 +87,14 @@ test('discover finds the Sections that hold a Content file, sorted', () => {
 });
 
 test('each resolver names its own file in a Section and nothing else', () => {
-  assert.equal(contentFile(root, 'front-screen'), join(root, 'front-screen', CONTENT));
-  assert.equal(tokensFile(root, 'front-screen'), join(root, 'front-screen', TOKENS));
+  assert.equal(contentFile(roots, 'front-screen'), join(root, 'front-screen', CONTENT));
+  assert.equal(tokensFile(roots, 'front-screen'), join(root, 'front-screen', TOKENS));
 });
 
 test('a resolver refuses a Section that does not exist', () => {
   for (const [name, resolve] of resolvers) {
-    assert.throws(() => resolve(root, 'not-a-section'), Refused, name);
-    assert.throws(() => resolve(root, 'invented'), Refused, name);
+    assert.throws(() => resolve(roots, 'not-a-section'), Refused, name);
+    assert.throws(() => resolve(roots, 'invented'), Refused, name);
   }
 });
 
@@ -72,7 +112,7 @@ test('a resolver refuses a traversal, in every spelling of one', () => {
     'front-screen%2f..',
   ]) {
     for (const [which, resolve] of resolvers) {
-      assert.throws(() => resolve(root, name), Refused, `${which} accepted ${JSON.stringify(name)}`);
+      assert.throws(() => resolve(roots, name), Refused, `${which} accepted ${JSON.stringify(name)}`);
     }
   }
 });
@@ -80,7 +120,7 @@ test('a resolver refuses a traversal, in every spelling of one', () => {
 test('a resolver refuses anything that is not a plain Section name', () => {
   for (const name of ['', ' ', 'Front-Screen', 'front_screen', 'front screen', '-leading', 'front-screen.ts', null, 7]) {
     for (const [which, resolve] of resolvers) {
-      assert.throws(() => resolve(root, name), Refused, `${which} accepted ${JSON.stringify(name)}`);
+      assert.throws(() => resolve(roots, name), Refused, `${which} accepted ${JSON.stringify(name)}`);
     }
   }
 });
@@ -93,8 +133,8 @@ test('the file named is always one of the two constants, and never a third', () 
   assert.equal(CONTENT, 'content.ts');
   assert.equal(TOKENS, 'tokens.css');
   for (const section of discover(root)) {
-    assert.ok(contentFile(root, section).endsWith(join(section, CONTENT)));
-    assert.ok(tokensFile(root, section).endsWith(join(section, TOKENS)));
+    assert.ok(contentFile(roots, section).endsWith(join(section, CONTENT)));
+    assert.ok(tokensFile(roots, section).endsWith(join(section, TOKENS)));
   }
 });
 
@@ -105,6 +145,84 @@ test('a resolver refuses a Section whose file is not on disk', () => {
   mkdirSync(join(root, 'half-a-section'), { recursive: true });
   writeFileSync(join(root, 'half-a-section', CONTENT), 'export const content = defineContent(schema, {});');
 
-  assert.equal(contentFile(root, 'half-a-section'), join(root, 'half-a-section', CONTENT));
-  assert.throws(() => tokensFile(root, 'half-a-section'), Refused);
+  assert.equal(contentFile(roots, 'half-a-section'), join(root, 'half-a-section', CONTENT));
+  assert.throws(() => tokensFile(roots, 'half-a-section'), Refused);
+});
+
+// ---------------------------------------------------------------------------
+// The Kernel's Tokens — the second family of holders (#146)
+// ---------------------------------------------------------------------------
+
+test('the Kernel names its Tokens files by their stem, sorted, and nothing else', () => {
+  assert.deepEqual(discoverKernel(kernel), ['kernel-corners', 'kernel-effects']);
+});
+
+test('a Kernel holder resolves to its one file under the constant directory', () => {
+  assert.equal(tokensFile(roots, 'kernel-effects'), join(kernel, KERNEL_TOKENS, 'effects.css'));
+});
+
+test('a Kernel holder has no Content, so asking for one is a refusal and not a path', () => {
+  assert.throws(() => contentFile(roots, 'kernel-effects'), Refused);
+});
+
+test('a Kernel name that is not on disk is refused, whatever it looks like', () => {
+  for (const name of ['kernel-invented', 'kernel-readme', 'kernel-', 'kernel-corners-x']) {
+    assert.throws(() => tokensFile(roots, name), Refused, name);
+  }
+});
+
+test('a Section cannot take a Kernel holder name, so a write cannot land in either', () => {
+  mkdirSync(join(root, 'kernel-effects'), { recursive: true });
+  writeFileSync(join(root, 'kernel-effects', CONTENT), 'export const content = defineContent(schema, {});');
+  writeFileSync(join(root, 'kernel-effects', TOKENS), '.x { --x-rule: 1px; }');
+
+  assert.equal(discover(root).includes('kernel-effects'), false);
+  // Still the Kernel's file, and never the Section folder that shadowed it.
+  assert.equal(tokensFile(roots, 'kernel-effects'), join(kernel, KERNEL_TOKENS, 'effects.css'));
+  assert.throws(() => contentFile(roots, 'kernel-effects'), Refused);
+  rmSync(join(root, 'kernel-effects'), { recursive: true, force: true });
+});
+
+// ---------------------------------------------------------------------------
+// The Bakes — the third
+// ---------------------------------------------------------------------------
+
+test('a Bake is a folder with a recipe in it, and a folder without one is not', () => {
+  assert.deepEqual(discoverBakes(bakes), ['plate']);
+  assert.deepEqual(discoverBakes(join(bakes, 'nowhere')), []);
+});
+
+test('a Bake that is not there is refused, in every spelling of a path', () => {
+  for (const name of ['not-a-bake', 'invented', '..', '../..', 'plate/..', '/etc', 'C:', '', 7, null]) {
+    assert.throws(() => recipeOf(roots, name), Refused, JSON.stringify(name));
+    assert.throws(() => paramsOf(roots, name), Refused, JSON.stringify(name));
+    assert.throws(() => putParam(roots, name, 'source', 'x'), Refused, JSON.stringify(name));
+  }
+});
+
+test('a Bake with nothing tuned has no parameters file and is not a failure', () => {
+  assert.deepEqual(paramsOf(roots, 'plate'), {});
+  assert.equal(recipeOf(roots, 'plate').title, 'The corner pictures');
+});
+
+test('putting a parameter writes it, and putting it back takes the line away again', () => {
+  const written = putParam(roots, 'plate', 'source', 'photos/other.rw2');
+  assert.equal(written.changed, true);
+  assert.equal(written.value, 'photos/other.rw2');
+  assert.deepEqual(paramsOf(roots, 'plate'), { source: 'photos/other.rw2' });
+
+  const again = putParam(roots, 'plate', 'source', 'photos/other.rw2');
+  assert.equal(again.changed, false);
+
+  const back = putParam(roots, 'plate', 'source', 'photos/dome.rw2');
+  assert.equal(back.changed, true);
+  // The value reported is the recipe's own, because that is what the Bake now
+  // holds — not an empty string, and not the key that has just been removed.
+  assert.equal(back.value, 'photos/dome.rw2');
+  assert.deepEqual(paramsOf(roots, 'plate'), {});
+});
+
+test('a parameter the recipe does not declare never reaches the file', () => {
+  assert.throws(() => putParam(roots, 'plate', 'invented', 'x'), Refused);
+  assert.deepEqual(paramsOf(roots, 'plate'), {});
 });

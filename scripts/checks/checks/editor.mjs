@@ -1,8 +1,8 @@
 import { cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { join, sep } from 'node:path';
 
-import { discover } from '../../editor/lib/sections.mjs';
+import { discover, discoverBakes, discoverKernel } from '../../editor/lib/sections.mjs';
 import { start } from '../../editor/server.mjs';
 import { PAGE, open } from '../lib/page.mjs';
 
@@ -54,19 +54,54 @@ const MARKER = 'Edited by the smoke Check';
 /** Both of the Editor's files, for every Section. */
 const WRITABLE = ['content.ts', 'tokens.css'];
 
-/** Copy every Section's writable files into a temporary tree of the same shape. */
+/**
+ * Copy everything the Editor may write into a temporary tree of the same shape.
+ *
+ * THREE FAMILIES NOW, not one: a Section's two files, one Tokens file per part of
+ * the Kernel, and a Bake's recipe and parameters. Every one of them is a file the
+ * Editor writes, so every one of them has to be copied — a Check that let the
+ * real tree be written would put a file it wrote into the commit it was gating.
+ * The originals are read here and compared at the end.
+ */
 function copySources(repoRoot) {
-  const from = join(repoRoot, 'src', 'sections');
-  const to = mkdtempSync(join(tmpdir(), 'editor-check-'));
+  const from = { sections: join(repoRoot, 'src', 'sections'), kernel: join(repoRoot, 'src', 'kernel'), bakes: join(repoRoot, 'design', 'bake') };
+  const root = mkdtempSync(join(tmpdir(), 'editor-check-'));
+  const to = { sections: join(root, 'sections'), kernel: join(root, 'kernel'), bakes: join(root, 'bakes') };
   const originals = new Map();
-  for (const section of discover(from)) {
-    mkdirSync(join(to, section), { recursive: true });
+
+  const keep = (where, path) => originals.set(where, readFileSync(path, 'utf8'));
+
+  for (const section of discover(from.sections)) {
+    mkdirSync(join(to.sections, section), { recursive: true });
     for (const file of WRITABLE) {
-      cpSync(join(from, section, file), join(to, section, file));
-      originals.set(`${section}/${file}`, readFileSync(join(from, section, file), 'utf8'));
+      cpSync(join(from.sections, section, file), join(to.sections, section, file));
+      keep(join('src', 'sections', section, file), join(from.sections, section, file));
     }
   }
-  return { from, to, originals };
+
+  mkdirSync(join(to.kernel, 'tokens'), { recursive: true });
+  for (const holder of discoverKernel(from.kernel)) {
+    const name = `${holder.replace(/^kernel-/, '')}.css`;
+    cpSync(join(from.kernel, 'tokens', name), join(to.kernel, 'tokens', name));
+    keep(join('src', 'kernel', 'tokens', name), join(from.kernel, 'tokens', name));
+  }
+
+  // The recipe is copied because the Bake cannot be read without it; the
+  // parameters are copied only where they exist, because a Bake standing at
+  // every default has never been written.
+  for (const bake of discoverBakes(from.bakes)) {
+    mkdirSync(join(to.bakes, bake), { recursive: true });
+    cpSync(join(from.bakes, bake, 'recipe.json'), join(to.bakes, bake, 'recipe.json'));
+    keep(join('design', 'bake', bake, 'recipe.json'), join(from.bakes, bake, 'recipe.json'));
+    try {
+      cpSync(join(from.bakes, bake, 'params.json'), join(to.bakes, bake, 'params.json'));
+      keep(join('design', 'bake', bake, 'params.json'), join(from.bakes, bake, 'params.json'));
+    } catch {
+      // never tuned, so there is nothing to copy and nothing to compare
+    }
+  }
+
+  return { repoRoot, root, to, originals };
 }
 
 export const check = {
@@ -88,11 +123,11 @@ export const check = {
       failures.push(`${PAGE} in the built tree carries the Editor — it must exist only in the Editor's own responses`);
     }
 
-    const { from, to, originals } = copySources(repoRoot);
+    const { root, to, originals } = copySources(repoRoot);
     let served;
     let context;
     try {
-      served = await start({ dist, sectionsRoot: to, repoRoot, canPublish: false });
+      served = await start({ dist, roots: to, repoRoot, canPublish: false, canBake: false });
       // The Editor's origin, through the suite's own opener.
       const opened = await open(browser, served.origin, { path: PAGE });
       context = opened.context;
@@ -148,11 +183,11 @@ export const check = {
         failures.push(`clicking ${key} and typing did not change the page — it still reads "${after}"`);
       }
 
-      const written = readFileSync(join(to, section, 'content.ts'), 'utf8');
+      const written = readFileSync(join(to.sections, section, 'content.ts'), 'utf8');
       if (!written.includes(MARKER)) {
         failures.push(`${key} was typed on the page and is not in ${section}/content.ts — the surface is not reaching the boundary`);
       }
-      const was = originals.get(`${section}/content.ts`) ?? '';
+      const was = originals.get(join('src', 'sections', section, 'content.ts')) ?? '';
       if (written.split('\n').length !== was.split('\n').length) {
         failures.push(
           `writing ${key} changed ${section}/content.ts from ${was.split('\n').length} lines to` +
@@ -181,7 +216,7 @@ export const check = {
       if (!said.startsWith('refused')) {
         failures.push(`an empty value was not refused — the Editor said "${said}"`);
       }
-      const stillThere = readFileSync(join(to, section, 'content.ts'), 'utf8');
+      const stillThere = readFileSync(join(to.sections, section, 'content.ts'), 'utf8');
       if (!stillThere.includes(MARKER) || stillThere !== written) {
         failures.push(`a refused value reached ${section}/content.ts — it must be refused before anything is written`);
       }
@@ -209,9 +244,9 @@ export const check = {
       const tokenSection = at.slice(0, at.indexOf(' '));
       const tokenKey = at.slice(at.indexOf(' ') + 1);
       const property = tokenKey.split(':')[1];
-      const tokenFile = join(to, tokenSection, 'tokens.css');
+      const tokenFile = join(to.sections, tokenSection, 'tokens.css');
       const tokensWere = readFileSync(tokenFile, 'utf8');
-      const contentWas = readFileSync(join(to, tokenSection, 'content.ts'), 'utf8');
+      const contentWas = readFileSync(join(to.sections, tokenSection, 'content.ts'), 'utf8');
 
       /** What the page currently computes that Token to. */
       const computed = () =>
@@ -263,7 +298,7 @@ export const check = {
             ` ${tokensNow.split('\n').length} — the boundary rewrote more than one value`,
         );
       }
-      if (readFileSync(join(to, tokenSection, 'content.ts'), 'utf8') !== contentWas) {
+      if (readFileSync(join(to.sections, tokenSection, 'content.ts'), 'utf8') !== contentWas) {
         failures.push(
           `writing ${property} also touched ${tokenSection}/content.ts — a Token edit reaches tokens.css only`,
         );
@@ -298,6 +333,140 @@ export const check = {
         failures.push(`putting ${property} back did not restore ${tokenSection}/tokens.css to what it was`);
       }
       notes.push(`put ${property} back to what it was before the session`);
+
+      // ---- the Kernel's Tokens --------------------------------------------
+
+      // #146 gave the Editor the Effect Stack's hundred numbers and the three
+      // corner pictures' placement, which are Tokens under src/kernel/tokens/
+      // rather than under any Section. Two halves, and they fail separately: the
+      // surface has to DISCOVER them, and a write has to reach the right file.
+      const kernelHolders = discoverKernel(to.kernel);
+      if (kernelHolders.length === 0) {
+        failures.push('the Check copied no Kernel Tokens files — src/kernel/tokens/ is where they live');
+      } else {
+        const holder = kernelHolders[0];
+        const drawn = await page.locator(`[data-editor-tokens="${holder}"]`).count();
+        if (drawn === 0) {
+          // Returned rather than carried on with: everything below asks the page
+          // for a control inside a group that is not there, and a locator that
+          // is not there is thirty seconds of waiting and then a timeout, which
+          // reads as a flaky Check rather than as the answer it already has.
+          failures.push(
+            `the Tokens surface drew nothing for ${holder} — the Kernel's own Tokens are not being discovered,` +
+              ' so two of the five tuners #146 absorbed are unreachable from the Editor',
+          );
+          return { failures, notes };
+        }
+        const kernelFile = join(to.kernel, 'tokens', `${holder.replace(/^kernel-/, '')}.css`);
+        const kernelWas = readFileSync(kernelFile, 'utf8');
+        const kernelKey = await page
+          .locator(`[data-editor-tokens="${holder}"] [data-editor-token]`)
+          .first()
+          .getAttribute('data-editor-token');
+        const kernelToken = (kernelKey ?? '').slice((kernelKey ?? '').indexOf(' ') + 1);
+        const reached = await fetch(`${served.origin}/__editor/tokens`, {
+          method: 'POST',
+          headers: { 'content-type': 'application/json', 'x-editor': '1' },
+          body: JSON.stringify({ section: holder, key: kernelToken, value: '0.4321px' }),
+        });
+        if (!reached.ok) {
+          failures.push(`a write to ${holder} ${kernelToken} was refused — ${(await reached.text()).slice(0, 120)}`);
+        }
+        const kernelNow = readFileSync(kernelFile, 'utf8');
+        if (kernelNow === kernelWas) failures.push(`writing ${holder} ${kernelToken} changed nothing in ${kernelFile}`);
+        if (kernelNow.split('\n').length !== kernelWas.split('\n').length) {
+          failures.push(`writing ${holder} ${kernelToken} rewrote more than one value`);
+        }
+        notes.push(`${kernelHolders.length} Kernel Tokens file(s), and one written`);
+      }
+
+      // ---- the Bakes -------------------------------------------------------
+
+      // Three things, and each is a different way for this surface to be wrong:
+      // it has to LIST the Bakes, a parameter has to reach params.json, and a
+      // run has to be refused while canBake is off. The generators themselves are
+      // never run here — every one of them needs something this repository
+      // deliberately does not carry, so a Check that ran one would be asserting
+      // the machine rather than the code.
+      await page.locator('[data-editor-choose="bakes"]').click();
+      const listed = await page.locator('[data-editor-bake]').count();
+      const onDisk = discoverBakes(to.bakes);
+      if (listed !== onDisk.length) {
+        failures.push(
+          `the Bakes surface listed ${listed} Bake(s) and design/bake/ holds ${onDisk.length}` +
+            ` (${onDisk.join(', ')}) — they are discovered, so a mismatch is the surface and not the tree`,
+        );
+      } else {
+        notes.push(`${listed} Bake(s) listed`);
+      }
+
+      if (onDisk.length > 0) {
+        const bake = onDisk[0];
+        const paramsFile = join(to.bakes, bake, 'params.json');
+        const recipe = JSON.parse(readFileSync(join(to.bakes, bake, 'recipe.json'), 'utf8'));
+        // The first parameter that is plain text: one with options only takes
+        // what it declares, and one with a range only takes a number, so neither
+        // can be moved without this Check knowing something about the recipe it
+        // is deliberately not reading.
+        const first = recipe.groups
+          .flatMap((group) => group.params)
+          .find((param) => !param.options && param.min === undefined);
+        if (!first) {
+          failures.push(`${bake} declares no plain-text parameter — this Check cannot move one without naming it`);
+        } else {
+          // Through the route rather than the control, for the same reason the
+          // Kernel half is: which control a parameter draws is decided by the
+          // recipe, and naming one here would make this Check fail the day a
+          // range was added to it.
+          const put = await fetch(`${served.origin}/__editor/bake`, {
+            method: 'POST',
+            headers: { 'content-type': 'application/json', 'x-editor': '1' },
+            body: JSON.stringify({ bake, key: first.key, value: `${first.value}-moved` }),
+          });
+          if (!put.ok) failures.push(`a write to ${bake}.${first.key} was refused — ${(await put.text()).slice(0, 120)}`);
+          const held = JSON.parse(readFileSync(paramsFile, 'utf8'));
+          if (held[first.key] !== `${first.value}-moved`) {
+            failures.push(`writing ${bake}.${first.key} did not reach ${bake}/params.json`);
+          } else {
+            notes.push(`wrote ${bake}.${first.key} to ${bake}/params.json`);
+          }
+          // ...and putting it back takes the line away rather than repeating the
+          // recipe, so the file reads as exactly what has been tuned.
+          await fetch(`${served.origin}/__editor/bake`, {
+            method: 'POST',
+            headers: { 'content-type': 'application/json', 'x-editor': '1' },
+            body: JSON.stringify({ bake, key: first.key, value: first.value }),
+          });
+          if (Object.keys(JSON.parse(readFileSync(paramsFile, 'utf8'))).includes(first.key)) {
+            failures.push(`putting ${bake}.${first.key} back left a line for it — the file is what has MOVED`);
+          }
+        }
+
+        // A parameter no recipe declares must not reach the file at all.
+        const invented = await fetch(`${served.origin}/__editor/bake`, {
+          method: 'POST',
+          headers: { 'content-type': 'application/json', 'x-editor': '1' },
+          body: JSON.stringify({ bake, key: 'nothing-declares-this', value: '1' }),
+        });
+        if (invented.ok) failures.push(`the Editor wrote ${bake}.nothing-declares-this, which no recipe declares`);
+
+        // Re-baking is off for this Check, and it has to SAY so rather than
+        // start a generator inside the suite.
+        const ran = await fetch(`${served.origin}/__editor/bake/run`, {
+          method: 'POST',
+          headers: { 'content-type': 'application/json', 'x-editor': '1' },
+          body: JSON.stringify({ bake }),
+        });
+        if (ran.ok) failures.push('the Editor started a generator from inside a Check — canBake was ignored');
+
+        // ...and it needs the handshake, like every other write.
+        const drivenBy = await fetch(`${served.origin}/__editor/bake`, {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ bake, key: first.key, value: 'from somewhere else' }),
+        });
+        if (drivenBy.ok) failures.push('the Editor took a Bake parameter with no handshake header');
+      }
 
       // ---- a Timeline, scrubbed -------------------------------------------
 
@@ -362,11 +531,11 @@ export const check = {
       // pre-commit hook, and one that quietly edited the tree it was gating
       // would be the worst possible failure in this suite.
       for (const [where, was] of originals) {
-        if (readFileSync(join(from, where), 'utf8') !== was) {
-          failures.push(`this Check changed src/sections/${where} — it must only ever write to its copy`);
+        if (readFileSync(join(repoRoot, where), 'utf8') !== was) {
+          failures.push(`this Check changed ${where.split(sep).join('/')} — it must only ever write to its copy`);
         }
       }
-      rmSync(to, { recursive: true, force: true });
+      rmSync(root, { recursive: true, force: true });
     }
 
     return { failures, notes };

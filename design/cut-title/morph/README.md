@@ -6,7 +6,7 @@ This directory is where the outlines and the correspondence between them are
 worked out; `portfolio/cut-morph.js` is the runtime that moves them.
 
 **This is on the site, and the face it turns into is Host Grotesk.**
-`design/cut-title/morph-tuner.html` previews all twenty-four faces against the
+`design/legacy/morph-tuner.html` previews all twenty-four faces against the
 real page so a choice can be made by eye, and `build-site.py --face <slug>` makes
 one of them permanent. Host Grotesk is OFL, the same footing as Vollkorn and
 Spectral in `/fonts`; the twelve Fontshare faces in the shortlist are free for

@@ -10,7 +10,7 @@
    `development` while looking like it reported on the branch.
 
    WHAT IS BEING ASSERTED, AND WHAT IS DELIBERATELY NOT. Choosing a treatment is
-   not a test: it is the author scrubbing design/plinth/plinth-tuner.html and
+   not a test: it is the author scrubbing design/legacy/plinth-tuner.html and
    picking one. What is testable is that whichever mixture is picked behaves —
    that it settles, that it never opens a hole, that it leaves the recording
    alone, that it disappears under `prefers-reduced-motion`, and that a phone

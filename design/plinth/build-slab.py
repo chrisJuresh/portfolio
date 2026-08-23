@@ -1020,7 +1020,68 @@ def load_added_stones():
 # them has been demonstrated.
 PROC_ROOMS = {k + "-noir": k for k in CANDIDATES}
 
-# Last, so that load_added_stones() can see every built-in name it must not take.
+# What `proc` means, snapshotted before anything is merged in below: THE FOUR
+# BUILT-INS AND NOTHING ELSE. The bake-off those four and the four gemini plates
+# recorded is the reason this file exists, and `proc` is how it is reproduced -
+# a group that quietly grew to include whatever the Editor last tuned would make
+# that command mean something different every time it was run.
+BUILT_IN_PROC = list(CANDIDATES)
+
+
+# ---------------------------------------------------------------------------
+# ...AND THE ONE THE EDITOR TUNES
+# ---------------------------------------------------------------------------
+# design/bake/plinth/ is one procedural stone: a name, a ground, three vein sets
+# and a fracture, declared in its recipe.json with every range and paragraph the
+# tuner this replaces used to carry, and tuned through design/bake/plinth/params.json.
+# It arrives here as an ordinary CANDIDATES entry, so nothing downstream knows the
+# difference - build_material() reads it the way it reads `portoro`.
+#
+# ONE STONE AND NEVER A BUILT-IN, which is the acceptance criterion this door was
+# built to keep. Re-rendering `nero`, `portoro`, `marquina`, `arabescato` or any
+# gemini plate would overwrite the pictures the marble comparison was judged from,
+# so a name this file already defines is REFUSED rather than shadowed - the same
+# rule, and the same wording, as load_added_stones() below.
+#
+# It is also why nothing gives it a `-noir` twin: PROC_ROOMS is built above this,
+# out of the built-ins alone. The room is a parameter of the stone instead.
+def tuned_stone():
+    sys.path.insert(0, os.path.join(ROOT, "design", "bake"))
+    import tuning
+
+    held = tuning.bake("plinth")
+    key = held.text("stone").strip()
+    if key in CANDIDATES or key in PHOTO_CANDIDATES or key in PROC_ROOMS:
+        print("! design/bake/plinth names %s, which this file already defines - "
+              "ignored, and nothing of that name is re-rendered" % key)
+        return {}
+    veins = []
+    for at in range(3):
+        vein = "vein%d." % at
+        veins.append((
+            held.num(vein + "scale"), held.num(vein + "detail"),
+            held.num(vein + "distortion"), held.num(vein + "width"),
+            held.num(vein + "sharpness"), held.linear(vein + "colour"),
+            held.num(vein + "rough"), held.num(vein + "bump"),
+        ))
+    return {key: {
+        "title": held.text("title"),
+        GROUND: held.linear("ground"),
+        "veins": veins,
+        "fracture": (held.linear("fracture.colour"), held.num("fracture.rough"),
+                     held.num("fracture.bump"), held.num("fracture.strength")),
+        "base_rough": held.num("base_rough"),
+        "samples": held.integer("samples"),
+        "seed": held.integer("seed"),
+        "room": held.text("room"),
+    }}
+
+
+TUNED = tuned_stone()
+CANDIDATES.update(TUNED)
+
+# Last, so that load_added_stones() can see every built-in name it must not take,
+# and the Editor's one as well.
 ADDED = load_added_stones()
 PHOTO_CANDIDATES.update(ADDED)
 
@@ -1282,8 +1343,11 @@ def build_material(key):
     pm.clamp = True
     pm.inputs["From Min"].default_value = 0.0
     pm.inputs["From Max"].default_value = 1.0
-    pm.inputs["To Min"].default_value = max(0.004, BASE_ROUGH - pswing)
-    pm.inputs["To Max"].default_value = BASE_ROUGH + pswing
+    # Per stone, falling back to the module's own: the Editor's stone carries its
+    # own polish and the four built-ins share this one.
+    base = spec.get("base_rough", BASE_ROUGH)
+    pm.inputs["To Min"].default_value = max(0.004, base - pswing)
+    pm.inputs["To Max"].default_value = base + pswing
     link(tree, pn, "Fac", pm, "Value")
     rough = (pm, "Result")
 
@@ -1596,7 +1660,7 @@ def build_photo_material(key):
         link(tree, rmap, "Color", rm, 0)
         link(tree, rm, "Value", bsdf, "Roughness")
     else:
-        bsdf.inputs["Roughness"].default_value = BASE_ROUGH
+        bsdf.inputs["Roughness"].default_value = spec.get("base_rough", BASE_ROUGH)
 
     # ---- relief ------------------------------------------------------------
     bstr, bdist = spec["bump"]
@@ -1868,6 +1932,10 @@ def build(key, sc, slab):
     if sc.world is None or not sc.world.name.startswith("room-" + room):
         sc.world = build_world(room)
         set_lights(room)
+    # Set per stone rather than once in build_scene(), so a stone that asks for
+    # fewer samples costs less and every other stone in the run is unaffected.
+    sc.cycles.samples = spec.get("samples", SAMPLES)
+    sc.cycles.seed = spec.get("seed", SEED)
     slab.data.materials.clear()
     slab.data.materials.append(
         build_photo_material(mat_key) if photo else build_material(mat_key))
@@ -1894,7 +1962,7 @@ SIDECAR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "slab.json")
 def material_version():
     """A digest of everything that decides the SHAPE of the material.
 
-    design/plinth/plinth-tuner.html carries a hand-written GLSL twin of
+    design/legacy/plinth-tuner.html carries a hand-written GLSL twin of
     build_material(), and its numbers come out of the sidecar so the two cannot
     disagree about those. What they can disagree about is the shape — a field the
     material grows and the shader never hears of — and that drift is invisible,
@@ -1911,14 +1979,14 @@ def material_version():
 
 
 def write_sidecar():
-    """Everything design/plinth/plinth-tuner.html needs, written by this script.
+    """Everything design/legacy/plinth-tuner.html needs, written by this script.
 
     The tuner previews a stone before Blender is asked to spend a minute on it,
     which means it has to know the camera, the block, the two lights and the
     CANDIDATES table. NONE OF THAT IS COPIED INTO IT. A tuner holding its own
     literals is a tuner that drifts: it goes on showing the stone this file used
     to render, and the drift is invisible because both halves look right on their
-    own. design/plate/plate-tuner.html reads plate-source.json for the same
+    own. design/legacy/plate-tuner.html reads plate-source.json for the same
     reason and that file says so at more length.
 
     So this is the one direction the constants travel. Change anything above and
@@ -2043,7 +2111,11 @@ def main():
     # bake-off you re-render one family at a time and the other four plates are
     # forty seconds you do not need to spend.
     groups = {"all": list(CANDIDATES) + list(PHOTO_CANDIDATES) + list(PROC_ROOMS),
-              "proc": list(CANDIDATES),
+              # The four built-ins, and never whatever the Editor last tuned:
+              # see BUILT_IN_PROC, and the comparison it is protecting.
+              "proc": BUILT_IN_PROC,
+              # ...which is reached by name, or by this.
+              "tuned": list(TUNED),
               "photo": list(PHOTO_CANDIDATES),
               "relit": list(PROC_ROOMS),
               # ...and the ones added from a photograph of your own, which is the
@@ -2053,7 +2125,7 @@ def main():
               # NOTHING, which is not a no-op: main() writes slab.json whatever
               # it rendered, so this is "rewrite the sidecar" on its own. What
               # needs it is a stone being DELETED — the tables are read at import
-              # and the picker in design/plinth/plinth-studio.html reads the
+              # and the picker in design/legacy/plinth-studio.html reads the
               # sidecar, so until this runs it goes on listing an entry whose
               # file is gone. Three seconds of starting Blender against a minute
               # of re-rendering something to make it notice.

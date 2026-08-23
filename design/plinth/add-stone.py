@@ -11,7 +11,7 @@ Three steps, and the only one that needs Blender is the last:
                                     build-slab.py merges into PHOTO_CANDIDATES
     3. portfolio/img/tex/plinth-<name>-<style>.webp   the Cycles plates, plus a
                                     rewritten design/plinth/slab.json, which is
-                                    what design/plinth/plinth-tuner.html reads
+                                    what design/legacy/plinth-tuner.html reads
 
 After it, reload the tuner and the stones are in the strip with their plates
 under them. They are listed as `photograph, plate only` like every other

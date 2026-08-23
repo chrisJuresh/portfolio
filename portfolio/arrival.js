@@ -51,7 +51,7 @@
  * user story is that the author can find those two points by watching rather
  * than by reading a description. --cross-in and --cross-out are declared in the
  * crossing block, read here on every measure, and scrubbed live by
- * design/plinth/plinth-tuner.html — so a pair arrived at by dragging is the
+ * design/legacy/plinth-tuner.html — so a pair arrived at by dragging is the
  * same pair that can be pasted back into the sheet. THEY MOVE --dark AND
  * NOTHING ELSE: --turn is what lifts the three corner pictures out of the way
  * and they have to clear the window as the page comes to rest whatever the
@@ -268,7 +268,7 @@
      the same arrangement, for the same reason, that cut-morph.js gives its own
      tuner through window.__cutMorph.
 
-     design/plinth/plinth-tuner.html iframes this page and scrubs --exit to judge
+     design/legacy/plinth-tuner.html iframes this page and scrubs --exit to judge
      an exit treatment by watching. Before #72 nothing on the page wrote --exit,
      so writing it inline from out there was the whole of the job. Now this file
      writes it on every scroll and resize — and an iframe both scrolls (the tuner

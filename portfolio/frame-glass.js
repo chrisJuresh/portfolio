@@ -54,7 +54,7 @@
  * looked at on the page it is for. So `dark` — the Frame's own fill, which is
  * what #66 settled — is the default and is what a reader gets; `marble` and
  * `clip` are reachable only by asking, through the seam at the foot of this
- * file, and design/plinth/plinth-tuner.html is the only thing that asks. What
+ * file, and design/legacy/plinth-tuner.html is the only thing that asks. What
  * that costs the shipping page is one branch in paintScene() and no per-frame
  * work at all: nothing moves the default off `dark`, so the promise above is the
  * same promise. What choosing `clip` would cost is still four passes a frame,

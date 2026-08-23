@@ -3,44 +3,13 @@
    scaled to --fold so they grow together, and graded in the file rather than by
    a filter here.
 
-   Every number below was tuned by eye on a 1920x1080 frame; src/kernel/NOTES.md
-   says what each one is measured from and which of them the ladder in corners.ts
-   has to agree with. --*-src is set by corners.ts, once it knows how many real
-   pixels this display will draw each picture in. `none` until then, so a dead
-   network leaves the page up rather than blank. */
+   Every number they are drawn from is in tokens/corners.css, imported first so
+   this file's rules stand after them, and so the Editor has one file per part of
+   the Kernel that is nothing but Tokens. src/kernel/NOTES.md says what each one
+   is measured from and which of them the ladder in corners.ts has to agree
+   with. */
 
-:root {
-  --plate-opacity: 0.12;
-  --plate-fill: 0.863;
-  --plate-y: 0px;
-  --plate-band: calc(var(--fold) - var(--plate-y));
-  --plate-w: min(calc(var(--plate-fill) * var(--plate-band)), 2400px);
-  --plate-x: 0px;
-  --plate-crop: 0.15;
-  --plate-src: none;
-
-  --car-opacity: 0.135;
-  --car-fill: 0.497;
-  --car-w: min(calc(var(--car-fill) * var(--fold)), 2400px);
-  --car-x: -60px;
-  --car-y: -78px;
-  --car-crop: 0;
-  --car-src: none;
-
-  --eye-opacity: 0.131;
-  --eye-fill: 0.582;
-  --eye-w: min(calc(var(--eye-fill) * var(--fold)), 2400px);
-  --eye-x: 0px;
-  --eye-y: 0px;
-  --eye-crop: 0;
-  --eye-src: none;
-}
-
-:root[data-theme='dark'] {
-  --plate-opacity: 0.17;
-  --car-opacity: 0.17;
-  --eye-opacity: 0.17;
-}
+@import './tokens/corners.css';
 
 /* One band, the height of the first screen, at the top of the document. No
    positioned ancestor on purpose: absolute against the initial containing block

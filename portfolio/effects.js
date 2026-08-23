@@ -341,7 +341,7 @@
      number, which is what makes this trap expensive: it returns 100 and 0
      respectively rather than failing, and the pictures land in the wrong place
      for a reason nothing in the console mentions.
-     (design/plate/plate-tuner.html has the same problem and answers it the other
+     (design/legacy/plate-tuner.html has the same problem and answers it the other
      way — by only ever offering rows whose values ARE plain numbers, which is
      why its size control is --plate-fill and not --plate-w.)
 
@@ -577,7 +577,7 @@
   }
 
   /* ---- the seam the tuner comes in through --------------------------------
-     design/effects/effects-tuner.html drives the real page in an iframe, exactly
+     design/legacy/effects-tuner.html drives the real page in an iframe, exactly
      as the type tuner does, so it needs a way in that is not "reach into the
      document and hope". Everything it does goes through here.
 

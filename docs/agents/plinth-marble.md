@@ -143,7 +143,7 @@ Then:
 
 ### Putting a different photograph on the plinth, without a terminal
 
-`python design/plinth/plinth-studio.py`, then open what it prints. It is the
+`python design/legacy/plinth-studio.py`, then open what it prints. It is the
 whole pipeline behind one page: drop an image, move every slider a stone has,
 bake, look at it standing under the real Frame, write it into `styles.css`. Its
 own docstring is the reference; what matters from outside it is:

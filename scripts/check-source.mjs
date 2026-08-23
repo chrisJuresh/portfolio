@@ -14,6 +14,7 @@
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { tokens as tokensIn } from './editor/lib/tokens.mjs';
 import { VARIANT_GATE, compounds, outsideAnyRule, rules } from './variant-sheet.mjs';
 
 const repoRoot = fileURLToPath(new URL('..', import.meta.url));
@@ -265,6 +266,36 @@ if (exists(astroConfig)) {
       `scopedStyleStrategy is '${strategy[1]}' — Variants need 'where', or a scoped rule's` +
         " specificity grows with its selector and :root[data-variant='…'] stops outranking it",
     );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// The Kernel's Tokens files hold Tokens, and nothing else.
+// ---------------------------------------------------------------------------
+
+// src/kernel/tokens/ is what #146 gave the Editor so that the Effect Stack's
+// hundred numbers and the three corner pictures' placement are reachable from
+// it - the two of the five tuners it absorbed that were entirely custom
+// properties. The Editor's Tokens parser is the grammar: a flat list of rules,
+// nothing in one but a custom property, no @media, no comment inside a value.
+// It REFUSES a file it cannot read wholly, so a declaration slipped into one of
+// these files does not half-load the surface, it takes every control in the file
+// down - which is a thing to be told about at build time rather than at the
+// panel. The parser is imported rather than a second copy of the rule, for the
+// reason the Editor's own two files give: two spellings of one grammar is a
+// disagreement about what may be written where.
+const kernelTokens = join(kernelDir, 'tokens');
+if (exists(kernelTokens)) {
+  const files = readdirSync(kernelTokens).filter((name) => name.endsWith('.css'));
+  if (files.length === 0) fail(kernelTokens, 'no Tokens files — the directory is the Editor’s allowlist');
+  for (const name of files) {
+    const file = join(kernelTokens, name);
+    try {
+      const held = tokensIn(readFileSync(file, 'utf8'));
+      if (held.length === 0) fail(file, 'declares no Tokens');
+    } catch (error) {
+      fail(file, `the Editor cannot read this as Tokens - ${error.message}`);
+    }
   }
 }
 

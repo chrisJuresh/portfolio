@@ -1,0 +1,55 @@
+{
+  "title": "The cut title's face",
+  "note": "PROJECTS at the foot of the page is a picture of type rather than type: one set of outlines, no font on the wire. The morph runs from Friz Quadrata to a second face, and this is which face. All twenty-four were previewable in the tuner and exactly one ships, because faces.json is 700 KB and the page carries one face's outlines inline.",
+  "needs": "the font files, which are not in this repository, and design/cut-title/morph/faces.json - which is. Without the fonts the run stops before it writes anything.",
+  "run": [
+    "python",
+    "design/cut-title/morph/build-site.py",
+    "--repo",
+    "."
+  ],
+  "shows": [
+    "portfolio/cut-morph.js"
+  ],
+  "groups": [
+    {
+      "name": "Which of the twenty-four",
+      "note": "Ranked in design/cut-title/morph/ranking.csv, with a blurb each in faces.json. The four kinds the tuner grouped them by - grotesk, display, soft, geometric - are fields on those entries rather than an axis here.",
+      "params": [
+        {
+          "key": "face",
+          "label": "face",
+          "value": "hostgrotesk",
+          "arg": "--face",
+          "options": [
+            "satoshi",
+            "switzer",
+            "generalsans",
+            "cabinetgrotesk",
+            "clashdisplay",
+            "supreme",
+            "ranade",
+            "nippo",
+            "chillax",
+            "technor",
+            "bespokesans",
+            "pally",
+            "geist",
+            "instrumentsans",
+            "hostgrotesk",
+            "funneldisplay",
+            "bricolagegrotesque",
+            "spacegrotesk",
+            "syne",
+            "gabarito",
+            "anybody",
+            "unbounded",
+            "sora",
+            "outfit"
+          ],
+          "note": "The face the word morphs INTO. At t = 0 every one of them is identical, because they are all Friz there."
+        }
+      ]
+    }
+  ]
+}

@@ -126,7 +126,7 @@
   --link-line:  #b3aa9b;
   /* The corner plate — see the block after the base rules. Where it stands and
      how far it carries; the grade is baked into the file and is tuned with the
-     rest of the plate in design/plate/plate-tuner.html, which prints both this
+     rest of the plate in design/legacy/plate-tuner.html, which prints both this
      block and the Python one it belongs with.
      Opacity first because it is the only one of the four that is a judgement
      rather than a measurement, and it is the one that gets argued about. */
@@ -2493,7 +2493,7 @@ body::after {
      while being right on localhost.
 
      THE DECLARATION BELOW IS MACHINE-WRITTEN, so it and not this comment is
-     which stone the site draws. design/plinth/plinth-studio.py rewrites the one
+     which stone the site draws. design/legacy/plinth-studio.py rewrites the one
      line — the filename and the digest together — every time a stone is applied
      in it, and it cannot rewrite prose, so a paragraph here naming a stone would
      go stale the first time one was picked and read as authority while doing it.
@@ -3832,7 +3832,7 @@ body::after {
    — #74. The text, the Frame and the plinth each leave in their own direction,
    at their own rate, and the point is the COMBINATION rather than a set of
    presets: three groups, five numbers each, mixable, and nothing here decides
-   which mixture is right. design/plinth/plinth-tuner.html is where that is
+   which mixture is right. design/legacy/plinth-tuner.html is where that is
    chosen, over the real composition, by watching.
 
    ONE NUMBER DRIVES ALL OF IT, AND IT IS SIGNED.
@@ -4152,7 +4152,7 @@ body::after {
    Ten optical treatments laid over the finished page, each one a token in
    `<html data-fx="...">` and each one off unless the token is there. Three ship
    on — film, paper, chroma — and the rest are built, wired and dormant. portfolio/
-   effects.js owns the attribute; design/effects/effects-tuner.html is where the
+   effects.js owns the attribute; design/legacy/effects-tuner.html is where the
    numbers below were arrived at and is the only sane way to move them.
 
    WHY AN ATTRIBUTE AND NOT SEVEN CLASSES

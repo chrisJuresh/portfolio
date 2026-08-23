@@ -22,19 +22,29 @@
  * reached, and it is also how anything the page speaks without drawing — an aria
  * label, an href — is reached at all.
  *
- * THE PANEL HOSTS THREE SURFACES AND OWNS ONE. Content is here, because it is
+ * THE PANEL HOSTS FOUR SURFACES AND OWNS ONE. Content is here, because it is
  * this file's binding-by-matching that reaches it. Tokens and the Timelines are
- * `client/tokens.js`, and the split is at a real seam rather than a tidy one: a
- * Token is addressed by a rule and a property and is bound to no element at all,
- * so it shares none of the field index everything in this file turns on. What is
- * shared is the panel, the report line and Publish, and those are passed in.
+ * `client/tokens.js` and the Bakes are `client/bakes.js`, and both splits are at
+ * real seams rather than tidy ones: a Token is addressed by a rule and a property
+ * and is bound to no element at all, and a Bake's parameter is not on the page in
+ * any form until a Python generator has run, so neither shares the field index
+ * everything in this file turns on. What is shared is the panel, the report line
+ * and Publish, and those are passed in.
  */
 
+import { Bakes } from './bakes.js';
 import { Motion, Tokens } from './tokens.js';
 
 const API = '/__editor';
 /** Elements whose text is not words on the page. */
 const SKIP = new Set(['SCRIPT', 'STYLE', 'TITLE', 'NOSCRIPT', 'TEMPLATE']);
+
+const get = async (route) => {
+  const response = await fetch(`${API}${route}`);
+  const answer = await response.json().catch(() => ({ error: `${response.status}` }));
+  if (!response.ok) throw new Error(answer.error ?? `${response.status}`);
+  return answer;
+};
 
 const post = async (route, body) => {
   const response = await fetch(`${API}${route}`, {
@@ -242,10 +252,12 @@ class Editor {
           <button type="button" data-editor-choose="content" aria-pressed="true">Content</button>
           <button type="button" data-editor-choose="tokens" aria-pressed="false">Tokens</button>
           <button type="button" data-editor-choose="motion" aria-pressed="false">Motion</button>
+          <button type="button" data-editor-choose="bakes" aria-pressed="false">Bakes</button>
         </nav>
         <div data-editor-surface="content"><div data-editor-fields></div></div>
         <div data-editor-surface="tokens" hidden></div>
         <div data-editor-surface="motion" hidden></div>
+        <div data-editor-surface="bakes" hidden></div>
         <div data-editor-publish>
           <input type="text" data-editor-message placeholder="what changed (optional)" />
           <button type="button" data-editor-go>Publish</button>
@@ -305,6 +317,20 @@ class Editor {
     this.motion = new Motion({ say: (text, bad) => this.say(text, bad) });
     this.motion.mount(panel.querySelector('[data-editor-surface="motion"]'));
 
+    // The Bakes read themselves from the server rather than out of `state`: the
+    // surface POLLS while a generator runs, and `/state` re-reads every Content
+    // and Tokens file in the tree.
+    this.bakes = new Bakes({
+      post,
+      get,
+      say: (text, bad) => this.say(text, bad),
+      edited: (id) => {
+        this.edits.add(id);
+        this.count();
+      },
+    });
+    void this.bakes.mount(panel.querySelector('[data-editor-surface="bakes"]'));
+
     // `surface` and not `tab`: CONTEXT.md's Rail — the list naming what can be
     // shown and marking which is selected — lists `tabs` under Avoid, and this
     // strip is that shape. The prose calls them surfaces, so the code does.
@@ -336,6 +362,7 @@ class Editor {
       surface.toggleAttribute('hidden', surface.dataset.editorSurface !== which);
     }
     if (which === 'motion') this.motion?.refresh();
+    if (which === 'bakes') void this.bakes?.refresh();
   }
 
   count() {

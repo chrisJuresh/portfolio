@@ -1,0 +1,48 @@
+/* The corner pictures' numbers, apart from what draws them, so the Editor can
+   reach every one — src/kernel/NOTES.md says what each is measured from, and
+   design/legacy/plate-tuner.html is where these were tuned before it could. */
+
+:root {
+  /* The plate, bottom-left. Anchored by two edges and scaled to the band between
+     the top of the page and the fold, so --plate-y shortens the band as it lifts
+     the picture and --plate-fill is a share of what is left. */
+  --plate-opacity: 0.12;
+  --plate-fill: 0.863;
+  --plate-y: 0px;
+  --plate-band: calc(var(--fold) - var(--plate-y));
+  --plate-w: min(calc(var(--plate-fill) * var(--plate-band)), 2400px);
+  --plate-x: 0px;
+  --plate-crop: 0.15;
+  /* Set by corners.ts once it knows how many real pixels this display will draw
+     the picture in. `none` until then, so a dead network leaves the page up
+     rather than blank — which is also why it is not worth typing into. */
+  --plate-src: none;
+
+  /* The car, top-right. Anchored by one corner and scaled to the fold itself, so
+     --car-y moves it without resizing anything. --car-crop cuts the TOP off,
+     which is the corner it is anchored to and the mirror of the plate's crop. */
+  --car-opacity: 0.135;
+  --car-fill: 0.497;
+  --car-w: min(calc(var(--car-fill) * var(--fold)), 2400px);
+  --car-x: -60px;
+  --car-y: -78px;
+  --car-crop: 0;
+  --car-src: none;
+
+  /* The eye, bottom-right. The car's anchoring with the plate's geometry: sized
+     against the fold, cropped at the foot. */
+  --eye-opacity: 0.131;
+  --eye-fill: 0.582;
+  --eye-w: min(calc(var(--eye-fill) * var(--fold)), 2400px);
+  --eye-x: 0px;
+  --eye-y: 0px;
+  --eye-crop: 0;
+  --eye-src: none;
+}
+
+/* Every picture needs more of itself on black, and nothing else moves. */
+:root[data-theme='dark'] {
+  --plate-opacity: 0.17;
+  --car-opacity: 0.17;
+  --eye-opacity: 0.17;
+}

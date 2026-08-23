@@ -56,7 +56,7 @@ design/
                      motion rather than only type. docs/agents/variants.md
   plate/
     build-plate.py   develops a source into portfolio/img/<stem>-*.webp — the grade
-    plate-tuner.html interactive: the same pipeline on sliders + Python/CSS export
+                     lives in design/bake/plate/, not in this file
     plate-source.webp  the ungraded frame the tuner grades; written by the script
     plate-source.json  the constants it was last built with — the tuner's "was"
     car-source.webp    the same pair for the second picture, the one in the
@@ -65,8 +65,21 @@ design/
     eye-source.json    all three; a Grade per picture per theme.
   effects/
     build-textures.py    bakes the two Texturelabs plates into portfolio/img/tex/
-    effects-tuner.html   interactive: every effect on chips, every number on a
-                         slider, over the real page — CSS export, per theme
+                         from design/bake/effects/
+  bake/
+    tuning.py            what the Editor has tuned, as the generator beside it
+                         wants it. Five folders below it, one per Bake, each
+                         holding a recipe.json (the declaration: the command and
+                         every parameter, with its default, its range and what it
+                         does) and a params.json (what has MOVED off those
+                         defaults — written by the Editor, absent until something
+                         is). The GENERATORS read it too, which is the point:
+                         there is no block of Python to paste back and nothing to
+                         drift. `pnpm editor`, the Bakes surface
+    plate/  effects/  plinth/  plinth-studio/  morph/
+  legacy/                the five HTML tuners the Editor replaced (#146), kept
+                         working. design/legacy/README.md says which is which and
+                         what moved where
   plinth/
     build-slab.py        RENDERS the Projects Panel's marble plinth into the
                          same directory — Blender, headless, one WebP per stone
@@ -80,50 +93,6 @@ design/
                          whole CANDIDATES table. WRITTEN BY IT, never by hand:
                          it is how the tuner below avoids holding a second copy
                          of constants that would drift out from under it.
-    plinth-tuner.html    interactive: the Panel's five by-eye decisions on one
-                         page, all of them switched over the real /portfolio in
-                         an iframe. Which STONE (a `data-marble` attribute and
-                         nothing else, so comparing the baked plates is exact),
-                         which of #57's five WORDINGS the subheading carries (the
-                         two text nodes .panel-sub already has), WHAT SITS BEHIND
-                         the titlebar's glass (three treatments, frame-glass.js's
-                         own), the GLASS itself — twenty-one uniforms on
-                         sliders, moved through the seam at the foot of that file
-                         so the material being judged is the material that ships
-                         — and HOW THE COMPOSITION LEAVES (#74): the text, the
-                         Frame and the plinth each on their own chip, mixable,
-                         with the five numbers behind every treatment on sliders
-                         beside them. `crossing` loads a SECOND /portfolio and
-                         stands it on the first with its ground taken away, so
-                         the Panel leaving and the Panel arriving are on the
-                         screen together; the readout beside the scrub is how
-                         thin the two ever get at once, measured off both.
-                         And WHERE IN THE TURN THE PAGE GOES DARK (#73, #58): two
-                         sliders for the crossing's ends and a scrub that holds
-                         the turn, so the middle of a crossing is a thing you can
-                         stand in — the iframe otherwise opens at the far end,
-                         where the crossing is already over. The readout is
-                         measured off the ground rather than off the numbers,
-                         which is how you find out the page is already black a
-                         sixth of a turn before `finishes at` says.
-                         Its one approximate half is a WebGL previz of the
-                         procedural stone's recipe, for asking what a change
-                         would do without paying a minute of Cycles; it is stale
-                         against the current material and says so. Exports a
-                         CANDIDATES entry, the styles.css rule and the bake for
-                         the stone; for the middle three the markup line, what
-                         shipping a treatment would take, and a `glass-state v2`
-                         blob that imports straight into glass-tuner.html; and
-                         for the exit the markup line, the moved numbers as the
-                         declarations they are, and an `exit-state v1` blob; and
-                         for the crossing the two declarations and a
-                         `cross-state v1` blob.
-    plinth-studio.py     interactive, and the only tool in design/ that is a
-    plinth-studio.html   SERVER rather than a page: photograph in, stone on the
-                         site out, with no command in between. Drop an image,
-                         move every parameter a stone has, bake it in Cycles,
-                         see it under the real Frame, write it into styles.css.
-                           python design/plinth/plinth-studio.py
   tools/
     render.mjs       Playwright: serves the repo, walks the matrix, writes shots/
     package.json     dev dependency (playwright) — not the site's
@@ -164,6 +133,15 @@ design/
                      recording keeps playing, reduced motion pins it settled, and
                      a phone composites one layer instead of five
 ```
+
+> **Five of these are in `design/legacy/` now.** The plate, plinth,
+> plinth-studio, morph and effects tuners were absorbed into `pnpm editor` by
+> #146 — one editing surface instead of six — and are kept, working, because
+> that is a judgement worth being able to reverse. Everything they said about
+> WHAT they tune is still true and is left standing below; what is no longer true
+> is the block of Python each of them prints, because a generator now reads its
+> numbers out of `design/bake/` rather than out of its own source.
+> `design/legacy/README.md` is the map.
 
 The **lab** compares finished candidates; the **tuner** is for arriving at one.
 The **plate tuner** does the same job for the three photographs in the page's
@@ -492,7 +470,7 @@ wheel reads as a mast of capsules, in the bottom-right. Serve the repo root
 (`run.bat`) and open:
 
 ```
-http://localhost:8000/design/plate/plate-tuner.html
+http://localhost:8000/design/legacy/plate-tuner.html
 ```
 
 Each is two things shipped through two different pipes, and this window is where
@@ -600,7 +578,7 @@ the halation, the gate weave, the CRT tube and the ASCII pass. Serve the repo
 root (`run.bat`) and open:
 
 ```
-http://localhost:8000/design/effects/effects-tuner.html
+http://localhost:8000/design/legacy/effects-tuner.html
 ```
 
 The same trick as the type tuner — the real `/portfolio` in an iframe, driven
@@ -727,7 +705,7 @@ photograph into four PBR maps and then path-tracing them in Blender, and a
 browser can do neither.
 
 ```bash
-python design/plinth/plinth-studio.py
+python design/legacy/plinth-studio.py
 ```
 
 It prints a URL and opens it. Do not serve it with `run.bat` — the page is inert

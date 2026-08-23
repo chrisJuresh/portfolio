@@ -46,7 +46,7 @@
  * still Friz's and none of them moves during the morph. The cap line stays where
  * the cut is taken from.
  *
- * TO CHANGE THE FACE. design/cut-title/morph-tuner.html previews all of them
+ * TO CHANGE THE FACE. design/legacy/morph-tuner.html previews all of them
  * against the real page; it drives this file through window.__cutMorph. To make
  * a choice permanent, re-run the build script with --face <slug> and it rewrites
  * the data block below.
@@ -210,7 +210,7 @@
   var queued = false;
 
   /* The letters take the pinned T when the tuner is holding one and the real
-     scroll otherwise. design/cut-title/morph-tuner.html scrubs T without moving
+     scroll otherwise. design/legacy/morph-tuner.html scrubs T without moving
      the page, which is what judging letterforms wants; #69's tuner is where the
      composition gets judged. */
   function frame() {
@@ -242,7 +242,7 @@
   }
 
   /* The tuner's handle on this, and the only reason any of it is exposed.
-     design/cut-title/morph-tuner.html iframes the real page and reaches in. */
+     design/legacy/morph-tuner.html iframes the real page and reaches in. */
   window.__cutMorph = {
     face: FACE,
     setFace: function (face) {

@@ -4,6 +4,9 @@ import { test } from 'node:test';
 import { Refused } from './content.mjs';
 import { publish, writtenAmong } from './publish.mjs';
 
+/** Both roots the Editor writes under, as `git status` spells them. */
+const ROOTS = { sections: 'src/sections', kernel: 'src/kernel' };
+
 /**
  * Publish: commit what the Editor wrote, push it, and say what it did.
  *
@@ -50,7 +53,7 @@ const setup = (replies = {}) =>
   });
 
 const run = (git, options = {}) =>
-  publish({ run: git.run, sections: 'src/sections', message: 'Edit some words', ...options });
+  publish({ run: git.run, roots: ROOTS, message: 'Edit some words', ...options });
 
 // ---------------------------------------------------------------------------
 // What it commits
@@ -220,7 +223,7 @@ test('what counts as one of the Editor’s paths is the Section-name pattern, no
         'src/sections/front-screen/contentXts',
         'design/legacy/front-screen/content.ts',
       ],
-      'src/sections',
+      ROOTS,
     ),
     ['src/sections/front-screen/content.ts', 'src/sections/front-screen/tokens.css'],
   );
@@ -234,5 +237,35 @@ test('a Windows path separator is read as a path separator', () => {
   const sep = String.fromCharCode(92);
   const windows = ['src', 'sections', 'front-screen', 'content.ts'].join(sep);
 
-  assert.deepEqual(writtenAmong([windows], 'src/sections'), [windows]);
+  assert.deepEqual(writtenAmong([windows], ROOTS), [windows]);
+});
+
+test('one of the Kernel’s Tokens files is the Editor’s own path too', () => {
+  // #146 gave the Editor the Effect Stack's numbers and the corner pictures'
+  // placement, which are Tokens under src/kernel/tokens rather than under a
+  // Section — so Publish has to recognise them or an edit made in the panel is
+  // one Publish reports as "nothing to publish".
+  assert.deepEqual(
+    writtenAmong(
+      [
+        'src/kernel/tokens/effects.css',
+        'src/kernel/tokens/corners.css',
+        'src/kernel/corners.css',
+        'src/kernel/effect-stack/effect-stack.css',
+        'src/kernel/tokens/nested/effects.css',
+        'src/kernel/tokens/effects.ts',
+        'src/kernel/tokens/-leading.css',
+      ],
+      ROOTS,
+    ),
+    ['src/kernel/tokens/effects.css', 'src/kernel/tokens/corners.css'],
+  );
+});
+
+test('a Kernel Tokens edit is committed, and named for the holder rather than a folder', async () => {
+  const git = setup({ status: { status: 0, stdout: ' M src/kernel/tokens/effects.css\n', stderr: '' } });
+  const done = await run(git, { message: undefined });
+  assert.deepEqual(done.files, ['src/kernel/tokens/effects.css']);
+  assert.match(done.message, /kernel-effects/);
+  assert.match(done.message, /Tokens/);
 });

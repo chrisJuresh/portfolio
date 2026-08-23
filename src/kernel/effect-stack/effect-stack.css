@@ -2,88 +2,13 @@
    in data-fx. The names are CONTEXT.md's: paper, halftone, film, grain, grille,
    scan, roll, tube, vignette.
 
-   Every number here was tuned by eye and most of them are stated twice, once per
-   theme, because a texture over white and the same texture over black are not
-   the same picture. src/kernel/NOTES.md carries the reasoning; the one thing that
-   must not be read past is the warning on .fx below. */
+   Every number the layers are drawn from is in tokens/effects.css, imported
+   first so this file's rules stand after them, and so the Editor has one file
+   per part of the Kernel that is nothing but Tokens. src/kernel/NOTES.md carries the
+   reasoning; the one thing that must not be read past is the warning on .fx
+   below. */
 
-:root {
-  --fx-y: 0px;
-  --fx-band: calc(var(--fold) - var(--fx-y));
-  --fx-fade: 0;
-
-  /* film — Texturelabs 185XL, one frame over the whole band, never tiled.
-     No ?v= digest, unlike the copy of these URLs in portfolio/styles.css: the
-     build fingerprints anything it can see in a url(), so what ships is
-     /_astro/film-1600.<hash>.webp and a re-bake is a different filename by
-     construction. The digest that sheet carries is doing this job by hand. */
-  --fx-film-src: image-set(
-    url('/portfolio/img/tex/film-1600.webp') 1x,
-    url('/portfolio/img/tex/film-2600.webp') 2x
-  );
-  --fx-film-strength: 0.14;
-  --fx-film-blend: multiply;
-  --fx-film-scale: 0.25;
-  --fx-film-aspect: 1.3445;
-  --fx-film-invert: 1;
-  --fx-film-lift: 1.5;
-  --fx-film-contrast: 2;
-
-  /* paper — a 512px square that wraps in both axes, drawn at --fx-paper-size */
-  --fx-paper-src: image-set(
-    url('/portfolio/img/tex/paper-512.webp') 1x,
-    url('/portfolio/img/tex/paper-1024.webp') 2x
-  );
-  --fx-paper-size: 384px;
-  --fx-paper-strength: 0.18;
-  --fx-paper-blend: multiply;
-  --fx-paper-invert: 0;
-  --fx-paper-lift: 1.5;
-  --fx-paper-contrast: 1.25;
-
-  --fx-grain-opacity: 0.09;
-  --fx-grain-size: 600px;
-  --fx-grain-fps: 2;
-
-  --fx-halftone-pitch: 3.7px;
-  --fx-halftone-dot: 0.27;
-  --fx-halftone-angle: 11deg;
-  --fx-halftone-opacity: 1;
-  --fx-halftone-blend: soft-light;
-
-  --fx-vignette-start: 55%;
-  --fx-vignette-strength: 0.3;
-
-  --fx-scan-pitch: 3px;
-  --fx-scan-alpha: 0.28;
-  --fx-flicker: 0.04;
-  --fx-grille-pitch: 3px;
-  --fx-grille-alpha: 0.16;
-  --fx-tube-curve: 1.4rem;
-  --fx-tube-alpha: 0.5;
-  --fx-roll-height: 14%;
-  --fx-roll-alpha: 0.05;
-  --fx-roll-period: 7s;
-}
-
-/* A texture over black is a different picture from the same texture over white,
-   so the two that ship on are stated again rather than scaled. */
-:root[data-theme='dark'] {
-  --fx-film-invert: 0;
-  --fx-film-lift: 0.75;
-  --fx-film-contrast: 4;
-  --fx-film-blend: screen;
-  --fx-film-strength: 0.18;
-
-  --fx-paper-lift: 0.8;
-  --fx-paper-contrast: 8;
-  --fx-paper-blend: normal;
-  --fx-paper-strength: 0.06;
-
-  --fx-halftone-pitch: 3.9px;
-  --fx-halftone-dot: 0.2;
-  --fx-halftone-blend: multiply;
-}
+@import '../tokens/effects.css';
 
 /* The film is one frame under `cover`: a narrow window sees LESS of the same
    picture, not a smaller one, so four scratches end up sharing a phone screen.

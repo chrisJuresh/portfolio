@@ -33,7 +33,14 @@ import { PAGE, start } from './server.mjs';
 
 const repoRoot = fileURLToPath(new URL('../..', import.meta.url)).replace(/[\\/]+$/, '');
 const dist = `${repoRoot}/dist`;
-const sectionsRoot = `${repoRoot}/src/sections`;
+/** The three roots the Editor reads: Sections, the Kernel's Tokens, and the
+ *  Bakes. Composed here and nowhere else, so `lib/sections.mjs` is handed paths
+ *  rather than deriving them. */
+const roots = {
+  sections: `${repoRoot}/src/sections`,
+  kernel: `${repoRoot}/src/kernel`,
+  bakes: `${repoRoot}/design/bake`,
+};
 
 const argv = process.argv.slice(2);
 const build = !argv.includes('--no-build');
@@ -61,14 +68,18 @@ try {
   process.exit(2);
 }
 
-const served = await start({ dist, sectionsRoot, repoRoot, port });
+const served = await start({ dist, roots, repoRoot, port });
 
 console.log('editor: the Portfolio, editable.\n');
 console.log(`  open       ${served.origin}${PAGE}`);
 console.log(`  serving    ${dist}`);
-console.log(`  writing    src/sections/*/{content.ts,tokens.css}   ${build ? '' : '(against a dist this did not build)'}`);
+console.log(
+  '  writing    src/sections/*/{content.ts,tokens.css}, src/kernel/tokens/*.css,' +
+    ` design/bake/*/params.json   ${build ? '' : '(against a dist this did not build)'}`,
+);
 console.log('\n  Click any text to change it. Enter commits, Escape puts it back.');
-console.log('  The Tokens surface drags every Token a Section declares; Motion scrubs its Timeline.');
+console.log('  Tokens drags every Token a Section and the Kernel declare; Motion scrubs a Timeline.');
+console.log('  Bakes runs the five generators — a re-bake rebuilds this tree, so the page shows it.');
 console.log('  Publish commits and pushes — the Checks run on the commit, so it takes a minute.');
 console.log('\n  Ctrl-C to stop.');
 

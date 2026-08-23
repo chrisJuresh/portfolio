@@ -29,21 +29,42 @@
  * RANGE comes from. Deriving the range from the current value instead would move
  * the slider under the author's own finger as they dragged it.
  *
+ * WHAT IT WRITES, part three, AND THE SECOND SPEED. A Bake's parameters, on
+ * their own route. A Token moves the page in the frame it is dragged in; a baked
+ * parameter moves nothing until a Python generator has run, so `/bake` writes the
+ * number and `/bake/run` starts the generator and answers immediately with an
+ * id. The surface polls `/bakes`. When a run succeeds the tree is REBUILT and both
+ * baselines are recaptured, which is what makes the page show the new asset — see
+ * `rebuild`, where the recapture is the part that is not optional.
+ *
  * WHAT IT WILL WRITE. Two files per Section, named `content.ts` and `tokens.css`,
- * chosen by `lib/sections.mjs` from a Section NAME. Nothing on the wire ever
- * becomes a path. ADR 0004 is the rule; that module is the mechanism.
+ * a Tokens file per part of the Kernel, and a `params.json` per Bake — every one
+ * of them chosen by `lib/sections.mjs` from a NAME. Nothing on the wire ever
+ * becomes a path, and a Bake's `recipe.json` is not writable at all. ADR 0004 is
+ * the rule; that module is the mechanism.
  */
 
-import { spawnSync } from 'node:child_process';
+import { spawn, spawnSync } from 'node:child_process';
 import { createReadStream, readFileSync, statSync } from 'node:fs';
 import { createServer } from 'node:http';
-import { join, relative } from 'node:path';
+import { join, relative, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { contentType, resolveFile } from '../static-tree.mjs';
+import { command, effective, moved } from './lib/bakes.mjs';
 import { Refused } from './lib/content.mjs';
 import { publish } from './lib/publish.mjs';
-import { put, putToken, readAll, readAllTokens } from './lib/sections.mjs';
+import { Runs } from './lib/runs.mjs';
+import {
+  discoverBakes,
+  paramsOf,
+  put,
+  putParam,
+  putToken,
+  readAll,
+  readAllTokens,
+  recipeOf,
+} from './lib/sections.mjs';
 
 const here = fileURLToPath(new URL('.', import.meta.url));
 
@@ -71,6 +92,21 @@ const HANDSHAKE = 'x-editor';
 /** Room for the longest Content string and its JSON, and nothing like a file. */
 const LONGEST_BODY = 64 * 1024;
 
+/** Every route that changes something, and therefore needs the handshake. */
+const WRITES = new Set(['/content', '/tokens', '/bake', '/bake/run', '/publish']);
+
+/**
+ * What is run to bring the served build up to date after a bake.
+ *
+ * THE WHOLE BUILD AND NOT A COPY, because a baked asset reaches the page two
+ * different ways and only one of them survives a copy: the corner pictures are
+ * fetched at run time by `corners.ts` and land in `dist/` with the static tree,
+ * while the two Texturelabs plates are named in a `url()` and are fingerprinted
+ * into the bundle. Assembling alone would show the new plate for one of those
+ * and the old one for the other, which is the quietest possible wrong answer.
+ */
+const REBUILD = ['build'];
+
 /**
  * The Editor's own files, and the two library modules the surface shares with the
  * boundary.
@@ -86,7 +122,9 @@ const CLIENT = {
   '/client.js': { file: 'client/editor.js', type: 'text/javascript; charset=utf-8' },
   '/tokens.js': { file: 'client/tokens.js', type: 'text/javascript; charset=utf-8' },
   '/client.css': { file: 'client/editor.css', type: 'text/css; charset=utf-8' },
+  '/bakes.js': { file: 'client/bakes.js', type: 'text/javascript; charset=utf-8' },
   '/lib/tokens.mjs': { file: 'lib/tokens.mjs', type: 'text/javascript; charset=utf-8' },
+  '/lib/bakes.mjs': { file: 'lib/bakes.mjs', type: 'text/javascript; charset=utf-8' },
   '/lib/content.mjs': { file: 'lib/content.mjs', type: 'text/javascript; charset=utf-8' },
 };
 
@@ -115,9 +153,9 @@ async function readBody(request) {
 }
 
 /** Every Content value as it stood when the served build was made. */
-function baselineOf(sectionsRoot) {
+function baselineOf(roots) {
   const baseline = new Map();
-  for (const { section, fields } of readAll(sectionsRoot)) {
+  for (const { section, fields } of readAll(roots)) {
     baseline.set(section, new Map(fields.map((field) => [field.key, field.value])));
   }
   return baseline;
@@ -125,9 +163,9 @@ function baselineOf(sectionsRoot) {
 
 /** Every Token as it stood before the session — what a control can be returned
  *  to, and what its range is derived from. */
-function tokenBaselineOf(sectionsRoot) {
+function tokenBaselineOf(roots) {
   const baseline = new Map();
-  for (const { section, tokens } of readAllTokens(sectionsRoot)) {
+  for (const { section, tokens } of readAllTokens(roots)) {
     baseline.set(section, new Map(tokens.map((token) => [token.key, token.value])));
   }
   return baseline;
@@ -153,17 +191,21 @@ function inject(html) {
  *
  * @param {object} options
  * @param {string} options.dist          the built tree to serve
- * @param {string} options.sectionsRoot   absolute path of src/sections
+ * @param {{ sections: string, kernel: string, bakes: string }} options.roots  the three the Editor reads
  * @param {string} options.repoRoot       the repository Publish commits in
  * @param {number} [options.port]         0 for an ephemeral one
  * @param {boolean} [options.canPublish]  false makes Publish refuse, for the Check
+ * @param {boolean} [options.canBake]     false makes a re-bake refuse, for the Check
  * @returns {Promise<{ origin: string, port: number, close: () => Promise<void> }>}
  */
-export async function start({ dist, sectionsRoot, repoRoot, port = 0, canPublish = true }) {
-  // Read once, at startup, and never again: this is what the served build says.
-  const baseline = baselineOf(sectionsRoot);
-  const wasToken = tokenBaselineOf(sectionsRoot);
-  const sectionsRelative = relative(repoRoot, sectionsRoot).replace(/\\/g, '/');
+export async function start({ dist, roots, repoRoot, port = 0, canPublish = true, canBake = true }) {
+  // Read at startup: this is what the served build says. A bake rebuilds, so
+  // both are recaptured after one — see `rebuild`, and the note above it.
+  let baseline = baselineOf(roots);
+  let wasToken = tokenBaselineOf(roots);
+  const relatively = (path) => relative(repoRoot, path).split(sep).join('/');
+  const relativeRoots = { sections: relatively(roots.sections), kernel: relatively(roots.kernel) };
+  const runs = new Runs();
 
   const git = (args) => {
     const result = spawnSync('git', args, { cwd: repoRoot, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 });
@@ -174,9 +216,11 @@ export async function start({ dist, sectionsRoot, repoRoot, port = 0, canPublish
     };
   };
 
-  /** Current values from disk, paired with what the build put on the page. */
+  /** Current values from disk, paired with what the build put on the page. The
+   *  Bakes are not in here: they are polled while a generator runs, and this
+   *  re-reads every Content and Tokens file in the tree. */
   const state = () => ({
-    sections: readAll(sectionsRoot).map(({ section, fields }) => ({
+    sections: readAll(roots).map(({ section, fields }) => ({
       section,
       fields: fields.map(({ key, value }) => ({
         key,
@@ -184,7 +228,7 @@ export async function start({ dist, sectionsRoot, repoRoot, port = 0, canPublish
         built: baseline.get(section)?.get(key) ?? null,
       })),
     })),
-    tokens: readAllTokens(sectionsRoot).map(({ section, tokens }) => ({
+    tokens: readAllTokens(roots).map(({ section, tokens }) => ({
       section,
       // What the file says, and what it said before the session. WHAT CONTROL to
       // draw for it is the surface's decision and is made there — out of the same
@@ -202,6 +246,110 @@ export async function start({ dist, sectionsRoot, repoRoot, port = 0, canPublish
       })),
     })),
   });
+
+  /**
+   * Every Bake, its parameters at their effective values, and how its last run
+   * went.
+   *
+   * A recipe that cannot be read is REPORTED AS ONE rather than taken down with
+   * the rest of the surface: a Bake is authored JSON, so a broken one is a
+   * mistake somebody wants to see named, and four working Bakes disappearing
+   * because a fifth has a trailing comma in it is the worst way to say so.
+   */
+  const bakes = () =>
+    discoverBakes(roots.bakes).map((name) => {
+      const run = runs.latest().find((one) => one.bake === name) ?? null;
+      const report = run && {
+        id: run.id,
+        state: run.state,
+        why: run.why,
+        log: run.log,
+        argv: run.argv,
+        ms: (run.ended ?? Date.now()) - run.started,
+      };
+      try {
+        const read = recipeOf(roots, name);
+        const held = paramsOf(roots, name);
+        const now = effective(read, held);
+        const off = new Set(moved(read, held));
+        return {
+          name,
+          title: read.title,
+          note: read.note,
+          needs: read.needs,
+          shows: read.shows,
+          // What pressing Re-bake will actually run, so the author can read it
+          // before pressing it and can type it into a shell instead.
+          argv: command(read, now),
+          params: read.params.map((param) => ({
+            key: param.key,
+            label: param.label,
+            note: param.note,
+            group: param.group,
+            groupNote: param.groupNote,
+            options: param.options,
+            min: param.min,
+            max: param.max,
+            step: param.step,
+            // `was` is the recipe's own default, which is what "put this back"
+            // means here — the Tokens surface's `was` is the session's opening
+            // value, and these two are different things on purpose: a Bake's
+            // default lives in a committed file and does not move under a
+            // session, so it is the honest thing to return to.
+            was: param.value,
+            value: now[param.key],
+            moved: off.has(param.key),
+          })),
+          run: report,
+        };
+      } catch (error) {
+        return { name, error: String(error?.message ?? error), run: report };
+      }
+    });
+
+  /**
+   * Bring the served build up to date, and recapture what it was made from.
+   *
+   * RECAPTURING IS NOT OPTIONAL. The Content baseline is "what the served build
+   * says", and the whole binding of an element to a Content key is made against
+   * it — so a rebuild that left the old baseline standing would report every
+   * field edited this session as not found on the page. Rebuilding and
+   * recapturing are one operation for that reason.
+   */
+  const rebuild = () =>
+    new Promise((ok, no) => {
+      // SPAWNED AND NOT spawnSync, and this is the one line in here that has to
+      // stay asynchronous. A build is ten to twenty seconds; running it
+      // synchronously blocks this server's whole event loop for that long, so
+      // the surface's poll cannot be answered, the keep-alive it is on times out
+      // the moment the loop is given back, and the page sees ECONNRESET rather
+      // than "baking". Which is also just the Editor freezing while the author
+      // watches it.
+      const built = spawn('pnpm', REBUILD, {
+        cwd: repoRoot,
+        shell: true,
+        windowsHide: true,
+      });
+      let said = '';
+      const keep = (chunk) => {
+        said += chunk;
+      };
+      built.stdout?.setEncoding('utf8');
+      built.stderr?.setEncoding('utf8');
+      built.stdout?.on('data', keep);
+      built.stderr?.on('data', keep);
+      built.on('error', (error) => no(new Error(`could not run pnpm ${REBUILD.join(' ')} — ${error.message}`)));
+      built.on('close', (code) => {
+        if (code !== 0) {
+          const tail = said.trim().split(/\r?\n/).slice(-4).join(' / ');
+          no(new Error(tail || `pnpm ${REBUILD.join(' ')} exited ${code}`));
+          return;
+        }
+        baseline = baselineOf(roots);
+        wasToken = tokenBaselineOf(roots);
+        ok();
+      });
+    });
 
   const server = createServer((request, response) => {
     void handle(request, response).catch((error) => {
@@ -228,9 +376,16 @@ export async function start({ dist, sectionsRoot, repoRoot, port = 0, canPublish
         return sendJson(response, 200, state());
       }
 
+      // The Bakes on their own, because this one is POLLED while a generator
+      // runs and `/state` re-reads every Content and Tokens file in the tree.
+      if (rest === '/bakes') {
+        if (request.method !== 'GET') return send(response, 405, 'GET only');
+        return sendJson(response, 200, { bakes: bakes() });
+      }
+
       // An unknown route is a 404 before it is a wrong method, or a mistyped
       // GET comes back as "POST only" and reads like a route that exists.
-      if (rest !== '/content' && rest !== '/tokens' && rest !== '/publish') {
+      if (!WRITES.has(rest)) {
         return send(response, 404, `no such Editor route: ${rest}`);
       }
 
@@ -244,7 +399,7 @@ export async function start({ dist, sectionsRoot, repoRoot, port = 0, canPublish
 
       if (rest === '/content') {
         const { section, key, value } = await readBody(request);
-        const written = put(sectionsRoot, section, key, value);
+        const written = put(roots, section, key, value);
         return sendJson(response, 200, {
           section,
           key: written.key,
@@ -258,7 +413,7 @@ export async function start({ dist, sectionsRoot, repoRoot, port = 0, canPublish
       // are two of these and not one with a kind in the body.
       if (rest === '/tokens') {
         const { section, key, value } = await readBody(request);
-        const written = putToken(sectionsRoot, section, key, value);
+        const written = putToken(roots, section, key, value);
         return sendJson(response, 200, {
           section,
           key: written.key,
@@ -268,10 +423,45 @@ export async function start({ dist, sectionsRoot, repoRoot, port = 0, canPublish
         });
       }
 
+      // A Bake's parameter. The route decides the file, as everywhere else here:
+      // this one reaches a params.json and can reach nothing else, and it cannot
+      // reach a recipe at all — that is the declaration, and it is authored.
+      if (rest === '/bake') {
+        const { bake, key, value } = await readBody(request);
+        const written = putParam(roots, bake, key, value);
+        return sendJson(response, 200, {
+          bake,
+          key: written.key,
+          value: written.value,
+          changed: written.changed,
+          file: relatively(written.file),
+        });
+      }
+
+      // THE SECOND SPEED. This answers as soon as the generator has started, and
+      // the surface polls /bakes for how it is going — a bake is fifteen seconds
+      // of Cycles or two minutes of Pillow, and holding a request open for that
+      // is a request that times out somewhere and a page that says nothing.
+      if (rest === '/bake/run') {
+        if (!canBake) throw new Refused('this Editor was started with re-baking off');
+        const { bake } = await readBody(request);
+        const read = recipeOf(roots, bake);
+        const argv = command(read, effective(read, paramsOf(roots, bake)));
+        const already = runs.running(bake);
+        if (already) {
+          throw new Refused(
+            `${bake} is already baking — one at a time per Bake, because two runs of one generator` +
+              ' race for the same output files',
+          );
+        }
+        const run = runs.start({ bake, argv, cwd: repoRoot, after: rebuild });
+        return sendJson(response, 200, { bake, id: run.id, argv });
+      }
+
       if (rest === '/publish') {
         if (!canPublish) throw new Refused('this Editor was started with publishing off');
         const { message } = await readBody(request);
-        return sendJson(response, 200, await publish({ run: git, sections: sectionsRelative, message }));
+        return sendJson(response, 200, await publish({ run: git, roots: relativeRoots, message }));
       }
 
     }

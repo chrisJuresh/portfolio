@@ -11,9 +11,9 @@ expensive to rediscover. Read it before writing a spec and before the first edit
 
 Then, as the work needs them: [`CONTEXT.md`](CONTEXT.md) for the vocabulary —
 **Shell**, **Kernel**, **Section**, **Turn**, **Timeline**, **Token**,
-**Content**, **Variant**, **Check** — which is binding on identifiers, ticket
-titles and prose; and [`docs/adr/`](docs/adr/) for the six decisions that are
-binding on the build. Where a name in the existing code disagrees with the
+**Content**, **Variant**, **Bake**, **Check** — which is binding on identifiers,
+ticket titles and prose; and [`docs/adr/`](docs/adr/) for the six decisions that
+are binding on the build. Where a name in the existing code disagrees with the
 glossary, the glossary wins.
 
 ## Branching and landing
@@ -206,26 +206,45 @@ unselected Variant has to cost the shipped page nothing.
 [`docs/agents/variants.md`](docs/agents/variants.md) is the authority; read it
 before writing one.
 
-A Section's words are its **Content** and its named numbers are its **Tokens**,
-and changing either is not an agent's job:
+A Section's words are its **Content**, its named numbers are its **Tokens**, and
+the generators that produce its assets are its **Bakes**. Changing any of them is
+not an agent's job:
 
 ```bash
 pnpm editor
 ```
 
 That opens the real page locally with the Editor over it — click any text, type,
-Enter; or drag a Token and watch the page move — and Publish commits and pushes.
-It writes Content and Tokens and nothing else (ADR 0004), and
+Enter; drag a Token and watch the page move; press Re-bake and watch the asset
+change — and Publish commits and pushes. It writes Content, Tokens and a Bake's
+parameters, and nothing else (ADR 0004), and
 [`scripts/editor/NOTES.md`](scripts/editor/NOTES.md) is the authority: read it
-before touching `scripts/editor/`. Four things there are easy to get wrong and
-expensive to rediscover — **each write boundary replaces one span's bytes rather
-than re-serialising the file**, which is what keeps a Content file's comments and
-a Tokens file's paragraphs; **an element is matched against the value the SERVED
-BUILD was made from**, which is what makes a Content edit survive a reload; **a
-Token's page and its file are two different things**, because its value is baked
-into the built stylesheet, so a drag previews through a stylesheet of the Editor's
-own and a release writes the file; and **a Timeline is held before it is
-scrubbed**, or the moment survives one frame.
+before touching `scripts/editor/`. Six things there are easy to get wrong and
+expensive to rediscover — **the Content and Tokens boundaries replace one span's
+bytes rather than re-serialising the file**, which is what keeps a Content file's
+comments and a Tokens file's paragraphs, while a Bake's parameters DO
+re-serialise, because there is nothing in that file to keep; **an element is
+matched against the value the SERVED BUILD was made from**, which is what makes a
+Content edit survive a reload; **a Token's page and its file are two different
+things**, because its value is baked into the built stylesheet, so a drag previews
+through a stylesheet of the Editor's own and a release writes the file; **a
+Timeline is held before it is scrubbed**, or the moment survives one frame; **a
+re-bake rebuilds the tree and recaptures both baselines**, which is the only thing
+that makes the page show the new asset; and **the plinth Bake renders one stone
+and never a built-in**, because `-- all` would overwrite the plates the marble
+comparison was judged from.
+
+**Tokens are not only a Section's.** The Effect Stack's hundred numbers and the
+three corner pictures' placement live in `src/kernel/tokens/`, one file per part
+of the Kernel, and answer to `kernel-<stem>`. A Bake is a folder under
+`design/bake/`: a `recipe.json` declaring the command and every parameter, and a
+`params.json` holding what has moved off those defaults — which the GENERATOR
+reads too, through `design/bake/tuning.py`, so a shell run and a re-bake are given
+the same numbers and there is nothing to paste back.
+
+The five HTML tuners this replaced are in
+[`design/legacy/`](design/legacy/README.md), still working, with their own map of
+what moved where.
 
 `IntersectionObserver` never delivers in the in-app browser pane, for the same
 reason `requestAnimationFrame` never ticks there: the pane does not run the

@@ -279,3 +279,73 @@
   outline-offset: 2px;
   background: rgb(127 179 255 / 12%);
 }
+
+/* ---- the Bakes ---------------------------------------------------------- */
+
+/* A Bake is a generator, so what it costs is a run and not a frame — which is
+   why this surface has a button and the Tokens surface does not, and why the
+   command is printed beside it rather than hidden behind it. */
+[data-editor-bake] > summary {
+  padding: 2px 0;
+}
+
+[data-editor-bake] > summary small {
+  opacity: 0.55;
+}
+
+[data-editor-bake-go] {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin: 6px 0 4px 8px;
+}
+
+[data-editor-argv] {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow-x: auto;
+  white-space: pre;
+  opacity: 0.55;
+}
+
+[data-editor-rebake]:disabled {
+  opacity: 0.5;
+  cursor: progress;
+}
+
+/* Three states, and each has to be legible at a glance from across the room:
+   the author has pressed a button that takes minutes and has gone to do
+   something else. */
+[data-editor-run] {
+  margin: 0 0 6px 8px;
+  padding-left: 8px;
+  border-left: 2px solid var(--editor-line);
+}
+
+[data-editor-run='running'] {
+  border-left-color: var(--editor-live);
+}
+
+[data-editor-run='failed'] {
+  border-left-color: var(--editor-bad);
+  color: var(--editor-bad);
+}
+
+[data-editor-log] {
+  margin: 4px 0 0;
+  max-height: 12rem;
+  overflow: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+  font: inherit;
+  opacity: 0.7;
+}
+
+[data-editor-note][data-editor-bad] {
+  color: var(--editor-bad);
+  opacity: 1;
+}
+
+[data-editor-token] select {
+  flex: 1 1 3rem;
+}
