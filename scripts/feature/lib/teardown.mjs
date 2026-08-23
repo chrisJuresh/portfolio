@@ -43,9 +43,30 @@ export function refusedForDirt(said) {
 /** One spelling, so paths from `git worktree list` (C:/…), `process.cwd()`
  *  (C:\…) and a config file all compare as the same string. Lower-cased because
  *  the drive letter's case is not stable between them, and this only ever runs
- *  against Windows and case-insensitive macOS. */
-function same(path) {
+ *  against Windows and case-insensitive macOS.
+ *
+ *  Exported because four modules were comparing worktree paths and three of them
+ *  had written their own version of this line. */
+export function samePath(path) {
   return String(path).replace(/\\/g, '/').replace(/\/+$/, '').toLowerCase();
+}
+
+/**
+ * Is this path one git still lists as a worktree?
+ *
+ * The one question three commands ask. `feature clean` asks it to decide whether
+ * a directory is an orphan, the guard below asks it before deleting anything, and
+ * `state.mjs` asks it of every row in the registry — and a registry row is not
+ * about a path anybody typed, so a second spelling of the comparison would show
+ * up there as ghosts that nothing could explain.
+ *
+ * @param {string[]} listed paths `git worktree list` gave
+ * @param {string} path
+ * @returns {boolean}
+ */
+export function listsWorktree(listed, path) {
+  const target = samePath(path);
+  return listed.some((one) => samePath(one) === target);
 }
 
 /**
@@ -60,8 +81,8 @@ function same(path) {
  * @returns {{ ok: boolean, why: string }}
  */
 export function deletable({ path, root, listed, orphan = false }) {
-  const target = same(path);
-  const main = same(root);
+  const target = samePath(path);
+  const main = samePath(root);
 
   if (target === main) {
     return { ok: false, why: 'that is the main checkout, and nothing deletes that' };
@@ -70,8 +91,7 @@ export function deletable({ path, root, listed, orphan = false }) {
     return { ok: false, why: `${path} is not under .claude/worktrees/` };
   }
 
-  const known = listed.some((one) => same(one) === target);
-  if (known) return { ok: true, why: '' };
+  if (listsWorktree(listed, path)) return { ok: true, why: '' };
 
   // A directory git no longer lists is the state a failed removal leaves behind:
   // `git worktree remove` unregisters the worktree and *then* deletes the files,

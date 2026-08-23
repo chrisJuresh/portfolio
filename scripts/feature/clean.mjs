@@ -18,6 +18,7 @@
 import { existsSync } from 'node:fs';
 import { git as gitOf } from './lib/git.mjs';
 import { takeDown } from './lib/takedown.mjs';
+import { samePath } from './lib/teardown.mjs';
 import { load, statePath } from './lib/state.mjs';
 
 const BASE = 'origin/development';
@@ -35,9 +36,7 @@ export async function clean({ sh, cwd, name }) {
   const worktree = `${root}/.claude/worktrees/${name}`;
 
   const listed = git.worktrees();
-  const known = listed.find(
-    (tree) => tree.path.replace(/\\/g, '/').toLowerCase() === worktree.toLowerCase(),
-  );
+  const known = listed.find((tree) => samePath(tree.path) === samePath(worktree));
   const recorded = load(statePath(common)).features.find((held) => held.branch === name) ?? null;
 
   if (!existsSync(worktree) && !known && !recorded && !git.hasLocalBranch(name)) {

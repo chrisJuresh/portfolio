@@ -6,6 +6,7 @@
  */
 
 import { heads, refNames, taken, uncommitted, worktrees } from './parse.mjs';
+import { listsWorktree } from './teardown.mjs';
 
 /**
  * @param {ReturnType<import('./exec.mjs').session>} sh
@@ -152,9 +153,9 @@ export function git(sh, cwd) {
     },
 
     hasWorktree(path) {
-      const wanted = path.replace(/\\/g, '/').replace(/\/+$/, '').toLowerCase();
-      return this.worktrees().some(
-        (tree) => tree.path.replace(/\\/g, '/').replace(/\/+$/, '').toLowerCase() === wanted,
+      return listsWorktree(
+        this.worktrees().map((tree) => tree.path),
+        path,
       );
     },
 

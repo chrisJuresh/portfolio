@@ -14,6 +14,7 @@
 
 import { existsSync, mkdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { dirname } from 'node:path';
+import { listsWorktree } from './teardown.mjs';
 
 /** @typedef {{ branch: string, directory: string, path: string, port: number,
  *              pid: number | null, startedAt: string }} Feature */
@@ -85,6 +86,71 @@ export function remove(state, branch) {
  */
 export function ports(state) {
   return new Set(state.features.map((held) => held.port).filter((port) => Number.isInteger(port)));
+}
+
+/**
+ * Split the registry into the features that are still there and the rows that
+ * are about a worktree that is not.
+ *
+ * A row comes out in `takedown.mjs`, and only when a teardown runs. A worktree
+ * removed any other way — by hand, by `git worktree remove`, by an agent harness
+ * that made its own — leaves its row behind for good, and the row then lies about
+ * two things at once: `feature list` calls it in flight, and `ports` above hands
+ * `feature start` a port that nothing is holding. Seven of eight ports in the
+ * pool had leaked that way before this existed.
+ *
+ * **A directory git has stopped listing but which is still on disk stays**, and
+ * that half is not tidiness. That state is exactly the orphan `feature clean`
+ * exists for — `git worktree remove` unregisters the tree and *then* deletes the
+ * files, so one that died on a locked file is unlisted and still there — and this
+ * row is the only record of the port and the pid `clean` needs in order to stop
+ * the server still running inside it. Dropping it would leave the port genuinely
+ * held and nothing able to name what is holding it.
+ *
+ * @param {State} state
+ * @param {object} world what git and the filesystem say, injected so the
+ *   decision can be tested without either
+ * @param {string[]} world.listed paths `git worktree list` gave
+ * @param {(path: string) => boolean} [world.onDisk]
+ * @returns {{ live: State, spent: Feature[] }}
+ */
+export function reconcile(state, { listed, onDisk = existsSync }) {
+  /** @type {Feature[]} */
+  const live = [];
+  /** @type {Feature[]} */
+  const spent = [];
+  for (const held of state.features) {
+    const there = listsWorktree(listed, held.path) || onDisk(held.path);
+    (there ? live : spent).push(held);
+  }
+  return { live: { features: live }, spent };
+}
+
+/**
+ * Reconcile the registry on disk, and say what went.
+ *
+ * Written back rather than filtered at the point of reading: `feature start`
+ * chooses its port out of this same file, so a `list` that only hid the ghosts
+ * would leave the port leak exactly where it was.
+ *
+ * Under the lock, because it is a read-modify-write of the file two `feature
+ * start` runs may be racing for. Callers that already hold the lock call
+ * `reconcile` themselves — taking it twice in one process is a two-second wait
+ * and then a throw.
+ *
+ * @param {string} file
+ * @param {string[]} listed paths `git worktree list` gave
+ * @returns {Promise<Feature[]>} the rows that were dropped
+ */
+export async function prune(file, listed) {
+  const held = await lock(file);
+  try {
+    const { live, spent } = reconcile(load(file), { listed });
+    if (spent.length > 0) save(file, live);
+    return spent;
+  } finally {
+    held.release();
+  }
 }
 
 /**

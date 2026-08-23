@@ -18,7 +18,7 @@ import { existsSync } from 'node:fs';
 import { git as gitOf } from './git.mjs';
 import { stop as stopServer } from './server.mjs';
 import { load, lock, remove, save, statePath } from './state.mjs';
-import { refusedForDirt, removeTree } from './teardown.mjs';
+import { refusedForDirt, removeTree, samePath } from './teardown.mjs';
 
 /**
  * @param {object} options
@@ -58,7 +58,7 @@ export async function takeDown({ sh, common, root, worktree, branch, orphan = fa
 
   // Nothing can remove the tree it is standing in, and on Windows nothing can
   // remove a directory a process has as its working directory either.
-  if (same(process.cwd()).startsWith(same(worktree))) process.chdir(root);
+  if (samePath(process.cwd()).startsWith(samePath(worktree))) process.chdir(root);
   const git = gitOf(sh, root);
 
   // Captured BEFORE the removal, and that ordering is load-bearing: `git
@@ -159,8 +159,4 @@ export async function takeDown({ sh, common, root, worktree, branch, orphan = fa
 
   console.log('\nfeature: nothing is left standing.');
   return 0;
-}
-
-function same(path) {
-  return String(path).replace(/\\/g, '/').replace(/\/+$/, '').toLowerCase();
 }

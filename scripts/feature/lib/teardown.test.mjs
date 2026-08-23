@@ -3,10 +3,29 @@ import { existsSync, mkdirSync, mkdtempSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { test } from 'node:test';
-import { deletable, refusedForDirt, removeTree } from './teardown.mjs';
+import { deletable, listsWorktree, refusedForDirt, removeTree, samePath } from './teardown.mjs';
 
 const root = 'C:/Users/Chris/Desktop/portfolio';
 const under = `${root}/.claude/worktrees/port-the-panel`;
+
+test('one spelling of a path, whichever side of the process it came from', () => {
+  // `git worktree list` says C:/…, `process.cwd()` says C:\…, the drive letter's
+  // case is not stable between them, and a trailing separator is not data. This
+  // is the comparison four modules were each writing their own version of.
+  assert.equal(samePath('C:\\repo\\a\\'), 'c:/repo/a');
+  assert.equal(samePath('C:/repo/a'), samePath('c:\\repo\\a\\'));
+});
+
+test('listsWorktree answers the one question three commands ask of git', () => {
+  // `feature clean` asks it to decide whether a directory is an orphan, the
+  // guard below asks it before deleting, and `state.mjs` asks it of every row in
+  // the registry. A second spelling would show up there as ghosts nothing could
+  // explain.
+  assert.equal(listsWorktree([under, root], `${under}/`), true);
+  assert.equal(listsWorktree([under], under.replace(/\//g, '\\').toUpperCase()), true);
+  assert.equal(listsWorktree([under], `${root}/.claude/worktrees/other`), false);
+  assert.equal(listsWorktree([], under), false);
+});
 
 test('a worktree git listed, under .claude/worktrees, may be deleted', () => {
   assert.equal(deletable({ path: under, root, listed: [under] }).ok, true);

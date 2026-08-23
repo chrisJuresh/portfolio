@@ -15,7 +15,7 @@ import { ensureHooksPath, hooksReport } from './lib/hooks.mjs';
 import { pick } from './lib/names.mjs';
 import { choosePort } from './lib/ports.mjs';
 import { logPath, start as startServer } from './lib/server.mjs';
-import { add, load, lock, ports, remove, save, statePath } from './lib/state.mjs';
+import { add, load, lock, ports, reconcile, remove, save, statePath } from './lib/state.mjs';
 
 /**
  * @param {object} options
@@ -112,12 +112,26 @@ export async function start({ sh, cwd, name, install, server }) {
   };
 
   held = await lock(state);
+  let dropped = [];
   try {
-    const current = load(state);
-    if (server) record.port = await choosePort({ taken: ports(current) });
-    save(state, add(current, record));
+    // Reconciled first, because `ports` below is the whole reason the registry is
+    // read here and a row whose worktree is gone reserves a port nothing is
+    // holding. Seven of the eight ports in the pool had leaked that way. Not
+    // `prune`, which takes the lock this already holds.
+    const { live, spent } = reconcile(load(state), {
+      listed: git.worktrees().map((tree) => tree.path),
+    });
+    dropped = spent;
+    if (server) record.port = await choosePort({ taken: ports(live) });
+    save(state, add(live, record));
   } finally {
     held.release();
+  }
+  if (dropped.length > 0) {
+    console.log(
+      `feature: dropped ${dropped.length} stale record(s) whose worktree is gone — ` +
+        `${dropped.map((one) => one.branch).join(', ')}.`,
+    );
   }
 
   if (server) {

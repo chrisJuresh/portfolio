@@ -22,7 +22,7 @@ import { land } from './land.mjs';
 import { session } from './lib/exec.mjs';
 import { git as gitOf } from './lib/git.mjs';
 import { HOOKS_PATH, ensureHooksPath, hooksReport } from './lib/hooks.mjs';
-import { load, statePath } from './lib/state.mjs';
+import { load, prune, statePath } from './lib/state.mjs';
 import { start } from './start.mjs';
 
 const USAGE = `feature — the change lifecycle (ADR 0005)
@@ -42,7 +42,10 @@ const USAGE = `feature — the change lifecycle (ADR 0005)
                                is already on development by then. It REFUSES if
                                the branch has anything development does not.
 
-  pnpm feature list            what is in flight, and on which port
+  pnpm feature list            what is in flight, and on which port. A record
+                               whose worktree git no longer lists, and which is
+                               not on disk either, is dropped — it was holding a
+                               port nothing was serving.
   pnpm feature hooks           point this clone's git at .githooks, so the
                                Checks block a commit. \`start\` does it too;
                                this is for a fresh clone that has not started
@@ -96,7 +99,7 @@ try {
       code = await clean({ sh, cwd, name: words.join(' ') });
     }
   } else if (verb === 'list') {
-    code = list(sh, cwd);
+    code = await list(sh, cwd);
   } else if (verb === 'hooks') {
     const git = gitOf(sh, cwd);
     console.log(
@@ -125,8 +128,27 @@ try {
 process.exit(code);
 
 /** What is in flight. The answer to "which port was that again". */
-function list(sh, cwd) {
-  const { features } = load(statePath(gitOf(sh, cwd).mainCheckout().common));
+async function list(sh, cwd) {
+  const git = gitOf(sh, cwd);
+  const state = statePath(git.mainCheckout().common);
+
+  // Reconciled against git before anything is printed, and written back rather
+  // than filtered on the way out. A row only comes out of the registry when a
+  // teardown runs, so a worktree removed any other way leaves one behind for
+  // good — and it lies twice: it says the feature is in flight, and it holds the
+  // port `feature start` would otherwise hand to the next one.
+  const dropped = await prune(state, git.worktrees().map((tree) => tree.path));
+  if (dropped.length > 0) {
+    // Said rather than done quietly. This deletes the only record of a port and
+    // a pid, and an author who was looking for one of those should hear that it
+    // is gone and why.
+    console.log(
+      `feature: dropped ${dropped.length} record(s) whose worktree git no longer lists and\n` +
+        `  which are not on disk — ${dropped.map((held) => held.branch).join(', ')}.`,
+    );
+  }
+
+  const { features } = load(state);
   if (features.length === 0) {
     console.log('feature: nothing in flight.');
     return 0;

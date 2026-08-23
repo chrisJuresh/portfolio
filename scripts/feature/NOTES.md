@@ -62,6 +62,35 @@ pointing at it. `deletable` takes an `orphan` flag for exactly that, and the fla
 is an exception to "git lists it" and to nothing else: the main checkout and
 anything outside `.claude/worktrees/` stay refused however it is set.
 
+## The registry, and the rows nothing was taking out
+
+`<git-common-dir>/feature-state.json` is what `feature list` prints and what
+`feature start` picks the next port out of. A row goes in at `start` and comes
+out in `takedown.mjs` — **and only there**, so a worktree removed by anything
+else left its row behind for good. Measured: nine rows, two worktrees, and seven
+of the eight ports in the pool reserved by features that had landed days
+earlier. The list is the thing a session reads to find out whether a name is
+taken and which port a feature is on, so both answers were wrong.
+
+So both readers reconcile the registry against `git worktree list` first, and
+**write it back** — `state.mjs`'s `reconcile` decides, `prune` takes the lock and
+saves. Filtering in `list` alone would have made the printout right and left the
+port leak exactly where it was, because `start` reads the file and not the
+printout.
+
+**A directory git has stopped listing but which is still on disk keeps its row**,
+and that half is not tidiness. That is the orphan above, the state `feature
+clean` exists to finish — and the row is the only record of the port and the pid
+`clean` needs in order to stop what is still serving inside it. Dropping it would
+leave the port genuinely held with nothing able to name the process holding it.
+
+The comparison is `teardown.mjs`'s `listsWorktree`, not a second one. There were
+four hand-written copies of "is this the same worktree path" — `git worktree
+list` says `C:/…`, `process.cwd()` says `C:\…`, the drive letter's case is not
+stable between them and a trailing separator is not data — and the one that had
+to be right about a path nobody typed was the new one. A strict comparison there
+does not fail loudly; it drops every live feature and takes its port with it.
+
 ## Why it is `pnpm feature`, and also two skills
 
 `pnpm feature start` is what a person types. `/feature-start` and `/feature-land`
