@@ -1,0 +1,18 @@
+/* Overrides — the Editor wrote every line of this file, and nothing else may.
+ *
+ * An Override is a value the Editor put OUTSIDE a Section's composition so the
+ * page looks right now, pending an agent folding it in properly (CONTEXT.md).
+ * Every record below is therefore debt: it is here because a change the Editor
+ * could not express was wanted anyway, and the Annotation it came with says what
+ * was measured. The Editor lists them all, so none of them is invisible.
+ *
+ * One record is one element: a comment naming it in the glossary's vocabulary,
+ * and a rule setting the geometry that was dragged. The declarations are
+ * important! on purpose — an Override's job is to outrank the rule it argues
+ * with, and saying so here is what makes this file greppable as debt.
+ *
+ * DO NOT EDIT IT BY HAND. Every write re-serialises the whole file, and refuses
+ * bytes that are not exactly what it would have written — so a hand edit does
+ * not get clobbered, it stops the tool. Fold a record into the Section it names
+ * and let the Editor discard it.
+ */

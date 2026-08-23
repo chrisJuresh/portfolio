@@ -269,3 +269,65 @@ test('a Kernel Tokens edit is committed, and named for the holder rather than a 
   assert.match(done.message, /kernel-effects/);
   assert.match(done.message, /Tokens/);
 });
+
+// ---------------------------------------------------------------------------
+// The Overrides file, which belongs to no Section
+// ---------------------------------------------------------------------------
+
+test('the Overrides file is published, and only the one the Editor was given', () => {
+  assert.deepEqual(
+    writtenAmong(
+      [
+        'src/overrides.css',
+        'src/sections/front-screen/content.ts',
+        'src/kernel/overrides.css',
+        'overrides.css',
+        'src/overrides.css.bak',
+        'design/legacy/src/overrides.css',
+      ],
+      { ...ROOTS, overrides: 'src' },
+    ),
+    ['src/overrides.css', 'src/sections/front-screen/content.ts'],
+  );
+});
+
+test('an Editor started without an Overrides file publishes none', () => {
+  assert.deepEqual(writtenAmong(['src/overrides.css'], ROOTS), []);
+  assert.deepEqual(writtenAmong(['src/overrides.css'], { ...ROOTS, overrides: '' }), []);
+});
+
+test('a message it was not given names an Override by its kind and not by src/', async () => {
+  const git = setup({
+    status: { status: 0, stdout: ' M src/overrides.css\n', stderr: '' },
+  });
+  const done = await publish({ run: git.run, roots: { ...ROOTS, overrides: 'src' } });
+
+  assert.deepEqual(done.files, ['src/overrides.css']);
+  assert.equal(done.message, 'Write the Editor’s Overrides');
+});
+
+test('an Override rides along with the Content it was taken beside', async () => {
+  const git = setup({
+    status: {
+      status: 0,
+      stdout: ' M src/sections/front-screen/content.ts\n M src/overrides.css\n M src/kernel/kernel.ts\n',
+      stderr: '',
+    },
+  });
+  const done = await publish({ run: git.run, roots: { ...ROOTS, overrides: 'src' } });
+
+  assert.deepEqual(done.files, ['src/sections/front-screen/content.ts', 'src/overrides.css']);
+  assert.equal(done.message, 'Edit the front-screen Content and Overrides');
+  assert.deepEqual(done.left, ['src/kernel/kernel.ts']);
+});
+
+test('it says an Override is among what has not changed', async () => {
+  const git = setup({ status: { status: 0, stdout: ' M src/kernel/kernel.ts\n', stderr: '' } });
+  await assert.rejects(
+    publish({ run: git.run, roots: { ...ROOTS, overrides: 'src' } }),
+    (error) => {
+      assert.match(error.message, /no Override/);
+      return true;
+    },
+  );
+});

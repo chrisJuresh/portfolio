@@ -226,26 +226,35 @@ pnpm editor
 
 That opens the real page locally with the Editor over it — click any text, type,
 Enter; drag a Token and watch the page move; press Re-bake and watch the asset
-change — and Publish commits and pushes. It writes Content, Tokens and a Bake's
-parameters, and nothing else (ADR 0004), and
+change — and Publish commits and pushes. Where a change is neither a word nor a
+Token, the **Measure** surface moves and resizes anything at all and hands back
+an **Annotation** to paste to an agent, and will write an **Override** into
+`src/overrides.css` so the page looks right while the composition is corrected
+later. It writes Content, Tokens, a Bake's parameters and that one stylesheet,
+and nothing else (ADR 0004), and
 [`scripts/editor/NOTES.md`](scripts/editor/NOTES.md) is the authority: read it
 before touching `scripts/editor/`. Six things there are easy to get wrong and
 expensive to rediscover — **the Content and Tokens boundaries replace one span's
 bytes rather than re-serialising the file**, which is what keeps a Content file's
-comments and a Tokens file's paragraphs, while a Bake's parameters DO
-re-serialise, because there is nothing in that file to keep; **an element is
-matched against the value the SERVED BUILD was made from**, which is what makes a
-Content edit survive a reload; **a Token's page and its file are two different
-things**, because its value is baked into the built stylesheet, so a drag previews
-through a stylesheet of the Editor's own and a release writes the file; **a
-Timeline is held before it is scrubbed**, or the moment survives one frame; **a
-re-bake rebuilds the tree and recaptures both baselines**, which is the only thing
-that makes the page show the new asset; and **the plinth Bake renders one stone
-and never a built-in**, because `-- all` would overwrite the plates the marble
-comparison was judged from.
+comments and a Tokens file's paragraphs, while a Bake's parameters and the
+Overrides DO re-serialise — the first because there is nothing in that file to
+keep, the second because the Editor wrote every byte of it, and that one is paid
+for by a **round trip** so a hand edit stops the tool instead of being clobbered
+by it; **an element is matched against the value the SERVED BUILD was made
+from**, which is what makes a Content edit survive a reload; **a Token’s page
+and its file are two different things**, because its value is baked into the
+built stylesheet, so a drag previews through a stylesheet of the Editor's own and
+a release writes the file — **and an Override's are two things for the same
+reason**; **a Timeline is held before it is scrubbed**, or the moment survives
+one frame; **a re-bake rebuilds the tree and recaptures both baselines**, which
+is the only thing that makes the page show the new asset; **the plinth Bake
+renders one stone and never a built-in**, because `-- all` would overwrite the
+plates the marble comparison was judged from; and **an Override's selector must
+never carry Astro’s `astro-…` scoping class**, which is a build’s fingerprint,
+so one built from it addresses something else after the next build.
 
 **Tokens are not only a Section's.** The Effect Stack's hundred numbers and the
-three corner pictures' placement live in `src/kernel/tokens/`, one file per part
+three corner pictures’ placement live in `src/kernel/tokens/`, one file per part
 of the Kernel, and answer to `kernel-<stem>`. A Bake is a folder under
 `design/bake/`: a `recipe.json` declaring the command and every parameter, and a
 `params.json` holding what has moved off those defaults — which the GENERATOR

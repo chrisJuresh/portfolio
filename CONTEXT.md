@@ -94,8 +94,8 @@ _Avoid_: copy, strings, CMS
 
 **Editor**:
 The local surface that opens the real Portfolio and changes its Content and
-Tokens in place, and re-bakes generated assets. It writes Content and Tokens and
-nothing else.
+Tokens in place, and re-bakes generated assets. It writes a Section's Content, a
+Section's Tokens, and an Override outside every Section — and nothing else.
 _Avoid_: dashboard, CMS, tuner, admin, studio
 
 **Bake**:

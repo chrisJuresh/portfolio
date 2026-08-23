@@ -43,6 +43,7 @@ import { join, resolve, sep } from 'node:path';
 
 import { PARAMS, RECIPE, recipe, values, write as writeParam } from './bakes.mjs';
 import { Refused, fields, write as writeContent } from './content.mjs';
+import { EMPTY as EMPTY_OVERRIDES, parse as parseOverrides, write as writeOverride } from './overrides.mjs';
 import { tokens, write as writeToken } from './tokens.mjs';
 
 /** The two file names the Editor writes inside a Section. Neither is a
@@ -358,4 +359,75 @@ export function putParam(roots, bake, key, value) {
   if (bytes === source) return { ...held, changed: false };
   writeFileSync(path, bytes, 'utf8');
   return { ...held, changed: true };
+}
+
+// ---------------------------------------------------------------------------
+// The Overrides file, which belongs to no holder at all
+// ---------------------------------------------------------------------------
+
+/**
+ * The one file the Editor writes that is outside every Section and the Kernel.
+ *
+ * That is what an Override IS: a value put OUTSIDE a composition so the page
+ * looks right now, pending an agent folding it in (CONTEXT.md, ADR 0004). So it
+ * is a fourth family beside the three above, and the narrowest of them — the name
+ * is a constant, the directory is one the Editor was started with, and there is
+ * no name on the wire at all. A request carries a selector and some declarations
+ * and never a file.
+ */
+export const OVERRIDES = 'overrides.css';
+
+/** The absolute path of the Overrides file, under the root it was given. */
+function overridesPath(roots) {
+  if (typeof roots?.overrides !== 'string' || roots.overrides === '') {
+    throw new Refused('this Editor was started without a root to write Overrides in');
+  }
+  const root = resolve(roots.overrides);
+  const path = resolve(root, OVERRIDES);
+  // Belt and braces, as in `within`: unreachable while the name is a constant,
+  // and the assertion that survives someone making it a parameter. It does NOT
+  // require the file to exist, which is the one way this differs from the other
+  // three families — `putOverride` creates it, because a tree that has never
+  // taken an Override has no reason to carry one.
+  if (!path.startsWith(root + sep) || !path.endsWith(sep + OVERRIDES)) {
+    throw new Refused(`${path} is not ${OVERRIDES} under ${root} — refused`);
+  }
+  return path;
+}
+
+/**
+ * Every Override, or none.
+ *
+ * A file that is not there reads as no Overrides rather than as an error: a tree
+ * that builds always has one, because the Shell imports it, so its absence is a
+ * tree mid-edit and not a question to answer.
+ */
+export function readOverrides(roots) {
+  let source;
+  try {
+    source = readFileSync(overridesPath(roots), 'utf8');
+  } catch {
+    return [];
+  }
+  return parseOverrides(source);
+}
+
+/**
+ * Set or discard one Override, on disk.
+ *
+ * @returns {{ file: string, selector: string, changed: boolean, overrides: object[] }}
+ */
+export function putOverride(roots, change) {
+  const path = overridesPath(roots);
+  let source;
+  try {
+    source = readFileSync(path, 'utf8');
+  } catch {
+    source = EMPTY_OVERRIDES;
+  }
+  const bytes = writeOverride(source, change);
+  const overrides = parseOverrides(bytes);
+  if (bytes === source) return { file: path, selector: change?.selector, changed: false, overrides };
+  writeFileSync(path, bytes, 'utf8');
+  return { file: path, selector: change?.selector, changed: true, overrides };
 }

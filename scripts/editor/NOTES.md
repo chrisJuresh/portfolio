@@ -13,38 +13,49 @@ pnpm editor -- --no-build --port 8790
 ```
 
 It builds this tree, serves that `dist/`, and prints a URL. Click any text, type,
-Enter. Escape puts it back. The panel at the bottom right has four surfaces:
+Enter. Escape puts it back. The panel at the bottom right has five surfaces:
 **Content**, every Content field of every Section, which is how anything the page
 speaks without drawing is reached; **Tokens**, a control per Token, of every
 Section AND of every part of the Kernel that has a Tokens file; **Motion**, a
-scrub per Timeline; and **Bakes**, the five Python generators and every number
-each is run with.
+scrub per Timeline; **Bakes**, the five Python generators and every number each is
+run with; and **Measure**, which moves and resizes anything at all and hands back
+an **Annotation** — and, if asked, writes an **Override**.
 
 ADR 0004 gives the Editor Content and Tokens, and it now has both. #146 gave it
 the Bakes as well, which is a THIRD kind of thing and not a loosening of that
 rule — a Bake writes no composition, it writes the parameters of a generator that
-produces an asset. What the Editor still does not have is an Annotation or an
-Override — a change it cannot express is still a sentence written to an agent by
-hand.
+produces an asset. #145 gave it the last two things that ADR names: the Annotation
+and the Override, which are what becomes of every change the other four surfaces
+cannot express.
 
 ## The shape, and why it is this shape
 
-**A write boundary, with a browser on top** (ADR 0004). There are THREE of them
-now, and they are siblings rather than one parser generalised over three formats:
+**A write boundary, with a browser on top** (ADR 0004). There are FOUR of them
+now, and they are siblings rather than one parser generalised over four formats:
 `lib/content.mjs` turns a Section's `content.ts`, a key and a value into the
-file's bytes; `lib/tokens.mjs` does the same for a `tokens.css`; and
-`lib/bakes.mjs` does it for a Bake's `params.json`. What IS shared is the plumbing
-around them — `lib/sections.mjs` resolves the path, reads, calls whichever
-boundary it was handed and writes, and `put`, `putToken` and `putParam` are that
-plumbing with one of the file names bound. Sharing the plumbing is free; sharing
-the parser would mean one function that understood none of the three formats
-exactly. Everything above them — the server, the surfaces, the panel — is a way of
-calling one of those three boundaries. The tests are on the functions, at the
-bytes, because these are the components in the repository whose bugs corrupt
-source files instead of appearing on screen.
+file's bytes; `lib/tokens.mjs` does the same for a `tokens.css`; `lib/bakes.mjs`
+does it for a Bake's `params.json`; and `lib/overrides.mjs` does it for the one
+`src/overrides.css`, which belongs to no holder at all. What IS shared is the
+plumbing around them — `lib/sections.mjs` resolves the path, reads, calls whichever
+boundary it was handed and writes, and `put`, `putToken`, `putParam` and
+`putOverride` are that plumbing with one of the file names bound. Sharing the
+plumbing is free; sharing the parser would mean one function that understood none
+of the four formats exactly. Everything above them — the server, the surfaces, the
+panel — is a way of calling one of those four boundaries. The tests are on the
+functions, at the bytes, because these are the components in the repository whose
+bugs corrupt source files instead of appearing on screen.
 
-**Two of the three replace a span; the third re-serialises, and the difference is
-the file rather than the discipline.** A Section's Content is
+**Two of the four replace a span; the other two re-serialise, and the difference
+is the file rather than the discipline.** A Bake's parameters re-serialise because
+there is nothing in that file to keep; the Overrides re-serialise because the
+Editor wrote every byte of it — and THAT one is paid for by a **round trip**,
+because a file with nobody else's judgement in it can still have somebody's hand
+in it. `parse` accepts only the bytes `render` would have produced, so an edit made
+by hand stops the tool instead of being clobbered by it, and
+`scripts/check-source.mjs` asks the same question at build time so the refusal
+arrives at a build rather than at the next drag.
+
+A Section's Content is
 TypeScript carrying comments, a schema, authored line breaks and long strings
 written as a sum of literals; a Section's Tokens are mostly the paragraphs that
 say what each number does and where it was measured. Reading either into an
@@ -91,19 +102,23 @@ that were meant to be in it.
 wire into a filesystem path, and **it takes a NAME rather than a path.** Every
 file name is a constant of that module, and **which kind a request gets is decided
 by the route it arrived on**: `/content` reaches a `content.ts`, `/tokens` reaches
-a `tokens.css`, `/bake` reaches a `params.json`. No file name is a parameter
+a `tokens.css`, `/bake` reaches a `params.json`, and `/overrides` reaches the one
+`overrides.css`. No file name is a parameter
 anywhere, so there is no argument to any of this that could make the Editor write
 a component, a Variant sheet, a script or a Bake's recipe — not a traversal, not
 an encoding, not a malformed name — and no way to ask a Content edit to land in a
 stylesheet. A name not on disk is refused before any path handling runs.
 
-**There are three families of name**, and they cannot collide. A Section is its
+**There are four families of name**, and they cannot collide. A Section is its
 folder under `src/sections`. A part of the Kernel is `kernel-<stem>`, which
 resolves to `src/kernel/tokens/<stem>.css` — and a Section folder beginning
 `kernel-` is not discovered as a Section at all, which the build already makes
 unreachable and `sections.test.mjs` asserts anyway, because this is the function
 that decides which file a write lands in. A Bake is its folder under
-`design/bake`, and only one of its two files is writable.
+`design/bake`, and only one of its two files is writable. The Overrides file has
+no name at all: there is one of it, under a root the Editor was started with, and
+a request carries a selector and some declarations instead — which makes it the
+narrowest of the four rather than the loosest.
 
 `sections.test.mjs` is that assertion, spelled seventeen ways, against every
 resolver.
@@ -230,6 +245,142 @@ GESTURE, so a drag on the friction moves the next flick. `stub/timeline.ts` read
 tween initialises, so that one takes a reload. Nothing here can tell the two apart,
 and nothing here should: the preview writes the custom property, and where a
 Section reads it from is the Section's decision.
+
+## Measuring: an Annotation, and optionally an Override
+
+The fourth surface, and the one that exists because the other three cannot express
+everything. Content is words and a Token is a named number; where a box stands and
+how big it is belongs to the composition, and ADR 0004 says a tool that moved
+boxes freely would destroy the relationship rather than edit it. So this one
+**measures**: press *measure*, click anything, drag it or type its numbers, and
+press *Annotation*.
+
+**A drag is an inline style, and reaches no file at all.** Moving and resizing
+happens in the DOM — `translate`, `width` and `height` on the one element — so
+"anything can be moved and resized without writing to the source" holds by
+construction rather than by care. *put back* restores exactly the inline values
+the page had, which are usually none.
+
+**Those inline styles are `!important`, and the reason is not tidiness.** An
+element that already carries an Override is held by a rule that is itself
+`!important`, and a plain inline style loses to it — so the second measurement of
+anything already overridden would move nothing, report "unchanged", and look
+exactly like a broken drag. A standing Override would quietly make its own element
+unmeasurable, and the only way to adjust one would be to discard it first.
+
+**`translate` is written as base plus delta, never the delta alone.** The element
+may already carry a `translate` — from its composition, or from an Override
+standing on it — so the base is read at pick time and every value written from
+there. An Override declares `translate` `!important` and therefore REPLACES the
+composition's, which is why the Annotation carries the absolute value rather than
+what was dragged: the delta alone would snap the element to zero and then out
+again.
+
+**An inline box is promoted to be measured at all.** `width`, `height` and
+`translate` do not apply to a non-replaced inline box, so a `<span>` or an `<a>` —
+most of the text on this page — drags with no effect whatever. The surface sets
+`display: inline-block` to measure one, **says so in the report line and in the
+Annotation**, and an Override carries the promotion because otherwise the page
+would not look like the measurement. That is the one box-model change this tool
+makes, `lib/overrides.mjs` refuses any other value of `display` by name, and
+`display` alone is not enough to write an Override — a promotion with nothing
+dragged would be an Override for having looked at something.
+
+**The numbers are MEASURED and not computed.** After every change the element's box
+is read again, so a flex child whose width is capped reports where it actually
+landed rather than where it was dragged to. The `before` box is the one it had when
+it was picked, taken relative to its parent — because the composition is written in
+shares of a parent, so the share is the number an agent needs and the pixels are
+how it was reached. The Annotation carries both.
+
+**The element is named out of `CONTEXT.md`, and nothing here holds a second copy of
+the glossary.** The server reads the terms out of that file at startup;
+`lib/annotations.mjs`'s `name()` titleises the tail of an element's own
+`section__part` class and matches it against them. So `projects-panel__frame` is
+"the Projects Panel's Frame", and `projects-panel__address-text` is "the Projects
+Panel's address text" **plus a line saying the glossary has no word for it** —
+which is the honest answer and a nudge towards adding one. A term landing in
+`CONTEXT.md` reaches these sentences for free, which is the same mechanism as the
+Section folder glob and the Token discovery: the thing that knows is the file that
+declares it.
+
+**Where a change maps onto a Token it says so, and offers it.** For each axis that
+moved, `client/measure.js` walks the page's own stylesheets for the property that
+could govern it — `left`, `right`, `margin-left`, `width`, `max-width` and the rest
+— and where the winning declaration is exactly `var(--something)`, that is the
+Token. The offer is a button, and pressing it goes through **the Tokens surface's
+own control** (`writeKey`) rather than through a second way to write a Token, so
+the page, the control, the preview sheet and the file move together. Three things
+stop an offer being made, and each is said rather than swallowed: a value that is a
+relationship (`clamp()`, `calc()`); a property set from a Token no Section declares,
+which means it is the Kernel's and ADR 0004's surface cannot reach it; and a Token
+declared on more than one rule, where which one the page is using is a judgement
+rather than a lookup. **The sign matters** — dragging right increases `left` and
+decreases `right`, and an offer with the wrong sign would be worse than no offer.
+
+**A bound is only the length while the box is standing on it.** `max-width`,
+`min-width`, `max-height`, `min-height` and `flex-basis` govern a size without
+being it, so restating one to the measured size offers a number that will not move
+the page — and an offer reads as certainty. So the bound's own computed value is
+compared with the box before the drag, and the offer is made only when the two
+agree. Off the bound it is reported with both numbers instead, which is the useful
+half of the answer.
+
+**A relationship and a literal are two different answers, and the difference is
+most of the value.** A length built out of Tokens is a relationship, and naming the
+constants inside it is the decision an agent has to make. A length with no Token in
+it is a literal in the composition, and the change to make is to promote it to one
+— which is ADR 0004's "anything the author will want to adjust must first be
+promoted to a Token", arrived at from the other end.
+
+**A written Token resets the measurement.** The page has moved through the Tokens
+surface's preview by then, so keeping the inline styles would show the change
+twice. The surface drops them and picks the element again, so the next drag starts
+from where the page now is.
+
+### The Override
+
+The one thing on this surface that reaches a file. It goes to `src/overrides.css`
+— outside every Section, imported last by the Shell, and written only by
+`lib/overrides.mjs`.
+
+**An Override's page and its file are two different things**, exactly as a Token's
+are and for the same reason: the served page is a build, so a rule written now is
+in the bundled stylesheet at the *next* build. So the surface keeps a stylesheet of
+its own holding every Override the file holds, written the way the file writes
+them. That sheet is what makes an Override look right immediately, and it is why
+the drag's inline styles are dropped the moment one lands — from then on the page
+is being moved by what the file says, which is the only thing worth looking at.
+
+**And then it is checked.** Once the sheet is in, the element's box is read again
+and compared with what was asked for. An Override that lost to the composition is
+reported as one, instead of being a file with a rule in it and a page that never
+moved.
+
+**Every declaration is `!important`**, which is the one place this disagrees with
+`lib/tokens.mjs` — that boundary refuses `!important` because a Token's value
+belongs to a composition. An Override's job is the reverse: to outrank the rule it
+argues with, from outside it, until an agent folds it in. Saying so at the bytes is
+also what makes the file greppable as debt.
+
+**`translate` and not `transform`**, plus `width` and `height`, and nothing else.
+`translate` is a property of its own that composes with whatever GSAP writes into
+`transform`, so an Override can never freeze a Timeline. A resize writes both sides,
+because the handle moves both and half a box is not a measurement anybody took.
+
+**A selector is built out of the page and checked against it.** The shortest chain
+upwards that matches this element and nothing else, made of tags, ids, authored
+classes and `:nth-of-type` — never Astro's `astro-…` scoping class, which is a
+build's fingerprint and would name a different element after the next one. It
+starts at `:root`, which is what makes it outrank the composition on purpose rather
+than by luck of source order, and the boundary refuses anything that is not that
+shape. Where there is no unique selector the surface says so: an Annotation can
+still be taken, and an Override cannot be named.
+
+**Overrides are listed in three places, because invisible debt is the failure the
+ticket names.** The Measure surface lists every one with a *discard* beside it; the
+panel's header carries a count that stays visible whichever surface is in front;
+and `pnpm check:sections` prints how many are standing on every build.
 
 ## Scrubbing a Timeline
 
@@ -367,12 +518,18 @@ The generators did not move, and none of them lost a flag.
 Two things about the commit are load-bearing.
 
 **It is pathspec-limited** to the files the Editor writes that git itself reports
-as changed — a Section's `content.ts` and a Section's `tokens.css`, and nothing
-else in the repository whatever state it is in. `git commit -- <paths>` commits
-those and leaves the rest of the index alone, so an agent's staged work in another
-window cannot ride along in a commit the author thinks is a typo fix or a nudged
-gap. The paths come from `git status` filtered to those two names, never from
-anything the browser said — the browser cannot name a file at all.
+as changed — a Section's `content.ts`, a Tokens file, a Bake's `params.json` and
+the one `src/overrides.css` — and nothing else in the repository whatever state it
+is in. `git commit -- <paths>` commits those and leaves the rest of the index
+alone, so an agent's staged work in another window cannot ride along in a commit
+the author thinks is a typo fix or a nudged gap. The paths come from `git status`
+filtered to those shapes, never from anything the browser said — the browser cannot
+name a file at all.
+
+The Overrides file is matched by its whole path rather than by a shape, because
+there is one of it and no name to pattern-match; and it is named in a commit
+message by its KIND alone, because the directory above it is `src` and would read
+as a Section that does not exist.
 
 **It does not pass `--no-verify`.** `.githooks/pre-commit` runs the Checks on every
 commit (ADR 0006), so a Publish takes about a minute and a broken tree refuses to
@@ -447,7 +604,41 @@ cannot find on the page is reported; a Token whose control is right while the pa
 under it is a build old looks like nothing at all. `pnpm editor` builds first, and
 that is the reason.
 
-## Three files on the client, and why the splits are there
+**A `CSSStyleRule` is a grouping rule now, and its `cssRules` is truthy.** CSS
+nesting gave every style rule an (empty) `cssRules` of its own, so a stylesheet
+walk that reads a truthy `cssRules` as "this is a group, not a declaration" finds
+**nothing, anywhere**, and the only symptom is an Annotation that never mentions a
+Token. `authored()` reads a rule AND descends into it, never one or the other. The
+smoke Check injects a rule of its own to guard this, because nothing about the page
+itself would have shown it.
+
+**A rule inside a `@media` that does not apply must not be read.** The Projects
+Panel writes `margin-left: 0px` on its Frame inside a `@media` for narrow windows,
+and a walk that takes the last match regardless of condition reports that 0 as
+what governs the Frame's position at 1440px — a wrong number in an Annotation,
+which is the one thing an Annotation may never carry. `inForce()` evaluates
+`@media` with `matchMedia` and `@supports` with `CSS.supports`, and treats anything
+it cannot evaluate (`@container`) as not holding: reporting a rule that may not
+apply is worse than reporting none.
+
+**The Panel's Plinth holds a live CLONE of the Frame**, classes and all, so no
+chain of descendants ever addresses one and not the other — which is why a selector
+is tried as a `>` chain before a descendant one, and why the boundary's grammar
+allows `>` at all. The composition's own stylesheet writes
+`.projects-panel__stage > .projects-panel__frame` for the same reason.
+
+**What governs a length is read once, when the element is picked.** A pointerdown
+on what is already picked starts a drag rather than picking it again — right for a
+finger, and the reason a Check that changes the stylesheet under the surface has to
+disarm and re-arm before measuring again.
+
+**Do not add a property to `PROPERTIES` without asking what animates it.** The
+list is `translate`, `width`, `height` because `translate` composes with GSAP's
+`transform` rather than fighting it. An Override on `transform` would be
+`!important` over a Timeline's own writes, and the symptom is motion that stopped
+with no error anywhere.
+
+## Four files on the client, and why the splits are there
 
 `client/editor.js` is one `Editor` class doing Content binding, in-place editing,
 the field list, publishing and listening. It said of itself that it wanted
@@ -455,8 +646,11 @@ splitting and was not split because its seams share one piece of state — the f
 index that binds an element is the index the panel renders and the index a write
 updates — and that the calculus would change if the Editor grew a second surface.
 
-It has, twice, and it did. `client/tokens.js` is the Tokens surface and the
-Timeline scrub; `client/bakes.js` is the Bakes. Both splits are at real seams
+It has, three times, and it did. `client/tokens.js` is the Tokens surface and the
+Timeline scrub; `client/bakes.js` is the Bakes; `client/measure.js` is Measure —
+the Annotations and the Overrides, addressed by a selector built out of the page,
+and handed the Tokens surface ITSELF so that a Token a measurement landed on is
+written through the control that already owns it. The splits are at real seams
 rather than tidy ones: a Token is addressed by a rule and a property and is bound
 to no element at all, and a Bake's parameter is not on the page in any form until
 a generator has run — so neither shares that field index. What is shared is the
@@ -483,25 +677,55 @@ elsewhere.
 | ---- | ------- |
 | `lib/content.test.mjs` | the bytes of a Content file: what moved, what did not, and every refusal |
 | `lib/tokens.test.mjs` | the bytes of a Tokens file, what control a value asks for, and every refusal |
+| `lib/overrides.test.mjs` | the bytes of the Overrides file, the round trip that lets it re-serialise, and every refusal |
+| `lib/annotations.test.mjs` | the Annotation's own text — the glossary read out of the real `CONTEXT.md`, what an element is called, and every number restated |
 | `lib/bakes.test.mjs` | the bytes of a Bake's parameters, the argv a Bake is run with, and every refusal |
 | `lib/runs.test.mjs` | whether a run is in flight, how it ended, and what it says when it did not end well |
 | `lib/sections.test.mjs` | that a request cannot name a file, against every resolver and all three families |
 | `lib/publish.test.mjs` | which arguments git is handed, and what counts as one of the Editor's paths |
-| `scripts/checks/checks/editor.mjs` | one smoke Check: click, type, drag, scrub, and find it in the file |
+| `scripts/checks/checks/editor.mjs` | one smoke Check: click, type, drag, scrub, measure, override, discard, and find each in the file |
 
 `pnpm test` runs everything but the last; `pnpm check` runs them and then the
 Check. `lib/runs.test.mjs` drives a fake child process rather than a real
 generator, for the reason above: every one of the five needs something this
 repository does not carry, so a test that ran one would be asserting the machine.
 
-The Check writes to a **temporary copy** of every Section's Content and Tokens and
+The Check writes to a **temporary copy** of everything the Editor may write and
 compares the real files before and after. That matters more than it sounds: it runs
 from the pre-commit hook, and a Check that edited the tree it was gating would put
 a file it wrote into the commit it was checking.
 
-Nine mutations have been shown to fail it: the boundary writing nothing, the
+**It picks a Section's own mount point to measure, and dispatches the pointer
+events on it** rather than moving a real mouse. A real click lands on whatever is
+deepest under the cursor, so the Check would have to name an element of a
+composition to know what it had picked — and would then fail the day that element
+was renamed. The listeners are on `document` in the capture phase, so an event
+dispatched on a descendant reaches them exactly as the author's own would.
+
+**It injects a rule of its own to assert the Token offer**, and that is the one
+place it stages a situation rather than finding one. Whether a length is governed by
+a Token depends on the composition, so a Check that looked for one would either name
+an element — and fail the day it was renamed — or assert nothing on a day nothing
+matched. So it declares a real Token, discovered from `/state` and filtered to a
+plain length on exactly one rule, as the width of the element it is about to
+measure. Its second rule is a trap: later in the sheet, so it would win on source
+order, inside a `@media` that never holds.
+
+Eighteen mutations have been shown to fail it: the boundary writing nothing, the
 handshake requirement removed, the surface binding nothing, empty Content values
 allowed — the last of which is caught by `content.test.mjs` before the browser
-starts, which is where it belongs — and, for this ticket, no Tokens discovered, a
-drag that does not move the page, a drag that writes the file on every frame, a
-scrub that does not hold, and a scrub not wired to the Timeline at all.
+starts, which is where it belongs — no Tokens discovered, a drag that does not move
+the page, a drag that writes the file on every frame, a scrub that does not hold,
+and a scrub not wired to the Timeline at all; and, for #145, a measuring drag that
+writes to a source file, an Override whose declarations lose their `!important`
+(caught by `overrides.test.mjs`, again before the browser), an Override that lands
+in the file without reaching the page, an Override that leaves the drag's inline
+styles standing on the element, a discard that does not write, a stylesheet walk
+that reads a style rule as a group and therefore finds nothing, one that reads a
+`@media` whose condition does not hold, a drag written without `!important` so a
+standing Override freezes its own element, and an inline box that is not promoted
+and therefore cannot be dragged at all.
+
+Four of those nine were real bugs rather than invented mutations, and none of them
+showed as anything but a silence — which is the argument for reading what the tool
+actually SAYS and not only whether it is green.

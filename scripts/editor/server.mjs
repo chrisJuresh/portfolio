@@ -51,6 +51,7 @@ import { join, relative, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { contentType, deployedFile } from '../static-tree.mjs';
+import { terms } from './lib/annotations.mjs';
 import { command, effective, moved } from './lib/bakes.mjs';
 import { Refused } from './lib/content.mjs';
 import { publish } from './lib/publish.mjs';
@@ -59,10 +60,12 @@ import {
   discoverBakes,
   paramsOf,
   put,
+  putOverride,
   putParam,
   putToken,
   readAll,
   readAllTokens,
+  readOverrides,
   recipeOf,
 } from './lib/sections.mjs';
 
@@ -93,7 +96,7 @@ const HANDSHAKE = 'x-editor';
 const LONGEST_BODY = 64 * 1024;
 
 /** Every route that changes something, and therefore needs the handshake. */
-const WRITES = new Set(['/content', '/tokens', '/bake', '/bake/run', '/publish']);
+const WRITES = new Set(['/content', '/tokens', '/overrides', '/bake', '/bake/run', '/publish']);
 
 /**
  * What is run to bring the served build up to date after a bake.
@@ -121,11 +124,14 @@ const REBUILD = ['build'];
 const CLIENT = {
   '/client.js': { file: 'client/editor.js', type: 'text/javascript; charset=utf-8' },
   '/tokens.js': { file: 'client/tokens.js', type: 'text/javascript; charset=utf-8' },
+  '/measure.js': { file: 'client/measure.js', type: 'text/javascript; charset=utf-8' },
   '/client.css': { file: 'client/editor.css', type: 'text/css; charset=utf-8' },
   '/bakes.js': { file: 'client/bakes.js', type: 'text/javascript; charset=utf-8' },
   '/lib/tokens.mjs': { file: 'lib/tokens.mjs', type: 'text/javascript; charset=utf-8' },
   '/lib/bakes.mjs': { file: 'lib/bakes.mjs', type: 'text/javascript; charset=utf-8' },
   '/lib/content.mjs': { file: 'lib/content.mjs', type: 'text/javascript; charset=utf-8' },
+  '/lib/annotations.mjs': { file: 'lib/annotations.mjs', type: 'text/javascript; charset=utf-8' },
+  '/lib/overrides.mjs': { file: 'lib/overrides.mjs', type: 'text/javascript; charset=utf-8' },
 };
 
 function send(response, status, body, type = 'text/plain; charset=utf-8') {
@@ -191,7 +197,7 @@ function inject(html) {
  *
  * @param {object} options
  * @param {string} options.dist          the built tree to serve
- * @param {{ sections: string, kernel: string, bakes: string }} options.roots  the three the Editor reads
+ * @param {{ sections: string, kernel: string, bakes: string, overrides: string }} options.roots  the four the Editor reads
  * @param {string} options.repoRoot       the repository Publish commits in
  * @param {number} [options.port]         0 for an ephemeral one
  * @param {boolean} [options.canPublish]  false makes Publish refuse, for the Check
@@ -204,7 +210,21 @@ export async function start({ dist, roots, repoRoot, port = 0, canPublish = true
   let baseline = baselineOf(roots);
   let wasToken = tokenBaselineOf(roots);
   const relatively = (path) => relative(repoRoot, path).split(sep).join('/');
-  const relativeRoots = { sections: relatively(roots.sections), kernel: relatively(roots.kernel) };
+  const relativeRoots = {
+    sections: relatively(roots.sections),
+    kernel: relatively(roots.kernel),
+    overrides: relatively(roots.overrides),
+  };
+  // The glossary, read once: an Annotation names an element in CONTEXT.md’s own
+  // words, and that file is the authority for them. Missing is not an error — the
+  // Annotation then says it could not name the part, which is true.
+  const glossary = (() => {
+    try {
+      return terms(readFileSync(join(repoRoot, 'CONTEXT.md'), 'utf8'));
+    } catch {
+      return [];
+    }
+  })();
   const runs = new Runs();
 
   const git = (args) => {
@@ -220,6 +240,11 @@ export async function start({ dist, roots, repoRoot, port = 0, canPublish = true
    *  Bakes are not in here: they are polled while a generator runs, and this
    *  re-reads every Content and Tokens file in the tree. */
   const state = () => ({
+    glossary,
+    // Read per request rather than captured at startup: an Override written a
+    // moment ago has to be in the list, which is the whole of "Overrides are
+    // visible somewhere the author will see them".
+    overrides: readOverrides(roots),
     sections: readAll(roots).map(({ section, fields }) => ({
       section,
       fields: fields.map(({ key, value }) => ({
@@ -456,6 +481,20 @@ export async function start({ dist, roots, repoRoot, port = 0, canPublish = true
         }
         const run = runs.start({ bake, argv, cwd: repoRoot, after: rebuild });
         return sendJson(response, 200, { bake, id: run.id, argv });
+      }
+
+      // The fourth route, and the fourth family of file. An Override carries a
+      // selector and some declarations and never a holder's name, because it
+      // belongs to none — and no declarations at all is how one is discarded.
+      if (rest === '/overrides') {
+        const { selector, name, note, declarations } = await readBody(request);
+        const written = putOverride(roots, { selector, name, note, declarations });
+        return sendJson(response, 200, {
+          selector: written.selector,
+          changed: written.changed,
+          overrides: written.overrides,
+          file: relatively(written.file),
+        });
       }
 
       if (rest === '/publish') {

@@ -32,14 +32,19 @@ the in-app preview serves the main checkout, so verifying a worktree through it
 reports on `development` while looking like it reported on the branch, and says
 nothing about which.
 
-**2. The Editor's write boundary.** Given a Section, a key and a value, produce
-the file's bytes — `scripts/editor/lib/content.mjs`, asserted at the bytes. This
-is a lower seam than a browser tool would normally get, and deliberately so: the
-Editor is the only component in the repository whose bugs corrupt source files
-instead of appearing on screen, and driving it through its own surface would be
-slow and flaky. The browser half gets exactly **one** smoke Check through seam 1
-— `scripts/checks/checks/editor.mjs`: open the Editor, change a word, confirm the
-page and the file both moved.
+**2. The Editor's write boundaries.** Given a Section, a key and a value, produce
+the file's bytes — `scripts/editor/lib/content.mjs` and `lib/tokens.mjs`, and
+`lib/overrides.mjs` for the one file that belongs to no Section — asserted at the
+bytes. This is a lower seam than a browser tool would normally get, and
+deliberately so: the Editor is the only component in the repository whose bugs
+corrupt source files instead of appearing on screen, and driving it through its own
+surface would be slow and flaky. Beside them sits `lib/annotations.mjs`, which is
+the same kind of seam for a different reason: an **Annotation** is text the author
+pastes to an agent, so the sentence *is* the deliverable and is asserted as one.
+The browser half gets exactly **one** smoke Check through seam 1 —
+`scripts/checks/checks/editor.mjs`: open the Editor, change a word, drag a Token,
+scrub a Timeline, measure something and override it, and confirm the page and the
+files both moved.
 
 Underneath both sits the ordinary kind: **a pure function with a test beside it**.
 `scripts/feature/lib/` and `scripts/editor/lib/` are written that way on purpose
@@ -173,7 +178,8 @@ authority is in the right-hand column.
 | **One mount point per Section.** | `src/sections/stub/NOTES.md` |
 | **A Variant's selector needs `:root`** to outrank the composition it argues with, and **nothing imports `variants.css`** — an unselected Variant must cost the shipped page nothing. Both are silent when wrong. | `docs/agents/variants.md` |
 | **The Editor matches an element against the value the SERVED BUILD was made from**, not the current one. That is what makes an edit survive a reload. | `scripts/editor/NOTES.md` |
-| **The Editor replaces one string literal's bytes** rather than re-serialising the file, which is what keeps a Content file's comments and formatting. | `scripts/editor/NOTES.md` |
+| **The Editor replaces one string literal's bytes** rather than re-serialising the file, which is what keeps a Content file's comments and formatting. Its **Overrides** boundary is the exception and inverts the rule: that file is generated, so it always re-serialises, and what pays for it is refusing any bytes it did not write. | `scripts/editor/NOTES.md` |
+| **An Override's selector may not carry Astro's `astro-…` scoping class.** It is a hash of the component's bytes, so a selector built from one addresses a different element after the next build — an Override that worked all afternoon and stops on a rebuild. | `scripts/editor/NOTES.md` |
 | **`pnpm install` does not download a browser.** The `playwright` package carries the driver, not the binaries, and pnpm blocks install scripts. Run `pnpm exec playwright install chromium` once per machine. | `scripts/checks/NOTES.md` |
 | **pnpm's settings live in `pnpm-workspace.yaml`, not `.npmrc`.** pnpm 11 ignores `.npmrc` for `saveExact`, and the failure is a caret quietly reappearing in `package.json`. | ADR 0002 |
 | **The vendored guard marks a worktree spent on the merge command's name appearing anywhere in a shell command string**, matched by regex rather than by what ran — so a `grep` for the phrase, or a doc that quotes it, denies the next edit in that tree. `gh pr list --head <branch> --state all` returning nothing settles it; then delete the marker the denial names. Report it upstream; do not patch it here. | `CLAUDE.md` |

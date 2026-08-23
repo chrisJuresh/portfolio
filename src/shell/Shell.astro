@@ -6,6 +6,13 @@
 import EffectStack from '../kernel/effect-stack/EffectStack.astro';
 import Kernel from '../kernel/Kernel.astro';
 import { THEME_KEY } from '../kernel/theme';
+// The Overrides the Editor has written, imported LAST so they stand after
+// everything they argue with. This is the one stylesheet in src/ that belongs to
+// no Section and to no Kernel: an Override is a value put OUTSIDE a composition
+// so the page looks right now, pending an agent folding it in (ADR 0004,
+// CONTEXT.md). The Editor is its only author — scripts/editor/lib/overrides.mjs
+// is the boundary, and check-source.mjs fails the build on bytes it did not write.
+import '../overrides.css';
 
 interface Props {
   title: string;

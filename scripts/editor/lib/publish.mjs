@@ -27,13 +27,13 @@
  */
 
 import { Refused } from './content.mjs';
-import { CONTENT, KERNEL, KERNEL_TOKENS, NAME, TOKENS } from './sections.mjs';
+import { CONTENT, KERNEL, KERNEL_TOKENS, NAME, OVERRIDES, TOKENS } from './sections.mjs';
 
 /** One line of words, long enough to say what changed. */
 const LONGEST_MESSAGE = 300;
 
-/** What each of the Editor's two files is called in a commit message. */
-const KIND = { [CONTENT]: 'Content', [TOKENS]: 'Tokens' };
+/** What each of the Editor's files is called in a commit message. */
+const KIND = { [CONTENT]: 'Content', [TOKENS]: 'Tokens', [OVERRIDES]: 'Overrides' };
 
 /**
  * What a written path is called in the commit message, and which of the two
@@ -43,10 +43,16 @@ const KIND = { [CONTENT]: 'Content', [TOKENS]: 'Tokens' };
  * named by its own stem, prefixed as the surface addresses it. Read off the path
  * rather than remembered from the write, because the paths come from `git
  * status` and not from anything the Editor kept.
+ *
+ * The Overrides file has no holder to be named by — it belongs to no Section and
+ * to no part of the Kernel, which is the whole of what it is — so it is named by
+ * its kind alone. Naming it after the directory above it would say `src`, and read
+ * as a Section that does not exist.
  */
 function holderOf(path) {
   const parts = path.split('/');
   const file = parts.at(-1);
+  if (file === OVERRIDES) return { name: null, kind: KIND[OVERRIDES] };
   return file === CONTENT || file === TOKENS
     ? { name: parts.at(-2), kind: KIND[file] }
     : { name: `${KERNEL}${file.replace(/\.css$/, '')}`, kind: KIND[TOKENS] };
@@ -83,15 +89,16 @@ const shapeOf = (pattern) => pattern.source.replace(/^\^/, '').replace(/\$$/, ''
  * The files under `roots` that the Editor writes, and nothing that merely looks
  * like one.
  *
- * Two shapes, because there are two kinds of holder: a Section's folder holding
- * either of the two file names, and one of the Kernel's Tokens files. Both
- * halves come from `sections.mjs`'s own constants rather than a second spelling
- * of them — this decides what gets committed, and a looser copy here would be
+ * Three shapes, because there are three kinds of holder: a Section's folder
+ * holding either of the two file names, one of the Kernel's Tokens files, and the
+ * single Overrides file — matched by its whole path rather than by a shape,
+ * because there is one of it and no name to pattern-match. Every half comes from
+ * `sections.mjs`'s own constants rather than a second spelling of them — this decides what gets committed, and a looser copy here would be
  * two files disagreeing about what a holder is called or about which of its
  * files the Editor is allowed to touch.
  *
  * @param {string[]} paths
- * @param {{ sections: string, kernel: string }} roots  both relative to the repository
+ * @param {{ sections: string, kernel: string, overrides?: string }} roots  all relative to the repository
  */
 export function writtenAmong(paths, roots) {
   const name = shapeOf(NAME);
@@ -102,9 +109,13 @@ export function writtenAmong(paths, roots) {
   // The STEM stands in the path and not the name: `kernel-effects` is
   // `tokens/effects.css`, so the prefix is off by the time a path is spelled.
   const kernel = new RegExp(`^${under(roots.kernel)}/${KERNEL_TOKENS}/(?:${name})[.]css$`);
+  const only =
+    typeof roots.overrides === 'string' && roots.overrides !== ''
+      ? `${under(roots.overrides)}/${OVERRIDES}`
+      : null;
   return paths.filter((path) => {
     const at = path.replace(/\\/g, '/');
-    return section.test(at) || kernel.test(at);
+    return section.test(at) || kernel.test(at) || at === only;
   });
 }
 
@@ -128,14 +139,19 @@ export async function publish({ run, roots, message }) {
     throw new Refused(
       dirty.length === 0
         ? 'nothing to publish — the tree is clean'
-        : `nothing to publish — no Content or Tokens have changed (${dirty.length} other file(s) have)`,
+        : `nothing to publish — no Content or Tokens, and no Override, have changed` +
+          ` (${dirty.length} other file(s) have)`,
     );
   }
 
   const holders = files.map(holderOf);
-  const named = [...new Set(holders.map((holder) => holder.name))];
+  const named = [...new Set(holders.map((holder) => holder.name).filter((name) => name !== null))];
   const kinds = [...new Set(holders.map((holder) => holder.kind))].sort();
-  const wanted = message ?? `Edit the ${named.join(' and ')} ${kinds.join(' and ')}`;
+  const wanted =
+    message ??
+    (named.length === 0
+      ? `Write the Editor’s ${kinds.join(' and ')}`
+      : `Edit the ${named.join(' and ')} ${kinds.join(' and ')}`);
   if (typeof wanted !== 'string' || wanted.trim() === '') {
     throw new Refused('a commit message is one line of words, and this one is empty');
   }

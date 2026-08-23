@@ -22,17 +22,24 @@
  * reached, and it is also how anything the page speaks without drawing — an aria
  * label, an href — is reached at all.
  *
- * THE PANEL HOSTS FOUR SURFACES AND OWNS ONE. Content is here, because it is
+ * THE PANEL HOSTS FIVE SURFACES AND OWNS ONE. Content is here, because it is
  * this file's binding-by-matching that reaches it. Tokens and the Timelines are
- * `client/tokens.js` and the Bakes are `client/bakes.js`, and both splits are at
- * real seams rather than tidy ones: a Token is addressed by a rule and a property
- * and is bound to no element at all, and a Bake's parameter is not on the page in
- * any form until a Python generator has run, so neither shares the field index
- * everything in this file turns on. What is shared is the panel, the report line
- * and Publish, and those are passed in.
+ * `client/tokens.js`, the Bakes are `client/bakes.js`, and Measure — the
+ * Annotations and the Overrides — is `client/measure.js`. Every split is at a real
+ * seam rather than a tidy one: a Token is addressed by a rule and a property and
+ * is bound to no element at all, a Bake's parameter is not on the page in any form
+ * until a Python generator has run, and a measurement is addressed by a selector
+ * built out of the page — so none of the three shares the field index everything
+ * in this file turns on. What is shared is the panel, the report line and
+ * Publish, and those are passed in.
+ *
+ * ONE THING MEASURING TAKES BACK FROM THIS FILE: while it is armed, the page is a
+ * measuring surface rather than a page, so the click handler at the foot of this
+ * file stands down. Otherwise picking a heading to drag would start editing it.
  */
 
 import { Bakes } from './bakes.js';
+import { Measure } from './measure.js';
 import { Motion, Tokens } from './tokens.js';
 
 const API = '/__editor';
@@ -245,6 +252,7 @@ class Editor {
       <header>
         <strong>Editor</strong>
         <span data-editor-count></span>
+        <span data-editor-owed></span>
         <button type="button" data-editor-fold aria-expanded="true">fold</button>
       </header>
       <div data-editor-body>
@@ -253,11 +261,13 @@ class Editor {
           <button type="button" data-editor-choose="tokens" aria-pressed="false">Tokens</button>
           <button type="button" data-editor-choose="motion" aria-pressed="false">Motion</button>
           <button type="button" data-editor-choose="bakes" aria-pressed="false">Bakes</button>
+          <button type="button" data-editor-choose="measure" aria-pressed="false">Measure</button>
         </nav>
         <div data-editor-surface="content"><div data-editor-fields></div></div>
         <div data-editor-surface="tokens" hidden></div>
         <div data-editor-surface="motion" hidden></div>
         <div data-editor-surface="bakes" hidden></div>
+        <div data-editor-surface="measure" hidden></div>
         <div data-editor-publish>
           <input type="text" data-editor-message placeholder="what changed (optional)" />
           <button type="button" data-editor-go>Publish</button>
@@ -330,6 +340,19 @@ class Editor {
       },
     });
     void this.bakes.mount(panel.querySelector('[data-editor-surface="bakes"]'));
+    // Measuring. Handed the Tokens surface itself rather than a second way to
+    // write one: where a drag lands on a Token, the offer goes through the control
+    // that already owns it, so the page, the control and the file stay one thing.
+    this.measure = new Measure({
+      glossary: this.state.glossary ?? [],
+      overrides: this.state.overrides ?? [],
+      tokens: this.state.tokens ?? [],
+      surface: this.tokens,
+      post,
+      say: (text, bad) => this.say(text, bad),
+      standing: (n) => this.owe(n),
+    });
+    this.measure.mount(panel.querySelector('[data-editor-surface="measure"]'));
 
     // `surface` and not `tab`: CONTEXT.md's Rail — the list naming what can be
     // shown and marking which is selected — lists `tabs` under Avoid, and this
@@ -368,6 +391,16 @@ class Editor {
   count() {
     const badge = this.panel?.querySelector('[data-editor-count]');
     if (badge) badge.textContent = this.edits.size === 0 ? '' : `${this.edits.size} edited`;
+  }
+
+  /** How many Overrides are standing, in the header rather than in the surface
+   *  that wrote them: an Override is debt, and debt behind a closed tab is the
+   *  invisible kind the ticket exists to prevent. */
+  owe(n) {
+    const badge = this.panel?.querySelector('[data-editor-owed]');
+    if (!badge) return;
+    badge.textContent = n === 0 ? '' : `${n} Override${n === 1 ? '' : 's'}`;
+    badge.toggleAttribute('data-editor-owing', n > 0);
   }
 
   say(text, bad = false) {
@@ -413,6 +446,9 @@ class Editor {
       'click',
       (event) => {
         if (event.target.closest?.('[data-editor]')) return;
+        // While the Measure surface is armed the page is being measured, so a
+        // click picks an element rather than editing a word.
+        if (document.documentElement.hasAttribute('data-editor-armed')) return;
         const element = event.target.closest?.('[data-editor-bound]');
         if (!element) return;
         if (this.editing?.element === element) return;

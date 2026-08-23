@@ -14,6 +14,7 @@
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { parse as parseOverrides } from './editor/lib/overrides.mjs';
 import { tokens as tokensIn } from './editor/lib/tokens.mjs';
 import { VARIANT_GATE, compounds, outsideAnyRule, rules } from './variant-sheet.mjs';
 
@@ -322,6 +323,34 @@ if (exists(effectStack)) {
   }
 }
 
+// ---------------------------------------------------------------------------
+// The Overrides file holds only what the Editor put there.
+// ---------------------------------------------------------------------------
+
+// The Editor is the only author of src/overrides.css, and the guarantee that
+// replaces "it only replaces one span" for that boundary is that it only ever
+// reads its own output (scripts/editor/lib/overrides.mjs). So a hand edit stops
+// the tool rather than being clobbered by it — which is a good refusal to get at
+// a build rather than the next time the author drags something.
+//
+// One spelling of the grammar, imported rather than restated: a second copy here
+// would be a file the build accepted and the Editor refused, or worse the reverse.
+const overridesFile = join(repoRoot, 'src', 'overrides.css');
+if (!exists(overridesFile)) {
+  failures.push('src/overrides.css: missing — the Shell imports it, so the build needs it there');
+} else {
+  try {
+    const records = parseOverrides(readFileSync(overridesFile, 'utf8'));
+    if (records.length > 0) {
+      console.log(
+        `check-source: ${records.length} Override(s) are standing outside a composition —` +
+          ' the Editor lists them, and they are waiting to be folded in.',
+      );
+    }
+  } catch (error) {
+    fail(overridesFile, `${error.message} — the Editor writes every byte of this file`);
+  }
+}
 if (failures.length > 0) {
   console.error('check-source: the source boundaries are broken.\n');
   for (const failure of failures) console.error(`  ${failure}`);

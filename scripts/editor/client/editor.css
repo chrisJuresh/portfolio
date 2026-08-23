@@ -348,4 +348,172 @@
 
 [data-editor-token] select {
   flex: 1 1 3rem;
+/* ---- measuring ---------------------------------------------------------- */
+
+/* How many Overrides are standing, beside the edit count and in the same place
+   whichever surface is in front. An Override is debt, and the ticket's own words
+   for why this is here rather than only in the surface that writes them: they
+   must be visible or they become invisible debt. */
+[data-editor-owed] {
+  color: var(--editor-bad);
+}
+
+[data-editor-owed][data-editor-owing]::before {
+  content: '⚑ ';
+}
+
+[data-editor-arm] {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: baseline;
+}
+
+[data-editor-arm] small {
+  flex: 1 1 12rem;
+  opacity: 0.55;
+}
+
+[data-editor-measuring][aria-pressed='true'] {
+  border-color: var(--editor-live);
+  color: var(--editor-live);
+}
+
+[data-editor-picked] {
+  margin: 9px 0 4px;
+  color: var(--editor-live);
+}
+
+/* One axis: its name, the number it is at, and what it was. Same shape as a
+   Token's row, for the same reason — the number box is the exact value and the
+   drag on the page is the feel of it. */
+[data-editor-axis] {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 3px 0;
+}
+
+[data-editor-axis] > span {
+  flex: 0 0 4rem;
+  opacity: 0.7;
+}
+
+[data-editor-axis][data-editor-moved] > span {
+  color: var(--editor-live);
+  opacity: 1;
+}
+
+[data-editor-axis] input {
+  flex: 0 0 6rem;
+  text-align: right;
+}
+
+[data-editor-axis] > small {
+  flex: 1 1 auto;
+  opacity: 0.55;
+}
+
+[data-editor-measure-buttons] {
+  display: flex;
+  gap: 6px;
+  margin: 8px 0 4px;
+}
+
+/* Where a measurement landed on a Token, and the offer to write it. */
+[data-editor-offer] {
+  margin: 4px 0;
+  padding-left: 8px;
+  border-left: 1px solid var(--editor-line);
+  opacity: 0.8;
+}
+
+[data-editor-write-token] {
+  color: var(--editor-live);
+  border-color: var(--editor-live);
+}
+
+[data-editor-annotation] {
+  margin-top: 10px;
+}
+
+[data-editor-annotation] textarea {
+  display: block;
+  width: 100%;
+  margin-top: 3px;
+  resize: vertical;
+  font: inherit;
+}
+
+[data-editor-annotation-buttons] {
+  display: flex;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+[data-editor-overrides-list] {
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px solid var(--editor-line);
+}
+
+[data-editor-override] {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 3px 0;
+}
+
+[data-editor-override] > span {
+  flex: 0 0 9rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--editor-bad);
+}
+
+[data-editor-override] > small {
+  flex: 1 1 auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  opacity: 0.6;
+}
+
+/* ---- measuring, on the page itself -------------------------------------- */
+
+/* While the surface is armed the page is being measured, so the hover outline
+   that says "this text is editable" is wrong and the cursor is a crosshair. */
+[data-editor-armed] [data-editor-bound]:hover {
+  outline: none;
+  cursor: crosshair;
+}
+
+/* The box over what is picked — a marquee, and NOT a "frame": CONTEXT.md gives
+   that word to the browser window a Showcase’s recording sits inside, and this
+   file is not allowed to spend it on something else. Fixed, so it follows the
+   page rather than the document, and pointer-events: none so it is a drawing and
+   not a surface — the drag happens on the element under it, which is what makes
+   the numbers real. */
+[data-editor-marquee] {
+  position: fixed;
+  z-index: 2147482000;
+  pointer-events: none;
+  outline: 1px solid #7fb3ff;
+  outline-offset: 0;
+  box-shadow: 0 0 0 1px rgb(0 0 0 / 35%);
+}
+
+[data-editor-handle] {
+  position: absolute;
+  right: -6px;
+  bottom: -6px;
+  width: 12px;
+  height: 12px;
+  padding: 0;
+  border: 1px solid #12121a;
+  border-radius: 2px;
+  background: #7fb3ff;
+  pointer-events: auto;
+  cursor: nwse-resize;
 }

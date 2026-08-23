@@ -33,13 +33,15 @@ import { PAGE, start } from './server.mjs';
 
 const repoRoot = fileURLToPath(new URL('../..', import.meta.url)).replace(/[\\/]+$/, '');
 const dist = `${repoRoot}/dist`;
-/** The three roots the Editor reads: Sections, the Kernel's Tokens, and the
- *  Bakes. Composed here and nowhere else, so `lib/sections.mjs` is handed paths
- *  rather than deriving them. */
+/** The four roots the Editor reads: Sections, the Kernel's Tokens, the Bakes,
+ *  and — belonging to none of them — wherever the one Overrides file stands.
+ *  Composed here and nowhere else, so `lib/sections.mjs` is handed paths rather
+ *  than deriving them. */
 const roots = {
   sections: `${repoRoot}/src/sections`,
   kernel: `${repoRoot}/src/kernel`,
   bakes: `${repoRoot}/design/bake`,
+  overrides: `${repoRoot}/src`,
 };
 
 const argv = process.argv.slice(2);
@@ -75,10 +77,12 @@ console.log(`  open       ${served.origin}${PAGE}`);
 console.log(`  serving    ${dist}`);
 console.log(
   '  writing    src/sections/*/{content.ts,tokens.css}, src/kernel/tokens/*.css,' +
-    ` design/bake/*/params.json   ${build ? '' : '(against a dist this did not build)'}`,
+    ' design/bake/*/params.json, src/overrides.css' +
+    `   ${build ? '' : '(against a dist this did not build)'}`,
 );
 console.log('\n  Click any text to change it. Enter commits, Escape puts it back.');
 console.log('  Tokens drags every Token a Section and the Kernel declare; Motion scrubs a Timeline.');
+console.log('  Measure moves and resizes anything and hands back an Annotation to paste to an agent.');
 console.log('  Bakes runs the five generators — a re-bake rebuilds this tree, so the page shows it.');
 console.log('  Publish commits and pushes — the Checks run on the commit, so it takes a minute.');
 console.log('\n  Ctrl-C to stop.');

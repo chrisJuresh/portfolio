@@ -283,6 +283,24 @@ export class Tokens {
       .join('\n');
   }
 
+  /**
+   * Write one Token by its key, for a surface that found it some other way.
+   *
+   * The Measure surface finds a Token by reading which one governs a length it
+   * measured, so it arrives with a key and no control. This is how it writes one:
+   * through the row that already owns it, so the page, the control, the preview
+   * sheet and the file all move together. `set` reports a refusal rather than
+   * throwing, so this reads the value back and throws on it — the caller has its
+   * own thing to say about a write that did not happen.
+   */
+  async writeKey(section, key, value) {
+    const id = `${section} ${key}`;
+    const held = this.rows.get(id);
+    if (!held) throw new Error(`no control for ${key} in ${section} — is it still declared?`);
+    await this.set(section, held.token, value);
+    if (held.token.value !== value) throw new Error(`${key} is still ${held.token.value}`);
+    return held.token;
+  }
   /** The one write. Everything above ends up here. */
   async set(section, token, value, back = false) {
     const id = `${section} ${token.key}`;

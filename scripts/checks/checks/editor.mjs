@@ -1,8 +1,9 @@
-import { cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { cpSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, statSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, sep } from 'node:path';
 
-import { discover, discoverBakes, discoverKernel } from '../../editor/lib/sections.mjs';
+import { EMPTY, PROPERTIES, parse as parseOverrides } from '../../editor/lib/overrides.mjs';
+import { OVERRIDES, discover, discoverBakes, discoverKernel } from '../../editor/lib/sections.mjs';
 import { start } from '../../editor/server.mjs';
 import { PAGE, open } from '../lib/page.mjs';
 
@@ -57,16 +58,16 @@ const WRITABLE = ['content.ts', 'tokens.css'];
 /**
  * Copy everything the Editor may write into a temporary tree of the same shape.
  *
- * THREE FAMILIES NOW, not one: a Section's two files, one Tokens file per part of
- * the Kernel, and a Bake's recipe and parameters. Every one of them is a file the
+ * FOUR FAMILIES NOW, not one: a Section's two files, one Tokens file per part of
+ * the Kernel, a Bake's recipe and parameters, and the one Overrides file. Every one of them is a file the
  * Editor writes, so every one of them has to be copied — a Check that let the
  * real tree be written would put a file it wrote into the commit it was gating.
  * The originals are read here and compared at the end.
  */
 function copySources(repoRoot) {
-  const from = { sections: join(repoRoot, 'src', 'sections'), kernel: join(repoRoot, 'src', 'kernel'), bakes: join(repoRoot, 'design', 'bake') };
+  const from = { sections: join(repoRoot, 'src', 'sections'), kernel: join(repoRoot, 'src', 'kernel'), bakes: join(repoRoot, 'design', 'bake'), overrides: join(repoRoot, 'src') };
   const root = mkdtempSync(join(tmpdir(), 'editor-check-'));
-  const to = { sections: join(root, 'sections'), kernel: join(root, 'kernel'), bakes: join(root, 'bakes') };
+  const to = { sections: join(root, 'sections'), kernel: join(root, 'kernel'), bakes: join(root, 'bakes'), overrides: join(root, 'overrides') };
   const originals = new Map();
 
   const keep = (where, path) => originals.set(where, readFileSync(path, 'utf8'));
@@ -101,7 +102,30 @@ function copySources(repoRoot) {
     }
   }
 
+  // The Overrides file, into a root of its own: the Editor is handed a DIRECTORY
+  // for this family and composes the one file name itself, so the copy has to be
+  // the same shape.
+  mkdirSync(to.overrides, { recursive: true });
+  cpSync(join(from.overrides, OVERRIDES), join(to.overrides, OVERRIDES));
+  keep(join('src', OVERRIDES), join(from.overrides, OVERRIDES));
+
   return { repoRoot, root, to, originals };
+}
+
+/**
+ * Every file under a directory, by its path relative to it.
+ *
+ * Used to assert that measuring writes NOTHING: the whole copied tree before,
+ * the whole copied tree after, and no map from a repo-relative key back to a
+ * copied path to get wrong.
+ */
+function snapshot(root, at = root, into = new Map()) {
+  for (const entry of readdirSync(at, { withFileTypes: true })) {
+    const path = join(at, entry.name);
+    if (entry.isDirectory()) snapshot(root, path, into);
+    else if (statSync(path).isFile()) into.set(path.slice(root.length + 1), readFileSync(path, 'utf8'));
+  }
+  return into;
 }
 
 export const check = {
@@ -504,6 +528,411 @@ export const check = {
           notes.push('scrubbed the Turn to 0.62, and it stayed there');
         }
       }
+
+      // ---- measuring, an Annotation and an Override -----------------------
+
+      // A pointer event dispatched ON a chosen element rather than a real mouse
+      // at a point, and that is not a shortcut: a real click lands on whatever
+      // is DEEPEST under the cursor, so this Check would have to name an element
+      // of the composition to know what it had picked — and would then fail the
+      // day that element was renamed. The listeners are on `document` in the
+      // capture phase, so an event dispatched on a descendant reaches them
+      // exactly as the author's own would.
+      const overridesFile = join(to.overrides, OVERRIDES);
+      // Every writable file as it stands NOW, rather than as it started: the two
+      // halves above have legitimately written a Content field and put a Token
+      // back, and what this half asserts is that measuring writes nothing on top
+      // of that.
+      const standing = snapshot(root);
+      const overridesWere = readFileSync(overridesFile, 'utf8');
+
+      await page.locator('[data-editor-choose="measure"]').click();
+      await page.locator('[data-editor-measuring]').click();
+      const armed = await page.evaluate(() => document.documentElement.hasAttribute('data-editor-armed'));
+      if (!armed) failures.push('pressing measure did not arm the surface — a click on the page still edits text');
+
+      // A Section's own mount point: always there, always a block, and named by
+      // the loader rather than by a composition.
+      const picked = await page.evaluate(() => {
+        const element = document.querySelector('[data-section]');
+        if (!element) return null;
+        const box = element.getBoundingClientRect();
+        const at = (type, x, y) =>
+          element.dispatchEvent(new PointerEvent(type, { bubbles: true, cancelable: true, clientX: x, clientY: y }));
+        const x = Math.round(box.left + box.width / 2);
+        const y = Math.round(box.top + 20);
+        at('pointerdown', x, y);
+        at('pointermove', x + 30, y + 10);
+        at('pointerup', x + 30, y + 10);
+        return { section: element.dataset.section, width: Math.round(box.width) };
+      });
+      if (picked === null) {
+        failures.push('no Section mount point on the page to measure');
+        return { failures, notes };
+      }
+
+      const pickedName = (await page.textContent('[data-editor-picked]')) ?? '';
+      if (pickedName.trim() === '') failures.push('dragging picked nothing — the surface reported no element');
+
+      // A drag moves the page and writes NOTHING. That pair is the acceptance
+      // criterion, so it is two assertions and not one.
+      const moved = await page.evaluate(
+        (name) => {
+          const element = document.querySelector(`[data-section="${name}"]`);
+          return getComputedStyle(element).translate;
+        },
+        picked.section,
+      );
+      if (!/30px/.test(moved)) {
+        failures.push(`dragging ${picked.section} did not move it — its translate is "${moved}"`);
+      }
+      if (readFileSync(overridesFile, 'utf8') !== overridesWere) {
+        failures.push('a drag wrote to src/overrides.css — moving and resizing writes to no source at all');
+      }
+      for (const [where, was] of snapshot(root)) {
+        if (was !== standing.get(where)) {
+          failures.push(`a drag reached ${where} — moving and resizing writes to no source at all`);
+        }
+      }
+      notes.push(`dragged the ${picked.section} mount point 30px, and no file moved`);
+
+      // Resized by the number box, which is the exact half of the same gesture.
+      const narrower = picked.width - 120;
+      await page.locator('[data-editor-nudge="width"]').fill(String(narrower));
+      await page.locator('[data-editor-nudge="width"]').press('Enter');
+      const narrowed = await page.evaluate(
+        (name) => Math.round(document.querySelector(`[data-section="${name}"]`).getBoundingClientRect().width),
+        picked.section,
+      );
+      if (Math.abs(narrowed - narrower) > 2) {
+        failures.push(`resizing ${picked.section} to ${narrower}px left it ${narrowed}px wide`);
+      }
+
+      // The Annotation: text, with the element's name and both numbers in it.
+      await page.locator('[data-editor-measure="annotation"]').click();
+      const annotation = await page.inputValue('[data-editor-annotations]');
+      if (annotation.trim() === '') failures.push('pressing Annotation produced no text');
+      for (const [what, wantedIn] of [
+        ['the name it gave the element', pickedName.trim()],
+        ['a before and an after', 'px → '],
+        ['what changed', '+'],
+        ['the selector an Override would use', ':root '],
+        ['the size it was measured at', String(Math.round(page.viewportSize()?.width ?? 0))],
+      ]) {
+        if (!annotation.includes(wantedIn)) {
+          failures.push(`the Annotation carries no ${what} ("${wantedIn}") — the text is the output, so it has to`);
+        }
+      }
+      notes.push(`took an Annotation of ${annotation.split('\n').length} lines`);
+
+      // The Override: the file, the list, the badge, and the page still right.
+      await page.locator('[data-editor-measure="override"]').click();
+      const wroteOverride = await page
+        .waitForFunction(
+          () => document.querySelector('[data-editor-said]')?.textContent?.includes('Override'),
+          undefined,
+          { timeout: 10_000 },
+        )
+        .then(() => true)
+        .catch(() => false);
+      if (!wroteOverride) failures.push('the Editor never reported writing an Override');
+
+      const overridesNow = readFileSync(overridesFile, 'utf8');
+      let standingRecords = [];
+      try {
+        standingRecords = parseOverrides(overridesNow);
+      } catch (error) {
+        failures.push(`the Editor wrote an Overrides file its own boundary cannot read — ${error.message}`);
+      }
+      if (standingRecords.length !== 1) {
+        failures.push(`writing one Override left ${standingRecords.length} in src/overrides.css`);
+      } else {
+        if (!overridesNow.includes('!important')) {
+          failures.push('an Override was written without !important — it would not outrank the rule it argues with');
+        }
+        if (!standingRecords[0].selector.startsWith(':root ')) {
+          failures.push(`an Override's selector is "${standingRecords[0].selector}", which does not start at :root`);
+        }
+      }
+      if (!overridesNow.startsWith(EMPTY.slice(0, EMPTY.indexOf('*/')))) {
+        failures.push('writing an Override did not keep the Overrides file’s header');
+      }
+
+      // Immediately, and without a rebuild: the page still shows the change, and
+      // it is the sheet the surface writes from the FILE that does it now — the
+      // drag's inline styles are gone by this point.
+      // The properties this surface sets, and not the whole style attribute: a
+      // Section legitimately writes inline custom properties of its own, and one
+      // of those holding the word "width" would read as a drag that was left on.
+      // The list comes from the boundary rather than being spelled again here.
+      // The properties themselves and not a joined string: a string has to be
+      // matched, a match needs a pattern, and a pattern is where an assertion
+      // quietly stops asserting. This one cannot — it is a list, and the claim is
+      // that the list is empty.
+      const leftInline = await page.evaluate(
+        ([name, properties]) => {
+          const style = document.querySelector(`[data-section="${name}"]`).style;
+          return properties
+            .map((property) => [property, style.getPropertyValue(property)])
+            .filter(([, value]) => value !== '')
+            .map(([property, value]) => `${property}: ${value}`);
+        },
+        [picked.section, PROPERTIES],
+      );
+      if (leftInline.length > 0) {
+        failures.push(
+          `writing an Override left the drag's inline styles on the element (${leftInline.join(', ')}) — the page` +
+            ' would then be showing the drag rather than what the file says',
+        );
+      }
+      const stillNarrow = await page.evaluate(
+        (name) => Math.round(document.querySelector(`[data-section="${name}"]`).getBoundingClientRect().width),
+        picked.section,
+      );
+      if (Math.abs(stillNarrow - narrower) > 2) {
+        failures.push(
+          `the Override did not make the page look right immediately — ${picked.section} went back to` +
+            ` ${stillNarrow}px instead of ${narrower}px, so it is waiting for a build`,
+        );
+      }
+
+      const listedOverrides = await page.locator('[data-editor-override]').count();
+      if (listedOverrides !== 1) {
+        failures.push(`the Editor listed ${listedOverrides} Overrides after writing one`);
+      }
+      const badge = (await page.textContent('[data-editor-owed]')) ?? '';
+      if (!badge.includes('1 Override')) {
+        failures.push(`the panel's header says "${badge}" rather than counting the Override — it would be invisible debt`);
+      }
+      notes.push('wrote an Override, and the page followed without a build');
+
+      // An element that already carries an Override must still be measurable. The
+      // Override is `!important`, so a drag written as a plain inline style loses
+      // to it — the page would not move, the surface would report "unchanged", and
+      // the only way to adjust an Override would be to discard it first. Nothing
+      // about that failure looks like a bug from the outside, which is why it is
+      // asserted here rather than trusted.
+      await page.locator('[data-editor-measuring]').click();
+      await page.locator('[data-editor-measuring]').click();
+      await page.evaluate((name) => {
+        const element = document.querySelector(`[data-section="${name}"]`);
+        const at = (type) => element.dispatchEvent(new PointerEvent(type, { bubbles: true, cancelable: true }));
+        at('pointerdown');
+        at('pointerup');
+      }, picked.section);
+      const again = narrower - 60;
+      await page.locator('[data-editor-nudge="width"]').fill(String(again));
+      await page.locator('[data-editor-nudge="width"]').press('Enter');
+      const remeasured = await page.evaluate(
+        (name) => Math.round(document.querySelector(`[data-section="${name}"]`).getBoundingClientRect().width),
+        picked.section,
+      );
+      if (Math.abs(remeasured - again) > 2) {
+        failures.push(
+          `an element already carrying an Override could not be measured again — it went to ${remeasured}px` +
+            ` instead of ${again}px, so the Override is outranking the drag and its own element is now frozen`,
+        );
+      } else {
+        notes.push('measured it again with the Override standing');
+      }
+      await page.locator('[data-editor-measure="restore"]').click();
+
+      // A refused Override leaves the file exactly as it was. A selector no
+      // surface would build is the one every Overrides file forbids.
+      const smuggleOverride = await fetch(`${served.origin}/__editor/overrides`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', 'x-editor': '1' },
+        body: JSON.stringify({
+          selector: '.projects-panel { } .a',
+          name: 'from somewhere else',
+          note: [],
+          declarations: { width: '1px' },
+        }),
+      });
+      if (smuggleOverride.ok) failures.push('the Editor accepted an Override selector carrying a rule');
+      if (readFileSync(overridesFile, 'utf8') !== overridesNow) {
+        failures.push('a refused Override reached src/overrides.css');
+      }
+
+      const driveOverride = await fetch(`${served.origin}/__editor/overrides`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ selector: ':root #front-screen', declarations: { width: '1px' } }),
+      });
+      if (driveOverride.ok) {
+        failures.push('the Editor wrote an Override with no handshake header — any page in any tab could');
+      }
+
+      // And it can be discarded, which is the other half of the debt being
+      // visible: a list nothing can be taken off is a list nobody trusts.
+      await page.locator('[data-editor-discard]').first().click();
+      const dropped = await page
+        .waitForFunction(
+          () => document.querySelector('[data-editor-said]')?.textContent?.includes('discarded'),
+          undefined,
+          { timeout: 10_000 },
+        )
+        .then(() => true)
+        .catch(() => false);
+      if (!dropped) failures.push('the Editor never reported discarding the Override');
+      if (readFileSync(overridesFile, 'utf8') !== overridesWere) {
+        failures.push('discarding the only Override did not put src/overrides.css back to what it was');
+      }
+      if ((await page.locator('[data-editor-override]').count()) !== 0) {
+        failures.push('a discarded Override is still in the list');
+      }
+      notes.push('discarded it, and the file went back');
+
+      // "Anything on the page can be moved and resized" includes the inline boxes,
+      // which is most of the text here — and `width`, `height` and `translate` do
+      // not apply to a non-replaced inline box at all, so without the promotion in
+      // pick() a <span> drags with no effect whatever and the Annotation reads
+      // "unchanged". The element is found by its computed display rather than
+      // named, and marked so this Check can address it without naming a
+      // composition.
+      const anInline = await page.evaluate(() => {
+        for (const element of document.querySelectorAll('[data-section] *')) {
+          if (element.closest('[data-editor]') || getComputedStyle(element).display !== 'inline') continue;
+          const box = element.getBoundingClientRect();
+          if (box.width < 8 || box.height < 8) continue;
+          element.setAttribute('data-editor-check-inline', '');
+          return { tag: element.tagName, left: Math.round(box.left) };
+        }
+        return null;
+      });
+      if (!anInline) {
+        notes.push('no inline box on the page, so the promotion is not asserted');
+      } else {
+        await page.locator('[data-editor-measuring]').click();
+        await page.locator('[data-editor-measuring]').click();
+        const drifted = await page.evaluate(() => {
+          const element = document.querySelector('[data-editor-check-inline]');
+          const box = element.getBoundingClientRect();
+          const at = (type, x, y) =>
+            element.dispatchEvent(new PointerEvent(type, { bubbles: true, cancelable: true, clientX: x, clientY: y }));
+          const x = Math.round(box.left + 2);
+          const y = Math.round(box.top + 2);
+          at('pointerdown', x, y);
+          at('pointermove', x + 30, y);
+          at('pointerup', x + 30, y);
+          return Math.round(element.getBoundingClientRect().left - box.left);
+        });
+        if (Math.abs(drifted - 30) > 2) {
+          failures.push(
+            `dragging an inline <${anInline.tag.toLowerCase()}> 30px moved it ${drifted}px — width, height and` +
+              ' translate do not apply to a non-replaced inline box, so it has to be promoted to be measured at all',
+          );
+        } else {
+          notes.push(`dragged an inline <${anInline.tag.toLowerCase()}>, promoted so it could move`);
+        }
+        await page.locator('[data-editor-measure="restore"]').click();
+        await page.locator('[data-editor-measuring]').click();
+        await page.locator('[data-editor-measuring]').click();
+        await page.evaluate(() =>
+          document.querySelector('[data-editor-check-inline]')?.removeAttribute('data-editor-check-inline'),
+        );
+      }
+
+      // ---- a measurement that lands on a Token ----------------------------
+      //
+      // The Editor offers to write a Token when the length that moved is declared
+      // as exactly one, and finding that out means walking the page's own
+      // stylesheets — which is the part of this surface that failed SILENTLY while
+      // reading as though it worked. (A `CSSStyleRule` has a `cssRules` of its own
+      // now that CSS nesting exists, empty for a rule with nothing nested; a walk
+      // that read that as "a group, not a declaration" found nothing anywhere, and
+      // the only symptom was an Annotation that never mentioned a Token.)
+      //
+      // So this Check MAKES the situation rather than looking for it: one rule of
+      // its own, declaring a real Token as a real length on the element it is about
+      // to measure. Injected rather than named, because naming an element of a
+      // composition would fail the day the composition renamed it — and taken back
+      // out afterwards.
+      const state = await fetch(`${served.origin}/__editor/state`).then((response) => response.json());
+      const lengths = state.tokens.flatMap(({ section: owner, tokens }) =>
+        tokens.map((token) => ({ owner, ...token })),
+      );
+      // A plain length, declared on exactly one rule: two rules is two Tokens and
+      // the Editor deliberately offers neither, and a value that is not a length
+      // cannot be restated as one.
+      const governs = lengths.find(
+        (token) =>
+          /^-?\d*\.?\d+(?:px|rem)$/.test(token.value) &&
+          lengths.filter((other) => other.property === token.property).length === 1,
+      );
+      if (!governs) {
+        notes.push('no Section declares a plain-length Token on one rule, so the Token offer is not asserted');
+      } else {
+        await page.evaluate(
+          ([name, property]) => {
+            const style = document.createElement('style');
+            style.id = 'editor-check-governs';
+            // The second rule is the other half of this assertion, and it is a
+            // trap rather than decoration. It stands LATER in the sheet and would
+            // win on source order — but its condition never holds, so a walk that
+            // ignored conditions would report `1px` as what governs the width and
+            // offer nothing. The Projects Panel really does write a `margin-left`
+            // inside a `@media` that does not apply at desktop widths, and the
+            // first version of this surface reported that number.
+            style.textContent =
+              `[data-section="${name}"] { width: var(${property}); }\n` +
+              `@media not all { [data-section="${name}"] { width: 1px; } }`;
+            document.head.append(style);
+          },
+          [picked.section, governs.property],
+        );
+        // Off and on again before picking, because what governs a length is read
+        // ONCE, when the element is picked — a pointerdown on what is already
+        // picked starts a drag rather than picking it afresh, which is the right
+        // answer for an author's finger and the wrong one for a Check that has
+        // just changed the stylesheet under it.
+        await page.locator('[data-editor-measuring]').click();
+        await page.locator('[data-editor-measuring]').click();
+        await page.evaluate((name) => {
+          const element = document.querySelector(`[data-section="${name}"]`);
+          const at = (type) => element.dispatchEvent(new PointerEvent(type, { bubbles: true, cancelable: true }));
+          at('pointerdown');
+          at('pointerup');
+        }, picked.section);
+
+        const width = await page.locator('[data-editor-nudge="width"]').inputValue();
+        await page.locator('[data-editor-nudge="width"]').fill(String(Math.round(Number(width) * 0.8)));
+        await page.locator('[data-editor-nudge="width"]').press('Enter');
+
+        const offer = page.locator('[data-editor-write-token="width"]');
+        if ((await offer.count()) === 0) {
+          const said = await page.locator('[data-editor-offer]').allTextContents();
+          failures.push(
+            `resizing something whose width is declared as var(${governs.property}) offered no Token to write` +
+              ` — the surface is not reading the page's own stylesheets. It said: ${said.join(' / ') || 'nothing'}`,
+          );
+        } else {
+          const offered = (await offer.textContent()) ?? '';
+          const tokenPath = join(to.sections, governs.owner, 'tokens.css');
+          const held = readFileSync(tokenPath, 'utf8');
+          await offer.click();
+          const wroteToken = await page
+            .waitForFunction(
+              (property) => document.querySelector('[data-editor-said]')?.textContent?.includes(property),
+              governs.property,
+              { timeout: 10_000 },
+            )
+            .then(() => true)
+            .catch(() => false);
+          if (!wroteToken) failures.push(`pressing "${offered}" never reported writing ${governs.property}`);
+          if (readFileSync(tokenPath, 'utf8') === held) {
+            failures.push(
+              `pressing "${offered}" wrote nothing to ${governs.owner}/tokens.css — the offer is not reaching` +
+                ' the Tokens surface’s own control',
+            );
+          }
+          notes.push(`offered and wrote ${governs.property} from a measurement (${offered})`);
+        }
+
+        await page.evaluate(() => document.getElementById('editor-check-governs')?.remove());
+      }
+
+      await page.locator('[data-editor-measuring]').click();
 
       // Publishing is off for this Check, and it has to say so rather than run.
       const publish = await fetch(`${served.origin}/__editor/publish`, {
