@@ -62,8 +62,28 @@ them — in favour of the built one. So:
 
 ## What was actually lost, and what was not
 
-Nothing about the parameters: all one hundred and nineteen are in the Bakes, with
-the ranges these pages spent a session choosing.
+Nothing about the baked parameters: all one hundred and nineteen are in the
+Bakes, with the ranges these pages spent a session choosing. Nothing about the
+styled ones either, with the two exceptions above: the Effect Stack's numbers are
+Tokens under `kernel-effects` and the corner pictures' placement under
+`kernel-corners`, both live.
+
+Two parameters of the effects tuner are NOT reachable, and both are the same
+kind of thing rather than an oversight:
+
+- **Which layers are on.** That was the tuner's row of chips, and it is
+  `<html data-fx="…">` — an attribute, written by `src/shell/Shell.astro`, not a
+  custom property. The Editor writes Content and Tokens (ADR 0004) and an
+  attribute is neither. Turning a layer that is already on DOWN is a Token and
+  works today (`--fx-paper-strength: 0`); turning one of the seven that are off ON
+  is a one-line change to Shell's default, and the thing that will make it a
+  control is #145's Annotation rather than a fourth kind of write. The
+  hand-written page's `?fx=` escape hatch went with #141.
+- **The effects that were never ported.** The tuner had rows for chromatic
+  aberration, ASCII, halation and gate weave. `CONTEXT.md` names nine layers and
+  the Effect Stack has nine; those four are not among them, so there is nothing
+  for a control to change. If one comes back it brings its Tokens with it and gets
+  controls for free, because nothing lists them.
 
 What is lost is the **preview** — the canvas transcription of the grade, the GLSL
 twin of the marble, the rectangle showing which part of a photograph lands on the
