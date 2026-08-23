@@ -46,7 +46,7 @@ design/
                      export says where each box ended up in pixels, in shares of
                      --panel-w, and on the composition's own grid lines
   shots/             committed renders + index.html contact sheet
-  sheets/            the Variant sheet — /next's Sections rendered under every
+  sheets/            the Variant sheet — the Portfolio's Sections rendered under every
                      Variant they declare, captioned with what each one changes.
                      Written by tools/render-variants.mjs, wiped on every run and
                      not committed

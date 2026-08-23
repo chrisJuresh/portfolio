@@ -1,13 +1,11 @@
 # chrisj.uk
 
-Personal site and photo portfolio — hand-written HTML, CSS and vanilla
-JavaScript.
+Personal site and photo portfolio.
 
-The live pages are still exactly that: no framework, no build step, no
-dependencies. Beside them, at `/next`, is the foundation the Portfolio is being
-rebuilt on — Astro and TypeScript, every version pinned exactly, nothing updated
-on a schedule. It replaces nothing yet. See
-[The build, and /next](#the-build-and-next).
+`/portfolio` is built with Astro and TypeScript — every version pinned exactly,
+nothing updated on a schedule — and prerendered to static files. It was hand
+-written HTML, CSS and vanilla JavaScript until the rebuild landed; the portal at
+`/` still is. See [The build](#the-build).
 
 **Live:** [chrisj.uk](https://chrisj.uk)
 
@@ -15,17 +13,20 @@ A single phone-width column presents a short CV — bio, work experience,
 education, contact — threaded through a full-bleed carousel of 53 of my own
 photographs of London. Scroll past the cut title at its foot and the page turns
 dark for the Projects Panel, where one project is shown as a composition rather
-than described. All of it is a handful of hand-written source files and a folder
-of images, served statically from Vercel.
+than described. It is one document, served statically from Vercel.
 
 <!-- screenshot: full-page desktop view, light theme, carousel mid-strip -->
 
 ## Highlights
 
-- **Zero dependencies.** Every behaviour — carousel physics, theming, the
-  scrollbar — is hand-rolled in ~300 lines of plain JavaScript. Nothing the site
-  serves needs installing or building. The one `package.json` in the repo belongs
-  to the dev-only typography lab in `design/`, which never ships.
+- **One document, several URLs.** The Sections are reached by scrolling and
+  never by clicking, and each one is still linkable: `/portfolio/projects` is
+  this same page, opened at the Projects Panel. A Section mounts as it approaches
+  the viewport, so a page carrying several heavy compositions costs one
+  Section's decode work at a time.
+- **Almost no dependencies.** GSAP moves the Timelines; everything else — the
+  carousel, the theme, the effect stack, the Frame's glass — is the project's own
+  TypeScript, and the page ships no framework runtime at all.
 - **Momentum carousel.** Wheel flicks and drag-releases feed a velocity that
   decays with friction each animation frame; when motion settles, the photo
   nearest the centre eases into place with a cancellable ease-out tween. The
@@ -47,65 +48,60 @@ of images, served statically from Vercel.
   strip comes to rest against the right-hand edge wearing what it wore against
   the left. It is scroll position, not a timed animation, so it runs backwards
   just as smoothly on the way home.
-  Both sets have sliders in `design/type-tuner.html`, which takes the strip to
-  whichever state you're tuning.
   The fades lift on hover or keyboard focus, and switch off entirely on
   narrow viewports where they would obscure the photos.
-- **An effect stack, on a switch.** Ten optical treatments over the finished
-  page — two baked textures, chromatic aberration, moving grain, a halftone
-  screen, vignette, halation, gate weave, a CRT tube, and an ASCII pass that
-  redraws the three corner photographs as a field of characters. Each is a token
-  in `<html data-fx="…">` and each is off unless its token is there; three ship
-  on. Add `?fx=film paper` to the URL to see any combination, or `?fx=` for the
-  page underneath — which is also how my GitHub profile README screenshots this
-  page, since a texture meant to be felt at full size only reads as noise once
-  it has been resampled into a README. Almost all of it is CSS — the layers are
-  composited quads, and the only things that animate are off by default. The
-  textures are baked by
-  `design/effects/build-textures.py` and tuned in `design/effects/effects-tuner.html`.
-  The trick that makes one asset serve both themes is in **THE LEVELS STAGE** in
-  `portfolio/styles.css`.
+- **An effect stack, on a switch.** Optical treatments over the finished page —
+  two baked textures, a halftone screen, moving grain, vignette, a CRT tube and
+  the rest. Each is a token in `<html data-fx="…">` and each is off unless its
+  token is there; two ship on. Add `?fx=film paper` to the URL to see any
+  combination, or `?fx=` for the page underneath. Almost all of it is CSS — the
+  layers are composited quads, and the only things that animate are off by
+  default. The textures are baked by `design/effects/build-textures.py` and tuned
+  in `design/effects/effects-tuner.html`; `src/kernel/effect-stack/` is what
+  paints them, and carries the one rule that cannot be written as a comment.
 - **Flash-free dark mode.** An inline script applies the saved or OS theme
-  before first paint. The site follows OS theme changes until you make an
-  explicit choice with the toggle, which is then remembered in
-  `localStorage`. The `theme-color` meta updates so mobile browser chrome
-  matches.
+  before first paint — the one blocking script on the page, and the reason it is
+  blocking. The site follows OS theme changes until you make an explicit choice
+  with the toggle, which is then remembered in `localStorage`.
 - **Accessible.** ARIA carousel semantics, a `role="switch"` theme toggle,
   keyboard-operable photo strip, visible focus outlines, alt text on every
-  photograph, and `prefers-reduced-motion` support in both the CSS and the
-  JS physics (reduced motion gets instant jumps instead of tweens).
+  photograph, and `prefers-reduced-motion` honoured — including the Panel's
+  recording, whose bytes are never requested by a reader who asked for less
+  motion.
 - **Fast.** 53 images total 5.7 MB (web-optimised copies of ~250 MB of
   originals, which stay out of the repo). Everything past the first two
   images lazy-loads; Vercel serves images with
   `stale-while-revalidate` cache headers.
-- **Prints as a CV.** A print stylesheet hides the carousel and toggle and
-  reflows the page as a clean text CV.
 
 ## Project structure
 
 ```
 .
-├── index.html          # portal at / — links into /portfolio and its projects section
-├── vercel.json         # clean URLs + the /projects redirect + cache headers
-├── run.bat             # double-click to preview locally (Windows)
-├── portfolio/          # the CV + photo carousel at /portfolio
-│   ├── index.html      # page shell: meta tags, pre-paint theme bootstrap
-│   ├── content.js      # ALL portfolio content — the only file you edit
-│   ├── app.js          # renders content.js and runs the carousel + theme
-│   ├── effects.js      # the effect stack's runtime half — optional, loaded last
-│   ├── cut-morph.js    # the cut title turning into a sans — optional, loaded last
-│   ├── panel-clip.js   # gives the Panel's <video> its sources — optional, loaded last
-│   ├── frame-glass.js  # the browser Frame's glass titlebar — optional, loaded last
-│   ├── styles.css      # layout, warm light/dark palettes, fades, print CV
+├── index.html          # portal at / — hand-written, served verbatim
+├── vercel.json         # clean URLs, the /projects redirect, the deep links, cache headers
+├── astro.config.mjs    # the build, and the dev server's stand-in for the deployment
+├── src/
+│   ├── pages/
+│   │   └── portfolio.astro     # the document
+│   ├── shell/          # the head, the mount points, the deep link's jump
+│   ├── kernel/         # faces, ground, theme, the Turn, corner pictures, effect stack
+│   └── sections/       # one folder per Section — see stub/NOTES.md
+├── scripts/            # the build's own steps, the Checks, the Editor, `pnpm feature`
+├── portfolio/          # served verbatim, not built
 │   ├── img/            # web-optimised photographs
-│   │   └── tex/        # the two baked textures — see its README
+│   │   └── tex/        # the baked textures — see its README
 │   └── video/          # the Projects Panel's recording — see design/censor/README.md
 ├── projects/           # no page here any more — /projects 308s to /portfolio#projects
 │   ├── entries.json    # the eleven cards the retired wall carried, kept as data
 │   └── og.jpg          # the retired page's social card — generated, see design/og/
 ├── fonts/              # the self-hosted faces — see its README
-└── design/             # dev-only: typography lab + OG builder — never deployed
+└── design/             # dev-only: the labs and the generators — never deployed
 ```
+
+A **Section** owns its markup, styles, Tokens, Content, Timeline and assets in one
+folder and may read the **Kernel** and nothing else; the **Shell** carries the
+head, the Kernel and the Sections' mount points and no composition of its own.
+`CONTEXT.md` is the whole vocabulary.
 
 `fonts/` holds every face the site is actually set in, as woff2 subsets — plus
 Latin Modern Roman, which no page links and which is kept as the record of a
@@ -131,42 +127,37 @@ is now unreferenced — a crawler following `/projects` reads `/portfolio`'s tag
 instead — but it is what `design/og/` builds, so it stays until that pipeline is
 either repointed or removed.
 
-The content lives in `portfolio/content.js` as one plain-object literal
-(name, bio, work, education, contact, and the photo list with alt text).
-`app.js` renders it — HTML-escaping every string on the way — so changing
-the site never means touching markup or logic. The file is commented so a
-non-developer could edit it.
+A Section's words are its **Content**, held as typed data in that Section's own
+`content.ts` apart from the markup that presents them.
 
 ## Running locally
 
-There is nothing to install. On Windows, double-click **`run.bat`** — it serves
-the repo root on the first free port from 8000 and opens a browser; close the
-window or press Ctrl+C to stop. Anywhere else:
-
 ```sh
-python -m http.server
-# then open http://localhost:8000/
+pnpm install --frozen-lockfile
+pnpm dev         # Astro's dev server, standing in for the deployment
 ```
 
-Serve the **repo root**, not a page directory, and don't open the HTML off disk.
-`/portfolio` sets an absolute `<base href>`, so its assets only resolve when it
-sits under the server root. Note that a plain file server does not read
-`vercel.json`: locally `/projects/` gets you a directory listing of the two files
-still in that folder rather than the redirect. The section it redirects to is
-reached at `/portfolio/#projects` either way.
+`pnpm dev` answers everything the deployment does off one origin: the built
+routes, the four paths served verbatim, and the deep-link rewrites. `pnpm build`
+then `pnpm preview` serves the real `dist/` instead, which is what the Checks
+drive.
 
 ## Editing the site
 
-1. Edit `portfolio/content.js` — add or reorder photos (any file in
-   `portfolio/img/` can be used), change the bio, work, education or
-   contact entries.
-2. Edit the Projects Panel in `portfolio/index.html` directly. Unlike the CV
-   above it, the Panel is one composition with no repetition in it, so it is
-   static markup with no content file — its copy, its four engineering points
-   and its Rail labels are all written where they are read.
-3. If you change a `styles.css`, `app.js` or `content.js`, bump the matching
-   `?v=` query string in that page's `index.html` so browsers pick up the new
-   version — there is no build step doing cache-busting for you.
+```sh
+pnpm editor
+```
+
+That opens the real page locally with the Editor over it: click any piece of
+text, type, press Enter, and the change is in the source file — or drag a Token
+and watch the page move. Publish commits and pushes, and the live site follows.
+It writes Content and Tokens and nothing else, a limit that is a mechanism rather
+than a promise: the only files it can name are a Section's `content.ts` and
+`tokens.css`, and the only thing it can do to one is replace a single value's
+bytes. `scripts/editor/NOTES.md` is the rest of it.
+
+Everything else — layout, palette, motion — is a Section's own folder, and
+`src/sections/stub/NOTES.md` is the convention every one of them follows.
 
 Full-resolution photo originals are deliberately untracked (see
 `.gitignore`); the repo carries only the optimised web copies in
@@ -174,21 +165,18 @@ Full-resolution photo originals are deliberately untracked (see
 optimise new originals: Pillow — `ImageOps.exif_transpose`, resize to
 800 px wide, quality 82, progressive JPEG (~110 KB each).
 
-Colours, the column width (`--col`), the carousel image height
-(`--slide-h`) and the fonts are CSS variables at the top of `styles.css`.
-
 ## Typography
 
 One page, four self-hosted families: three book serifs for the CV and a grotesk
 for the Projects Panel at its foot. The Sitka stack described further down is
 what the whole site used to be set in, and is now only the fallback tail.
 
-**`/portfolio`, the CV** — **Vollkorn** for anything meant to be read (`--serif-body`:
-body text, role lines, headings, contact), **Spectral** for the small lettered
-labels (`--serif-label`: name, tagline, projects link, theme toggle), and
-**Source Serif 4** for the year column (`--serif-num`). All three are OFL,
-subset and served from `/fonts`, declared at the top of `portfolio/styles.css`,
-~112 KB across five faces. The italic lead (`--serif-lead`) stays in Georgia.
+**`/portfolio`, the CV** — **Vollkorn** for anything meant to be read (body
+text, role lines, headings, contact), **Spectral** for the small lettered labels
+(name, tagline, projects link, theme toggle), and **Source Serif 4** for the year
+column. All three are OFL, subset and served from `/fonts`, declared in
+`src/kernel/faces.css`, ~112 KB across five faces. The italic lead stays in
+Georgia.
 
 The year column is the slot with a reason rather than a preference behind it: it
 exists to keep a date from reading as loud as the organisation name beside it,
@@ -205,12 +193,12 @@ than on Times New Roman.
 
 **...and one grotesk, at the foot.** Past the cut title and the blank screen it
 opens onto, `/portfolio` ends in the Projects Panel — a dark composition showing
-one project rather than describing it — and that is set in **Host Grotesk**
-(`--sans-panel`), OFL, two cuts, 32 KB. It is not a sixth reading face: the cut
-title *morphs into* Host Grotesk as the page scrolls, so the section is set in
-what the animation above it turns into, and its masthead uses the exact weight
-that morph solved for. `fonts/README.md` has the whole of that, including why
-one of the two cuts is at a weight nobody names.
+one project rather than describing it — and that is set in **Host Grotesk**, OFL,
+two cuts, 32 KB. It was chosen as what the cut title *morphed into* as the page
+scrolled, and its masthead uses the exact weight that morph solved for. The morph
+itself did not survive the rebuild; the face and the weight did.
+`fonts/README.md` has the whole of that, including why one of the two cuts is at
+a weight nobody names.
 
 **The fallback tail** — **Sitka**, Matthew Carter's serif, cut for reading on
 screen and bundled with Windows. It was what `/projects` shipped in until #71
@@ -230,32 +218,34 @@ deliberately: Vollkorn's x-height is 4% below Sitka's and Spectral's 6%, small
 enough that the faces were chosen at the existing sizes.
 
 How that was decided lives in `design/` — a dev-only lab that previews the real
-pages under any typeface variant, plus a tuner for arriving at one, and committed
-Playwright renders of the whole matrix. It holds the repo's only dependency and is
-kept out of deploys by `.vercelignore`. `fonts/README.md` records why Computer
-Modern lost, measured rather than asserted. Neither folder affects a visitor; see
+page under any typeface variant, plus a tuner for arriving at one, and committed
+Playwright renders of the whole matrix. It is kept out of deploys by
+`.vercelignore`. `fonts/README.md` records why Computer Modern lost, measured
+rather than asserted. Neither folder affects a visitor; see
 [`design/README.md`](design/README.md) and [`fonts/README.md`](fonts/README.md).
 
-## The build, and /next
-
-Everything above is served exactly as it sits in the tree. `/next` is not:
+## The build
 
 ```bash
 pnpm install --frozen-lockfile
 pnpm build       # checks, typechecks, builds, assembles dist/
 pnpm preview     # serves that dist/ — of the tree it is run from
-pnpm dev         # Astro's dev server, with the static site beside it
+pnpm dev         # Astro's dev server, standing in for the deployment
+pnpm check       # builds, serves, drives headless Chromium, runs every Check
 pnpm variants    # renders every Variant of every Section into one sheet
 pnpm editor      # opens the real page locally, editable
 ```
 
-`/next` is one document made of Sections. A **Section** owns its markup, styles,
-Tokens, Content, Timeline and assets in one folder and may read the **Kernel** and
-nothing else; the **Shell** carries the head, the Kernel and the Sections' mount
-points and no composition of its own. Two of those boundaries are the build's
-rather than a convention: a Section's styles are scoped by the compiler, and its
-Content is typed, so renaming a field stops the build instead of blanking the
-page. `pnpm check:sections` is the rest of it.
+`/portfolio` is one document made of Sections. Two of the boundaries between them
+are the build's rather than a convention: a Section's styles are scoped by the
+compiler, and its Content is typed, so renaming a field stops the build instead
+of blanking the page. `pnpm check:sections` is the rest of it.
+
+**Deep links.** `/portfolio/<section>` is this same document, rewritten onto that
+path by the deployment and opened at the Section the last segment names, so a
+link to one part can be shared without the site becoming several pages. The
+rewrites are declared in `vercel.json` and read from there by every local server,
+and a Check requires a working one for each Section the document is made of.
 
 A Section can also carry **Variants**: several complete alternative directions,
 all present in the source at once and selected by an attribute, so that choosing
@@ -267,30 +257,17 @@ compared, and cost a reader nothing: nothing imports them, so they are not in th
 build at all. This is the general form of the typographic comparison in `design/`
 described above.
 
-Its words are its **Content**, held as typed data apart from the markup that
-presents them, and `pnpm editor` is how they are changed. It opens the built page
-locally with the Editor over it: click any piece of text, type, press Enter, and
-the change is in the source file. Publish commits and pushes, and the live site
-follows. It writes Content and nothing else — a limit that is a mechanism rather
-than a promise, since the only file it can name is a Section's `content.ts` and the
-only thing it can do to one is replace a single string literal's bytes.
-`scripts/editor/NOTES.md` is the rest of it.
-
-Nothing at `/next` is live yet — it carries a stub Section, and `/portfolio` goes
-on being the document until the ticket that flips the route.
-
 Reading order for the detail: `CONTEXT.md` for the vocabulary, `docs/adr/` for the
 decisions, then `src/kernel/NOTES.md` and `src/sections/stub/NOTES.md`.
 `docs/agents/variants.md` is the Variants and the sheet.
 
 ## Deployment
 
-The live pages deploy to Vercel as a plain static site. The build adds one step
-rather than replacing that: `pnpm build` writes Astro's output to `dist/` and
-copies `index.html`, `portfolio/`, `projects/` and `fonts/` in beside it, byte for
-byte, and `dist/` is what gets served. A collision between the two halves fails
-the build rather than being merged, which is what keeps `/next` from ever landing
-on a path `/portfolio` answers on.
+The site deploys to Vercel as static files. `pnpm build` writes Astro's output to
+`dist/` and copies `index.html`, `portfolio/`, `projects/` and `fonts/` in beside
+it, byte for byte, and `dist/` is what gets served. `dist/portfolio/` holds both
+halves — the document Astro rendered and the pictures it reaches for — so the
+copy refuses on a FILE both sides own rather than merging over it.
 
 `vercel.json` enables clean URLs, 308s `/projects` to
 `/portfolio#projects`, and sets a
@@ -303,8 +280,9 @@ The Projects Panel's recording is the one thing under an immutable rule that
 does **not** get a new filename, and it is a deliberate exception rather than an
 oversight: it is named by the page in two places and referred to by a third
 repository's documentation, so it carries a content stamp in its query string
-instead — `video/photos-grid.webm?v=<stamp>`, the same device `styles.css`
-already uses for the baked textures. A re-cut clip changes the stamp. It is
+instead — `video/photos-grid.webm?v=<stamp>`, written by hand because the URL is
+assembled in script where the build cannot fingerprint it. A re-cut clip changes
+the stamp. It is
 written down in `design/censor/README.md` beside the command that produces the
 clip, because that is where somebody about to make the mistake will be standing.
 
@@ -313,7 +291,7 @@ renders never reach the deployment.
 
 ## Status
 
-A personal site, live and maintained. Small by design: the constraint that
-everything visitors touch is hand-written, and that the only dependency is a
-browser, is the point. The one dev dependency is Playwright in `design/`, for
-screenshots — nothing the site serves.
+A personal site, live and maintained. Small by design, and still small after the
+rebuild: what a visitor is served is prerendered HTML, one stylesheet per
+Section, GSAP, and the project's own TypeScript. Every version is pinned exactly
+and nothing is updated on a schedule.

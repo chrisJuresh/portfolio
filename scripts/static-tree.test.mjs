@@ -33,7 +33,7 @@ test('the paths STATIC_ROOTS owns are the static tree to answer', () => {
 });
 
 test("a path outside STATIC_ROOTS is not the static tree's", () => {
-  for (const pathname of ['/next', '/src/pages/portfolio.astro', '/@vite/client', '/_astro/index.css']) {
+  for (const pathname of ['/design/sheets/index.html', '/src/pages/portfolio.astro', '/@vite/client', '/_astro/index.css']) {
     assert.equal(servedFromStaticTree(pathname, [PORTFOLIO]), false, pathname);
   }
 });
@@ -52,7 +52,7 @@ test('no routes yet is the static tree answering, not nothing', () => {
   // at, but a middleware that served 404s until it did would be a worse failure
   // than one that briefly ignored a route nobody has added.
   assert.equal(servedFromStaticTree('/portfolio', []), true);
-  assert.equal(servedFromStaticTree('/next', []), false);
+  assert.equal(servedFromStaticTree('/_astro/index.css', []), false);
 });
 
 test("Astro's internal 404 route does not claim the portal", () => {

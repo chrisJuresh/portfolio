@@ -204,22 +204,20 @@
      at a flat 24 whatever the texture under it says, and that fault took three
      wrong diagnoses to find.
 
-     THE SOURCE BYTES ARE STILL /portfolio's, which is where every rendered plate
-     in this repository is written. `src/kernel/corners.ts` and the Front Screen's
-     photographs point at the same tree and say the same thing about it: the
-     ticket that flips the route moves the bytes and changes the constant.
+     THE SOURCE BYTES ARE UNDER /portfolio/img/tex/, which is where every rendered
+     plate in this repository is written. `src/kernel/corners.ts` and the Front
+     Screen's photographs point at the same tree and say the same thing about it.
 
-     NO `?v=` DIGEST, unlike the copy of this URL in portfolio/styles.css, and the
-     Effect Stack's textures settled why: the build fingerprints anything it can
-     see in a url(), so what ships is /_astro/plinth-….<hash>.webp and a
-     re-rendered plate is a different filename by construction. The digest that
-     sheet carries is doing this job by hand, because nothing builds it.
+     NO `?v=` DIGEST, and the Effect Stack's textures settled why: the build
+     fingerprints anything it can see in a url(), so what ships is
+     /_astro/plinth-….<hash>.webp and a re-rendered plate is a different filename
+     by construction.
 
-     AND design/plinth/plinth-studio.py DOES NOT REWRITE THIS LINE. It rewrites
-     the one in portfolio/styles.css, which is the stone the live site draws, and
-     it knows nothing about this file. So applying a stone in the studio changes
-     /portfolio and leaves /next on the old plate. NOTES.md says what to do about
-     it, and the route-flip ticket is what ends it by deleting the other one. */
+     THIS IS THE ONE LINE design/plinth/plinth-studio.py REWRITES when a stone is
+     applied, and it is the only declaration of it anywhere — the second copy, in
+     the hand-written page's stylesheet, went with that page. The studio replaces
+     this declaration's bytes and nothing else in the file, the same rule the
+     Editor obeys, which is what keeps these paragraphs. */
   --projects-panel-plinth-src: url('/portfolio/img/tex/plinth-gemini-generated-image-zbkpg6zbkpg6zbkp-1-noir.webp');
 
   /* ---- the reflection ---------------------------------------------------- */

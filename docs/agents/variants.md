@@ -150,9 +150,8 @@ folder broken. It has happened. The install is two seconds.
 ## Not to be confused with
 
 `design/variants.css` and `design/tools/render.mjs` are the *typographic*
-comparison this generalises, and they are still there and still work: eight
-variants of one type stack across `/portfolio`, which is a plain static tree with
-no Sections in it. They are kept as the comparison was judged. A Section's
-Variants are the mechanism that replaces them once `/next` replaces
-`/portfolio` — the same idea, no longer only about type, and per Section rather
-than per site.
+comparison this generalises: eight variants of one type stack across the
+hand-written `/portfolio`, which was a plain static tree with no Sections in it.
+They are kept as the record of how that comparison was judged, and the page they
+drove is gone. A Section's Variants are the mechanism that replaced them — the
+same idea, no longer only about type, and per Section rather than per site.

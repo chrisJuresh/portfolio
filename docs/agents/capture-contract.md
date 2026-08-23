@@ -1,5 +1,15 @@
 # Capture Contract
 
+> **#141 broke this, on purpose.** The capture asserts on the hand-written page's
+> structure — `.page`, `.col`, `.slide`, a `.listing` whose `h2` is exactly `Work
+> Experience` — and that page is deleted. The hourly job therefore throws and the
+> profile README keeps its previous preview. `check-capture-contract.py` cannot
+> pass against the flipped `/portfolio` and is a gate on nothing until #148,
+> which is blocked on #141 and is where the capture is made to work again and
+> taken off its schedule. Everything below is the account of what it asserts and
+> which traps it exists to avoid, which is what #148 needs; read the numbers as
+> the record of what the deleted page measured.
+
 `/portfolio` has a consumer outside this repository. `chrisJuresh/chrisJuresh` —
 the author's GitHub profile repo — screenshots `chrisj.uk/portfolio` roughly
 hourly and rewrites its README to a light/dark `<picture>` of the result.

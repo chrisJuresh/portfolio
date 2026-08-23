@@ -26,14 +26,12 @@ if (!box || !inside || !wide || !tall) {
 const listings = [content.work, content.education];
 
 /**
- * Where the photographs' bytes are, and the ONE LINE in this Section that points
- * at the old tree.
+ * Where the photographs' bytes are, and the ONE LINE in this Section that knows.
  *
- * The files are still the ones `/portfolio` serves, because `/next` is not
- * replacing it yet and 15 MB of photographs shipped twice is the alternative.
- * `src/kernel/corners.ts` makes the same trade for the corner pictures and says
- * the same thing about it: the ticket that flips the route moves the bytes and
- * changes this constant, and nothing else knows where they live.
+ * `/portfolio/img/` is not built by anything — it is laid into dist/ beside the
+ * document by scripts/assemble-dist.mjs, which is what lets 15 MB of photographs
+ * be served without passing through a bundler. `src/kernel/corners.ts` says the
+ * same thing about the corner pictures.
  *
  * No `?v=` digest, and that is the live page's own posture for these files
  * rather than an omission: a photograph here is never re-baked, it is replaced by

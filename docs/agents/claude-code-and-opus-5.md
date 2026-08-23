@@ -23,9 +23,9 @@ much of the allowance a habit consumes, not as an invoice.
 4.7 and later models ... use a newer tokenizer that contributes to their improved
 performance ... This tokenizer produces approximately 30% more tokens for the
 same text." Every byte-count intuition carried over from Sonnet 4.6 is about 30%
-low. `portfolio/styles.css` and `portfolio/index.html` together are 382 KB, which
-is roughly 125k model tokens on this tokenizer, not the ~96k a four-bytes-per-
-token estimate gives — about $0.62 of uncached input to read once. #129's premise
+low. The hand-written page #129 replaced — `portfolio/styles.css` and
+`portfolio/index.html` — was 382 KB together, which is roughly 125k model tokens
+on this tokenizer, not the ~96k a four-bytes-per-token estimate gives — about $0.62 of uncached input to read once. #129's premise
 is, if anything, understated.
 
 ## How to use this file

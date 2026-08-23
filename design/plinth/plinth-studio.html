@@ -190,8 +190,8 @@
         <button class="go" id="btnApply">apply the shown stone</button>
         <button id="btnForget" title="Delete this stone's entry and plate">delete stone</button>
       </div>
-      <p class="hint" style="margin-left:0">Apply rewrites the default <code>--panel-plinth-src</code> in
-        portfolio/styles.css and restamps the <code>?v=</code> on every plinth url() in it. Nothing else in
+      <p class="hint" style="margin-left:0">Apply rewrites <code>--projects-panel-plinth-src</code> in
+        src/sections/projects-panel/tokens.css, and that one declaration's bytes only. Nothing else in
         the repository is touched, and nothing is committed — that is still yours.</p>
     </section>
 
@@ -360,13 +360,11 @@
       $("chipBlender").className = "chip" + (s.blender ? "" : " bad");
       $("chipBlender").title = s.blender || "Set $BLENDER, put it on PATH, or start the server with --blender.";
       $("chipSite").innerHTML = "site: <b>" + (s.site.stone || "?") + "</b>";
-      $("chipVer").innerHTML = "?v= <b>" + (s.site.version || "—") + "</b>";
-      $("chipVer").className = "chip" + (s.stale ? " bad" : "");
-      $("chipVer").title = s.stale
-        ? "The stylesheet asks for ?v=" + s.site.version + " and the plates on disk digest to "
-          + s.version + ". vercel.json caches /portfolio/img/ for a day, so the deployment would serve "
-          + "a stale plate under an unchanged URL. Apply restamps it."
-        : "matches the plates on disk";
+      $("chipVer").innerHTML = "plates <b>" + (s.version || "—") + "</b>";
+      $("chipVer").className = "chip";
+      $("chipVer").title = "The digest of every plate on disk, which this page previews with. "
+        + "The Token carries none: the build fingerprints the plate by content, so a re-bake is a "
+        + "different filename on its own.";
       fillSources();
       fillPresets();
       fillGrades();
@@ -387,13 +385,8 @@
 
   function siteNote() {
     var n = $("siteNote");
-    var bits = ["portfolio/styles.css draws <code>" + (S.site.stone || "?") + "</code> at <code>?v="
-                + (S.site.version || "—") + "</code>."];
-    if (S.stale) {
-      bits.push("<b>The plates on disk digest to <code>" + S.version + "</code></b> — every plinth url() "
-                + "in the stylesheet is a stale name. Apply to restamp.");
-    }
-    n.className = "note" + (S.stale ? " bad" : "");
+    var bits = ["the Projects Panel draws <code>" + (S.site.stone || "?") + "</code>."];
+    n.className = "note";
     n.innerHTML = bits.join(" ");
   }
 
@@ -727,9 +720,10 @@
 
   /* ---- the strip and the frame -------------------------------------------- */
 
-  /* The same ?v= the stylesheet asks for, so the strip and the frame can never
-     be showing two different renders of one stone. Always a query, even when
-     slab.json has no version yet, because every caller appends `&t=` to it. */
+  /* The digest of every plate on disk, so the strip and the frame can never be
+     showing two different renders of one stone. This page's own — the Token
+     carries none. Always a query, even when slab.json has no version yet,
+     because every caller appends `&t=` to it. */
   function plateURL(k, base) {
     return (base || "/portfolio/") + "img/tex/plinth-" + k + ".webp"
       + "?v=" + ((S && S.version) || "0");
@@ -857,7 +851,7 @@
           show(key);
           note.className = "note ok";
           note.textContent = "Baked. It is in the strip and standing under the Frame below. "
-            + "“apply” writes it into portfolio/styles.css.";
+            + "“apply” writes it into the Projects Panel's tokens.css.";
         });
       });
     }).catch(function (e) { note.className = "note bad"; note.textContent = e.message; });
@@ -866,12 +860,9 @@
   function applyStone() {
     if (!shown) return;
     api("/api/apply", { key: shown }).then(function (r) {
-      logLine("portfolio/styles.css: " + (r.was_stone === r.stone
-        ? "still " + r.stone : r.was_stone + " → " + r.stone)
-        + ", ?v=" + (r.was_version || "—") + " → " + r.version
-        + " on " + r.stamped + " url()s.");
-      logLine("Not committed — that is still yours. A change to the stone the Panel draws is a "
-              + "change to /portfolio's colour, so run the capture contract before merging it.");
+      logLine("src/sections/projects-panel/tokens.css: " + (r.was_stone === r.stone
+        ? "still " + r.stone : r.was_stone + " → " + r.stone) + ".");
+      logLine("Not committed — that is still yours. Run `pnpm check` before landing it.");
       refresh();
     }).catch(function (e) { logLine("! " + e.message); });
   }

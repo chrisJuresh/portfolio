@@ -105,7 +105,7 @@ back and `check-source.mjs` fails the build. What renders them instead is:
 pnpm variants
 ```
 
-which reads the sheet off disk, injects it into `/next` before the page's own
+which reads the sheet off disk, injects it into `/portfolio` before the page's own
 scripts run, and assembles `design/sheets/index.html` — every Variant of every
 Section, in both themes, captioned with what it declares.
 `docs/agents/variants.md` is the authority on that tool and on writing a Variant.

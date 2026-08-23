@@ -9,12 +9,11 @@ actual page rather than a mock of it.
 
 WHAT IT IS FOR. Everything under design/plinth/ already exists as a command:
 build-portoro-maps.py takes a photograph apart, build-slab.py lights the result
-in Cycles, add-stone.py runs the two together for four fixed presets, and
-portfolio/styles.css is hand-edited afterwards to point at the winner. That is
-four steps, three of which have to be got right in the correct order, and the
-last of which has a digest in it that goes stale silently. This is those four
-steps behind one page: drop an image, move every slider the stone has, bake,
-look at it standing under the real Frame, and write it into the stylesheet.
+in Cycles, add-stone.py runs the two together for four fixed presets, and the
+Projects Panel's Token is hand-edited afterwards to point at the winner. That is
+four steps, three of which have to be got right in the correct order. This is
+those four steps behind one page: drop an image, move every slider the stone has,
+bake, look at it standing under the real Frame, and write it into the Section.
 
 WHAT IT IS NOT. It is not a preview of an unbaked stone. A photo-backed stone
 is a path-traced render of four maps and there is no honest way to draw one
@@ -36,12 +35,13 @@ THE THREE THINGS IT KNOWS THAT THE COMMANDS DO NOT:
   called photo.jpg silently overwrites, which is the exact failure
   docs/agents/plinth-marble.md warns about for maps/ itself.
 
-  THE ?v= IS THE DIGEST OF EVERY PLATE, so it moves whenever ANY stone is baked
-  - including one you are only trying out. portfolio/styles.css then asks for a
-  filename that no longer describes what is on disk, and vercel.json caches
-  /portfolio/img/ for a day, so the deployment serves the stale plate for up to
-  24 hours while localhost looks right. "Apply" restamps every plinth url() in
-  the stylesheet, and the page shows a warning whenever they have drifted apart.
+  THE ?v= IS THE DIGEST OF EVERY PLATE, and it is this page's own - it goes on
+  the URLs the studio previews with, so the strip and the Frame can never be
+  showing two different renders of one stone. It does NOT go on the Token this
+  writes, and that is not an omission: the plate is named in a stylesheet the
+  build can see, so Vite fingerprints it into /_astro/plinth-....<hash>.webp by
+  content and a re-bake is a different filename by construction. The hand-written
+  page this replaced had no build and carried the digest by hand.
 
   A STONE THIS WRITES IS A FILE, NOT A TABLE ENTRY. design/plinth/stones/<key>.json,
   which build-slab.py's load_added_stones() merges into PHOTO_CANDIDATES - the
@@ -53,8 +53,11 @@ checkout and can be looked at there, and can only be RE-BAKED from a tree that
 still has the image. design/plinth/sources/ is where this keeps them and it is
 gitignored - keep anything you care about somewhere else as well.
 
-IT WRITES TO portfolio/styles.css when you press Apply, and to nothing else
-outside design/plinth/ and portfolio/img/tex/. It binds to 127.0.0.1 only.
+IT WRITES TO src/sections/projects-panel/tokens.css when you press Apply, and to
+nothing else outside design/plinth/ and portfolio/img/tex/. That file is the
+Editor's too (ADR 0004) and this obeys the same rule the Editor does: one
+declaration's bytes are replaced and the rest of the file, comments and all, is
+left exactly as it was. It binds to 127.0.0.1 only.
 """
 
 from __future__ import annotations
@@ -90,7 +93,7 @@ STONES_DIR = os.path.join(HERE, "stones")
 SIDECAR = os.path.join(HERE, "slab.json")
 BUILD_SLAB = os.path.join(HERE, "build-slab.py")
 PLATES = os.path.join(ROOT, "portfolio", "img", "tex")
-STYLESHEET = os.path.join(ROOT, "portfolio", "styles.css")
+STYLESHEET = os.path.join(ROOT, "src", "sections", "projects-panel", "tokens.css")
 CONTRACT = os.path.join(ROOT, "design", "tools", "check-capture-contract.py")
 STUDIO_PAGE = "/design/plinth/plinth-studio.html"
 
@@ -116,18 +119,19 @@ MAX_UPLOAD = 96 * 1024 * 1024
 NAME_RE = re.compile(r"^[a-z0-9][a-z0-9-]*$")
 SLUG_RE = re.compile(r"[^a-z0-9]+")
 
-# The default declaration in the .panel block, which is the stone the site
-# draws. Anchored at the start of a line with nothing but indent before it, so
-# it cannot match the `.panel[data-marble="…"] { --panel-plinth-src: … }`
-# candidate rules further down - those carry a selector on the same line.
+# The Token that names the stone the Panel draws. Anchored at the start of a
+# line with nothing but indent before it, and check-source.mjs already
+# guarantees this file is a flat list of rules on the Section's own root, so
+# there is one declaration to find and no candidate rules to mistake for it.
+#
+# NO ?v= IS WRITTEN. The plate is named in a stylesheet the build can see, so it
+# is fingerprinted into /_astro/plinth-....<hash>.webp by content and a re-bake
+# is a different filename on its own. The group is still matched, so a digest
+# added by hand is recognised and taken back off rather than left to rot.
 SITE_SRC_RE = re.compile(
-    r'^(?P<lead>[ \t]*--panel-plinth-src:[ \t]*url\(")'
-    r'img/tex/plinth-(?P<key>[a-z0-9-]+)\.webp(?:\?v=(?P<ver>[0-9a-f]+))?'
-    r'(?P<tail>"\);)', re.M)
-# ...and every plinth plate url() in the file, candidates included, for the
-# restamp. One digest covers all of them: digest() hashes the whole directory.
-ANY_SRC_RE = re.compile(
-    r'(?P<head>url\("img/tex/plinth-[a-z0-9-]+\.webp)(?:\?v=[0-9a-f]+)?(?P<tail>"\))')
+    r"^(?P<lead>[ \t]*--projects-panel-plinth-src:[ \t]*url\(')"
+    r"/portfolio/img/tex/plinth-(?P<key>[a-z0-9-]+)\.webp(?:\?v=(?P<ver>[0-9a-f]+))?"
+    r"(?P<tail>'\);)", re.M)
 
 
 def slug(text):
@@ -213,15 +217,14 @@ def list_sources():
 
 
 def read_site():
-    """Which stone portfolio/styles.css draws, and at which digest."""
+    """Which stone the Projects Panel's Token names."""
     with open(STYLESHEET, encoding="utf-8") as fh:
         css = fh.read()
     hits = SITE_SRC_RE.findall(css)
     m = SITE_SRC_RE.search(css)
     return {"stone": m.group("key") if m else None,
             "version": m.group("ver") if m else None,
-            "declarations": len(hits),
-            "stamped": len(ANY_SRC_RE.findall(css))}
+            "declarations": len(hits)}
 
 
 def plate_path(key):
@@ -508,40 +511,33 @@ def contract_job(job):
 # ---------------------------------------------------------------------------
 
 def apply_stone(key):
-    """Point portfolio/styles.css at `key` and restamp every plinth ?v=.
+    """Point the Projects Panel's Token at `key`.
 
-    Two edits and they are independent: WHICH plate the .panel block asks for,
-    and the digest on every plinth url() in the file including the candidate
-    rules. The second happens on its own whenever any stone has been baked,
-    which is why it is done even when the stone has not changed.
+    ONE declaration's bytes, and nothing else in the file: tokens.css is the
+    Editor's file too, and what keeps its comments and its paragraphs is that
+    nothing ever re-serialises it. The digest the hand-written page needed is
+    gone with it - the build fingerprints this url() by content.
     """
     if not os.path.isfile(plate_path(key)):
         raise SystemExit("no plate at portfolio/img/tex/plinth-%s.webp - bake "
                          "it before pointing the site at it." % key)
-    version = sidecar().get("version")
-    if not version:
-        raise SystemExit("design/plinth/slab.json has no version. Bake "
-                         "something, or refresh the sidecar.")
     with open(STYLESHEET, encoding="utf-8") as fh:
         css = fh.read()
     hits = SITE_SRC_RE.findall(css)
     if len(hits) != 1:
         raise SystemExit(
-            "found %d default --panel-plinth-src declarations in "
-            "portfolio/styles.css and expected exactly one. The stylesheet has "
-            "moved under this tool; fix it by hand and say so in "
+            "found %d --projects-panel-plinth-src declarations in "
+            "src/sections/projects-panel/tokens.css and expected exactly one. The "
+            "Section has moved under this tool; fix it by hand and say so in "
             "docs/agents/plinth-marble.md." % len(hits))
     was = SITE_SRC_RE.search(css)
     before = (was.group("key"), was.group("ver"))
     css = SITE_SRC_RE.sub(
-        lambda m: "%simg/tex/plinth-%s.webp?v=%s%s"
-                  % (m.group("lead"), key, version, m.group("tail")), css, count=1)
-    css, stamped = ANY_SRC_RE.subn(
-        lambda m: "%s?v=%s%s" % (m.group("head"), version, m.group("tail")), css)
+        lambda m: "%s/portfolio/img/tex/plinth-%s.webp%s"
+                  % (m.group("lead"), key, m.group("tail")), css, count=1)
     with open(STYLESHEET, "w", encoding="utf-8", newline="\n") as fh:
         fh.write(css)
-    return {"stone": key, "version": version, "stamped": stamped,
-            "was_stone": before[0], "was_version": before[1]}
+    return {"stone": key, "was_stone": before[0], "was_version": before[1]}
 
 
 def forget_stone(key):
@@ -555,7 +551,7 @@ def forget_stone(key):
                          "built-in and this cannot delete it." % key)
     site = read_site()
     if site["stone"] == key:
-        raise SystemExit("portfolio/styles.css draws `%s`. Apply another stone "
+        raise SystemExit("the Projects Panel draws `%s`. Apply another stone "
                          "first." % key)
     os.remove(entry)
     gone = ["design/plinth/stones/%s.json" % key]
@@ -601,7 +597,10 @@ def state():
         "plate": doc.get("plate"),
         "version": version,
         "site": site,
-        "stale": bool(version and site["version"] and version != site["version"]),
+        # The Token carries no digest to drift from the plates on disk; the
+        # build makes the filename out of the bytes. Reported so the page keeps
+        # one shape, and false by construction.
+        "stale": False,
         "soft_px": add_stone.SOFT_PX,
         "cap_px": add_stone.CAP_PX,
         "busy": (RUN.busy().id if RUN.busy() else None),
@@ -781,7 +780,7 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="Serves the repository at 127.0.0.1 only. It writes to "
                "design/plinth/{sources,maps,stones}/, portfolio/img/tex/, and "
-               "- when you press Apply - portfolio/styles.css.")
+               "- when you press Apply - src/sections/projects-panel/tokens.css.")
     ap.add_argument("--port", type=int, default=4180)
     ap.add_argument("--blender", default=None,
                     help="path to blender.exe, if it is not on PATH, in "
@@ -802,7 +801,7 @@ def main():
                                   "NOT FOUND - baking will fail. --blender, "
                                   "$BLENDER, or PATH."))
     site = read_site()
-    print("the site draws  %s  (?v=%s)" % (site["stone"], site["version"]))
+    print("the Panel draws %s" % site["stone"])
     print("\nctrl-c to stop.\n")
     if not args.no_open:
         threading.Timer(0.4, webbrowser.open, (url,)).start()

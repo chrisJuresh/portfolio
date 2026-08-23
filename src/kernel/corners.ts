@@ -7,10 +7,11 @@ import { onThemeChange, theme, type Theme } from './theme';
  * black, again per theme — so this picks one file out of a grid rather than off a
  * list, and picks again when the theme or the display changes under it.
  *
- * THE ONE LINE POINTING AT THE OLD TREE. The ladder is still the one
- * design/plate/build-plate.py writes into portfolio/img/, because /next is not
- * replacing /portfolio yet; the ticket that flips the route moves these bytes and
- * changes this constant. Nothing else here knows where they live.
+ * WHERE THE LADDER IS, AND THE ONLY LINE THAT KNOWS. The files are the ones
+ * design/plate/build-plate.py writes into portfolio/img/, which is not built by
+ * anything: `/portfolio` is this document and `/portfolio/img/` is its pictures,
+ * laid into the same dist/ by scripts/assemble-dist.mjs. Nothing else here knows
+ * where they live.
  */
 const LADDER_BASE = '/portfolio/img/';
 

@@ -84,7 +84,7 @@ harder version of the same reason: those two *are* the composition's height.
 The floors are in **px and not rem** because inside the live page's one-screen
 band the root's font size is solved from the window, so a rem is 11-something px
 on exactly the short screens the floors exist for. A floor that shrinks with the
-thing it holds up is not a floor. `/next` has no such band yet; the numbers are
+thing it holds up is not a floor. This page has no such band yet; the numbers are
 carried as they are so that the Front Screen's port does not have to re-choose
 them.
 
@@ -167,7 +167,7 @@ Two divergences from the live page, both deliberate:
 
 - **The crossing is not gated.** The live sheet only crosses inside its
   one-screen band and paints the flat far end below it. That gate is about the
-  band, not about the Panel, and `/next`'s Turn is a Kernel property of the page
+  band, not about the Panel, and the Turn is a Kernel property of the page
   at every width.
 - **`data-turn` is not on this Section.** The crossing happens across the scroll
   of the Section *above* this one — that is where the reader is while it happens
@@ -283,14 +283,12 @@ Three things about the stack:
   the rework session chooses between, and Variants are the shape that choice now
   has. `timeline.ts` exports nothing, which is how the loader is told there is
   nothing to register.
-- **Which stone is drawn is settled in two places now, and only one of them is
-  maintained.** `design/plinth/plinth-studio.py` rewrites the declaration in
-  `portfolio/styles.css` when a stone is applied, and it knows nothing about
-  `tokens.css`. So a bake-off run after this ticket changes `/portfolio` and
-  leaves `/next` on the plate named here. It is one line, it is named in the
-  Token's own comment and in `docs/agents/plinth-marble.md`, and the route-flip
-  ticket ends it by deleting the other declaration. Until then: apply a stone in
-  the studio, then copy the filename across by hand.
+- ~~**Which stone is drawn is settled in two places now.**~~ **Settled here, and
+  only here.** It was declared in this Section's `tokens.css` AND in the
+  hand-written page's stylesheet, and `design/plinth/plinth-studio.py` rewrote
+  only the second — so a bake-off run changed one of the two sites and said
+  nothing. #141 deleted that stylesheet and pointed the studio at this file. The
+  `?v=` went with it: the build fingerprints a `url()` it can see.
 
 ## The Frame
 
@@ -585,7 +583,7 @@ Two more things the live page does that are **not** ported, and neither is an
 omission here: the Effect Stack's `data-fx-no-text` lift, which keeps the print
 off the Section's type, has no mechanism in the Kernel yet and would be the
 Kernel's to add; and the print stylesheet hides the Panel outright, which belongs
-with whichever ticket gives `/next` a print sheet.
+with whichever ticket gives the Portfolio a print sheet.
 
 ## The Plinth
 
@@ -862,13 +860,12 @@ is invisible on screen: one with **scripting off**, where the marble has to be
 drawn at its full depth with nothing lying in it, and one with **reduced motion**,
 where not one byte of the recording may be requested.
 
-And it reaches outside the served page exactly once, to `portfolio/styles.css`,
-for the one thing no reading of `/next` alone could tell: whether the two trees
-still draw the same stone. It compares the STEM rather than the filename, because
-the build fingerprints the plate into `plinth-….<hash>.webp`. If the live sheet is
-ever gone — the route flip — the assertion returns clean rather than failing,
-because at that point there is only one declaration left and nothing to disagree
-with.
+It used to reach outside the served page exactly once, to the hand-written page's
+stylesheet, for the one thing no reading of this page alone could tell: whether
+the two trees still drew the same stone. #141 deleted that sheet, so there is one
+declaration and nothing to disagree with, and the assertion went with the file it
+read. The shape is worth remembering — a Check may read the repository when what
+can break is an agreement between two files rather than anything on screen.
 
 **Sixteen mutations, each applied on its own, rebuilt, and reverted.** Fifteen
 were caught by the Check and one by the typecheck:

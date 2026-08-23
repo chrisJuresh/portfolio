@@ -1,8 +1,7 @@
 /* ============================================================================
    Faces that are available but not rendering on the live page. The faces
-   /portfolio is actually set in are declared at the top of portfolio/styles.css
-   instead — every word on the page needs one of those, and a second <link>
-   would block the first paint. Nothing here is linked by any page today; see
+   /portfolio is actually set in are declared in src/kernel/faces.css instead —
+   every word on the page needs one of those, and they are part of the build. Nothing here is linked by any page today; see
    README.md for what each face is and why it is kept.
    ========================================================================== */
 
