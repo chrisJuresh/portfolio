@@ -18,7 +18,10 @@ import { open, settle } from '../lib/page.mjs';
  *     read each other, so the measure they share is restated in the Kernel
  *     (src/kernel/tokens/landing.css). Drift, and the word is a different size
  *     from the masthead it stands in for — which nobody sees, because that
- *     masthead is invisible.
+ *     masthead is invisible. The Plinth's overhang is restated there for the same
+ *     reason and asserted here beside it: the width branch spends the page across
+ *     on the composition AND that stone, so a share that drifts is a marble slab
+ *     that stops short of the page's corner or runs off it.
  *   * One PROJECTS. The Panel's masthead goes `visibility: hidden` and KEEPS ITS
  *     BOX: it is row one's stated height, the line the subheading hangs off, and
  *     the slot the word occupies. `display: none` would draw the same page with
@@ -108,6 +111,16 @@ export const check = {
           'var(--projects-panel-masthead-cap)',
           'var(--projects-panel-mast-top)',
         );
+        // The third restated number, and the newest: the stone's overhang, which
+        // the width branch spends the page across on so the marble's right end
+        // lands on the page's. Both sides as a LENGTH — the Kernel's share times
+        // the width it solved, against the Panel's own share times the Frame it
+        // resolved — because a share of the composition and a share of the Frame
+        // are not comparable numbers and the thing that has to agree is the px.
+        const [kernelStone, panelStone] = spend(
+          'calc(var(--landing-plinth-share) * var(--landing-w))',
+          'calc(var(--projects-panel-plinth-overhang) * var(--projects-panel-frame-w))',
+        );
 
         const shown = getComputedStyle(masthead);
         const box = masthead.getBoundingClientRect();
@@ -117,6 +130,8 @@ export const check = {
           kernelDrop,
           panelCap,
           panelDrop,
+          kernelStone,
+          panelStone,
           visibility: shown.visibility,
           display: shown.display,
           mastheadHeight: box.height,
@@ -145,6 +160,14 @@ export const check = {
         failures.push(
           `the Kernel publishes a masthead drop of ${landing.kernelDrop.toFixed(2)}px and the Panel solves ` +
             `${landing.panelDrop.toFixed(2)}px — the Panel begins the wrong distance above the word`,
+        );
+      }
+      if (Math.abs(landing.kernelStone - landing.panelStone) > 0.5) {
+        failures.push(
+          `the Kernel leaves ${landing.kernelStone.toFixed(2)}px for the Plinth to overhang by and the Panel ` +
+            `draws ${landing.panelStone.toFixed(2)}px — the width branch is spending the page across on a ` +
+            'stone that is not the size of the one on the page, so the marble either stops short of the ' +
+            'corner or runs past it. src/kernel/tokens/landing.css restates the Panel’s overhang.',
         );
       }
       if (landing.visibility !== 'hidden') {
@@ -179,8 +202,8 @@ export const check = {
       }
       notes.push(
         `the landing: a ${landing.kernelCap.toFixed(1)}px cap, the Panel beginning ` +
-          `${landing.kernelDrop.toFixed(1)}px above the word, ports at ` +
-          `${landing.ports.map((port) => port.toFixed(0)).join(' and ')}`,
+          `${landing.kernelDrop.toFixed(1)}px above the word, ${landing.kernelStone.toFixed(1)}px of page ` +
+          `left for the stone, ports at ${landing.ports.map((port) => port.toFixed(0)).join(' and ')}`,
       );
 
       // ---- the word across the crossing ----------------------------------

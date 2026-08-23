@@ -69,6 +69,20 @@ const DEPTH_TOLERANCE = 0.002;
 /** The drop into the subheading's second line, in px. */
 const DROP_TOLERANCE = 0.5;
 
+/** How far the slab's corner may fall short of the page's, in px. Half a pixel:
+ *  the two halves of the corner are exact arithmetic on the same lengths the
+ *  browser lays the boxes out with, so all that is left is Chromium's 1/64px
+ *  layout units down a handful of terms. It measures 0.03px across and 0.02px
+ *  down at DESK, and the smallest gap a reader could see is a whole one. */
+const CORNER_SLACK = 0.5;
+
+/** And how far it may run past, which is a different question with a different
+ *  answer. The width branch reads `100vw`, which includes a classic scrollbar
+ *  where the box the drawing was laid out in does not — so on a platform that
+ *  reserves that gutter the far end lands about 15px over, clipped by the
+ *  Section and invisible. Anything past that is not a scrollbar. */
+const CORNER_OVERRUN = 20;
+
 /** Every control, by the pair of Tokens that places it: where its centre is and
  *  how wide its ink is. This list IS the render's table — the CSS computes each
  *  gap from the pair either side of it, and this asserts that the arithmetic
@@ -189,6 +203,24 @@ async function readPage(page) {
 
       const stageStyle = getComputedStyle(stage);
 
+      // ---- the three landing lengths the corner is solved from -------------
+      // A custom property reads back off getComputedStyle as the token sequence
+      // it was declared as, so each is spent on a throwaway element's padding
+      // instead, which computes to px. Outside the landing band they are all
+      // zero, which is why the corner is only asked about inside it.
+      const probe = document.createElement('div');
+      probe.style.cssText = 'position:absolute;visibility:hidden';
+      const spend = (length) => {
+        probe.style.paddingTop = length;
+        section.append(probe);
+        const read = Number.parseFloat(getComputedStyle(probe).paddingTop) || 0;
+        probe.remove();
+        return read;
+      };
+      const inset = spend('var(--landing-inset)');
+      const landingW = spend('var(--landing-w)');
+      const stone = spend('calc(var(--landing-plinth-share) * var(--landing-w))');
+
       // ---- the Plinth, the reflection and the recording --------------------
       /** A Plinth Token off the Frame. Custom properties inherit, so the four
        *  unitless shares read back here as plainly as the chrome's do. The three
@@ -212,6 +244,10 @@ async function readPage(page) {
 
       return {
         viewport: { width: window.innerWidth, height: window.innerHeight },
+        // The landing band, asked of the window rather than of any element: the
+        // corner the slab stands in is the landing's, and outside the band there
+        // is no landing to stand in.
+        landing: window.innerWidth >= 1100 && window.innerHeight >= 700,
         frame: { width: fr.width, height: fr.height, ratio: fr.width / fr.height },
         ratioToken: token('ratio'),
         bar: bar.getBoundingClientRect().height,
@@ -277,6 +313,29 @@ async function readPage(page) {
           // What the stage measures, which is what the fit constant assumes: the
           // slab costs the flow its depth and not the strip behind the window.
           stageFoot: stage.getBoundingClientRect().bottom - fr.bottom,
+          // THE CORNER, against the Section's own box and in px rather than as a
+          // share of anything: the whole assertion is that two corners are the
+          // same point, and a share would be measuring it against the thing it is
+          // supposed to have escaped. Positive is past the edge, which the
+          // Section's `overflow-x: clip` makes safe and invisible; negative is
+          // the black sliver this exists to catch.
+          cornerX: pl.right - section.getBoundingClientRect().right,
+          cornerY: pl.bottom - section.getBoundingClientRect().bottom,
+          // WHICH BRANCH OF THE SOLVE BOUND, because only one of them can put
+          // the stone on the page's right edge. Where the composition's width is
+          // capped by its HEIGHT the drawing is narrower than the page has room
+          // for, it starts at the page's left margin because that is where the
+          // word stands, and the marble ends with it — an ultrawide, and the one
+          // window in the band where the corner is not a promise. The vertical
+          // half holds either way.
+          //
+          // The width branch is mirrored here rather than spent as a probe, and
+          // that is the lesser of two evils: a probe would restate the expression
+          // and a restated expression that drifts turns the assertion OFF without
+          // saying so. This way the shortfall is reported either way, and only
+          // whether it is a failure or a note depends on the mirror.
+          widthBound: (window.innerWidth - inset) / (1 + stone / landingW) <= landingW + 1,
+          shortfall: window.innerWidth - (inset + landingW + stone),
           plate: plinthStyle.backgroundImage,
           sized: plinthStyle.backgroundSize,
           covered: behind ? frame.contains(behind) : null,
@@ -628,6 +687,51 @@ function stands(read) {
         `${px(read.plinth.depth).toFixed(2)}px deep — the Plinth is out of flow, so the composition is short ` +
         'by exactly its depth and the fit constant is counting something that is not there',
     );
+  }
+
+  // ---- and the corner it stands in ---------------------------------------
+  // THE SLAB'S BOTTOM-RIGHT CORNER IS THE PAGE'S. Inside the landing band the
+  // drawing runs to the page's bottom edge and the page's width is spent on the
+  // composition AND the stone's overhang, so the marble ends exactly where the
+  // window does — down and across. Both halves are arithmetic in a file that
+  // cannot see this one: --landing-plinth-share and the height branch in
+  // src/kernel/landing.css put the right edge there, and --projects-panel-fall
+  // puts the foot there.
+  //
+  // WHY IT IS WORTH ASSERTING. Every way it breaks is quiet. A drift in the
+  // restated share leaves a few pixels of ground showing past the stone or a few
+  // pixels of stone clipped off, and a fall that stops agreeing with the box it
+  // is subtracted from leaves a black band under the marble — which is exactly
+  // what the composition looked like before, and read as deliberate.
+  //
+  // OUTSIDE THE BAND IT ASSERTS NOTHING, and the gate is a viewport one because
+  // the thing being asked about is the landing, which is a viewport's. Below it
+  // there is no landing, the Section is a scrolling stack, and "the corner of the
+  // page" is not a place.
+  //
+  // ACROSS IS ASKED ONLY WHERE THE WIDTH BRANCH BOUND. On an ultrawide the height
+  // branch wins, the drawing is narrower than the page has room for, and the
+  // marble ends with the drawing rather than at the edge — documented in
+  // src/kernel/landing.css and not a fault. DOWN is asked either way: the fall
+  // puts the foot on the page's bottom edge on both branches.
+  if (read.landing) {
+    for (const [axis, measured, off, asked] of [
+      ['across', read.plinth.cornerX, "short of the page's right edge", read.plinth.widthBound],
+      ['down', read.plinth.cornerY, "above the page's foot", true],
+    ]) {
+      if (asked && measured < -CORNER_SLACK) {
+        failures.push(
+          `at ${where} the slab stops ${Math.abs(measured).toFixed(2)}px ${off} — inside the landing band it ` +
+            `sits square in the corner, and ${axis} it does not`,
+        );
+      }
+      if (measured > CORNER_OVERRUN) {
+        failures.push(
+          `at ${where} the slab runs ${measured.toFixed(2)}px past the page ${axis} — a few pixels are the ` +
+            'scrollbar 100vw does not know about, but this is the drawing having come off its own solve',
+        );
+      }
+    }
   }
 
   // The plate, and the one declaration in the block that would be a bug if it
@@ -1169,6 +1273,15 @@ export const check = {
               `${read.frame.width.toFixed(0)}px wide, overhanging ${(read.plinth.left * read.frame.width).toFixed(1)}px ` +
               `each end, with ${(read.reflection.depth * read.frame.width).toFixed(1)}px of the window lying in it`,
           );
+          // Reported at whatever it is, on both branches: a shortfall that is
+          // expected on an ultrawide and a shortfall that is a bug read the same
+          // in the numbers, and the only way to tell which is to see them.
+          if (read.landing) {
+            notes.push(
+              `its corner: ${read.plinth.cornerX.toFixed(2)}px across and ${read.plinth.cornerY.toFixed(2)}px ` +
+                `down from the page's, on the ${read.plinth.widthBound ? 'width' : 'height'} branch`,
+            );
+          }
         }
         notes.push(
           `at ${viewport.width}x${viewport.height}: a Frame ${read.frame.width.toFixed(0)}px wide, titlebar ` +

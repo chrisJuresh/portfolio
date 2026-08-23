@@ -947,15 +947,28 @@ const selected = (project: { href?: string }) => project.href === `#${here}`;
      keeps the arithmetic honest: the box is `depth + back` tall and costs the
      flow only `depth`. Nothing above this rule moves.
 
-     AND IT RUNS OFF THE PAGE ON THE RIGHT. The Frame is flush with the
-     composition's right edge, so a slab that overhangs it symmetrically has
-     nowhere on that side to do it. The window is NOT moved left to make room —
-     that was tried, and it puts the Frame over the engineering points, 42px of
-     live text behind it at 1600x1000. The Frame is allowed to occlude the
-     subheading, which is set to be occluded; it is not allowed to eat the list.
-     So the stone runs off the edge instead, which is what the render does — its
-     own slab is cut off by the picture — and `overflow-x: clip` on the Section
-     is what makes that safe. */
+     AND ITS RIGHT END IS THE PAGE'S RIGHT EDGE. The Frame is flush with the
+     composition's right edge, so a slab that overhangs it symmetrically needs
+     room on that side that the composition does not have. Nothing here is what
+     found it: THE PAGE'S WIDTH IS SPENT ON THE DRAWING AND THE STONE TOGETHER,
+     one line in src/kernel/landing.css, which makes the composition a little
+     under a per cent narrower and lands the marble's right end exactly on the
+     window's edge. Read that comment before changing anything on this side of it.
+
+     THE WINDOW IS STILL NOT MOVED LEFT TO MAKE ROOM. That was tried, and it puts
+     the Frame over the engineering points, 42px of live text behind it at
+     1600x1000; a nudge on the stage alone would do the same thing more quietly,
+     eating into the gutter between the list and the window at every width and
+     crossing it above about 1550. The Frame is allowed to occlude the subheading,
+     which is set to be occluded; it is not allowed to eat the list. Narrowing the
+     whole drawing is the move that costs the gutter nothing, because the gutter
+     narrows with it.
+
+     `overflow-x: clip` on the Section stays, and still matters: outside the
+     landing band nothing solves for the stone, and a classic scrollbar makes
+     `100vw` about 15px wider than the box the drawing was laid out in — so the
+     far end can still land a few pixels past the edge, which is what the render
+     itself does with its own slab. */
   .projects-panel__plinth {
     position: relative;
     /* Under the Frame, which carries `z-index: 1`. The marble behind the contact
@@ -1292,6 +1305,65 @@ const selected = (project: { href?: string }) => project.href === `#${here}`;
          does. The padding it used to spend at the top is spent by the landing. */
       min-height: calc(var(--fold) - var(--landing-top) + var(--landing-mast-top));
       padding-top: 0;
+      /* AND NONE AT THE FOOT OR ON THE RIGHT EITHER: THE PAGE'S MARGIN IS ON THE
+         LEFT AND NOWHERE ELSE HERE. The top's is spent by the landing, and the
+         other two are the Plinth's — the stone stands on the page's bottom edge
+         and ends on its right one, and a margin is exactly the thing that cannot
+         be between them.
+
+         The foot also keeps the Section exactly `min-height` tall: the fall below
+         spends every pixel of the box on the composition, so a bottom padding
+         would be content plus padding OVER the minimum and the document would
+         come out one page margin taller than two screens — the crossing finishing
+         before the scroll does.
+
+         AND THE RIGHT ONE IS WHAT LETS THE COMPOSITION BE AS WIDE AS IT SOLVED
+         FOR. The width branch spends the page across on the drawing and the stone
+         together, so the column it asks for is wider than `100vw - 2 x inset`
+         whenever the margin is large against the window — every window over about
+         1156px tall, where the margin hits its 6.5rem cap. A right padding caps
+         the column there without saying so, and then --projects-panel-w
+         OVER-STATES the box that was actually laid out: the composition comes out
+         narrow, the fall subtracts a Frame height that is not the Frame's, and the
+         marble stops short of BOTH edges at once. 41px across and 15px down at
+         1100x1440, which is the window that found it. Nothing is centred here and
+         nothing lays out from the right edge, so there is nothing for the padding
+         to do but that. */
+      padding-bottom: 0;
+      padding-right: 0;
+
+      /* ---- THE FALL: what the drawing comes down by ------------------------
+         THE PLINTH SITS SQUARE IN THE PAGE'S BOTTOM-RIGHT CORNER. The right half
+         of that is the Kernel's — src/kernel/landing.css spends the page across
+         on the composition AND the stone's overhang, so the marble's right end IS
+         the page's right edge. This is the bottom half: the distance from where
+         the composition's foot falls to where the page's foot is, and everything
+         in row two comes down by it.
+
+         WHY THERE IS ANYTHING TO COME DOWN BY. The drawing is self-similar, so it
+         has one height for its width, and the width is the smaller of what the
+         page has across and what its height will carry. Where the WIDTH binds the
+         drawing is shorter than the screen, and the difference used to be black
+         sitting under the marble. It is spent inside the composition instead.
+
+         MEASURED, NOT RESTATED. Every term is a length the Section already has:
+         the Section's own box, less the two rows the composition is built out of.
+         The fit constant's own ratio is deliberately NOT one of them — writing
+         0.5586 here would be a fourth copy of a number three files already
+         disagree about by a third of a per cent, and the fall is exactly the size
+         of that disagreement plus a page margin. So the sum below is the same
+         arithmetic the browser lays the box out with, and the two agree to the
+         pixel by construction rather than by luck.
+
+         POSITIVE AT EVERY WINDOW IN THE BAND, on both branches: where the height
+         binds it is the page margin the fit left over, and where the width binds
+         it is that plus whatever the page's width could not spend. */
+      --projects-panel-fall: calc(
+        var(--fold) - var(--landing-top) + var(--landing-mast-top) -
+          var(--projects-panel-mast-line) - var(--projects-panel-sub-line) -
+          var(--projects-panel-frame-drop) - var(--projects-panel-plinth-depth) -
+          var(--projects-panel-frame-w) / var(--projects-panel-frame-ratio)
+      );
 
       /* ONE COLUMN. The Rail is out of flow below, so the composition's own left
          edge is the Section's content edge — the page's margin, which is exactly
@@ -1329,6 +1401,47 @@ const selected = (project: { href?: string }) => project.href === `#${here}`;
        the same answer the one-column grid above gives for the width. */
     .projects-panel__inner {
       align-self: start;
+    }
+
+    /* ---- row two comes down by the fall, and the line that hangs into it ---
+       THREE BOXES AND ONE LENGTH. The stage is the one that has to move — the
+       Plinth's foot is the composition's foot, so the fall is what puts it on the
+       page's bottom edge — and the other two move because of what moving it
+       costs.
+
+       THE SUBHEADING'S SECOND LINE COMES WITH THE WINDOW. The Frame's top edge is
+       a measured fraction into that line and the bite is the composition's, so a
+       stage that fell on its own would leave the window a hundred pixels clear of
+       the line it is supposed to occlude. The line falls the same distance and the
+       drop between them is untouched — which is also why the `occlusion` Check
+       still passes rather than having been retired.
+
+       THE MASTHEAD DOES NOT MOVE, and the negative margin is what buys that. The
+       head is `align-self: end` against a row of stated height, so its MARGIN box
+       is what the row places: growing the content by the fall and the margin by
+       the same amount leaves the margin box where it was, and the masthead — the
+       slot the Cut Title stands in, which nothing may move — with it.
+
+       AND THE POINTS COME DOWN BECAUSE THE LINE DID. Their top margin clears the
+       hanging line by construction; leave it and the second line lands on top of
+       the list, which is the collision this term exists to not have. */
+    .projects-panel__head {
+      margin-bottom: calc(-1 * (var(--projects-panel-sub-line) + var(--projects-panel-fall)));
+    }
+
+    .projects-panel__sub span:last-child {
+      margin-top: var(--projects-panel-fall);
+    }
+
+    .projects-panel__points {
+      margin-top: calc(
+        var(--projects-panel-sub-line) + var(--projects-panel-fall) +
+          var(--projects-panel-points-air)
+      );
+    }
+
+    .projects-panel__stage {
+      margin-top: calc(var(--projects-panel-frame-drop) + var(--projects-panel-fall));
     }
 
     /* WHY THE MASTHEAD STAYS IN THE MARKUP AND ONLY GOES INVISIBLE. Its box is

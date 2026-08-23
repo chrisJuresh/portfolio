@@ -41,11 +41,29 @@ masthead's cap, and the Panel's composition is solved for the height the Front
 Screen gives up — and a Section may read only the Kernel. So the width both are
 functions of is solved here, once, and each Section reads the answer:
 `--landing-w`, `--landing-cap`, `--landing-mast-top`, `--landing-top`.
-`tokens/landing.css` holds the four terms it is solved from and names the Section
-each was taken from. Three of them are restated rather than shared, which is what
-the `turn` Check exists for: it compares the Kernel's published cap and drop
-against the Panel's own arithmetic, because a drift there draws the word at a size
+`tokens/landing.css` holds the terms it is solved from and names the Section each
+was taken from. Four of them are restated rather than shared, which is what the
+`turn` Check exists for: it compares the Kernel's published cap, drop and stone
+against the Panel's own arithmetic, because a drift in any of them draws a page
 nobody can see is wrong.
+
+**The width branch spends the page across on the drawing AND the stone.** The
+Panel's Plinth overhangs the Frame's right foot and the Frame is flush with the
+composition's right edge, so the widest thing in that Section is the composition
+plus that overhang — which is why the page's margin appears once in the branch and
+the answer is divided by one plus `--landing-plinth-share`. Solve
+`inset + W + stone × W = 100vw` for `W` and that is the line. What it buys is the
+marble's right end landing **on** the page's right edge, and it is the reason a
+Kernel file knows a Section's overhang exists at all: the Kernel may not ask the
+Panel, so the share is restated here beside the masthead's.
+
+**And the height branch spends the page's margin once, not twice.** The Panel's
+composition now runs from the page's top margin to the page's bottom **edge** —
+the Plinth stands on it — so the height it has to fit into is the screen less one
+margin. Subtracting the second is what used to leave the stone short of the corner
+at ordinary window sizes, because the branch that bound was solving for a bottom
+margin that no longer exists. `src/sections/projects-panel/NOTES.md` has the other
+half, which is the Panel's own.
 
 **This is the "short list of names shared where two Sections must agree" that
 CONTEXT.md allows**, and it should stay short. A third Section wanting to join it

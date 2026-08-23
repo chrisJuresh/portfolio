@@ -35,14 +35,40 @@
   :root {
     /* The Panel composition's width, re-solved for the landing. Two terms move
        against the Panel's own base solve: the Rail leaves the grid to stand in
-       the page's margin, so the width branch is the whole of what the page has
-       across rather than 0.972 of it, and the height branch is the screen less
-       the two margins and the half-leading the word's cap top stands on. */
+       the page's margin, so the width branch is the page's own margin ONCE rather
+       than 0.972 of the screen, and the height branch is the screen less the two
+       margin ONCE and the half-leading the word's cap top stands on.
+
+       THE WIDTH BRANCH SPENDS THE PAGE ACROSS ON THE DRAWING AND THE STONE. The
+       Panel's Plinth overhangs the Frame's right foot, and the Frame is flush
+       with the composition's right edge, so the widest thing in the Section is
+       the composition PLUS that overhang — which is why the margin appears once
+       and the answer is divided by one plus the stone's share rather than the
+       page across being handed to the composition alone. Solve
+       `inset + W + stone x W = 100vw` for W and this is it, and what it buys is
+       the marble's right end landing ON the page's right edge instead of running
+       off it. The overhang is a share of the composition, so the stone scales
+       with the drawing and the equation holds at every width.
+
+       THE HEIGHT BRANCH SPENDS THE MARGIN ONCE FOR THE SAME REASON. The drawing
+       runs from the page's top margin to the page's bottom EDGE — the Plinth
+       stands on it — so the height it has to fit into is the screen less ONE
+       margin and the half-leading, not two margins. Subtracting the second one
+       here is what used to hand the width branch a composition 145px narrower
+       than the page could carry at 1440x900, and it is what left the stone 115px
+       short of the corner at 1600x900: the branch that bound was solving for a
+       bottom margin that no longer exists.
+
+       WHERE THE HEIGHT BRANCH STILL WINS THE STONE STOPS SHORT, and that is the
+       honest answer rather than a missed case. Inside the band it takes an
+       ultrawide to get there — 3440x1440 does, 2560x1440 does not — and there the
+       composition is genuinely narrower than the page has room for: it starts at
+       the page's left margin because that is where the word stands, and a slab
+       dragged out to the right edge on its own would be a slab that had come off
+       its drawing. */
     --landing-w: min(
-      calc(100vw - 2 * var(--landing-inset)),
-      calc(
-        (var(--fold) - 2 * var(--landing-inset) - var(--landing-name-lead)) / var(--landing-fit)
-      )
+      calc((100vw - var(--landing-inset)) / (1 + var(--landing-plinth-share))),
+      calc((var(--fold) - var(--landing-inset) - var(--landing-name-lead)) / var(--landing-fit))
     );
     --landing-mast-size: calc(var(--landing-mast-share) * var(--landing-w));
 

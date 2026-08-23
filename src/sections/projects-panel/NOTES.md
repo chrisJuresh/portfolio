@@ -96,7 +96,14 @@ second hangs below it — into row two, whose top edge is therefore the second
 line's top edge, at every window width and whatever set row one's height. That
 one trick is what makes the Frame's occlusion exact rather than lucky: the Frame
 takes a positive drop from that same edge and lands a fixed fraction of the way
-down the letters. Nothing in the arithmetic goes through the head's total height,
+down the letters.
+
+Inside the landing band the second line takes the **fall** as a top margin and
+the negative bottom margin grows by the same length, so the margin box the row
+still places is where it was — which is what keeps the masthead in the slot the
+Cut Title stands in, and nothing may move that. The drop between the line and the
+Frame is untouched, because both moved by the same length. See *And its foot is on
+the page's bottom edge* under the Plinth. Nothing in the arithmetic goes through the head's total height,
 the copy's height, or the row's — and the Check asserts the drop against that
 edge and against nothing else.
 
@@ -536,6 +543,9 @@ reverted:
 | `@container` changed to `@media` | every glyph still drawn at 1440x450 |
 | `z-index: 0` on the stage | the stage having become a stacking context |
 | the head's negative bottom margin dropped | the drop into the second line |
+| the fall added to the stage and not to the second line | the drop into the second line |
+| the restated stone drifting from the drawn overhang | the Kernel and the Panel disagreeing in px, and the slab's corner |
+| a padding back on the Section's right or foot | the slab's corner, across and down |
 | `aria-hidden` off the stage | the chrome back in the accessibility tree |
 | a button added to the chrome | a focusable thing inside an aria-hidden subtree |
 | the canvas hidden while the shader had drawn | the tier and the canvas disagreeing |
@@ -678,16 +688,79 @@ block that would be a bug if it were the usual thing. The plate is rendered at
 exactly this box's aspect ratio, so stretching it to the box is an identity;
 `cover` would crop off either the far edge or the block's base.
 
-### The slab runs off the right of the page, and the Frame does not move
+### The slab ends on the page's right edge, and the Frame does not move
 
 The Frame is flush with the composition's right edge, so a slab that overhangs it
-symmetrically has nowhere on that side to do it. **Pulling the window left to make
-room was tried and is wrong**: it puts the Frame over the engineering points, 42px
-of live text behind it at 1600×1000. The Frame is allowed to occlude the
-subheading, which is set to be occluded; it is not allowed to eat the list. So the
-stone runs off the edge instead — which is what the render does, its own slab
-being cut off by the picture — and `overflow-x: clip` on the Section makes that
-safe rather than a scrollbar.
+symmetrically needs room on that side the composition does not have. **Pulling the
+window left to make room was tried and is wrong**: it puts the Frame over the
+engineering points, 42px of live text behind it at 1600×1000. A relative nudge on
+the stage alone does the same thing more quietly — it eats the gutter between the
+list and the window at every width and crosses it above about 1550. The Frame is
+allowed to occlude the subheading, which is set to be occluded; it is not allowed
+to eat the list.
+
+What found the room instead was **spending the page's width on the drawing and
+the stone together**, one line in `src/kernel/landing.css`:
+
+```
+  inset + W + stone × W = 100vw      →     W = (100vw − inset) / (1 + stone)
+```
+
+The composition comes out a little under a per cent narrower and the marble's
+right end lands exactly on the window's edge. It costs the gutter nothing, because
+the gutter is a share of `W` and narrows with it — which is the whole difference
+between this and nudging the stage. `stone` is `--landing-plinth-share`, the
+overhang restated in the Kernel because the Kernel may not ask a Section, and the
+`turn` Check holds it to the Panel's own answer in px.
+
+`overflow-x: clip` on the Section stays and still matters. Outside the landing
+band nothing solves for the stone, and `100vw` counts a classic scrollbar that the
+box the drawing was laid out in does not — so the far end can still land a few
+pixels over, which is what the render itself does with its own slab.
+
+### And its foot is on the page's bottom edge: the fall
+
+The drawing is self-similar, so it has one height for its width, and the width is
+the smaller of the two branches. **Where the width branch binds, the drawing is
+shorter than the screen**, and that difference used to be black sitting under the
+marble — 102px of it at 1440×900, which read as deliberate. It is spent inside the
+composition instead, by `--projects-panel-fall`, and everything in row two comes
+down by it: the stage, so the Plinth's foot is the page's foot; the subheading's
+**second line**, so the Frame still bites a measured fraction into it; and the
+points, because otherwise the line that moved lands on top of the list.
+
+The fall is **measured, not restated** — the Section's own box less the lengths
+the two rows are built out of, every one of them a variable the Section already
+has. The fit constant's ratio is deliberately not among them: writing 0.5586 there
+would be a fourth copy of a number three files already disagree about by a third
+of a per cent, and the fall is exactly the size of that disagreement plus a page
+margin. Stated as the same arithmetic the browser lays the box out with, the two
+agree to a hundredth of a pixel at fifteen windows across the band.
+
+Three paddings go with it. **The page's margin is on the left in the landing band
+and nowhere else**: the top's is spent by the landing, and the foot's and the
+right's are the stone's. The right one is not cosmetic — the width branch asks for
+a column wider than `100vw − 2 × inset` on every window over about 1156px tall,
+where the margin hits its 6.5rem cap, and a right padding caps the grid track
+there without saying so. Then `--projects-panel-w` over-states the box that was
+actually laid out, the fall subtracts a Frame height that is not the Frame's, and
+the marble stops short of **both** edges at once: 41px across and 15px down at
+1100×1440, which is the window that found it.
+
+The height branch had to move for the same reason the fall exists. The drawing now
+runs from the page's top margin to the page's bottom **edge**, so its budget is
+the screen less **one** margin. Subtracting the second one was what left the stone
+115px short at 1600×900 — the branch that bound was solving for a bottom margin
+that no longer exists.
+
+**On an ultrawide the stone stops with the drawing**, and that is the honest
+answer rather than a missed case. At 3440×1440 the height branch wins, the
+composition is genuinely narrower than the page has room for, and it starts at the
+page's left margin because that is where the word stands; a slab dragged out to the
+edge on its own would be a slab that had come off its drawing. 2560×1440 is still
+on the width branch. The `projects-panel` Check asks for the corner across only
+where the width branch bound, reports the shortfall either way, and asks for it
+down unconditionally — the fall lands the foot on both branches.
 
 ### The reflection is a clone, and it is life-size
 
@@ -924,6 +997,12 @@ rather than inside the composition at x 81..96 — which is the live page's own
 pair of figures. Everything else is the same drawing in both: the type scale, the
 two-row grid, the hanging second line, the copy at four lines, and the Rail's 10px
 floor.
+
+The band is also where the Plinth sits square in the page's bottom-right corner:
+the width branch above spends the page across on the drawing **and** the stone, and
+`--projects-panel-fall` brings row two down onto the page's foot. The two sections
+under the Plinth are the whole of it, and the paddings they turn off are why the
+page's margin is on the left here and nowhere else.
 
 Three more things the landing block does, each for a reason that is not obvious:
 the composition stands at the Section's own top edge rather than centred in what
