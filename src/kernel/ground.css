@@ -67,8 +67,23 @@ html {
   overflow-x: clip;
 }
 
+/* `position: relative` is here for ONE reason, and it is not this file's: it
+   makes the body the containing block the Effect Stack is measured against, so
+   `.fx` can say `bottom: 0` and mean the foot of the DOCUMENT. Absolute against
+   the initial containing block, which is what it had before, means the foot of
+   the first SCREEN — and the treatment stopped dead at the fold with a seam the
+   reader scrolled past. See effect-stack.css.
+
+   It costs nothing else. The body's origin IS the document origin (`margin: 0`,
+   directly above) and its width is the initial containing block's, so every
+   other absolute box that was measured against that block — `.kernel-corners`,
+   which says so in as many words — lands in exactly the same place. And
+   `z-index` stays `auto`, so the body does not become a stacking context and the
+   stack's layers still compare z with the Sections' own. That last part is
+   load-bearing: see the warning on `.fx`. */
 body {
   margin: 0;
+  position: relative;
   font-family: var(--face-body);
   background: transparent;
 }

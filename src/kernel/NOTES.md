@@ -153,6 +153,39 @@ turns up later as a Timeline that will not seek. A Check that wants a mount poin
 of its own should give it a name of its own; `observeSection` is exposed for
 exactly that.
 
+## The Effect Stack covers the document, and leaves with the Turn
+
+**The stack is over the whole page, not over the first screen.** It used to be a
+band one screen tall at the top of the document, which is the same thing while the
+page is at rest and a seam the moment it moves: the treatment stopped dead at the
+fold and the Section below it was untreated. So `.fx` says `bottom: 0`, and what
+makes that mean the foot of the DOCUMENT rather than the foot of the first screen
+is one line in `ground.css` — `body { position: relative }`, which is where the
+reasoning for it is.
+
+**What ends the stack is the veil, not a length.** `--fx-veil` runs 1 to 0 across
+the Turn, so the treatment belongs to the paper and goes out with it: full
+strength on the Front Screen, nothing at all on the Projects Panel at rest, and no
+edge anywhere between. `--fx-veil-from` and `--fx-veil-to` are the two Turn values
+it runs between and are the Tokens; the veil itself is derived in
+`effect-stack.css`, because it is a function of `--turn` and not a number the
+author sets.
+
+**It is a mask and not an `opacity`,** and that is the invariant below rather than
+a preference: `opacity` on `.fx` would isolate the stack outright. It rides in the
+mask each layer already carries for `--fx-fade`, which is applied before the blend
+and is harmless.
+
+**Two lengths that used to be the same and are not any more.** `--fx-band` is one
+screen and is now only what the textures are scaled and travelled against — the
+film's cover arithmetic and the roll's sweep. The stack's own box is the document.
+Nothing shipped reads the difference, because `paper` and `halftone` are the two
+layers the Shell lights and both are uniform tiles; the two that would, `vignette`
+and `tube`, now frame the document rather than the screen. Fixing that would need
+them fixed to the VIEWPORT, and `position: fixed` is a stacking context, so it
+cannot be had without breaking the invariant below. Whichever ticket wants a
+per-screen vignette is choosing between the two.
+
 ## The Effect Stack's one invariant
 
 `.fx` must not declare `z-index`, `isolation`, `mask` or anything else that makes

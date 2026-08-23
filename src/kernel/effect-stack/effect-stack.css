@@ -35,27 +35,64 @@
    wash, measure a bare patch of paper before touching a strength.
    .fx is the last positioned element in the body, so it paints over the Sections
    on DOM order alone and needs nothing. */
+/* `bottom: 0` and not `height: var(--fx-band)`: the stack covers the WHOLE
+   DOCUMENT, every Section of it, and the body is positioned so that this reaches
+   the foot of the document rather than the foot of the first screen (ground.css
+   is where that one line lives, and why). A band one screen tall ended at the
+   fold, so the treatment stopped in the middle of the page turn — a seam the
+   reader scrolls past, with the second Section untreated below it. What ends the
+   stack now is the veil below, not a length. */
 .fx {
   position: absolute;
   top: var(--fx-y);
   left: 0;
   right: 0;
-  height: var(--fx-band);
+  bottom: 0;
   pointer-events: none;
   overflow: hidden;
+}
+
+/* THE VEIL: how much of the stack is left, as the reader turns the page.
+   1 while the page is on paper, 0 by the time it has arrived in dark, and the
+   crossing between is the Turn's — so the treatment belongs to the paper and
+   goes out with it rather than being a fixed wash over a document that has
+   changed colour underneath it. --fx-veil-from and --fx-veil-to are the two
+   Turn values it runs between; equal values would divide by zero, which is why
+   they are stated as a span and not as a midpoint and a width.
+
+   It is derived HERE and not in tokens/effects.css because it is not a number
+   the author sets — it is a function of --turn, and a Tokens file the Editor
+   offers as a slider has no business holding one. The two ends of it are
+   Tokens, and they are what there is to drag. */
+:root {
+  --fx-veil: clamp(
+    0,
+    (var(--fx-veil-to) - var(--turn)) / (var(--fx-veil-to) - var(--fx-veil-from)),
+    1
+  );
 }
 
 .fx > * {
   display: none;
   position: absolute;
   inset: 0;
-  /* The dissolve at the foot, when --fx-fade is not 0. On each LAYER and never
-     on .fx — see above. A mask on the blending element itself is applied before
-     the blend and is harmless; only a mask between the blenders and the backdrop
-     isolates. */
+  /* The veil, and the dissolve at the foot when --fx-fade is not 0. Both are one
+     mask because both are the same question — how much of this layer survives —
+     and one mask is one composite.
+
+     ON EACH LAYER AND NEVER ON .fx — see above. A mask on the blending element
+     itself is applied before the blend and is harmless; only a mask between the
+     blenders and the backdrop isolates. This is also why the veil is a mask and
+     not an `opacity` on the container: `opacity` below 1 makes .fx an isolated
+     group, which is the exact failure the warning above is about, and
+     check-source.mjs fails the build on it.
+
+     The stop is a PERCENTAGE of the layer and no longer --fx-fade x --fx-band:
+     the layer is the document's height now and --fx-band is a screen, so the two
+     stopped being the same length when `bottom: 0` went in above. */
   mask-image: linear-gradient(
     to bottom,
-    #000 calc(100% - var(--fx-fade) * var(--fx-band)),
+    rgb(0 0 0 / var(--fx-veil)) calc(100% * (1 - var(--fx-fade))),
     transparent 100%
   );
 }

@@ -8,9 +8,30 @@
    and not a breakpoint. */
 
 :root {
+  /* --fx-y is where the stack begins; it ends at the foot of the DOCUMENT and
+     there is no token for that, because the stack covers every Section and a
+     length that said otherwise would be a length to get wrong.
+
+     --fx-band is therefore NOT the stack's own height. It is one screen — what
+     the textures are scaled and travelled against, which is a question about how
+     much of a photograph is on screen and not about how tall the page is. The
+     film's cover arithmetic and the roll's sweep are its only readers.
+
+     --fx-fade is the share of the layer that dissolves at its foot, and it is a
+     share of the layer rather than of --fx-band for the same reason. */
   --fx-y: 0px;
   --fx-band: calc(var(--fold) - var(--fx-y));
   --fx-fade: 0;
+
+  /* The veil's two ends, as values of the Turn: the stack is whole at
+     --fx-veil-from and gone at --fx-veil-to. 0 and 1 spend the whole page turn
+     fading, so the treatment is at full strength on the Front Screen and clean
+     off the Projects Panel, with no seam anywhere between. Raising `from`
+     holds the stack for the first part of the crossing; lowering `to` finishes
+     it early. effect-stack.css derives --fx-veil from these, and says why it is
+     derived there and not here. */
+  --fx-veil-from: 0;
+  --fx-veil-to: 1;
 
   /* film — Texturelabs 185XL, one frame over the whole band, never tiled.
      No ?v= digest, unlike the hand-written page's copy of these URLs: the build

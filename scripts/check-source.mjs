@@ -301,7 +301,7 @@ if (exists(kernelTokens)) {
 }
 
 // ---------------------------------------------------------------------------
-// The Kernel's one invariant that a comment cannot hold.
+// The Kernel's two invariants that a comment cannot hold.
 // ---------------------------------------------------------------------------
 
 // A z-index, `isolation` or a mask on .fx makes it an isolated group, and an
@@ -318,6 +318,58 @@ if (exists(effectStack)) {
     for (const banned of ['z-index', 'isolation', 'mask', 'mask-image', 'filter', 'opacity']) {
       if (new RegExp(`(^|;)\\s*${banned}\\s*:`).test(container[2])) {
         fail(effectStack, `.fx declares ${banned} — that isolates the stack and stops it blending`);
+      }
+    }
+  }
+}
+
+// The body is what the Effect Stack is measured against, and it is the second
+// place the invariant above can be broken from — one the warning in
+// effect-stack.css cannot reach, because the rule is in a different file and the
+// person editing it is thinking about the ground rather than about the stack.
+//
+// TWO CLAIMS, both silent when they break. The stack says `bottom: 0` and means
+// the foot of the DOCUMENT, which is only true while the body is its containing
+// block: drop `position` and the treatment shrinks back to the first screen and
+// stops dead at the fold, which is the bug that put it there. And a stacking context
+// here hands every blending layer a transparent backdrop instead of the page, so
+// the layers stop blending and start painting — the failure that reads as the
+// strengths being too high and costs a day of tuning the wrong numbers.
+const groundCss = join(kernelDir, 'ground.css');
+if (exists(groundCss)) {
+  const css = withoutComments(readFileSync(groundCss, 'utf8'));
+  const body = /(^|\})\s*body\s*\{([^}]*)\}/.exec(css);
+  if (!body) fail(groundCss, 'no body rule found — the Effect Stack is measured against it');
+  else {
+    if (!/(^|;)\s*position\s*:\s*relative\s*(;|$)/.test(body[2])) {
+      fail(
+        groundCss,
+        'body does not declare `position: relative` — the Effect Stack’s `bottom: 0` then means the foot of the first screen and the treatment stops at the fold',
+      );
+    }
+    // Every way an element becomes a stacking context that a body plausibly
+    // grows one from. `position` is already pinned to `relative` above, so the
+    // one that is missing here is a `z-index` other than `auto` — which is the
+    // next line, and the reason the list is a list.
+    for (const banned of [
+      'z-index',
+      'isolation',
+      'filter',
+      'backdrop-filter',
+      'opacity',
+      'mix-blend-mode',
+      'mask',
+      'mask-image',
+      'transform',
+      'perspective',
+      'contain',
+      'will-change',
+    ]) {
+      if (new RegExp(`(^|;)\\s*${banned}\\s*:`).test(body[2])) {
+        fail(
+          groundCss,
+          `body declares ${banned} — that makes it a stacking context, which isolates the Effect Stack and stops it blending`,
+        );
       }
     }
   }
