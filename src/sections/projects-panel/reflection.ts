@@ -29,20 +29,28 @@
  *     reduced-motion refusal. A reader who asks for reduced motion gets two
  *     posters and no fetch, and the reflection freezes with the still — arrived
  *     at by not writing anything.
- *   * `glass.ts` renders the material once and blits it onto every titlebar it
- *     finds, so the reflected titlebar is the same glass rather than an
- *     imitation of it. It already reads every OTHER titlebar on the page and
- *     said so before there was one.
+ *   * `lens.ts` gives every titlebar it finds its material, so the reflected one
+ *     is the same Lens rather than an imitation of it. It already read every
+ *     OTHER titlebar on the page and said so before there was one.
  *
  * Both are one call in a file that already knew how to do the work. Running this
  * last instead would have made the reflection a special case in three files.
  *
+ * THE ONE ASYMMETRY, AND IT IS lens.ts's TO KNOW ABOUT: the copy gets the
+ * FROSTED rung. The Plinth's top face is `--projects-panel-plinth-top` of the
+ * Frame's width, so at a Frame 1033 wide the whole reflection is 17.4px of stone
+ * against a 531px window and the reflected titlebar is about 1.2 pixels tall. A
+ * displacement map for that is a canvas encode and a second filter subtree for
+ * something with no room to exist in. The rings and the tint carry it, and this
+ * file does not have to know — which is the point of the ordering.
+ *
  * THE CLONE IS INERT, and it was already: everything inside the Frame is a
- * `<span>`, an `<i>`, an `<svg>`, a `<canvas>` or the recording, there is no `id`
- * anywhere in it to duplicate, and the whole stage is `aria-hidden`, so the copy
- * carries no accessible name, no focus stop and no handler. The one thing
- * `cloneNode` cannot copy is a canvas's pixels — which is exactly the case
- * `glass.ts` handles, and the reason it handles it rather than this file.
+ * `<span>`, an `<i>`, an `<svg>` or the recording, there is no `id` anywhere in
+ * it to duplicate, and the whole stage is `aria-hidden`, so the copy carries no
+ * accessible name, no focus stop and no handler. It used to carry a `<canvas>`
+ * too, whose pixels `cloneNode` cannot copy — the material is custom properties
+ * and a filter now, both of which a clone simply inherits, so that case is gone
+ * rather than handled.
  */
 
 /**

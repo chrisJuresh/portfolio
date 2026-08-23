@@ -419,15 +419,24 @@ wide its ink is — both as shares of the Frame's width:
 | ---------------- | -------- | ------ |
 | titlebar         | —        | 3.4583% tall |
 | corner           | —        | 1.6333% |
-| content inset    | —        | 0.816% |
+| content inset    | —        | 0.816% — **now 0, see below** |
 | lights           | 2.04% (first), 1.52% pitch | 0.95% |
-| sidebar toggle   | 8.00%    | 1.41% |
+| ~~sidebar toggle~~ | ~~8.00%~~ | ~~1.41%~~ — **dropped** |
 | back / forward   | 10.66% / 12.95% | 0.54% |
 | address field    | 50.19%   | 39.45% wide, 2.07% tall |
-| reload           | 69.15%   | 0.87% |
+| reload           | ~~69.15%~~ | 0.87%, on a **declared 0.8% clearance** |
 | share            | 92.22%   | 1.20% |
-| new tab          | 94.91%   | 1.03% |
-| tabs             | 97.52%   | 1.36% |
+| ~~new tab~~      | ~~94.91%~~ | ~~1.03%~~ — **dropped** |
+| ~~tabs~~         | ~~97.52%~~ | ~~1.36%~~ — **dropped** |
+
+**Three of the ten are gone, and they were struck through rather than deleted so
+the render can still be read against this.** The sidebar toggle because the grid
+the recording shows **has no sidebar at all** — the photos site's own docs say so
+— and at 1.41% of the Frame it read as a battery rather than a pane. The new-tab
+plus and the tab pile because there is nothing a page bound to `127.0.0.1:8770`
+could do with either. Share stays: it is the one of the three with a future, a
+link to the repository. The reload's centre went with them, for a different
+reason — see the clearance below.
 
 **Every one of those is a Token, and every gap in the stylesheet is computed from
 the pair either side of it** — the distance between two centres, less the two
@@ -488,15 +497,22 @@ was captured with no chrome, so there was never anything here to measure.
 Six decisions that were paragraphs in `portfolio/styles.css` and are one-liners in
 the component now.
 
-- **The rim is an inset ring, not a `border`.** A border takes a pixel off the
-  inside of every child's box and puts the window's own edge *inside* the
-  titlebar, a pixel in from where the glass draws its own — two rims a pixel apart
-  down each end. A ring paints over the fill and costs the layout nothing.
-- **The titlebar draws no rim of its own, and that is why its fill is
-  translucent.** The Frame's ring already runs round the whole window and shows
-  through at this alpha, so the outline stays continuous across the strip. A second
-  ring there puts two on the same pixel and measures 150 of 255 along the top edge
-  against the render's 66.
+- ~~**The rim is an inset ring, not a `border`.**~~ **The rim is an ELEMENT.** A
+  border was never the alternative — it takes a pixel off the inside of every
+  child's box and puts the window's edge *inside* the titlebar. But an inset
+  `box-shadow` paints on the element's own background and therefore **under every
+  child**, and once the band went to zero the recording covered the ring
+  completely: the window had no outer edge at all, and `bar only` and `no ring`
+  rendered identically. `.projects-panel__rim` is an absolutely-placed child at
+  z-index 2 instead — above the recording, whose z-index is auto, and above the
+  strip's 1.
+- ~~**The titlebar draws no rim of its own, and that is why its fill is
+  translucent.**~~ **The titlebar draws no rim of its own, and the window's runs
+  in FRONT of it.** The old reason was that the Frame's ring "shows through at
+  this alpha", which was true of 0.135 and is not true of 0.75: a tint that heavy
+  is a wall, and a ring behind it outlines the window on three sides with a gap
+  along the top. The conclusion is unchanged — one ring, not two on the same pixel
+  — and the reason it works is now the z-index rather than the alpha.
 - **The Frame is `container-type: inline-size`**, which is what lets every length
   in the chrome be a share of the window rather than of the page — and what makes
   #140's clone answer the question about itself rather than being told what the
@@ -520,12 +536,29 @@ the component now.
   moment #140's marble is there, which should extend the backdrop rather than
   reach for this.
 
-And the content box: **inset on three sides and flush at the top**. The render is
-explicit about it — down the left side the outer rim is followed by the Frame's
-own fill before the picture starts, and the right edge measures the same, while
-the picture begins exactly where the titlebar ends. So the box is not concentric
-with the window, and its two top corners are rounded against a straight titlebar
-above them. That notch is in the render and is not an artefact.
+And the content box: ~~**inset on three sides and flush at the top**~~ **flush on
+all four**. The render is explicit about the band — down the left side the outer
+rim is followed by the Frame's own fill before the picture starts, and the right
+edge measures the same — and drawing it produced **two** borders rather than one,
+because the recording carries about 10px of the grid's own `--page-inset` inside
+the file, and the capture is seeded light so that margin is **pure white**. The
+band is the one of the two this repository can move, so it is zero
+(`--projects-panel-frame-inset`), and the rim is what says where the window ends.
+
+The top edge moved for a different reason: the recording now runs **under** the
+strip. A displacement map over the flat fill the box used to start below returns
+the same flat fill — the Lens had nothing to bend. So `border-radius: inherit`
+rather than the old `corner − inset` subtraction: the box is coincident with the
+window, its corner is the window's, and the window's is the two-value form that
+keeps the curve from being an ellipse on a box of this aspect. Restating it here
+in one value draws a circle.
+
+**The white margin is still there, and it is `record`'s to remove.** Trimming the
+encoded frame leaves the app's layout untouched, so the camera sees strictly
+*less* than the censored list was signed against — the same argument this file
+already makes for cropping the recording from the top edge only. Zeroing
+`--page-inset` at the capture instead reflows the justified rows and drifts that
+list, which is a photograph review to redo.
 
 The chrome is **inert, and it is said twice**: `pointer-events: none` on the row,
 and not one element in it is a button, a link or anything with a `tabindex`. The
@@ -534,80 +567,91 @@ to send anyone — and making any of it live later is a change of element and of
 nothing else, because every length is measured from a glyph's centre and no rule
 depends on what kind of element carries it.
 
-### The material, and the three rungs
+### The Lens, and its two rungs
 
-`glass.ts` is the port of the live page's `frame-glass.js`: four WebGL2 passes
-rendered once into a canvas the size of the titlebar. The shaders and #66's
-settled parameters come across unchanged, including the one line of the fragment
-shader that is **not** upstream's — the rim gain, divided by the canvas height it
-was settled at, without which a strip 32px tall gets sixteen times the rim it
-should and the corners go out of gamut and black.
+`lens.ts` is the material, `CONTEXT.md` is where the word is defined, and
+**`design/frame-glass/` is where every number in it was chosen by looking** — a
+studio that plays the real clip in a real Frame with each decision on its own
+axis. It is deleted by the ticket that reads this paragraph and finds it stale.
 
-The ladder is the cascade and not a chain of `if`s: a flat translucent fill, a
-blurred one with two rims behind `@supports`, and the canvas on top of both when
-the shader has actually drawn. `data-glass` is written from what the page
-resolved rather than from what the browser claims, and it is what shows the
-canvas as well as what turns the two rungs below off — one answer deciding both.
+It is a port of `chrisJuresh/photos` `ui/src/lib/glass.js`, which is itself
+**iyinchao/liquid-glass-studio reduced to what a backdrop filter can carry**. The
+optics are upstream's term for term, under upstream's own names, because its
+shader is where the meaning of each setting lives and a rename would make the two
+unreadable against each other. What is *not* upstream's is where the numbers come
+from: every one is a Token on the Frame, read back in `lens.ts`, so the material
+is the Editor's to move.
 
-All three were driven and read back at 1440x900, with the upper rungs suppressed
-in the harness rather than predicted:
+| part | mechanism |
+| --- | --- |
+| refraction | an SVG `feDisplacementMap` inside `backdrop-filter` |
+| dispersion | that pass three times at three scales, screened back together |
+| Fresnel | `::before`, a flat wash on a masked ring |
+| glare | `::after`, a conic gradient on a masked ring |
+| blur, saturation, tint | ordinary CSS, driven by custom properties |
 
-| rung  | canvas | fill | backdrop-filter | rims |
-| ----- | ------ | ---- | --------------- | ---- |
-| webgl | shown  | none | none            | none |
-| blur  | hidden | #fab2ff at 0.108 | blur(4.63px) | 0.106 / 0.133 / 0.133 |
-| flat  | hidden | #fab2ff at 0.108 | none         | 0.106 / 0.133 / 0.133 |
+**What it replaced, and why that is a simplification rather than a swap.** The
+titlebar was four WebGL2 passes rendered into a canvas the size of the strip, and
+because the Panel's colours are all mixes against the Turn that canvas had to be
+re-rendered as the page crossed — keyed on the Turn quantised to sixteen steps,
+plus a `data-theme` watcher, because the Frame's near end was the page's own
+paper. **None of that survives.** A custom property interpolates through the
+crossing for free, and the map depends on the pane's SIZE and on the optical
+Tokens and on nothing else — so it is rebuilt on a resize, never on a scroll,
+there is no bake to invalidate and no theme to watch. The canvas is gone with it,
+and so is the divergence that canvas forced: `frame-glass.js` inserted its own at
+run time and an unscoped rule styled it, because Astro cannot scope a rule to an
+element the compiler never saw.
 
-and the shader's own picture reads back identical to the live page's, to the
-integer, at all four places #66 measured: body (44,38,49), top rim (68,62,72),
-both ends (93,86,102).
+**Two rungs, and the cascade is still what picks.** The `.projects-panel__bar`
+rule is the frosted rung and is everything an engine gets that cannot refract:
+the tint, the blur, the saturation and the two rings. The refraction is spliced
+into that same backdrop filter through one of two slots, `--lens-pre` and
+`--lens-post` — which is what is left of upstream's `blurEdge` once there is one
+filter chain rather than a shader that can choose per pixel. Exactly one slot is
+ever filled, because CSS cannot reorder a list from a variable.
 
-Two of those numbers are relationships here where the live sheet has constants.
-**The flat rung's fill is #66's tint** — `#fab2ff` at its own 0.135 times the 0.8
-the shader multiplies it by — so the tint is declared once, as a Token, and the
-shader reads it back off the Frame instead of carrying a second copy. And **the
-blurred rung's two rims composite**, so the second one's alpha is solved out of
-the pair: the render's side rims measure 0.222 in total and its top rim 0.104, and
-`(0.222 − 0.104) / (1 − 0.104)` is what the ends have to be painted at. Giving
-them the measured total instead is the mistake of reading a measured sum as one
-layer's share of it, and it puts the ends half again too bright.
+**THE FALLBACK ASKS THE ENGINE WHAT IT KEPT.** Chromium is the only engine that
+runs `url()` in a backdrop filter today, and one that does not drops the **whole**
+declaration — which would cost the blur and the saturation as well. So the
+declaration is set, the computed value is read back, and if the `url()` did not
+survive the slot is emptied again. `data-lens` is written from that readback and
+is `refracting` or `frosted`. The Check drives **both**, the frosted one by
+declaring the strip's backdrop filter without the slots and resizing to make
+`lens.ts` look again — the same stance the old ladder took, whose three rungs were
+"driven and read back at 1440x900, with the upper rungs suppressed in the harness
+rather than predicted".
 
-**The bake carries what it was baked against.** The Panel's colours are all mixes
-against `--turn`, so a canvas drawn at load and never revisited holds a near-white
-titlebar under near-white chrome ink for the whole of the crossing. The bake is
-keyed on the Turn quantised to sixteen steps plus the two colour Tokens the scene
-is painted from, so a crossing costs at most sixteen renders of a thin strip and a
-page at rest costs none. `data-theme` is watched alongside the root's `style`,
-which the live page does not do: the Frame's *near* end is the page's own paper,
-so a theme flip before the crossing has finished moves the backdrop without
-touching `style`. Past the crossing both themes arrive at the same far end, which
-is why the omission has never shown.
+**Three things about it are easy to get wrong and silent when you do.**
 
-**What is not ported, and none of it is an omission.** The live page's `marble`
-and `clip` treatments of the backdrop and the `window.panelGlass` seam that
-reaches them are for a tuner in `design/`, and #146 is the ticket that turns the
-tuners into the Editor — a seam with no consumer is a second material that agrees
-with the shipped one only while somebody keeps checking. The chrome's ink does not
-cross with the Turn either, which is the live page's own arrangement: before the
-crossing the Frame is a pane of the page's own paper and the glyphs on it are
-nearly invisible. The reader is never there — the Panel is where the Turn arrives
-— and re-deriving those five alphas against a moving ground is a change to the
-Frame rather than a port of it.
+- **The glare is a function of the surface NORMAL, not of the direction from the
+  centre**, and those are the same thing only on a square. The strip is 36px tall
+  in a window 1033 wide, so its top edge is 177° of the sweep round the centre and
+  each end cap is under 2° of it: a conic gradient read straight off the position
+  angle puts a lobe halfway along a long edge, leaves every corner unlit, and
+  squeezes the brightest part of the rim into three pixels of end cap. So the
+  stops are walked along the outline itself. **The symptom to expect if this is
+  ever simplified back is that the reflection's copy looks nearly right and the
+  strip looks wrong**, because the copy is closer to square.
+- **`corner-shape: superellipse()` takes the LOGARITHM of the exponent.** The
+  Token is the exponent — 2 is `border-radius`'s own arc, 4 is a squircle — and
+  `lens.ts` writes CSS `log₂` of it. Handed over raw, the shipped 4 paints an
+  exponent of 16, a corner with almost no curve left, while the map goes on
+  refracting the arc it was asked for. The stylesheet's own default is 1, so an
+  engine with no `corner-shape` and a page whose script never ran agree.
+- **The map's radius is the PAINTED radius, read off the pane.** Upstream owns its
+  own blob and lets one setting decide both; here the corner is
+  `--projects-panel-frame-corner`, a share of the window, and the window and its
+  titlebar are cut to it by construction. A separate radius refracts an arc the
+  paint never drew — the same class of fault as the logarithm and just as
+  invisible. It was exactly this fault in the studio that made all three corner
+  options look identical.
 
-### The canvas is in the markup, which the live page's is not
-
-One forced divergence. Astro scopes a component's rules by narrowing every
-compound in them, so a rule can only match an element the compiler saw — and a
-canvas created at run time is not one. `frame-glass.js` inserts its canvas and an
-unscoped `.frame-glass` rule styles it; here the canvas is written in the markup
-and `glass.ts` fills it.
-
-It is not a worse arrangement. The geometry stays in the stylesheet where the rest
-of the Frame's is, `data-glass` hides the canvas until there is a picture in it —
-which is also what takes it back down after a lost context — and #140's clone
-arrives with a canvas of its own instead of needing one built by hand. What it
-costs is one always-present element that is `display: none` on two of the three
-rungs.
+**The reflection gets the frosted rung**, and `reflection.ts` says why from the
+other end: the Plinth's top face is `--projects-panel-plinth-top` of the Frame's
+width, so the reflected titlebar is about **1.2 pixels tall**. A displacement map
+for that is a canvas encode and a second filter subtree for something with no
+room to exist in.
 
 ### The small-Frame reduction, and why the gate is the Frame
 
@@ -928,10 +972,11 @@ copy that gets edited and one that does not, and the one that does not is the
 reflection, where nobody would notice for months.
 
 **The clone runs before the other two scripts**, and that ordering is the design.
-`clip.ts` hands sources to every recording on the page and `glass.ts` blits its
-material onto every titlebar, so making the copy first is what lets both treat it
-as one more Frame instead of a special case. `glass.ts` was already written for
-it and said so before there was one to find.
+`clip.ts` hands sources to every recording on the page and `lens.ts` gives every
+titlebar its material, so making the copy first is what lets both treat it as one
+more Frame instead of a special case. Both were written for it and said so before
+there was one to find. The copy's ONE asymmetry is `lens.ts`'s: it gets the
+frosted rung, because a titlebar 1.2px tall has no room for a bevel.
 
 **A mirror image is the same size as the thing it reflects, and getting that
 wrong is the mistake this is most likely to be re-made into.** A planar mirror

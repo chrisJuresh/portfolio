@@ -103,7 +103,14 @@
      the band between the recording and the window's edge. */
   --projects-panel-frame-bar: 0.034583;
   --projects-panel-frame-corner: 0.016333;
-  --projects-panel-frame-inset: 0.00816;
+  /* ZERO, and that is a decision rather than a number left out. The render's own
+     band is 0.816% of the Frame, and what it produced on the page was TWO
+     borders: this one showing the window's fill, and inside it the ~10px of the
+     grid's own --page-inset that the recording carries in the file. The band is
+     the one of the two this repository can move. The recording now runs to the
+     window's edge, and the rim is what says where that edge is — which is why
+     the rim had to stop being an inset shadow. NOTES.md. */
+  --projects-panel-frame-inset: 0;
 
   /* ---- the window's own colours ----------------------------------------- */
   /* The body the glass stands on, and the rim round the whole window: the
@@ -112,28 +119,71 @@
   --projects-panel-frame-fill-far: #131518;
   --projects-panel-frame-edge-far: rgba(242, 241, 238, 0.32);
 
-  /* ---- the material the titlebar is made of ----------------------------- */
-  /* #66's tint, and the one part of the settled material both the stylesheet and
-     the shader need — so it is declared once and glass.ts reads it back off the
-     Frame rather than carrying a copy. NOTES.md. */
-  --projects-panel-frame-tint: #fab2ff;
-  --projects-panel-frame-tint-alpha: 0.135;
-  /* The blurred rung's two measured rims, as fractions of white over the body:
-     the top rim peaks at 66 of 255 and the two ends at 90. The ends are the
-     TOTAL of both rings compositing, which the component solves. NOTES.md. */
-  --projects-panel-frame-rim: 0.104;
-  --projects-panel-frame-rim-ends: 0.222;
-  /* How far that rung softens what is behind it, as a share of the Frame. */
-  --projects-panel-frame-blur: 0.005;
+  /* ---- the LENS: the material the titlebar is made of -------------------
+     Every number here is upstream's — iyinchao/liquid-glass-studio, through
+     chrisJuresh/photos — under upstream's own names, because its shader is where
+     the meaning of each one lives and a rename would make the two unreadable
+     against each other. lens.ts reads all of them off this Frame, so the
+     material is the Editor's to move. NOTES.md is the authority, and
+     design/frame-glass/ is where these were chosen by looking.
+
+     The tint is 0.75 and that is the loudest of them: at this alpha the strip is
+     nearly a wall, the recording under it reads as movement rather than as
+     pictures, and the refraction survives only where the bevel concentrates it —
+     at the rim. It is also why the window's rim is painted IN FRONT of the
+     titlebar rather than showing through it, which it did at 0.135. */
+  --projects-panel-lens-tint: #08080a;
+  --projects-panel-lens-tint-alpha: 0.75;
+  /* A SHARE OF THE FRAME'S WIDTH, not pixels — a bevel measured in pixels is a
+     different material on a small window, and every other length in this chrome
+     is already a share. 0.0126 is the 13px the choice was made at, on the 1033px
+     Frame it was made on. */
+  --projects-panel-lens-thickness: 0.0126;
+  --projects-panel-lens-index: 1.5;
+  --projects-panel-lens-dispersion: 3;
+  /* The Fresnel is a flat wash and the glare is two lobes. Upstream's ranges are
+     0-100 and become a band's width; its hardnesses run BACKWARDS into a blur,
+     so 45 is a soft edge and 0 is a hard one. */
+  --projects-panel-lens-fresnel-range: 22;
+  --projects-panel-lens-fresnel-hardness: 45;
+  --projects-panel-lens-fresnel-factor: 30;
+  --projects-panel-lens-glare-range: 26;
+  --projects-panel-lens-glare-hardness: 35;
+  --projects-panel-lens-glare-factor: 85;
+  /* NOT a lobe width: it is the exponent the raised sine is taken to. 40 gives
+     0.9, a rim lit most of the way round; 100 gives 2.1, two highlights with
+     dark between them. */
+  --projects-panel-lens-glare-convergence: 40;
+  --projects-panel-lens-glare-opposite: 80;
+  --projects-panel-lens-glare-angle: -45;
+  /* Also a share of the Frame: 7px on the 1033px Frame this was chosen on. */
+  --projects-panel-lens-blur: 0.0068;
+  --projects-panel-lens-saturate: 118;
+  /* The corner's EXPONENT. 2 is border-radius's own arc and 4 is a squircle —
+     Apple's actual corner, which leaves the straight edge later and arrives at
+     the next one later, so the curve reads as continuous rather than as an arc
+     spliced between two lines. lens.ts writes CSS the LOGARITHM of this, because
+     `corner-shape: superellipse()` takes it that way; the two are one number
+     stated twice and that file is where they are kept in step. */
+  --projects-panel-lens-roundness: 4;
+  /* Which side of the blur the refraction runs on — 1 is after it, which lenses
+     an already-smeared backdrop, 0 is before. What is left of upstream's
+     `blurEdge` once there is one filter chain rather than a shader that can
+     choose per pixel. */
+  --projects-panel-lens-blur-edge: 1;
 
   /* ---- the chrome's ink ------------------------------------------------- */
   /* One alpha for every enabled glyph — the back chevron's, the one stroke thick
-     enough that the render's blur does not eat it. The lights get their own,
-     because a filled disc can be measured honestly; `-off` is the forward
+     enough that the render's blur does not eat it. `-off` is the forward
      chevron, greyed out. */
   --projects-panel-frame-ink: rgba(242, 241, 238, 0.55);
   --projects-panel-frame-ink-off: rgba(242, 241, 238, 0.22);
-  --projects-panel-frame-light: rgba(242, 241, 238, 0.45);
+  /* THREE COLOURS AND NOT ONE ALPHA. The render draws three identical grey
+     discs, which is an UNFOCUSED macOS window; these are the focused ones, and
+     they are the only saturated colour anywhere in the chrome. */
+  --projects-panel-frame-light-close: #ff5f57;
+  --projects-panel-frame-light-minimise: #febc2e;
+  --projects-panel-frame-light-zoom: #28c840;
   --projects-panel-frame-address-bg: rgba(242, 241, 238, 0.12);
   --projects-panel-frame-address-ink: rgba(242, 241, 238, 0.72);
 
@@ -142,9 +192,12 @@
   --projects-panel-frame-light-w: 0.0095;
   --projects-panel-frame-light-pitch: 0.0152;
   --projects-panel-frame-light-centre: 0.0204;
-  --projects-panel-frame-sidebar-w: 0.0141;
-  --projects-panel-frame-sidebar-centre: 0.08;
-  /* Both chevrons are one width; only their centres differ. */
+  /* Both chevrons are one width; only their centres differ. THE BACK CHEVRON'S
+     GAP IS MEASURED OFF THE LIGHTS NOW. It was measured off the sidebar
+     toggle's right edge, and the toggle is gone — the grid the recording shows
+     has no sidebar at all, so the glyph was a lie about the application. A gap
+     is two controls' business, so removing one re-derives its neighbour's
+     number. NOTES.md. */
   --projects-panel-frame-chevron-w: 0.0054;
   --projects-panel-frame-back-centre: 0.1066;
   --projects-panel-frame-fwd-centre: 0.1295;
@@ -156,13 +209,19 @@
   --projects-panel-frame-address-centre: 0.5019;
   --projects-panel-frame-address-corner: 0.0044;
   --projects-panel-frame-reload-w: 0.0087;
-  --projects-panel-frame-reload-centre: 0.6915;
+  /* THE RELOAD'S CLEARANCE IS ITS OWN NUMBER, and it was the residue of two.
+     Its measured centre (0.6915) against the field's measured right edge left
+     0.0033 of the Frame between them — 3.4px at a window 1033 wide, which reads
+     as a glyph shoved against a wall. Stated as a clearance it is one decision
+     instead of the difference between two, and it belongs to the FIELD rather
+     than to the row: the glyph travels with the field. NOTES.md. */
+  --projects-panel-frame-reload-clear: 0.008;
+  /* THE LAST GLYPH IN THE ROW, so the row's right padding is measured off it.
+     It was measured off the tab pile, and both the pile and the new-tab plus are
+     gone: nothing a loopback page could do with either. Share stays because it
+     is the one of the three with a future — a link to the repository. */
   --projects-panel-frame-share-w: 0.012;
   --projects-panel-frame-share-centre: 0.9222;
-  --projects-panel-frame-new-w: 0.0103;
-  --projects-panel-frame-new-centre: 0.9491;
-  --projects-panel-frame-tabs-w: 0.0136;
-  --projects-panel-frame-tabs-centre: 0.9752;
 
   /* The one thing in the chrome that is a choice: the render's own field is
      empty, so there was nothing to measure. 11.4px at a Frame 1200 wide. */

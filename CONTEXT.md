@@ -56,9 +56,16 @@ A word drawn as a picture rather than set as type, standing at a Section's foot.
 _Avoid_: heading, wordmark, the big word
 
 **Frame**:
-The browser window a Showcase's recording is shown inside — chrome, glass
-titlebar, controls — drawn by the page rather than captured.
+The browser window a Showcase's recording is shown inside — chrome, titlebar,
+controls — drawn by the page rather than captured.
 _Avoid_: window, mockup, browser chrome
+
+**Lens**:
+The material a Frame's titlebar is made of: refraction, dispersion, Fresnel,
+glare and tint, with a named fallback for an engine that cannot refract. It is a
+lens rather than a pane because it is in front of something and bends it — a
+Frame whose recording stops at the titlebar has nothing for its Lens to do.
+_Avoid_: glass, blur, frosted, the shader, liquid glass
 
 **Plinth**:
 The rendered marble slab a Frame stands on, with the Frame's live reflection

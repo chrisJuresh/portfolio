@@ -114,17 +114,19 @@ const CORNER_OVERRUN = CORNER_SLACK;
  *  gap from the pair either side of it, and this asserts that the arithmetic
  *  came out at the centres it was solved for. */
 const CONTROLS = [
-  { name: 'the sidebar toggle', part: 'sidebar', centre: 'sidebar-centre', width: 'sidebar-w' },
+
   { name: 'the back chevron', part: 'back', centre: 'back-centre', width: 'chevron-w' },
   { name: 'the forward chevron', part: 'fwd', centre: 'fwd-centre', width: 'chevron-w' },
   { name: 'the share glyph', part: 'share', centre: 'share-centre', width: 'share-w' },
-  { name: 'the new-tab glyph', part: 'new', centre: 'new-centre', width: 'new-w' },
-  { name: 'the tabs glyph', part: 'tabs', centre: 'tabs-centre', width: 'tabs-w' },
 ];
 
 /** What the small-Frame reduction takes away, and what it must leave. Part names
  *  rather than selectors: the Section's class prefix is written once, in the page. */
-const SHED = ['sidebar', 'back', 'fwd', 'share', 'new', 'tabs', 'reload', 'address-text'];
+/* What the small-Frame reduction drops. The sidebar toggle, the new-tab plus and
+   the tab pile are gone from the chrome entirely, so they are not in here either
+   — a name in this list that no longer exists is an assertion that passes by
+   matching nothing, which is the failure mode NOTES.md warns about three times. */
+const SHED = ['back', 'fwd', 'share', 'reload', 'address-text'];
 const KEPT = ['lights', 'address'];
 
 /** The window a reading was taken at, which every failure names. */
@@ -151,7 +153,8 @@ async function readPage(page) {
       const stage = document.querySelector('.projects-panel__stage');
       const frame = document.querySelector('.projects-panel__frame');
       const bar = document.querySelector('.projects-panel__bar');
-      const glass = document.querySelector('.projects-panel__glass');
+      const rim = document.querySelector('.projects-panel__rim');
+      const rimStyle = rim === null ? null : getComputedStyle(rim);
       const content = document.querySelector('.projects-panel__content');
       const secondLine = document.querySelector('.projects-panel__sub span:last-child');
       const plinth = document.querySelector('.projects-panel__plinth');
@@ -161,7 +164,7 @@ async function readPage(page) {
         ['the stage', stage],
         ['the Frame', frame],
         ['the titlebar', bar],
-        ['the glass canvas', glass],
+        ["the window's rim", rim],
         ['the content box', content],
         ["the subheading's second line", secondLine],
         ['the Plinth', plinth],
@@ -306,7 +309,8 @@ async function readPage(page) {
           height: token('address-h'),
           centre: token('address-centre'),
         },
-        reloadToken: { width: token('reload-w'), centre: token('reload-centre') },
+        reloadToken: { width: token('reload-w') },
+        reloadClear: token('reload-clear'),
         content: {
           top: cr.top - fr.top,
           left: cr.left - fr.left,
@@ -429,13 +433,23 @@ async function readPage(page) {
           from: getComputedStyle(clip).objectPosition,
         })),
         ladder: {
-          tier: bar.dataset.glass ?? '',
-          canvasShown: getComputedStyle(glass).display !== 'none',
+          tier: bar.dataset.lens ?? '',
           fill: getComputedStyle(bar).backgroundColor,
           backdrop:
             getComputedStyle(bar).backdropFilter ||
             getComputedStyle(bar).getPropertyValue('-webkit-backdrop-filter') ||
             'none',
+          // The two rings, read off the pseudo-elements rather than off the
+          // custom properties they are written from: a property set to a value
+          // no rule reads is a material that is declared and not drawn.
+          fresnel: getComputedStyle(bar, '::before').backgroundColor,
+          glare: getComputedStyle(bar, '::after').backgroundImage,
+          // The window's rim is an ELEMENT now, and what it has to clear is the
+          // recording and the strip. Both z-indexes, so the assertion is about
+          // the order rather than about one number.
+          rim: rimStyle === null ? null : rimStyle.boxShadow,
+          rimZ: rimStyle === null ? null : rimStyle.zIndex,
+          barZ: getComputedStyle(bar).zIndex,
         },
         chrome: {
           hidden: stage.getAttribute('aria-hidden') === 'true',
@@ -587,17 +601,18 @@ function drawn(read) {
           `${read.reloadToken.width}`,
       );
     }
-    const clearance =
-      read.addressToken.centre +
-      read.addressToken.width / 2 -
-      read.reloadToken.centre -
-      read.reloadToken.width / 2;
+    // A DECLARED CLEARANCE, NOT THE DIFFERENCE BETWEEN TWO MEASURED CENTRES.
+    // It used to be solved out of the field's right edge and the glyph's own
+    // centre, which came to 0.0033 of the Frame — 3.4px at a window 1033 wide,
+    // a glyph against a wall. Held against the Token instead, so the assertion
+    // is the same shape as the decision: one number, and the glyph still
+    // travelling with the field it belongs to rather than with the row.
     const inside = read.address.right - read.reload.right;
-    if (Math.abs(inside - clearance) > CENTRE_TOLERANCE) {
+    if (Math.abs(inside - read.reloadClear) > CENTRE_TOLERANCE) {
       failures.push(
-        `at ${where} the reload glyph sits ${inside.toFixed(5)} of the Frame inside the field's right edge and ` +
-          `the two measured edges put it at ${clearance.toFixed(5)} — the glyph has stopped travelling with the ` +
-          'field it belongs to',
+        `at ${where} the reload glyph sits ${inside.toFixed(5)} of the Frame inside the field's right edge ` +
+          `against the ${read.reloadClear} its clearance asks for — it is measured off that edge precisely so ` +
+          'that it travels with the field, so a drift here means it has been placed against the row instead',
       );
     }
   }
@@ -620,10 +635,16 @@ function drawn(read) {
       );
     }
   }
-  if (Math.abs(read.content.top - read.bar) > LENGTH_TOLERANCE) {
+  // THE TOP IS THE BAND NOW AND NOT THE TITLEBAR'S FOOT. The recording runs
+  // UNDER the strip, because a displacement map over the flat fill this box used
+  // to start below returns the same flat fill — the Lens had nothing to bend.
+  // Asserted against the band like the other three rather than against zero, so
+  // the day the band stops being zero this moves with it.
+  if (Math.abs(read.content.top - band) > LENGTH_TOLERANCE) {
     failures.push(
-      `at ${where} the content box starts ${read.content.top.toFixed(2)}px down and the titlebar ends at ` +
-        `${read.bar.toFixed(2)}px — the recording is meant to be flush with the chrome, not inset from it`,
+      `at ${where} the content box starts ${read.content.top.toFixed(2)}px down against the ${band.toFixed(2)}px ` +
+        'the band asks for — the recording is meant to run UNDER the titlebar, so there is a photograph behind ' +
+        'the Lens rather than the window\'s own fill',
     );
   }
 
@@ -1087,35 +1108,91 @@ function occludes(read) {
   return failures;
 }
 
-/** The ladder, and the chrome being furniture rather than controls. */
+/**
+ * The Lens's two rungs, the window's rim, and the chrome being furniture rather
+ * than controls.
+ *
+ * WHAT THIS MAY AND MAY NOT ASSERT. Nothing here is about whether the material
+ * looks good — NOTES.md's rule, and it has no exceptions. What it is about is
+ * which rung the page RESOLVED, which is a fact the engine reports and the same
+ * thing `data-glass` meant before there was a Lens: `refracting` when the
+ * `url()` survived in the backdrop filter, `frosted` when it did not. The
+ * fallback is the half that would otherwise rot unwatched, because it is the
+ * path every engine that is not Chromium takes and nobody looks at it.
+ */
 function honest(read) {
   /** @type {string[]} */
   const failures = [];
-  const { tier, canvasShown, fill, backdrop } = read.ladder;
+  const { tier, fill, backdrop, fresnel, glare, rim, rimZ, barZ } = read.ladder;
 
-  if (!['flat', 'blur', 'webgl'].includes(tier)) {
+  if (!['refracting', 'frosted'].includes(tier)) {
     failures.push(
-      `the titlebar reports data-glass="${tier}" — it is one of flat, blur or webgl, written from what the page ` +
-        'resolved. An empty one means the module never ran and never said so.',
+      `the titlebar reports data-lens="${tier}" — it is one of refracting or frosted, written from the computed ` +
+        'value the engine kept rather than from what was asked for. An empty one means lens.ts never ran and ' +
+        'never said so.',
     );
   }
-  // The attribute is the whole of the ladder: it turns the two lower rungs off
-  // AND shows the canvas. A canvas shown with no picture in it, or a shader that
-  // drew under a hidden canvas, are both a titlebar that is not there.
-  if (canvasShown !== (tier === 'webgl')) {
+  // The attribute and the declaration have to agree, in BOTH directions. A
+  // `refracting` strip with no url() in its backdrop filter is a page that
+  // believed a declaration the engine dropped; a `frosted` one WITH a url() is
+  // the readback wired backwards, which would report the fallback on every
+  // engine including the one that works.
+  const refracted = backdrop.includes('url(');
+  if (refracted !== (tier === 'refracting')) {
     failures.push(
-      `the titlebar reports "${tier}" and its canvas is ${canvasShown ? 'shown' : 'hidden'} — the attribute is ` +
-        'what decides both, so the two disagreeing means one rung is painting over another or none is painting',
+      `the titlebar reports "${tier}" and its backdrop-filter is ${backdrop} — the attribute is written FROM the ` +
+        'computed value, so the two disagreeing means the readback is not reading what it claims to',
     );
   }
-  // And whichever rung it is, the strip is made of something. The webgl rule
-  // turns the fill and the blur off, so the canvas has to be there instead.
-  const painted =
-    (tier === 'webgl' && canvasShown) || backdrop !== 'none' || !/^rgba\(.*,\s*0\)$/.test(fill);
-  if (!painted) {
+  // Whichever rung it is, the strip is made of something — and on the frosted
+  // one that is the tint, the blur and the two rings, none of which the
+  // refraction was ever carrying.
+  if (/^rgba\(.*,\s*0\)$/.test(fill)) {
     failures.push(
-      `the titlebar paints nothing: tier "${tier}", fill ${fill}, backdrop-filter ${backdrop}, canvas ` +
-        `${canvasShown ? 'shown' : 'hidden'} — every rung of the ladder ends in a visible strip`,
+      `the titlebar's fill is ${fill} — the tint is what holds the chrome's ink legible over a moving ` +
+        'photograph, and a transparent one means the Token never resolved',
+    );
+  }
+  if (!backdrop.includes('blur(')) {
+    failures.push(
+      `the titlebar's backdrop-filter is ${backdrop} — the blur is the frosted rung and the rung below the ` +
+        'refraction, so a chain without one means the whole declaration was dropped rather than just the url()',
+    );
+  }
+  // THE RINGS ARE THE FALLBACK'S EDGE, and they are read off the pseudo-elements
+  // rather than off the properties lens.ts writes: a custom property set to a
+  // value no rule consumes is a material that is declared and not drawn, which
+  // is exactly the shape of silent pass NOTES.md warns about.
+  if (/^rgba\(.*,\s*0\)$/.test(fresnel)) {
+    failures.push(
+      `the Fresnel ring is ${fresnel} — on the frosted rung the two rings are the only thing drawing the edge ` +
+        'of the strip, so an unpainted one is a pane with no boundary',
+    );
+  }
+  if (!glare.includes('conic-gradient')) {
+    failures.push(
+      `the glare ring is ${glare} — it is laid out off the pane's own outline because brightness varies with the ` +
+        'surface normal, and a missing gradient means that walk never ran',
+    );
+  }
+  // ---- the window's rim, and that it is IN FRONT ---------------------------
+  // It was an inset box-shadow on the Frame, which paints under every child, so
+  // with the band at zero the recording covered it and the window had no edge.
+  // Both halves are asserted: that it exists, and that it clears the strip.
+  if (rim === null) {
+    failures.push(
+      'the window has no rim element — with the band at zero the recording runs to the window\'s edge, and the ' +
+        'rim is the only thing left saying where that edge is',
+    );
+  } else if (rim === 'none') {
+    failures.push(
+      'the window\'s rim draws no ring — it is an element rather than a shadow on the Frame precisely so that ' +
+        'it can paint over the recording, and one that paints nothing is worse than the shadow it replaced',
+    );
+  } else if (!(Number(rimZ) > Number(barZ))) {
+    failures.push(
+      `the window's rim is at z-index ${rimZ} against the titlebar's ${barZ} — the ring has to run ACROSS the ` +
+        'strip, and at this tint nothing shows through it, so a rim behind it outlines the window on three sides',
     );
   }
 
@@ -1324,6 +1401,100 @@ async function withoutMotion(browser, origin) {
   }
 }
 
+/**
+ * The Lens's FROSTED rung, driven rather than predicted.
+ *
+ * This is the path every engine that is not Chromium takes today, and the one
+ * nobody looks at — so it is the half of the material that would rot silently.
+ * The old ladder had the same problem and answered it the same way: NOTES.md
+ * records all three of its rungs being "driven and read back at 1440x900, with
+ * the upper rungs suppressed in the harness rather than predicted".
+ *
+ * HOW THE RUNG IS FORCED, AND WHY IT IS THE REAL PATH AND NOT A MOCK. There is
+ * no flag that turns `url()` off inside a backdrop filter, so instead a later
+ * rule declares the strip's backdrop filter WITHOUT the two slots the refraction
+ * is spliced into. The computed value then holds no `url(`, which is exactly the
+ * state an engine that dropped the declaration leaves behind — and it is
+ * `lens.ts`'s own readback, unmodified, that notices and writes `frosted`. The
+ * resize is what makes it look again, and that a resize redraws at all is worth
+ * asserting on its own: a material that read its engine once at mount and never
+ * again would never recover from anything.
+ *
+ * What it then asserts is that the strip is still a strip. The tint, the blur,
+ * the saturation and the two rings are all still there, because the refraction
+ * was never carrying any of them — which is the whole claim the fallback makes.
+ */
+async function frosted(browser, origin) {
+  const { context, page } = await open(browser, origin, { viewport: DESK });
+  try {
+    const settled = await settle(page);
+    if (settled.length > 0) return settled;
+
+    await page.addStyleTag({
+      content:
+        '.projects-panel__bar { -webkit-backdrop-filter: blur(7px) saturate(118%) !important; ' +
+        'backdrop-filter: blur(7px) saturate(118%) !important; }',
+    });
+    // Two pixels: enough to move the ResizeObserver, not enough to change which
+    // branch of the composition's fit is taken.
+    await page.setViewportSize({ width: DESK.width - 2, height: DESK.height });
+    await page.waitForTimeout(250);
+
+    const read = await page.evaluate(() => {
+      const bar = document.querySelector('.projects-panel__bar');
+      if (bar === null) return null;
+      const style = getComputedStyle(bar);
+      return {
+        tier: bar.dataset.lens ?? '',
+        fill: style.backgroundColor,
+        backdrop: style.backdropFilter || style.getPropertyValue('-webkit-backdrop-filter') || 'none',
+        fresnel: getComputedStyle(bar, '::before').backgroundColor,
+        glare: getComputedStyle(bar, '::after').backgroundImage,
+      };
+    });
+
+    /** @type {string[]} */
+    const failures = [];
+    if (read === null) {
+      return ['with url() refused there is no titlebar in the document at all'];
+    }
+    if (read.tier !== 'frosted') {
+      failures.push(
+        `with url() refused the titlebar still reports "${read.tier}" — the readback is what writes that ` +
+          'attribute, so a strip that goes on claiming to refract through a declaration the engine did not ' +
+          'keep is one that never looked',
+      );
+    }
+    if (read.backdrop.includes('url(')) {
+      failures.push(
+        `with url() refused the titlebar's backdrop-filter is ${read.backdrop} — the slot is meant to be ` +
+          'emptied again, and a url() left in a chain the engine rejected costs the blur and the saturation too',
+      );
+    }
+    if (!read.backdrop.includes('blur(')) {
+      failures.push(
+        `with url() refused the titlebar's backdrop-filter is ${read.backdrop} — the blur IS the frosted rung, ` +
+          'so losing it means the fallback fell through to nothing rather than to a pane',
+      );
+    }
+    if (/^rgba\(.*,\s*0\)$/.test(read.fill)) {
+      failures.push(
+        `with url() refused the titlebar's fill is ${read.fill} — the tint is what holds the chrome's ink ` +
+          'legible, and it is the one part of this material that never depended on refracting anything',
+      );
+    }
+    if (/^rgba\(.*,\s*0\)$/.test(read.fresnel) || !read.glare.includes('conic-gradient')) {
+      failures.push(
+        `with url() refused the rings are ${read.fresnel} and ${read.glare} — on this rung they are the only ` +
+          'thing drawing the edge of the strip',
+      );
+    }
+    return failures;
+  } finally {
+    await context.close();
+  }
+}
+
 export const check = {
   name: 'projects-panel',
   title: "the Frame and the Plinth: geometry, occlusion, reflection, ladder and reduction",
@@ -1385,6 +1556,8 @@ export const check = {
     notes.push('with no script: the marble is drawn, nothing is lying in it, and the copy is simply there');
     failures.push(...(await withoutMotion(browser, origin)));
     notes.push('with reduced motion: the poster, and not one byte of the recording');
+    failures.push(...(await frosted(browser, origin)));
+    notes.push('with url() refused: the Lens falls back to frosted, and the strip is still a strip');
 
     return { failures, notes };
   },

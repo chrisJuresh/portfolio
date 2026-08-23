@@ -79,108 +79,112 @@ const selected = (project: { href?: string }) => project.href === `#${here}`;
         window twice would be worse than being offered it once. NOTES.md. */}
     <div class="projects-panel__stage" aria-hidden="true">
       <div class="projects-panel__frame">
-        {/* The titlebar. Its material is not markup: two of the three rungs are
-            this element's own background and the third is the canvas below.
-            `data-glass` says which engaged. NOTES.md. */}
+        {/* The titlebar, and the LENS it is made of. Its material is not
+            markup: it is this element's own background, its backdrop filter and
+            two masked rings, all driven by custom properties lens.ts writes.
+            `data-lens` says which rung engaged — `refracting` when the engine
+            kept the url() in the backdrop filter, `frosted` when it did not.
+            NOTES.md. */}
         <div class="projects-panel__bar">
-          {/* First, so the chrome is drawn over it: the controls sit ON the
-              glass. In the markup rather than created in script because a scoped
-              rule cannot reach an element the compiler never saw. NOTES.md. */}
-          <canvas class="projects-panel__glass"></canvas>
           {/* NOT ONE OF THESE IS A CONTROL — every one is a span or an i, with
               no tabindex and no handler, and the Check asserts it stays that way.
-              Each viewBox is the glyph's measured ink in the render's own pixels,
-              which is what lets the stylesheet set a width and leave the height
-              alone. NOTES.md. */}
+              Each viewBox is the glyph's own ink, which is what lets the
+              stylesheet set a width and leave the height alone.
+
+              SEVEN GLYPHS, WHERE THE RENDER HAD TEN. The sidebar toggle went
+              because the grid the recording shows has no sidebar — its own docs
+              say so — and at this size it read as a battery rather than a pane.
+              The new-tab plus and the tab pile went because there is nothing a
+              page bound to loopback could do with either. Share stayed: it is
+              the one of the three with a future. NOTES.md. */}
           <div class="projects-panel__chrome">
+            {/* Close, minimise, zoom — a FOCUSED window. The render's three are
+                identical grey, which is what macOS draws when the window is not
+                the front one, and a window nobody is looking at is not what this
+                composition is of. */}
             <span class="projects-panel__lights"><i></i><i></i><i></i></span>
-            {/* A window with its left pane filled. */}
-            <span class="projects-panel__icon projects-panel__sidebar">
-              <svg viewBox="0 0 26 16" fill="none" stroke="currentColor" stroke-width="1.5">
-                <rect x="0.75" y="0.75" width="24.5" height="14.5" rx="2.5"></rect>
-                <path d="M9.5 0.75V15.25"></path>
-                <rect x="3.4" y="3.6" width="3.2" height="8.8" rx="1" fill="currentColor" stroke="none"></rect>
-              </svg>
-            </span>
-            {/* Back, and forward greyed out beside it: a browser saying there
-                is nowhere forward to go. */}
+            {/* Back, and forward greyed out beside it: a browser saying there is
+                nowhere forward to go. One glyph, drawn twice — the forward
+                chevron is the back one turned round, so the pair cannot drift
+                apart. */}
             <span class="projects-panel__icon projects-panel__back">
               <svg
-                viewBox="0 0 10 18"
+                viewBox="0 0 9 16"
                 fill="none"
                 stroke="currentColor"
-                stroke-width="1.5"
+                stroke-width="1.6"
                 stroke-linecap="round"
                 stroke-linejoin="round"
               >
-                <path d="M8.5 1.5 1.5 9l7 7.5"></path>
+                <path d="M7.6 1.2 1.4 8l6.2 6.8"></path>
               </svg>
             </span>
             <span class="projects-panel__icon projects-panel__fwd">
               <svg
-                viewBox="0 0 10 18"
+                viewBox="0 0 9 16"
                 fill="none"
                 stroke="currentColor"
-                stroke-width="1.5"
+                stroke-width="1.6"
                 stroke-linecap="round"
                 stroke-linejoin="round"
               >
-                <path d="M1.5 1.5 8.5 9l-7 7.5"></path>
+                <path d="M7.6 1.2 1.4 8l6.2 6.8"></path>
               </svg>
             </span>
             {/* The address is the truth and not a decoration, which is why it
                 is Content. NOTES.md. */}
             <span class="projects-panel__address">
               <span class="projects-panel__address-text">{content.frame.address}</span>
+              {/* An arc of about 300 degrees with a chevron head standing on its
+                  own end, rather than the bare hook the render drew — at 9px of
+                  ink a hook reads as a comma. */}
               <span class="projects-panel__icon projects-panel__reload">
                 <svg
-                  viewBox="0 0 16 18"
+                  viewBox="0 0 16 16"
                   fill="none"
                   stroke="currentColor"
                   stroke-width="1.5"
                   stroke-linecap="round"
                   stroke-linejoin="round"
                 >
-                  <path d="M13.5 9a5.5 5.5 0 1 1-1.9-4.2"></path>
-                  <path d="M13.9 1.4v3.6h-3.6"></path>
+                  <path d="M14 8A6 6 0 1 1 12.24 3.76"></path>
+                  <path d="M14.3 2v3.4h-3.4"></path>
                 </svg>
               </span>
             </span>
-            {/* Share, new tab, tabs. */}
+            {/* A tray with a real corner radius and an arrow leaving it. */}
             <span class="projects-panel__icon projects-panel__share">
               <svg
-                viewBox="0 0 22 21"
+                viewBox="0 0 20 21"
                 fill="none"
                 stroke="currentColor"
                 stroke-width="1.5"
                 stroke-linecap="round"
                 stroke-linejoin="round"
               >
-                <path d="M6 8.2H2.75v11.05h16.5V8.2H16"></path>
-                <path d="M11 1v11.4M11 1 7.3 4.8M11 1l3.7 3.8"></path>
-              </svg>
-            </span>
-            <span class="projects-panel__icon projects-panel__new">
-              <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
-                <path d="M10 1.5v17M1.5 10h17"></path>
-              </svg>
-            </span>
-            {/* Two tabs. The back one's path is the part of an identical
-                rounded rect the front one does not cover, so it begins and ends
-                ON the front tab's outline — a bare corner reads as a hook. */}
-            <span class="projects-panel__icon projects-panel__tabs">
-              <svg viewBox="0 0 25 17" fill="none" stroke="currentColor" stroke-width="1.5">
-                <rect x="0.75" y="0.75" width="17" height="11.5" rx="2.5"></rect>
                 <path
-                  d="M17.75 4.75h3.5a2.5 2.5 0 0 1 2.5 2.5v6.5a2.5 2.5 0 0 1-2.5 2.5H9.25a2.5 2.5 0 0 1-2.5-2.5v-1.5"
+                  d="M6.2 7.8H3.6a1.6 1.6 0 0 0-1.6 1.6v8.4a1.6 1.6 0 0 0 1.6 1.6h12.8a1.6 1.6 0 0 0 1.6-1.6V9.4a1.6 1.6 0 0 0-1.6-1.6h-2.6"
                 ></path>
+                <path d="M10 1.2v10.8"></path>
+                <path d="M6.6 4.6 10 1.2l3.4 3.4"></path>
               </svg>
             </span>
           </div>
         </div>
-        {/* The window's content: inset from the window's edge on three sides.
-            The crop happens here rather than on the Frame, because this box is
-            the shape the recording has to fill and it is not the Frame's. */}
+        {/* THE WINDOW'S RIM, AND IT IS AN ELEMENT RATHER THAN A SHADOW ON THE
+            FRAME. An inset box-shadow paints on the element's own background and
+            therefore under every child, so with the band at zero the recording
+            covered it completely and the window had no edge at all. It also has
+            to sit above the TITLEBAR: the old reason the strip drew no rim of its
+            own was that the Frame's ring showed through its 0.135 fill, and
+            nothing shows through 0.75. Last in source order and z-index 2.
+            NOTES.md. */}
+        <div class="projects-panel__rim"></div>
+        {/* The window's content, FLUSH TO THE WINDOW ON ALL FOUR SIDES now
+            that the band is zero — so the recording runs under the titlebar and
+            there is a photograph behind the Lens rather than a flat fill. The
+            crop happens here rather than on the Frame, because this box is the
+            shape the recording has to fill. NOTES.md. */}
         <div class="projects-panel__content">
           {/* NO `src` AND NO `<source>`, WHICH IS THE POINT. The sources are
               given by clip.ts and only when the reader has not asked for reduced
@@ -627,80 +631,109 @@ const selected = (project: { href?: string }) => project.href === `#${here}`;
     --projects-panel-frame-band: calc(var(--projects-panel-frame-inset) * 100cqw);
   }
 
-  /* ---- the titlebar, and the three materials it can be made of -----------
-     THE LADDER IS THE CASCADE, not a chain of ifs: this rule is the flat rung and
-     what a browser that never runs glass.ts gets, the @supports block below is
-     the blurred one, and the canvas turns both off when the shader has drawn.
-     The fill is not a chosen colour — it is #66's tint times the 0.8 the shader
-     multiplies its alpha by, which is why the 0.8 is written here rather than
-     folded into the Token. NOTES.md. */
+  /* ---- the titlebar, and the LENS it is made of -------------------------
+     TWO RUNGS AND NOT THREE, AND THE CASCADE IS STILL WHAT PICKS. This rule is
+     the frosted rung and is everything an engine gets that cannot refract: the
+     tint, the blur, the saturation and the two rings. The refraction is spliced
+     into the same backdrop filter through one of two empty slots, and lens.ts
+     only fills a slot once it has read the computed value back and seen that the
+     engine kept it — so `data-lens` reports what happened rather than what was
+     hoped for. There is no canvas, no WebGL context to lose, and no bake keyed on
+     the Turn: a custom property interpolates through the crossing for free.
+     NOTES.md. */
   .projects-panel__bar {
     position: absolute;
     top: 0;
     left: 0;
     right: 0;
     height: var(--projects-panel-frame-bar-h);
-    /* Above the recording: the glass is a lens, and a lens is in front of what
-       it bends. Source order cannot do it — the canvas is a child of this. */
+    /* Above the recording: the Lens is a lens, and a lens is in front of what it
+       bends. The recording is a sibling, so source order alone would not do it. */
     z-index: 1;
-    /* The window's own top corners, and the only two the Frame has. */
+    /* The window's own top corners, and the only two the Frame has. The shape is
+       written by lens.ts as the LOGARITHM of the exponent Token, and the default
+       here is 1 — the circular corner border-radius draws anyway, so an engine
+       without corner-shape and a page whose script never ran agree. */
     border-radius: var(--projects-panel-frame-radius) var(--projects-panel-frame-radius) 0 0;
+    corner-shape: superellipse(var(--lens-shape, 1));
+    /* A stacking context of its own, so the two rings sit over the strip's own
+       backdrop rather than over whatever the Frame has behind it. */
+    isolation: isolate;
     background: color-mix(
       in srgb,
-      var(--projects-panel-frame-tint) calc(var(--projects-panel-frame-tint-alpha) * 80%),
+      var(--projects-panel-lens-tint) calc(var(--projects-panel-lens-tint-alpha) * 100%),
       transparent
     );
-    /* No rim of its own: the Frame's ring shows through the translucent fill,
-       and a second ring puts two on the same pixel. NOTES.md. */
+    /* --lens-pre and --lens-post are the two slots upstream's `blurEdge` chooses
+       between, and exactly one of them ever holds the refraction: after the blur
+       the rim lenses an already-smeared backdrop, before it the rim lenses the
+       sharp one and the blur softens the result. CSS cannot reorder a list from a
+       variable, which is why there are two. */
+    -webkit-backdrop-filter: var(--lens-pre, ) blur(calc(var(--projects-panel-lens-blur) * 100cqw))
+      saturate(calc(var(--projects-panel-lens-saturate) * 1%)) var(--lens-post, );
+    backdrop-filter: var(--lens-pre, ) blur(calc(var(--projects-panel-lens-blur) * 100cqw))
+      saturate(calc(var(--projects-panel-lens-saturate) * 1%)) var(--lens-post, );
+    /* No rim of its own — the window's own ring runs across it, and now paints
+       IN FRONT of it. See .projects-panel__rim. */
   }
 
-  /* The blurred rung. The blur does nothing today — what is behind the titlebar
-     is the Frame's own flat fill — and is written now so that #140 moves a
-     backdrop and not a ladder. THE TWO RIMS COMPOSITE, which is why the second's
-     alpha is solved out of the pair rather than set to the measured total: at the
-     total the two ends come out half again too bright. NOTES.md. */
-  @supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
-    .projects-panel__bar {
-      --projects-panel-frame-glare: calc(
-        (var(--projects-panel-frame-rim-ends) - var(--projects-panel-frame-rim)) /
-          (1 - var(--projects-panel-frame-rim))
-      );
+  /* THE TWO RINGS. Two identical masks, one clipped to the content box and
+     subtracted from the other: what survives is the padding, which is the ring.
+     A real border cannot hold a gradient and an outline cannot follow a radius.
+     The blur runs BEFORE the mask, so it softens inwards and is clipped
+     outwards — which is the direction a Fresnel falloff goes.
 
-      -webkit-backdrop-filter: blur(calc(var(--projects-panel-frame-blur) * 100cqw));
-      backdrop-filter: blur(calc(var(--projects-panel-frame-blur) * 100cqw));
-      box-shadow:
-        inset 0 0 0 1px rgb(255 255 255 / calc(var(--projects-panel-frame-rim) * 100%)),
-        inset 1px 0 0 0 rgb(255 255 255 / calc(var(--projects-panel-frame-glare) * 100%)),
-        inset -1px 0 0 0 rgb(255 255 255 / calc(var(--projects-panel-frame-glare) * 100%));
-    }
-  }
-
-  /* The shader rung. The two below are turned OFF rather than painted over: a
-     backdrop-filter under an opaque child still costs a pass per composite. */
-  .projects-panel__bar[data-glass='webgl'] {
-    background: none;
-    -webkit-backdrop-filter: none;
-    backdrop-filter: none;
-    box-shadow: none;
-  }
-
-  /* Sized in CSS, so a resize is a repaint of a canvas that is already the
-     right shape. Hidden until the shader has drawn, off the same attribute that
-     turns the two rungs below off — the context is opaque, so a canvas shown
-     early is a blank strip and one left showing after a lost context is a
-     titlebar the Frame no longer has. The clip gives up half a pixel of
-     superellipse. NOTES.md. */
-  .projects-panel__glass {
-    display: none;
-    width: 100%;
-    height: 100%;
+     `::before` is the Fresnel, a flat wash. `::after` is the glare, a conic
+     gradient whose stops lens.ts lays out off this pane's OWN outline, because
+     brightness varies with the surface normal and not with the direction from the
+     centre — and on a strip 36px tall in a window 1033 wide those are nowhere
+     near the same thing. NOTES.md. */
+  .projects-panel__bar::before,
+  .projects-panel__bar::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: 2;
     border-radius: inherit;
-    /* Inert like everything else in the window. */
+    corner-shape: inherit;
+    mask:
+      linear-gradient(#000 0 0) content-box,
+      linear-gradient(#000 0 0);
+    mask-composite: exclude;
     pointer-events: none;
   }
 
-  .projects-panel__bar[data-glass='webgl'] .projects-panel__glass {
-    display: block;
+  .projects-panel__bar::before {
+    padding: var(--lens-fresnel-w, 0.4px);
+    background: var(--lens-fresnel, rgb(255 255 255 / 0.11));
+    filter: blur(var(--lens-fresnel-blur, 0.32px));
+  }
+
+  .projects-panel__bar::after {
+    padding: var(--lens-glare-w, 1.1px);
+    background: var(--lens-glare, none);
+    filter: blur(var(--lens-glare-blur, 1.1px));
+  }
+
+  /* ---- the window's rim --------------------------------------------------
+     AN ELEMENT, NOT AN INSET SHADOW ON THE FRAME, and that is the fix rather
+     than the tidy-up. An inset box-shadow paints on the element's own background
+     and therefore under every child, so with the band at zero the recording
+     covered the ring completely and the window had no outer edge at all. It also
+     has to be in FRONT of the titlebar: the old argument for the strip drawing no
+     rim of its own was that the Frame's ring showed through its 0.135 fill, and
+     nothing shows through 0.75.
+
+     z-index 2 — above the recording, whose z-index is auto, and above the strip's
+     1. Inert, like everything else in the window. NOTES.md. */
+  .projects-panel__rim {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    border-radius: inherit;
+    corner-shape: inherit;
+    box-shadow: inset 0 0 0 1px var(--projects-panel-frame-edge);
+    pointer-events: none;
   }
 
   /* ---- the controls ------------------------------------------------------
@@ -718,9 +751,12 @@ const selected = (project: { href?: string }) => project.href === `#${here}`;
     padding-left: calc(
       (var(--projects-panel-frame-light-centre) - var(--projects-panel-frame-light-w) / 2) * 100cqw
     );
-    /* And in from the right: what is left past the tabs glyph's outer edge. */
+    /* And in from the right: what is left past the LAST glyph's outer edge,
+       which after the cull is share rather than the tab pile. A gap is two
+       controls' business, so dropping one re-derives its neighbour's number. */
     padding-right: calc(
-      (1 - var(--projects-panel-frame-tabs-centre) - var(--projects-panel-frame-tabs-w) / 2) * 100cqw
+      (1 - var(--projects-panel-frame-share-centre) - var(--projects-panel-frame-share-w) / 2) *
+        100cqw
     );
     pointer-events: none;
     user-select: none;
@@ -739,7 +775,21 @@ const selected = (project: { href?: string }) => project.href === `#${here}`;
     width: calc(var(--projects-panel-frame-light-w) * 100cqw);
     height: calc(var(--projects-panel-frame-light-w) * 100cqw);
     border-radius: 50%;
-    background: var(--projects-panel-frame-light);
+  }
+
+  /* Close, minimise, zoom. Addressed by position because that is what they are —
+     the render gives one pitch and three centres follow from it, and nothing
+     about a disc distinguishes it from its neighbours except where it sits. */
+  .projects-panel__lights i:nth-child(1) {
+    background: var(--projects-panel-frame-light-close);
+  }
+
+  .projects-panel__lights i:nth-child(2) {
+    background: var(--projects-panel-frame-light-minimise);
+  }
+
+  .projects-panel__lights i:nth-child(3) {
+    background: var(--projects-panel-frame-light-zoom);
   }
 
   /* The viewBox is scaled so the stroke lands on the box's edges, which is why
@@ -756,25 +806,17 @@ const selected = (project: { href?: string }) => project.href === `#${here}`;
     height: auto;
   }
 
-  /* Two pitches past the first light's centre: the one gap in the row whose
-     left-hand neighbour is not the element before it. */
-  .projects-panel__sidebar {
-    width: calc(var(--projects-panel-frame-sidebar-w) * 100cqw);
-    margin-left: calc(
-      (
-          var(--projects-panel-frame-sidebar-centre) - var(--projects-panel-frame-sidebar-w) / 2 -
-            var(--projects-panel-frame-light-centre) - 2 * var(--projects-panel-frame-light-pitch) -
-            var(--projects-panel-frame-light-w) / 2
-        ) * 100cqw
-    );
-  }
-
+  /* THE ONE GAP IN THE ROW WHOSE LEFT-HAND NEIGHBOUR IS NOT THE ELEMENT BEFORE
+     IT — it was measured off the sidebar toggle's right edge, and the toggle is
+     gone, so it is measured off the third light's instead: two pitches past the
+     first light's centre, plus the half disc standing on it. */
   .projects-panel__back {
     width: calc(var(--projects-panel-frame-chevron-w) * 100cqw);
     margin-left: calc(
       (
           var(--projects-panel-frame-back-centre) - var(--projects-panel-frame-chevron-w) / 2 -
-            var(--projects-panel-frame-sidebar-centre) - var(--projects-panel-frame-sidebar-w) / 2
+            var(--projects-panel-frame-light-centre) - 2 * var(--projects-panel-frame-light-pitch) -
+            var(--projects-panel-frame-light-w) / 2
         ) * 100cqw
     );
   }
@@ -789,6 +831,14 @@ const selected = (project: { href?: string }) => project.href === `#${here}`;
         ) * 100cqw
     );
     color: var(--projects-panel-frame-ink-off);
+  }
+
+  /* ONE GLYPH DRAWN TWICE. The forward chevron is the back one mirrored rather
+     than a second path, so the pair cannot drift apart — and a scaleX on the svg
+     rather than on the span, because the span is what carries the measured
+     width. */
+  .projects-panel__fwd svg {
+    transform: scaleX(-1);
   }
 
   /* Absolutely placed, because it is centred on the FRAME and the row's two
@@ -819,16 +869,13 @@ const selected = (project: { href?: string }) => project.href === `#${here}`;
     white-space: nowrap;
   }
 
-  /* Against the field's right edge and not at its own centre, because it belongs
-     to the field and travels with it: one measured edge against another. */
+  /* Against the field's right edge, because it belongs to the field and travels
+     with it — and by a DECLARED clearance rather than by the difference between
+     two measured centres, which came to 3.4px and read as a glyph shoved against
+     a wall. NOTES.md. */
   .projects-panel__reload {
     position: absolute;
-    right: calc(
-      (
-          var(--projects-panel-frame-address-centre) + var(--projects-panel-frame-address-w) / 2 -
-            var(--projects-panel-frame-reload-centre) - var(--projects-panel-frame-reload-w) / 2
-        ) * 100cqw
-    );
+    right: calc(var(--projects-panel-frame-reload-clear) * 100cqw);
     width: calc(var(--projects-panel-frame-reload-w) * 100cqw);
   }
 
@@ -839,26 +886,6 @@ const selected = (project: { href?: string }) => project.href === `#${here}`;
     margin-left: auto;
   }
 
-  .projects-panel__new {
-    width: calc(var(--projects-panel-frame-new-w) * 100cqw);
-    margin-left: calc(
-      (
-          var(--projects-panel-frame-new-centre) - var(--projects-panel-frame-new-w) / 2 -
-            var(--projects-panel-frame-share-centre) - var(--projects-panel-frame-share-w) / 2
-        ) * 100cqw
-    );
-  }
-
-  .projects-panel__tabs {
-    width: calc(var(--projects-panel-frame-tabs-w) * 100cqw);
-    margin-left: calc(
-      (
-          var(--projects-panel-frame-tabs-centre) - var(--projects-panel-frame-tabs-w) / 2 -
-            var(--projects-panel-frame-new-centre) - var(--projects-panel-frame-new-w) / 2
-        ) * 100cqw
-    );
-  }
-
   /* ---- what is left of the chrome on a small Frame ----------------------
      Below 520px of Frame the small glyphs are dropped rather than drawn as grey
      noise in the shape of a titlebar. A CONTAINER QUERY AND NOT A MEDIA QUERY:
@@ -866,12 +893,9 @@ const selected = (project: { href?: string }) => project.href === `#${here}`;
      Frame, so a viewport gate would be asking about the wrong box. The Check
      measures at 1440x450 for exactly that. NOTES.md. */
   @container (max-width: 520px) {
-    .projects-panel__sidebar,
     .projects-panel__back,
     .projects-panel__fwd,
     .projects-panel__share,
-    .projects-panel__new,
-    .projects-panel__tabs,
     .projects-panel__reload,
     .projects-panel__address-text {
       display: none;
@@ -879,19 +903,20 @@ const selected = (project: { href?: string }) => project.href === `#${here}`;
   }
 
   /* ---- the window's content ----------------------------------------------
-     Inset on three sides and flush at the TOP, so this box is not concentric with
-     the window. Empty until #140. NOTES.md. */
+     FLUSH TO THE WINDOW ON ALL FOUR SIDES, which is two changes at once. The band
+     is zero, so the box is no longer inset from the sides and foot; and it starts
+     at the TOP rather than under the titlebar, so the recording runs beneath the
+     Lens and there is a photograph behind it to bend. A displacement map over the
+     flat fill this used to sit on returns the same flat fill.
+
+     `border-radius: inherit` and not the old subtraction: the box is now
+     coincident with the window, so its corner is the window's, and the window's
+     is the two-value form that keeps the curve from being an ellipse on a box of
+     this aspect. Restating it here in one value would draw a circle. NOTES.md. */
   .projects-panel__content {
     position: absolute;
-    top: var(--projects-panel-frame-bar-h);
-    left: var(--projects-panel-frame-band);
-    right: var(--projects-panel-frame-band);
-    bottom: var(--projects-panel-frame-band);
-    /* The window's corner less the band it is inset by — written as the
-       subtraction, not as the band it happens to come within a thousandth of. */
-    border-radius: calc(
-      (var(--projects-panel-frame-corner) - var(--projects-panel-frame-inset)) * 100cqw
-    );
+    inset: var(--projects-panel-frame-band);
+    border-radius: inherit;
     /* The crop below has to happen somewhere, and the corners with it. */
     overflow: hidden;
   }
@@ -1623,16 +1648,18 @@ const selected = (project: { href?: string }) => project.href === `#${here}`;
 
 <script>
   import { mountClip } from './clip';
-  import { mountGlass } from './glass';
+  import { mountLens } from './lens';
   import { mountReflection } from './reflection';
 
   /* THE ORDER IS THE DESIGN AND NOT THE ALPHABET. The reflection is made first,
      so the two that follow each treat the copy as one more Frame on the page
      instead of as a special case: `mountClip` hands sources to every recording
-     it finds, and `mountGlass` blits the material it rendered onto every
-     titlebar. Reverse it and both would have to go looking for a reflection they
-     know nothing about. reflection.ts says the same thing from the other end. */
+     it finds, and `mountLens` gives every titlebar its material. Reverse it and
+     both would have to go looking for a reflection they know nothing about.
+     reflection.ts says the same thing from the other end — and it is where the
+     one asymmetry is written down: the copy in the marble gets the frosted rung,
+     because a titlebar 1.2px tall has no room for a bevel. */
   mountReflection();
   mountClip();
-  mountGlass();
+  mountLens();
 </script>
