@@ -727,7 +727,7 @@ plain length on exactly one rule, as the width of the element it is about to
 measure. Its second rule is a trap: later in the sheet, so it would win on source
 order, inside a `@media` that never holds.
 
-Eighteen mutations have been shown to fail it: the boundary writing nothing, the
+Twenty-one mutations have been shown to fail it: the boundary writing nothing, the
 handshake requirement removed, the surface binding nothing, empty Content values
 allowed — the last of which is caught by `content.test.mjs` before the browser
 starts, which is where it belongs — no Tokens discovered, a drag that does not move
@@ -744,9 +744,10 @@ and therefore cannot be dragged at all; and, for #162, a handle that does not kn
 which corner it is, a resize that treats every corner as the bottom right, and a
 `client/editor.css` that stops parsing before the measuring section.
 
-Four of those nine were real bugs rather than invented mutations, and none of them
-showed as anything but a silence — which is the argument for reading what the tool
-actually SAYS and not only whether it is green.
+Five were real bugs rather than invented mutations — four of #145's nine, and the
+unclosed CSS rule of #162's three — and none of them showed as anything but a
+silence, which is the argument for reading what the tool actually SAYS and not only
+whether it is green.
 
 **A dispatched pointer event does not need the element to be drawn, and that is
 the blind spot this Check had.** Every assertion above dispatches straight at an
