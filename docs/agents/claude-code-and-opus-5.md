@@ -265,7 +265,7 @@ Three of those matter directly here:
   or changing its tool list only appends new content and doesn't disturb anything
   already cached." The same goes for a plugin's skills, commands, agents, hooks,
   monitors and themes: "Claude Code never invalidates the cache" for those. The
-  `mattpocock-skills` and `gitkraken-hooks` plugins are free at the prefix.
+  `mattpocock-skills` plugin is free at the prefix.
 - **A scoped deny rule is cache-safe; a bare tool name is not.** "Adding a bare
   tool name like `Bash` or `WebFetch` as a deny rule removes that tool from
   Claude's context entirely ... adding or removing one of these rules
