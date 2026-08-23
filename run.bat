@@ -12,7 +12,8 @@ rem What still needs this: the instruments under design/ - the type lab and the
 rem tuners beside it, and the five the Editor replaced, now in design/legacy/.
 rem They are plain HTML reaching for ../portfolio/img/ and the rest by relative
 rem path, and `pnpm dev` does not serve design/ at all, so only a server rooted
-rem here resolves them. Close the window or press Ctrl+C to stop.
+rem here resolves them - which is why the browser is opened at /design/ and not
+rem at the portal. Close the window or press Ctrl+C to stop.
 
 setlocal EnableDelayedExpansion
 cd /d "%~dp0"
@@ -40,11 +41,20 @@ for /l %%i in (1,1,20) do (
 )
 :gotport
 
-set "URL=http://localhost:%PORT%/"
+rem The root is what gets SERVED - design/ is where the browser is pointed. The
+rem portal at / is served too, and its "portfolio" link goes to a path this
+rem server answers with a directory listing of the pictures, so landing there
+rem invites exactly one wrong conclusion.
+set "URL=http://localhost:%PORT%/design/"
 
 echo.
 echo   Serving %CD%
 echo   %URL%
+echo.
+echo   This is NOT the site. It is the repo root as plain files, for the
+echo   instruments under design/. For the site, close this and run:
+echo.
+echo       pnpm dev
 echo.
 echo   Press Ctrl+C (or close this window) to stop.
 echo.
