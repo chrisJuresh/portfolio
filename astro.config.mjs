@@ -1,29 +1,35 @@
 import { createReadStream, statSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { defineConfig } from 'astro/config';
-import { contentType, resolveFile, servedFromStaticTree } from './scripts/static-tree.mjs';
+import {
+  contentType,
+  resolveFile,
+  rewriteTarget,
+  servedFromStaticTree,
+} from './scripts/static-tree.mjs';
 
 const repoRoot = fileURLToPath(new URL('.', import.meta.url)).replace(/[\\/]+$/, '');
 
 /**
- * Serve the site that already exists beside /next while `astro dev` is running.
+ * Answer, while `astro dev` is running, everything the deployment answers that
+ * Astro does not build: the paths under STATIC_ROOTS, and the rewrites.
  *
  * The Kernel's corner pictures and the Effect Stack's textures are baked files
- * under /portfolio/img/, and a built /next reaches them because the assemble
- * step puts both trees in one dist/. Without this the dev server is the only
- * place those URLs 404, which makes the dev server the one surface that cannot
- * be trusted.
+ * under /portfolio/img/, and a built page reaches them because the assemble step
+ * puts them in the same dist/ Astro wrote. Without this the dev server is the
+ * only place those URLs 404, which makes the dev server the one surface that
+ * cannot be trusted.
  *
  * REGISTERED IN FRONT OF EVERYTHING, which is the opposite of what it used to
  * say, and the reason is that neither of the two middlewares ahead of it calls
  * next(). Astro's dev middleware answers an unmatched HTML request with its own
  * 404, so /portfolio, /portfolio/ and / never reached this at all. Vite's
- * transform middleware answers /portfolio/styles.css and /fonts/fonts.css by
- * compiling them into JS modules, `content-type: text/javascript` and an
- * `import` of /@vite/client at the top — which a <link rel="stylesheet"> will
- * not apply, so the page came up unstyled the moment its HTML was reachable.
- * Registered behind those, this middleware served nothing whatsoever; the assets
- * that did work in dev were Vite's static serving, not this.
+ * transform middleware answers a plain .css under a static root by compiling it
+ * into a JS module, `content-type: text/javascript` and an `import` of
+ * /@vite/client at the top — which a <link rel="stylesheet"> will not apply, so
+ * the page came up unstyled the moment its HTML was reachable. Registered behind
+ * those, this middleware served nothing whatsoever; the assets that did work in
+ * dev were Vite's static serving, not this.
  *
  * `enforce: 'pre'` and a direct `server.middlewares.use` — rather than the use
  * inside a returned function, which is Vite's post hook — put it ahead of both.
@@ -32,23 +38,35 @@ const repoRoot = fileURLToPath(new URL('.', import.meta.url)).replace(/[\\/]+$/,
  * now serves them exactly as scripts/serve-dist.mjs does, which is what makes
  * `pnpm dev` and `pnpm preview` agree.
  *
- * A REAL ASTRO ROUTE STILL WINS. Running first, this could otherwise shadow a
- * page somebody adds at src/pages/portfolio.astro, so the promise is kept
- * explicitly now rather than by ordering: `astro:routes:resolved` hands over
- * every route Astro has — at startup before the server listens, and again
- * whenever a page is added or removed — and the middleware stands aside for any
- * of them.
+ * A REWRITE IS HANDED BACK TO ASTRO rather than answered here, and it is tried
+ * first. `/portfolio/<section>` is a path STATIC_ROOTS owns and no Astro route
+ * matches, so without this it would fall to the resolver, find nothing under
+ * portfolio/ and 404 — while production served the document. Rewriting req.url
+ * and calling next() is what the deployment does: the page Astro renders for
+ * /portfolio answers, and the browser keeps the path it asked for, which is the
+ * whole point of a deep link.
+ *
+ * A REAL ASTRO ROUTE STILL WINS the static half. Running first, this could
+ * otherwise shadow a page somebody adds under src/pages/, so the promise is kept
+ * explicitly rather than by ordering: `astro:routes:resolved` hands over every
+ * route Astro has — at startup before the server listens, and again whenever a
+ * page is added or removed — and the middleware stands aside for any of them.
  */
-function servesTheExistingSite() {
+function servesWhatAstroDoesNotBuild() {
   // Filled in by the routes:resolved hook below, and read on every request.
   let astroRoutes = [];
 
   const middleware = {
-    name: 'portfolio:existing-site',
+    name: 'portfolio:unbuilt-paths',
     enforce: 'pre',
     configureServer(server) {
       server.middlewares.use((req, res, next) => {
         const pathname = (req.url ?? '/').split('?')[0];
+        const rewritten = rewriteTarget(pathname);
+        if (rewritten !== null) {
+          req.url = rewritten;
+          return next();
+        }
         if (!servedFromStaticTree(pathname, astroRoutes)) return next();
         const file = resolveFile(repoRoot, pathname, { statSync });
         if (!file) return next();
@@ -63,7 +81,7 @@ function servesTheExistingSite() {
   };
 
   return {
-    name: 'portfolio:existing-site',
+    name: 'portfolio:unbuilt-paths',
     hooks: {
       'astro:config:setup': ({ updateConfig }) => {
         updateConfig({ vite: { plugins: [middleware] } });
@@ -89,8 +107,9 @@ export default defineConfig({
   // dist/ is where the deployment's output directory points, and where the
   // assemble step lays the existing site down beside what Astro wrote.
   outDir: './dist',
-  // /next, not /next/index.html — vercel.json's cleanUrls serves the directory
-  // form at the bare path.
+  // /portfolio, not /portfolio/index.html — vercel.json's cleanUrls serves the
+  // directory form at the bare path. It is also what puts the document at
+  // dist/portfolio/index.html, beside the assets the assemble step lays in.
   build: { format: 'directory' },
   // Astro scopes a component's rules by narrowing every compound in them, and
   // the DEFAULT strategy narrows with a bare attribute selector — which adds
@@ -107,5 +126,5 @@ export default defineConfig({
   // src/sections/stub/NOTES.md.
   scopedStyleStrategy: 'where',
   devToolbar: { enabled: false },
-  integrations: [servesTheExistingSite()],
+  integrations: [servesWhatAstroDoesNotBuild()],
 });

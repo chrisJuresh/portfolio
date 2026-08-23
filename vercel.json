@@ -10,6 +10,10 @@
     { "source": "/projects/", "destination": "/portfolio#projects", "permanent": true },
     { "source": "/projects/index.html", "destination": "/portfolio#projects", "permanent": true }
   ],
+  "rewrites": [
+    { "source": "/portfolio/front-screen", "destination": "/portfolio" },
+    { "source": "/portfolio/projects", "destination": "/portfolio" }
+  ],
   "headers": [
     {
       "source": "/_astro/(.*)",

@@ -9,8 +9,8 @@
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
-/** The route the Portfolio's new foundation is served at until the ticket that flips it. */
-export const PAGE = '/next';
+/** The route the Portfolio is served at. */
+export const PAGE = '/portfolio';
 
 /** The same window the /portfolio checks in design/tools/ use, so the two agree about one drawing. */
 export const DESK = { width: 1440, height: 900 };

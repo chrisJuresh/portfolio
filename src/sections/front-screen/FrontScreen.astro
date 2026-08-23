@@ -53,11 +53,17 @@ const PHOTO_BASE = '/portfolio/img/';
 const EAGER = 2;
 ---
 
-{/* data-section is the loader's handle. No data-turn: the Section is one screen,
-    so `top top` and `bottom bottom` would be the same scroll position and the
-    page would open already crossed. The crossing spans the Section AFTER this
-    one, which starts at this one's foot. NOTES.md. */}
-<section class="front-screen" data-section="front-screen" aria-labelledby="front-screen-name">
+{/* data-section is the loader's handle, and `id` is the Section's deep link —
+    `/portfolio/front-screen` is this same document opened here. No data-turn:
+    the Section is one screen, so `top top` and `bottom bottom` would be the same
+    scroll position and the page would open already crossed. The crossing spans
+    the Section AFTER this one, which starts at this one's foot. NOTES.md. */}
+<section
+  class="front-screen"
+  id="front-screen"
+  data-section="front-screen"
+  aria-labelledby="front-screen-name"
+>
   <div class="front-screen__col">
     <header class="front-screen__masthead">
       <h1 class="front-screen__name" id="front-screen-name">{content.name}</h1>

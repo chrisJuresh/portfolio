@@ -5,38 +5,46 @@
  * never has to ask, so it is the part worth pinning: astro.config.mjs registers
  * its middleware AHEAD of Astro's, and this predicate is the only thing standing
  * between that and a real page being shadowed by a file of the same name.
+ *
+ * `rewriteTarget` is the opposite — the deployment's own rule, mirrored locally
+ * so `pnpm preview` and the Checks answer a deep link the way production does.
+ * The rewrites it reads are vercel.json's; what is pinned here is the matching,
+ * and every case is passed its own table so the tests say nothing about which
+ * Sections happen to exist today.
  */
 
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { isStaticPath, servedFromStaticTree } from './static-tree.mjs';
+import { isStaticPath, rewriteTarget, servedFromStaticTree } from './static-tree.mjs';
 
 /** As `astro:routes:resolved` gives them — the src/pages route that exists. */
-const NEXT = /^\/next\/?$/;
+const PORTFOLIO = /^\/portfolio\/?$/;
 /** Astro's internal fallback, which astro.config.mjs filters out by origin. */
 const FOUR_OH_FOUR = /^\/404\/?$/;
 
+/** A deep link, as vercel.json spells one. */
+const REWRITES = [{ source: '/portfolio/projects', destination: '/portfolio' }];
+
 test('the paths STATIC_ROOTS owns are the static tree to answer', () => {
-  for (const pathname of ['/', '/portfolio', '/portfolio/', '/portfolio/index.html', '/fonts/fonts.css', '/projects/og.jpg']) {
-    assert.equal(servedFromStaticTree(pathname, [NEXT]), true, pathname);
+  for (const pathname of ['/', '/portfolio/img/plate-800.webp', '/fonts/fonts.css', '/projects/og.jpg']) {
+    assert.equal(servedFromStaticTree(pathname, [PORTFOLIO]), true, pathname);
   }
 });
 
 test("a path outside STATIC_ROOTS is not the static tree's", () => {
-  for (const pathname of ['/next', '/src/pages/next.astro', '/@vite/client', '/_astro/index.css']) {
-    assert.equal(servedFromStaticTree(pathname, [NEXT]), false, pathname);
+  for (const pathname of ['/next', '/src/pages/portfolio.astro', '/@vite/client', '/_astro/index.css']) {
+    assert.equal(servedFromStaticTree(pathname, [PORTFOLIO]), false, pathname);
   }
 });
 
 test('a real Astro route takes its path back off the static tree', () => {
-  // What adding src/pages/portfolio.astro looks like from here. The file
-  // portfolio/index.html still exists — the point is that it stops being served.
-  const portfolio = /^\/portfolio\/?$/;
-  assert.equal(servedFromStaticTree('/portfolio', [NEXT, portfolio]), false);
-  assert.equal(servedFromStaticTree('/portfolio/', [NEXT, portfolio]), false);
-  // Only the route's own path, though. The assets under it are nobody else's.
-  assert.equal(servedFromStaticTree('/portfolio/styles.css', [NEXT, portfolio]), true);
+  // The document's own path belongs to the page Astro renders, and the assets
+  // under it belong to nobody else — which is the overlap the whole arrangement
+  // is built around.
+  assert.equal(servedFromStaticTree('/portfolio', [PORTFOLIO]), false);
+  assert.equal(servedFromStaticTree('/portfolio/', [PORTFOLIO]), false);
+  assert.equal(servedFromStaticTree('/portfolio/video/photos-grid.webm', [PORTFOLIO]), true);
 });
 
 test('no routes yet is the static tree answering, not nothing', () => {
@@ -50,8 +58,8 @@ test('no routes yet is the static tree answering, not nothing', () => {
 test("Astro's internal 404 route does not claim the portal", () => {
   // It cannot match `/` anyway; the assertion is that passing it in changes
   // nothing, so filtering by origin at the call site stays a guard and not a fix.
-  assert.equal(servedFromStaticTree('/', [NEXT, FOUR_OH_FOUR]), true);
-  assert.equal(servedFromStaticTree('/portfolio', [NEXT, FOUR_OH_FOUR]), true);
+  assert.equal(servedFromStaticTree('/', [PORTFOLIO, FOUR_OH_FOUR]), true);
+  assert.equal(servedFromStaticTree('/portfolio/img/eye-800.webp', [PORTFOLIO, FOUR_OH_FOUR]), true);
 });
 
 test('isStaticPath is the whitelist and nothing more', () => {
@@ -59,4 +67,21 @@ test('isStaticPath is the whitelist and nothing more', () => {
   assert.equal(isStaticPath('/portfolio/img/tex/paper-512.webp'), true);
   assert.equal(isStaticPath('/docs/agents/domain.md'), false);
   assert.equal(isStaticPath('/README.md'), false);
+});
+
+test('a deep link is rewritten onto the document', () => {
+  assert.equal(rewriteTarget('/portfolio/projects', REWRITES), '/portfolio');
+  // cleanUrls serves the trailing-slash form at the bare path, so the rewrite
+  // has to see one path where the reader may type two.
+  assert.equal(rewriteTarget('/portfolio/projects/', REWRITES), '/portfolio');
+  assert.equal(rewriteTarget('/portfolio/projects?fx=paper', REWRITES), '/portfolio');
+});
+
+test('everything else is served from its own path', () => {
+  // Literal sources only. A `:param` pattern would answer for every spelling,
+  // and a deep link nothing declares is meant to 404 rather than quietly serve
+  // the document — which is what makes the Check that walks them worth having.
+  for (const pathname of ['/portfolio', '/portfolio/nonsense', '/portfolio/img/plate-800.webp', '/']) {
+    assert.equal(rewriteTarget(pathname, REWRITES), null, pathname);
+  }
 });

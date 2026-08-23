@@ -1,6 +1,6 @@
 import { createReadStream, statSync } from 'node:fs';
 import { createServer } from 'node:http';
-import { contentType, resolveFile } from '../../static-tree.mjs';
+import { contentType, deployedFile } from '../../static-tree.mjs';
 
 /**
  * Ports Chromium refuses to fetch from, whatever is listening on them.
@@ -32,7 +32,7 @@ const CHROMIUM_REFUSES = new Set([
  */
 export async function serve(dist) {
   const server = createServer((request, response) => {
-    const file = resolveFile(dist, request.url ?? '/', { statSync });
+    const file = deployedFile(dist, request.url ?? '/', { statSync });
     if (!file) {
       response.statusCode = 404;
       response.end('not found\n');
