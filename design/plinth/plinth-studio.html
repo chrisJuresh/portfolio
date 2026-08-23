@@ -107,11 +107,10 @@
 <div class="top">
   <strong>Plinth studio</strong>
   <span class="chip" id="chipSite">site: —</span>
-  <span class="chip" id="chipVer">?v= —</span>
+  <span class="chip" id="chipVer">plates —</span>
   <span class="chip" id="chipBlender">blender: —</span>
   <span class="grow"></span>
   <span class="chip" id="chipBusy" hidden></span>
-  <button id="btnContract" title="Replay the GitHub profile README's hourly screenshot of /portfolio against this tree">capture contract</button>
   <button id="btnReload">reload state</button>
 </div>
 
@@ -346,7 +345,7 @@
     var chip = $("chipBusy");
     chip.hidden = !on;
     chip.textContent = label || "";
-    ["btnBake", "btnApply", "btnForget", "btnContract", "btnSweep", "btnRefresh"]
+    ["btnBake", "btnApply", "btnForget", "btnSweep", "btnRefresh"]
       .forEach(function (b) { $(b).disabled = !!on; });
   }
 
@@ -933,18 +932,10 @@
     api("/api/refresh", {}).then(function (j) { watch(j.job, function () { refresh(); }); })
       .catch(function (e) { logLine("! " + e.message); });
   });
-  $("btnContract").addEventListener("click", function () {
-    logClear();
-    logLine("Replaying the profile README's capture against this tree. It fetches the capture script "
-            + "from the profile repository at run time, so this needs the network.");
-    api("/api/contract", {}).then(function (j) { watch(j.job, function () {}); })
-      .catch(function (e) { logLine("! " + e.message); });
-  });
-
   $("frame").addEventListener("load", function () {
     doc = $("frame").contentDocument;
     panel = doc.getElementById("projects");
-    if (!panel) { $("frameNote").textContent = "— no #projects in /portfolio, so there is no Panel to stand a plinth under."; return; }
+    if (!panel) { $("frameNote").textContent = "— /portfolio is a build now and this server serves the repository, so there is no Panel here to stand a plinth under. Judge the stone in the strip above, and look at it under the Frame with `pnpm build` and `pnpm preview`."; return; }
     /* The plinth is at the foot of a page several screens long. Instantly, not
        smoothly: a glide on every reload is time spent not looking at the stone. */
     panel.scrollIntoView({ block: "end", behavior: "instant" });

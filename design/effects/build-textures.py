@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Bake the two Texturelabs plates into the assets portfolio/styles.css overlays.
+"""Bake the two Texturelabs plates into the assets the Effect Stack overlays.
 
     python design/effects/build-textures.py [film | paper | all]
 
@@ -442,7 +442,7 @@ def build_paper() -> None:
 def digest() -> str:
     """One short hash over THIS script's own plates in portfolio/img/tex/, for the
     ?v= these assets are fetched with. Same job and same reasoning as IMG_VERSION
-    in portfolio/index.html — a rung's filename does not change when its contents
+    in src/kernel/corners.ts — a rung's filename does not change when its contents
     do, and vercel.json caches this directory for a day.
 
     IT USED TO HASH EVERY .webp IN THE DIRECTORY, and stopped when
@@ -472,9 +472,13 @@ def main() -> None:
         build_film()
     if which in ("paper", "all"):
         build_paper()
-    print("\nTEX_VERSION = \"%s\"  <- paste over the ?v= on --fx-film-src and\n"
-          "                        --fx-paper-src in portfolio/styles.css when\n"
-          "                        it differs from what is written there" % digest())
+    # NOTHING TO PASTE ANY MORE, and that is the build rather than an omission:
+    # --fx-film-src and --fx-paper-src are url()s in a stylesheet the build can
+    # see, so Vite fingerprints them into /_astro/ by content and a re-bake is a
+    # different filename on its own. The hand-written page had no build and
+    # carried this digest by hand. effect-stack.css says the same.
+    print("\nbaked digest %s  — nothing to paste: the build fingerprints these\n"
+          "                            by content. See effect-stack.css." % digest())
 
 
 if __name__ == "__main__":

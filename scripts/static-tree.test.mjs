@@ -16,7 +16,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { isStaticPath, rewriteTarget, servedFromStaticTree } from './static-tree.mjs';
+import { deployedFile, isStaticPath, rewriteTarget, servedFromStaticTree } from './static-tree.mjs';
 
 /** As `astro:routes:resolved` gives them — the src/pages route that exists. */
 const PORTFOLIO = /^\/portfolio\/?$/;
@@ -84,4 +84,40 @@ test('everything else is served from its own path', () => {
   for (const pathname of ['/portfolio', '/portfolio/nonsense', '/portfolio/img/plate-800.webp', '/']) {
     assert.equal(rewriteTarget(pathname, REWRITES), null, pathname);
   }
+});
+
+/**
+ * A filesystem with only the paths named in it, for `deployedFile`.
+ *
+ * The real one is injected for the same reason: what is being asserted is the
+ * ORDER — a file that exists wins, and a rewrite is what answers when none does
+ * — and that is a statement about the resolver, not about any tree on disk.
+ */
+const only = (...paths) => ({
+  statSync(path) {
+    if (paths.includes(path)) return { isFile: () => true, isDirectory: () => false };
+    throw new Error(`ENOENT ${path}`);
+  },
+});
+
+test('a file that exists is served from its own path, rewrite or no rewrite', () => {
+  const fs = only('/d/portfolio/index.html', '/d/portfolio/img/plate-800.webp');
+  assert.equal(deployedFile('/d', '/portfolio/img/plate-800.webp', fs), '/d/portfolio/img/plate-800.webp');
+  assert.equal(deployedFile('/d', '/portfolio', fs), '/d/portfolio/index.html');
+});
+
+test('a path no file answers falls through to the rewrite', () => {
+  // The deep link, end to end: nothing is on disk at /portfolio/projects, and
+  // what comes back is the document the rewrite names. This is the whole reason
+  // `pnpm preview`, the Check runner and the Editor go through one function —
+  // three servers agreeing with production by construction rather than by three
+  // people remembering.
+  const fs = only('/d/portfolio/index.html');
+  assert.equal(deployedFile('/d', '/portfolio/projects', fs), '/d/portfolio/index.html');
+});
+
+test('a path with neither a file nor a rewrite is a 404', () => {
+  const fs = only('/d/portfolio/index.html');
+  assert.equal(deployedFile('/d', '/portfolio/nonsense', fs), null);
+  assert.equal(deployedFile('/d', '/next', fs), null);
 });

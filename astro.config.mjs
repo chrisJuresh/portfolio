@@ -61,22 +61,41 @@ function servesWhatAstroDoesNotBuild() {
     enforce: 'pre',
     configureServer(server) {
       server.middlewares.use((req, res, next) => {
-        const pathname = (req.url ?? '/').split('?')[0];
+        const url = req.url ?? '/';
+        const pathname = url.split('?')[0];
+        const query = url.slice(pathname.length);
+
+        // A FILE FIRST, A REWRITE LAST, which is the order Vercel resolves in
+        // and therefore the only order that makes this server a stand-in for
+        // it. Reversed, a rewrite would take a path off the static tree AND off
+        // a real Astro route without either of them being asked — and nothing
+        // collides today, so it would sit there silently until one did.
+        if (servedFromStaticTree(pathname, astroRoutes)) {
+          const file = resolveFile(repoRoot, pathname, { statSync });
+          if (file) return serve(res, file);
+        }
+
+        // Nothing on disk answers it, so the deployment's rewrites get their
+        // turn. Handed back to Astro rather than answered here: the page it
+        // renders for the destination is what production serves, and the
+        // browser keeps the path it asked for. The query survives the rewrite
+        // because `?fx=` is a real thing to put on a deep link.
         const rewritten = rewriteTarget(pathname);
         if (rewritten !== null) {
-          req.url = rewritten;
+          req.url = rewritten + query;
           return next();
         }
-        if (!servedFromStaticTree(pathname, astroRoutes)) return next();
-        const file = resolveFile(repoRoot, pathname, { statSync });
-        if (!file) return next();
+        return next();
+      });
+
+      function serve(res, file) {
         res.setHeader('content-type', contentType(file));
         // A read that fails after the stat would otherwise take the dev
         // server down on an unhandled 'error'.
         createReadStream(file)
           .on('error', () => res.destroy())
           .pipe(res);
-      });
+      }
     },
   };
 

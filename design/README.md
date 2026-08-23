@@ -1,13 +1,34 @@
 # design/ — typography lab
 
 Dev-only. Nothing here is served by the site; `.vercelignore` keeps the whole
-folder out of deployments. The site itself stays dependency-free and build-free.
+folder out of deployments.
+
+> **#141 deleted the page half of this lab drives, and most of it has not been
+> repointed.** `/portfolio` was a hand-written tree served straight off the repo
+> root, and that is what every instrument here opens: `render.mjs` walks
+> `/portfolio/`, and `glass-tuner`, `effects-tuner`, `layout-tuner`,
+> `morph-tuner`, `plate-tuner` and `plinth-tuner` iframe it or drive scripts it
+> carried. It is an Astro build now, so `run.bat` no longer serves it and those
+> pages open on a 404 or an inert frame.
+>
+> What still works untouched: everything that BAKES rather than looks —
+> `build-plate.py`, `build-textures.py`, `build-portoro-maps.py`, `build-slab.py`,
+> `add-stone.py`, `build-og.py`, the censor pipeline — because their outputs are
+> under `portfolio/img/` and `portfolio/video/`, which the build does not produce
+> and the deployment still serves verbatim. `plinth-studio.py`,
+> `build-cut-title.py` and the morph lab's `build-site.py` were repointed at the
+> Section files they now write. `render-variants.mjs` (`pnpm variants`) is the
+> successor to `render.mjs` and drives the built page correctly.
+>
+> Repointing the tuners is not a rename: each one has to reach a built page
+> instead of a served file, and several read Content out of a JavaScript object
+> that is now typed TypeScript. That wants its own ticket and its own decisions.
 
 **Two things called variants live here, and they are not the same thing.**
 `variants.css` and `tools/render.mjs` are the typographic comparison this folder
-was built for: eight variants of one type stack, across `/portfolio`, which is a
-plain static tree with no Sections in it. They are kept as that comparison was
-judged. `tools/render-variants.mjs` is the general mechanism it became — a
+was built for: eight variants of one type stack, across the hand-written
+`/portfolio`, which was a plain static tree with no Sections in it. They are kept
+as the record of how that comparison was judged; the page they drove is gone. `tools/render-variants.mjs` is the general mechanism it became — a
 **Variant** is any complete alternative direction for a Section, declared in that
 Section's own `variants.css`, and `pnpm variants` renders them all into
 `sheets/index.html`. See [`../docs/agents/variants.md`](../docs/agents/variants.md).
@@ -122,47 +143,24 @@ design/
     plinth-studio.html   SERVER rather than a page: photograph in, stone on the
                          site out, with no command in between. Drop an image,
                          move every parameter a stone has, bake it in Cycles,
-                         see it under the real Frame, write it into styles.css.
+                         see it under the real Frame, write it into the Panel's
+                         tokens.css.
                            python design/plinth/plinth-studio.py
   tools/
     render.mjs       Playwright: serves the repo, walks the matrix, writes shots/
     package.json     dev dependency (playwright) — not the site's
     check-capture-contract.py
                      replays the GitHub profile README's hourly screenshot of
-                     /portfolio against a local tree, so a change can be shown
-                     not to have broken it. See docs/agents/capture-contract.md
-    check-panel-clip.mjs
-                     does the Panel's recording behave the way #65 asks — it
-                     plays, loops, is silent, and under prefers-reduced-motion
-                     not one byte of either video file is fetched
-    check-panel-nav.mjs
-                     does scrolling carry the reader into the section and does
-                     the Rail tell the truth (#72). Measures the weld between the
-                     composition and the scroll position frame by frame through a
-                     real mid-flight reversal, and reads the browser's own ARIA
-                     tree rather than the markup
-    check-crossing.mjs
-                     does the page cross into dark where the sheet says, and come
-                     back (#73, tunable per #58). Every number in it is body's own
-                     computed ground rasterised to sRGB through a 1x1 canvas, so
-                     nothing is asserted about a property: light at the top, the
-                     section's own black at rest, monotone and identical in both
-                     directions, and a moved --cross-in/--cross-out honoured on
-                     both sides. Also that a deep link lands settled rather than
-                     mid-crossing, that a reader who chose light still gets light
-                     after scrolling back, and that neither <html> nor body
-                     animates or eases its colour — which is the assertion that
-                     keeps the profile capture from photographing this page dark
-    check-panel-exit.mjs
-                     do the Panel's exit treatments behave the way #74 asks. It
-                     reads one Panel TWICE, at t and at t - 1, because that is
-                     exactly the pair a crossing holds — so the "never an empty
-                     screen" criterion is measured before there is a second Panel
-                     to measure it against. Also: the settled composition is
-                     untouched, the Rail does not leave, the document does not
-                     grow mid-crossing, the three groups really are mixable, the
-                     recording keeps playing, reduced motion pins it settled, and
-                     a phone composites one layer instead of five
+                     /portfolio against a local tree. It asserts on the deleted
+                     page's structure, so it cannot pass and is a gate on
+                     nothing until #148. See docs/agents/capture-contract.md
+    (the four per-ticket harnesses that used to sit here - check-panel-clip,
+     check-panel-nav, check-crossing and check-panel-exit - are gone with the
+     page they drove. Each proved one closed ticket's criteria against the
+     hand-written /portfolio by serving the repo root and navigating to it, and
+     #141 deleted that page. Their successor is the blocking suite: `pnpm
+     check`, in scripts/checks/, which is the seam docs/agents/contract.md
+     names. git history has them.)
 ```
 
 The **lab** compares finished candidates; the **tuner** is for arriving at one.

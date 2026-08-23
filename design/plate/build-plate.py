@@ -1024,7 +1024,7 @@ def main() -> int:
         # with nothing. See A GRADE PER PICTURE, A LADDER PER THEME.
         if theme != "light" and g == pic.grades["light"]:
             print(f"{theme}: same grade as light — no ladder "
-                  f"(portfolio/index.html falls back to the light file)")
+                  f"(src/kernel/corners.ts falls back to the light file)")
             continue
 
         graded = grade(lin, keep, g)
@@ -1079,9 +1079,11 @@ def main() -> int:
 
     # Last line of the run, because it is the one thing left to do by hand. A
     # re-bake that is not followed by this paste is invisible on the deployment
-    # for a day whatever else it got right — see rungUrl in portfolio/index.html.
-    print(f'\nvar IMG_VERSION = "{ladder_stamp()}";'
-          f"   <- portfolio/index.html, if it differs from what is there")
+    # for a day whatever else it got right — the ladder's URLs are assembled in
+    # script, so the build cannot fingerprint them the way it does a url() in a
+    # stylesheet. See rung() in src/kernel/corners.ts.
+    print(f"\nconst LADDER_VERSION = '{ladder_stamp()}';"
+          f"   <- src/kernel/corners.ts, if it differs from what is there")
     return 0
 
 

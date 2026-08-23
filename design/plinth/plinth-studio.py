@@ -3,9 +3,18 @@
 
     python design/plinth/plinth-studio.py
 
-...then open what it prints. It serves the repository, so the studio page, the
-plates and the real /portfolio all come off one origin and the preview is the
-actual page rather than a mock of it.
+...then open what it prints. It serves the repository, so the studio page and
+the plates come off one origin.
+
+THE FRAME PREVIEW NEEDS A BUILT TREE, and does not have one yet. It iframes
+/portfolio to stand the stone under the real Panel, and /portfolio stopped being
+a file in this repository when #141 deleted the hand-written page - it is an
+Astro build now, and this server does not serve dist/. So the frame comes up
+empty and says so. Everything else here works: the drop, the sliders, the window
+preview, the bake, the strip, and Apply. Repointing the frame is the same job as
+repointing the rest of the tuners under design/, and design/README.md says why
+that is its own ticket. Until it lands, judge a stone in the strip and look at it
+under the Frame with `pnpm build` and `pnpm preview`.
 
 WHAT IT IS FOR. Everything under design/plinth/ already exists as a command:
 build-portoro-maps.py takes a photograph apart, build-slab.py lights the result
@@ -94,7 +103,6 @@ SIDECAR = os.path.join(HERE, "slab.json")
 BUILD_SLAB = os.path.join(HERE, "build-slab.py")
 PLATES = os.path.join(ROOT, "portfolio", "img", "tex")
 STYLESHEET = os.path.join(ROOT, "src", "sections", "projects-panel", "tokens.css")
-CONTRACT = os.path.join(ROOT, "design", "tools", "check-capture-contract.py")
 STUDIO_PAGE = "/design/plinth/plinth-studio.html"
 
 # The surrounds build-slab.py's ROOMS defines. Stated here because ROOMS lives
@@ -222,8 +230,9 @@ def read_site():
         css = fh.read()
     hits = SITE_SRC_RE.findall(css)
     m = SITE_SRC_RE.search(css)
+    # No digest is read back, because none is written: the build makes the
+    # plate's shipped filename out of its bytes. `stale` went with it.
     return {"stone": m.group("key") if m else None,
-            "version": m.group("ver") if m else None,
             "declarations": len(hits)}
 
 
@@ -495,17 +504,6 @@ def refresh_job(job):
     return {"version": sidecar().get("version")}
 
 
-def contract_job(job):
-    rc = stream(job, [sys.executable, os.path.relpath(CONTRACT, ROOT)])
-    job.log("")
-    job.log({0: "contract holds.",
-             1: "! the contract is BROKEN - see above.",
-             }.get(rc, "! could not run (exit %d)." % rc))
-    if rc != 0:
-        raise SystemExit("check-capture-contract.py exited %d" % rc)
-    return {"exit": rc}
-
-
 # ---------------------------------------------------------------------------
 # writing the stylesheet
 # ---------------------------------------------------------------------------
@@ -530,14 +528,13 @@ def apply_stone(key):
             "src/sections/projects-panel/tokens.css and expected exactly one. The "
             "Section has moved under this tool; fix it by hand and say so in "
             "docs/agents/plinth-marble.md." % len(hits))
-    was = SITE_SRC_RE.search(css)
-    before = (was.group("key"), was.group("ver"))
+    before = SITE_SRC_RE.search(css).group("key")
     css = SITE_SRC_RE.sub(
         lambda m: "%s/portfolio/img/tex/plinth-%s.webp%s"
                   % (m.group("lead"), key, m.group("tail")), css, count=1)
     with open(STYLESHEET, "w", encoding="utf-8", newline="\n") as fh:
         fh.write(css)
-    return {"stone": key, "was_stone": before[0], "was_version": before[1]}
+    return {"stone": key, "was_stone": before}
 
 
 def forget_stone(key):
@@ -597,10 +594,6 @@ def state():
         "plate": doc.get("plate"),
         "version": version,
         "site": site,
-        # The Token carries no digest to drift from the plates on disk; the
-        # build makes the filename out of the bytes. Reported so the page keeps
-        # one shape, and false by construction.
-        "stale": False,
         "soft_px": add_stone.SOFT_PX,
         "cap_px": add_stone.CAP_PX,
         "busy": (RUN.busy().id if RUN.busy() else None),
@@ -700,8 +693,6 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                 return self.spawn("bake", "bake " + req["key"], bake_job(req))
             if parts.path == "/api/refresh":
                 return self.spawn("refresh", "refresh slab.json", refresh_job)
-            if parts.path == "/api/contract":
-                return self.spawn("contract", "capture contract", contract_job)
             if parts.path == "/api/apply":
                 req = json.loads(self.body() or b"{}")
                 return self.send_json(apply_stone(str(req.get("key", ""))))
