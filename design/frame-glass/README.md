@@ -87,14 +87,46 @@ the "it even reaches around the top but a decision was made to cut it out" in th
 brief: `src/sections/projects-panel/NOTES.md` records that notch as being in the
 render rather than an artefact. Axis E is that band.
 
-**There IS a second border, and it is in the video.** The grid keeps
-`--page-inset: 14px` from every edge of its own window, so the clip carries about
-14px of near-black down its left and right sides — measured at 14, 16 and 18px at
-three heights of one frame. Scaled into the Frame that is another ~9px inside the
-8.4px band, which is why the sides read twice as heavy as the foot. Axis F shows
-what removing it would buy, **by scale rather than by re-recording**, because
-re-recording is not free: the app's page inset is part of the layout the censored
-roll was collected against, so moving it reflows the justified rows and
-`design/tools/collect-roll.mjs --check` reports DRIFTED — the signed list stops
-covering the photographs the clip passes over. That is a review to redo, not a
-number to change.
+**There IS a second border, it is in the video, and it is WHITE.** ~~near-black~~
+— the first version of this paragraph said the clip carried about 14px of
+near-black down its sides, off a frame pulled with `ffmpeg -ss` *before* `-i`.
+That is keyframe seeking, not accurate seeking, and on a 2.85s clip with two
+keyframes it returned a frame that is not in the file at that time at all. It is
+recorded here rather than quietly corrected because the wrong number is the more
+plausible one — a dark app in a dark Panel — and the next reader will guess it
+too.
+
+What the file actually holds, agreed on by ffmpeg's accurate decode, by
+Chromium's own decoder read back off a canvas, and by the shipped page's pixels:
+the clip is the **light** theme, and `--page-inset` shows as **pure white**,
+`rgb(255,255,255)`, to every edge and at every time. Measured in from the
+window's edge on the real page at a Frame 1056 wide: 1px of rim at
+`rgb(90,91,93)`, 8px of `#131518`, then **10px of pure white**, then photographs.
+A white line between a dark grey band and a pure-black Panel is a far louder
+border than the band it sits inside, and it is most of what the brief is
+describing.
+
+That the clip is light is **deliberate and recent** — `4ca13a2`, "Re-cut the
+photos clip on white, and make the capture hold it there". `capture-origin.mjs`
+seeds `photos.theme = "light"` before first paint and
+`check-capture-origin.mjs` **refuses the capture** if it reads back anything
+else. So this is a decision to revisit, not a defect to fix.
+
+Two different costs, and they are not the same:
+
+- **The theme is free.** That commit measured it: "the walk run under each theme
+  returns the same 84 tiles at the same boxes and the same `roll_digest`, so the
+  theme repaints the ground and moves nothing." A dark re-cut needs no censor
+  re-review — one seeded value, and the check's expectation moved with it.
+- **The page inset is not.** `--page-inset` changes the width the justified rows
+  are packed into, so zeroing it reflows them,
+  `design/tools/collect-roll.mjs --check` reports DRIFTED, and the signed list
+  stops covering the photographs the clip passes over. That is a photograph
+  review to redo, not a number to change.
+
+Which is why removing the margin belongs in **`record`, as a trim on the
+capture** rather than in the app: trimming the encoded frame leaves the layout
+untouched, so the camera sees strictly *less* than the list was signed against —
+the same argument `NOTES.md` already makes for cropping the recording from the
+top edge only. Axis F simulates that trim by scale, so it can be judged before
+the code exists.

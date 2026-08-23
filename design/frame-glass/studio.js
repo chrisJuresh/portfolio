@@ -207,6 +207,23 @@ const TINTS = {
   turn: { name: 'Crossed with the Turn', note: 'Paper at the near end, graphite at the far one — the one tint that costs nothing to interpolate now that the material is custom properties rather than a baked canvas.', turn: true },
 };
 
+
+// The clip's own theme, from the two stills design/frame-glass/shoot.mjs captures
+// through the CENSORED origin. A still and not a clip, because the question is a
+// colour — and because re-cutting the clip in the other theme is the thing this
+// is deciding whether to do.
+//
+// `light` is what ships (4ca13a2, deliberately, with a check that refuses a
+// capture reading anything else). What it costs is visible at the window's edge:
+// the app keeps --page-inset from every side of its own window, so a light
+// capture puts a PURE WHITE line inside the Frame's dark band, against a Panel
+// that #164 just made pure black.
+const THEMES = {
+  none: { name: 'The clip (light, as shipped)', note: 'The real recording, playing. Every other card in this row is a still.' },
+  light: { name: 'Still — light', note: 'The same capture as a frame. The white margin is the app’s own --page-inset, and it is the loud border rather than the dark band outside it.' },
+  dark: { name: 'Still — dark', note: 'The same page, the same stacking, the same fourteen obscured tiles, seeded dark. Its ground reads rgb(0,0,0) — the exact black the Panel now is — so the margin stops being a border at all without anything being trimmed.' },
+};
+
 const BACKDROPS = {
   flat: { name: 'Flat fill (today)', note: "The Frame's own #131518. A displacement map over a uniform colour returns the same uniform colour, so the refraction computes to nothing and only the rings are visible." },
   clip: { name: 'The recording, under the glass', note: 'The content box goes to the top of the window and the bar floats over the photographs. What Safari 26 actually does — and it puts the app’s own liquid glass bar under the page’s.' },
@@ -229,8 +246,24 @@ const BANDS = {
 };
 
 const CROPS = {
-  'as-is': { name: 'As recorded', note: "The clip carries the grid's own 14px page inset, near-black, INSIDE the video — so on the left and right there are two borders stacked." },
-  cropped: { name: 'Page inset cropped out', note: 'What a re-record with the app’s --page-inset at 0 would look like. Simulated by scale here, because that answers whether it is worth re-recording without re-recording.' },
+  'as-is': {
+    name: 'As recorded',
+    note: "The clip carries the grid's own 14px page inset INSIDE the video, and because the capture is seeded LIGHT that margin is pure white — a white line between the dark band and a black Panel. Two borders stacked, and the inner one is the loud one.",
+  },
+  cropped: {
+    name: 'Trimmed',
+    note: 'What a trim on the capture would give: the margin gone, photographs to the band. Simulated by scale, because that answers whether it is worth a change to record before the change exists.',
+  },
+};
+
+// The corner, which is one question asked in two places: what the paint draws
+// and what the map refracts. CSS's superellipse() takes the LOGARITHM of the
+// exponent and the SDF takes the exponent, so these are the same curve stated
+// twice and glass.js is where they are kept in step.
+const CORNERS_AXIS = {
+  circular: { name: 'Circular (today)', note: 'border-radius’s own arc, exponent 2. What ships, and what an engine without corner-shape draws whatever it is asked for.', k: 2 },
+  squircle: { name: 'Squircle, exponent 4', note: "CSS's `squircle`. Apple's actual corner: it leaves the straight edge later and arrives at the other one later, so the curve reads as continuous rather than as an arc spliced between two lines.", k: 4 },
+  softsquare: { name: 'Exponent 5', note: 'What upstream ships as its own default. Nearly a square with the corners taken off — a window, more than a pill.', k: 5 },
 };
 
 const LIGHTS = {
@@ -253,6 +286,8 @@ function makeFrame(opts) {
     crop: 'as-is',
     icons: 'safari',
     lights: 'grey',
+    corner: 'circular',
+    theme: 'none',
     reloadPad: 0.008,
     material: 'glass',
     ...opts,
@@ -271,7 +306,11 @@ function makeFrame(opts) {
   frame.innerHTML =
     '<div class="fill"></div>' +
     '<div class="stone"></div>' +
-    `<div class="content"><video class="clip" muted loop playsinline preload="none" poster="${POSTER}" width="1440" height="900"></video></div>` +
+    '<div class="content">' +
+    (o.theme === 'none'
+      ? `<video class="clip" muted loop playsinline preload="none" poster="${POSTER}" width="1440" height="900"></video>`
+      : `<img class="clip" src="./local/grid-${o.theme}.png" width="1440" height="900" alt="">`) +
+    '</div>' +
     `<div class="bar" data-material="${o.material}" data-rings="${o.rim === 'none' ? 'off' : 'on'}">` +
     `<div class="chrome">` +
     `<span class="lights" data-lights="${o.lights}"><i></i><i></i><i></i></span>` +
@@ -293,7 +332,7 @@ function makeFrame(opts) {
 /** Give one Frame's panes their settings, and report which rung each landed on. */
 function dress(frame) {
   const o = frame.__opts;
-  const s = { ...OPTICS[o.optics].s };
+  const s = { ...OPTICS[o.optics].s, shapeRoundness: CORNERS_AXIS[o.corner].k };
   const tint = TINTS[o.tint];
   s.tint = tint.turn ? turnTint() : tint.v;
   if (window.__forceFallback) s.refThickness = 0;
@@ -305,7 +344,17 @@ function dress(frame) {
   if (o.rim === 'one') targets.push(frame);
   frame.__panes = targets.map((node) => {
     const pane = refract(node);
-    pane.draw(s, s.refThickness <= 0);
+    /* THE MAP'S RADIUS IS THE PAINTED RADIUS, READ OFF THE NODE. Upstream owns
+       its own blob and so lets `shapeRadius` decide both; here the corner is the
+       Section's --projects-panel-frame-corner, a share of the window, and the
+       titlebar and the window are cut to it by construction. Left as upstream's
+       80 it clamps to half the pane's height — a pill end on the bar and
+       something else again on the Frame — so the map would refract an arc the
+       paint never drew, which is the exact fault the exponent's logarithm causes
+       and just as invisible. */
+    const painted = Number.parseFloat(getComputedStyle(node).borderTopLeftRadius);
+    const own = Number.isFinite(painted) ? { ...s, shapeRadius: painted } : s;
+    pane.draw(own, own.refThickness <= 0);
     return pane;
   });
   frame.__refracting = frame.__panes.some((pane) => pane.refracting());
@@ -391,7 +440,7 @@ function axis(title, blurb, options, key, width, base) {
 // -------------------------------------------------------------------- the page
 
 const controls = {};
-const composer = { ...{}, backdrop: 'clip', tint: 'white-06', rim: 'one', optics: 'apple', band: 'as-is', crop: 'as-is', icons: 'safari', lights: 'grey' };
+const composer = { theme: 'none', backdrop: 'clip', tint: 'white-06', rim: 'one', optics: 'apple', band: 'as-is', crop: 'as-is', icons: 'safari', lights: 'grey', corner: 'circular' };
 
 function selector(label, options, key) {
   const field = document.createElement('label');
@@ -449,6 +498,8 @@ function build() {
     selector('Clip crop', CROPS, 'crop'),
     selector('Glyphs', GLYPHS, 'icons'),
     selector('Lights', LIGHTS, 'lights'),
+    selector('Corner', CORNERS_AXIS, 'corner'),
+    selector('Clip', THEMES, 'theme'),
   );
 
   composerHost = document.querySelector('.composer');
@@ -514,6 +565,22 @@ function build() {
       base,
     ),
     axis('H — the lights', 'Three discs, and two other things they could be.', LIGHTS, 'lights', 520, base),
+    axis(
+      'J — the clip’s own theme',
+      'The recording is captured LIGHT, on purpose and recently. This is what that costs at the window’s edge, and what the other theme would give — both shot through the censored origin, so these are the obscured pixels the clip is made of.',
+      THEMES,
+      'theme',
+      520,
+      base,
+    ),
+    axis(
+      'I — the corner',
+      'One question in two places: the curve the paint draws and the curve the displacement map refracts. They are kept in step through one number, and CSS takes its logarithm while the SDF takes the exponent — hand it over raw and the paint goes square while the refraction stays round.',
+      CORNERS_AXIS,
+      'corner',
+      520,
+      base,
+    ),
   );
 
   for (const frame of panes) dress(frame);

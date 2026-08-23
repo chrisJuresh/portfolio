@@ -60,6 +60,13 @@ design/tools/.capture-contract/
 # command; capture-origin.mjs refuses to serve against a stale bake.
 design/censor/mosaic/
 
+# stills the Frame's material is judged over, captured through the censored
+# origin above by design/frame-glass/shoot.mjs. Obscured pixels rather than raw
+# ones, and STILL not committed: what ships is the clip in portfolio/video/, and
+# a still of a real library kept in the tree to make a colour choice checkable is
+# exactly what the origin exists to avoid. Rebuild with one command.
+design/frame-glass/local/
+
 # where `record` writes when it is handed design/record as its workspace. The
 # Project and its Action are committed — they are the settings the clip was made
 # with — and the Runs are not: ten of them per Action, each carrying the same
