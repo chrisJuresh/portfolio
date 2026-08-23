@@ -101,16 +101,16 @@ node design/tools/check-capture-origin.mjs      # is this the signed origin?
 
 The origin stands in front of the vault and serves the baked mosaic wherever the
 vault would serve a confirmed photograph, so nothing downstream of it — the
-browser included — is ever sent an unobscured one. It also seeds stacking, which
-is the other half of what it exists for; see below. It refuses to start against
-an unsigned list, a list signed against a different roll, a stale bake, or one
-baked finer than the ceiling above.
+browser included — is ever sent an unobscured one. It also seeds **stacking and
+the theme**, which is the other half of what it exists for; see below. It refuses
+to start against an unsigned list, a list signed against a different roll, a
+stale bake, or one baked finer than the ceiling above.
 
 The two checks are both needed and neither implies the other. `collect-roll
 --check` asks whether the roll still describes the live grid; `check-capture-origin`
 asks whether the origin serves what was signed and whether the grid mounts
-stacked, by driving the origin the way the clip does and reading the bytes off
-the network.
+stacked and light, by driving the origin the way the clip does and reading the
+bytes off the network.
 
 **6. Record.**
 
@@ -186,6 +186,15 @@ the mosaic is weakened, this list stops being a defence.
 | scroll | 0 → 1200 | `record/projects/photos/actions/scroll-peek.overrides.toml` |
 | band | document y ∈ [0, 2100] | scroll range plus one viewport |
 | stacking | **on** | the view the Panel is meant to show off |
+
+The **theme is deliberately not in that table**, and that is a measurement rather
+than an oversight. It repaints the ground behind the photographs and moves
+nothing: the same walk run under each theme returns the same 84 tiles at the same
+boxes and the same `roll_digest`. So a roll collected under either theme covers a
+clip captured under either, `collect-roll.mjs` has no theme flag and needs none,
+and the light clip is covered by the review signed against the dark one. What
+does have to be held is the *capture*, and that is the origin's job and
+`check-capture-origin`'s — see below.
 
 The vault sorts newest-first, so importing a single photograph shifts the whole
 roll and the confirmed list silently stops covering the clip. Same if record's
@@ -278,6 +287,36 @@ The two are genuinely different rolls, not the same photographs regrouped:
 So `stacking` is written into `roll.json` and `--check` compares it like
 geometry. `--stack off` collects the other view for comparison; it is not a
 toss-up between them.
+
+### And it must be light, which is the same problem again
+
+The clip shows the grid on **white**. The vault's own default is black: `photos.theme`
+is read from localStorage once before the app mounts and falls back to `dark`,
+with no `prefers-color-scheme` fallback on purpose — photos `ui/src/lib/theme.js`
+says the ground behind a photograph is a decision about the photograph rather
+than about the machine.
+
+So it is the stacking problem in every respect that matters: a setting in a
+profile, read once, before any hook a recorder has. record's `evaluate` runs
+after navigation, so a Timeline that flipped the theme would flip it after
+record has already photographed the settled page. The same seed script answers
+both — `capture-origin.mjs` writes `photos.stack` and `photos.theme` together in
+one classic `<script src="/__capture/seed.js">` at the top of `<head>` — and
+`check-capture-origin.mjs` reads `document.documentElement.dataset.theme` back
+off the page, refusing the capture if it is not `light`.
+
+It is worth a check of its own rather than an eyeball because the failure is
+quiet in exactly the way the unstacked one is: an origin that stopped seeding the
+theme produces a clip that is sharp, correctly framed, correctly obscured, and
+the wrong colour — and the wrong colour is the thing nobody notices in a contact
+sheet of four-hundred-pixel tiles.
+
+**It does not touch the roll.** Measured, not assumed: the walk run under each
+theme returns the same 84 tiles at the same boxes and the same `roll_digest`, so
+the review signed against the dark grid covers the light clip unchanged. That is
+why there is no `theme` field in `roll.json` beside `stacking`, and why the two
+are not symmetrical — stacking changes what the camera passes over, and the theme
+changes only what it looks like.
 
 ### Two more things [#65] hit, and why neither is worked around any more
 

@@ -8,11 +8,15 @@
    Exit 0 means the clip may be captured. Exit 1 means it may not, and says why.
 
    It drives design/censor/capture-origin.mjs the way the clip does — the same
-   viewport, the same scroll range — and asks the page three questions that a
+   viewport, the same scroll range — and asks the page four questions that a
    capture cannot ask itself:
 
      stacked        did the grid mount stacked? The roll was assembled over the
                     stacked view and does not cover the unstacked one.
+     light          did it mount light? The vault's default is dark and has no
+                    `prefers-color-scheme` fallback, so an origin that stopped
+                    seeding the theme would produce a dark clip that looks
+                    entirely correct — which is the clip this one replaced.
      obscured       was every confirmed photograph the walk requested served as
                     the mosaic mosaic.py baked, byte for byte?
      substituted    are those bytes actually different from the vault's own? A
@@ -25,8 +29,8 @@
    ----------------------------------------------
    collect-roll.mjs seeds stacking with addInitScript, because it drives the
    vault directly and Playwright has a hook that early. This must not: the
-   question here is whether the ORIGIN seeds it, since record has no such hook
-   and that is the whole reason the origin exists. A check that seeded the
+   question here is whether the ORIGIN seeds both, since record has no such hook
+   and that is the whole reason the origin exists. A check that seeded either
    setting would pass against an origin that had stopped doing so, which is the
    failure it is here to catch.
 
@@ -142,6 +146,7 @@ page.on("response", async (response) => {
 });
 
 let decks = 0;
+let theme = "";
 try {
   await page.goto(`${origin}/`, { waitUntil: "domcontentloaded" });
   await page.waitForSelector(".tile", { timeout: 30_000 });
@@ -161,6 +166,11 @@ try {
   await page.waitForTimeout(600);
 
   decks = await page.evaluate(`document.querySelectorAll(".tile .card:not([hidden])").length`);
+  /* theme.js's own reading of it: the attribute is the theme, and anything that
+     is not "light" is the dark default however it got there. Read off the
+     document rather than out of localStorage for the reason `decks` is — the
+     question is what the camera would photograph, not what was stored. */
+  theme = await page.evaluate(`document.documentElement.dataset.theme || "dark"`);
 } finally {
   await browser.close();
 }
@@ -171,6 +181,16 @@ if (decks === 0) {
     "the grid mounted UNSTACKED — no tile drew a card. The origin did not seed " +
       'localStorage["photos.stack"], or the vault has moved the key. The signed roll was ' +
       "assembled over the stacked view and does not cover this one.",
+  );
+}
+
+/* ---- light -------------------------------------------------------------- */
+if (theme !== "light") {
+  problems.push(
+    `the grid mounted ${theme.toUpperCase()} — the origin did not seed ` +
+      'localStorage["photos.theme"], or the vault has moved the key or renamed the theme. ' +
+      "Check photos ui/src/lib/theme.js against the SEED in design/censor/capture-origin.mjs. " +
+      "A dark capture looks entirely correct and is the clip this one replaced.",
   );
 }
 
@@ -223,6 +243,7 @@ if (sample !== undefined) {
 /* ---- the report --------------------------------------------------------- */
 console.log(`origin           ${origin}`);
 console.log(`stacking         ${decks > 0 ? `on — ${decks} tile(s) drew a card` : "OFF"}`);
+console.log(`theme            ${theme === "light" ? "light" : `${theme.toUpperCase()} — the clip is meant to be light`}`);
 console.log(
   `thumbnails       ${served.size} served over the clip's scroll range, ` +
     `${beyond.size} of them outside the roll's band (the sheet's overscan — never painted)`,

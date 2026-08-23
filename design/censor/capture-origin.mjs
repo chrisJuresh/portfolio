@@ -6,15 +6,17 @@
 
    Node builtins only; nothing here is deployed (.vercelignore excludes design/).
 
-   The vault as it stands is not the thing #65 is allowed to photograph, in two
-   separate ways. This stands in front of it and fixes both, and record then
-   records this rather than the vault:
+   The vault as it stands is not the thing #65 is allowed to photograph, in
+   three separate ways. This stands in front of it and fixes all three, and
+   record then records this rather than the vault:
 
      the confirmed tiles     served as the mosaics design/censor/mosaic.py baked,
                              so the browser taking the picture is never sent an
                              unobscured pixel of one
      stacking                seeded into this origin's localStorage by a script
                              served from this origin, so the grid mounts stacked
+     the theme               seeded the same way, so the grid mounts light — the
+                             vault's default is dark and the clip is not
 
    Everything else is forwarded untouched, headers included — the vault's own
    Content-Security-Policy above all, so the page being photographed is under
@@ -40,6 +42,9 @@
    setting is read from localStorage once at mount, and the Timeline runs after
    navigation. Left alone, #65 produces a clip that looks entirely correct and
    shows the unstacked grid — a view the signed roll was never assembled over.
+   The theme is the same shape of problem and the same answer: `photos.theme` is
+   read once from localStorage before the app mounts, so a Timeline that flipped
+   it would flip it after the settled frame had already been photographed.
 
    One proxy answers all four, and it answers them in the only place that is
    strictly earlier than the page: the bytes.
@@ -99,29 +104,46 @@ const port = Number(opt.port || 8792);
 const vault = opt.vault || "http://127.0.0.1:8770";
 
 /* ---------------------------------------------------------------------------
-   THE SEEDED SETTING
+   THE SEEDED SETTINGS
 
    A classic script in <head>, so it runs before the module the vault mounts its
    app from — `<script type="module">` is deferred, and this is not. Served from
    this origin, which is what gets it past `script-src 'self'` without the CSP
    being rewritten: the page is photographed under the policy it really carries.
 
-   The shape is stack.js's own, field for field, because that file validates
-   what it reads rather than trusting it and a near-miss would come back as the
-   default with nothing said. Both knobs stay null, which means "whichever the
-   server is pointed at" — this seeds the setting the grid is drawn with, and
-   has no business choosing a threshold.
+   TWO SETTINGS, ONE SCRIPT, AND BOTH FOR THE SAME REASON. Each is read out of
+   localStorage exactly once before the app paints, so each has to be there
+   before the document's own scripts run and neither can be set from anywhere
+   later. They are written in the shape their own module validates against —
+   stack.js and theme.js — because both files check what they read rather than
+   trusting it, and a near-miss comes back as the default with nothing said.
+
+     photos.stack   the grid drawn stacked, which is the view the Panel exists
+                    to show off and the view the signed roll was assembled over.
+                    Both knobs stay null, meaning "whichever assignment the
+                    server is pointed at": this seeds how the grid is drawn and
+                    has no business choosing a threshold.
+     photos.theme   "light". The vault's default is dark and theme.js has no
+                    `prefers-color-scheme` fallback, so a fresh profile — which
+                    is what record photographs — mounts dark unless told.
+
+   The theme is a decision about the clip and not about the roll: it repaints
+   the ground behind the photographs and moves nothing. Measured rather than
+   assumed — the same walk run under each theme returns the same 84 tiles at the
+   same boxes and the same roll_digest, so the signed list covers the light clip
+   exactly as it covered the dark one. README.md records that.
    ------------------------------------------------------------------------ */
 const SEED = `/* Written by design/censor/capture-origin.mjs. See design/censor/README.md. */
 try {
   localStorage.setItem("photos.stack", JSON.stringify({ on: true, strictness: null, linkage: null }));
+  localStorage.setItem("photos.theme", "light");
 } catch (error) {
   /* Nothing to fall back to, so say it where the check can see it. */
-  console.error("capture-origin: could not seed photos.stack —", error);
+  console.error("capture-origin: could not seed the capture settings —", error);
 }
 `;
 
-const SEED_TAG = '<script src="/__capture/stack.js"></script>';
+const SEED_TAG = '<script src="/__capture/seed.js"></script>';
 
 /* ---------------------------------------------------------------------------
    WHAT IS SUBSTITUTED
@@ -215,7 +237,7 @@ function proxy(substitutes, counts) {
   return async (req, res) => {
     const path = req.url.split("?")[0];
 
-    if (path === "/__capture/stack.js") {
+    if (path === "/__capture/seed.js") {
       counts.seed++;
       return serve(res, 200, SEED, { "content-type": "text/javascript; charset=utf-8" });
     }
@@ -251,13 +273,13 @@ function proxy(substitutes, counts) {
     /* The one rewrite. The seed goes in immediately after <head>, so it is the
        first script the document has and runs before the deferred module the app
        mounts from. Refusing rather than serving an unseeded document: a page
-       that quietly mounted unstacked is exactly the failure this exists to
-       stop, and it would look like a working capture. */
+       that quietly mounted unstacked, or dark, is exactly the failure this
+       exists to stop, and it would look like a working capture. */
     if ((headers["content-type"] ?? "").startsWith("text/html")) {
       const html = body.toString("utf8");
       const at = html.indexOf("<head>");
       if (at < 0) {
-        return serve(res, 500, `no <head> in ${path} — cannot seed stacking, refusing to serve it`, {
+        return serve(res, 500, `no <head> in ${path} — cannot seed the capture settings, refusing to serve it`, {
           "content-type": "text/plain; charset=utf-8",
         });
       }
@@ -301,7 +323,7 @@ server.on("error", (error) => {
 process.on("SIGINT", () => {
   console.log(
     `\n${counts.obscured} obscured tile(s) served, ` +
-      `${counts.seeded} document(s) seeded, stack.js fetched ${counts.seed} time(s)`,
+      `${counts.seeded} document(s) seeded, seed.js fetched ${counts.seed} time(s)`,
   );
   server.close(() => process.exit(0));
 });
@@ -314,6 +336,6 @@ server.listen(port, "127.0.0.1", () => {
       `${manifest.blocks} blocks on the shorter side`,
   );
   console.log(`signed by        ${signed.confirmed_by} at ${signed.confirmed_at}`);
-  console.log(`stacking         seeded before the app mounts`);
+  console.log(`stacking, theme  seeded before the app mounts — stacked, light`);
   console.log(`\nverify with      node design/tools/check-capture-origin.mjs`);
 });

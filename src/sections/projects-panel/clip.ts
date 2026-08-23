@@ -68,7 +68,7 @@ const RECORDING_BASE = '/portfolio/video/';
  * in the Kernel is: the Editor's business is a word the author chose, and this is
  * a digest a tool prints. Nothing here is authored.
  */
-const VERSION = '?v=21f8d5ea';
+const VERSION = '?v=f6205767';
 
 /**
  * The still the window shows before — and instead of — the recording.
