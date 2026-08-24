@@ -161,6 +161,59 @@ probed by binding, and recorded — and a `feature start` holds a lock file whil
 chooses, because two processes seconds apart would otherwise both find the same
 port free, neither having bound it yet.
 
+**And `--port` is a request, not an instruction** — which is the other half of
+the same fact and cost its own day (#167). Astro still increments when the number
+it was handed turns out to be busy, and the window between this probing a port
+and astro binding it is real: something can take it in between, and something
+did. So the port that was asked for and the port that is being served are two
+different things, and everything downstream needs the second one. The version
+that recorded the first said `no dev server — nothing was listening on 4321`
+about a server that was serving on 4322 and saying so in its own log; `feature
+list` could not name it; and `land` then "stopped" a port that was already free
+while the real server sat inside the worktree holding the directory open,
+leaving nothing but `EBUSY` to work from.
+
+The fix is not a better probe — a probe that polls harder finds the same wrong
+port. **Astro is the authority, because astro is the process that bound the
+socket**, and it prints where it went. `lib/astro.mjs` reads that line and is the
+sibling of `parse.mjs`: string in, value out, tested without a server. Three
+shapes, because astro has three:
+
+| shape | when |
+| --- | --- |
+| `{"message":"Dev server running at …","label":"SKIP_FORMAT",…}` | astro thinks an agent is running it (`am-i-vibing`, which sees `CLAUDECODE`) — so, almost always here. It backgrounds itself in the same breath |
+| `Dev server running at <url> (pid N)` | the message inside that JSON, and what `--background` prints unwrapped |
+| `┃ Local    <url>` | the ordinary foreground banner, coloured |
+
+Three things about the reader are load-bearing. **The log is read from the byte
+offset the spawn started at**, because it is appended to and a second start would
+otherwise find the first one's announcement and record a port that server has
+already given up. **The last announcement wins**, for the same reason within one
+run. And **the log is asked before the port probe, every time round the loop** —
+the other order is the bug wearing a different hat, since if astro moved then
+something else is holding the port that was asked for, and "the asked port is no
+longer bindable" is then true and means nothing at all about our server. The
+probe survives only as a last resort, after thirty seconds of the log saying
+nothing.
+
+A start that lands somewhere else says so on the way past, rather than reporting
+no server at all.
+
+**`EBUSY` does not name what is holding it.** Two sessions have now spent a turn
+running `netstat -ano | grep LISTENING` by hand to find the dev server that was
+keeping a spent worktree alive. The teardown has two ways to know and now uses
+both: the port in the registry, and `<worktree>/.astro/dev.json`, which is
+astro's own lock file and names the pid that bound the socket. `server.mjs`'s
+`serving()` is that question, the teardown stops everything it finds rather than
+only the recorded row, and a removal that still fails prints the port, the pid,
+where the answer came from and the one command that shifts it.
+
+The lock file is not believed on its own. Astro deletes it on a clean stop, so
+one left behind by a killed server would otherwise be reported as a live holder;
+the socket is what confirms it. An unconfirmed one is **named and not killed** —
+the only pid available for it came out of a file, and a pid out of a file is a
+pid the operating system may have handed to somebody else since.
+
 **A browser refuses to fetch from some ports.** A dev server on one answers
 `curl` and fails every page load with `net::ERR_UNSAFE_PORT`, which reads like a
 broken tree. `lib/ports.mjs` skips them; `scripts/checks/lib/serve.mjs` carries
@@ -263,7 +316,7 @@ could not start, matching the Check runner's so a script can tell the three apar
 is the teardown the last two share — one implementation on purpose, because the
 verification is the valuable half and two copies of it would drift into one that
 verified less. Everything else under `lib/` is either a pure function with a test
-beside it — `names`, `ports`, `parse`, `friction`, `refusal`, `verdict`,
+beside it — `names`, `ports`, `parse`, `astro`, `friction`, `refusal`, `verdict`,
 `teardown`, `listeners`, `state` — or the one thin impure layer over it,
 `exec.mjs` and `git.mjs`.
 

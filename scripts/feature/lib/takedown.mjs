@@ -16,7 +16,7 @@
 
 import { existsSync } from 'node:fs';
 import { git as gitOf } from './git.mjs';
-import { stop as stopServer } from './server.mjs';
+import { serving, stop as stopServer } from './server.mjs';
 import { load, lock, remove, save, statePath } from './state.mjs';
 import { refusedForDirt, removeTree, samePath } from './teardown.mjs';
 
@@ -37,18 +37,37 @@ export async function takeDown({ sh, common, root, worktree, branch, orphan = fa
 
   console.log('\nfeature: taking it down…');
 
-  if (recorded?.port) {
+  // The recorded port, AND whatever is actually serving inside the tree. Those
+  // are the same thing now that `start` records the port astro took rather than
+  // the one it asked for (#167) — but a row written before that fix names a port
+  // nothing is on, and a server restarted by hand may have moved since. Stopping
+  // only the record is what left a server running inside a worktree that then
+  // could not be removed, twice.
+  const running = serving({ worktree, port: recorded?.port ?? null });
+  const ports = [
+    ...new Set([
+      recorded?.port ?? null,
+      ...running.filter((one) => one.confirmed).map((one) => one.port),
+    ]),
+  ].filter((port) => Number.isInteger(port) && port > 0);
+
+  for (const port of ports) {
+    const onThisPort = running.find((one) => one.port === port) ?? null;
     const stopped = await stopServer({
-      pid: recorded.pid,
-      listener: recorded.listener ?? null,
-      port: recorded.port,
+      // The recorded pids belong to the recorded port and to nothing else.
+      pid: port === recorded?.port ? recorded.pid : null,
+      listener: port === recorded?.port ? (recorded.listener ?? null) : (onThisPort?.pid ?? null),
+      port,
     });
-    console.log(`  server     ${stopped.stopped ? 'stopped' : 'STILL RUNNING'} — ${stopped.said}`);
+    const which = port === recorded?.port ? '' : ` (${onThisPort?.from ?? 'found in the tree'})`;
+    console.log(
+      `  server     ${stopped.stopped ? 'stopped' : 'STILL RUNNING'} on ${port}${which} — ${stopped.said}`,
+    );
     if (!stopped.stopped) {
       // Recorded as friction because this is what makes the removal below fail,
       // and the fix is a change to something rather than a retry.
       sh.note({
-        what: `stopping the dev server for ${branch} (pid ${recorded.pid}, port ${recorded.port})`,
+        what: `stopping the dev server for ${branch} (port ${port}, pid ${onThisPort?.pid ?? recorded?.pid ?? 'unrecorded'})`,
         gate: 'a process that would not stop',
         refusal: stopped.said,
         fix: 'find what is still listening on that port and stop it — a worktree cannot be removed while a process inside it holds a file',
@@ -113,6 +132,18 @@ export async function takeDown({ sh, common, root, worktree, branch, orphan = fa
     `  remote     ${stillRemote ? `STILL THERE — origin/${branch}` : remoteWas ? 'gone' : 'there was none'}`,
   );
 
+  // WHO IS HOLDING IT, and not only `EBUSY`. Asked after the removal rather than
+  // before, because the question is only interesting once the removal has failed
+  // — and asked at all because two sessions have now spent a turn finding the
+  // answer by hand with `netstat -ano`. A dirty tree is not this: git refused
+  // there on purpose, and nothing is holding anything.
+  const holders = stillThere && !dirt ? serving({ worktree, port: recorded?.port ?? null }) : [];
+  for (const holder of holders) {
+    console.log(
+      `  holding    pid ${holder.pid} is listening on ${holder.port} inside it (${holder.from})`,
+    );
+  }
+
   const left = [];
   if (stillThere) {
     // Not `git worktree remove --force`: that is what just failed, and on a tree
@@ -120,6 +151,12 @@ export async function takeDown({ sh, common, root, worktree, branch, orphan = fa
     // directory and pruning — and `pnpm feature clean` does exactly that, which
     // is the whole reason it exists.
     left.push(`the worktree at ${worktree} — \`pnpm feature clean ${branch}\` finishes it`);
+    for (const holder of holders) {
+      left.push(
+        `pid ${holder.pid} on port ${holder.port}, inside that worktree, from ${holder.from} — ` +
+          `\`${stopCommand(holder.pid)}\``,
+      );
+    }
   }
   if (stillLocal) left.push(`the branch ${branch} — \`git branch -D ${branch}\``);
   if (stillRemote) {
@@ -159,4 +196,9 @@ export async function takeDown({ sh, common, root, worktree, branch, orphan = fa
 
   console.log('\nfeature: nothing is left standing.');
   return 0;
+}
+
+/** The one command that stops a process, spelled for the shell the author is in. */
+function stopCommand(pid) {
+  return process.platform === 'win32' ? `taskkill /PID ${pid} /T /F` : `kill -9 ${pid}`;
 }

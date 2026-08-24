@@ -135,10 +135,25 @@ export async function start({ sh, cwd, name, install, server }) {
   }
 
   if (server) {
-    console.log(`feature: starting a dev server on ${record.port}…`);
-    const started = await startServer({ worktree: chosen.path, port: record.port });
+    const asked = record.port;
+    console.log(`feature: starting a dev server on ${asked}…`);
+    const started = await startServer({ worktree: chosen.path, port: asked });
     record.pid = started.pid;
     record.listener = started.listener;
+
+    // THE PORT ASTRO TOOK, not the one it was asked for. `--port` is a request:
+    // when something else holds the number astro moves up and says so, and the
+    // version of this that recorded the request reported no server at all and
+    // then left one running that no teardown could find (#167). The reservation
+    // made under the lock above was for `asked`; the row saved below reserves
+    // this one instead, which is the port that is actually held.
+    if (started.port !== null) record.port = started.port;
+    if (started.port !== null && started.port !== asked) {
+      console.log(
+        `feature: astro took ${started.port}, not the ${asked} it was asked for — something\n` +
+          `  else holds ${asked}. ${started.port} is what is recorded, listed and taken down.`,
+      );
+    }
     if (started.reason) console.error(`feature: no dev server — ${started.reason}`);
 
     // Written back so `feature land` can take down what actually came up. Read
