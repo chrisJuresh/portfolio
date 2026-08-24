@@ -354,3 +354,54 @@ to read the refusal's substance and ignore its steps — which is what this entr
 for. **What was done**: `pnpm feature land`, which is the answer to the substance,
 and the question to the user was asked in the same reply rather than instead of
 landing.
+
+## 2026-08-24 — the session that named the standing shell (#168, #169)
+
+**Attempted**: stopping, with both changes landed on `development` through
+`pnpm feature land` and both feature worktrees taken down. Nothing of the
+session's own work was outstanding.
+
+**Refused by**: the vendored skill's `Stop` gate — the third row of the table
+above, and the same gate as the 2026-08-23 entry below it. **A different failure,
+though, and the reason this is a second entry rather than a note on that one: the
+count was a false positive.** That session had one commit of its own, unlanded.
+This one had none.
+
+```
+This worktree is holding 1 commit(s) not in origin/development. A branch that
+exists only on this disk is not a delivered change …
+```
+
+**The commit it counted was `f5ee988`, which is `origin/main`'s tip.** The session
+was running in `.claude/worktrees/mattpocock-skills-70-4de7f1`, a tree the harness
+cut before the session started, sitting on `main`'s history — the exact thing
+`CLAUDE.md` warns about when it says a bare `EnterWorktree` "cuts from `main` and
+carries the whole divergence into your diff". The gate counts
+`origin/development..HEAD` and nothing else, so in a repository whose **default
+branch is `main` and whose integration branch is `development`**, every
+harness-made worktree holds `main`'s divergence and trips this gate forever, on
+every session, however completely the work was delivered.
+
+Following its steps would have been actively destructive, not merely wasteful:
+`git push -u origin HEAD` and a squash merge into `development` would have replayed
+245 files and some fifty thousand deletions of `main`'s divergence onto the
+integration branch. The one instruction in it that was right was its last —
+*if the change is genuinely abandoned, leave the worktree standing* — and it is
+right for a reason the gate cannot see, which is that there was no change.
+
+**What was done**: nothing to the worktree. `git branch -r --contains f5ee988`
+answered `origin/main`, which settles it in one command: a commit already on a
+remote branch is not a branch that exists only on this disk. The tree was left
+standing, since it is the one the session is running in and holds no work.
+
+**Fix**: **upstream**, in `chrisJuresh/skills`, and it is a narrower fix than the
+entry below asks for. Before prescribing anything, the gate should ask whether the
+commits it counted are reachable from **any** remote ref — `git branch -r
+--contains <sha>`, or `git rev-list --not --remotes` in place of
+`origin/development..HEAD`. A commit that is already published is not undelivered
+work whatever branch it is not on, and that one question would have made this gate
+silent here instead of prescribing a push that corrupts `development`. Until it
+lands, the recognition line for this gate is worth reading with the third row of
+the table above: **a `Stop` gate counting one commit in a worktree the session did
+not create is `main`'s tip, not your work.** Check it before believing the count,
+and never push it.
