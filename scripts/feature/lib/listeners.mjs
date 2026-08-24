@@ -69,3 +69,64 @@ export function listeners(port) {
   const asked = spawnSync('lsof', ['-ti', `tcp:${port}`, '-sTCP:LISTEN'], { encoding: 'utf8' });
   return fromLsof(asked.stdout ?? '');
 }
+
+/**
+ * Which of them is this feature's — the answer a failed teardown needs.
+ *
+ * `EBUSY: resource busy or locked, rmdir '…'` does not name what is holding the
+ * directory, and two sessions have now spent a turn finding that out by hand
+ * with `netstat -ano`. There are two ways to know without asking a person: the
+ * port the registry recorded, and `<worktree>/.astro/dev.json`, which is astro's
+ * own lock file and names the process that bound the socket.
+ *
+ * Neither is believed on its own. **`listeners()` is machine-wide**, so a pid on
+ * the recorded port is a pid on that port and nothing stronger — the report says
+ * exactly that and no more. And astro deletes its lock on a clean stop, so one
+ * left behind by a killed server would otherwise be reported as a live holder;
+ * the socket is what confirms it. An **unconfirmed** row is named and never
+ * stopped: the only pid it has came out of a file, and a pid out of a file is
+ * one the operating system may have handed to somebody else since.
+ *
+ * Pure, and given the world rather than asking it, because this is the decision
+ * and `server.mjs` is the syscall under it.
+ *
+ * @param {object} world
+ * @param {{ port: number, pid: number } | null} world.lock astro's lock, parsed
+ * @param {number[]} world.onLockPort pids listening on the lock's port
+ * @param {boolean} world.lockPidAlive whether the lock's own pid still exists
+ * @param {number | null} world.recordedPort the registry's port for this feature
+ * @param {number[]} world.onRecordedPort pids listening on it
+ * @returns {{ rows: { port: number, pid: number, from: string, confirmed: boolean }[],
+ *             stop: number[] }}
+ *   `stop` is the ports worth stopping, recorded first. A recorded port with
+ *   nothing on it stays in the list: `stop` reports "already free", which is a
+ *   fact the author wants, and leaving it out would make a quiet teardown
+ *   indistinguishable from one that never looked.
+ */
+export function holders({ lock, onLockPort, lockPidAlive, recordedPort, onRecordedPort }) {
+  /** @type {{ port: number, pid: number, from: string, confirmed: boolean }[]} */
+  const rows = [];
+  const seen = new Set();
+  const note = (port, pid, from, confirmed) => {
+    const key = `${port}:${pid}`;
+    if (seen.has(key)) return;
+    seen.add(key);
+    rows.push({ port, pid, from, confirmed });
+  };
+
+  if (lock) {
+    for (const pid of onLockPort) note(lock.port, pid, 'astro’s lock file in this worktree', true);
+    if (onLockPort.length === 0 && lockPidAlive) {
+      note(lock.port, lock.pid, 'astro’s lock file, which the socket does not confirm', false);
+    }
+  }
+  if (recordedPort !== null) {
+    for (const pid of onRecordedPort) note(recordedPort, pid, 'the port this feature recorded', true);
+  }
+
+  const stop = [
+    ...new Set([recordedPort, ...rows.filter((row) => row.confirmed).map((row) => row.port)]),
+  ].filter((port) => Number.isInteger(port) && port > 0);
+
+  return { rows, stop };
+}

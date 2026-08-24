@@ -32,6 +32,8 @@
  * the one thing the spawned pid is not.
  */
 
+/** @typedef {{ port: number, pid: number | null }} Announcement a server, as astro named it */
+
 /** Astro's stdout is a TTY-shaped stream even when it is a file, so the banner
  *  arrives coloured. Colour is not data. */
 const SGR = new RegExp(`${String.fromCharCode(27)}\\[[0-9;]*m`, 'g');
@@ -52,10 +54,10 @@ const BANNER = /^\s*(?:┃\s*)?Local\s+(\S+)/;
  * server has since given up.
  *
  * @param {string} output whatever astro has written since the spawn
- * @returns {{ port: number, pid: number | null } | null}
+ * @returns {Announcement | null}
  */
 export function announced(output) {
-  /** @type {{ port: number, pid: number | null } | null} */
+  /** @type {Announcement | null} */
   let found = null;
   for (const line of String(output ?? '').split(/\r?\n/)) {
     for (const said of unwrap(line)) {
@@ -88,7 +90,7 @@ function unwrap(line) {
   }
 }
 
-/** @returns {{ port: number, pid: number | null } | null} */
+/** @returns {Announcement | null} */
 function fromLine(said) {
   const sentence = SENTENCE.exec(said);
   if (sentence) {
@@ -131,7 +133,7 @@ function portOf(url) {
  * about has to be there and be a number.
  *
  * @param {string} text
- * @returns {{ port: number, pid: number | null } | null}
+ * @returns {Announcement | null}
  */
 export function locked(text) {
   try {

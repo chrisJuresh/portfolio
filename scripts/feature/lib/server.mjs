@@ -31,7 +31,7 @@
 import { spawn, spawnSync } from 'node:child_process';
 import { existsSync, openSync, readFileSync, statSync } from 'node:fs';
 import { announced, locked } from './astro.mjs';
-import { listeners } from './listeners.mjs';
+import { holders, listeners } from './listeners.mjs';
 import { free } from './ports.mjs';
 
 /** Where the server's output goes. `*.log` is gitignored repository-wide. */
@@ -43,10 +43,10 @@ export function logPath(worktree) {
  *  the log the backgrounded server writes its requests and errors to. Ours only
  *  ever holds the one announcement, because the process we spawn hands the
  *  serving to a child and exits. */
-export function astroLockPath(worktree) {
+function astroLockPath(worktree) {
   return `${worktree}/.astro/dev.json`;
 }
-export function astroLogPath(worktree) {
+function astroLogPath(worktree) {
   return `${worktree}/.astro/dev.log`;
 }
 
@@ -54,10 +54,11 @@ export function astroLogPath(worktree) {
  * @param {object} options
  * @param {string} options.worktree absolute path
  * @param {number} options.port the port to ASK for
- * @returns {Promise<{ port: number | null, asked: number, pid: number | null,
+ * @returns {Promise<{ port: number | null, pid: number | null,
  *                     listener: number | null, log: string, reason?: string }>}
  *   `port` is the one astro took, which is what everything downstream must
- *   record: `feature list` prints it and the teardown stops it.
+ *   record: `feature list` prints it and the teardown stops it. Null means astro
+ *   never said, and `reason` says where to look.
  */
 export async function start({ worktree, port: asked }) {
   const log = logPath(worktree);
@@ -65,7 +66,6 @@ export async function start({ worktree, port: asked }) {
   if (!existsSync(astro)) {
     return {
       port: null,
-      asked,
       pid: null,
       listener: null,
       log,
@@ -93,16 +93,15 @@ export async function start({ worktree, port: asked }) {
   );
   child.unref();
 
-  const came = await waitForServer({ log, since, asked });
+  const came = await waitForServer({ log, since });
   return {
     port: came?.port ?? null,
-    asked,
     pid: child.pid ?? null,
     listener: came?.listener ?? null,
     log,
     reason: came
       ? undefined
-      : `astro announced no server within 30 seconds — see ${log}` +
+      : `astro announced no server within 30 seconds (it was asked for ${asked}) — see ${log}` +
         (existsSync(astroLogPath(worktree)) ? ` and ${astroLogPath(worktree)}` : ''),
   };
 }
@@ -110,24 +109,25 @@ export async function start({ worktree, port: asked }) {
 /**
  * Wait for astro to say where it is, and then ask the socket who is there.
  *
- * THE LOG IS ASKED FIRST, every time round, and the port probe is only a
- * fallback. The other order is the bug: if astro has moved to another port then
- * something else is holding the one that was asked for, so "the asked port is no
- * longer bindable" is true and means nothing about our server.
+ * THE LOG IS THE ONLY SOURCE, and there is deliberately no fallback to probing
+ * the port that was asked for. That probe is the bug in a different coat: if
+ * astro has moved then something else is holding the port that was asked for, so
+ * "the asked port is no longer bindable" is perfectly true and says nothing
+ * whatever about our server — and a start that recorded it would hand the
+ * teardown a stranger's process to kill.
+ *
+ * So an astro that says nothing this reader understands is reported as no
+ * server, loudly, with the two logs named. That is a wrong answer somebody can
+ * act on; the probe's is one nobody can see.
  *
  * @returns {Promise<{ port: number, listener: number } | null>}
  */
-async function waitForServer({ log, since, asked, attempts = 60, wait = 500 }) {
+async function waitForServer({ log, since, attempts = 60, wait = 500 }) {
   for (let attempt = 0; attempt < attempts; attempt += 1) {
-    const said = announced(sinceBytes(log, since));
+    const said = announced(readOrEmpty(log, since));
     if (said) return { port: said.port, listener: await whoHas(said.port, said.pid) };
     await new Promise((ok) => setTimeout(ok, wait));
   }
-  // Nothing this reader understood. An astro that says nothing is still a
-  // server, so a port that has become bound is worth taking — LAST, and never
-  // as the first answer, because if astro moved then something else is holding
-  // the port that was asked for and this would record that instead.
-  if (!(await free(asked))) return { port: asked, listener: await whoHas(asked, null) };
   return null;
 }
 
@@ -149,9 +149,15 @@ async function whoHas(port, announcedPid, attempts = 10, wait = 200) {
   return announcedPid ?? -1;
 }
 
-/** What has been written to a file since a byte offset. Sliced as bytes, not as
- *  characters: astro's banner is not ASCII, so a character slice drifts. */
-function sinceBytes(file, since) {
+/**
+ * A file, or '' if it is not there — from a byte offset, when one is given.
+ *
+ * Sliced as bytes and not as characters: astro's banner is not ASCII, so a
+ * character slice drifts away from the offset `statSync` reported.
+ *
+ * @returns {string}
+ */
+function readOrEmpty(file, since = 0) {
   try {
     return readFileSync(file).subarray(since).toString('utf8');
   } catch {
@@ -162,50 +168,25 @@ function sinceBytes(file, since) {
 /**
  * What is still serving inside a worktree — a port and a pid, not just `EBUSY`.
  *
- * The one thing a failed removal never said. Twice now a session has been handed
- * `EBUSY: resource busy or locked, rmdir '…'` and has had to find the holder by
- * hand with `netstat -ano`, which is a turn spent on something the script already
- * has two ways to know: the port it recorded, and astro's own lock file, which
- * the holder wrote itself.
+ * The syscalls under `listeners.mjs`'s `holders`, which is where the decision
+ * and its tests are. This gathers the world: astro's lock file, who is on its
+ * port, whether its pid still exists, and who is on the port the registry
+ * recorded.
  *
  * @param {object} options
  * @param {string} options.worktree
  * @param {number | null} [options.port] what the registry recorded
- * @returns {{ port: number, pid: number, from: string, confirmed: boolean }[]}
- *   `confirmed` means the socket says so. An unconfirmed holder is named in the
- *   report and NOT killed: the only pid available for it came out of a file, and
- *   a pid out of a file is a pid the operating system may have handed to
- *   somebody else since.
+ * @returns {ReturnType<typeof holders>}
  */
 export function serving({ worktree, port = null }) {
-  /** @type {{ port: number, pid: number, from: string, confirmed: boolean }[]} */
-  const found = [];
-  const seen = new Set();
-  const note = (candidate, from, confirmed) => {
-    const key = `${candidate.port}:${candidate.pid}`;
-    if (seen.has(key)) return;
-    seen.add(key);
-    found.push({ ...candidate, from, confirmed });
-  };
-
-  // Astro's lock first: it names both halves, and the holder wrote it. It is not
-  // believed on its own, though — astro removes it on a clean stop, so one left
-  // behind by a killed server would otherwise be reported as a live holder. The
-  // socket is what makes it true.
-  const held = locked(readOr(astroLockPath(worktree)));
-  if (held) {
-    const holding = listeners(held.port);
-    for (const pid of holding) note({ port: held.port, pid }, 'astro’s lock file', true);
-    if (holding.length === 0 && alive(held.pid)) {
-      note(held, 'astro’s lock file, which the socket does not confirm', false);
-    }
-  }
-  // Then whatever is on the recorded port, which catches a holder that is not
-  // astro at all.
-  if (port !== null) {
-    for (const pid of listeners(port)) note({ port, pid }, 'the recorded port', true);
-  }
-  return found;
+  const lock = locked(readOrEmpty(astroLockPath(worktree)));
+  return holders({
+    lock,
+    onLockPort: lock ? listeners(lock.port) : [],
+    lockPidAlive: lock ? alive(lock.pid) : false,
+    recordedPort: port,
+    onRecordedPort: port === null ? [] : listeners(port),
+  });
 }
 
 /** Is this process still there? Signal 0 asks without sending anything. */
@@ -215,15 +196,6 @@ function alive(pid) {
     return true;
   } catch {
     return false;
-  }
-}
-
-/** @returns {string} the file, or '' if it is not there */
-function readOr(file) {
-  try {
-    return readFileSync(file, 'utf8');
-  } catch {
-    return '';
   }
 }
 
@@ -268,6 +240,20 @@ export async function stop({ pid, listener, port }) {
 
 function dedupe(pids) {
   return [...new Set(pids.filter((pid) => Number.isInteger(pid) && pid > 0))];
+}
+
+/**
+ * The command a person would type to stop one, for a report that has run out of
+ * things it can safely do itself.
+ *
+ * Here rather than beside the report, so that one module knows how a server dies
+ * on each platform. `kill` below is the same decision, made in code.
+ *
+ * @param {number} pid
+ * @returns {string}
+ */
+export function stopCommand(pid) {
+  return process.platform === 'win32' ? `taskkill /PID ${pid} /T /F` : `kill -9 ${pid}`;
 }
 
 /** @returns {string} what happened, for the report */

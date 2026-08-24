@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { fromLsof, fromNetstat } from './listeners.mjs';
+import { fromLsof, fromNetstat, holders } from './listeners.mjs';
 
 const NETSTAT = `
 Active Connections
@@ -49,4 +49,88 @@ test('lsof gives pids one to a line', () => {
   assert.deepEqual(fromLsof('3628\n26140\n'), [3628, 26140]);
   assert.deepEqual(fromLsof(''), []);
   assert.deepEqual(fromLsof('\n\n'), []);
+});
+
+const NOTHING = { lock: null, onLockPort: [], lockPidAlive: false, recordedPort: null, onRecordedPort: [] };
+
+test('it names the port and the pid the teardown could not otherwise say', () => {
+  // The whole of #167's last acceptance criterion: `EBUSY` on its own sent two
+  // sessions to `netstat -ano` by hand.
+  const { rows, stop } = holders({
+    ...NOTHING,
+    lock: { port: 4322, pid: 10108 },
+    onLockPort: [10108],
+    lockPidAlive: true,
+    recordedPort: 4322,
+    onRecordedPort: [10108],
+  });
+  assert.deepEqual(rows, [
+    { port: 4322, pid: 10108, from: 'astro’s lock file in this worktree', confirmed: true },
+  ]);
+  // One row, not two: the lock and the registry agreeing is one server.
+  assert.deepEqual(stop, [4322]);
+});
+
+test('a port astro moved to is stopped as well as the one that was recorded', () => {
+  // The pre-#167 registry row: it names the port that was ASKED for, and the
+  // server is somewhere else. Stopping only the record is what left a server
+  // running inside a worktree that then could not be removed.
+  const { rows, stop } = holders({
+    ...NOTHING,
+    lock: { port: 4322, pid: 10108 },
+    onLockPort: [10108],
+    lockPidAlive: true,
+    recordedPort: 4321,
+    onRecordedPort: [],
+  });
+  assert.deepEqual(rows.map((row) => row.port), [4322]);
+  assert.deepEqual(stop, [4321, 4322]);
+});
+
+test('a lock the socket does not confirm is named and never stopped', () => {
+  // Astro deletes its lock on a clean stop, so one left behind is a dead
+  // server — and its pid came out of a file, which the operating system may
+  // have handed to somebody else since.
+  const { rows, stop } = holders({
+    ...NOTHING,
+    lock: { port: 4322, pid: 10108 },
+    onLockPort: [],
+    lockPidAlive: true,
+    recordedPort: null,
+    onRecordedPort: [],
+  });
+  assert.equal(rows.length, 1);
+  assert.equal(rows[0].confirmed, false);
+  assert.match(rows[0].from, /does not confirm/);
+  assert.deepEqual(stop, []);
+});
+
+test('a lock whose process is gone is not a holder at all', () => {
+  const { rows, stop } = holders({
+    ...NOTHING,
+    lock: { port: 4322, pid: 10108 },
+    onLockPort: [],
+    lockPidAlive: false,
+  });
+  assert.deepEqual(rows, []);
+  assert.deepEqual(stop, []);
+});
+
+test('a foreign process on the recorded port is described as exactly that', () => {
+  // `listeners()` is machine-wide. Saying "inside the worktree" about a pid that
+  // merely holds the number would send the author after the wrong process.
+  const { rows } = holders({ ...NOTHING, recordedPort: 4321, onRecordedPort: [999] });
+  assert.deepEqual(rows, [
+    { port: 4321, pid: 999, from: 'the port this feature recorded', confirmed: true },
+  ]);
+});
+
+test('nothing serving still leaves the recorded port worth a look', () => {
+  const { rows, stop } = holders({ ...NOTHING, recordedPort: 4321 });
+  assert.deepEqual(rows, []);
+  assert.deepEqual(stop, [4321]);
+});
+
+test('no record and no lock asks nothing of anybody', () => {
+  assert.deepEqual(holders(NOTHING), { rows: [], stop: [] });
 });

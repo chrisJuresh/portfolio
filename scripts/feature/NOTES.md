@@ -189,30 +189,43 @@ Three things about the reader are load-bearing. **The log is read from the byte
 offset the spawn started at**, because it is appended to and a second start would
 otherwise find the first one's announcement and record a port that server has
 already given up. **The last announcement wins**, for the same reason within one
-run. And **the log is asked before the port probe, every time round the loop** —
-the other order is the bug wearing a different hat, since if astro moved then
-something else is holding the port that was asked for, and "the asked port is no
-longer bindable" is then true and means nothing at all about our server. The
-probe survives only as a last resort, after thirty seconds of the log saying
-nothing.
+run. And **there is no fallback to probing the port that was asked for** — that
+probe is the bug wearing a different hat. If astro moved, then something else is
+holding the port that was asked for, so "the asked port is no longer bindable" is
+perfectly true and says nothing whatever about our server; a start that recorded
+it would hand the teardown a stranger's process to kill. An astro that says
+nothing this reader understands is therefore reported as **no server**, loudly,
+with both logs named. That is a wrong answer somebody can act on, and the probe's
+is one nobody can see.
 
 A start that lands somewhere else says so on the way past, rather than reporting
 no server at all.
 
+One thing this cannot fix, and says instead: the port is reserved in the registry
+*before* astro is started, and astro's own choice can land on one another feature
+has reserved and not yet bound. Nothing here can undo that — astro has already
+bound the socket — so `start` prints that two rows now name one port, because a
+teardown that stopped the wrong server would be the worse silence.
+
 **`EBUSY` does not name what is holding it.** Two sessions have now spent a turn
 running `netstat -ano | grep LISTENING` by hand to find the dev server that was
-keeping a spent worktree alive. The teardown has two ways to know and now uses
-both: the port in the registry, and `<worktree>/.astro/dev.json`, which is
-astro's own lock file and names the pid that bound the socket. `server.mjs`'s
-`serving()` is that question, the teardown stops everything it finds rather than
-only the recorded row, and a removal that still fails prints the port, the pid,
-where the answer came from and the one command that shifts it.
+keeping a spent worktree alive. There are two ways to know without asking a
+person: the port in the registry, and `<worktree>/.astro/dev.json`, which is
+astro's own lock file and names the pid that bound the socket.
+`listeners.mjs`'s `holders` is that decision — pure, tested, given the world
+rather than asking it — and `server.mjs`'s `serving()` is the syscall under it.
+The teardown stops every port it hands back rather than only the recorded row,
+and a removal that still fails prints the port, the pid, where the answer came
+from and the one command that shifts it.
 
-The lock file is not believed on its own. Astro deletes it on a clean stop, so
-one left behind by a killed server would otherwise be reported as a live holder;
-the socket is what confirms it. An unconfirmed one is **named and not killed** —
-the only pid available for it came out of a file, and a pid out of a file is a
-pid the operating system may have handed to somebody else since.
+Neither source is believed on its own, and the wording is exact about which is
+which. **`listeners()` is machine-wide**, so a pid on the recorded port is a pid
+on that port and nothing stronger — the report says "held by", never "inside the
+worktree". And astro deletes its lock on a clean stop, so one left behind by a
+killed server would otherwise read as a live holder; the socket is what confirms
+it. An unconfirmed row is **named and never stopped** — the only pid it has came
+out of a file, and a pid out of a file is one the operating system may have
+handed to somebody else since.
 
 **A browser refuses to fetch from some ports.** A dev server on one answers
 `curl` and fails every page load with `net::ERR_UNSAFE_PORT`, which reads like a

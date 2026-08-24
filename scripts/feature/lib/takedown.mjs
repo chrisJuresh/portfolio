@@ -16,7 +16,7 @@
 
 import { existsSync } from 'node:fs';
 import { git as gitOf } from './git.mjs';
-import { serving, stop as stopServer } from './server.mjs';
+import { serving, stopCommand, stop as stopServer } from './server.mjs';
 import { load, lock, remove, save, statePath } from './state.mjs';
 import { refusedForDirt, removeTree, samePath } from './teardown.mjs';
 
@@ -44,15 +44,9 @@ export async function takeDown({ sh, common, root, worktree, branch, orphan = fa
   // only the record is what left a server running inside a worktree that then
   // could not be removed, twice.
   const running = serving({ worktree, port: recorded?.port ?? null });
-  const ports = [
-    ...new Set([
-      recorded?.port ?? null,
-      ...running.filter((one) => one.confirmed).map((one) => one.port),
-    ]),
-  ].filter((port) => Number.isInteger(port) && port > 0);
 
-  for (const port of ports) {
-    const onThisPort = running.find((one) => one.port === port) ?? null;
+  for (const port of running.stop) {
+    const onThisPort = running.rows.find((one) => one.port === port) ?? null;
     const stopped = await stopServer({
       // The recorded pids belong to the recorded port and to nothing else.
       pid: port === recorded?.port ? recorded.pid : null,
@@ -137,11 +131,13 @@ export async function takeDown({ sh, common, root, worktree, branch, orphan = fa
   // — and asked at all because two sessions have now spent a turn finding the
   // answer by hand with `netstat -ano`. A dirty tree is not this: git refused
   // there on purpose, and nothing is holding anything.
-  const holders = stillThere && !dirt ? serving({ worktree, port: recorded?.port ?? null }) : [];
-  for (const holder of holders) {
-    console.log(
-      `  holding    pid ${holder.pid} is listening on ${holder.port} inside it (${holder.from})`,
-    );
+  const holding =
+    stillThere && !dirt ? serving({ worktree, port: recorded?.port ?? null }).rows : [];
+  for (const holder of holding) {
+    // "held by", not "inside it": `listeners` is machine-wide, so a pid on the
+    // recorded port is a pid on that port and nothing stronger. `from` is what
+    // says how much to believe it.
+    console.log(`  holding    port ${holder.port} held by pid ${holder.pid} — ${holder.from}`);
   }
 
   const left = [];
@@ -151,9 +147,9 @@ export async function takeDown({ sh, common, root, worktree, branch, orphan = fa
     // directory and pruning — and `pnpm feature clean` does exactly that, which
     // is the whole reason it exists.
     left.push(`the worktree at ${worktree} — \`pnpm feature clean ${branch}\` finishes it`);
-    for (const holder of holders) {
+    for (const holder of holding) {
       left.push(
-        `pid ${holder.pid} on port ${holder.port}, inside that worktree, from ${holder.from} — ` +
+        `port ${holder.port}, held by pid ${holder.pid} — ${holder.from} — ` +
           `\`${stopCommand(holder.pid)}\``,
       );
     }
@@ -196,9 +192,4 @@ export async function takeDown({ sh, common, root, worktree, branch, orphan = fa
 
   console.log('\nfeature: nothing is left standing.');
   return 0;
-}
-
-/** The one command that stops a process, spelled for the shell the author is in. */
-function stopCommand(pid) {
-  return process.platform === 'win32' ? `taskkill /PID ${pid} /T /F` : `kill -9 ${pid}`;
 }

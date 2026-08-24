@@ -161,7 +161,21 @@ export async function start({ sh, cwd, name, install, server }) {
     // itself while this server was coming up.
     held = await lock(state);
     try {
-      save(state, add(remove(load(state), record.branch), record));
+      const others = remove(load(state), record.branch);
+      // The reservation taken before the server started was for `asked`. Astro
+      // choosing its own number can land on one another feature has reserved and
+      // not yet bound, and nothing here can undo that — the choice was astro's
+      // and it has already bound the socket. So it is said rather than hidden:
+      // two rows on one port is a teardown that stops somebody else's server.
+      const clash = others.features.find((one) => one.port === record.port);
+      if (clash) {
+        console.error(
+          `feature: ${record.port} is also recorded for ${clash.branch} — astro chose it after\n` +
+            '  the reservation was made, so two features now name one port. Take one of them\n' +
+            '  down before landing either, or the teardown will stop the wrong server.',
+        );
+      }
+      save(state, add(others, record));
     } finally {
       held.release();
     }
