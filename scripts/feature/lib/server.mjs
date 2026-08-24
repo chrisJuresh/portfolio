@@ -31,7 +31,7 @@
 import { spawn, spawnSync } from 'node:child_process';
 import { existsSync, openSync, readFileSync, statSync } from 'node:fs';
 import { announced, locked } from './astro.mjs';
-import { holders, listeners } from './listeners.mjs';
+import { fromCommandLines, holders, listeners, standingIn } from './listeners.mjs';
 import { free } from './ports.mjs';
 
 /** Where the server's output goes. `*.log` is gitignored repository-wide. */
@@ -187,6 +187,68 @@ export function serving({ worktree, port = null }) {
     recordedPort: port,
     onRecordedPort: port === null ? [] : listeners(port),
   });
+}
+
+/**
+ * What is holding the worktree open without being on a port — a working
+ * directory, which is what `EBUSY` on the top-level `rmdir` actually means.
+ *
+ * The syscalls under `listeners.mjs`'s `standingIn`, where the decision and its
+ * tests are. Only ever called once a removal has already failed, which is what
+ * pays for spawning a shell here: `Get-CimInstance Win32_Process` is about a
+ * second, and on a teardown that worked nobody would want to have waited for it.
+ *
+ * @param {object} options
+ * @param {string} options.worktree
+ * @param {string | null} options.startedIn the directory the process started in,
+ *   captured before anything chdired out of it
+ * @returns {ReturnType<typeof standingIn>}
+ */
+export function standing({ worktree, startedIn }) {
+  return standingIn({
+    worktree,
+    startedIn,
+    named: fromCommandLines(commandLines(), worktree, process.pid),
+  });
+}
+
+/**
+ * Every process's command line, `<pid>\t<command line>` a line.
+ *
+ * This is as close as Windows gets to the question. `Win32_Process` has
+ * `CommandLine` and `ExecutablePath` and **no working-directory property**, so
+ * the shell standing in the tree is not in here — only things launched from a
+ * path inside it. `standingIn` is the half that is exact.
+ *
+ * @returns {string}
+ */
+function commandLines() {
+  if (process.platform === 'win32') {
+    // Composed with `[char]9` and no quotes of its own: the whole script is one
+    // argv entry that node has to quote for a Windows command line, and a script
+    // carrying its own double quotes is the thing that breaks on the way through.
+    // `-NoProfile` because a profile that prints anything lands in this output.
+    const asked = spawnSync(
+      'powershell',
+      [
+        '-NoProfile',
+        '-NonInteractive',
+        '-Command',
+        'Get-CimInstance Win32_Process | ForEach-Object ' +
+          '{ $_.ProcessId.ToString() + [char]9 + $_.CommandLine }',
+      ],
+      { encoding: 'utf8', maxBuffer: 16 * 1024 * 1024, windowsHide: true },
+    );
+    return asked.stdout ?? '';
+  }
+  // `ps` separates the pid from the command with spaces; the parser wants one
+  // field boundary, and a missing `ps` is not an error — it just means the
+  // exact half below is all there is.
+  const asked = spawnSync('ps', ['-eo', 'pid=,args='], {
+    encoding: 'utf8',
+    maxBuffer: 16 * 1024 * 1024,
+  });
+  return (asked.stdout ?? '').replace(/^[ ]*(\d+)[ ]+/gm, '$1' + String.fromCharCode(9));
 }
 
 /** Is this process still there? Signal 0 asks without sending anything. */

@@ -16,9 +16,9 @@
 
 import { existsSync } from 'node:fs';
 import { git as gitOf } from './git.mjs';
-import { serving, stopCommand, stop as stopServer } from './server.mjs';
+import { serving, standing, stopCommand, stop as stopServer } from './server.mjs';
 import { load, lock, remove, save, statePath } from './state.mjs';
-import { refusedForDirt, removeTree, samePath } from './teardown.mjs';
+import { inside, refusedForDirt, removeTree } from './teardown.mjs';
 
 /**
  * @param {object} options
@@ -69,9 +69,19 @@ export async function takeDown({ sh, common, root, worktree, branch, orphan = fa
     }
   }
 
+  // Captured BEFORE the chdir below, because it is the answer `EBUSY` does not
+  // give. `land` refuses to run from the main checkout, so on every single land
+  // the shell that invoked it has this worktree as its working directory — and on
+  // Windows that alone blocks the final rmdir (#168).
+  const startedIn = process.cwd();
+
   // Nothing can remove the tree it is standing in, and on Windows nothing can
-  // remove a directory a process has as its working directory either.
-  if (samePath(process.cwd()).startsWith(samePath(worktree))) process.chdir(root);
+  // remove a directory a process has as its working directory either. This moves
+  // OUR process, which is the half that is fixable; the shell that called us is a
+  // different process and cannot be moved from here, so `standing` below names it
+  // instead. `inside` rather than a bare `startsWith`, which reads `…/panel` as a
+  // prefix of `…/panel-two`.
+  if (inside(worktree, startedIn)) process.chdir(root);
   const git = gitOf(sh, root);
 
   // Captured BEFORE the removal, and that ordering is load-bearing: `git
@@ -140,13 +150,45 @@ export async function takeDown({ sh, common, root, worktree, branch, orphan = fa
     console.log(`  holding    port ${holder.port} held by pid ${holder.pid} — ${holder.from}`);
   }
 
+  // And what is holding it WITHOUT being on a port, which is the commonest cause
+  // here and the one the report used to say nothing at all about. A working
+  // directory inside the tree blocks the top-level rmdir on Windows while
+  // everything underneath deletes, so this is the signature `land` reports on
+  // every land: twelve attempts, `EBUSY`, no cause named (#168).
+  const standingIn = stillThere && !dirt ? standing({ worktree, startedIn }) : [];
+  for (const row of standingIn) {
+    console.log(`  standing   ${row.pid === null ? '' : `pid ${row.pid} — `}${row.from}`);
+  }
+
+  // Nothing found is still worth a sentence. `Win32_Process` has no
+  // working-directory property, so a shell sitting in the tree that is not the
+  // one that ran this is undetectable from here — and `EBUSY` on its own is what
+  // sent two sessions to `netstat -ano` by hand and a third to guess.
+  if (stillThere && !dirt && holding.length === 0 && standingIn.length === 0) {
+    console.log(
+      '  holding    nothing is on a port, and no process names a path inside it — check that no\n' +
+        '             shell, editor or terminal has this directory as its working directory. On\n' +
+        '             Windows that alone blocks the rmdir, and nothing here can see it.',
+    );
+  }
+
   const left = [];
   if (stillThere) {
     // Not `git worktree remove --force`: that is what just failed, and on a tree
     // with node_modules in it it fails again. What works is deleting the
     // directory and pruning — and `pnpm feature clean` does exactly that, which
     // is the whole reason it exists.
-    left.push(`the worktree at ${worktree} — \`pnpm feature clean ${branch}\` finishes it`);
+    // The `cd` is not decoration, and it has to be a command of its own: the
+    // process still standing in the worktree is what blocks the removal, and
+    // running `clean` without moving it leaves it standing in a directory whose
+    // contents have just been deleted. Measured on #167 — `cd`, then `clean`,
+    // removed it on the first attempt with nothing else changed.
+    left.push(
+      standingIn.some((row) => row.confirmed)
+        ? `the worktree at ${worktree} — something is still standing in it, so: ` +
+            `\`cd ${root}\` on its own, then \`pnpm feature clean ${branch}\``
+        : `the worktree at ${worktree} — \`pnpm feature clean ${branch}\` finishes it`,
+    );
     for (const holder of holding) {
       left.push(
         `port ${holder.port}, held by pid ${holder.pid} — ${holder.from} — ` +

@@ -41,6 +41,10 @@ work is already on `development` and the only thing left is a directory.
 `pnpm feature clean <name>` finishes it, and `land` names that command in its own
 report rather than leaving the author to work out what is safe to delete.
 
+`node_modules` is not the commonest reason it is needed, though — the shell `land`
+was run from is. See **`EBUSY` does not name what is holding it** below, and note
+that the remedy is two commands and not one.
+
 **What makes `clean` safe to have at all is that it refuses unless the work
 landed**, and it asks that twice, in this order:
 
@@ -226,6 +230,58 @@ killed server would otherwise read as a live holder; the socket is what confirms
 it. An unconfirmed row is **named and never stopped** — the only pid it has came
 out of a file, and a pid out of a file is one the operating system may have
 handed to somebody else since.
+
+**And the commonest holder is not on a port at all — it is the shell `land` was
+run from.** `land` refuses to run from the main checkout, so the shell that
+invokes it has the worktree as its working directory on *every single land*. On
+Windows a process's working directory is an open handle to that directory without
+`FILE_SHARE_DELETE`: the contents delete perfectly well and the final `rmdir` on
+the worktree root cannot. That is the signature — an empty tree and `EBUSY` on the
+top-level directory — and `removeTree` then spends twelve attempts on a lock that
+can never clear.
+
+Measured (#168, and #167 before anybody knew why): `land` from inside
+`.claude/worktrees/feature-port-from-astro` stopped the dev server correctly and
+then failed twelve removals with `EBUSY`. `cd` to the main checkout **in a call of
+its own**, then `pnpm feature clean feature-port-from-astro`, removed it on the
+first attempt with nothing else changed. `takedown.mjs` already chdirs its OWN
+process out of the tree; the shell is a different process and nothing here can
+move it.
+
+So the report names it, and the remedy it prints when it does is the two commands
+in that order — the `cd` first, alone. Running `clean` without moving the shell
+leaves it standing in a directory whose contents have just been deleted.
+
+`listeners.mjs`'s `standingIn` is that decision, a sibling of `holders` rather than
+a branch inside it: a `stop` list is ports, and **a shell must never be killed**,
+so folding a portless row into the rows that feed `stop` would be the same shape
+as the bugs the rest of this file is about. It has two sources and is exact about
+which is which:
+
+| source | worth |
+| --- | --- |
+| the directory the process started in, captured before the chdir | **exact.** pnpm inherited it from whoever called it, so a directory inside the worktree means a live process has it — live because it is blocked waiting for us. True of a `cd &&`, a `( … )` subshell and a `bash -c` alike |
+| a `Win32_Process` command line naming a path inside the tree | **named, never believed.** A command line is not a working directory. It earns its place because `astro dev` is spawned with an absolute `<worktree>/node_modules/astro/bin/astro.mjs`, so a server both port checks missed turns up here |
+
+The wording of the exact half says *the directory* and not *the shell*, because
+`pnpm --dir <worktree>` would make it this process's own working directory and
+nobody else's — and the author is about to act on that sentence.
+
+**There is no third source, and that is a property of Windows rather than an
+omission.** `Win32_Process` carries `CommandLine` and `ExecutablePath` and has no
+working-directory property at all, so a shell sitting in the tree that is not the
+one that ran the command is invisible from here. When the removal fails and
+nothing at all is found — no port, no directory, no named process — the report
+says to check for exactly that rather than saying nothing. `EBUSY` alone is what
+sent two sessions to `netstat -ano` by hand and a third to guessing.
+
+Two things it deliberately does not do. It does not shorten the twelve-attempt
+wait when a standing directory is found, though that wait is knowably futile:
+a `node_modules` lock can coexist with it, and ending the wait is what `feature
+clean` is for. And it writes **no friction-log entry** — `git worktree remove`
+failing already passes `expected: true`, and per the rules below a refusal with a
+documented completion in `feature clean` earns no entry. An identical line on
+every land is what blocked the next land's `pull --ff-only` once already.
 
 **A browser refuses to fetch from some ports.** A dev server on one answers
 `curl` and fails every page load with `net::ERR_UNSAFE_PORT`, which reads like a

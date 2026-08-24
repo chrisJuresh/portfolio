@@ -3,7 +3,7 @@ import { existsSync, mkdirSync, mkdtempSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { test } from 'node:test';
-import { deletable, listsWorktree, refusedForDirt, removeTree, samePath } from './teardown.mjs';
+import { deletable, inside, listsWorktree, refusedForDirt, removeTree, samePath } from './teardown.mjs';
 
 const root = 'C:/Users/Chris/Desktop/portfolio';
 const under = `${root}/.claude/worktrees/port-the-panel`;
@@ -14,6 +14,18 @@ test('one spelling of a path, whichever side of the process it came from', () =>
   // is the comparison four modules were each writing their own version of.
   assert.equal(samePath('C:\\repo\\a\\'), 'c:/repo/a');
   assert.equal(samePath('C:/repo/a'), samePath('c:\\repo\\a\\'));
+});
+
+test('inside is a path question, not a string prefix', () => {
+  // The difference is a live feature: `…/worktrees/panel` is a prefix of
+  // `…/worktrees/panel-two`, and the caller that gets this wrong chdirs out of
+  // somebody else's tree, or reports their dev server as holding ours (#168).
+  assert.equal(inside(under, under), true, 'the directory itself');
+  assert.equal(inside(under, `${under}/scripts/feature`), true);
+  assert.equal(inside(under, under.replace(/[/]/g, String.fromCharCode(92)).toUpperCase()), true);
+  assert.equal(inside(under, `${under}-two`), false, 'a sibling sharing the prefix');
+  assert.equal(inside(under, root), false, 'the main checkout is not inside a worktree');
+  assert.equal(inside(root, under), true, 'but a worktree is inside the main checkout');
 });
 
 test('listsWorktree answers the one question three commands ask of git', () => {

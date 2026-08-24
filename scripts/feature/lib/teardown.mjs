@@ -52,6 +52,27 @@ export function samePath(path) {
 }
 
 /**
+ * Is `path` the directory `parent`, or something inside it?
+ *
+ * `startsWith` on its own is not this, and the difference is a live feature:
+ * `.claude/worktrees/panel` is a prefix of `.claude/worktrees/panel-two`, which
+ * is somebody else's work. Two callers ask — `takedown.mjs` asks it of its own
+ * working directory before chdiring out of the tree it is about to delete, and
+ * `listeners.mjs` asks it of the directory the command was run in — and the
+ * first of those decides whether a recursive delete happens from inside its own
+ * target.
+ *
+ * @param {string} parent
+ * @param {string} path
+ * @returns {boolean}
+ */
+export function inside(parent, path) {
+  const one = samePath(parent);
+  const other = samePath(path);
+  return other === one || other.startsWith(`${one}/`);
+}
+
+/**
  * Is this path one git still lists as a worktree?
  *
  * The one question three commands ask. `feature clean` asks it to decide whether
