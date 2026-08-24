@@ -58,7 +58,8 @@
  */
 
 import { AXES, TEXT, annotate, list, name, nudge, restate } from './lib/annotations.mjs';
-import { CORNERS, label as cornerLabel, resize } from './lib/corners.mjs';
+import { asWritten, insets } from './lib/boxes.mjs';
+import { CORNERS, label as cornerLabel, drift, resize, word as cornerWord } from './lib/corners.mjs';
 import { DISPLAY, asSelector, rule as ruleFor } from './lib/overrides.mjs';
 
 /** Which of the parent's two sides each axis is measured down. `AXES` itself is
@@ -648,15 +649,60 @@ export class Measure {
         ? null
         : `${round(base.x + wanted.dx)}px ${round(base.y + wanted.dy)}px`,
     );
-    set('width', wanted.width === null ? null : `${wanted.width}px`);
-    set('height', wanted.height === null ? null : `${wanted.height}px`);
+    // BEFORE the sizes, and the order is load-bearing: a padding in `em` is a
+    // share of this very number, and the inset subtracted below is read off the
+    // page once it is standing at it.
     set('font-size', wanted.size === null ? null : `${wanted.size}px`);
+    // A MEASURED size is a BORDER box and a WRITTEN one is a CONTENT box unless
+    // the element says otherwise, so the two are converted rather than confused.
+    // `lib/boxes.mjs` is the whole reason, and it is not cosmetic: `resize()`
+    // derives a corner's MOVE from the size it asked for, so an inflated box
+    // drifts its anchor by padding-plus-border and stays drifted.
+    const sizes = asWritten(wanted, insets(getComputedStyle(element)));
+    set('width', sizes.width === null ? null : `${sizes.width}px`);
+    set('height', sizes.height === null ? null : `${sizes.height}px`);
     // MEASURED and not computed: a flex child whose width is capped ends up
     // somewhere other than where it was dragged to, and a text size the page
     // clamps lands somewhere other than where it was scrubbed. The number the
     // author wants in the Annotation is where it actually is.
     held.after = this.box(element);
     held.type.after = this.typeSize(element);
+  }
+
+  /**
+   * The one thing a corner drag can fail at that its own numbers do not show.
+   *
+   * `resize()` holds the anchor by translating the box by exactly what its width
+   * lost, which is right only when the LAYOUT holds the left edge still. A box
+   * placed by `margin-inline: auto` moves both edges as it narrows, so the anchor
+   * drifts by half the delta; one placed by `justify-content: flex-end` or
+   * `margin-left: auto` drifts by all of it.
+   *
+   * Nothing here fights that, and that is the decision rather than the shortfall.
+   * `applyTo()` re-measures, so the read-out and the Annotation already say
+   * truthfully where the box landed — a tool that moved the layout to hold a
+   * corner would be COMPUTING a position instead of reporting one, which is the
+   * line ADR 0004 draws. What was missing is that the author was not told, so the
+   * drag felt wrong under the pointer with nothing on screen saying why.
+   *
+   * Measured from where the box stood when THIS DRAG started, and not from where
+   * it was picked. An element that was moved first is standing on a translate the
+   * author asked for, and blaming the layout for it would fire this line on the
+   * ordinary "drag it over there, then size it" and teach the author to ignore it.
+   *
+   * Returns a clause to hang off the report line, or '' when the anchor held.
+   */
+  anchored(corner, was) {
+    const moved = drift(corner, was, this.picked.after);
+    if (moved.held) return '';
+    const by = [];
+    if (moved.dx !== 0) by.push(`${Math.abs(moved.dx)}px ${moved.dx > 0 ? 'right' : 'left'}`);
+    if (moved.dy !== 0) by.push(`${Math.abs(moved.dy)}px ${moved.dy > 0 ? 'down' : 'up'}`);
+    return (
+      ` — but the ${cornerWord(moved.corner)} corner could not be held: the page has it ${list(by)} of where the` +
+      ' drag started, because this box is placed by its layout rather than by its left edge. The numbers above are' +
+      ' measured, so they are true; the anchor is not.'
+    );
   }
 
   /**
@@ -1354,6 +1400,11 @@ export class Measure {
             corner: handle.dataset.editorHandle,
             x: event.clientX,
             y: event.clientY,
+            // Where the box stands NOW, which is what "the anchor did not move"
+            // is measured against when this drag is let go — see `anchored()`.
+            // Not `before`: an element already moved is standing on a translate
+            // the author asked for, and that is not the layout refusing to let go.
+            was: { ...this.picked.after },
             // The sizes are RESOLVED here rather than each frame. `wanted.width`
             // is null until something has asked for one, and reading the fallback
             // off `after` on every move would read a box the previous frame had
@@ -1419,7 +1470,7 @@ export class Measure {
         done,
         (event) => {
           if (!this.dragging) return;
-          const { how, axis } = this.dragging;
+          const { how, axis, corner, was } = this.dragging;
           this.dragging = null;
           if (!this.picked) return;
           // A scrub is a deliberate change to the value the row names, so letting
@@ -1427,7 +1478,11 @@ export class Measure {
           // measurement until the author says otherwise — `land()` is the whole
           // note on why the two differ.
           if (how === 'scrub' && event.type === 'pointerup') return void this.land(axis);
-          this.say(`${this.picked.named.phrase}: ${annotate(this.measurement()).headline}`);
+          const headline = annotate(this.measurement()).headline;
+          // Only a resize can lose an anchor: a move translates the box and asks
+          // the layout for nothing.
+          const anchor = how === 'resize' ? this.anchored(corner, was) : '';
+          this.say(`${this.picked.named.phrase}: ${headline}${anchor}`, anchor !== '');
         },
         true,
       );

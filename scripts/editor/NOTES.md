@@ -360,6 +360,42 @@ fallback off the last measured box on every frame made a slow drag compound and
 outrun the pointer. It is a `translate` and never a `left`, which is what keeps a
 resize inside the five properties an Override may write.
 
+**A MEASURED size is a border box and a WRITTEN one is a content box, and
+`lib/boxes.mjs` is the one place they are converted.** Every number this surface
+shows comes off `getBoundingClientRect()`, which includes padding and border; a
+`width` in a style excludes both unless the element computes `box-sizing:
+border-box`, and this repository has no global rule making it so — only three
+Sections set it locally. So writing a measured width straight back rendered a box
+padding-plus-border wider than the one measured. With one handle in the bottom
+right that was a size jump on the first frame; with four corners it is a lasting
+drift, because the move is derived from the size that was ASKED for and the page
+gave a bigger one. It **subtracts** rather than writing `box-sizing: border-box`,
+and that is the decision: `border-box` would be a SECOND box-model change by this
+tool, and the first — the `display: inline-block` promotion — is said out loud in
+the report line, in the Annotation and in the Override, because it is a real
+difference between what was measured and what the page does. Subtracting is no
+box-model change at all.
+
+**An anchor the LAYOUT will not let go of is reported and not fought.** The
+translate that holds the anchor is exactly what the width lost, which is right only
+where the layout holds the box's left edge still — a box placed by `margin-inline:
+auto` moves both edges as it narrows, and one placed by `justify-content: flex-end`
+or `margin-left: auto` moves by the whole delta. `applyTo()` re-measures, so the
+read-out and the Annotation were already truthful about where it landed; what was
+missing is that the author was not TOLD, so the drag felt wrong under the pointer
+with nothing on screen saying why. `drift()` in `lib/corners.mjs` answers whether
+the anchor held, within a pixel, and a corner drag that lost it says so as it is
+let go. Holding it instead would mean moving the layout, which is computing a
+position rather than reporting one — the line ADR 0004 draws.
+
+**It is measured from where the box stood when the RESIZE started, and not from
+where it was picked.** "Drag it over there, then size it" is the ordinary gesture,
+and an element standing on a translate the author asked for is not the layout
+refusing to let a corner go. Measured from the pick, the line fires on most drags,
+which is the same as not having it. The pixel of slack is the other half of that:
+sub-pixel layout and the hundredth every number here is rounded to put a fraction
+on nearly every measurement.
+
 **A drag is an inline style, and reaches no file at all.** Moving and resizing
 happens in the DOM — `translate`, `width`, `height` and `font-size` on the one
 element — so
@@ -795,7 +831,8 @@ elsewhere.
 | `lib/overrides.test.mjs` | the bytes of the Overrides file, the round trip that lets it re-serialise, and every refusal |
 | `lib/annotations.test.mjs` | the Annotation's own text — the glossary read out of the real `CONTEXT.md`, what an element is called, and every number restated |
 | `lib/bakes.test.mjs` | the bytes of a Bake's parameters, the argv a Bake is run with, and every refusal |
-| `lib/corners.test.mjs` | the corner arithmetic: per corner, that the opposite one does not move — through the clamp as well |
+| `lib/corners.test.mjs` | the corner arithmetic: per corner, that the opposite one does not move — through the clamp as well — and whether the anchor actually held |
+| `lib/boxes.test.mjs` | the border box a size is measured as against the content box it is written as, and that an axis nothing asked for stays unasked for |
 | `lib/runs.test.mjs` | whether a run is in flight, how it ended, and what it says when it did not end well |
 | `lib/sections.test.mjs` | that a request cannot name a file, against every resolver and all three families |
 | `lib/publish.test.mjs` | which arguments git is handed, and what counts as one of the Editor's paths |
@@ -842,12 +879,20 @@ that reads a style rule as a group and therefore finds nothing, one that reads a
 standing Override freezes its own element, and an inline box that is not promoted
 and therefore cannot be dragged at all; and, for #162, a handle that does not know
 which corner it is, a resize that treats every corner as the bottom right, and a
-`client/editor.css` that stops parsing before the measuring section.
+`client/editor.css` that stops parsing before the measuring section; and, for
+#165, a measured border box written back as a content box — which is why the
+corners are dragged on two shapes, the second padded, and why the first
+deliberately carries no padding at all — a report line for a lost anchor that
+never fires, one that fires on a box whose layout does hold it, and one measured
+from the pick rather than from the drag, which fires on "move it, then size it".
 
-Five were real bugs rather than invented mutations — four of #145's nine, and the
-unclosed CSS rule of #162's three — and none of them showed as anything but a
-silence, which is the argument for reading what the tool actually SAYS and not only
-whether it is green.
+Six were real bugs rather than invented mutations — four of #145's nine, the
+unclosed CSS rule of #162's three, and the content box of #165's — and none of them
+showed as anything but a silence, which is the argument for reading what the tool
+actually SAYS and not only whether it is green. #165's was found by reading #162's
+diff rather than by running anything, which is the same argument from the other
+end: the old bottom-right handle hid it, and the Check that would have caught it
+injected an element with no padding on purpose.
 
 **A dispatched pointer event does not need the element to be drawn, and that is
 the blind spot this Check had.** Every assertion above dispatches straight at an

@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { CORNERS, HOLDS, OPPOSITE, label, resize } from './corners.mjs';
+import { CORNERS, HOLDS, OPPOSITE, drift, label, resize } from './corners.mjs';
 
 /**
  * The corner arithmetic, on its own.
@@ -135,5 +135,77 @@ test('a corner is rounded to the hundredth, like every other number on this surf
 test('a corner nobody named is refused rather than guessed at', () => {
   for (const corner of ['n', 'north-west', 'NW', '', null]) {
     assert.throws(() => resize(corner, { dx: 1, dy: 1 }, from), /corner/i, `${corner} was not refused`);
+  }
+});
+
+// ---------------------------------------------------------------------------
+// Whether the anchor actually held, which the arithmetic above cannot know
+// ---------------------------------------------------------------------------
+
+/** A box as `client/measure.js` measures one: parent-relative, border box. */
+const box = (left, top, width, height) => ({ left, top, width, height });
+
+test('an anchor the layout held still reports as held', () => {
+  const held = drift('se', box(20, 30, 100, 50), box(20, 30, 60, 25));
+  assert.deepEqual(held, { corner: 'nw', dx: 0, dy: 0, held: true });
+});
+
+test('a centred box drifts by half of what its width lost', () => {
+  // `margin-inline: auto`: the box shrank by 40 and both edges came in by 20, so
+  // a translate of 40 overshoots the anchor by 20.
+  const moved = drift('se', box(20, 30, 100, 50), box(40, 30, 60, 50));
+  assert.deepEqual(moved, { corner: 'nw', dx: 20, dy: 0, held: false });
+});
+
+test('a right-anchored box drifts by all of it', () => {
+  const moved = drift('se', box(20, 30, 100, 50), box(60, 30, 60, 50));
+  assert.deepEqual(moved, { corner: 'nw', dx: 40, dy: 0, held: false });
+});
+
+test('each corner is judged by the corner opposite it and not by the left edge', () => {
+  // The box lost 40 of its width and was translated 40 right, which is exactly
+  // what dragging the WEST edge asks for — so the east edge, which is `nw`'s
+  // anchor, is where it always was and nothing has drifted.
+  assert.deepEqual(drift('nw', box(20, 30, 100, 50), box(60, 30, 60, 50)), {
+    corner: 'se',
+    dx: 0,
+    dy: 0,
+    held: true,
+  });
+  // The same two boxes judged from the other end: `se`'s anchor is the WEST edge,
+  // and it moved 40.
+  assert.equal(drift('se', box(20, 30, 100, 50), box(60, 30, 60, 50)).held, false);
+});
+
+test('a drift is read on both axes, not only across', () => {
+  const moved = drift('nw', box(20, 30, 100, 50), box(20, 30, 100, 50));
+  assert.deepEqual(moved, { corner: 'se', dx: 0, dy: 0, held: true });
+  assert.deepEqual(drift('nw', box(20, 30, 100, 50), box(20, 40, 100, 50)), {
+    corner: 'se',
+    dx: 0,
+    dy: 10,
+    held: false,
+  });
+});
+
+test('a pixel is not a drift, and more than one is', () => {
+  // Sub-pixel layout and the hundredth everything is rounded to put a fraction on
+  // most measurements, and a report line for it would cry wolf on every drag.
+  assert.equal(drift('se', box(20, 30, 100, 50), box(21, 30, 99, 50)).held, true);
+  assert.equal(drift('se', box(20, 30, 100, 50), box(21.5, 30, 98.5, 50)).held, false);
+});
+
+test('a drift is rounded to the hundredth, like every other number here', () => {
+  assert.deepEqual(drift('se', box(0, 0, 100, 50), box(2.005, 0, 100, 50)), {
+    corner: 'nw',
+    dx: 2.01,
+    dy: 0,
+    held: false,
+  });
+});
+
+test('a drift on a corner nobody named is refused rather than guessed at', () => {
+  for (const corner of ['n', 'north-west', 'NW', '', null]) {
+    assert.throws(() => drift(corner, box(0, 0, 10, 10), box(0, 0, 10, 10)), /corner/i, `${corner} was not refused`);
   }
 });

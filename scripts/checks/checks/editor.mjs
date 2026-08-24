@@ -911,70 +911,232 @@ export const check = {
       await page.locator('[data-editor-measure="restore"]').click();
 
       const anchors = { nw: ['right', 'bottom'], ne: ['left', 'bottom'], sw: ['right', 'top'], se: ['left', 'top'] };
-      const cornered = [];
-      // Every corner dragged INWARDS, so all four take the same 40x25 off the box
-      // and one comparison reads for all of them.
-      for (const [corner, dx, dy] of [
-        ['nw', 40, 25],
-        ['ne', -40, 25],
-        ['sw', 40, -25],
-        ['se', -40, -25],
-      ]) {
-        const dragged = await page.evaluate(
-          ([which, byX, byY]) => {
-            const element = document.getElementById('editor-check-corners');
-            const at = (target, type, x, y) =>
-              target.dispatchEvent(new PointerEvent(type, { bubbles: true, cancelable: true, clientX: x, clientY: y }));
-            const start = element.getBoundingClientRect();
-            const mid = [Math.round(start.left + start.width / 2), Math.round(start.top + start.height / 2)];
-            at(element, 'pointerdown', ...mid);
-            at(element, 'pointerup', ...mid);
-            const handle = document.querySelector(`[data-editor-handle="${which}"]`);
-            if (!handle) return null;
-            const grip = handle.getBoundingClientRect();
-            const x = Math.round(grip.left + grip.width / 2);
-            const y = Math.round(grip.top + grip.height / 2);
-            at(handle, 'pointerdown', x, y);
-            at(handle, 'pointermove', x + byX, y + byY);
-            at(handle, 'pointerup', x + byX, y + byY);
-            const box = ({ left, top, right, bottom, width, height }) => ({
-              left: Math.round(left),
-              top: Math.round(top),
-              right: Math.round(right),
-              bottom: Math.round(bottom),
-              width: Math.round(width),
-              height: Math.round(height),
-            });
-            return { before: box(start), after: box(element.getBoundingClientRect()) };
-          },
-          [corner, dx, dy],
-        );
-        if (dragged === null) {
-          failures.push(`the marquee has no ${corner} handle — that corner cannot be dragged at all`);
-          continue;
-        }
-        const { before, after } = dragged;
-        if (Math.abs(before.width - after.width - 40) > 2 || Math.abs(before.height - after.height - 25) > 2) {
-          failures.push(
-            `dragging the ${corner} corner inwards by 40x25 took ${before.width - after.width}x` +
-              `${before.height - after.height} off the box`,
+      // TWO shapes, and the same four corners on each. The second is #165: a
+      // MEASURED size is a BORDER box, because it is read off
+      // `getBoundingClientRect()`, and a WRITTEN one is a CONTENT box unless the
+      // element says otherwise — and this repository has no global
+      // `box-sizing: border-box`. So a padded content box was given back a box
+      // padding-plus-border WIDER than the one asked for, and because
+      // `lib/corners.mjs` derives the corner's MOVE from the size it asked for,
+      // the anchor drifted by exactly that and stayed drifted for the whole drag.
+      // The plain shape is first and deliberately carries no padding at all,
+      // which is what keeps its four assertions about SIGNS and nothing else.
+      const shapes = [
+        ['a plain box', 'position: fixed; left: 200px; top: 200px; width: 240px; height: 160px;'],
+        [
+          'a padded content box',
+          'position: fixed; left: 200px; top: 200px; width: 240px; height: 160px; box-sizing: content-box;' +
+            ' padding: 12px 18px; border: 3px solid transparent;',
+        ],
+      ];
+      for (const [shape, css] of shapes) {
+        // A FRESH element per shape, rather than restyling the one above. What is
+        // picked stays picked through a *put back*, and a pointerdown on something
+        // already picked does not re-record it — so restyling it under the
+        // selection left `before` measuring the previous shape, and every number
+        // below was out by the padding whether the code was right or wrong. A new
+        // element is not in the selection, so the pointerdown that starts each
+        // drag picks it properly.
+        await page.evaluate((style) => {
+          document.getElementById('editor-check-corners')?.remove();
+          const element = document.createElement('div');
+          element.id = 'editor-check-corners';
+          element.style.cssText = style;
+          document.body.append(element);
+        }, css);
+        const cornered = [];
+        // Every corner dragged INWARDS, so all four take the same 40x25 off the box
+        // and one comparison reads for all of them.
+        for (const [corner, dx, dy] of [
+          ['nw', 40, 25],
+          ['ne', -40, 25],
+          ['sw', 40, -25],
+          ['se', -40, -25],
+        ]) {
+          const dragged = await page.evaluate(
+            ([which, byX, byY]) => {
+              const element = document.getElementById('editor-check-corners');
+              const at = (target, type, x, y) =>
+                target.dispatchEvent(new PointerEvent(type, { bubbles: true, cancelable: true, clientX: x, clientY: y }));
+              const start = element.getBoundingClientRect();
+              const mid = [Math.round(start.left + start.width / 2), Math.round(start.top + start.height / 2)];
+              at(element, 'pointerdown', ...mid);
+              at(element, 'pointerup', ...mid);
+              const handle = document.querySelector(`[data-editor-handle="${which}"]`);
+              if (!handle) return null;
+              const grip = handle.getBoundingClientRect();
+              const x = Math.round(grip.left + grip.width / 2);
+              const y = Math.round(grip.top + grip.height / 2);
+              at(handle, 'pointerdown', x, y);
+              at(handle, 'pointermove', x + byX, y + byY);
+              at(handle, 'pointerup', x + byX, y + byY);
+              const box = ({ left, top, right, bottom, width, height }) => ({
+                left: Math.round(left),
+                top: Math.round(top),
+                right: Math.round(right),
+                bottom: Math.round(bottom),
+                width: Math.round(width),
+                height: Math.round(height),
+              });
+              return { before: box(start), after: box(element.getBoundingClientRect()) };
+            },
+            [corner, dx, dy],
           );
+          if (dragged === null) {
+            failures.push(`the marquee over ${shape} has no ${corner} handle — that corner cannot be dragged at all`);
+            continue;
+          }
+          const { before, after } = dragged;
+          if (Math.abs(before.width - after.width - 40) > 2 || Math.abs(before.height - after.height - 25) > 2) {
+            failures.push(
+              `dragging the ${corner} corner of ${shape} inwards by 40x25 took` +
+                ` ${before.width - after.width}x${before.height - after.height} off the box`,
+            );
+          }
+          const drifted = anchors[corner].filter((edge) => Math.abs(after[edge] - before[edge]) > 2);
+          if (drifted.length > 0) {
+            failures.push(
+              `dragging the ${corner} corner of ${shape} moved its ${anchors[corner].join(' and ')}` +
+                ` (${drifted.map((edge) => `${edge} ${before[edge]} → ${after[edge]}`).join(', ')}) — the corner` +
+                ' opposite the one being dragged is the anchor and does not move',
+            );
+          } else {
+            cornered.push(corner);
+          }
+          // The other half of #165 is a report line for an anchor the LAYOUT would
+          // not let go of, and a line that fires on every drag would say nothing.
+          // Both shapes here are `position: fixed` with a `left`, so the layout
+          // does hold their left edge and there is nothing to warn about.
+          const reported = (await page.textContent('[data-editor-said]')) ?? '';
+          if (reported.includes('could not be held')) {
+            failures.push(
+              `dragging the ${corner} corner of ${shape} reported a lost anchor — "${reported}" — on a box whose` +
+                ' left edge the layout does hold, so that warning fires on every drag and says nothing',
+            );
+          }
+          await page.locator('[data-editor-measure="restore"]').click();
         }
-        const drifted = anchors[corner].filter((edge) => Math.abs(after[edge] - before[edge]) > 2);
-        if (drifted.length > 0) {
+        if (cornered.length === 4) notes.push(`resized ${shape} by dragging all four corners (${cornered.join(', ')})`);
+      }
+      await page.evaluate(() => document.getElementById('editor-check-corners')?.remove());
+
+      // ---- moved first, then resized ---------------------------------------
+      //
+      // The lost-anchor line is measured from where the box stood when the RESIZE
+      // started, and not from where it was picked. "Drag it over there, then size
+      // it" is the ordinary gesture, and an element standing on a translate the
+      // author asked for is not the layout refusing to let a corner go — a line
+      // that fired on it would fire on most drags and teach the author to skip it.
+      await page.evaluate(() => {
+        const element = document.createElement('div');
+        element.id = 'editor-check-moved';
+        element.style.cssText = 'position: fixed; left: 200px; top: 300px; width: 200px; height: 80px;';
+        document.body.append(element);
+      });
+      const pushed = await page.evaluate(() => {
+        const element = document.getElementById('editor-check-moved');
+        const at = (target, type, x, y) =>
+          target.dispatchEvent(new PointerEvent(type, { bubbles: true, cancelable: true, clientX: x, clientY: y }));
+        const start = element.getBoundingClientRect();
+        const x = Math.round(start.left + start.width / 2);
+        const y = Math.round(start.top + start.height / 2);
+        at(element, 'pointerdown', x, y);
+        at(element, 'pointermove', x + 60, y);
+        at(element, 'pointerup', x + 60, y);
+        const shifted = Math.round(element.getBoundingClientRect().left);
+        const handle = document.querySelector('[data-editor-handle="se"]');
+        if (!handle) return null;
+        const grip = handle.getBoundingClientRect();
+        const gx = Math.round(grip.left + grip.width / 2);
+        const gy = Math.round(grip.top + grip.height / 2);
+        at(handle, 'pointerdown', gx, gy);
+        at(handle, 'pointermove', gx - 30, gy - 20);
+        at(handle, 'pointerup', gx - 30, gy - 20);
+        return { from: Math.round(start.left), shifted };
+      });
+      if (pushed === null || pushed.from === pushed.shifted) {
+        failures.push(
+          'a box dragged 60px right did not move, so the Check that a prior move is not reported as a lost anchor' +
+            ' is staging nothing',
+        );
+      } else {
+        const reported = (await page.textContent('[data-editor-said]')) ?? '';
+        if (reported.includes('could not be held')) {
           failures.push(
-            `dragging the ${corner} corner moved the ${anchors[corner].join(' and ')} of the box` +
-              ` (${drifted.map((edge) => `${edge} ${before[edge]} → ${after[edge]}`).join(', ')}) — the corner` +
-              ' opposite the one being dragged is the anchor and does not move',
+            `a box moved ${pushed.shifted - pushed.from}px and then resized reported a lost anchor — "${reported}" —` +
+              " but the translate it is standing on is the author's own, so this fires on the ordinary gesture",
           );
         } else {
-          cornered.push(corner);
+          notes.push('did not call the author’s own move a lost anchor');
         }
-        await page.locator('[data-editor-measure="restore"]').click();
       }
-      if (cornered.length === 4) notes.push(`resized by dragging all four corners (${cornered.join(', ')})`);
+      await page.locator('[data-editor-measure="restore"]').click();
+      await page.evaluate(() => document.getElementById('editor-check-moved')?.remove());
+
+      // ---- an anchor the layout will not let go of -------------------------
+      //
+      // `lib/corners.mjs` holds the anchor by translating the box by exactly what
+      // its width lost, which is right only when the layout holds the box's LEFT
+      // edge still. A box placed by `margin-inline: auto` moves both edges as it
+      // narrows, so the anchor drifts by half the delta whatever this surface
+      // does about it.
+      //
+      // #165 decided not to fight that: this surface MEASURES, so `applyTo()`
+      // re-reads the box and the read-out and the Annotation are already truthful
+      // about where it landed — a tool that moved the layout to hold a corner
+      // would be computing a position rather than reporting one, which is the
+      // line ADR 0004 draws. What it owes the author is to SAY so, and that
+      // sentence is the deliverable, so it is what is asserted.
+      await page.evaluate(() => {
+        const around = document.createElement('div');
+        around.id = 'editor-check-centred';
+        around.style.cssText = 'position: fixed; left: 100px; top: 420px; width: 400px; height: 80px;';
+        const inside = document.createElement('div');
+        inside.id = 'editor-check-centred-box';
+        inside.style.cssText = 'width: 200px; height: 60px; margin-inline: auto;';
+        around.append(inside);
+        document.body.append(around);
+      });
+      const centred = await page.evaluate(() => {
+        const element = document.getElementById('editor-check-centred-box');
+        const at = (target, type, x, y) =>
+          target.dispatchEvent(new PointerEvent(type, { bubbles: true, cancelable: true, clientX: x, clientY: y }));
+        const start = element.getBoundingClientRect();
+        at(element, 'pointerdown', Math.round(start.left + start.width / 2), Math.round(start.top + start.height / 2));
+        at(element, 'pointerup', Math.round(start.left + start.width / 2), Math.round(start.top + start.height / 2));
+        const handle = document.querySelector('[data-editor-handle="se"]');
+        if (!handle) return null;
+        const grip = handle.getBoundingClientRect();
+        const x = Math.round(grip.left + grip.width / 2);
+        const y = Math.round(grip.top + grip.height / 2);
+        at(handle, 'pointerdown', x, y);
+        at(handle, 'pointermove', x - 40, y - 25);
+        at(handle, 'pointerup', x - 40, y - 25);
+        return { left: Math.round(start.left), now: Math.round(element.getBoundingClientRect().left) };
+      });
+      if (centred === null) {
+        failures.push('the marquee over a centred box has no se handle, so nothing here could be dragged');
+      } else if (centred.left === centred.now) {
+        // Not the surface's failure to report — the situation did not arise, so
+        // the assertion below would pass on a page that had nothing to say.
+        failures.push(
+          `a box placed by margin-inline: auto did not move its left edge when it narrowed (${centred.left} both` +
+            ' times), so this Check is no longer staging the case it is about',
+        );
+      } else {
+        const reported = (await page.textContent('[data-editor-said]')) ?? '';
+        if (!reported.includes('top left corner could not be held')) {
+          failures.push(
+            `resizing a centred box moved its left edge from ${centred.left} to ${centred.now} and the Editor said` +
+              ` "${reported}" — the anchor could not be held and the author was not told`,
+          );
+        } else {
+          notes.push('said so when a centred box would not let its anchor be held');
+        }
+      }
+      await page.locator('[data-editor-measure="restore"]').click();
       await page.locator('[data-editor-choose="content"]').click();
-      await page.evaluate(() => document.getElementById('editor-check-corners')?.remove());
+      await page.evaluate(() => document.getElementById('editor-check-centred')?.remove());
       await page.locator('[data-editor-choose="measure"]').click();
 
       // ---- a measurement that lands on a Token ----------------------------

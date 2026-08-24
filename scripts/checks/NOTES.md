@@ -84,7 +84,7 @@ cannot be verified there even by hand.
 | `moments`        | a Timeline cannot be seeked, does not survive a scroll, moves nothing, or will not release |
 | `deep-links`     | a Section on the page carries no id, or its `/portfolio/<id>` does not answer, or answers with something that is not the document, or opens it somewhere other than where that Section asks to be put |
 | `unpublishable`  | a Section's words or its spoken attributes match the denylist                 |
-| `editor`         | the Editor cannot change a word or drag a Token on the real page, or the change does not reach the file, or a refusal does, or a drag writes on every frame, or a Timeline cannot be scrubbed and held, or measuring writes to a source file, or an Override does not reach the file or does not reach the page, or one cannot be discarded, or a corner does not resize from the corner opposite it, or the marquee and its handles are not drawn at all, or the Editor is in the built tree |
+| `editor`         | the Editor cannot change a word or drag a Token on the real page, or the change does not reach the file, or a refusal does, or a drag writes on every frame, or a Timeline cannot be scrubbed and held, or measuring writes to a source file, or an Override does not reach the file or does not reach the page, or one cannot be discarded, or a corner does not resize from the corner opposite it, or a measured border box is written back as a content box, or an anchor the layout would not let go of is not reported — or is reported on every drag — or the marquee and its handles are not drawn at all, or the Editor is in the built tree |
 
 `front-screen` is the first Section-specific Check, and the pattern it sets is
 worth copying: it asserts only relationships between two things that have to stay
@@ -185,8 +185,8 @@ see. Partial wiring is one they would.
 **`editor` is one smoke Check and is not where the Editor is tested.** The Editor's
 tests are at its four write boundaries, on the bytes — `scripts/editor/lib/*.test.mjs`,
 run by `pnpm test` — because that is where a bug corrupts a source file, plus the
-Annotation's own text and the corner arithmetic, both tested there for the opposite
-reason: a sentence and a sum are the deliverable and need no page. What a boundary
+Annotation's own text and the corner and box-model arithmetic, all tested there for
+the opposite reason: a sentence and a sum are the deliverable and need no page. What a boundary
 cannot see is whether the surface is WIRED to it, and that is all this Check is for. It writes to a temporary `src/`
 holding every Section's Content and Tokens and a copy of the Overrides file, and
 compares the real files before and after: it runs from the pre-commit hook, and a
