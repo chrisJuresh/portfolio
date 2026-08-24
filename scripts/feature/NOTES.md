@@ -261,7 +261,7 @@ which is which:
 | source | worth |
 | --- | --- |
 | the directory the process started in, captured before the chdir | **exact.** pnpm inherited it from whoever called it, so a directory inside the worktree means a live process has it — live because it is blocked waiting for us. True of a `cd &&`, a `( … )` subshell and a `bash -c` alike |
-| a `Win32_Process` command line naming a path inside the tree | **named, never believed.** A command line is not a working directory. It earns its place because `astro dev` is spawned with an absolute `<worktree>/node_modules/astro/bin/astro.mjs`, so a server both port checks missed turns up here |
+| a `Win32_Process` command line naming a path inside the tree | **named, never believed.** A command line is not a working directory. It earns its place because `astro dev` is spawned with an absolute `<worktree>/node_modules/astro/bin/astro.mjs`, so a server both port checks missed turns up here. Cut to one line from the front — the program identifies the process, and a shell's command line here is seven hundred characters of snapshot-sourcing preamble that wrapped the row three times and buried the line above it |
 
 The wording of the exact half says *the directory* and not *the shell*, because
 `pnpm --dir <worktree>` would make it this process's own working directory and

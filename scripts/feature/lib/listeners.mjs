@@ -200,6 +200,27 @@ function names(said, target) {
 }
 
 /**
+ * One terminal line of a command line.
+ *
+ * A shell's command line here is seven hundred characters of snapshot-sourcing
+ * preamble, and printing it whole wrapped the row three times and buried the
+ * `standing` line above it — which is the one the author acts on (#169). The
+ * report's whole job is that somebody reads it.
+ *
+ * Taken from the FRONT, because the program is at the front and the program is
+ * what identifies the process. The rest is evidence, and the pid is the handle.
+ *
+ * @param {string} said
+ * @param {number} [max] characters, the ellipsis included
+ * @returns {string}
+ */
+export function brief(said, max = 120) {
+  const oneLine = String(said).replace(/\s+/g, ' ').trim();
+  // Elided visibly, so a truncated command line is never read as a whole one.
+  return oneLine.length <= max ? oneLine : `${oneLine.slice(0, max - 1)}…`;
+}
+
+/**
  * What is holding the worktree open without being on a port.
  *
  * On Windows a process's working directory is an open handle to that directory
@@ -253,7 +274,7 @@ export function standingIn({ worktree, startedIn, named = [] }) {
       // and Windows will not report one. `holders` above is careful in the same
       // way about a port being machine-wide, and for the same reason — a report
       // that overstates sends the author after the wrong process.
-      from: `its command line names a path inside this worktree — ${one.said}`,
+      from: `its command line names a path inside this worktree — ${brief(one.said)}`,
       confirmed: false,
     });
   }

@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { fromCommandLines, fromLsof, fromNetstat, holders, standingIn } from './listeners.mjs';
+import { brief, fromCommandLines, fromLsof, fromNetstat, holders, standingIn } from './listeners.mjs';
 
 const NETSTAT = `
 Active Connections
@@ -215,6 +215,29 @@ test('a command run from the main checkout is not standing in the worktree', () 
   assert.deepEqual(standingIn({ worktree: TREE, startedIn: 'C:/Users/Chris/Desktop/portfolio' }), []);
   assert.deepEqual(standingIn({ worktree: TREE, startedIn: `${TREE}-two` }), []);
   assert.deepEqual(standingIn({ worktree: TREE, startedIn: null }), []);
+});
+
+test('a command line is cut to one line, from the front', () => {
+  // A shell's command line here is seven hundred characters of snapshot-sourcing
+  // preamble, and a row that wraps three times buries the `standing` line above
+  // it (#169). The program is at the front, and the program is what identifies
+  // the process.
+  const long = `"C:/Program Files/Git/bin/bash.exe" -c "source ${'x'.repeat(400)}"`;
+  const cut = brief(long);
+  assert.equal(cut.length, 120);
+  assert.ok(cut.startsWith('"C:/Program Files/Git/bin/bash.exe" -c'), cut);
+  assert.ok(cut.endsWith('…'), 'elided visibly, so it is not read as the whole command');
+});
+
+test('a short command line is left exactly as it is', () => {
+  assert.equal(brief('node astro.mjs dev'), 'node astro.mjs dev');
+  assert.equal(brief(''), '');
+});
+
+test('newlines and runs of space in a command line collapse', () => {
+  // One row, one line: a command line carrying a newline would otherwise put a
+  // second, unlabelled line into the report.
+  assert.equal(brief(` node${String.fromCharCode(10)}  --flag${String.fromCharCode(9)}x `), 'node --flag x');
 });
 
 test('a command line is named but never believed', () => {
