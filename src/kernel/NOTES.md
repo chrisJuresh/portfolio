@@ -207,6 +207,22 @@ which is what the Editor is; `carousel` is what refuses a committed value the
 band's short corner cannot pay for, rather than letting the strip collapse
 quietly.
 
+**And it is dragged from the PAGE and not only from the panel.** The Measure
+surface's `scale everything` toggle turns a corner drag into a drag of this number
+— pick anything, drag its corner diagonally, and the whole composition scales by
+the percentage the report line names. `scripts/editor/NOTES.md` is that gesture and
+why a box could never have answered it: an element's width is a width, and
+"everything at one percentage" is the root font-size or it is nothing.
+
+**A zoom is a REDISTRIBUTION inside the band, which is the sentence to have ready
+when somebody asks why the photographs got smaller.** The strip is the remainder,
+so it cannot grow with the rest — it funds the rest. Measured at 2560x1311, ×1.3
+takes the column from 432px to 562px and every glyph with it, and takes a
+photograph from 288px wide to 250px, because at 100% the strip was already standing
+on its own `24rem` ceiling and the fold had nothing left to give. Making the
+photographs BIGGER is therefore not a zoom at all: it is the type giving up some of
+the budget, which is a change to the Section's ladder rather than to this number.
+
 ## Two things a Check has to know
 
 **Ask a Timeline for a moment, but `hold()` first.** A scrubbed Timeline is

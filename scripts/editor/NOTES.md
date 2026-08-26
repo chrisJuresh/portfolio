@@ -32,10 +32,10 @@ cannot express.
 
 The Recording is not a seventh kind of thing either: it writes nothing at all. It
 is the Annotation at session scale, which is what two of the Measure surface's
-three toggles — **scale text** and **keep** — are for as well. All three are one
+four toggles — **scale text** and **keep** — are for as well. All three are one
 complaint about a tool that measured *one element* well: see
-**Three toggles, and a Recording** below. The third, **resize by one ratio**, is a
-different complaint and has its own heading.
+**Four toggles, and a Recording** below. The other two — **resize by one ratio**
+and **scale everything** — are a different complaint, and have their own headings.
 
 **undo, redo and `Ctrl-Z`** are that complaint's last part, and they reach a file
 without being a fifth kind of thing either: an undo writes the same Token, and the
@@ -618,11 +618,67 @@ ticket names.** The Measure surface lists every one with a *discard* beside it; 
 panel's header carries a count that stays visible whichever surface is in front;
 and `pnpm check:sections` prints how many are standing on every build.
 
-### Three toggles, and a Recording
+### Four toggles, and a Recording
 
-Four things. Three of them are one complaint — the surface measured **one element**
-well and a **session** of them badly — and `resize by one ratio` is the fourth,
-which is about the gesture rather than the session.
+Five things. Three of them are one complaint — the surface measured **one element**
+well and a **session** of them badly. `resize by one ratio` and `scale everything`
+are the other two, and they are about the GESTURE rather than the session: one
+scales the box, and one scales the page.
+
+#### `scale everything` — a corner drag scales the composition
+
+The third time the author asked for this, the ask was the same each time and the
+answer was not in a row: *let me drag a corner diagonally and make everything
+bigger by a percentage — the photographs and the text too.*
+
+**A BOX CANNOT ANSWER THAT, and that is the whole reason this toggle exists rather
+than a sixth row.** The four rows are one element's, and an element's width is a
+width: scaling it takes the box and leaves the photographs, the gaps and the type
+inside exactly where they were. Worse, most boxes here have no size of their own to
+scale — the Front Screen's column is a measure inside a Section pinned to the fold,
+so its height is a *fill* and there is nothing to give it. "Everything, at one
+percentage" is not a property of any box on the page. It is the **root font-size**,
+because every measure, gap and glyph in both Sections is authored in rem.
+
+So while this is on, a corner drag does not touch the box at all: it multiplies
+`--type-zoom` — `ZOOM` in `client/measure.js`, `src/kernel/tokens/faces.css` — by
+the ratio the drag asked for, and the box the author is holding follows because its
+measure is in rem like everything else. The ratio is `lib/corners.mjs`'s, the axis
+the pointer travelled further along, and it matters more here than it does for a
+scale: the column can only grow sideways, so a ratio that averaged the two axes in
+would leave the corner lagging the pointer by half on the one gesture this exists
+for.
+
+**It PREVIEWS through the Tokens surface's own sheet**, because a custom property on
+`:root` has no element to be written on — which is also what stops the panel's own
+slider and this gesture disagreeing about what the page is showing. And it **WRITES
+on release**, alone among the drags here. That asymmetry is `land()`'s, from the
+other end: a drag that moves a box moved a coordinate in a composition and stays a
+measurement, and a drag that moves a TOKEN moved a named number the author owns, so
+the only thing to do with it is write it. It goes through `writeTokens()` for that,
+not a second way to write a Token, so the Recording's line, the repick that drops
+this surface's now-doubled inline styles, and the record an undo reverses all come
+from the one place. A cancel puts the preview back and writes nothing.
+
+**WHAT IT CANNOT DO, and the author has to be told rather than left to discover it.**
+Above 1100x700 the Front Screen is composed to exactly ONE SCREEN, and the
+photograph strip is that budget's remainder. So a zoom is a REDISTRIBUTION and not
+a magnification: everything with a *stated* size grows by the percentage, and the
+remainder shrinks to pay for it. Measured at 2560x1311, ×1.3 takes the column from
+432px to 562px and every glyph with it — and takes a photograph from 288px wide to
+250px, because at 100% the strip was already standing on its own `24rem` ceiling
+and the fold has no more room to give. The release line says exactly this, in the
+same sentence as the percentage, because a photograph getting smaller while
+everything else grows reads as a bug and is the composition working.
+
+**Naming one Token in one place is a decision, not a shortcut.** There is exactly
+one zoom on this page, and a protocol for a Section to declare its own would be
+machinery for a single number nobody has asked for twice. `zoomToken()` degrades
+honestly meanwhile: it reads through `declaring()`, so the value is whatever the
+last write left rather than what the build was made from — which is what makes an
+undo of the second zoom in a session land on the first's value — and it answers
+null where nothing declares it, or where two rules do, and the toggle says so
+instead of arming a gesture with nothing behind it.
 
 #### `resize by one ratio` — a corner drag scales the box
 

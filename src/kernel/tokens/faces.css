@@ -29,7 +29,18 @@
      the screen's own height: measured at 1.5, a 2560x1311 window still leaves a
      254px strip, and 1440x900 leaves 18px. So this is a Token to drag while
      LOOKING at the page, and `carousel` is the Check that refuses a value the
-     band's short corner cannot afford. */
+     band's short corner cannot afford.
+
+     WHICH MAKES IT A REDISTRIBUTION AND NOT A MAGNIFICATION, and that is the thing
+     to know before dragging it: everything with a STATED size grows by the
+     percentage, and the strip — the remainder — shrinks to fund it. At 2560x1311,
+     1.3 takes the column from 432px to 562px and a photograph from 288px to 250px,
+     because at 1 the strip already stood on its own 24rem ceiling. Making the
+     PHOTOGRAPHS bigger is a change to the Section's type ladder and not to this
+     number.
+
+     The Editor drags it from the page as well as from the panel: pick anything,
+     turn on `scale everything`, and a corner drag moves this — scripts/editor/NOTES.md. */
   --type-zoom: 1;
 
   /* THE CEILING, in rem rather than px on purpose: on the root's own font-size a

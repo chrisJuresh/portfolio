@@ -1569,6 +1569,98 @@ export const check = {
         });
       }
 
+      // ---- the zoom, which is not any box's and is dragged all the same ----
+      //
+      // WHAT THIS ASSERTS THAT NO ROW CAN. The four rows are one element's, and
+      // "make everything bigger by a percentage" is not a property of any element:
+      // it is the root font-size, because every measure, gap and glyph in both
+      // Sections is authored in rem. So the `scale everything` toggle turns a corner
+      // drag into a drag of ONE KERNEL TOKEN, previewed through the Tokens surface's
+      // own sheet because there is no element to put it on, and written on release
+      // rather than left as a measurement — a zoom is a Token and not a coordinate.
+      //
+      // Three things can be silently wrong about that and none of them is visible
+      // from a boundary test: the drag can fail to reach the Token, the preview can
+      // fail to reach the page, and the release can move the page without writing
+      // the file. So this asserts the root font-size MOVED and the file HOLDS it.
+      const zoomFile = join(to.kernel, 'tokens', 'faces.css');
+      const zoomHeld = (() => {
+        try {
+          return readFileSync(zoomFile, 'utf8');
+        } catch {
+          return null;
+        }
+      })();
+      if (zoomHeld === null || !zoomHeld.includes('--type-zoom')) {
+        notes.push('the Kernel declares no --type-zoom, so the zoom gesture is not asserted');
+      } else {
+        await page.locator('[data-editor-choose="content"]').click();
+        await page.locator('[data-editor-choose="measure"]').click();
+        await page.evaluate((name) => {
+          const element = document.querySelector(`[data-section="${name}"] *`);
+          const at = (kind) => element.dispatchEvent(new PointerEvent(kind, { bubbles: true, cancelable: true }));
+          at('pointerdown');
+          at('pointerup');
+        }, picked.section);
+        await page.locator('[data-editor-toggle="zoom"]').check();
+        const rootWas = await page.evaluate(() => getComputedStyle(document.documentElement).fontSize);
+        const zoomGrip = await page.locator('[data-editor-handle="se"]').boundingBox();
+        if (!zoomGrip) {
+          failures.push('no handle to drag the zoom by — nothing was picked, or the marquee is not drawn');
+        } else {
+          await page.mouse.move(zoomGrip.x + zoomGrip.width / 2, zoomGrip.y + zoomGrip.height / 2);
+          await page.mouse.down();
+          await page.mouse.move(zoomGrip.x + zoomGrip.width / 2 + 90, zoomGrip.y + zoomGrip.height / 2 + 60, {
+            steps: 10,
+          });
+          const rootDuring = await page.evaluate(() => getComputedStyle(document.documentElement).fontSize);
+          await page.mouse.up();
+          // The PAGE first: a preview that never reached the document is a gesture
+          // the author cannot see, whatever the file ends up holding.
+          if (Number.parseFloat(rootDuring) <= Number.parseFloat(rootWas)) {
+            failures.push(
+              `dragging a corner with "scale everything" on left the root font-size at ${rootDuring} from` +
+                ` ${rootWas} — the preview is not reaching the page, so nothing about the gesture is visible`,
+            );
+          }
+          // Then the FILE, which is the half a moving page cannot vouch for: the
+          // preview is a stylesheet of the Editor's own, so a release that wrote
+          // nothing would look completely right until the next build took it back.
+          const wroteZoom = await holds(page, () => readFileSync(zoomFile, 'utf8') !== zoomHeld);
+          if (!wroteZoom) {
+            failures.push(
+              'letting go of a zoom wrote nothing to src/kernel/tokens/faces.css — the gesture is not reaching' +
+                ' the Tokens surface’s own control, so the page and the file disagree',
+            );
+          } else {
+            notes.push(`dragged the zoom: root font-size ${rootWas} → ${rootDuring}, and --type-zoom was written`);
+          }
+          // AND BACK — but not until the STEP is on the stack, which is a moment
+          // later than the file changing and cost this Check a run. `landZoom` is
+          // not awaited by the pointerup handler, so the write lands inside
+          // `writeKey` and the step is recorded after it: a Ctrl-Z fired the instant
+          // the bytes changed reverses whatever was on the stack BEFORE this
+          // gesture, and reads as an undo that did not reach the Token. The button's
+          // own title is the honest signal that the step exists.
+          await page
+            .waitForFunction(
+              () => document.querySelector('[data-editor-undo]')?.title?.includes('the zoom'),
+              null,
+              { timeout: 10_000 },
+            )
+            .catch(() => {
+              failures.push('a zoom never reached the undo stack — the button is still offering an older gesture');
+            });
+          await page.keyboard.press('Control+z');
+          if (!(await holds(page, () => readFileSync(zoomFile, 'utf8') === zoomHeld))) {
+            failures.push('Ctrl-Z after a zoom left --type-zoom written — the Token write is not on the stack');
+          } else {
+            notes.push('Ctrl-Z wrote the zoom back to what the build was made from');
+          }
+        }
+        await page.locator('[data-editor-toggle="zoom"]').uncheck();
+      }
+
       // ---- the text size, which is the fifth row and the reason for #166 ---
       //
       // Same mechanism as the width above and a different property, so what this

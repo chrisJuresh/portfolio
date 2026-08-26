@@ -221,6 +221,37 @@ const LIFTS = {
  *  The four axes' bounds included, because a preview lifts the one that governs. */
 const WRITES = ['display', 'translate', 'width', 'height', ...LIFTS.width, ...LIFTS.height];
 
+/**
+ * The page's own zoom: the one Token every ladder on the page is a multiple of.
+ *
+ * WHY A BOX CANNOT ANSWER "MAKE EVERYTHING BIGGER". The four rows are one
+ * element's, and an element's width is a width — scaling it takes the box with it
+ * and leaves the photographs, the gaps and the type inside exactly where they
+ * were. Worse, most boxes here have no size of their own to scale: the Front
+ * Screen's column is a measure inside a Section pinned to the fold, so its height
+ * is a fill that cannot be given anything at all. "Everything, at one percentage"
+ * is therefore not a property of any box on the page. It is the root font-size,
+ * because every measure, every gap and every glyph in both Sections is authored in
+ * rem — `src/kernel/tokens/faces.css` is the three numbers and says so.
+ *
+ * NAMED HERE RATHER THAN DISCOVERED, and that is a decision rather than a
+ * shortcut: there is exactly one zoom on this page, and a protocol for a Section
+ * to declare its own would be machinery for a single number nobody has asked for
+ * twice. If a second one ever exists, this is the line that has to become a
+ * lookup. The surface degrades honestly meanwhile — `zoomToken()` answers null
+ * where nothing declares it and the toggle says so rather than arming a gesture
+ * with nothing behind it.
+ */
+const ZOOM = '--type-zoom';
+
+/** A zoom, to the thousandth: it is a multiplier rather than a length, so the
+ *  hundredth every box measurement is rounded to would be a visible step. */
+const factor = (n) => Math.round(n * 1000) / 1000;
+
+/** The same as a percentage, which is the unit the author actually asks in — "make
+ *  it 30% bigger" — and the one the report line uses. */
+const percent = (n) => `${Math.round(n * 1000) / 10}%`;
+
 /** A declaration that is exactly one Token and nothing else. Anything else — a
  *  `calc()` holding one, a sum of two — is a relationship, and the Annotation
  *  says which Tokens it saw rather than offering to write it. */
@@ -516,6 +547,23 @@ export class Measure {
      */
     this.scaling = false;
     /**
+     * Whether a corner drag scales the WHOLE COMPOSITION rather than the box.
+     *
+     * The gesture behind "let me drag a corner diagonally and make everything
+     * bigger by a percentage — the photographs and the text too". It is a different
+     * thing from `resize by one ratio` and not a stronger version of it: that one
+     * scales the picked box and leaves the page around it alone, and this one does
+     * not touch the box at all — it multiplies the page's zoom, and the box follows
+     * because its measure is in rem like everything else. `ZOOM` is which Token and
+     * why a box could never have answered this.
+     *
+     * It writes on release, like a scrubbed row and unlike every other drag on this
+     * surface, and the asymmetry is the same one `land()` describes: a drag that
+     * moves a box is exploration and stays a measurement, and a drag that moves a
+     * TOKEN is a change to the composition the author is entitled to make.
+     */
+    this.zooming = false;
+    /**
      * Whether a change stays on the page when the selection leaves it.
      *
      * Off by default because the old behaviour is the right one for measuring ONE
@@ -664,6 +712,32 @@ export class Measure {
       }
     }
     return found;
+  }
+
+  /**
+   * The page's zoom, as everything needed to preview it and write it — or null.
+   *
+   * Read through `declaring()` rather than out of a field of its own, which is what
+   * keeps the value CURRENT: the Tokens surface writes `token.value` back onto the
+   * very object the state handed both surfaces, so a second zoom in one session
+   * reads what the first one left rather than what the build was made from. That is
+   * exactly what makes undo of the second gesture land on the first's value instead
+   * of all the way home.
+   *
+   * Null is an ordinary answer and not a failure: a page that declares no zoom
+   * cannot be zoomed, and the toggle says so rather than arming a gesture with
+   * nothing behind it.
+   */
+  zoomToken() {
+    const declaring = this.declaring(ZOOM);
+    // More than one is refused for the same reason a Token declared on two rules is
+    // refused everywhere else here: which one the page is using is a judgement, and
+    // this surface reports a judgement rather than taking one.
+    if (declaring.length !== 1) return null;
+    const { section, token } = declaring[0];
+    const at = Number.parseFloat(token.value);
+    if (!Number.isFinite(at) || at <= 0) return null;
+    return { section, token, at };
   }
 
   /**
@@ -1529,6 +1603,11 @@ export class Measure {
         resizes it from the opposite one — or scales it, below — and scrubbing a row writes the
         Token that governs it where there is one. <kbd>Esc</kbd> drops the selection.</small>
         <div data-editor-toggles>
+          <label><input type="checkbox" data-editor-toggle="zoom" />
+            <span>scale everything</span>
+            <small>a corner drag scales the whole composition by a percentage — the photographs, the gaps
+            and the type — instead of the box, and writes it on release</small>
+          </label>
           <label><input type="checkbox" data-editor-toggle="scale" />
             <span>resize by one ratio</span>
             <small>a corner drag scales the box instead of sizing its two axes separately, so it keeps its
@@ -1573,9 +1652,34 @@ export class Measure {
       this.say('the Annotations are cleared');
     });
 
-    // The three toggles. Each one says on arrival what it now does and what it does
+    // The four toggles. Each one says on arrival what it now does and what it does
     // NOT do, because all of them change what a gesture the author already knows
     // means — and a mode nobody was told about is worse than a press.
+    into.querySelector('[data-editor-toggle="zoom"]').addEventListener('change', (event) => {
+      this.zooming = event.currentTarget.checked;
+      if (!this.zooming) {
+        this.say('sizing again — a corner drag is about the box, and the zoom stays wherever it was written');
+        return;
+      }
+      // ASKED HERE AND NOT AT THE FIRST DRAG, so a page with nothing to zoom says so
+      // while the author is deciding rather than under their finger. It is asked
+      // again at the pointerdown, because a Token can be written between the two.
+      const zoom = this.zoomToken();
+      if (!zoom) {
+        this.say(
+          `nothing on this page declares ${ZOOM}, so there is no zoom to drag. The four rows still measure` +
+            ' this box.',
+          true,
+        );
+        return;
+      }
+      this.say(
+        `scaling everything — the page is at ${percent(zoom.at)}, and a corner drag now moves ${ZOOM} instead` +
+          ' of the box. Every measure, gap and glyph on the page is in rem, so all of it scales together and' +
+          ' the box you are holding follows. It WRITES on release, unlike every other drag here, because a' +
+          ' zoom is a Token and not a coordinate.',
+      );
+    });
     into.querySelector('[data-editor-toggle="scale"]').addEventListener('change', (event) => {
       this.scaling = event.currentTarget.checked;
       this.say(
@@ -1871,6 +1975,78 @@ export class Measure {
     // deliberately did not hold it.
     for (const held of this.selection) held.by = null;
     this.apply();
+  }
+
+  /**
+   * Show the page at a zoom, without writing anything.
+   *
+   * THROUGH THE TOKENS SURFACE'S OWN PREVIEW SHEET and not through an inline style,
+   * which is the only thing that could work: the zoom is a custom property on
+   * `:root` that the whole document reads, and there is no element to put it on.
+   * That sheet is also what the Tokens panel's own slider previews through, so the
+   * control and this gesture cannot disagree about what the page is showing.
+   *
+   * The picked records are re-measured afterwards rather than being told a size,
+   * because the box did not move — the PAGE did, and where its measure landed under
+   * a new rem is layout's answer and not this surface's. That is what keeps the
+   * read-out and the Annotation truthful about a gesture that never touched the box.
+   */
+  showZoom(at) {
+    const zoom = this.dragging?.zoom;
+    if (!zoom || !this.surface) return;
+    // WHAT THE PAGE IS SHOWING, kept on the drag, because that is the number the
+    // release writes. Deriving it again at the pointerup from the box's ratio would
+    // multiply the zoom by a ratio it has ALREADY been multiplied by — the box the
+    // ratio is read off has moved because the zoom moved it.
+    this.dragging.at = at;
+    this.surface.preview(zoom.section, zoom.token, String(at));
+    for (const held of this.selection) {
+      held.after = this.box(held.element);
+      held.type.after = this.typeNow(held);
+    }
+    // `paintPicked()` redraws the rows and the marquee, so the box's four numbers
+    // follow the page as it scales. The PERCENTAGE is not one of those numbers and
+    // is the one the author is actually watching, so it goes on the report line —
+    // per frame, which is what that line is for.
+    this.paintPicked();
+    this.say(`the zoom: ${percent(this.dragging.from.at)} → ${percent(at)} — let go to write it`);
+  }
+
+  /**
+   * Let go of a zoom: write the Token.
+   *
+   * WHY THIS WRITES WHERE A CORNER DRAG DOES NOT. Every other drag here leaves an
+   * inline style and stays a measurement until the author says otherwise, because
+   * what it moved is a coordinate in a composition and ADR 0004 keeps those out of
+   * the Editor's hands. A zoom is not a coordinate: it is a named number the author
+   * owns, and the only thing to do with a dragged one is write it — the same
+   * asymmetry `land()` is about, arrived at from the other end.
+   *
+   * `writeTokens()` and not a second way to write a Token: the Recording's line,
+   * the repick that drops this surface's now-doubled inline styles, and the record
+   * an undo reverses all come from there.
+   */
+  async landZoom(zoom, was, at) {
+    const held = zoom.token.value;
+    const wants = String(at);
+    if (wants === held) {
+      this.say(`the zoom is still ${percent(at)} — nothing to write`);
+      return;
+    }
+    const wrote = await this.writeTokens(
+      [{ section: zoom.section, key: zoom.token.key, token: ZOOM, was: held, wants, axis: 'zoom' }],
+      'zoom',
+    );
+    // AFTER the write, and the write's own line is not enough on its own: it says
+    // the Token and the value, and what the author asked in is a percentage. This is
+    // the sentence they will quote.
+    this.say(
+      `the zoom: ${percent(was)} → ${percent(at)} — every STATED size on the page is now ${percent(at / was)}` +
+        ' of what it was. A box that is a budget’s REMAINDER cannot be, and gets smaller instead as the rest' +
+        ' grows: above 1100x700 the Front Screen is composed to exactly one screen, and its photograph strip' +
+        ' is that remainder. undo writes it back.',
+    );
+    this.finish(`the zoom, ${percent(was)} → ${percent(at)}`, { tokens: wrote });
   }
 
   /**
@@ -2588,6 +2764,34 @@ export class Measure {
 
         if (handle) {
           if (!this.picked) return;
+          // A ZOOM TAKES THE HANDLE FIRST, because it is a different gesture on the
+          // same grip rather than a variation of the resize: nothing about the box is
+          // asked for, so `wanted` is never touched and there is no `begin()` to
+          // pair with — the step this gesture puts on the stack is the Token write.
+          if (this.zooming) {
+            const zoom = this.zoomToken();
+            if (!zoom) {
+              this.say(
+                `nothing on this page declares ${ZOOM}, so there is no zoom to drag — the toggle is on and` +
+                  ' this gesture has nothing behind it',
+                true,
+              );
+              return;
+            }
+            this.dragging = {
+              how: 'zoom',
+              corner: handle.dataset.editorHandle,
+              x: event.clientX,
+              y: event.clientY,
+              zoom,
+              // The box the ratio is read off, and the zoom the drag started at.
+              // Resolved once here for the reason the resize's sizes are: the page
+              // MOVES under this gesture, so reading either back per frame reads a
+              // page the previous frame already zoomed and the drag runs away.
+              from: { ...this.picked.after, dx: 0, dy: 0, at: zoom.at },
+            };
+            return;
+          }
           this.begin();
           this.dragging = {
             how: 'resize',
@@ -2665,6 +2869,15 @@ export class Measure {
         const dx = event.clientX - this.dragging.x;
         const dy = event.clientY - this.dragging.y;
         const { from } = this.dragging;
+        if (this.dragging.how === 'zoom') {
+          // The same ratio a scale uses — `lib/corners.mjs` says why it is the axis
+          // the pointer travelled further along and not the smaller of the two. Here
+          // it matters more than it does there: the Front Screen's column can only
+          // grow sideways, so a ratio that averaged the two axes in would leave the
+          // corner lagging the pointer by half on the one gesture this exists for.
+          const asked = ratio(resize(this.dragging.corner, { dx, dy }, from), from);
+          return this.showZoom(factor(from.at * (asked ?? 1)));
+        }
         if (this.dragging.how === 'scrub') {
           // A held Shift is the fine step, because a text size is chosen in tenths
           // and a pointer is not that precise over sixteen pixels.
@@ -2732,6 +2945,23 @@ export class Measure {
           }
           if (!this.dragging) return;
           const { how, axis, corner, was } = this.dragging;
+          // A ZOOM IS LET GO OF BEFORE `this.dragging` IS CLEARED, because both
+          // halves of it — the value the page is showing and the Token to write it
+          // to — are on the drag and nowhere else. A cancel puts the page back
+          // instead: the gesture was taken away rather than finished, and writing a
+          // Token nobody let go of would be this surface deciding it had been.
+          if (how === 'zoom') {
+            const { zoom, from, at = from.at } = this.dragging;
+            this.dragging = null;
+            if (event.type !== 'pointerup') {
+              // The value the FILE holds, which is where the page goes back to: the
+              // preview sheet is the only thing showing anything else.
+              this.surface?.preview(zoom.section, zoom.token, zoom.token.value);
+              this.repick();
+              return void this.say('the zoom gesture was cancelled — the page is back where it was');
+            }
+            return void this.landZoom(zoom, from.at, at);
+          }
           this.dragging = null;
           if (!this.picked) return;
           // A scrub is a deliberate change to the value the row names, so letting

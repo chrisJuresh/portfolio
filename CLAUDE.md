@@ -265,10 +265,15 @@ the composition is corrected later. That asymmetry is ADR 0004 and not an
 unfinished half: a Token is a named number the author may move, a coordinate in a
 composition is not.
 
-**Three toggles on that surface and a sixth surface make it a session's tool
-rather than one element's**, and an agent is most likely to meet the last of them:
-**resize by one ratio** makes a corner drag SCALE the box — both axes by one
-ratio, whichever of the two the pointer travelled further along, with `Shift`
+**Four toggles on that surface and a sixth surface make it a session's tool
+rather than one element's**, and an agent is most likely to meet the first two:
+**scale everything** makes a corner drag scale the WHOLE COMPOSITION by a
+percentage — it does not touch the box, it drags `--type-zoom`, and it WRITES on
+release because a zoom is a Token and not a coordinate. Above 1100x700 that is a
+REDISTRIBUTION rather than a magnification: every stated size grows and the
+photograph strip, being the one-screen budget's remainder, shrinks to pay for it.
+**resize by one ratio** makes a corner drag SCALE the box instead — both axes by
+one ratio, whichever of the two the pointer travelled further along, with `Shift`
 inverting it for one drag — so a drawing keeps its shape and only its size
 changes; **scale text** carries the text size through a resize by the ratio the
 box changed by, so letting the row go writes BOTH Tokens — and the size it
