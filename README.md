@@ -207,6 +207,14 @@ session rather than over one element:
   together. Picking something you already moved carries on from where you started
   rather than starting again.
 
+**undo** and **redo** sit under the two toggles, and **Ctrl+Z** is the same press
+without moving the pointer (**Ctrl+Shift+Z** puts it back). One gesture at a time
+— a drag, a corner, a row, a *put back* — rather than all the way home, which is
+what *put back* already was. Where the gesture wrote something, undo writes it
+back: a row backed by a Token writes that Token to what it held before, and an
+Override is discarded or restored. So trying a drag costs nothing, which is the
+whole point of it.
+
 Everything you do lands on the **Recording**, the sixth surface: one block per
 element, with the numbers, what governs each of them and which values the Editor
 has already written for you. Press **copy** and paste it to an agent — that

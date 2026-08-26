@@ -52,6 +52,24 @@ import { PAGE, open } from '../lib/page.mjs';
 
 const MARKER = 'Edited by the smoke Check';
 
+/**
+ * Wait for something OFF the page to become true — a file on disk, which is where
+ * the half of an undo that can be silently wrong actually lives.
+ *
+ * `waitForFunction` cannot answer this: it runs in the browser, and the browser
+ * cannot read the tree. The write is a POST, so it lands a moment after the
+ * keystroke that asked for it, and asserting immediately would report a race
+ * rather than a stack.
+ */
+async function holds(page, answered, ms = 10_000) {
+  const until = Date.now() + ms;
+  while (Date.now() < until) {
+    if (answered()) return true;
+    await page.waitForTimeout(50);
+  }
+  return answered();
+}
+
 /** Both of the Editor's files, for every Section. */
 const WRITABLE = ['content.ts', 'tokens.css'];
 
@@ -1245,6 +1263,69 @@ export const check = {
           );
         }
         if (wroteToken) notes.push(`committed the width row and it wrote ${governs.property}, with no second press`);
+
+        // ---- and Ctrl-Z writes it back ------------------------------------
+        //
+        // THE HALF OF AN UNDO ON THIS SURFACE THAT IS INVISIBLE, which is why it
+        // is asserted at the bytes and not on the page. Everything else a gesture
+        // here does is an inline style, so a stack that only reversed those would
+        // look completely right: the page goes back, the read-out goes back, the
+        // marquee goes back. The FILE would still hold what the gesture put there,
+        // and the disagreement would surface at the next build — with the author
+        // having watched the change be taken back. That is the exact failure "a
+        // Token's page and its file are two different things" exists to prevent.
+        //
+        // The keystroke and not the button, because the keystroke is the one that
+        // has a way of being wrong that the button does not: it is delivered to
+        // whatever has the focus, and `paintPicked()` puts the focus back in the
+        // number box this Check just typed into.
+        const pressable = await page.locator('[data-editor-undo]').isEnabled();
+        if (!pressable) {
+          failures.push('a committed row left the undo button disabled — the gesture never reached the stack');
+        }
+        // An undo AWAITS the POST that writes the Token back, and a second press
+        // inside that window is deliberately dropped — so the file matching is not
+        // the same thing as the surface being ready for the next press. The report
+        // line is what says the walk finished.
+        const said = (word) =>
+          page
+            .waitForFunction(
+              (text) => document.querySelector('[data-editor-said]')?.textContent?.includes(text),
+              word,
+              { timeout: 10_000 },
+            )
+            .then(() => true)
+            .catch(() => false);
+
+        await page.keyboard.press('Control+z');
+        if (!(await said('undid'))) {
+          failures.push('Ctrl-Z after committing the width row said nothing — the keystroke never reached the surface');
+        }
+        if (!(await holds(page, () => readFileSync(tokenPath, 'utf8') === held))) {
+          failures.push(
+            `Ctrl-Z after committing the width row left ${governs.owner}/tokens.css holding the new value —` +
+              ' the page was put back and the file was not, which is the one way this stack can be silently' +
+              ' wrong',
+          );
+        } else {
+          notes.push(`Ctrl-Z wrote ${governs.property} back to the value the build was made from`);
+        }
+        // And forward again, because a redo that did nothing would leave the
+        // author's only way back from an undo being to make the gesture again.
+        await page.keyboard.press('Control+Shift+z');
+        if (!(await said('redid')) || !(await holds(page, () => readFileSync(tokenPath, 'utf8') !== held))) {
+          failures.push(
+            `Ctrl-Shift-Z did not write ${governs.property} again — the redo stack is not reaching the Tokens` +
+              ' surface',
+          );
+        } else {
+          notes.push('Ctrl-Shift-Z wrote it forward again');
+        }
+        // Back to what the build was made from, so nothing after this measures a
+        // page this Check moved.
+        await page.keyboard.press('Control+z');
+        await said('undid');
+        await holds(page, () => readFileSync(tokenPath, 'utf8') === held);
 
         await page.evaluate(() => document.getElementById('editor-check-governs')?.remove());
       }

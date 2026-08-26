@@ -18,6 +18,12 @@ rem   keep changes when         the change you just made stays on the page while
 rem   picking something else    you pick the next thing, so several can be
 rem                             arranged and looked at together.
 rem
+rem A bad gesture costs nothing: undo and redo sit under those two toggles, and
+rem Ctrl+Z is the same press (Ctrl+Shift+Z puts it back). It goes back ONE
+rem gesture - a drag, a corner, a row, a "put back" - and where the gesture wrote
+rem something, undo writes it back: a row backed by a Token writes that Token to
+rem what it held before, and an Override is discarded or restored.
+rem
 rem Everything you do lands on the Recording: one block per element, with the
 rem numbers and which values the Editor has already written for you. Press copy
 rem and paste it to an agent. "put the page back" takes every kept change off the

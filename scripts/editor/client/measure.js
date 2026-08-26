@@ -79,11 +79,24 @@
  * NOTHING ABOUT ANY OF THE THREE LOOSENS WHAT THIS SURFACE WRITES. A scaled text
  * size is an inline style like every other preview, a kept change is the same
  * inline style left alone, and the Recording is text in a box.
+ *
+ * AND THEN UNDO, WHICH IS WHAT MAKES A GESTURE CHEAP TO TRY. *put back* was the
+ * only way out of a bad drag and it takes the whole element to where the
+ * composition had it, so the four good gestures before the bad one went with it.
+ * `undo`, `redo` and Ctrl-Z take one gesture back. `lib/history.mjs` is the stack —
+ * pure, tested in node, and the note there is on the two rules that are easy to get
+ * quietly wrong. What is HERE is what a step means, and the thing worth reading
+ * twice is that it means more than the page: **a scrubbed row writes a Token, so
+ * undoing it writes that Token back**, and an Override is discarded or restored the
+ * same way. An undo that put the page back and left the file where the gesture put
+ * it would be the exact failure "a Token's page and its file are two different
+ * things" exists to prevent, with the author looking at a page that says otherwise.
  */
 
 import { AXES, TEXT, annotate, holderFile, list, name, nudge, restate } from './lib/annotations.mjs';
 import { asWritten, insets } from './lib/boxes.mjs';
 import { CORNERS, label as cornerLabel, drift, resize, word as cornerWord } from './lib/corners.mjs';
+import { History } from './lib/history.mjs';
 import { DISPLAY, asSelector, rule as ruleFor } from './lib/overrides.mjs';
 import { fitted } from './lib/typefit.mjs';
 
@@ -178,6 +191,40 @@ const stripScope = (selector) => selector.replace(/:where\(\.astro-[a-z0-9]+\)/g
 const SCOPED = /^astro-[a-z0-9]+$/i;
 
 const round = (n) => Math.round(n * 100) / 100;
+
+/**
+ * Whether the keystroke belongs to a field the browser already has an undo for.
+ *
+ * A TEXT FIELD, AND DELIBERATELY NOT A NUMBER BOX. The Annotation textarea and the
+ * Content surface's inputs hold prose being typed, and taking Ctrl-Z off them would
+ * be this surface reaching into a field it does not own. A row's number box is the
+ * opposite case: typing into one and committing it IS a gesture on this surface —
+ * it goes through the same `commit()` a scrub does and writes the same Token — and
+ * `paintPicked()` puts the focus back in that box afterwards. Standing down there
+ * would make the press the author reaches for straight after the change they want
+ * to take back do nothing at all, and the browser's own undo of a committed number
+ * box gives them nothing in exchange.
+ */
+const TYPED = new Set(['text', 'search', 'url', 'email', 'tel', 'password']);
+
+const typing = (target) =>
+  target instanceof Element &&
+  (target.matches('textarea') ||
+    (target instanceof HTMLInputElement && TYPED.has(target.type)) ||
+    target.closest('[contenteditable]') !== null);
+
+/** The Recording's line for an Override standing in the file. One spelling, used
+ *  by the press that writes one and by the undo that puts one back — two would
+ *  drift, and the written list is keyed on what it says. */
+const wroteOverride = (selector, declarations) => ({
+  kind: 'override',
+  what: selector,
+  value: Object.entries(declarations)
+    .map(([property, value]) => `${property}: ${value}`)
+    .join('; '),
+  file: 'src/overrides.css',
+  where: 'an Override, and therefore debt',
+});
 const px = (n) => `${round(n)}px`;
 
 /** A computed `translate` as two numbers. `none` and a single value are both
@@ -429,6 +476,27 @@ export class Measure {
     this.panel = null;
     this.marquees = [];
     this.dragging = null;
+    /**
+     * What can be taken back, gesture by gesture. `lib/history.mjs` is the stack
+     * and the rules; `replay()` below is what a step MEANS.
+     */
+    this.history = new History();
+    /**
+     * The `wanted` every picked element stood at when the gesture now under way
+     * began, as `{ element, from }`.
+     *
+     * Taken at the pointerdown and NEVER read off `before`, for the same reason
+     * `lib/corners.mjs` resolves its sizes there: an element being dragged for the
+     * second time is standing on the first drag, so `before` is where the
+     * composition had it and `from` is where THIS gesture found it. Undo has to go
+     * back one gesture and not all the way home — *put back* is the press for all
+     * the way home, and it is a step of its own.
+     */
+    this.gesture = null;
+    /** Whether an undo or a redo is in flight. It writes Tokens and Overrides, so
+     *  it awaits POSTs, and a second press inside that window would reverse a step
+     *  against a page half way through the last one. */
+    this.replaying = false;
   }
 
   /** The primary — whose numbers the rows show, and whose ancestors the
@@ -732,11 +800,24 @@ export class Measure {
       return;
     }
     this.put(held);
+    // AND THE UNDO STACK LOSES IT. The page has just dropped every gesture this
+    // element carried, and there is no record left to put them back into — so a
+    // step still naming it would either do nothing at all or, worse, appear to work
+    // while restoring numbers measured against a page that has moved. This is the
+    // one place that forgets, and it is the `keep`-off branch on purpose: with the
+    // toggle ON the record goes to `this.kept` and every step naming it is still
+    // reversible.
+    this.history.forget(held.element);
+    this.paintHistory();
   }
 
   /** Every picked element back where the page had it, still picked. */
   restore(report = true) {
     if (this.selection.length === 0) return;
+    // A STEP OF ITS OWN, and the press undo exists beside rather than replaces:
+    // this one goes all the way home and undo goes back one gesture. Recorded, so a
+    // mis-press here costs nothing either.
+    this.begin();
     for (const held of this.selection) {
       this.put(held);
       // Putting back is undoing, so the Recording loses it too. Anything else and
@@ -744,6 +825,7 @@ export class Measure {
       // paste, which is the one way this log can be actively wrong.
       this.log?.forget(held.element);
     }
+    this.finish(`putting ${this.naming()} back`);
     this.paintPicked();
     if (report) this.say(`${this.spoken()} back where the page had it`);
   }
@@ -759,11 +841,18 @@ export class Measure {
    */
   putAllBack() {
     const n = this.selection.length + this.kept.length;
-    for (const held of [...this.selection, ...this.kept]) {
+    const all = [...this.selection, ...this.kept];
+    // The kept records go on the step rather than being thrown away with the list.
+    // They are the only thing that knows where those elements started, and without
+    // them an undo of this press would have nothing to apply its numbers to.
+    const kept = [...this.kept];
+    this.begin(all);
+    for (const held of all) {
       this.put(held);
       this.log?.forget(held.element);
     }
     this.kept = [];
+    this.finish('putting the whole page back', { of: all, kept });
     this.paintPicked();
     this.say(
       n === 0
@@ -1087,6 +1176,13 @@ export class Measure {
             <small>a change that was made stays on the page, so several can be arranged together</small>
           </label>
         </div>
+        <div data-editor-history>
+          <button type="button" data-editor-undo disabled>undo</button>
+          <button type="button" data-editor-redo disabled>redo</button>
+          <small>one gesture at a time — <kbd>Ctrl</kbd>+<kbd>Z</kbd>, and
+          <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>Z</kbd> to put it back. A row that wrote a Token writes it
+          back. <em data-editor-history-next></em></small>
+        </div>
       </div>
       <div data-editor-measured></div>
       <div data-editor-annotation>
@@ -1100,6 +1196,9 @@ export class Measure {
         </div>
       </div>
       <div data-editor-overrides-list></div>`;
+
+    into.querySelector('[data-editor-undo]').addEventListener('click', () => void this.undo());
+    into.querySelector('[data-editor-redo]').addEventListener('click', () => void this.redo());
 
     into.querySelector('[data-editor-copy]').addEventListener('click', () => this.copy());
     into.querySelector('[data-editor-forget]').addEventListener('click', () => {
@@ -1144,6 +1243,7 @@ export class Measure {
     this.listen();
     this.paint();
     this.paintPicked();
+    this.paintHistory();
   }
 
   annotations() {
@@ -1240,6 +1340,10 @@ export class Measure {
       // Typing a number is the same deliberate change as scrubbing one, so it
       // lands the same way: preview, then write whatever the row is backed by.
       box.addEventListener('change', () => {
+        // The gesture starts here rather than at a pointerdown, because typing is
+        // the whole of it — and `land()` reaches the same `commit()` a scrub does,
+        // so it ends in the same place.
+        this.begin();
         this.want(axis, Number(box.value));
         void this.land(axis);
       });
@@ -1490,6 +1594,13 @@ export class Measure {
       found.push(on);
     }
 
+    // WHERE THE NUMBERS ENDED UP, READ BEFORE ANYTHING IS WRITTEN. `writeTokens`
+    // repicks, and after a repick every `wanted` is back to nothing — so a redo
+    // reading them off the selection afterwards would replay a gesture that asked
+    // for zero.
+    const after = this.selection.map((held) => ({ element: held.element, to: { ...held.wanted } }));
+    const label = `the ${axis} of ${this.naming()}`;
+
     if (split.length > 0) {
       this.say(
         `${list(split)} ${split.length === 1 ? 'is' : 'are'} governed by one Token on` +
@@ -1498,10 +1609,12 @@ export class Measure {
           ' at a time.',
         true,
       );
-      if (found.length === 0) return;
     }
-    if (found.length === 0) return;
-    await this.writeTokens(found, axis);
+    // RECORDED WHETHER OR NOT A TOKEN WAS FOUND, because both outcomes changed the
+    // page: a row backed by a Token wrote it, and a row backed by nothing left an
+    // inline style standing. Undo has to reverse either one.
+    const wrote = found.length === 0 ? [] : await this.writeTokens(found, axis);
+    this.finish(label, { after, tokens: wrote });
   }
 
   /**
@@ -1530,6 +1643,206 @@ export class Measure {
       // applied each of them. What this carries is the sentence for the block.
       this.log.measured(held.element, this.measurement(held), held === this.picked ? scaled : null);
     }
+  }
+
+  // -------------------------------------------------------------------------
+  // Taking a gesture back
+  // -------------------------------------------------------------------------
+
+  /** Whichever record this surface is holding for an element right now — picked,
+   *  or standing on the page because the `keep` toggle left it there. A STEP NAMES
+   *  THE ELEMENT AND NOT THE RECORD, because writing a Token repicks and throws
+   *  every record away. */
+  holding(element) {
+    return (
+      this.selection.find((held) => held.element === element) ??
+      this.kept.find((held) => held.element === element) ??
+      null
+    );
+  }
+
+  /** What to call the selection in a step's label — a phrase, where `spoken()` is
+   *  a clause. */
+  naming() {
+    if (!this.picked) return 'the page';
+    return this.selection.length === 1 ? this.picked.named.phrase : `${this.selection.length} elements`;
+  }
+
+  /**
+   * A gesture is starting: remember where every element it is about stands now.
+   *
+   * AT THE POINTERDOWN AND NEVER OFF `before`. `before` is where the composition
+   * had the element, and an element being dragged for the second time is standing
+   * on the first drag — so undoing to `before` would take four gestures back
+   * instead of one. *put back* is the press for all the way home, and it is a step
+   * of its own.
+   */
+  begin(of = this.selection) {
+    this.gesture = of.map((held) => ({ element: held.element, from: { ...held.wanted } }));
+  }
+
+  /**
+   * The gesture ended: put it on the stack.
+   *
+   * BOTH SIDES ARE RECORDED HERE, so redo is the same walk in the other direction
+   * rather than a second recording made while undoing — which would measure the
+   * state being left rather than the one being restored.
+   *
+   * @param {string} label            what the buttons and the report line call it
+   * @param {object} [options]
+   * @param {object[]} [options.of]   the records it was about, where that is not
+   *   the selection — `putAllBack` is about the kept ones too
+   * @param {object[]} [options.after] where they ended up, where the page has moved
+   *   since: writing a Token repicks, and after a repick there is no `wanted` left
+   *   to read
+   * @param {object[]} [options.tokens]     Token writes to reverse
+   * @param {object[]} [options.overrides]  Override writes to reverse
+   * @param {object[]} [options.kept]  records this gesture took off `this.kept`, so
+   *   an undo has something to apply its measures TO
+   */
+  finish(label, options = {}) {
+    const started = this.gesture;
+    this.gesture = null;
+    const { of = this.selection, after = null, tokens = [], overrides = [], kept = [] } = options;
+    const now = after ?? of.map((held) => ({ element: held.element, to: { ...held.wanted } }));
+    const measures = (started ?? []).map(({ element, from }) => ({
+      element,
+      from,
+      to: now.find((one) => one.element === element)?.to ?? { ...from },
+    }));
+    this.history.record({ label, measures, tokens, overrides, kept });
+    this.paintHistory();
+  }
+
+  async undo() {
+    if (this.replaying) return;
+    if (!this.history.canUndo) {
+      return this.say('there is nothing to undo — no gesture on this surface has changed anything yet');
+    }
+    const step = this.history.undo();
+    const missing = await this.replay(step, true);
+    this.paintHistory();
+    if (missing === null) return;
+    this.say(
+      `undid ${step.label}${missing > 0 ? ` — ${missing} of the elements it named is no longer held, so that` +
+        ' much of it stayed' : ''} — redo, or Ctrl-Shift-Z, puts it back`,
+      missing > 0,
+    );
+  }
+
+  async redo() {
+    if (this.replaying) return;
+    if (!this.history.canRedo) return this.say('there is nothing to redo — nothing has been undone');
+    const step = this.history.redo();
+    const missing = await this.replay(step, false);
+    this.paintHistory();
+    if (missing === null) return;
+    this.say(`redid ${step.label}`, missing > 0);
+  }
+
+  /**
+   * What a step MEANS, in whichever direction.
+   *
+   * THE FILE HALF FIRST AND THE PAGE HALF SECOND, because writing a Token repicks:
+   * a `wanted` applied before the write would be thrown away by it. And the file
+   * half is the reason this is async at all — undoing a scrubbed row is a POST,
+   * because that row wrote a Token when it was let go of. An undo that put the page
+   * back and left the file where the gesture put it would be the exact failure "a
+   * Token's page and its file are two different things" exists to prevent, and the
+   * author would be looking at a page that disagreed with the source.
+   *
+   * @returns {number|null} how many of the step's elements this surface is no
+   *   longer holding — so the report can say that much of it stayed — or null where
+   *   a write was refused and the line has already been said
+   */
+  async replay(step, back) {
+    this.replaying = true;
+    try {
+      // The records a *put the page back* took off `this.kept`, which have to be
+      // held again before anything can be applied to them.
+      for (const held of step.kept ?? []) {
+        const at = this.kept.indexOf(held);
+        if (back && at === -1 && !this.holding(held.element)) this.kept.push(held);
+        if (!back && at !== -1) this.kept.splice(at, 1);
+      }
+      for (const one of step.overrides ?? []) {
+        const going = back ? one.had : one.now;
+        try {
+          const answer = await this.post('/overrides', {
+            selector: one.selector,
+            name: going?.name ?? one.selector,
+            note: going?.note ?? [],
+            declarations: going?.declarations ?? {},
+          });
+          this.overrides = answer.overrides;
+          this.paint();
+        } catch (error) {
+          this.say(`could not put the Override on ${one.selector} back: ${error.message}`, true);
+          return null;
+        }
+        // The line for the value being restored, and never the one for the value it
+        // replaced: an Override put back to what it held before is a different
+        // instruction from the one that was undone.
+        if (going === null) this.log?.unwrote('override', one.selector);
+        else if (going.record) this.log?.wrote(going.record);
+      }
+      for (const one of step.tokens ?? []) {
+        try {
+          await this.surface.writeKey(one.section, one.key, back ? one.was : one.wants);
+        } catch (error) {
+          this.say(`could not put ${one.token} back: ${error.message}`, true);
+          return null;
+        }
+        if (back) this.log?.unwrote('token', one.token);
+        else if (one.record) this.log?.wrote(one.record);
+      }
+      // The page has moved through the Tokens surface's own preview, so the inline
+      // styles have to go the same way they do after a write — `writeTokens`'s note
+      // is the whole of why.
+      if ((step.tokens ?? []).length > 0) this.repick();
+
+      let missing = 0;
+      const touched = [];
+      for (const { element, from, to } of step.measures ?? []) {
+        // Resolved NOW rather than held on the step: a repick, two lines up or in
+        // the gesture that recorded this, has made fresh records for every one of
+        // them.
+        const held = this.holding(element);
+        if (!held) {
+          missing += 1;
+          continue;
+        }
+        Object.assign(held.wanted, back ? from : to);
+        this.applyTo(held);
+        touched.push(held);
+      }
+      // The Recording follows the page, or the document the author pastes would ask
+      // an agent for a gesture that was taken back.
+      for (const held of touched) {
+        this.log?.measured(held.element, this.measurement(held), held === this.picked ? this.scaled() : null);
+      }
+      this.paintPicked();
+      return missing;
+    } finally {
+      this.replaying = false;
+    }
+  }
+
+  /** The two buttons: whether they can be pressed, and what they would reverse. */
+  paintHistory() {
+    const undo = this.panel?.querySelector('[data-editor-undo]');
+    const redo = this.panel?.querySelector('[data-editor-redo]');
+    if (!undo || !redo) return;
+    const { next } = this.history;
+    undo.disabled = !this.history.canUndo;
+    redo.disabled = !this.history.canRedo;
+    // On the button rather than only in the report line: the author reads it
+    // BEFORE pressing, which is the moment "which gesture is this going to take
+    // back" is actually a question.
+    undo.title = next.undo === null ? 'nothing on this surface has changed anything yet' : `undo ${next.undo}`;
+    redo.title = next.redo === null ? 'nothing has been undone' : `redo ${next.redo}`;
+    const said = this.panel?.querySelector('[data-editor-history-next]');
+    if (said) said.textContent = next.undo === null ? '' : next.undo;
   }
 
   // -------------------------------------------------------------------------
@@ -1579,6 +1892,10 @@ export class Measure {
     const wrote = [];
     const missed = [];
     const unnamed = [];
+    // The gesture this press ends is everything standing in the inline styles it is
+    // about to drop, so undoing it puts those back and discards the rule.
+    this.begin();
+    const steps = [];
     for (const held of this.selection) {
       const { selector, named, element } = held;
       if (selector === null) {
@@ -1592,23 +1909,24 @@ export class Measure {
       // it would write an Override for having looked at something.
       if (Object.keys(declarations).filter((property) => property !== 'display').length === 0) continue;
       const wanted = { ...measured.after };
+      // What the file held for this selector before, read before the post: the
+      // answer comes back holding the new one, and this is the only thing that
+      // knows what an undo has to put back — including nothing at all.
+      const had = this.standingOn(selector);
       try {
         const answer = await this.post('/overrides', { selector, name: named.phrase, note, declarations });
         this.overrides = answer.overrides;
         this.paint();
+        steps.push({
+          selector,
+          had,
+          now: { name: named.phrase, note, declarations, record: wroteOverride(selector, declarations) },
+        });
         // On the Recording as ALREADY WRITTEN, and as debt: an Override is a value
         // standing outside every composition, and folding it back in is the work
         // whoever reads that document is being asked to do.
         this.log?.forget(element);
-        this.log?.wrote({
-          kind: 'override',
-          what: selector,
-          value: Object.entries(declarations)
-            .map(([property, value]) => `${property}: ${value}`)
-            .join('; '),
-          file: 'src/overrides.css',
-          where: 'an Override, and therefore debt',
-        });
+        this.log?.wrote(wroteOverride(selector, declarations));
         // The inline styles go, because from here the page is moved by what the
         // file says — through this surface's own stylesheet until the next build.
         this.put(held);
@@ -1619,9 +1937,14 @@ export class Measure {
         if (off.length > 0) missed.push(`${named.phrase} on ${list(off)}`);
         else wrote.push(named.phrase);
       } catch (error) {
+        // Whatever landed before the refusal still landed, so it goes on the stack
+        // rather than being lost with the press.
+        if (steps.length > 0) this.finish(`the Override on ${this.naming()}`, { overrides: steps });
         return this.say(`refused: ${error.message}`, true);
       }
     }
+    if (steps.length > 0) this.finish(`the Override on ${this.naming()}`, { overrides: steps });
+    else this.gesture = null;
     this.paintPicked();
     if (wrote.length === 0 && missed.length === 0 && unnamed.length === 0) {
       return this.say('nothing has moved, so there is no Override to write');
@@ -1643,15 +1966,29 @@ export class Measure {
    * move together — and the repick happens ONCE at the end, not per write, because
    * repicking between them would reset the measurement the second one is derived
    * from and it would land a number nobody asked for.
+   *
+   * IT HANDS BACK WHAT LANDED, because that is the half of the gesture undo cannot
+   * see on the page: the value went into a file, and the only way back is to write
+   * the old one. Each entry carries the line the Recording was given as well, so a
+   * redo can put that line back rather than composing a second spelling of it.
+   *
+   * @returns {{ section: string, key: string, token: string, was: string,
+   *   wants: string, record: object }[]}
    */
   async writeTokens(found, gesture = null) {
-    if (!this.surface) return this.say('the Tokens surface is not here to write through', true);
+    if (!this.surface) {
+      this.say('the Tokens surface is not here to write through', true);
+      return [];
+    }
     const wrote = [];
     let refused = null;
     for (const one of found) {
+      // The value the file holds NOW, read before the write rather than off the
+      // measurement afterwards — `was` on the offer is the same number, and reading
+      // it here is what makes that true whatever else has moved since the pick.
+      const was = one.was;
       try {
         await this.surface.writeKey(one.section, one.key, one.wants);
-        wrote.push(one);
         // On the Recording as ALREADY WRITTEN, so an agent handed the document does
         // not apply it a second time — which is arithmetic on a number that has
         // already moved, and therefore silently wrong rather than a no-op. The row
@@ -1659,7 +1996,7 @@ export class Measure {
         // with `scale text` on those are two different rows, and "written when the
         // text size row was let go of" about a width scrub would be a sentence that
         // did not happen.
-        this.log?.wrote({
+        const record = {
           kind: 'token',
           what: one.token,
           value: one.wants,
@@ -1669,7 +2006,9 @@ export class Measure {
               ? `a Token, written when the ${one.axis} row was let go of`
               : `a Token governing ${one.axis}, written when the ${gesture} row was let go of and the text` +
                 ' followed the box',
-        });
+        };
+        this.log?.wrote(record);
+        wrote.push({ section: one.section, key: one.key, token: one.token, was, wants: one.wants, record });
       } catch (error) {
         refused = error.message;
         break;
@@ -1681,19 +2020,48 @@ export class Measure {
     // from a stack of two — and it happens even after a refusal, because whatever
     // did land has already moved the page.
     if (wrote.length > 0) this.repick();
-    if (refused !== null) return this.say(`refused: ${refused}`, true);
+    if (refused !== null) {
+      this.say(`refused: ${refused}`, true);
+      return wrote;
+    }
     this.say(
       `wrote ${list(wrote.map((one) => `${one.token} = ${one.wants}`))} — measured again from where the` +
-        ' page now is',
+        ' page now is, and undo writes it back',
     );
+    return wrote;
+  }
+
+  /**
+   * The record the file holds for a selector right now, in the shape the write
+   *  boundary takes one — which is what an undo has to post back.
+   *
+   * ONE SIDE OF A STEP, and it carries the Recording's line as well as the
+   * declarations: an Override standing in the file is a line in the written list,
+   * so putting it back has to put that line back too, and the line for the value
+   * being REPLACED is not the line for the value replacing it.
+   */
+  standingOn(selector) {
+    const record = this.overrides.find((one) => one.selector === selector);
+    if (!record) return null;
+    const declarations = Object.fromEntries(record.declarations.map(({ property, value }) => [property, value]));
+    return { name: record.name, note: record.note, declarations, record: wroteOverride(selector, declarations) };
   }
 
   async discard(selector) {
+    // Read BEFORE the post, because the answer comes back without it — and it is
+    // the only thing that knows what to put back.
+    const had = this.standingOn(selector);
     try {
       const answer = await this.post('/overrides', { selector, declarations: {} });
       this.overrides = answer.overrides;
       this.paint();
-      this.say(`discarded the Override on ${selector}`);
+      this.log?.unwrote('override', selector);
+      this.begin([]);
+      this.finish(`discarding the Override on ${selector}`, {
+        of: [],
+        overrides: [{ selector, had, now: null }],
+      });
+      this.say(`discarded the Override on ${selector} — undo writes it back`);
     } catch (error) {
       this.say(`refused: ${error.message}`, true);
     }
@@ -1760,6 +2128,10 @@ export class Measure {
         if (scrub) {
           if (!this.picked) return;
           event.preventDefault();
+          // Where every picked element stands as this gesture begins — the undo
+          // stack's `from`. Taken at the pointerdown for the same reason the
+          // scrub's own `from` is: anything read later has already moved.
+          this.begin();
           const axis = scrub.dataset.editorScrub;
           this.dragging = {
             how: 'scrub',
@@ -1780,6 +2152,7 @@ export class Measure {
 
         if (handle) {
           if (!this.picked) return;
+          this.begin();
           this.dragging = {
             how: 'resize',
             corner: handle.dataset.editorHandle,
@@ -1813,6 +2186,8 @@ export class Measure {
           return;
         }
         if (!this.selection.some((held) => held.element === element)) this.pick(element);
+        // AFTER the pick, because picking clears the selection this is about.
+        this.begin();
         this.dragging = { how: 'move', x: event.clientX, y: event.clientY, from: { ...this.picked.wanted } };
       },
       true,
@@ -1871,6 +2246,15 @@ export class Measure {
           // it and a document that did not mention it would be describing a
           // different page from the one on screen.
           this.logged();
+          // And the undo stack, for the same reason and at the same moment: a
+          // gesture is one step whether it ended under the pointer or was cancelled
+          // out from under it, because the page is left where the last frame put it
+          // either way.
+          this.finish(
+            how === 'scrub'
+              ? `the ${axis} of ${this.naming()}`
+              : `${how === 'resize' ? 'resizing' : 'moving'} ${this.naming()}`,
+          );
           const headline = annotate(this.measurement()).headline;
           // Only a resize can lose an anchor: a move translates the box and asks
           // the layout for nothing.
@@ -1886,7 +2270,26 @@ export class Measure {
     document.addEventListener(
       'keydown',
       (event) => {
-        if (!this.armed || !this.picked) return;
+        if (!this.armed) return;
+        // Ctrl-Z, and Ctrl-Shift-Z or Ctrl-Y the other way. BEFORE the panel stands
+        // down, and before the "something has to be picked" gate: a kept change is
+        // still standing on the page with nothing picked at all, and the whole point
+        // of the stack is that it survives the selection moving on.
+        if ((event.metaKey || event.ctrlKey) && !event.altKey) {
+          const key = event.key.toLowerCase();
+          const undo = key === 'z' && !event.shiftKey;
+          const redo = key === 'y' || (key === 'z' && event.shiftKey);
+          if (!undo && !redo) return;
+          // Except where the browser has an undo of its own to give: a number box
+          // and the Annotation textarea are text being typed, and taking Ctrl-Z off
+          // them would be this surface reaching into a field it does not own.
+          if (typing(event.target)) return;
+          event.preventDefault();
+          event.stopPropagation();
+          void (undo ? this.undo() : this.redo());
+          return;
+        }
+        if (!this.picked) return;
         if (event.metaKey || event.ctrlKey || event.altKey) return;
         // Not while a number is being typed, and not while anything else in the
         // panel has the focus: an arrow key in a number box belongs to the box.

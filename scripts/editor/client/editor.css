@@ -425,7 +425,48 @@
   color: var(--editor-live);
 }
 
-[data-editor-measuring] kbd {
+/* Undo and redo, under the two toggles and above the read-out — the same place
+   the toggles are and for the same reason: they are the surface's and not the
+   selection's. Drawn even with nothing picked, because a change left standing by
+   the `keep` toggle is still on the page after the selection has moved off it, and
+   that is exactly the moment the author reaches for this. */
+[data-editor-history] {
+  flex: 1 1 100%;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px;
+  margin: 2px 0;
+}
+
+[data-editor-history] small {
+  flex: 1 1 12rem;
+  opacity: 0.5;
+}
+
+/* What the next press would take back, in the sentence rather than only in the
+   button's title: the author reads it BEFORE pressing, which is the moment it is
+   actually a question. */
+[data-editor-history-next] {
+  color: var(--editor-live);
+  font-style: normal;
+  opacity: 0.9;
+}
+
+[data-editor-history-next]:not(:empty)::before {
+  content: '→ ';
+}
+
+/* Not `progress`, which is what a disabled button means everywhere else in this
+   panel: these two are disabled because there is nothing to take back, and a
+   waiting cursor would say the tool was busy. */
+[data-editor-history] button:disabled {
+  cursor: default;
+}
+
+/* Every key this surface names, wherever the sentence naming it sits — the
+   instruction at the top and the undo row under it. */
+[data-editor-arm] kbd {
   padding: 0 3px;
   border: 1px solid var(--editor-line);
   border-radius: 3px;

@@ -268,7 +268,9 @@ by, so letting the row go writes BOTH Tokens; **keep** leaves a change standing 
 the page when the selection moves off it, and picking that element again *resumes*
 its record rather than measuring afresh from where it got to; and the
 **Recording** is every measurement of the session as one document, one block per
-element, which is what the author will paste. Read that document's own headings
+element, which is what the author will paste. **undo, redo and Ctrl-Z** go back
+one gesture rather than all the way home, and they reverse the FILE too — an undo
+of a scrubbed row writes its Token back to what it held. Read that document's own headings
 before acting on it — **ALREADY WRITTEN** means the Token holds that value now and
 applying it again is arithmetic on a number that has already moved, and **they
 COMPOSE** means a block measured inside an earlier one was measured with that

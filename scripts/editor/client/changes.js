@@ -130,6 +130,23 @@ export class Changes {
     this.paint();
   }
 
+  /**
+   * One thing off the written list, because it was taken back off the file.
+   *
+   * The symmetry `forget()` is for the measured list. Undoing a Token write puts
+   * the file back to what the build was made from, so a line still saying it was
+   * written would be asking an agent to keep a value the author has just removed —
+   * the same way an entry for an element that was put back would ask for a change
+   * nobody wants. Replacing the line with the restored value would be worse: it
+   * reads as a change to make, and it is the absence of one.
+   */
+  unwrote(kind, what) {
+    const at = this.written.findIndex((one) => one.kind === kind && one.what === what);
+    if (at === -1) return;
+    this.written.splice(at, 1);
+    this.paint();
+  }
+
   /** One element off the Recording: it was put back, or what it measured has been
    *  superseded by an Override that says the same thing. */
   forget(element) {

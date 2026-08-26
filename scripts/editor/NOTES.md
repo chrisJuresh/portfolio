@@ -36,6 +36,10 @@ toggles — **scale text** and **keep** — are for as well. All three are one
 complaint about a tool that measured *one element* well: see
 **Two toggles, and a Recording** below.
 
+**undo, redo and `Ctrl-Z`** are that complaint's last part, and they reach a file
+without being a fifth kind of thing either: an undo writes the same Token, and the
+same Override, the gesture it is reversing wrote. See **undo, redo, and Ctrl-Z**.
+
 ## The shape, and why it is this shape
 
 **A write boundary, with a browser on top** (ADR 0004). There are FOUR of them
@@ -671,6 +675,74 @@ screenful of text, and reading it is the one moment in this tool when the author
 *not* measuring — so being there disarms the page, which is what should happen while
 somebody is selecting text in a box.
 
+### undo, redo, and Ctrl-Z
+
+The complaint the toggles and the Recording did not answer: **a bad gesture cost the
+arrangement.** *put back* is the only way out of one and it takes the element all the
+way to where the composition had it, so the four good drags before the bad one went
+with it — and the author stopped trying things, which is the opposite of what this
+surface is for. `undo` and `redo` sit under the two toggles, and `Ctrl-Z` /
+`Ctrl-Shift-Z` (or `Ctrl-Y`) are the same two presses without the pointer leaving the
+page.
+
+**One gesture, and *put back* is still one press away.** The two are not rivals: undo
+goes back one gesture and *put back* goes all the way home. *put back* is itself a
+step, so a mis-press there costs nothing either.
+
+**`lib/history.mjs` is the stack and this file is what a step MEANS.** Same split as
+`lib/typefit.mjs`: the part that is pure — two stacks, the cap, the rule that a new
+gesture throws the redos away, and what happens to a step whose element has been let
+go of — is tested in node; the part that needs a page and a POST is in
+`client/measure.js`.
+
+**A STEP IS MORE THAN THE PAGE, and this is the thing worth reading twice.** A
+scrubbed row backed by a Token *writes that Token when it is let go of* — that is the
+whole of #166's "no second press" — so an undo of one has to write the Token back, and
+an undo of an Override has to discard it. Reversing only the inline styles would look
+completely right: the page goes back, the read-out goes back, the marquee goes back,
+and the file would still hold what the gesture put there until the next build said so.
+That is the exact failure **a Token's page and its file are two different things**
+exists to prevent, and the smoke Check asserts it at the bytes for that reason — a
+Check on the page could not see it.
+
+**Both sides are recorded when the gesture ends**, so redo is the same walk in the
+other direction. The alternative — recording again while undoing — measures the state
+being *left* rather than the one being restored, which is the same trap `record()`
+resumes a kept element for.
+
+**A step names the ELEMENT and never the record.** Writing a Token repicks, so every
+record is thrown away and remade the first time anything lands in a file; a step
+holding one would be holding a stale one. `holding()` resolves the element to whatever
+record the surface has for it now — picked, or standing on the page because `keep` left
+it there.
+
+**Letting go of an element with `keep` off takes its steps off the stack**, and
+`release()` is the one place that does it — the same branch, and for the same reason,
+as the one that decides whether to put the element back at all. The page has already
+dropped those gestures and there is no record left to put them back into, so a step
+still naming it would either do nothing or restore numbers measured against a page
+that has moved. Per measure and not per step, because a shift-click out of a series
+lets go of one member of five; and a step that wrote a file survives it whatever
+happens to its elements.
+
+**`from` is where the gesture found the element, and not `before`.** `before` is where
+the composition had it, and an element being dragged for the second time is standing on
+the first drag — so undoing to `before` would take four gestures back instead of one.
+
+**A number box keeps Ctrl-Z and a textarea does not**, which is the one place this
+disagrees with the ordinary rule about not reaching into a field the browser owns.
+Typing into a row and committing it IS a gesture here: it goes through the same
+`commit()` a scrub does and writes the same Token, and `paintPicked()` puts the focus
+back in that box afterwards — so standing down there would make the press the author
+reaches for straight after the change they want to take back do nothing at all. The
+Annotation textarea and the Content surface's inputs hold prose, and they keep theirs.
+
+**The Recording follows.** An undone measurement is re-recorded from where the page now
+is — and re-recording something that is back where it started takes its entry out,
+which `changes.js` already did for *put back*. A Token written back is not a line
+saying it now holds its old value: `unwrote()` takes the line out, because a value the
+author has just removed is not a change to ask an agent for.
+
 ## Scrubbing a Timeline
 
 The Motion surface is the other thing ADR 0003's named seekable Timeline was for,
@@ -1012,7 +1084,7 @@ plain length on exactly one rule, as the width of the element it is about to
 measure. Its second rule is a trap: later in the sheet, so it would win on source
 order, inside a `@media` that never holds.
 
-Twenty-one mutations have been shown to fail it: the boundary writing nothing, the
+Twenty-four mutations have been shown to fail it: the boundary writing nothing, the
 handshake requirement removed, the surface binding nothing, empty Content values
 allowed — the last of which is caught by `content.test.mjs` before the browser
 starts, which is where it belongs — no Tokens discovered, a drag that does not move
@@ -1032,7 +1104,13 @@ which corner it is, a resize that treats every corner as the bottom right, and a
 corners are dragged on two shapes, the second padded, and why the first
 deliberately carries no padding at all — a report line for a lost anchor that
 never fires, one that fires on a box whose layout does hold it, and one measured
-from the pick rather than from the drag, which fires on "move it, then size it".
+from the pick rather than from the drag, which fires on "move it, then size it";
+and, for the undo stack, an undo that reverses the inline styles and does NOT write
+the Token back — the one this Check exists for, because on screen it is
+indistinguishable from a working one — a redo keystroke wired to nothing, and a
+keystroke that stands down inside a number box, which is where `paintPicked()` has
+just put the focus and therefore silently loses the press the author reaches for
+first.
 
 Six were real bugs rather than invented mutations — four of #145's nine, the
 unclosed CSS rule of #162's three, and the content box of #165's — and none of them
