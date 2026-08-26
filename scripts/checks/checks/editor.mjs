@@ -861,6 +861,139 @@ export const check = {
         );
       }
 
+      // ---- a press inside what is already picked ---------------------------
+      //
+      // Two assertions, because they are the two halves of one decision and each
+      // is invisible in the other's absence. A box reached by `↑` or by a crumb
+      // COVERS children, so a press over one of them that re-picked the child left
+      // the box the author had just chosen movable only on whatever bare strip of
+      // it happened not to be a child. And the pointer is the only way INTO a box —
+      // `↓` goes back only where `↑` came from — so a press inside that always
+      // dragged would seal every parent shut the moment it was picked. A drag from
+      // inside moves what is picked; a click from inside goes deeper.
+      //
+      // A pair found by shape rather than named, for the same reason the inline box
+      // above is: naming one would fail the day it was renamed.
+      const nested = await page.evaluate(() => {
+        for (const parent of document.querySelectorAll('[data-section] *')) {
+          if (parent.closest('[data-editor]')) continue;
+          const box = parent.getBoundingClientRect();
+          if (box.width < 60 || box.height < 30) continue;
+          const child = [...parent.children].find((one) => {
+            const inner = one.getBoundingClientRect();
+            return inner.width > 12 && inner.height > 12;
+          });
+          if (!child) continue;
+          parent.setAttribute('data-editor-check-outer', '');
+          child.setAttribute('data-editor-check-inner', '');
+          return { parent: parent.tagName.toLowerCase(), child: child.tagName.toLowerCase() };
+        }
+        return null;
+      });
+      if (!nested) {
+        notes.push('no nested pair on the page, so a press inside what is picked is not asserted');
+      } else {
+        await page.locator('[data-editor-choose="content"]').click();
+        await page.locator('[data-editor-choose="measure"]').click();
+        // Every event below is dispatched AT THE CHILD, which is the whole point:
+        // the author's pointer is over the child both times, and what differs is
+        // only whether it travelled.
+        const inside = await page.evaluate(() => {
+          const parent = document.querySelector('[data-editor-check-outer]');
+          const child = document.querySelector('[data-editor-check-inner]');
+          const at = (target, type, x, y) =>
+            target.dispatchEvent(new PointerEvent(type, { bubbles: true, cancelable: true, clientX: x, clientY: y }));
+          const midOf = (element) => {
+            const box = element.getBoundingClientRect();
+            return [Math.round(box.left + box.width / 2), Math.round(box.top + box.height / 2)];
+          };
+          // The parent is picked by pressing on the parent — a dispatched event
+          // lands on the element it is dispatched at, so this needs no bare strip
+          // of it to aim for and stays true of any composition.
+          const [px, py] = midOf(parent);
+          at(parent, 'pointerdown', px, py);
+          at(parent, 'pointerup', px, py);
+
+          const [x, y] = midOf(child);
+          const parentWas = parent.getBoundingClientRect().left;
+          at(child, 'pointerdown', x, y);
+          at(child, 'pointermove', x + 40, y);
+          at(child, 'pointerup', x + 40, y);
+          const dragged = {
+            parent: Math.round(parent.getBoundingClientRect().left - parentWas),
+            // Who was actually dragged, and the only reading that tells them apart:
+            // the child rides along inside the parent either way, but a translate is
+            // written on whatever is PICKED.
+            child: getComputedStyle(child).translate,
+          };
+
+          // And now the same press with the pointer standing still, which is a
+          // click and picks the child. Both baselines are read AFTER it, so it
+          // does not matter whether picking put the parent back.
+          at(child, 'pointerdown', x, y);
+          at(child, 'pointerup', x, y);
+          const before = { parent: parent.getBoundingClientRect().left, child: child.getBoundingClientRect().left };
+          at(child, 'pointerdown', x, y);
+          at(child, 'pointermove', x + 25, y);
+          at(child, 'pointerup', x + 25, y);
+          const clicked = {
+            parent: Math.round(parent.getBoundingClientRect().left - before.parent),
+            child: Math.round(child.getBoundingClientRect().left - before.child),
+          };
+
+          // And a hand that is not quite still is still a click. The parent back,
+          // and then two pixels of travel — under the slop, so it must pick rather
+          // than move. Picking puts the parent back and the parent is carrying
+          // nothing at this point, so anything at all here is the drag firing.
+          at(parent, 'pointerdown', px, py);
+          at(parent, 'pointerup', px, py);
+          const steady = parent.getBoundingClientRect().left;
+          at(child, 'pointerdown', x, y);
+          at(child, 'pointermove', x + 2, y);
+          at(child, 'pointerup', x + 2, y);
+          return { dragged, clicked, shaky: parent.getBoundingClientRect().left - steady };
+        });
+        const pair = `<${nested.child}> inside <${nested.parent}>`;
+        if (Math.abs(inside.dragged.parent - 40) > 2) {
+          failures.push(
+            `with <${nested.parent}> picked, dragging 40px from inside it moved it ${inside.dragged.parent}px —` +
+              ` the press re-picked the ${nested.child} under the pointer instead, so a box can only be moved` +
+              ' by the part of it that covers nothing',
+          );
+        } else if (/40px/.test(inside.dragged.child)) {
+          failures.push(
+            `dragging from inside <${nested.parent}> moved it, but wrote the translate on the <${nested.child}>` +
+              ' as well — two elements are being dragged by one gesture',
+          );
+        } else {
+          notes.push(`dragged ${pair} by pressing on the child, and the parent is what moved`);
+        }
+        if (Math.abs(inside.clicked.child - 25) > 2 || Math.abs(inside.clicked.parent) > 2) {
+          failures.push(
+            `a click inside <${nested.parent}> did not pick the <${nested.child}> under it — the next drag moved` +
+              ` the child ${inside.clicked.child}px and the parent ${inside.clicked.parent}px, so the pointer has` +
+              ' no way into a box once its parent is picked',
+          );
+        } else {
+          notes.push('and a click inside it picked the child, which is the way back in');
+        }
+        if (Math.abs(inside.shaky) > 0.5) {
+          failures.push(
+            `two pixels of travel inside <${nested.parent}> moved it ${inside.shaky.toFixed(2)}px — a click is` +
+              ' being read as a drag, so a hand that is not quite still can no longer pick anything smaller',
+          );
+        } else {
+          notes.push('and two pixels of travel is still a click');
+        }
+        await page.locator('[data-editor-measure="restore"]').click();
+        await page.locator('[data-editor-choose="content"]').click();
+        await page.locator('[data-editor-choose="measure"]').click();
+        await page.evaluate(() => {
+          document.querySelector('[data-editor-check-outer]')?.removeAttribute('data-editor-check-outer');
+          document.querySelector('[data-editor-check-inner]')?.removeAttribute('data-editor-check-inner');
+        });
+      }
+
       // ---- the four corners -----------------------------------------------
       //
       // Resizing used to be one handle in the bottom right, which needed no

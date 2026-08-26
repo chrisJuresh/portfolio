@@ -196,8 +196,14 @@ found and the browser opened for you.
 ### Rearranging a whole screenful, and handing it over
 
 The **Measure** surface picks anything on the page and moves it, resizes it or
-changes its text size. Two toggles at the top of it are what make that work over a
-session rather than over one element:
+changes its text size. A click picks the smallest thing under the pointer, `↑` and
+the breadcrumb climb out of it to the box you actually meant — and once that box is
+picked, **dragging from anywhere inside it moves it**, children and all, rather
+than grabbing whatever happens to be under the pointer. A *click* inside it still
+picks something smaller, so that is the way back in.
+
+Two toggles at the top of it are what make that work over a session rather than
+over one element:
 
 - **scale text with the box** — a resize carries the text size with it, by the
   ratio the box changed by, so "make this bigger" is one gesture instead of two.

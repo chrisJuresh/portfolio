@@ -9,6 +9,11 @@ rem It is not for changing layout, palette or motion - Measure hands back an
 rem Annotation to paste to an agent for those, and writes an Override if asked.
 rem scripts/editor/NOTES.md and README.md's "Editing the site" are the rest of it.
 rem
+rem On the Measure surface a click picks the SMALLEST thing under the pointer, and
+rem the breadcrumb or the up arrow climbs out of it to the box you meant. Once that
+rem box is picked, dragging from anywhere inside it moves the whole box, children
+rem and all - a click inside it is what picks something smaller again.
+rem
 rem To rearrange a whole screenful and hand the lot over, use the two toggles at
 rem the top of the Measure surface and then the RECORDING surface beside it:
 rem

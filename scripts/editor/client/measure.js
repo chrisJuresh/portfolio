@@ -43,7 +43,9 @@
  *     resize them" is what was asked for.
  *   - THE ANCESTORS ARE DRAWN. A click lands on the deepest element under the
  *     pointer, which is almost never the box the author means. `crumbs()` lists the
- *     chain and `↑`/`↓` walk it.
+ *     chain and `↑`/`↓` walk it. And once one of them IS picked, a press anywhere
+ *     inside it drags it rather than re-picking whatever the pointer happened to be
+ *     over — `this.pending` is that, and how a click still gets back in.
  *   - A ROW IS SCRUBBED, AND LETTING GO WRITES THE TOKEN. Five rows now: the box's
  *     four and the TEXT SIZE, which is the one thing the author kept reaching for
  *     and could not touch. Seventeen of the nineteen `font-size` declarations under
@@ -113,6 +115,13 @@ const MEASURES = [...AXES, TEXT];
  *  the coarse step is the row's and not the surface's. */
 const SCRUB = { [TEXT]: 0.5, default: 1 };
 const FINE = 0.1;
+
+/** How far the pointer travels before a press INSIDE what is already picked is a
+ *  drag of that box rather than a click through to what is under it. Below this a
+ *  press and release picks the deepest element under the pointer, exactly as it
+ *  always did — which is what keeps the way into a box open now that pressing
+ *  inside one moves it. Three pixels, because a hand holding still is not still. */
+const SLOP = 3;
 
 /**
  * Which authored properties could be the one that governs an axis, in the order
@@ -477,6 +486,23 @@ export class Measure {
     this.marquees = [];
     this.dragging = null;
     /**
+     * A press inside what is already picked, waiting to find out which gesture it
+     * is: `{ element, x, y }`. Past `SLOP` it becomes a move of the SELECTION; if
+     * the pointer never goes anywhere it was a click, and picks `element` — the
+     * deepest thing under it — the way a press used to straight away.
+     *
+     * WHY IT WAITS: a box reached by climbing, or by a crumb, covers children, and
+     * a press over one of them used to re-pick that child and drag it instead. So
+     * the box the author had just chosen could not be moved by pressing anywhere it
+     * actually covers — only on whatever bare strip of it was not a child. Pressing
+     * inside now moves what is picked, and the click still goes deeper.
+     *
+     * Nothing is begun and nothing moves while a press is pending, which is what
+     * makes that cheap: the click it may turn out to be leaves no step on the undo
+     * stack and no block on the Recording.
+     */
+    this.pending = null;
+    /**
      * What can be taken back, gesture by gesture. `lib/history.mjs` is the stack
      * and the rules; `replay()` below is what a step MEANS.
      */
@@ -730,7 +756,8 @@ export class Measure {
         ? `picked ${named.phrase} — nothing here can address it uniquely, so an Annotation can be` +
             ' taken but an Override cannot be written'
         : `picked ${named.phrase}${promoted ? ` — an inline box, so it is measured as ${DISPLAY}` : ''} —` +
-            ' drag it, drag a corner, scrub a row, or shift-click to pick more',
+            ' drag from anywhere inside it to move it, drag a corner, scrub a row, click inside it to pick' +
+            ' something smaller, or shift-click to pick more',
       selector === null,
     );
   }
@@ -867,6 +894,10 @@ export class Measure {
     for (const held of this.selection) this.release(held);
     this.selection = [];
     this.came = null;
+    // A press waiting to find out what it is was waiting inside one of THESE, so it
+    // goes with them: Escape or leaving the surface between the press and the
+    // release must not leave a click behind to pick something afterwards.
+    this.pending = null;
   }
 
   /** What to call the selection in a report line. */
@@ -1163,7 +1194,8 @@ export class Measure {
     into.innerHTML = `
       <div data-editor-arm>
         <small data-editor-measuring>Click anything on the page. Shift-click picks more,
-        <kbd>↑</kbd> and <kbd>↓</kbd> climb to a parent and back, dragging moves it, a corner
+        <kbd>↑</kbd> and <kbd>↓</kbd> climb to a parent and back, dragging from anywhere inside
+        what is picked moves it, a click inside it picks something smaller instead, a corner
         resizes it from the opposite one, and scrubbing a row writes the Token that governs it
         where there is one. <kbd>Esc</kbd> drops the selection.</small>
         <div data-editor-toggles>
@@ -2185,7 +2217,19 @@ export class Measure {
           this.pick(element, true);
           return;
         }
-        if (!this.selection.some((held) => held.element === element)) this.pick(element);
+        // Inside something already picked — its own box, or anything the DOM puts
+        // within it. Which gesture this is cannot be known at the press, so it
+        // waits: `this.pending` is the whole of why.
+        //
+        // DESCENDANCE AND NOT GEOMETRY, deliberately. "Anywhere inside the box" is
+        // what it is for, but the Panel's Frame is drawn OVER the subheading at some
+        // widths, and a press on the Frame that moved the subheading underneath it
+        // would be this surface moving something the pointer was not on.
+        if (this.selection.some((held) => held.element === element || held.element.contains(element))) {
+          this.pending = { element, x: event.clientX, y: event.clientY };
+          return;
+        }
+        this.pick(element);
         // AFTER the pick, because picking clears the selection this is about.
         this.begin();
         this.dragging = { how: 'move', x: event.clientX, y: event.clientY, from: { ...this.picked.wanted } };
@@ -2196,6 +2240,22 @@ export class Measure {
     document.addEventListener(
       'pointermove',
       (event) => {
+        // A press inside what is already picked turns into a drag of it HERE, once
+        // the pointer has actually gone somewhere. The origin stays the press, so
+        // nothing jumps as it is promoted: the box moves by exactly what the pointer
+        // has travelled, the slop included. And `wanted` is read here rather than at
+        // the press because it cannot have changed between the two — nothing else
+        // runs in that window — so this is the same numbers a frame later.
+        if (this.pending) {
+          const far =
+            Math.abs(event.clientX - this.pending.x) >= SLOP || Math.abs(event.clientY - this.pending.y) >= SLOP;
+          if (!far) return;
+          const { x, y } = this.pending;
+          this.pending = null;
+          if (!this.picked) return;
+          this.begin();
+          this.dragging = { how: 'move', x, y, from: { ...this.picked.wanted } };
+        }
         if (!this.dragging || !this.picked) return;
         event.preventDefault();
         const dx = event.clientX - this.dragging.x;
@@ -2232,6 +2292,21 @@ export class Measure {
       document.addEventListener(
         done,
         (event) => {
+          // A press inside what is already picked that never went anywhere is a
+          // click, and a click picks the deepest element under it — which is the way
+          // INTO a box after its parent has been picked, and the only one the pointer
+          // has. Nothing was begun, so there is nothing here to land, log or record.
+          if (this.pending) {
+            const { element } = this.pending;
+            this.pending = null;
+            // Not on a cancel: that is the gesture being taken away rather than let
+            // go of, and it should leave the selection where it found it. And not on
+            // something already picked — a click on what the author is holding is not
+            // a change of mind, and re-picking one of a series would drop the rest.
+            const held = this.selection.some((one) => one.element === element);
+            if (event.type === 'pointerup' && !held) this.pick(element);
+            return;
+          }
           if (!this.dragging) return;
           const { how, axis, corner, was } = this.dragging;
           this.dragging = null;

@@ -192,9 +192,10 @@ holding every Section's Content and Tokens and a copy of the Overrides file, and
 compares the real files before and after: it runs from the pre-commit hook, and a
 Check that edited the tree it was gating would put a file it wrote into the commit
 it was checking. `scripts/editor/NOTES.md` is the authority, and it is where this
-Check's mutation record lives — twenty-four of them, four for Content, five for the
+Check's mutation record lives — twenty-seven of them, four for Content, five for the
 Tokens and Timeline halves #144 added, nine for the measuring half of #145, three
-for the corner handles of #162, and three for the undo stack.
+for the corner handles of #162, three for the undo stack, and three for a press
+inside what is already picked.
 
 One thing it asserts in two halves rather than one, because they are two claims: a
 Token's value is baked into the served build's stylesheet, so a drag has to move

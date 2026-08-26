@@ -989,9 +989,27 @@ allows `>` at all. The composition's own stylesheet writes
 `.projects-panel__stage > .projects-panel__frame` for the same reason.
 
 **What governs a length is read once, when the element is picked.** A pointerdown
-on what is already picked starts a drag rather than picking it again — right for a
+inside what is already picked starts a drag rather than picking again — right for a
 finger, and the reason a Check that changes the stylesheet under the surface has to
 disarm and re-arm before measuring again.
+
+**A press inside what is picked is not resolved until the pointer moves**, and that
+is `this.pending`. Past three pixels it is a drag of the SELECTION; if the pointer
+never goes anywhere it was a click, and picks the deepest element under it as a
+press used to straight away. Both halves are load-bearing. A box reached by `↑` or
+by a crumb covers children, and a press over one of them used to re-pick that child
+and drag it instead — so the box the author had just chosen could only be moved by
+finding a bare strip of it that was not a child. But the pointer is also the only
+way INTO a box, `↓` going back only where `↑` came from, so a press inside that
+always moved would seal every parent shut the moment it was picked.
+
+It waits by doing NOTHING — no `begin()`, no inline style — which is what makes the
+click cheap: the gesture it may turn out not to be leaves no step on the undo stack
+and no block on the Recording. It is dropped by `clear()` with the selection, so
+Escape or leaving the surface mid-press cannot leave a click behind to land later.
+And it is DESCENDANCE and not geometry: the Panel's Frame is drawn over the
+subheading at some widths, and a press on the Frame that moved the subheading
+underneath it would be this surface moving something the pointer was not on.
 
 **Do not add a property to `PROPERTIES` without asking what animates it.** The
 list is `translate`, `width`, `height` because `translate` composes with GSAP's
@@ -1084,7 +1102,7 @@ plain length on exactly one rule, as the width of the element it is about to
 measure. Its second rule is a trap: later in the sheet, so it would win on source
 order, inside a `@media` that never holds.
 
-Twenty-four mutations have been shown to fail it: the boundary writing nothing, the
+Twenty-seven mutations have been shown to fail it: the boundary writing nothing, the
 handshake requirement removed, the surface binding nothing, empty Content values
 allowed — the last of which is caught by `content.test.mjs` before the browser
 starts, which is where it belongs — no Tokens discovered, a drag that does not move
@@ -1110,7 +1128,10 @@ the Token back — the one this Check exists for, because on screen it is
 indistinguishable from a working one — a redo keystroke wired to nothing, and a
 keystroke that stands down inside a number box, which is where `paintPicked()` has
 just put the focus and therefore silently loses the press the author reaches for
-first.
+first; and, for the press inside what is picked, a press that re-picks the child
+under the pointer instead of dragging the box that covers it, a click inside that
+picks nothing and so seals every parent shut, and a slop of zero, which reads two
+pixels of hand-shake as a drag and takes the click away again.
 
 Six were real bugs rather than invented mutations — four of #145's nine, the
 unclosed CSS rule of #162's three, and the content box of #165's — and none of them
