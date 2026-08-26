@@ -254,19 +254,27 @@ change — and Publish commits and pushes. Where a change is neither a word nor 
 Token, the **Measure** surface is the inspector: click anything, shift-click a
 series, climb to a parent with the breadcrumb or `↑`, then drag it, drag a corner,
 or scrub any of the five rows — the box's four and the **text size**. A row backed
-by a Token writes that Token on release, which is most of them; a row backed by
+by a Token writes that Token on release, which is most of them — **including one
+behind a bound**: a box written as `width: 100%` inside
+`max-width: var(--a-token)` is governed by the Token and not by the `100%`, and a
+drag lifts the cap so the box actually moves rather than writing a style the cap
+swallows. A row backed by
 nothing stays a measurement and hands back an **Annotation** to paste to an agent,
 or writes an **Override** into `src/overrides.css` so the page looks right while
 the composition is corrected later. That asymmetry is ADR 0004 and not an
 unfinished half: a Token is a named number the author may move, a coordinate in a
 composition is not.
 
-**Two toggles on that surface and a sixth surface make it a session's tool rather
-than one element's**, and an agent is most likely to meet the third of them:
-**scale text** carries the text size through a resize by the ratio the box changed
-by, so letting the row go writes BOTH Tokens — and the size it carries is the
-TEXT's own and not the box's, so resizing a list scales the type its ITEMS declare
-rather than writing a `font-size` on the list that nothing would read; **keep**
+**Three toggles on that surface and a sixth surface make it a session's tool
+rather than one element's**, and an agent is most likely to meet the last of them:
+**resize by one ratio** makes a corner drag SCALE the box — both axes by one
+ratio, whichever of the two the pointer travelled further along, with `Shift`
+inverting it for one drag — so a drawing keeps its shape and only its size
+changes; **scale text** carries the text size through a resize by the ratio the
+box changed by, so letting the row go writes BOTH Tokens — and the size it
+carries is the TEXT's own and not the box's, so resizing a list scales the type
+its ITEMS declare rather than writing a `font-size` on the list that nothing would
+read; **keep**
 leaves a change standing on the page when the selection moves off it, and picking
 that element again *resumes* its record rather than measuring afresh from where it
 got to; and the

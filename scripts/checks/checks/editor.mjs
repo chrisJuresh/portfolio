@@ -1461,6 +1461,112 @@ export const check = {
         await holds(page, () => readFileSync(tokenPath, 'utf8') === held);
 
         await page.evaluate(() => document.getElementById('editor-check-governs')?.remove());
+
+        // ---- and the same Token BEHIND A BOUND, which is the shape that was
+        // ---- silent ------------------------------------------------------
+        //
+        // WHAT THIS ADDS OVER THE BLOCK ABOVE, and it is two things the direct
+        // `width: var(--token)` shape cannot see.
+        //
+        // A composition almost never declares a box's width as a Token outright.
+        // It writes `width: 100%` beside `max-width: var(--a-token)` — fill the
+        // parent, up to the measure — which is the Front Screen's column exactly.
+        // Against that, this surface used to fail TWICE and silently: the walk for
+        // what governs the width stopped at `width`, saw `100%`, and answered "a
+        // literal, not a Token at all"; and the preview wrote an inline `width`
+        // that `max-width` clamped, however `!important` it was, so the box did not
+        // move, the re-measure truthfully said "unchanged", and the commit had no
+        // delta to write. The author's report was "I cannot make it any wider",
+        // twice, with nothing on screen saying why — which is precisely a failure a
+        // person cannot notice the cause of, and therefore a Check.
+        //
+        // So this asserts the two halves at the two places they broke: the ROW
+        // names the Token, and a corner drag actually MOVES the box.
+        //
+        // INSIDE THE ELEMENT THE TOKEN IS DECLARED ON, exactly as the text-size
+        // block below is, and for a reason that cost this Check a run: a Section's
+        // Token is declared on the Section's own root, so `max-width: var(--it)` on
+        // an element outside that subtree resolves to nothing, the declaration is
+        // invalid at computed-value time, `max-width` computes to `none` — and the
+        // Check then asserts a cap that was never there and reads as the surface
+        // failing.
+        const capped = await page.evaluate(
+          ([property, selector]) => {
+            const host = document.querySelector(selector);
+            if (!host) return null;
+            const element = document.createElement('div');
+            element.id = 'editor-check-capped';
+            element.textContent = 'Aa';
+            // Taken out of flow so the composition around it does not move, and
+            // `width: 100%` against the viewport is wider than any measure Token —
+            // which is the point: the box has to be STANDING on the bound when it
+            // is picked, or the bound is legitimately not what sized it. Clipped,
+            // because what is measured is the box and not what the words do in it.
+            element.style.cssText = 'position: fixed; left: 12px; top: 12px; height: 24px; overflow: hidden;';
+            host.append(element);
+            const style = document.createElement('style');
+            style.id = 'editor-check-capped-sheet';
+            style.textContent = `#editor-check-capped { width: 100%; max-width: var(${property}); }`;
+            document.head.append(style);
+            return element.getBoundingClientRect().width;
+          },
+          [governs.property, governs.selector],
+        );
+        if (capped === null) {
+          failures.push(
+            `nothing on the page matches "${governs.selector}", which is where ${governs.property} is declared`,
+          );
+        }
+        await page.locator('[data-editor-choose="content"]').click();
+        await page.locator('[data-editor-choose="measure"]').click();
+        await page.evaluate(() => {
+          const element = document.getElementById('editor-check-capped');
+          const at = (kind) => element.dispatchEvent(new PointerEvent(kind, { bubbles: true, cancelable: true }));
+          at('pointerdown');
+          at('pointerup');
+        });
+
+        const behind = await page.locator('[data-editor-axis="width"]').getAttribute('data-editor-governed');
+        if (capped !== null && behind !== governs.property) {
+          failures.push(
+            `a box written as width: 100% inside max-width: var(${governs.property}) reports its width as` +
+              ` governed by "${behind}" — the walk is stopping at the first declared property instead of` +
+              ' preferring the one that is a Token, so the row offers a length nothing can write',
+          );
+        }
+
+        // The corner and not the row, because the row sets a number directly and
+        // the DRAG is what the clamp swallowed. `boundingBox()` of the handle, so
+        // this is the same gesture a hand makes.
+        const grip = capped === null ? null : await page.locator('[data-editor-handle="se"]').boundingBox();
+        if (!grip && capped !== null) {
+          failures.push('no bottom-right handle on a picked element — the marquee is not drawn');
+        } else if (grip) {
+          await page.mouse.move(grip.x + grip.width / 2, grip.y + grip.height / 2);
+          await page.mouse.down();
+          await page.mouse.move(grip.x + grip.width / 2 + 120, grip.y + grip.height / 2 + 12, { steps: 8 });
+          const dragged = await page.evaluate(
+            () => document.getElementById('editor-check-capped').getBoundingClientRect().width,
+          );
+          await page.mouse.up();
+          if (dragged < capped + 100) {
+            failures.push(
+              `dragging the corner of a box capped by max-width: var(${governs.property}) took it from` +
+                ` ${capped.toFixed(1)}px to ${dragged.toFixed(1)}px against 120px of pointer — the preview is` +
+                ' not lifting the bound it is going to write, so the drag writes a style and the box stays put',
+            );
+          } else {
+            notes.push(
+              `dragged a box capped by max-width: var(${governs.property}) from ${capped.toFixed(1)}px to` +
+                ` ${dragged.toFixed(1)}px, and the row named the Token behind the cap`,
+            );
+          }
+          await page.locator('[data-editor-measure="restore"]').click();
+        }
+        await page.evaluate(() => {
+          document.getElementById('editor-check-capped')?.remove();
+          document.getElementById('editor-check-capped-sheet')?.remove();
+        });
       }
 
       // ---- the text size, which is the fifth row and the reason for #166 ---

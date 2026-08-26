@@ -31,10 +31,11 @@ and the Override, which are what becomes of every change the other four surfaces
 cannot express.
 
 The Recording is not a seventh kind of thing either: it writes nothing at all. It
-is the Annotation at session scale, which is what the Measure surface's two
-toggles — **scale text** and **keep** — are for as well. All three are one
+is the Annotation at session scale, which is what two of the Measure surface's
+three toggles — **scale text** and **keep** — are for as well. All three are one
 complaint about a tool that measured *one element* well: see
-**Two toggles, and a Recording** below.
+**Three toggles, and a Recording** below. The third, **resize by one ratio**, is a
+different complaint and has its own heading.
 
 **undo, redo and `Ctrl-Z`** are that complaint's last part, and they reach a file
 without being a fifth kind of thing either: an undo writes the same Token, and the
@@ -522,6 +523,36 @@ compared with the box before the drag, and the offer is made only when the two
 agree. Off the bound it is reported with both numbers instead, which is the useful
 half of the answer.
 
+**A TOKEN OUTRANKS THE ORDER, and this is the one rule in `governing()` that is not
+`GOVERNED`'s list read top to bottom.** The list is ordered by how directly a
+property states a length, and the walk used to stop at the first property the
+composition declared. So a box written as `width: 100%` inside
+`max-width: var(--a-token)` answered *a literal, and not a Token at all* — because
+`width` comes first and `100%` is not a Token. That is the wrong half of the pair:
+`100%` says the box FILLS and the `max-width` says how wide it may get, and the
+number the author measured is the second one. Every declared candidate is collected
+now and the first that is exactly one Token wins, provided that where it is a bound
+the box is standing on it — the same arithmetic as the paragraph above, asked at the
+pick as well as at the commit. The order **among Tokens** is still `GOVERNED`'s, so
+this can only ever turn "no Token governs this" into a Token and never one Token
+into another.
+
+**AND A PREVIEW HAS TO LIFT THE BOUND IT IS GOING TO WRITE.** This is the half that
+made the whole thing silent rather than merely wrong. `applyTo()` previews through
+an inline `width`, and `max-width` clamps a `width` **however `!important` the
+`width` is** — importance settles a fight between two declarations of one property,
+not between two different properties. So the box the composition capped could not
+be dragged wider at all: the style was written, the box did not move, `applyTo()`
+re-measured it truthfully as unchanged, and the commit had no delta to write. The
+Front Screen's column is exactly that shape, and *I cannot make it any wider* is
+what it looks like from the outside. `LIFTS` is the four bounds a preview may lift,
+per axis, and it lifts only the property `governing()` actually chose. `flex-basis`
+and `aspect-ratio` are deliberately not among them even though the first is a bound:
+writing either inline changes what the layout SOLVES rather than lifting a clamp on
+the answer, and this surface reports a layout instead of arguing with it. Everything
+`applyTo()` may write is listed once as `WRITES` and recorded by `record()`, because
+a bound lifted and then not put back is a discarded drag that stayed on the page.
+
 **A relationship and a literal are two different answers, and the difference is
 most of the value.** A length built out of Tokens is a relationship, and naming the
 constants inside it is the decision an agent has to make. A length with no Token in
@@ -587,10 +618,47 @@ ticket names.** The Measure surface lists every one with a *discard* beside it; 
 panel's header carries a count that stays visible whichever surface is in front;
 and `pnpm check:sections` prints how many are standing on every build.
 
-### Two toggles, and a Recording
+### Three toggles, and a Recording
 
-Three things, and they are one complaint: the surface measured **one element** well
-and a **session** of them badly.
+Four things. Three of them are one complaint — the surface measured **one element**
+well and a **session** of them badly — and `resize by one ratio` is the fourth,
+which is about the gesture rather than the session.
+
+#### `resize by one ratio` — a corner drag scales the box
+
+A corner drag sized the two axes independently, which is what a *container* wants
+and not what a *drawing* wants: "make the whole thing bigger" means the shape is
+held and only the size changes, and doing that by hand means dragging a corner and
+then correcting one axis by eye. While this is on, `lib/corners.mjs`'s
+`proportional()` takes both axes to one ratio and the anchor is held exactly as it
+is for an ordinary resize — `place()` is the one copy of that rule now, because
+there are two ways to arrive at a size and a second copy of the anchor arithmetic
+is a sign wrong waiting to happen.
+
+**The ratio is the axis the pointer travelled FURTHER along**, measured as distance
+from 1 so the two axes can be compared at all. A mostly-sideways drag scales by what
+it did sideways; a diagonal one gives the same answer either way. **This is not
+`typefit.mjs`'s rule, which takes the smaller of the two, and the difference is not
+an inconsistency**: that one answers "how big may the type be and still fit", where
+the smaller ratio is the safe one, and this one answers "how much bigger did the
+author ask for", where the smaller ratio would make every drag lag the pointer.
+
+**`Shift` INVERTS it for one drag**, in both directions, which is one exclusive-or
+rather than a second mode. Shift is free to mean that here and only here: on a scrub
+it is the fine step and on a press it builds the series, and a corner drag is
+neither of those.
+
+**It composes with `scale text`, and that pair is the point of it**: one ratio on the
+box, the same ratio on the type — `typefit`'s min of two equal ratios is that ratio —
+and a Recording that names it. Which is the other half:
+
+**The Recording says what was ASKED FOR, because the rows say what happened.** A box
+the layout will not give a ratio to takes it on one axis and not the other, and the
+table above the sentence reports that truthfully — so a block with no sentence would
+read as a botched measurement. `by` on a record is per member and measured from the
+**pick**, so it agrees with the table printed above it, and it is cleared by a row
+scrub and by a move: a stale ratio would have the document claim a shape was held by
+a gesture that deliberately did not hold it.
 
 #### `scale text` — a resize carries the type with it
 
@@ -1115,7 +1183,7 @@ elsewhere.
 | `lib/overrides.test.mjs` | the bytes of the Overrides file, the round trip that lets it re-serialise, and every refusal |
 | `lib/annotations.test.mjs` | the Annotation's own text — the glossary read out of the real `CONTEXT.md`, what an element is called, and every number restated |
 | `lib/bakes.test.mjs` | the bytes of a Bake's parameters, the argv a Bake is run with, and every refusal |
-| `lib/corners.test.mjs` | the corner arithmetic: per corner, that the opposite one does not move — through the clamp as well — and whether the anchor actually held |
+| `lib/corners.test.mjs` | the corner arithmetic: per corner, that the opposite one does not move — through the clamp as well, and through a SCALE as well — whether the anchor actually held, and that one ratio is the axis the pointer travelled further along rather than the larger or the smaller of the two |
 | `lib/typefit.test.mjs` | the `scale text` ratio: that the smaller of the two wins, that it is taken from the picked box so a drag does not compound, and that nothing resized is no answer rather than a ratio of one — and `carried()`, that holders set at one size are the box's text size and holders set at several are no answer |
 | `lib/changes.test.mjs` | the Recording's own text — that only what moved takes a row, that an already-written Token is marked and a differently-written one is not, and that the caveats are said once however many elements there are |
 | `lib/boxes.test.mjs` | the border box a size is measured as against the content box it is written as, and that an axis nothing asked for stays unasked for |

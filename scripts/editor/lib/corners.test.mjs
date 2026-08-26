@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { CORNERS, HOLDS, OPPOSITE, drift, label, resize } from './corners.mjs';
+import { CORNERS, HOLDS, OPPOSITE, drift, label, proportional, ratio, resize } from './corners.mjs';
 
 /**
  * The corner arithmetic, on its own.
@@ -207,5 +207,57 @@ test('a drift is rounded to the hundredth, like every other number here', () => 
 test('a drift on a corner nobody named is refused rather than guessed at', () => {
   for (const corner of ['n', 'north-west', 'NW', '', null]) {
     assert.throws(() => drift(corner, box(0, 0, 10, 10), box(0, 0, 10, 10)), /corner/i, `${corner} was not refused`);
+  }
+});
+
+// ---------------------------------------------------------------------------
+// One ratio: the `resize by one ratio` gesture
+// ---------------------------------------------------------------------------
+
+test('the ratio is the axis the pointer travelled further along', () => {
+  // Width doubled, height barely touched: the hand meant the width.
+  assert.equal(ratio({ width: 200, height: 51 }, from), 2);
+  // And the other way round — 50 → 100 is ×2 against 100 → 101's ×1.01.
+  assert.equal(ratio({ width: 101, height: 100 }, from), 2);
+  // A shrink is further from 1 than a small growth, which is the same rule and the
+  // case a `Math.max` would get wrong.
+  assert.equal(ratio({ width: 50, height: 55 }, from), 0.5);
+});
+
+test('a box with no size to grow from has no ratio', () => {
+  assert.equal(ratio({ width: 10, height: 10 }, { width: 0, height: 0, dx: 0, dy: 0 }), null);
+  // One axis is enough, and the answer is that axis alone.
+  assert.equal(ratio({ width: 10, height: 10 }, { width: 0, height: 50, dx: 0, dy: 0 }), 0.2);
+});
+
+test('a scale takes both axes to the same ratio, and still holds the anchor', () => {
+  for (const corner of CORNERS) {
+    // A drag that asks the width for ×1.5 and the height for almost nothing.
+    const scaled = proportional(corner, { dx: HOLDS[corner].includes('west') ? -50 : 50, dy: 0 }, from);
+    assert.equal(scaled.width, 150, `${corner} did not scale the width`);
+    assert.equal(scaled.height, 75, `${corner} did not carry the height`);
+    const anchor = OPPOSITE[corner];
+    assert.deepEqual(
+      corners(scaled)[anchor],
+      corners(from)[anchor],
+      `${corner}: the ${anchor} anchor moved during a scale`,
+    );
+  }
+});
+
+test('a scale of a box with no size falls back to the sizing it can do', () => {
+  const flat = { width: 0, height: 0, dx: 0, dy: 0 };
+  assert.deepEqual(proportional('se', { dx: 30, dy: 10 }, flat), resize('se', { dx: 30, dy: 10 }, flat));
+});
+
+test('a scale clamps at zero rather than turning the box inside out', () => {
+  const scaled = proportional('se', { dx: -400, dy: 0 }, from);
+  assert.equal(scaled.width, 0);
+  assert.equal(scaled.height, 0);
+});
+
+test('a scale on a corner nobody named is refused rather than guessed at', () => {
+  for (const corner of ['n', 'north-west', 'NW', '', null]) {
+    assert.throws(() => proportional(corner, { dx: 1, dy: 1 }, from), /corner/i, `${corner} was not refused`);
   }
 });

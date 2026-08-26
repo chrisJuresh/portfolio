@@ -31,7 +31,11 @@ const measured = (over = {}) => ({
   ...over,
 });
 
-const entry = (over = {}) => ({ measured: measured(over.measured), scaled: over.scaled ?? null });
+const entry = (over = {}) => ({
+  measured: measured(over.measured),
+  scaled: over.scaled ?? null,
+  by: over.by ?? null,
+});
 
 test('only what moved takes a row', () => {
   const text = report({ entries: [entry()] });
@@ -160,6 +164,34 @@ test('a scaled text size says it was not scrubbed, and by what ratio', () => {
   });
   assert.match(text, /followed the box/);
   assert.match(text, /×1\.2/);
+});
+
+test('a scale says what one ratio was asked for, and that the box took it', () => {
+  // The fixture is 800x450 → 960x540, which is ×1.2 on both axes: the shape was
+  // held, so the sentence has nothing to warn about and says so.
+  const text = report({ entries: [entry({ by: 1.2 })] });
+  assert.match(text, /SCALE and not two separate sizes/);
+  assert.match(text, /×1\.2/);
+  assert.match(text, /took it on both axes/);
+});
+
+test('a scale the layout only half gave says so, and which ratio to act on', () => {
+  // A flex fill, a measure inside a wider parent: the width moved and the height
+  // did not. The rows are measured and would look like a bad scale, so the block
+  // has to name the asked-for ratio as the one an agent should act on — this is the
+  // Front Screen's column exactly, whose height is a fill of a Section pinned to
+  // the fold and cannot be given anything.
+  const text = report({
+    entries: [entry({ by: 1.2, measured: { after: { left: 120, top: 40, width: 960, height: 450 } } })],
+  });
+  assert.match(text, /both axes were asked for ×1\.2/);
+  assert.doesNotMatch(text, /took it on both axes/);
+  // Wrapped across lines by `paragraph()`, so the assertion is on the phrase that
+  // survives one line rather than the whole sentence.
+  assert.match(text, /it is the layout that would not/);
+  assert.match(text, /the ratio to act on is the one asked for/);
+  // And both ratios the page actually gave, so the reader can see which axis it was.
+  assert.match(text, /×1\.2 and ×1/);
 });
 
 test('a text size the element does not own says whose it is, so the change lands on the right rule', () => {

@@ -43,7 +43,8 @@ export class Changes {
   constructor({ say, counted }) {
     this.say = say;
     this.counted = counted ?? (() => {});
-    /** @type {{ element: Element, measured: object, scaled: ({by: number}|null) }[]} */
+    /** @type {{ element: Element, measured: object, scaled: ({by: number}|null),
+     *            by: (number|null) }[]} */
     this.entries = [];
     /** @type {{ kind: string, what: string, value: string, file: string, where: string }[]} */
     this.written = [];
@@ -100,8 +101,17 @@ export class Changes {
    * not recorded anywhere: `lib/changes.mjs` derives it from `written` at render
    * time, and the note on `block()` is why — stored, it was a fact about the order
    * of two calls, and one extra `change` event out of a number box reversed them.
+   *
+   * @param {Element} element
+   * @param {object} measured  what `Measure.measurement()` made of it
+   * @param {{ by: number }|null} [scaled]  the ratio the TEXT followed the box by,
+   *   where `scale text` derived one
+   * @param {number|null} [by]  the one ratio the BOX was asked to take, where the
+   *   gesture was a proportional resize. Two different numbers on purpose: with
+   *   both toggles on they agree, and where only one is on the block has to be able
+   *   to say which of the two happened.
    */
-  measured(element, measured, scaled = null) {
+  measured(element, measured, scaled = null, by = null) {
     const at = this.at(element);
     if (moved(measured).length === 0) {
       if (at !== -1) {
@@ -110,7 +120,7 @@ export class Changes {
       }
       return;
     }
-    const entry = { element, measured, scaled };
+    const entry = { element, measured, scaled, by };
     if (at === -1) this.entries.push(entry);
     // In place, so the blocks stay in the order they were FIRST measured — which is
     // the order the author made them in, and the order the composing note at the
@@ -185,7 +195,7 @@ export class Changes {
    *  `lib/changes.mjs`, which is pure and has to stay testable. */
   text() {
     return report({
-      entries: this.entries.map(({ measured, scaled }) => ({ measured, scaled })),
+      entries: this.entries.map(({ measured, scaled, by }) => ({ measured, scaled, by })),
       written: this.written,
       kept: this.kept,
       at: new Date().toISOString().slice(0, 16).replace('T', ' '),

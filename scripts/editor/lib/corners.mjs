@@ -73,9 +73,28 @@ export function resize(corner, { dx, dy }, from) {
   // the move from it — rather than moving by the pointer and clamping after — is
   // what keeps the anchor still once the box has collapsed: past zero the corner
   // stops, and the far edge stays where it always was.
-  const width = round(Math.max(0, horizontal === 'west' ? from.width - dx : from.width + dx));
-  const height = round(Math.max(0, vertical === 'north' ? from.height - dy : from.height + dy));
+  const width = Math.max(0, horizontal === 'west' ? from.width - dx : from.width + dx);
+  const height = Math.max(0, vertical === 'north' ? from.height - dy : from.height + dy);
+  return place(corner, { width, height }, from);
+}
 
+/**
+ * A size, and the translate that holds the anchor while the box takes it.
+ *
+ * EXTRACTED BECAUSE THERE ARE NOW TWO WAYS TO ARRIVE AT A SIZE — the pointer's two
+ * axes, and one ratio applied to both — and the anchor is the same rule for both.
+ * Remembered twice it would be remembered with one sign wrong, which is the whole
+ * reason this file exists.
+ *
+ * @param {string} corner  the one under the pointer, one of `CORNERS`
+ * @param {{ width: number, height: number }} to  the size being taken, unrounded
+ * @param {{ width: number, height: number, dx: number, dy: number }} from  the box
+ *   and the translate when the drag started
+ */
+function place(corner, to, from) {
+  const [vertical, horizontal] = HOLDS[corner];
+  const width = round(Math.max(0, to.width));
+  const height = round(Math.max(0, to.height));
   return {
     width,
     height,
@@ -84,6 +103,61 @@ export function resize(corner, { dx, dy }, from) {
     dx: round(horizontal === 'west' ? from.dx + (from.width - width) : from.dx),
     dy: round(vertical === 'north' ? from.dy + (from.height - height) : from.dy),
   };
+}
+
+/**
+ * The one ratio a corner drag asked for.
+ *
+ * THE AXIS THE POINTER MEANT, and that is the decision worth stating: the two axes
+ * of a corner drag are two different ratios, and a proportional resize has to pick
+ * one. It picks whichever is FURTHER FROM 1 — the axis the hand travelled further
+ * along, in the only units that can be compared across two axes of different
+ * lengths. So a drag that is mostly sideways scales by what it did sideways and the
+ * height follows, which is what a hand expects; and a diagonal drag, where the two
+ * ratios are close, gives the same answer either way.
+ *
+ * It is NOT `typefit.mjs`'s rule, which takes the SMALLER of the two, and the
+ * difference is not an inconsistency. That one is answering "how big may the type
+ * be and still fit", where the smaller ratio is the safe one. This one is
+ * answering "how much bigger did the author ask for", where the smaller ratio
+ * would make every drag lag the pointer.
+ *
+ * @param {{ width: number, height: number }} asked  the size the two axes came to
+ * @param {{ width: number, height: number }} from  the box the drag started at
+ * @returns {number|null} null where there is no ratio to have: a box with no width
+ *   and no height to grow from cannot be scaled, and answering 1 would claim the
+ *   author asked for no change
+ */
+export function ratio(asked, from) {
+  const found = [];
+  for (const axis of ['width', 'height']) {
+    if (!(from?.[axis] > 0) || !Number.isFinite(asked?.[axis])) continue;
+    found.push(asked[axis] / from[axis]);
+  }
+  if (found.length === 0) return null;
+  return found.reduce((one, other) => (Math.abs(other - 1) > Math.abs(one - 1) ? other : one));
+}
+
+/**
+ * Where a corner drag leaves the box when both axes move by the same ratio.
+ *
+ * The gesture the `resize by one ratio` toggle turns a corner drag into: the box
+ * keeps its proportions and only its size changes, which is what "make the whole
+ * thing bigger" is when the thing is a drawing rather than a container. The anchor
+ * is held exactly as it is for an ordinary resize — `place()` is the one copy of
+ * that rule — so the corner opposite the pointer stays where it was and the box
+ * grows away from it.
+ *
+ * Falls back to the ordinary resize where there is no ratio to apply, so a zero-
+ * sized box is still draggable rather than stuck.
+ *
+ * @returns {{ width: number, height: number, dx: number, dy: number }}
+ */
+export function proportional(corner, by, from) {
+  const asked = resize(corner, by, from);
+  const scale = ratio(asked, from);
+  if (scale === null) return asked;
+  return place(corner, { width: from.width * scale, height: from.height * scale }, from);
 }
 
 /** How far the anchor may have moved and still count as held. Sub-pixel layout

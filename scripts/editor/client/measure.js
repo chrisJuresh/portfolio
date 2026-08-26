@@ -100,7 +100,15 @@
 
 import { AXES, TEXT, annotate, holderFile, list, name, nudge, restate } from './lib/annotations.mjs';
 import { asWritten, insets } from './lib/boxes.mjs';
-import { CORNERS, label as cornerLabel, drift, resize, word as cornerWord } from './lib/corners.mjs';
+import {
+  CORNERS,
+  label as cornerLabel,
+  drift,
+  proportional,
+  ratio,
+  resize,
+  word as cornerWord,
+} from './lib/corners.mjs';
 import { History } from './lib/history.mjs';
 import { DISPLAY, asSelector, rule as ruleFor } from './lib/overrides.mjs';
 import { carried, fitted } from './lib/typefit.mjs';
@@ -180,6 +188,38 @@ const GOVERNED = {
  *  rather than assumed. `flex-basis` is here too: what a flex item ends up at is
  *  the algorithm's answer and not this number. */
 const BOUND = new Set(['max-width', 'min-width', 'max-height', 'min-height', 'flex-basis']);
+
+/**
+ * The bounds a PREVIEW has to lift, per axis, and why lifting them is the
+ * difference between a drag that works and one that silently does nothing.
+ *
+ * A preview writes an inline `width`, and `max-width` clamps a `width` however
+ * `!important` the `width` is — the two are different properties and importance
+ * does not settle a fight between them. So a box the composition sizes as
+ * `width: 100%` inside `max-width: var(--some-token)` could not be dragged WIDER
+ * at all: the inline style was written, the box did not move, `applyTo()`
+ * re-measured it truthfully as unchanged, and the commit had no delta to write.
+ * The Front Screen's column is exactly that shape, and "I cannot make it any
+ * wider" is what it looks like from the outside.
+ *
+ * Lifting the bound to the size being asked for is what makes the preview show
+ * what committing is GOING to do — the commit writes the Token behind the bound,
+ * which is the same number. It is only ever done to the property `governing()`
+ * chose, so a bound the composition is not sizing this box with is left alone.
+ *
+ * `flex-basis` and `aspect-ratio` are deliberately not here even though the first
+ * is a `BOUND`: writing either inline changes what the layout SOLVES rather than
+ * lifting a clamp on the answer, and this surface reports a layout instead of
+ * arguing with it.
+ */
+const LIFTS = {
+  width: ['max-width', 'min-width'],
+  height: ['max-height', 'min-height'],
+};
+
+/** Every property `applyTo()` may write and therefore has to be able to put back.
+ *  The four axes' bounds included, because a preview lifts the one that governs. */
+const WRITES = ['display', 'translate', 'width', 'height', ...LIFTS.width, ...LIFTS.height];
 
 /** A declaration that is exactly one Token and nothing else. Anything else — a
  *  `calc()` holding one, a sum of two — is a relationship, and the Annotation
@@ -462,6 +502,20 @@ export class Measure {
      */
     this.fitting = false;
     /**
+     * Whether a corner drag moves both axes by ONE ratio.
+     *
+     * "Scale the whole thing up or down by dragging the four corners" is the
+     * gesture this is, and it is a mode rather than the default for the reason the
+     * two beside it are: a corner that stopped following the pointer on one axis
+     * without being asked would be this surface deciding what the author meant.
+     * `lib/corners.mjs` is the arithmetic and which of the two ratios wins.
+     *
+     * IT COMPOSES WITH `scale text`, and that pair is the point of it: one ratio on
+     * the box, the same ratio on the type, and a Recording that says what the ratio
+     * was. Holding Shift through a corner drag is the same thing for one gesture.
+     */
+    this.scaling = false;
+    /**
      * Whether a change stays on the page when the selection leaves it.
      *
      * Off by default because the old behaviour is the right one for measuring ONE
@@ -624,16 +678,35 @@ export class Measure {
    * list are set by the rule on its items, so asking the list what governs its
    * `font-size` finds nothing at all and offers a row backed by nothing for a size
    * the composition names.
+   *
+   * A TOKEN OUTRANKS THE ORDER, and that is the one rule here that is not simply
+   * `GOVERNED`'s list read top to bottom. `GOVERNED` is ordered by how directly a
+   * property states a length, and it used to stop at the FIRST property the
+   * composition declared — so `width: 100%` beside `max-width: var(--a-token)`
+   * answered "a literal, and not a Token at all", because `width` comes first and
+   * `100%` is not a Token. That is the wrong half of the pair: `100%` says the box
+   * FILLS, the `max-width` says how wide it may get, and the number the author
+   * measured is the second one. The Front Screen's column is that shape, and the
+   * symptom is a row that reports a length nothing can write and a drag that moves
+   * nothing.
+   *
+   * So every declared candidate is collected, and the first that is exactly ONE
+   * TOKEN wins — provided that, where it is a bound, the box is actually STANDING
+   * on it, because a `max-width` the box is nowhere near is not what decided its
+   * size. Failing all that, the first candidate is the answer, exactly as before.
+   * The order among Tokens is still `GOVERNED`'s, so this can only ever turn "no
+   * Token governs this" into a Token, and never one Token into another.
    */
   governing(element, type = element) {
     const found = {};
     for (const axis of MEASURES) {
       const on = axis === TEXT ? type : element;
+      const candidates = [];
       for (const [property, sign] of GOVERNED[axis]) {
         const declaration = authored(on, property);
         if (!declaration) continue;
         const one = ONE_TOKEN.exec(declaration.value);
-        found[axis] = {
+        candidates.push({
           property,
           sign,
           on: declaration.selector,
@@ -646,11 +719,36 @@ export class Measure {
           // several: naming the constants a `calc()` is built out of is most of
           // what an agent needs to decide which of them moved.
           inside: [...new Set([...declaration.value.matchAll(EVERY_TOKEN)].map((seen) => seen[1]))],
-        };
-        break;
+        });
       }
+      if (candidates.length === 0) continue;
+      // The size to test a bound against, and only the two axes that HAVE one: a
+      // `left` and a text size have no bound in `GOVERNED` at all, so the question
+      // never arises for them and asking it would need a number that means nothing.
+      const size = axis === 'width' || axis === 'height' ? this.box(element)[axis] : null;
+      found[axis] = candidates.find((one) => this.settles(one, size)) ?? candidates[0];
     }
     return found;
+  }
+
+  /**
+   * Whether one candidate is the Token that settled this length.
+   *
+   * The bound test is the same arithmetic `measurement()` does before offering to
+   * restate one, and it is here as well rather than only there because the two
+   * questions are the same question at two moments: *is this bound what decided the
+   * size* at the pick, and *is it still* at the commit. Both are exact rather than
+   * approximate — every Section sets `box-sizing: border-box`, so a computed
+   * `max-width` and a measured border box are the same number — and a candidate
+   * this cannot settle is passed over rather than guessed at, which lands on the
+   * behaviour that was there before.
+   */
+  settles(candidate, size) {
+    if (candidate.token === null) return false;
+    if (!BOUND.has(candidate.property)) return true;
+    return (
+      Number.isFinite(size) && Number.isFinite(candidate.computed) && Math.abs(candidate.computed - size) < 0.5
+    );
   }
 
   // -------------------------------------------------------------------------
@@ -873,12 +971,27 @@ export class Measure {
       // see `typeHolders()`.
       type,
       wanted: { dx: 0, dy: 0, width: null, height: null, size: null },
-      was: {
-        display: element.style.display,
-        translate: element.style.translate,
-        width: element.style.width,
-        height: element.style.height,
-      },
+      /**
+       * The one ratio the last gesture on this element asked for, where that
+       * gesture was a proportional resize, and null where it was anything else.
+       *
+       * PER MEMBER AND NOT PER GESTURE, for the reason `fitType()` derives per
+       * member: `want()` gives every picked element the same absolute size, so a
+       * series of five boxes of five different widths is five different ratios,
+       * and each one's own is the number its block in the Recording has to carry.
+       *
+       * Measured from `before` — the box at the PICK — and not from where the drag
+       * started, so it agrees with the table printed above it. An element picked,
+       * dragged, and dragged again reports one ratio from where the composition had
+       * it, which is the number an agent can act on.
+       */
+      by: null,
+      // Every property `applyTo()` may write, so *put back* can put every one of
+      // them back. `WRITES` and not four names spelled here: a preview lifts the
+      // bound that governs a size, and a bound this forgot to record would be
+      // lifted and then left lifted — the box staying where a discarded drag put
+      // it, which reads as an Override that was never written.
+      was: Object.fromEntries(WRITES.map((property) => [property, element.style.getPropertyValue(property)])),
       governs: this.governing(element, type.on[0].element),
     };
     if (held.promoted) {
@@ -977,6 +1090,7 @@ export class Measure {
       if (was !== '') element.style.setProperty('font-size', was);
     }
     held.wanted = { dx: 0, dy: 0, width: null, height: null, size: null };
+    held.by = null;
     held.after = this.box(held.element);
     held.type.after = this.typeNow(held);
   }
@@ -1190,6 +1304,17 @@ export class Measure {
     const sizes = asWritten(wanted, insets(getComputedStyle(element)));
     set('width', sizes.width === null ? null : `${sizes.width}px`);
     set('height', sizes.height === null ? null : `${sizes.height}px`);
+    // AND THE BOUND THAT WOULD CLAMP IT, where the composition sizes this box with
+    // one. `LIFTS` is the whole reason; the short version is that `max-width` beats
+    // an `!important` inline `width` because importance does not settle a fight
+    // between two different properties, so without this the drag writes a style and
+    // the box does not move. Only the property `governing()` chose, and only while
+    // a size is being asked for — a `null` puts it back like everything else here.
+    for (const axis of ['width', 'height']) {
+      const governed = held.governs[axis];
+      if (!governed || !LIFTS[axis].includes(governed.property)) continue;
+      set(governed.property, sizes[axis] === null ? null : `${sizes[axis]}px`);
+    }
     // MEASURED and not computed: a flex child whose width is capped ends up
     // somewhere other than where it was dragged to, and a text size the page
     // clamps lands somewhere other than where it was scrubbed. The number the
@@ -1401,9 +1526,14 @@ export class Measure {
         <small data-editor-measuring>Click anything on the page. Shift-click picks more,
         <kbd>↑</kbd> and <kbd>↓</kbd> climb to a parent and back, dragging from anywhere inside
         what is picked moves it, a click inside it picks something smaller instead, a corner
-        resizes it from the opposite one, and scrubbing a row writes the Token that governs it
-        where there is one. <kbd>Esc</kbd> drops the selection.</small>
+        resizes it from the opposite one — or scales it, below — and scrubbing a row writes the
+        Token that governs it where there is one. <kbd>Esc</kbd> drops the selection.</small>
         <div data-editor-toggles>
+          <label><input type="checkbox" data-editor-toggle="scale" />
+            <span>resize by one ratio</span>
+            <small>a corner drag scales the box instead of sizing its two axes separately, so it keeps its
+            shape. <kbd>Shift</kbd> through a drag means the other one, either way round</small>
+          </label>
           <label><input type="checkbox" data-editor-toggle="fit" />
             <span>scale text with the box</span>
             <small>a resize carries the text size with it, by the ratio the box changed by</small>
@@ -1443,9 +1573,22 @@ export class Measure {
       this.say('the Annotations are cleared');
     });
 
-    // The two toggles. Each one says on arrival what it now does and what it does
-    // NOT do, because both change what a gesture the author already knows means —
-    // and a mode nobody was told about is worse than a press.
+    // The three toggles. Each one says on arrival what it now does and what it does
+    // NOT do, because all of them change what a gesture the author already knows
+    // means — and a mode nobody was told about is worse than a press.
+    into.querySelector('[data-editor-toggle="scale"]').addEventListener('change', (event) => {
+      this.scaling = event.currentTarget.checked;
+      this.say(
+        this.scaling
+          ? 'scaling — a corner drag now moves both axes by one ratio, whichever of the two the pointer' +
+              ' travelled further along, so the box keeps its shape. The rows still set one axis each,' +
+              ' holding Shift through a drag sizes the two axes separately for that drag, and turning on' +
+              ' “scale text” as well carries the type by the same ratio.'
+          : 'sizing — a corner drag moves each axis by whatever the pointer did on it, as it did before,' +
+              ' and Shift through a drag scales by one ratio. Anything already scaled stays where it is' +
+              ' until it is put back.',
+      );
+    });
     into.querySelector('[data-editor-toggle="fit"]').addEventListener('change', (event) => {
       this.fitting = event.currentTarget.checked;
       this.say(
@@ -1722,6 +1865,11 @@ export class Measure {
     // which move the box and change nothing about how much room it has; and not the
     // text-size row itself, or the toggle would make that row unusable.
     if (axis === 'width' || axis === 'height') this.fitType();
+    // AND A ROW IS NEVER A PROPORTIONAL GESTURE, whatever the toggle says: it sets
+    // one axis and leaves the other where it was, so a stale ratio left standing
+    // here would have the Recording claim the shape was held by a gesture that
+    // deliberately did not hold it.
+    for (const held of this.selection) held.by = null;
     this.apply();
   }
 
@@ -1893,7 +2041,7 @@ export class Measure {
       // The primary's ratio for the primary only: the others were given the same
       // absolute size and so have ratios of their own, and `fitType()` has already
       // applied each of them. What this carries is the sentence for the block.
-      this.log.measured(held.element, this.measurement(held), held === this.picked ? scaled : null);
+      this.log.measured(held.element, this.measurement(held), held === this.picked ? scaled : null, held.by);
     }
   }
 
@@ -2527,15 +2675,34 @@ export class Measure {
         // what `want()` does for a typed number and for the same reason: an
         // absolute size means the same thing for all of them, a coordinate does
         // not.
+        // A resize moves the box as well as sizing it, unless the corner under the
+        // pointer is the bottom right — the corner OPPOSITE the one being dragged
+        // has to stay where it is, and that is the whole of `lib/corners.mjs`.
+        //
+        // ONE RATIO OR TWO AXES, and Shift INVERTS whichever the toggle says — so
+        // the answer is one exclusive-or rather than two modes, and the key means
+        // "the other one, just for this drag" in both directions. Shift is free to
+        // mean that here: on a scrub it is the fine step and on a press it builds
+        // the series, and a corner drag is neither. Read per frame, so a Shift
+        // pressed part way through takes effect where the pointer already is
+        // rather than at the next press.
         const wanted =
           this.dragging.how === 'move'
             ? { dx: round(from.dx + dx), dy: round(from.dy + dy) }
-            : // A resize moves the box as well as sizing it, unless the corner
-              // under the pointer is the bottom right — the corner OPPOSITE the one
-              // being dragged has to stay where it is, and that is the whole of
-              // `lib/corners.mjs`.
-              resize(this.dragging.corner, { dx, dy }, from);
-        for (const held of this.selection) Object.assign(held.wanted, wanted);
+            : (this.scaling !== event.shiftKey ? proportional : resize)(
+                this.dragging.corner,
+                { dx, dy },
+                from,
+              );
+        // The ratio each member's own box was asked to take, where this gesture was
+        // a scale — see the note on `by` in `record()` for why it is per member and
+        // measured from the pick. Cleared on anything else, including a move, so the
+        // number never outlives the gesture it describes.
+        const scaling = this.dragging.how === 'resize' && this.scaling !== event.shiftKey;
+        for (const held of this.selection) {
+          Object.assign(held.wanted, wanted);
+          held.by = scaling ? ratio(held.wanted, held.before) : null;
+        }
         // The other of the two places a resize is expressed — see `fitType()`. A
         // move is not one, so a drag across the page never touches the type.
         if (this.dragging.how === 'resize') this.fitType();
@@ -2590,7 +2757,11 @@ export class Measure {
           // Only a resize can lose an anchor: a move translates the box and asks
           // the layout for nothing.
           const anchor = how === 'resize' ? this.anchored(corner, was) : '';
-          this.say(`${this.picked.named.phrase}: ${headline}${anchor}`, anchor !== '');
+          // The ratio a scale asked for, said out loud: it is the number the author
+          // is going to quote, and reading it off the four rows is arithmetic the
+          // surface can do for them. The rows still say what the box actually took.
+          const scale = this.picked.by === null ? '' : ` — scaled ×${round(this.picked.by)}`;
+          this.say(`${this.picked.named.phrase}: ${headline}${scale}${anchor}`, anchor !== '');
         },
         true,
       );

@@ -132,7 +132,7 @@ export function headline(entry) {
  * should be applied again.
  */
 function block(entry, at, written = []) {
-  const { measured, scaled } = entry;
+  const { measured, scaled, by = null } = entry;
   const { named, before, after, parent, text } = measured;
   const changed = moved(measured);
   const lines = [`${at}. ${named.phrase}`, columns(['   on the page', measured.selector], [15])];
@@ -174,6 +174,34 @@ function block(entry, at, written = []) {
       ...paragraph(
         `This element draws no words of its own: the text size above is the one the elements inside it are` +
           ` set at${text.on ? `, by ${text.on}` : ''}, which is where it was read from and where it belongs.`,
+        '   ',
+      ),
+    );
+  }
+
+  if (by !== null) {
+    // WHAT WAS ASKED FOR, AND THE ROWS ABOVE ARE WHAT HAPPENED. A proportional
+    // resize asks both axes for one number; a box the layout will not give it — a
+    // flex fill, a measure inside a wider parent — takes it on one axis and not the
+    // other, and the table says so. Naming the asked-for ratio is what makes the
+    // difference between the two legible instead of looking like a bad measurement.
+    const took = ['width', 'height']
+      .map((axis) => (before[axis] > 0 ? after[axis] / before[axis] : null))
+      .filter((one) => one !== null);
+    // A thousandth, because that is what `figure(_, 3)` prints these to: two ratios
+    // that print the same number have to read as one, or the sentence argues with
+    // the numbers beside it.
+    const held = took.length === 2 && Math.abs(took[0] - took[1]) < 0.0005;
+    lines.push(
+      '',
+      ...paragraph(
+        `This was a SCALE and not two separate sizes: both axes were asked for ×${figure(by, 3)}, so the` +
+          ' shape is meant to be held and only the size to change.' +
+          (held
+            ? ' The box took it on both axes, so the ratio above is the whole of the change.'
+            : ` The page gave it ${list(took.map((one) => `×${figure(one, 3)}`))} — the rows above are` +
+              ' measured, so where those differ it is the layout that would not give one axis what was' +
+              ' asked, and the ratio to act on is the one asked for.'),
         '   ',
       ),
     );
@@ -247,7 +275,8 @@ function block(entry, at, written = []) {
  * The whole session as one document.
  *
  * @param {object} session
- * @param {Array<{ measured: object, scaled: ({ by: number }|null) }>} session.entries
+ * @param {Array<{ measured: object, scaled: ({ by: number }|null),
+ *                 by: (number|null) }>} session.entries
  *   one per element, in the order they were first measured
  * @param {Array<{ kind: 'token'|'override', what: string, value: string, file: string,
  *                 where: string }>} session.written  what already reached a file
