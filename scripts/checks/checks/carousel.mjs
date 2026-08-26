@@ -150,8 +150,9 @@ function composed(read) {
     failures.push(
       `at ${where} the photographs' slot is ${read.strip.height.toFixed(1)}px and ` +
         `--front-screen-strip-min asks for ${read.floor.toFixed(1)}px. The slot is the one-screen budget's ` +
-        "remainder, so what buys it that height is the Kernel's --type-scale — either that has been dragged, " +
-        "or its media gate and the Front Screen's band have drifted out of step.",
+        "remainder, so what buys it that height is the Kernel's type size — either --type-zoom has been " +
+        'dragged up, or --type-scale has been dragged, or its media gate and the Front ' +
+        "Screen's band have drifted out of step.",
     );
   }
   return {

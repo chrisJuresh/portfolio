@@ -13,7 +13,7 @@ than a convenience.
 
 | file                        | owns                                                        |
 | --------------------------- | ----------------------------------------------------------- |
-| `faces.css`                 | the five families, six files, the face Tokens, and the page's own type size |
+| `faces.css` / `tokens/faces.css` | the five families, six files, the face Tokens, and the page's own type size — the zoom, the ceiling and the give-way |
 | `ground.css`                | the theme's two papers, the Turn across them, and that the document never scrolls sideways |
 | `corners.css` / `corners.ts`| the plate, the car and the eye — geometry, and which rung    |
 | `effect-stack/`             | the nine layers, and the grain tile                          |
@@ -124,8 +124,9 @@ it.
 
 ## The page's own type size
 
-`faces.css` sets the root `font-size` inside the Front Screen's one-screen band,
-and it is the one thing in the Kernel whose reason lives in a Section.
+`faces.css` sets the root `font-size` — a zoom the author owns times a ceiling,
+and inside the Front Screen's one-screen band a give-way under that ceiling — and
+the give-way is the one thing in the Kernel whose reason lives in a Section.
 
 Composing a Section to exactly one screen turns "does it fit" from a yes-or-no
 question into one with a SIZE for an answer: everything in a Section's ladder is
@@ -162,14 +163,49 @@ than this. That costs a smaller photograph and never an overflowing page — the
 strip is the remainder, so it absorbs the difference — and it is the same extreme
 the live sheet names and composes for rather than optimises for.
 
-**Two things it is NOT, and both are worth stating rather than discovering.** Its
-media query is a second copy of the band in
+**One thing it is NOT, and it is worth stating rather than discovering.** Its media
+query is a second copy of the band in
 `src/sections/front-screen/FrontScreen.astro`; the two are one idea and the same
-Check is what catches them drifting apart. And it is a number the author will
-plausibly want to drag while it is not a **Token** and cannot be one: CONTEXT.md
-makes a Token a *Section's* named number and this is the Kernel's, so ADR 0004's
-surface cannot reach it. Whichever ticket gives the Kernel a Token story should
-take this with it.
+Check is what catches them drifting apart.
+
+### The zoom, and why the ceiling had to become a Token to get one
+
+`--type-scale` used to live in `faces.css` beside the rule that spends it, with a
+paragraph here saying it was a number the author would plausibly want to drag
+while it could not be a **Token**, because CONTEXT.md makes a Token a *Section's*
+named number. #146 settled that by giving the Kernel `tokens/`, where a file's
+numbers answer to `kernel-<stem>`, so the three numbers are now
+`tokens/faces.css` and the Editor reaches all three.
+
+**A give-way is not a size, which is why moving it was not enough.** Everything
+here only ever made type SMALLER — the ceiling is the reader's own default and the
+share of the viewport gives way under it — so an author who wanted the drawing
+bigger had nothing to drag. Not per element either: the Front Screen's column is
+`width: 100%` inside `max-width: var(--front-screen-measure)`, so a width dragged
+onto it is clamped by the measure and a height is a flex fill of a Section pinned
+to the fold. Both silently do nothing, which is exactly the report that produced
+this.
+
+`--type-zoom` is the size, and it is one number because every ladder on the page
+is in rem: both measures, every gap down them, every glyph. It multiplies whichever
+of the ceiling and the give-way the screen chose, rather than standing among them —
+inside the `min()` it would be a third ceiling and could only make type smaller
+again. So the proportions hold and only the size changes, and on a short screen the
+give-way still gives way by the same fraction of a now-larger number.
+
+**What it costs, so it is not a surprise.** It is the one number on the page
+allowed to ask for type larger than the reader's default, which is what "scale the
+composition up" means and is the author's call to make. The bill is paid by the
+one-screen budget's remainder — the photograph strip — because a larger rem spends
+more of the fold on everything above it, and **how much there is to spend is the
+screen's own height rather than anything about this Token.** Measured at 1.5: a
+2560x1311 window takes the Front Screen's column from 432px to 648px and still
+leaves a 254px strip, and 1440x900 takes it from 389px to 583px and leaves 18px.
+Dragged further than the screen can afford, the column overflows the fold rather
+than the strip going negative. So it is a Token to drag while LOOKING at the page,
+which is what the Editor is; `carousel` is what refuses a committed value the
+band's short corner cannot pay for, rather than letting the strip collapse
+quietly.
 
 ## Two things a Check has to know
 

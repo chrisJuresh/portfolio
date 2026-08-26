@@ -302,9 +302,14 @@ plates the marble comparison was judged from; and **an Override's selector must
 never carry Astro’s `astro-…` scoping class**, which is a build’s fingerprint,
 so one built from it addresses something else after the next build.
 
-**Tokens are not only a Section's.** The Effect Stack's hundred numbers and the
-three corner pictures’ placement live in `src/kernel/tokens/`, one file per part
-of the Kernel, and answer to `kernel-<stem>`. A Bake is a folder under
+**Tokens are not only a Section's.** The Effect Stack's hundred numbers, the three
+corner pictures’ placement, the landing's four terms and the page's own type size
+live in `src/kernel/tokens/`, one file per part of the Kernel, and answer to
+`kernel-<stem>`. **`kernel-faces`’s `--type-zoom` is how the whole drawing is
+scaled up**: every ladder on the page is in rem, so it is the one number that
+makes a composition bigger without changing its proportions — and there is no
+per-element width to drag instead, because a Section's boxes are measures and
+flex fills rather than sizes. A Bake is a folder under
 `design/bake/`: a `recipe.json` declaring the command and every parameter, and a
 `params.json` holding what has moved off those defaults — which the GENERATOR
 reads too, through `design/bake/tuning.py`, so a shell run and a re-bake are given
