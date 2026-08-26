@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { fitted, scale } from './typefit.mjs';
+import { carried, fitted, scale } from './typefit.mjs';
 
 /**
  * The `scale text` toggle's arithmetic, on its own.
@@ -70,4 +70,53 @@ test('a text size nothing could measure is no answer', () => {
   // for every one of them. A NaN reaching a style writes `NaNpx` and loses the
   // drag, which is the same failure `lib/boxes.mjs` guards its own parse against.
   assert.equal(fitted(Number.NaN, box, { width: 300, height: null }), null);
+});
+
+/**
+ * `carried()` — whose text size the row speaks for.
+ *
+ * The failure this exists for is silent and was reported as "resizing that does
+ * nothing": a box that draws no words of its own carries an inherited `font-size`,
+ * scaling it writes a number the words never see, and the page does not move. The
+ * assertions below are the two answers that keep that honest — the shared size is
+ * the box's, and a disagreement is no answer rather than a guess.
+ */
+
+test('holders set at one size are that size, and the row can speak for them', () => {
+  assert.deepEqual(
+    carried([
+      { size: 10, selector: '.projects-panel__rail-item' },
+      { size: 10, selector: '.projects-panel__rail-item' },
+    ]),
+    { size: 10, selector: '.projects-panel__rail-item' },
+  );
+});
+
+test('holders set at several sizes are no answer, because one row is one number', () => {
+  assert.equal(carried([{ size: 10, selector: '.a' }, { size: 14, selector: '.b' }]), null);
+});
+
+test('one size on two rules keeps the size and loses the selector', () => {
+  // The row still reads and scrubs it — what goes is the Override, because which
+  // of the two rules the author meant is a judgement rather than a lookup.
+  assert.deepEqual(carried([{ size: 10, selector: '.a' }, { size: 10, selector: '.b' }]), {
+    size: 10,
+    selector: null,
+  });
+  // And a holder the composition declares nothing for is the same answer: it is
+  // standing on what it inherited, so there is no rule to override.
+  assert.deepEqual(carried([{ size: 10, selector: null }]), { size: 10, selector: null });
+});
+
+test('nothing carries the text, and a size nothing could measure, are both no answer', () => {
+  assert.equal(carried([]), null);
+  assert.equal(carried(null), null);
+  assert.equal(carried([{ size: Number.NaN, selector: '.a' }]), null);
+});
+
+test('a size is agreed on at the hundredth, which is what every row is rounded to', () => {
+  assert.deepEqual(carried([{ size: 10.001, selector: '.a' }, { size: 10.004, selector: '.a' }]), {
+    size: 10,
+    selector: '.a',
+  });
 });

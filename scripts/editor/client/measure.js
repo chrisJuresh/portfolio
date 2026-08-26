@@ -65,7 +65,10 @@
  *     while this is on a resize carries the text size with it, by the ratio the box
  *     changed by. `lib/typefit.mjs` is that ratio and the note on why it is a scale
  *     and not a search. It is off by default, because a resize that silently
- *     changed a second thing would be the tool taking a judgement.
+ *     changed a second thing would be the tool taking a judgement. AND THE SIZE IT
+ *     SCALES IS THE TEXT'S AND NOT THE BOX'S — `typeHolders()` is why, and it is
+ *     the difference between the toggle working on the Projects Panel's Rail and
+ *     appearing to do nothing at all there.
  *   - KEEP. Picking something else used to put the last thing back, which is right
  *     while a measurement is one element and wrong the moment the author is
  *     arranging several: half the point of moving two boxes is looking at them
@@ -100,7 +103,7 @@ import { asWritten, insets } from './lib/boxes.mjs';
 import { CORNERS, label as cornerLabel, drift, resize, word as cornerWord } from './lib/corners.mjs';
 import { History } from './lib/history.mjs';
 import { DISPLAY, asSelector, rule as ruleFor } from './lib/overrides.mjs';
-import { fitted } from './lib/typefit.mjs';
+import { carried, fitted } from './lib/typefit.mjs';
 
 /** Which of the parent's two sides each axis is measured down. `AXES` itself is
  *  the Annotation's, imported rather than spelled again. */
@@ -200,6 +203,29 @@ const stripScope = (selector) => selector.replace(/:where\(\.astro-[a-z0-9]+\)/g
 const SCOPED = /^astro-[a-z0-9]+$/i;
 
 const round = (n) => Math.round(n * 100) / 100;
+
+/** Whether this element draws words of its OWN — a child text node with something
+ *  in it — rather than only containing elements that do. It is the question
+ *  "whose `font-size` is this text drawn at" starts from. */
+function owns(element) {
+  for (const node of element.childNodes) {
+    if (node.nodeType === Node.TEXT_NODE && node.nodeValue.trim() !== '') return true;
+  }
+  return false;
+}
+
+/**
+ * How many text-owning descendants are worth walking before a box is treated as
+ * having no single text size.
+ *
+ * A CAP AND NOT A PERFORMANCE HEDGE, though it is that too. `authored()` walks
+ * every rule in every stylesheet, so resolving the holders inside a whole Section
+ * would be hundreds of those walks at the moment of a click — but the reason the
+ * answer is refused rather than computed slowly is that a box holding forty
+ * different pieces of text has no ONE text size, and a row claiming otherwise
+ * would be worse than a row that says nothing.
+ */
+const TEXT_OWNERS = 32;
 
 /**
  * Whether the keystroke belongs to a field the browser already has an undo for.
@@ -592,12 +618,19 @@ export class Measure {
    * Read once, when the element is picked: what governs a length does not change
    * because the length did, and walking every stylesheet on every frame of a drag
    * would be the one thing in this surface that felt slow.
+   *
+   * THE TEXT ROW IS READ OFF THE ELEMENT THAT CARRIES THE TYPE and the four box
+   * rows off the box, which is `typeHolders()`'s whole point: the words inside a
+   * list are set by the rule on its items, so asking the list what governs its
+   * `font-size` finds nothing at all and offers a row backed by nothing for a size
+   * the composition names.
    */
-  governing(element) {
+  governing(element, type = element) {
     const found = {};
     for (const axis of MEASURES) {
+      const on = axis === TEXT ? type : element;
       for (const [property, sign] of GOVERNED[axis]) {
-        const declaration = authored(element, property);
+        const declaration = authored(on, property);
         if (!declaration) continue;
         const one = ONE_TOKEN.exec(declaration.value);
         found[axis] = {
@@ -608,7 +641,7 @@ export class Measure {
           token: one?.[1] ?? null,
           // What the bound itself comes to, so a measurement can ask whether the
           // box is actually standing on it before offering to restate it.
-          computed: Number.parseFloat(getComputedStyle(element).getPropertyValue(property)),
+          computed: Number.parseFloat(getComputedStyle(on).getPropertyValue(property)),
           // Every Token the value mentions, for the case where it mentions
           // several: naming the constants a `calc()` is built out of is most of
           // what an agent needs to decide which of them moved.
@@ -642,6 +675,151 @@ export class Measure {
   }
 
   /**
+   * The elements whose `font-size` the words inside this one are actually drawn
+   * at.
+   *
+   * THIS IS THE ANSWER TO "RESIZING IT DOES NOTHING TO THE TEXT". Every box has a
+   * `font-size` — an inherited one where it declares none — so the old row always
+   * had a number to show and `scale text` always had a number to multiply. But a
+   * box that draws no words of its own passes that number to nothing: the
+   * elements inside it that DO draw words declare their own, and an inherited size
+   * loses to a declared one. The Projects Panel's Rail is exactly that shape, and
+   * so is every other list on this page: the author resizes the list and each item
+   * inside it sets `font-size` for itself, so the row read 16px that governed
+   * nothing and the type never moved.
+   *
+   * SO THE HOLDER IS THE NEAREST ANCESTOR OF EACH PIECE OF TEXT THAT DECLARES ONE,
+   * and the element itself where nothing between them does — which is the case
+   * where the old behaviour was already right, and it stays exactly as it was.
+   * `authored()` is memoised across the walk because the chains overlap: a list of
+   * five items is eleven elements and five distinct questions.
+   *
+   * A DESCENDANT WITH NO BOX IS NOT TEXT ON THE PAGE. `display: none` draws
+   * nothing, and letting it into the answer would let a size nobody can see
+   * disagree with the size everybody can and take the row away from both.
+   */
+  typeHolders(element) {
+    if (owns(element)) return [element];
+    const owners = [];
+    for (const node of element.querySelectorAll('*')) {
+      if (!owns(node)) continue;
+      if (node.getClientRects().length === 0) continue;
+      owners.push(node);
+      if (owners.length > TEXT_OWNERS) return [element];
+    }
+    if (owners.length === 0) return [element];
+    const seen = new Map();
+    // AN INLINE `font-size` IS A DECLARATION TOO, which matters here for exactly one
+    // reason: the `keep` toggle leaves this surface's own previews standing, so an
+    // element whose type was scaled and then let go of is drawn at a size no
+    // stylesheet holds. Picking its parent afterwards has to find it there, or the
+    // row would report a size the page stopped showing several gestures ago.
+    const declares = (node) => {
+      if (node.style.fontSize !== '') return true;
+      if (!seen.has(node)) seen.set(node, authored(node, 'font-size'));
+      return seen.get(node) !== null;
+    };
+    const holders = [];
+    for (const owner of owners) {
+      let holder = element;
+      for (let node = owner; node && node !== element; node = node.parentElement) {
+        if (declares(node)) {
+          holder = node;
+          break;
+        }
+      }
+      if (!holders.includes(holder)) holders.push(holder);
+    }
+    return holders;
+  }
+
+  /**
+   * The selector an Override of this text size would have to be written on.
+   *
+   * NOT `selectorFor()`, and that is the point. That one builds a path to ONE
+   * element, which is right for a box and wrong for the type inside a list: five
+   * items set by one rule are one declaration in the composition, and five
+   * Overrides naming five items would be the tool inventing a distinction the page
+   * does not make. So the selector is the composition's own — the rule the holders
+   * answer to — and it is CHECKED against the page before it is offered: a rule
+   * that also reaches text outside the box the author is looking at would move
+   * something they never picked, which is the one guarantee the Override boundary
+   * makes.
+   */
+  typeSelector(element, on) {
+    if (typeof on !== 'string' || on === '') return null;
+    let selector;
+    try {
+      selector = asSelector(`:root ${on}`);
+    } catch {
+      return null;
+    }
+    let found;
+    try {
+      found = [...document.querySelectorAll(selector)];
+    } catch {
+      return null;
+    }
+    if (found.length === 0) return null;
+    if (found.some((node) => !element.contains(node))) return null;
+    return selector;
+  }
+
+  /**
+   * Everything one record tracks about the type inside an element: where it is
+   * written, what it reads now, and what the inline styles there were before this
+   * surface touched them.
+   *
+   * `own` is the ordinary case — the element draws its own words — and everything
+   * downstream of here reads the same as it always did for it. Where it is false
+   * the row has been taken off the box and put on the text, and the Annotation, the
+   * Recording and the Override all have to say so rather than describing a
+   * `font-size` on an element that would ignore it.
+   */
+  typeRecord(element) {
+    const holders = this.typeHolders(element);
+    const own = holders.length === 1 && holders[0] === element;
+    const answer = own
+      ? { size: this.typeSize(element), selector: null }
+      : carried(
+          holders.map((node) => ({
+            size: this.typeSize(node),
+            selector: authored(node, 'font-size')?.selector ?? null,
+          })),
+        );
+    // No single answer means the words inside are set at several sizes, and one row
+    // cannot show two numbers. Back to the element's own inherited size, which is
+    // what the row has always shown — and `split` is what the row's own tooltip
+    // says about it, because "this does nothing" with no reason given is the
+    // complaint this whole walk exists to answer.
+    if (answer === null) {
+      return {
+        on: [{ element, was: element.style.fontSize }],
+        own: true,
+        split: holders.length,
+        selector: null,
+        before: this.typeSize(element),
+        after: this.typeSize(element),
+      };
+    }
+    return {
+      on: (own ? [element] : holders).map((node) => ({ element: node, was: node.style.fontSize })),
+      own,
+      split: 0,
+      selector: own ? null : this.typeSelector(element, answer.selector),
+      before: answer.size,
+      after: answer.size,
+    };
+  }
+
+  /** What the type inside a record reads right now. Off the holder and never off
+   *  the element, or a resized list would report the size it inherited while the
+   *  page showed the size its items were scaled to. */
+  typeNow(held) {
+    return this.typeSize(held.type.on[0].element);
+  }
+
+  /**
    * Everything this surface tracks about one element, ready to be dragged.
    *
    * A KEPT ELEMENT IS RESUMED RATHER THAN RECORDED AGAIN, and that is the whole of
@@ -661,11 +839,12 @@ export class Measure {
       // fresh: `after` is a measurement and everything else on the record is the
       // starting point the measurement is against.
       held.after = this.box(element);
-      held.type.after = this.typeSize(element);
+      held.type.after = this.typeNow(held);
       return held;
     }
     const parent = element.parentElement;
     const computed = getComputedStyle(element);
+    const type = this.typeRecord(element);
     const held = {
       element,
       named: this.describe(element),
@@ -689,17 +868,18 @@ export class Measure {
       after: this.box(element),
       // The text size, tracked beside the box rather than in it: it has no share
       // of a parent and no opposite corner, so `lib/annotations.mjs` keeps it out
-      // of `AXES` and so does this.
-      type: { before: this.typeSize(element), after: this.typeSize(element) },
+      // of `AXES` and so does this. It carries its own `was` per holder rather than
+      // joining the four below, because the holders are not always this element —
+      // see `typeHolders()`.
+      type,
       wanted: { dx: 0, dy: 0, width: null, height: null, size: null },
       was: {
         display: element.style.display,
-        'font-size': element.style.fontSize,
         translate: element.style.translate,
         width: element.style.width,
         height: element.style.height,
       },
-      governs: this.governing(element),
+      governs: this.governing(element, type.on[0].element),
     };
     if (held.promoted) {
       element.style.setProperty('display', DISPLAY, 'important');
@@ -790,9 +970,15 @@ export class Measure {
       held.element.style.removeProperty(property);
       if (was !== '') held.element.style.setProperty(property, was);
     }
+    // The type separately, because it is not always on this element — a list's
+    // words are on its items, and putting the list back has to put those back.
+    for (const { element, was } of held.type.on) {
+      element.style.removeProperty('font-size');
+      if (was !== '') element.style.setProperty('font-size', was);
+    }
     held.wanted = { dx: 0, dy: 0, width: null, height: null, size: null };
     held.after = this.box(held.element);
-    held.type.after = this.typeSize(held.element);
+    held.type.after = this.typeNow(held);
   }
 
   /** Whether anything has actually been asked of this element yet. A pick with
@@ -982,7 +1168,20 @@ export class Measure {
     // BEFORE the sizes, and the order is load-bearing: a padding in `em` is a
     // share of this very number, and the inset subtracted below is read off the
     // page once it is standing at it.
-    set('font-size', wanted.size === null ? null : `${wanted.size}px`);
+    //
+    // AND ON THE HOLDERS, WHICH ARE NOT ALWAYS THIS ELEMENT. A size written on a
+    // box whose words are set by the rule on its own children is a declaration
+    // nothing ever reads — the whole of what "resizing the Rail does nothing to
+    // its text" was. `typeHolders()` is which elements, and it answers this one
+    // in the ordinary case.
+    for (const { element: node, was } of held.type.on) {
+      node.style.removeProperty('font-size');
+      if (wanted.size === null) {
+        if (was !== '') node.style.setProperty('font-size', was);
+      } else {
+        node.style.setProperty('font-size', `${wanted.size}px`, 'important');
+      }
+    }
     // A MEASURED size is a BORDER box and a WRITTEN one is a CONTENT box unless
     // the element says otherwise, so the two are converted rather than confused.
     // `lib/boxes.mjs` is the whole reason, and it is not cosmetic: `resize()`
@@ -996,7 +1195,7 @@ export class Measure {
     // clamps lands somewhere other than where it was scrubbed. The number the
     // author wants in the Annotation is where it actually is.
     held.after = this.box(element);
-    held.type.after = this.typeSize(element);
+    held.type.after = this.typeNow(held);
   }
 
   /**
@@ -1172,7 +1371,13 @@ export class Measure {
       parent: of.parent,
       before,
       after,
-      text: { before: type.before, after: type.after },
+      // `own` and `on` are how far the text row reached: false means the words are
+      // not this element's own, and every reader of a measurement — the Annotation,
+      // the Recording, the Override — has to say so rather than describing a
+      // `font-size` on a box that would ignore one. `on` is the selector an
+      // Override would have to be written on, and null where there is none to
+      // offer.
+      text: { before: type.before, after: type.after, own: type.own, on: type.selector },
       // The absolute translate the page is showing, base included: an Override
       // REPLACES the composition's own, so the delta alone would move the element
       // back to zero and then out again by however far it was dragged.
@@ -1362,6 +1567,21 @@ export class Measure {
         row.dataset.editorGoverned = governed.token;
       } else {
         label.title = `nothing the Editor can see declares ${axis} here — scrubbing this measures it`;
+      }
+      // WHERE THE TEXT ROW IS READING FROM, on the handle the pointer is already
+      // over. Both answers below are "why did resizing this not move the type",
+      // answered before it is asked: the words are the items' and not the list's,
+      // or there are several sizes inside and no one number for a row to hold.
+      if (text && this.picked.type.split > 0) {
+        label.title +=
+          ` — but the text inside is set at ${this.picked.type.split} different sizes, so this row is` +
+          ' this box’s own inherited size and moves nothing on the page. Pick the words themselves.';
+        row.dataset.editorSplit = String(this.picked.type.split);
+      } else if (text && !this.picked.type.own) {
+        label.title +=
+          ` — read off the ${this.picked.type.on.length} element(s) inside that carry the type, because this` +
+          ' box draws no words of its own. A resize writes it there.';
+        row.dataset.editorInside = String(this.picked.type.on.length);
       }
 
       const box = document.createElement('input');
@@ -1936,36 +2156,72 @@ export class Measure {
       }
       const measured = this.measurement(held);
       const { declarations, note } = annotate(measured);
+      const { text } = measured;
+      const retyped = Math.abs(text.after - text.before) >= 0.005;
+      // THE TEXT INSIDE A BOX IS A RECORD OF ITS OWN, on the composition's own
+      // rule. `annotate()` leaves `font-size` out of the box's declarations when
+      // the words are not the box's own, because a size declared there is one
+      // nothing on the page ever reads — and five items set by one rule are ONE
+      // declaration in the source, so this is one record and not five selectors.
+      // Where there is no rule to name, it is reported as unnamed rather than
+      // written somewhere it would move text nobody picked.
+      const records = [{ selector, name: named.phrase, note, declarations }];
+      if (retyped && !text.own) {
+        if (text.on === null) unnamed.push(`the text inside ${named.phrase}`);
+        else {
+          records.push({
+            selector: text.on,
+            name: `the text inside ${named.phrase}`,
+            note: [`text set to ${px(text.after)}`, note.at(-1)],
+            declarations: { 'font-size': px(text.after) },
+          });
+        }
+      }
       // `display` alone is not a change the author asked for: it is the promotion
       // this surface made in order to measure an inline box at all, so on its own
       // it would write an Override for having looked at something.
-      if (Object.keys(declarations).filter((property) => property !== 'display').length === 0) continue;
+      const writing = records.filter(
+        (one) => Object.keys(one.declarations).filter((property) => property !== 'display').length > 0,
+      );
+      if (writing.length === 0) continue;
       const wanted = { ...measured.after };
-      // What the file held for this selector before, read before the post: the
-      // answer comes back holding the new one, and this is the only thing that
-      // knows what an undo has to put back — including nothing at all.
-      const had = this.standingOn(selector);
       try {
-        const answer = await this.post('/overrides', { selector, name: named.phrase, note, declarations });
-        this.overrides = answer.overrides;
-        this.paint();
-        steps.push({
-          selector,
-          had,
-          now: { name: named.phrase, note, declarations, record: wroteOverride(selector, declarations) },
-        });
-        // On the Recording as ALREADY WRITTEN, and as debt: an Override is a value
-        // standing outside every composition, and folding it back in is the work
-        // whoever reads that document is being asked to do.
+        for (const one of writing) {
+          // What the file held for this selector before, read before the post: the
+          // answer comes back holding the new one, and this is the only thing that
+          // knows what an undo has to put back — including nothing at all.
+          const had = this.standingOn(one.selector);
+          const answer = await this.post('/overrides', {
+            selector: one.selector,
+            name: one.name,
+            note: one.note,
+            declarations: one.declarations,
+          });
+          this.overrides = answer.overrides;
+          this.paint();
+          steps.push({
+            selector: one.selector,
+            had,
+            now: { ...one, record: wroteOverride(one.selector, one.declarations) },
+          });
+          // On the Recording as ALREADY WRITTEN, and as debt: an Override is a value
+          // standing outside every composition, and folding it back in is the work
+          // whoever reads that document is being asked to do.
+          this.log?.wrote(wroteOverride(one.selector, one.declarations));
+        }
         this.log?.forget(element);
-        this.log?.wrote(wroteOverride(selector, declarations));
         // The inline styles go, because from here the page is moved by what the
         // file says — through this surface's own stylesheet until the next build.
         this.put(held);
         // And then it is CHECKED. An Override that lost to the composition would
-        // otherwise be a file with a rule in it and a page that never moved.
+        // otherwise be a file with a rule in it and a page that never moved. The
+        // type is checked the same way and for the same reason: an Override on the
+        // items' own rule can still lose to something more specific, and a text
+        // size that did not follow is exactly the failure this whole change is
+        // about.
         const landed = this.box(element);
         const off = AXES.filter((axis) => Math.abs(landed[axis] - wanted[axis]) > 1);
+        if (retyped && Math.abs(this.typeNow(held) - text.after) > 0.5) off.push(TEXT);
         if (off.length > 0) missed.push(`${named.phrase} on ${list(off)}`);
         else wrote.push(named.phrase);
       } catch (error) {

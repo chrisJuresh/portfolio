@@ -29,6 +29,16 @@
  * fifty of them. This is the same trap `lib/corners.mjs` resolves its sizes at
  * pointerdown for, and it fails the same way: the drag outruns the pointer.
  *
+ * AND THE SIZE IT SCALES IS THE TEXT'S OWN AND NOT THE BOX'S. A box that draws no
+ * words of its own has a `font-size` all the same — the one it inherited — and
+ * scaling THAT moves nothing, because the elements inside it that do draw words
+ * declare their own and so never see it. That is the Projects Panel's Rail exactly:
+ * the list is the box the author resizes and every item inside it sets
+ * `font-size` for itself, so the whole feature appeared to do nothing on the one
+ * element it was most obviously wanted for. `carried()` is the rule for whose size
+ * the row speaks; `Measure.typeHolders()` is the walk that finds the candidates,
+ * because that half needs a page.
+ *
  * IT IS PURE SO IT CAN BE TESTED, like `lib/boxes.mjs` and `lib/corners.mjs`: two
  * plain objects in, a number or null out, no DOM and no node imports.
  */
@@ -36,6 +46,41 @@
 /** The hundredth, which is what every number on the Measure surface is rounded
  *  to. */
 const round = (n) => Math.round(n * 100) / 100;
+
+/**
+ * Whose text size one row can speak for, out of the elements that actually carry
+ * the type inside a box.
+ *
+ * ONE ROW IS ONE NUMBER, which is the whole of the rule. Where every holder is set
+ * at the same size, that size IS the box's text size: the row reads it, a scrub
+ * sets it, and `scale text` multiplies it. Where they are set at several, there is
+ * no single number for the row to show and no single Token behind it — so this
+ * answers null and the caller falls back to the element's own inherited size,
+ * which is what it always showed. Picking one of several would be this tool
+ * choosing which text the author meant.
+ *
+ * THE SELECTOR IS OFFERED ONLY WHERE THEY SHARE ONE. An Override for a text size
+ * has to be written where the composition writes it — on the rule the holders
+ * answer to — and two rules governing two halves of the words inside a box is a
+ * judgement rather than a lookup. The size still stands in that case; only the
+ * Override goes.
+ *
+ * @param {{ size: number, selector: string|null }[]} holders  one per element
+ *   whose `font-size` the words inside the box are actually drawn at, with the
+ *   selector the composition declares it on where there is one
+ * @returns {{ size: number, selector: string|null }|null} null where the holders
+ *   do not agree on a size, or where there are none
+ */
+export function carried(holders) {
+  if (!Array.isArray(holders) || holders.length === 0) return null;
+  const sizes = new Set(holders.map((one) => round(one?.size)));
+  if (sizes.size !== 1) return null;
+  const [size] = sizes;
+  if (!Number.isFinite(size)) return null;
+  const selectors = new Set(holders.map((one) => one?.selector ?? null));
+  const [only] = selectors;
+  return { size, selector: selectors.size === 1 && typeof only === 'string' ? only : null };
+}
 
 /**
  * The factor the text size should be multiplied by, or null where there is no

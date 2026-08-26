@@ -291,9 +291,14 @@ function paragraph(text, width = 88) {
  * @param {{ phrase: string, width: number, height: number }} measured.parent
  * @param {{ left: number, top: number, width: number, height: number }} measured.before
  * @param {{ left: number, top: number, width: number, height: number }} measured.after
- * @param {{ before: number, after: number } | null} [measured.text]  the element's
- *   font-size in px, before and after. Absent where the caller did not look at the
- *   type, which is not the same as a size that did not change.
+ * @param {{ before: number, after: number, own?: boolean, on?: string|null } | null}
+ *   [measured.text]  the font-size the words inside the element are drawn at, in
+ *   px, before and after. Absent where the caller did not look at the type, which
+ *   is not the same as a size that did not change. `own` is false where those words
+ *   are not the element's own — a list whose items each set their own size — and
+ *   then `on` is the selector the composition declares that size on, or null where
+ *   there is none this can name. A caller that says nothing is taken to mean the
+ *   ordinary case, so an older measurement reads exactly as it did.
  * @param {Array<{ axis: string, property: string, token: string, selector: string,
  *                 section: string | null, key: string | null, was: string,
  *                 wants: string | null, why?: string | null }>} measured.tokens
@@ -319,6 +324,12 @@ export function annotate(measured) {
   // A hundredth of a pixel, because that is what `px()` prints to: a difference
   // that rounds away would read as a change and report as none.
   const retyped = text !== null && Math.abs(grew) >= 0.005;
+  // WHOSE TEXT IT IS. A box that draws no words of its own has an inherited
+  // `font-size` that governs nothing, so the size above was read off the elements
+  // inside that do — and a `font-size` written back on the box would be a
+  // declaration nothing reads. Absent means the ordinary case, so every caller that
+  // says nothing reads exactly as it did.
+  const ownText = text === null || text.own !== false;
 
   const did = [moved && 'moved', resized && 'resized', retyped && 'its text size changed'].filter(Boolean);
   const what = did.length === 0 ? 'unchanged' : list(did);
@@ -367,6 +378,18 @@ export function annotate(measured) {
   }
 
   lines.push('', `  on the page: ${measured.selector}`);
+
+  if (text && !ownText) {
+    lines.push(
+      '',
+      ...paragraph(
+        `The text size above is not this element's own: it draws no words itself, and the ones inside it` +
+          ` are set${text.on ? ` by ${text.on}` : ' by rules of their own'}. That is where the size was read` +
+          ' from and where the Editor writes it, so a change to it belongs on that rule and not on this box —' +
+          ' a font-size declared here would be one nothing on the page ever reads.',
+      ),
+    );
+  }
 
   if (measured.promoted) {
     lines.push(
@@ -450,7 +473,12 @@ export function annotate(measured) {
   // The measured size and not the delta, for the same reason `translate` is
   // absolute: an Override declares it `!important` and therefore replaces whatever
   // the composition had, rather than adding to it.
-  if (retyped) declarations['font-size'] = px(text.after);
+  //
+  // And only where the words are the element's OWN. Where they are set by a rule
+  // on what is inside it, a `font-size` here is a declaration nothing reads — so
+  // the caller writes that one on the rule it belongs to, and this record stays
+  // the box's.
+  if (retyped && ownText) declarations['font-size'] = px(text.after);
   if (moved) declarations.translate = `${px(at.x)} ${px(at.y)}`;
   if (resized) {
     declarations.width = px(after.width);
@@ -460,7 +488,9 @@ export function annotate(measured) {
   const said = [
     moved && `moved by ${px(by.left)}, ${px(by.top)}`,
     resized && `resized to ${px(after.width)} × ${px(after.height)}`,
-    retyped && `text set to ${px(text.after)}`,
+    // Same rule as the declaration: this note stands above the rule this record
+    // writes, so it may only say what that rule declares.
+    retyped && ownText && `text set to ${px(text.after)}`,
   ].filter(Boolean);
   const note = [
     said.length === 0 ? 'measured, and neither moved nor resized' : list(said),

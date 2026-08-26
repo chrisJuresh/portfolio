@@ -264,9 +264,12 @@ composition is not.
 **Two toggles on that surface and a sixth surface make it a session's tool rather
 than one element's**, and an agent is most likely to meet the third of them:
 **scale text** carries the text size through a resize by the ratio the box changed
-by, so letting the row go writes BOTH Tokens; **keep** leaves a change standing on
-the page when the selection moves off it, and picking that element again *resumes*
-its record rather than measuring afresh from where it got to; and the
+by, so letting the row go writes BOTH Tokens — and the size it carries is the
+TEXT's own and not the box's, so resizing a list scales the type its ITEMS declare
+rather than writing a `font-size` on the list that nothing would read; **keep**
+leaves a change standing on the page when the selection moves off it, and picking
+that element again *resumes* its record rather than measuring afresh from where it
+got to; and the
 **Recording** is every measurement of the session as one document, one block per
 element, which is what the author will paste. **undo, redo and Ctrl-Z** go back
 one gesture rather than all the way home, and they reverse the FILE too — an undo

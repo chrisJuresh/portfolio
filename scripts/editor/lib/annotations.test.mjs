@@ -306,6 +306,53 @@ test('a text size that maps onto a Token is offered like any other length', () =
   assert.ok(text.includes(`${TEXT} maps onto a Token`), text);
 });
 
+/**
+ * A text size the element does not own.
+ *
+ * The failure these guard is a silent one and it was reported as "resizing the
+ * Rail does nothing to its text": a box that draws no words of its own carries an
+ * inherited `font-size`, and a `font-size` written back onto it is a declaration
+ * nothing on the page ever reads. So the Annotation has to say where the size
+ * actually lives, and the Override this record carries must not claim it.
+ */
+
+test('a text size the element does not own is named where it lives, and left out of its Override', () => {
+  const { text, declarations, note } = annotate({
+    ...MEASURED,
+    after: { ...MEASURED.before },
+    text: { before: 10, after: 12, own: false, on: ':root .projects-panel__rail-item' },
+  });
+  assert.ok(text.includes('10px → 12px'), text);
+  assert.ok(text.includes(':root .projects-panel__rail-item'), text);
+  assert.ok(/draws no words itself/.test(text), text);
+  // The whole point: this record is the BOX's, and the box declares nothing about
+  // the type. The caller writes that on the rule the words answer to.
+  assert.ok(!('font-size' in declarations), JSON.stringify(declarations));
+  assert.ok(!note.some((line) => line.includes('text set to')), note.join(' | '));
+});
+
+test('a text size the element does not own, with no rule to name, still says whose it is', () => {
+  const { text, declarations } = annotate({
+    ...MEASURED,
+    after: { ...MEASURED.before },
+    text: { before: 10, after: 12, own: false, on: null },
+  });
+  assert.ok(/set by rules of their own/.test(text), text);
+  assert.ok(!('font-size' in declarations));
+});
+
+test('a measurement that says nothing about whose text it is reads as the element’s own', () => {
+  // Every caller written before this existed, and every element that does draw its
+  // own words: `own` absent is the ordinary case and nothing about it changes.
+  const { text, declarations } = annotate({
+    ...MEASURED,
+    after: { ...MEASURED.before },
+    text: { before: 16, after: 20 },
+  });
+  assert.equal(declarations['font-size'], '20px');
+  assert.ok(!/draws no words itself/.test(text), text);
+});
+
 test('an inline box that had to be promoted to be measured says so in the declarations', () => {
   const { declarations, text } = annotate({ ...MEASURED, promoted: true });
   assert.equal(declarations.display, 'inline-block');

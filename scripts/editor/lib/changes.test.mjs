@@ -162,6 +162,28 @@ test('a scaled text size says it was not scrubbed, and by what ratio', () => {
   assert.match(text, /×1\.2/);
 });
 
+test('a text size the element does not own says whose it is, so the change lands on the right rule', () => {
+  // The block is what an agent acts on. Without this line it reads as "give this
+  // list a font-size", which is a declaration nothing on the page would ever read
+  // — the items inside set their own, which is why the size was taken from them.
+  const text = report({
+    entries: [
+      entry({
+        measured: {
+          text: { before: 10, after: 12, own: false, on: ':root .projects-panel__rail-item' },
+        },
+      }),
+    ],
+  });
+  assert.match(text, /draws no words of its own/);
+  assert.match(text, /:root \.projects-panel__rail-item/);
+});
+
+test('a text size the element owns says nothing about whose it is', () => {
+  const text = report({ entries: [entry({ measured: { text: { before: 18, after: 21.6 } } })] });
+  assert.doesNotMatch(text, /draws no words of its own/);
+});
+
 test('the composing caveat is there only when changes were kept', () => {
   assert.match(report({ entries: [entry()], kept: true }), /they COMPOSE/);
   assert.doesNotMatch(report({ entries: [entry()], kept: false }), /they COMPOSE/);

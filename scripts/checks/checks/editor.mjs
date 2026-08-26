@@ -1969,6 +1969,98 @@ export const check = {
         for (const element of document.querySelectorAll('[data-editor-check-fit]')) element.remove();
       });
 
+      // ---- the text a box does not own ------------------------------------
+      //
+      // THE SHAPE OF EVERY LIST ON THIS PAGE, and the one `scale text` used to do
+      // nothing at all for. A box that draws no words itself still has a
+      // `font-size` — the one it inherited — so the row always had a number and the
+      // toggle always had something to multiply, and both of them wrote a
+      // declaration that the elements inside, which declare their own, never read.
+      // The Projects Panel's Rail is exactly this, and "resizing it does not make
+      // the text bigger" is how it was reported.
+      //
+      // Injected for the same reason the two boxes above are: this needs a known
+      // size on a known rule, and naming an element of a composition would make the
+      // Check fail the next time somebody chose that number differently. A
+      // stylesheet and not an inline style, because the rule is half of what is
+      // being asserted — the size has to be found where the composition declares it.
+      await page.evaluate(() => {
+        const style = document.createElement('style');
+        style.dataset.editorCheckSheet = '';
+        style.textContent = '.editor-check-item { font-size: 10px; }';
+        document.head.append(style);
+        const list = document.createElement('div');
+        list.dataset.editorCheckList = '';
+        list.style.cssText = 'position: fixed; left: 700px; bottom: 90px; width: 100px; height: 30px;';
+        for (const word of ['one', 'two']) {
+          const item = document.createElement('span');
+          item.className = 'editor-check-item';
+          item.textContent = word;
+          list.append(item);
+        }
+        document.body.append(list);
+      });
+      await page.locator('[data-editor-toggle="fit"]').check();
+      await page.evaluate(() => {
+        const list = document.querySelector('[data-editor-check-list]');
+        for (const kind of ['pointerdown', 'pointerup']) {
+          list.dispatchEvent(new PointerEvent(kind, { bubbles: true, cancelable: true }));
+        }
+      });
+      // FIRST THAT THE ROW FOUND IT AT ALL. 16 here is the inherited size the old
+      // row showed — a number that governs nothing on the page — and 10 is the size
+      // the words are actually drawn at.
+      const insideRow = Math.round(Number(await page.inputValue('[data-editor-nudge="text size"]')));
+      if (insideRow !== 10) {
+        failures.push(
+          `the text size row read ${insideRow} on a box that draws no words of its own — it has to read the` +
+            ' size the elements inside it are set at, which is 10, and not the one it inherited',
+        );
+      }
+      await widen(200);
+      const insideSizes = await page.evaluate(() =>
+        [...document.querySelectorAll('.editor-check-item')].map((item) =>
+          Math.round(Number.parseFloat(getComputedStyle(item).fontSize)),
+        ),
+      );
+      if (insideSizes.some((size) => size !== 20)) {
+        failures.push(
+          `doubling a box whose words are set by its items left them at ${insideSizes.join('px, ')}px rather` +
+            ' than 20px — the size has to be written where the text actually is, or the toggle moves nothing',
+        );
+      } else {
+        notes.push('scaled the text a box does not own: 100px → 200px took its items from 10px to 20px');
+      }
+      // AND THE ANNOTATION SAYS WHOSE TEXT IT IS. The pasted text is the deliverable,
+      // and one that read as "give this box a font-size" would be asking an agent
+      // for a declaration nothing on the page reads.
+      await page.locator('[data-editor-measure="annotation"]').click();
+      const insideNote = await page.inputValue('[data-editor-annotations]');
+      if (!/draws no words itself/.test(insideNote) || !insideNote.includes('.editor-check-item')) {
+        failures.push(
+          'the Annotation for a box whose text is set by its items does not say so, or does not name the rule' +
+            ' it is set by — an agent handed it would write the size back onto the box',
+        );
+      }
+      await page.locator('[data-editor-measure="restore"]').click();
+      const insideBack = await page.evaluate(() =>
+        [...document.querySelectorAll('.editor-check-item')].map((item) =>
+          Math.round(Number.parseFloat(getComputedStyle(item).fontSize)),
+        ),
+      );
+      if (insideBack.some((size) => size !== 10)) {
+        failures.push(
+          `putting it back left its items at ${insideBack.join('px, ')}px — a size written inside an element` +
+            ' has to come off it again with the element it was written for',
+        );
+      }
+      await page.locator('[data-editor-toggle="fit"]').uncheck();
+      await page.evaluate(() => {
+        for (const element of document.querySelectorAll('[data-editor-check-list], [data-editor-check-sheet]')) {
+          element.remove();
+        }
+      });
+
       await page.locator('[data-editor-choose="content"]').click();
 
       // Publishing is off for this Check, and it has to say so rather than run.

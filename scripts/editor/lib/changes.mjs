@@ -164,6 +164,21 @@ function block(entry, at, written = []) {
     lines.push(columns([`   ${axis}`, px(from), px(to), signed(to - from), share], [15, 12, 12, 12]));
   }
 
+  // WHOSE TEXT IT IS, where it is not this element's own. A box that draws no words
+  // itself has an inherited size that governs nothing, so the row above was read off
+  // what is inside it — and an agent handed this document has to make the change on
+  // that rule rather than on this box, where a font-size would be read by nothing.
+  if (changed.includes(TEXT) && text?.own === false) {
+    lines.push(
+      '',
+      ...paragraph(
+        `This element draws no words of its own: the text size above is the one the elements inside it are` +
+          ` set at${text.on ? `, by ${text.on}` : ''}, which is where it was read from and where it belongs.`,
+        '   ',
+      ),
+    );
+  }
+
   if (scaled) {
     lines.push(
       '',

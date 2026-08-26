@@ -302,6 +302,49 @@ reaching for and could not touch. It is beside the box's four and not among them
 text size has no share of a parent, no opposite corner and no sign to get wrong,
 so folding it in would put it through arithmetic that means nothing for it.
 
+#### The text size is the TEXT's and not the box's
+
+This is the one thing on the surface that is not where a reading of the code would
+put it, and it was reported as *"selecting the Projects Panel's rail items and
+resizing it is not making the text bigger"*.
+
+**Every box has a `font-size`**, because every box inherits one. So the row always
+had a number to show and `scale text` always had a number to multiply — and on a
+box that draws no words of its own, both of them wrote a declaration that nothing
+on the page ever read. The elements inside that DO draw the words declare their
+own size, and a declared size beats an inherited one. The Rail is exactly that
+shape: the list is the box the author reaches for, `.projects-panel__rail-item`
+sets the type, and the row was showing the 16px the list inherited from the
+document while the words were drawn at 10.
+
+`Measure.typeHolders()` is the answer, and it is a walk rather than a lookup:
+
+- **The element itself, where it draws its own words.** The ordinary case, and it
+  behaves exactly as it always did. Nothing below this line applies to it.
+- **Otherwise, the nearest ancestor of each piece of text inside that declares a
+  `font-size`** — and the element itself where nothing between them does, because
+  then the inherited size really is what the words are drawn at. An inline
+  `font-size` counts: the `keep` toggle leaves this surface's own previews
+  standing, so an element scaled and then let go of is drawn at a size no
+  stylesheet holds.
+- **One row is one number**, so `lib/typefit.mjs`'s `carried()` refuses where the
+  holders are set at several sizes: back to the element's own inherited size, with
+  the row's own tooltip saying why. Picking one of several would be this tool
+  deciding which text the author meant.
+- **`TEXT_OWNERS` caps the walk at 32**, and the cap is a rule and not a hedge: a
+  box holding forty pieces of text has no one text size, and a row claiming
+  otherwise is worse than a row that says nothing.
+
+Everything downstream then has to say *whose* text it is, or it would ask for a
+change on the wrong element. `measurement()` carries `text.own` and `text.on`;
+`annotate()` leaves `font-size` out of the box's own Override declarations and
+names the rule instead; `lib/changes.mjs` says it in the block; and `override()`
+writes the type as **a record of its own, on the composition's own selector** —
+one record and not five, because five items set by one rule are one declaration in
+the source. That selector is checked against the page before it is offered: a rule
+reaching text outside the box the author picked would move something they never
+looked at, which is the one guarantee the Override boundary makes.
+
 ### A row backed by a Token writes; a row backed by nothing does not
 
 This asymmetry is the whole shape of the surface, and it is ADR 0004 rather than an
@@ -572,6 +615,11 @@ wider and shorter has *less* room for type than it had.
 arrive at one ratio rather than compounding fifty — the same trap `lib/corners.mjs`
 resolves its sizes at pointerdown for, and it fails the same way: the drag outruns
 the pointer.
+
+**And the size it carries is the TEXT's, not the box's** — *The text size is the
+TEXT's and not the box's*, above, is the whole of it. Without that, this toggle did
+nothing at all on any box that draws no words of its own, which is every list on
+the page.
 
 **It is derived at the two places a resize is expressed, and never in `apply()`.**
 That would look tidier and be wrong: `apply()` also runs after the *text size* row is
@@ -1068,13 +1116,13 @@ elsewhere.
 | `lib/annotations.test.mjs` | the Annotation's own text — the glossary read out of the real `CONTEXT.md`, what an element is called, and every number restated |
 | `lib/bakes.test.mjs` | the bytes of a Bake's parameters, the argv a Bake is run with, and every refusal |
 | `lib/corners.test.mjs` | the corner arithmetic: per corner, that the opposite one does not move — through the clamp as well — and whether the anchor actually held |
-| `lib/typefit.test.mjs` | the `scale text` ratio: that the smaller of the two wins, that it is taken from the picked box so a drag does not compound, and that nothing resized is no answer rather than a ratio of one |
+| `lib/typefit.test.mjs` | the `scale text` ratio: that the smaller of the two wins, that it is taken from the picked box so a drag does not compound, and that nothing resized is no answer rather than a ratio of one — and `carried()`, that holders set at one size are the box's text size and holders set at several are no answer |
 | `lib/changes.test.mjs` | the Recording's own text — that only what moved takes a row, that an already-written Token is marked and a differently-written one is not, and that the caveats are said once however many elements there are |
 | `lib/boxes.test.mjs` | the border box a size is measured as against the content box it is written as, and that an axis nothing asked for stays unasked for |
 | `lib/runs.test.mjs` | whether a run is in flight, how it ended, and what it says when it did not end well |
 | `lib/sections.test.mjs` | that a request cannot name a file, against every resolver and all three families |
 | `lib/publish.test.mjs` | which arguments git is handed, and what counts as one of the Editor's paths |
-| `scripts/checks/checks/editor.mjs` | one smoke Check: click, type, drag, scrub, measure, resize by every corner, scale the type with the box, keep a change standing, record the session, override, discard, and find each in the file |
+| `scripts/checks/checks/editor.mjs` | one smoke Check: click, type, drag, scrub, measure, resize by every corner, scale the type with the box — including the type a box does not own — keep a change standing, record the session, override, discard, and find each in the file |
 
 `pnpm test` runs everything but the last; `pnpm check` runs them and then the
 Check. `lib/runs.test.mjs` drives a fake child process rather than a real
