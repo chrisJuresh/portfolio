@@ -55,12 +55,37 @@
  * unfinished half: a row backed by a Token writes on release, and a row backed by
  * nothing stays a measurement however hard it is scrubbed. A Token is a named
  * number the author is entitled to move. A coordinate in a composition is not.
+ *
+ * AND THEN TWO TOGGLES AND A RECORDING, which are the same complaint again: the
+ * tool measured one element well and a SESSION of them badly.
+ *
+ *   - SCALE TEXT. Enlarging a box almost never means "the same words bigger", so
+ *     while this is on a resize carries the text size with it, by the ratio the box
+ *     changed by. `lib/typefit.mjs` is that ratio and the note on why it is a scale
+ *     and not a search. It is off by default, because a resize that silently
+ *     changed a second thing would be the tool taking a judgement.
+ *   - KEEP. Picking something else used to put the last thing back, which is right
+ *     while a measurement is one element and wrong the moment the author is
+ *     arranging several: half the point of moving two boxes is looking at them
+ *     together. While this is on, a change that was actually made STAYS on the page
+ *     when the selection leaves it — `release()` rather than `put()` — and picking
+ *     it again resumes its own record, so a box moved twice reads as one change from
+ *     where it started rather than two from wherever it got to.
+ *   - THE RECORDING. Every completed gesture goes into `client/changes.js`, one
+ *     entry per element, and `lib/changes.mjs` renders the lot as one document to
+ *     paste to an agent. It is not the Annotation twenty times over, and the note at
+ *     the top of that file is why.
+ *
+ * NOTHING ABOUT ANY OF THE THREE LOOSENS WHAT THIS SURFACE WRITES. A scaled text
+ * size is an inline style like every other preview, a kept change is the same
+ * inline style left alone, and the Recording is text in a box.
  */
 
-import { AXES, TEXT, annotate, list, name, nudge, restate } from './lib/annotations.mjs';
+import { AXES, TEXT, annotate, holderFile, list, name, nudge, restate } from './lib/annotations.mjs';
 import { asWritten, insets } from './lib/boxes.mjs';
 import { CORNERS, label as cornerLabel, drift, resize, word as cornerWord } from './lib/corners.mjs';
 import { DISPLAY, asSelector, rule as ruleFor } from './lib/overrides.mjs';
+import { fitted } from './lib/typefit.mjs';
 
 /** Which of the parent's two sides each axis is measured down. `AXES` itself is
  *  the Annotation's, imported rather than spelled again. */
@@ -331,8 +356,11 @@ export class Measure {
    * @param {(route: string, body: object) => Promise<any>} wiring.post
    * @param {(text: string, bad?: boolean) => void} wiring.say
    * @param {(n: number) => void} wiring.standing  told how many Overrides are standing
+   * @param {import('./changes.js').Changes} [wiring.log]  the Recording, told about
+   *   every completed gesture. Optional so this surface still works without one —
+   *   a measurement is a measurement whether anything is keeping a list of them.
    */
-  constructor({ glossary, overrides, tokens, surface, post, say, standing }) {
+  constructor({ glossary, overrides, tokens, surface, post, say, standing, log }) {
     this.glossary = glossary ?? [];
     this.overrides = overrides ?? [];
     this.tokens = tokens ?? [];
@@ -340,7 +368,50 @@ export class Measure {
     this.post = post;
     this.say = say;
     this.standing = standing ?? (() => {});
+    this.log = log ?? null;
     this.armed = false;
+    /**
+     * Whether a resize carries the text size with it.
+     *
+     * Off by default and said out loud when it goes on: a resize that silently
+     * changed a second thing would be this tool taking a judgement instead of
+     * reporting one, which is the line ADR 0004 draws. `lib/typefit.mjs` is the
+     * ratio, and the reason it is a scale rather than a search.
+     */
+    this.fitting = false;
+    /**
+     * Whether a change stays on the page when the selection leaves it.
+     *
+     * Off by default because the old behaviour is the right one for measuring ONE
+     * element: put it back, and the page is the page again. It is the wrong one for
+     * arranging several, which is what this exists for.
+     */
+    this.keeping = false;
+    /**
+     * Records whose inline styles are still standing but which are no longer
+     * picked. `release()` puts one here instead of putting it back, and `record()`
+     * takes it straight out again if it is picked a second time — which is what
+     * makes a box moved twice read as one change from where it started rather than
+     * two from wherever it got to.
+     */
+    this.kept = [];
+    /**
+     * Which lands are in flight, as the row plus the numbers being asked for.
+     *
+     * A GUARD ON AN ASYNC SEAM, and not a fix for anything seen on the page — worth
+     * saying, because a note claiming a symptom nobody reproduced sends the next
+     * session hunting one. `land()` awaits a POST, and a second commit of the SAME
+     * row at the SAME numbers arriving inside that window would run `logged()` a
+     * second time after `repick()` had already reset the measurement it recorded:
+     * that reads as a measurement of nothing, and the Recording drops the entry the
+     * first one had just put in it — the change on the page, in the file, and
+     * missing from the document the author pastes.
+     *
+     * Keyed on the numbers as well as the row, so it can only ever skip a commit
+     * that would have written exactly what is already being written. A genuine
+     * second gesture at a different value has a different key and lands.
+     */
+    this.landing = new Set();
     /**
      * What is picked, primary first.
      *
@@ -476,8 +547,29 @@ export class Measure {
     return round(Number.parseFloat(getComputedStyle(element).fontSize));
   }
 
-  /** Everything this surface tracks about one element, ready to be dragged. */
+  /**
+   * Everything this surface tracks about one element, ready to be dragged.
+   *
+   * A KEPT ELEMENT IS RESUMED RATHER THAN RECORDED AGAIN, and that is the whole of
+   * why `kept` is a list of records and not a list of elements. Its `before` box,
+   * its `base` translate, its picked text size and the Tokens governing it were all
+   * read when the page still had it where the composition put it; reading them
+   * again now would read a page this surface has already moved, so "move it, pick
+   * something else, come back and move it a bit more" would report the second
+   * nudge and lose the first — and the Recording, the Annotation and the Override
+   * would every one of them describe a change nobody made.
+   */
   record(element) {
+    const at = this.kept.findIndex((held) => held.element === element);
+    if (at !== -1) {
+      const [held] = this.kept.splice(at, 1);
+      // Where it actually stands now, which is the one thing that has to be read
+      // fresh: `after` is a measurement and everything else on the record is the
+      // starting point the measurement is against.
+      held.after = this.box(element);
+      held.type.after = this.typeSize(element);
+      return held;
+    }
     const parent = element.parentElement;
     const computed = getComputedStyle(element);
     const held = {
@@ -537,8 +629,13 @@ export class Measure {
     } else {
       const at = this.selection.findIndex((held) => held.element === element);
       if (at !== -1) {
-        // Out again — restoring only this one, because the rest are still picked.
-        this.put(this.selection[at]);
+        // Out again — releasing only this one, because the rest are still picked.
+        // `release` and not `put`: a shift-click out of a series it has already been
+        // dragged with is "I am done with that one", and one out of a series that
+        // has not moved is the wrong-pick correction this gesture was added for.
+        // `release` tells those two apart by whether anything was asked for, so one
+        // rule covers both.
+        this.release(this.selection[at]);
         this.selection.splice(at, 1);
         this.paintPicked();
         this.say(
@@ -570,11 +667,23 @@ export class Measure {
     );
   }
 
-  /** Pick the same elements again, from where the page now is. What a Token write
-   *  needs: the page has moved under the selection, so every `before` is stale. */
+  /**
+   * Pick the same elements again, from where the page now is. What a Token write
+   * needs: the page has moved under the selection, so every `before` is stale.
+   *
+   * IT PUTS BACK RATHER THAN RELEASING, whatever the keep toggle says, and it is
+   * the one place in this file that does. Keeping is for a change this surface is
+   * still holding in an inline style; by the time this runs the change is in a
+   * Token and the page is showing it through the Tokens surface's own preview, so
+   * keeping the inline styles would show it TWICE — which is exactly what
+   * `writeTokens`'s note says this call exists to prevent. It does not go through
+   * `clear()` for the same reason.
+   */
   repick() {
     const elements = this.selection.map((held) => held.element);
-    this.clear();
+    for (const held of this.selection) this.put(held);
+    this.selection = [];
+    this.came = null;
     this.selection = elements.map((element) => this.record(element));
     this.paintPicked();
   }
@@ -591,17 +700,82 @@ export class Measure {
     held.type.after = this.typeSize(held.element);
   }
 
+  /** Whether anything has actually been asked of this element yet. A pick with
+   *  nothing asked of it is not a change, however long it was looked at — which is
+   *  what lets `release()` tell a finished arrangement from a wrong pick. */
+  changed(held) {
+    const { dx, dy, width, height, size } = held.wanted;
+    return dx !== 0 || dy !== 0 || width !== null || height !== null || size !== null;
+  }
+
+  /**
+   * Let go of one element: keep the change standing, or put it back.
+   *
+   * The keep toggle's one decision, in one place, so everything that lets go of a
+   * selection — a new pick, a shift-click out of a series, Escape, leaving the
+   * surface — behaves the same way. An element nothing was asked of is put back
+   * whatever the toggle says, and that is not an exception to the rule but the
+   * reason there is only one: it takes the `display: inline-block` promotion off
+   * something that was picked and looked at, which is not a change anybody made.
+   */
+  release(held) {
+    if (this.keeping && this.changed(held)) {
+      const at = this.kept.findIndex((one) => one.element === held.element);
+      if (at !== -1) this.kept.splice(at, 1);
+      this.kept.push(held);
+      // The Recording has to say this once at the top of the document: a change
+      // left standing means anything measured after it — and anything measured
+      // INSIDE it — was measured against a page that already had it, so the
+      // measurements compose. Told here rather than read off the toggle, because
+      // what matters is whether it actually happened.
+      this.log?.composed();
+      return;
+    }
+    this.put(held);
+  }
+
   /** Every picked element back where the page had it, still picked. */
   restore(report = true) {
     if (this.selection.length === 0) return;
-    for (const held of this.selection) this.put(held);
+    for (const held of this.selection) {
+      this.put(held);
+      // Putting back is undoing, so the Recording loses it too. Anything else and
+      // a change the author took off the page would still be in the document they
+      // paste, which is the one way this log can be actively wrong.
+      this.log?.forget(held.element);
+    }
     this.paintPicked();
     if (report) this.say(`${this.spoken()} back where the page had it`);
   }
 
-  /** Nothing picked, and nothing left behind on the page. */
+  /**
+   * The whole page back the way the build had it — the selection AND everything
+   * the keep toggle left standing.
+   *
+   * Without this there is no way back from a kept arrangement short of a reload,
+   * and a reload takes the Recording with it. `put back` next to the rows is the
+   * primary's; this is the session's, so it lives on the Recording beside the list
+   * it empties.
+   */
+  putAllBack() {
+    const n = this.selection.length + this.kept.length;
+    for (const held of [...this.selection, ...this.kept]) {
+      this.put(held);
+      this.log?.forget(held.element);
+    }
+    this.kept = [];
+    this.paintPicked();
+    this.say(
+      n === 0
+        ? 'nothing was standing on the page to put back'
+        : `${n} element(s) back where the page had it — the Recording lost them too`,
+    );
+  }
+
+  /** Nothing picked, and nothing left behind on the page unless the keep toggle
+   *  says otherwise. */
   clear() {
-    for (const held of this.selection) this.put(held);
+    for (const held of this.selection) this.release(held);
     this.selection = [];
     this.came = null;
   }
@@ -629,6 +803,42 @@ export class Measure {
   apply() {
     for (const held of this.selection) this.applyTo(held);
     this.paintPicked();
+  }
+
+  /**
+   * The text size that follows a resize, while the `scale text` toggle is on.
+   *
+   * CALLED FROM THE TWO PLACES A RESIZE IS EXPRESSED and never from `apply()`,
+   * which is the one thing here that would look tidier and be wrong: `apply()` also
+   * runs after the text-size row is scrubbed, so deriving there would overwrite the
+   * number the author had just typed or dragged with the box's ratio, and the row
+   * would appear to do nothing at all.
+   *
+   * PER MEMBER, because the ratio is each element's own. `want()` gives every
+   * picked element the same absolute width, so five boxes of five different widths
+   * are five different ratios — and each one's type following its own box is what
+   * "scale text" means. The size is derived from the size it was PICKED at, so
+   * fifty frames of one drag arrive at one answer rather than compounding fifty.
+   *
+   * It asks a question and answers it in the `wanted` it was given; what the ratio
+   * WAS is `scaled()`, which is the same question asked without moving anything.
+   */
+  fitType() {
+    if (!this.fitting) return;
+    for (const held of this.selection) {
+      const answer = fitted(held.type.before, held.before, held.wanted);
+      if (answer === null) continue;
+      held.wanted.size = answer.size;
+    }
+  }
+
+  /** What the `scale text` toggle derived for the primary, where it derived
+   *  anything — which is what the Recording carries so the block can say the text
+   *  size was not scrubbed. */
+  scaled() {
+    if (!this.fitting || !this.picked) return null;
+    const answer = fitted(this.picked.type.before, this.picked.before, this.picked.wanted);
+    return answer === null ? null : { by: answer.by };
   }
 
   applyTo(held) {
@@ -867,6 +1077,16 @@ export class Measure {
         <kbd>↑</kbd> and <kbd>↓</kbd> climb to a parent and back, dragging moves it, a corner
         resizes it from the opposite one, and scrubbing a row writes the Token that governs it
         where there is one. <kbd>Esc</kbd> drops the selection.</small>
+        <div data-editor-toggles>
+          <label><input type="checkbox" data-editor-toggle="fit" />
+            <span>scale text with the box</span>
+            <small>a resize carries the text size with it, by the ratio the box changed by</small>
+          </label>
+          <label><input type="checkbox" data-editor-toggle="keep" />
+            <span>keep changes when picking something else</span>
+            <small>a change that was made stays on the page, so several can be arranged together</small>
+          </label>
+        </div>
       </div>
       <div data-editor-measured></div>
       <div data-editor-annotation>
@@ -885,6 +1105,40 @@ export class Measure {
     into.querySelector('[data-editor-forget]').addEventListener('click', () => {
       this.annotations().value = '';
       this.say('the Annotations are cleared');
+    });
+
+    // The two toggles. Each one says on arrival what it now does and what it does
+    // NOT do, because both change what a gesture the author already knows means —
+    // and a mode nobody was told about is worse than a press.
+    into.querySelector('[data-editor-toggle="fit"]').addEventListener('change', (event) => {
+      this.fitting = event.currentTarget.checked;
+      this.say(
+        this.fitting
+          ? 'scaling text with the box — resizing now carries the text size with it, by the smaller of the' +
+              ' two ratios the resize makes. Scrubbing the text size row still sets it outright.'
+          : 'the text size is its own again — a resize changes the box and nothing else. Anything already' +
+              ' scaled stays scaled until it is put back.',
+      );
+    });
+    into.querySelector('[data-editor-toggle="keep"]').addEventListener('change', (event) => {
+      this.keeping = event.currentTarget.checked;
+      if (!this.keeping) {
+        // Turning it OFF does not sweep the page: the changes standing on it are
+        // ones the author made deliberately, and taking them away as a side effect
+        // of a checkbox is the kind of surprise nothing here should be capable of.
+        // *put the page back* on the Recording is how they go.
+        this.say(
+          this.kept.length === 0
+            ? 'not keeping — picking something else puts the last thing back, as it did before'
+            : `not keeping from here on. The ${this.kept.length} already standing stay standing —` +
+                ' “put the page back” on the Recording is what takes them off.',
+        );
+        return;
+      }
+      this.say(
+        'keeping — a change stays on the page when the selection leaves it, and picking it again resumes' +
+          ' the same measurement rather than starting a new one from where it got to.',
+      );
     });
 
     this.listen();
@@ -1108,6 +1362,10 @@ export class Measure {
       else if (axis === 'left') wanted.dx = dx;
       else wanted.dy = dy;
     }
+    // A size, and only a size, carries the type with it. Not a `left` or a `top`,
+    // which move the box and change nothing about how much room it has; and not the
+    // text-size row itself, or the toggle would make that row unusable.
+    if (axis === 'width' || axis === 'height') this.fitType();
     this.apply();
   }
 
@@ -1183,19 +1441,95 @@ export class Measure {
    */
   async land(axis) {
     if (!this.picked) return;
-    const found = this.measurement().tokens.find((one) => one.axis === axis);
-    if (!found || found.wants === null || found.section === null || found.key === null) return;
-    if (this.selection.length > 1) {
-      const theirs = this.selection.map((held) => held.governs[axis]?.token ?? null);
-      if (theirs.some((token) => token !== found.token)) {
-        return this.say(
-          `${axis} is ${found.token} on ${this.picked.named.phrase}, and something else on the rest of the` +
-            ' selection — so nothing was written. Take the Annotation, or pick them one at a time.',
-          true,
-        );
-      }
+    // One commit, one land — see the note on `landing`.
+    const gesture = `${axis} ${JSON.stringify(this.picked.wanted)}`;
+    if (this.landing.has(gesture)) return;
+    this.landing.add(gesture);
+    try {
+      await this.commit(axis);
+    } finally {
+      this.landing.delete(gesture);
     }
-    await this.writeToken(found);
+  }
+
+  /** What a committed row does, once. `land()` is the guard around it, so this is
+   *  reached exactly once per gesture however many times the row raises `change`. */
+  async commit(axis) {
+    // BEFORE anything is written, because writing repicks: the Recording holds the
+    // measurement that was made, and after a write there is no measurement left to
+    // hold. `logged()` is idempotent per element, so one gesture is one entry.
+    this.logged();
+
+    // WITH `scale text` ON, A RESIZE CHANGED TWO THINGS, so letting go of it lands
+    // two. Landing only the size would leave the file describing a box whose type
+    // did not move while the page in front of the author shows type that did — and
+    // the next build would silently take the text back, which is the one failure
+    // this surface's whole "a Token's page and its file are two things" note exists
+    // to prevent.
+    const axes = [axis];
+    if (this.fitting && (axis === 'width' || axis === 'height') && this.scaled() !== null) {
+      axes.push(TEXT);
+    }
+
+    const measured = this.measurement();
+    const found = [];
+    const split = [];
+    for (const one of axes) {
+      const on = measured.tokens.find((token) => token.axis === one);
+      if (!on || on.wants === null || on.section === null || on.key === null) continue;
+      // A SELECTION SHARING ONE TOKEN IS ONE WRITE, and one that does not is none —
+      // asked per axis, because with `scale text` on a series can share the size's
+      // Token and not the text's, or the other way round.
+      if (this.selection.length > 1) {
+        const theirs = this.selection.map((held) => held.governs[one]?.token ?? null);
+        if (theirs.some((token) => token !== on.token)) {
+          split.push(one);
+          continue;
+        }
+      }
+      found.push(on);
+    }
+
+    if (split.length > 0) {
+      this.say(
+        `${list(split)} ${split.length === 1 ? 'is' : 'are'} governed by one Token on` +
+          ` ${this.picked.named.phrase} and by something else on the rest of the selection, so` +
+          ` ${split.length === 1 ? 'it was' : 'they were'} not written. Take the Recording, or pick them one` +
+          ' at a time.',
+        true,
+      );
+      if (found.length === 0) return;
+    }
+    if (found.length === 0) return;
+    await this.writeTokens(found, axis);
+  }
+
+  /**
+   * Put every picked element's measurement into the Recording.
+   *
+   * ONE ENTRY PER ELEMENT AND NOT ONE PER GESTURE, which is the decision that makes
+   * the pasted document readable: "resize a whole load of different elements" is
+   * twenty elements and two hundred gestures, and a keystroke history of it is not
+   * a description of the page the author wants. So an element measured again
+   * replaces its own entry, and the document is the latest state of each.
+   *
+   * AN ELEMENT PUT BACK TO WHERE IT STARTED LOSES ITS ENTRY. Dragging something out
+   * and then dragging it back is the author deciding against it, and a Recording
+   * that reported it anyway would be asking an agent to make a change nobody wants.
+   *
+   * Called once per completed gesture — a pointerup, or a number typed into a row —
+   * and never per frame: `measurement()` walks a stylesheet per axis, and doing that
+   * sixty times a second is the one thing on this surface that would feel slow.
+   */
+  logged() {
+    if (!this.log) return;
+    const scaled = this.scaled();
+    for (const held of this.selection) {
+      // The primary's ratio for the primary only: the others were given the same
+      // absolute size and so have ratios of their own, and `fitType()` has already
+      // applied each of them. What this carries is the sentence for the block.
+      this.log.measured(held.element, this.measurement(held), held === this.picked ? scaled : null);
+    }
   }
 
   // -------------------------------------------------------------------------
@@ -1262,6 +1596,19 @@ export class Measure {
         const answer = await this.post('/overrides', { selector, name: named.phrase, note, declarations });
         this.overrides = answer.overrides;
         this.paint();
+        // On the Recording as ALREADY WRITTEN, and as debt: an Override is a value
+        // standing outside every composition, and folding it back in is the work
+        // whoever reads that document is being asked to do.
+        this.log?.forget(element);
+        this.log?.wrote({
+          kind: 'override',
+          what: selector,
+          value: Object.entries(declarations)
+            .map(([property, value]) => `${property}: ${value}`)
+            .join('; '),
+          file: 'src/overrides.css',
+          where: 'an Override, and therefore debt',
+        });
         // The inline styles go, because from here the page is moved by what the
         // file says — through this surface's own stylesheet until the next build.
         this.put(held);
@@ -1287,20 +1634,58 @@ export class Measure {
     this.say(list(said), missed.length > 0 || unnamed.length > 0);
   }
 
-  /** Write the Token a measurement landed on, through the control that owns it. */
-  async writeToken(found) {
+  /**
+   * Write the Tokens a measurement landed on, through the controls that own them.
+   *
+   * A LIST AND NOT ONE, because `scale text` makes one gesture two writes: the size
+   * and the type that followed it. They go one at a time through the Tokens
+   * surface's own `writeKey` — the page, the control, the preview sheet and the file
+   * move together — and the repick happens ONCE at the end, not per write, because
+   * repicking between them would reset the measurement the second one is derived
+   * from and it would land a number nobody asked for.
+   */
+  async writeTokens(found, gesture = null) {
     if (!this.surface) return this.say('the Tokens surface is not here to write through', true);
-    try {
-      await this.surface.writeKey(found.section, found.key, found.wants);
-      // The page has moved through the Tokens surface's own preview, so this
-      // one's inline styles would double the change. Dropping them and measuring
-      // again from where the page now is means the next drag starts from the
-      // truth rather than from a stack of two.
-      this.repick();
-      this.say(`wrote ${found.token} = ${found.wants} — measured again from where the page now is`);
-    } catch (error) {
-      this.say(`refused: ${error.message}`, true);
+    const wrote = [];
+    let refused = null;
+    for (const one of found) {
+      try {
+        await this.surface.writeKey(one.section, one.key, one.wants);
+        wrote.push(one);
+        // On the Recording as ALREADY WRITTEN, so an agent handed the document does
+        // not apply it a second time — which is arithmetic on a number that has
+        // already moved, and therefore silently wrong rather than a no-op. The row
+        // NAMED is the one the author let go of and not the axis this Token governs:
+        // with `scale text` on those are two different rows, and "written when the
+        // text size row was let go of" about a width scrub would be a sentence that
+        // did not happen.
+        this.log?.wrote({
+          kind: 'token',
+          what: one.token,
+          value: one.wants,
+          file: holderFile(one.section),
+          where:
+            gesture === null || gesture === one.axis
+              ? `a Token, written when the ${one.axis} row was let go of`
+              : `a Token governing ${one.axis}, written when the ${gesture} row was let go of and the text` +
+                ' followed the box',
+        });
+      } catch (error) {
+        refused = error.message;
+        break;
+      }
     }
+    // The page has moved through the Tokens surface's own preview, so this one's
+    // inline styles would double the change. Dropping them and measuring again from
+    // where the page now is means the next drag starts from the truth rather than
+    // from a stack of two — and it happens even after a refusal, because whatever
+    // did land has already moved the page.
+    if (wrote.length > 0) this.repick();
+    if (refused !== null) return this.say(`refused: ${refused}`, true);
+    this.say(
+      `wrote ${list(wrote.map((one) => `${one.token} = ${one.wants}`))} — measured again from where the` +
+        ' page now is',
+    );
   }
 
   async discard(selector) {
@@ -1460,6 +1845,9 @@ export class Measure {
               // `lib/corners.mjs`.
               resize(this.dragging.corner, { dx, dy }, from);
         for (const held of this.selection) Object.assign(held.wanted, wanted);
+        // The other of the two places a resize is expressed — see `fitType()`. A
+        // move is not one, so a drag across the page never touches the type.
+        if (this.dragging.how === 'resize') this.fitType();
         this.apply();
       },
       true,
@@ -1478,6 +1866,11 @@ export class Measure {
           // measurement until the author says otherwise — `land()` is the whole
           // note on why the two differ.
           if (how === 'scrub' && event.type === 'pointerup') return void this.land(axis);
+          // A completed gesture, so the Recording gets it — including a cancelled
+          // one, because a pointercancel leaves the page wherever the last frame put
+          // it and a document that did not mention it would be describing a
+          // different page from the one on screen.
+          this.logged();
           const headline = annotate(this.measurement()).headline;
           // Only a resize can lose an anchor: a move translates the box and asks
           // the layout for nothing.

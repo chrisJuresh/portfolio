@@ -127,12 +127,15 @@ const CLIENT = {
   '/measure.js': { file: 'client/measure.js', type: 'text/javascript; charset=utf-8' },
   '/client.css': { file: 'client/editor.css', type: 'text/css; charset=utf-8' },
   '/bakes.js': { file: 'client/bakes.js', type: 'text/javascript; charset=utf-8' },
+  '/changes.js': { file: 'client/changes.js', type: 'text/javascript; charset=utf-8' },
   '/lib/tokens.mjs': { file: 'lib/tokens.mjs', type: 'text/javascript; charset=utf-8' },
   '/lib/bakes.mjs': { file: 'lib/bakes.mjs', type: 'text/javascript; charset=utf-8' },
   '/lib/content.mjs': { file: 'lib/content.mjs', type: 'text/javascript; charset=utf-8' },
   '/lib/annotations.mjs': { file: 'lib/annotations.mjs', type: 'text/javascript; charset=utf-8' },
+  '/lib/changes.mjs': { file: 'lib/changes.mjs', type: 'text/javascript; charset=utf-8' },
   '/lib/corners.mjs': { file: 'lib/corners.mjs', type: 'text/javascript; charset=utf-8' },
   '/lib/boxes.mjs': { file: 'lib/boxes.mjs', type: 'text/javascript; charset=utf-8' },
+  '/lib/typefit.mjs': { file: 'lib/typefit.mjs', type: 'text/javascript; charset=utf-8' },
   '/lib/overrides.mjs': { file: 'lib/overrides.mjs', type: 'text/javascript; charset=utf-8' },
 };
 

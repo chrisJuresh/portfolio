@@ -193,6 +193,28 @@ bytes. `scripts/editor/NOTES.md` is the rest of it.
 On Windows, double-clicking **`editor.bat`** is that command with a free port
 found and the browser opened for you.
 
+### Rearranging a whole screenful, and handing it over
+
+The **Measure** surface picks anything on the page and moves it, resizes it or
+changes its text size. Two toggles at the top of it are what make that work over a
+session rather than over one element:
+
+- **scale text with the box** — a resize carries the text size with it, by the
+  ratio the box changed by, so "make this bigger" is one gesture instead of two.
+  Scrubbing the text size row still sets it outright.
+- **keep changes when picking something else** — the change you just made stays on
+  the page while you pick the next thing, so several can be arranged and looked at
+  together. Picking something you already moved carries on from where you started
+  rather than starting again.
+
+Everything you do lands on the **Recording**, the sixth surface: one block per
+element, with the numbers, what governs each of them and which values the Editor
+has already written for you. Press **copy** and paste it to an agent — that
+document is written to be acted on, and it says explicitly which changes are
+already in the source so they do not get applied twice. **put the page back** takes
+every kept change off the page again, and **clear the Recording** empties the
+document without touching the page.
+
 Everything else — layout, palette, motion — is a Section's own folder, and
 `src/sections/stub/NOTES.md` is the convention every one of them follows.
 

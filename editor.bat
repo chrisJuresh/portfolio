@@ -9,6 +9,20 @@ rem It is not for changing layout, palette or motion - Measure hands back an
 rem Annotation to paste to an agent for those, and writes an Override if asked.
 rem scripts/editor/NOTES.md and README.md's "Editing the site" are the rest of it.
 rem
+rem To rearrange a whole screenful and hand the lot over, use the two toggles at
+rem the top of the Measure surface and then the RECORDING surface beside it:
+rem
+rem   scale text with the box   a resize carries the text size with it, by the
+rem                             ratio the box changed by. One gesture, not two.
+rem   keep changes when         the change you just made stays on the page while
+rem   picking something else    you pick the next thing, so several can be
+rem                             arranged and looked at together.
+rem
+rem Everything you do lands on the Recording: one block per element, with the
+rem numbers and which values the Editor has already written for you. Press copy
+rem and paste it to an agent. "put the page back" takes every kept change off the
+rem page; "clear the Recording" empties the document and leaves the page alone.
+rem
 rem The other two windows beside this one are not this one. site.bat serves the
 rem same build with nothing over it, which is how the article is READ rather than
 rem edited; run.bat serves the repository root as plain files, for the dev-only

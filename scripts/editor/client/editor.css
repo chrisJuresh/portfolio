@@ -376,6 +376,55 @@
   opacity: 0.55;
 }
 
+/* The two toggles, and why they are inside the instruction block rather than
+   beside the rows: both of them change what a gesture the author ALREADY KNOWS
+   means — a corner drag now moves the type, and picking something else now leaves
+   the last thing where it was — so they belong with the sentence that describes
+   the gestures and not with the numbers. Full width, one per line, and each one
+   carrying what it does under its own label: a mode nobody was told about is
+   worse than a press. */
+[data-editor-toggles] {
+  flex: 1 1 100%;
+  display: grid;
+  gap: 3px;
+  margin: 6px 0 2px;
+  padding: 6px 8px;
+  border: 1px solid var(--editor-line);
+  border-radius: 4px;
+}
+
+[data-editor-toggles] label {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0 6px;
+  align-items: baseline;
+  cursor: pointer;
+}
+
+[data-editor-toggles] input {
+  grid-row: 1;
+  margin: 0;
+  accent-color: var(--editor-live);
+}
+
+[data-editor-toggles] label > span {
+  grid-column: 2;
+}
+
+/* The sentence under the label, in the second column so it lines up with the
+   label rather than with the box. */
+[data-editor-toggles] label > small {
+  grid-column: 2;
+  flex: none;
+  opacity: 0.5;
+}
+
+/* On is live, because these are the only two things in this panel that change what
+   the next gesture does. */
+[data-editor-toggles] label:has(input:checked) > span {
+  color: var(--editor-live);
+}
+
 [data-editor-measuring] kbd {
   padding: 0 3px;
   border: 1px solid var(--editor-line);
@@ -529,6 +578,107 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  opacity: 0.6;
+}
+
+/* ---- the Recording ------------------------------------------------------ */
+
+/* How many elements the Recording is holding, beside the edit count and the
+   Overrides. Same reasoning as the Overrides badge: the whole point of this
+   surface is that the author measures a load of things and hands the lot over at
+   the end, and a document behind a closed surface is one that gets forgotten
+   before it is pasted. */
+[data-editor-recorded] {
+  color: var(--editor-live);
+}
+
+/* ONE COLUMN, unlike every other label in this panel. The panel's own label rule
+   puts a 11rem name beside its control, which is right for a row of numbers and
+   wrong for a document 88 columns wide: the name would take a third of the width
+   the document needs. So the title stacks above it and the box gets the lot. */
+[data-editor-recording] label {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 2px;
+}
+
+[data-editor-recording] textarea {
+  display: block;
+  width: 100%;
+  /* BOTH, and it is the one thing that makes this readable in a 30rem panel: the
+     document is 88 columns and the panel is not, so it scrolls sideways — and
+     dragging the corner past the panel's edge is how the author reads the whole of
+     it without this growing a window of its own. Copying it does not need any of
+     that, which is what the box is actually for. */
+  resize: both;
+  overflow: auto;
+  /* Monospace, and this is the one text box in the panel that needs it: the
+     document is columns of numbers, and a proportional face makes them stop being
+     columns. */
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 11px;
+  line-height: 1.35;
+  white-space: pre;
+}
+
+[data-editor-record-buttons] {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+[data-editor-record-list] {
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px solid var(--editor-line);
+}
+
+/* One measured element: what happened to it, and the press that takes it off the
+   list without touching the page. */
+[data-editor-record-row] {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 3px 0;
+}
+
+[data-editor-record-row] > span {
+  flex: 1 1 auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+[data-editor-record-written] {
+  flex: 0 0 auto;
+  color: var(--editor-live);
+  opacity: 0.75;
+}
+
+/* One value that already reached a file. An Override is debt and reads as debt;
+   a Token is an ordinary change to a composition and does not. */
+[data-editor-record-wrote] {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 3px 0;
+  opacity: 0.75;
+}
+
+[data-editor-record-wrote] > span {
+  flex: 1 1 auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+[data-editor-record-wrote='override'] > span {
+  color: var(--editor-bad);
+}
+
+[data-editor-record-wrote] > small {
+  flex: 0 0 auto;
   opacity: 0.6;
 }
 

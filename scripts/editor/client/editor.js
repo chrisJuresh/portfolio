@@ -22,16 +22,24 @@
  * reached, and it is also how anything the page speaks without drawing — an aria
  * label, an href — is reached at all.
  *
- * THE PANEL HOSTS FIVE SURFACES AND OWNS ONE. Content is here, because it is
+ * THE PANEL HOSTS SIX SURFACES AND OWNS ONE. Content is here, because it is
  * this file's binding-by-matching that reaches it. Tokens and the Timelines are
- * `client/tokens.js`, the Bakes are `client/bakes.js`, and Measure — the
- * Annotations and the Overrides — is `client/measure.js`. Every split is at a real
+ * `client/tokens.js`, the Bakes are `client/bakes.js`, Measure — the
+ * Annotations and the Overrides — is `client/measure.js`, and the Recording is
+ * `client/changes.js`. Every split is at a real
  * seam rather than a tidy one: a Token is addressed by a rule and a property and
  * is bound to no element at all, a Bake's parameter is not on the page in any form
- * until a Python generator has run, and a measurement is addressed by a selector
- * built out of the page — so none of the three shares the field index everything
- * in this file turns on. What is shared is the panel, the report line and
- * Publish, and those are passed in.
+ * until a Python generator has run, a measurement is addressed by a selector
+ * built out of the page, and the Recording is addressed by nothing at all — it is
+ * keyed by the element node itself — so none of the four shares the field index
+ * everything in this file turns on. What is shared is the panel, the report line
+ * and Publish, and those are passed in.
+ *
+ * THE RECORDING IS ITS OWN SURFACE AND NOT A CORNER OF MEASURE, and the reason is
+ * the ordering below rather than a preference: it is a document about a whole
+ * session, it grows to a screenful of text, and reading it is the one moment in
+ * this tool when the author is NOT measuring — so being here disarms the page,
+ * which is the right thing to happen while somebody is selecting text in a box.
  *
  * ONE THING MEASURING TAKES BACK FROM THIS FILE: while it is armed, the page is a
  * measuring surface rather than a page, so the click handler at the foot of this
@@ -39,6 +47,7 @@
  */
 
 import { Bakes } from './bakes.js';
+import { Changes } from './changes.js';
 import { Measure } from './measure.js';
 import { Motion, Tokens } from './tokens.js';
 
@@ -252,6 +261,7 @@ class Editor {
       <header>
         <strong>Editor</strong>
         <span data-editor-count></span>
+        <span data-editor-recorded></span>
         <span data-editor-owed></span>
         <button type="button" data-editor-fold aria-expanded="true">fold</button>
       </header>
@@ -262,12 +272,14 @@ class Editor {
           <button type="button" data-editor-choose="motion" aria-pressed="false">Motion</button>
           <button type="button" data-editor-choose="bakes" aria-pressed="false">Bakes</button>
           <button type="button" data-editor-choose="measure" aria-pressed="false">Measure</button>
+          <button type="button" data-editor-choose="changes" aria-pressed="false">Recording</button>
         </nav>
         <div data-editor-surface="content"><div data-editor-fields></div></div>
         <div data-editor-surface="tokens" hidden></div>
         <div data-editor-surface="motion" hidden></div>
         <div data-editor-surface="bakes" hidden></div>
         <div data-editor-surface="measure" hidden></div>
+        <div data-editor-surface="changes" hidden></div>
         <div data-editor-publish>
           <input type="text" data-editor-message placeholder="what changed (optional)" />
           <button type="button" data-editor-go>Publish</button>
@@ -340,6 +352,17 @@ class Editor {
       },
     });
     void this.bakes.mount(panel.querySelector('[data-editor-surface="bakes"]'));
+
+    // The Recording, BEFORE Measure, because Measure is handed it: a completed
+    // gesture goes into the log as it happens rather than being collected
+    // afterwards, so the log has to exist by the time the surface that fills it
+    // does. What goes the other way is one button — putting the page back is
+    // Measure's to do, so it is assigned once both exist and before the Recording
+    // is mounted.
+    this.changes = new Changes({
+      say: (text, bad) => this.say(text, bad),
+      counted: (n) => this.recorded(n),
+    });
     // Measuring. Handed the Tokens surface itself rather than a second way to
     // write one: where a drag lands on a Token, the offer goes through the control
     // that already owns it, so the page, the control and the file stay one thing.
@@ -351,8 +374,11 @@ class Editor {
       post,
       say: (text, bad) => this.say(text, bad),
       standing: (n) => this.owe(n),
+      log: this.changes,
     });
     this.measure.mount(panel.querySelector('[data-editor-surface="measure"]'));
+    this.changes.putBack = () => this.measure.putAllBack();
+    this.changes.mount(panel.querySelector('[data-editor-surface="changes"]'));
 
     // `surface` and not `tab`: CONTEXT.md's Rail — the list naming what can be
     // shown and marking which is selected — lists `tabs` under Avoid, and this
@@ -386,6 +412,10 @@ class Editor {
     }
     if (which === 'motion') this.motion?.refresh();
     if (which === 'bakes') void this.bakes?.refresh();
+    // Repainted on arrival rather than only when something lands in it: the clock
+    // in the document's own header would otherwise be the time of the last gesture
+    // rather than the time it is being read.
+    if (which === 'changes') this.changes?.paint();
     // Being on the Measure surface IS being armed (#166). The press that used to
     // do this was a second gate on a decision the author had already made by
     // choosing the surface — and leaving disarms, so a click goes back to editing
@@ -396,6 +426,15 @@ class Editor {
   count() {
     const badge = this.panel?.querySelector('[data-editor-count]');
     if (badge) badge.textContent = this.edits.size === 0 ? '' : `${this.edits.size} edited`;
+  }
+
+  /** How many elements the Recording is holding, in the header for the same reason
+   *  the Overrides count is: the whole point of it is that the author measures a
+   *  load of things and hands the lot over at the end, and a document behind a
+   *  closed surface is one that gets forgotten before it is pasted. */
+  recorded(n) {
+    const badge = this.panel?.querySelector('[data-editor-recorded]');
+    if (badge) badge.textContent = n === 0 ? '' : `${n} recorded`;
   }
 
   /** How many Overrides are standing, in the header rather than in the surface

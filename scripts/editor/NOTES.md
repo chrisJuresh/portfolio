@@ -13,14 +13,15 @@ pnpm editor -- --no-build --port 8790
 ```
 
 It builds this tree, serves that `dist/`, and prints a URL. Click any text, type,
-Enter. Escape puts it back. The panel at the bottom right has five surfaces:
+Enter. Escape puts it back. The panel at the bottom right has six surfaces:
 **Content**, every Content field of every Section, which is how anything the page
 speaks without drawing is reached; **Tokens**, a control per Token, of every
 Section AND of every part of the Kernel that has a Tokens file; **Motion**, a
 scrub per Timeline; **Bakes**, the five Python generators and every number each is
-run with; and **Measure**, which picks anything at all — or its parent — moves it,
+run with; **Measure**, which picks anything at all — or its parent — moves it,
 resizes it, changes its text size, and hands back an **Annotation** — and, if
-asked, writes an **Override**.
+asked, writes an **Override**; and the **Recording**, which is every measurement
+this session made as one document to paste to an agent.
 
 ADR 0004 gives the Editor Content and Tokens, and it now has both. #146 gave it
 the Bakes as well, which is a THIRD kind of thing and not a loosening of that
@@ -28,6 +29,12 @@ rule — a Bake writes no composition, it writes the parameters of a generator t
 produces an asset. #145 gave it the last two things that ADR names: the Annotation
 and the Override, which are what becomes of every change the other four surfaces
 cannot express.
+
+The Recording is not a seventh kind of thing either: it writes nothing at all. It
+is the Annotation at session scale, which is what the Measure surface's two
+toggles — **scale text** and **keep** — are for as well. All three are one
+complaint about a tool that measured *one element* well: see
+**Two toggles, and a Recording** below.
 
 ## The shape, and why it is this shape
 
@@ -533,6 +540,137 @@ ticket names.** The Measure surface lists every one with a *discard* beside it; 
 panel's header carries a count that stays visible whichever surface is in front;
 and `pnpm check:sections` prints how many are standing on every build.
 
+### Two toggles, and a Recording
+
+Three things, and they are one complaint: the surface measured **one element** well
+and a **session** of them badly.
+
+#### `scale text` — a resize carries the type with it
+
+Enlarging a box almost never means "the same words bigger", and the author was doing
+that in two gestures: resize the box, then scrub the text size until it looked right.
+While this is on, the second follows the first — `lib/typefit.mjs` is the ratio and
+`fitType()` is where it is applied. It is **off by default**, because a resize that
+silently changed a second thing would be the tool taking a judgement.
+
+**It is a SCALE and not a FIT, and that is the decision rather than a shortfall.** A
+real fit — the largest size at which the words stop overflowing — is a *search*: set
+a size, re-read `scrollHeight`, try again. It runs on every frame of a corner drag,
+it answers differently depending on where the words happen to break, and it is a
+number computed by a tool. Scaling by what the box did holds the ratio between a box
+and its type exactly where it was, which is what these compositions are written in.
+
+**The smaller ratio wins.** A corner moves both axes and a row moves one, so there
+are one or two ratios; the smaller keeps the words inside the box, because a box made
+wider and shorter has *less* room for type than it had.
+
+**Measured from the pick and never from the last frame.** Fifty frames of one drag
+arrive at one ratio rather than compounding fifty — the same trap `lib/corners.mjs`
+resolves its sizes at pointerdown for, and it fails the same way: the drag outruns
+the pointer.
+
+**It is derived at the two places a resize is expressed, and never in `apply()`.**
+That would look tidier and be wrong: `apply()` also runs after the *text size* row is
+scrubbed, so deriving there would overwrite the number the author just set and the row
+would appear to do nothing at all. A move is not a resize either, so dragging a box
+across the page never touches its type.
+
+**And letting go of a resize lands BOTH Tokens.** `commit()` adds `TEXT` to the axes
+it looks for whenever the toggle derived a size, because writing only the size would
+leave the file describing a box whose type did not move while the page shows type that
+did — and the next build would silently take the text back. That is the exact failure
+"a Token's page and its file are two different things" exists to prevent. The
+shared-Token question is asked **per axis**, because a series can share the size's
+Token and not the text's.
+
+#### `keep` — a change stays when the selection leaves it
+
+Putting the last thing back is right while a measurement is one element and wrong the
+moment the author is arranging several: half the point of moving two boxes is looking
+at them together.
+
+**`release()` is the whole of it, and it is one decision in one place** — a new pick,
+a shift-click out of a series, `Escape` and leaving the surface all go through it. An
+element **nothing was asked of** is put back whatever the toggle says, and that is not
+an exception but the reason there is only one rule: it takes the `display:
+inline-block` promotion off something that was merely looked at, and it leaves the
+shift-click-out gesture working as the wrong-pick correction it was added for.
+
+**Picking a kept element again RESUMES its record.** This is the part worth reading
+twice. `kept` holds *records* and not elements, because `before`, `base`, the picked
+text size and the governing Tokens were all read when the page still had the element
+where the composition put it. Recorded afresh, "move it, pick something else, come
+back and nudge it" would report the nudge and lose the move — and the read-out, the
+Recording, the Annotation and the Override would every one of them describe a change
+nobody made. The Check asserts exactly that: the row has to read `was 100` and not
+`was 200`.
+
+**`repick()` puts back rather than releasing, whatever the toggle says**, and it is
+the one place in the file that does. Keeping is for a change still held in an inline
+style; by the time `repick()` runs the change is in a Token and the page is showing it
+through the Tokens surface's preview, so keeping the inline styles would show it
+**twice**.
+
+**Turning the toggle off does not sweep the page.** The changes standing on it were
+made deliberately, and taking them away as a side effect of a checkbox is a surprise
+nothing here should be capable of. *put the page back* on the Recording is how they
+go — and without that press there is no way out of a kept arrangement short of a
+reload, which would take the Recording with it.
+
+#### The Recording — one document, not twenty Annotations
+
+`client/changes.js` is the store and the surface; `lib/changes.mjs` is the format,
+pure and tested in node, exactly as `lib/annotations.mjs` is.
+
+**One entry per element, keyed by the element node.** Twenty elements and two hundred
+gestures come out as twenty blocks holding the *latest* state of each. The Annotation
+box was the closest thing before and it is a *transcript*: press it twice on the same
+element and the document says two contradictory things, neither of which says which
+was last. Keyed by the node and not by a selector, because `selectorFor` legitimately
+answers null and an entry per null would be one entry for all of them.
+
+**An element put back loses its entry.** Dragging something out and dragging it back
+is the author deciding against it, and a document that reported it anyway would ask an
+agent for a change nobody wants — the one way a log like this is actively harmful
+rather than merely long.
+
+**Measured and written are two lists, and that difference prevents a wrong answer
+rather than a long one.** The surface writes a Token whenever a scrubbed row has one
+behind it, so by the time a session is pasted some of its changes are *already in the
+source*. One flat list would get those applied twice, and the second application is
+arithmetic on a number that has already moved — silently wrong rather than a no-op.
+
+**The already-written mark is DERIVED and not stored**, and the first version got this
+wrong. Stored on the entry, it was a fact about the order of two calls — record the
+measurement, write, mark the axis — and anything that re-recorded between them dropped
+the mark off a line that had in fact been written. Derived, the question is the one
+that matters and has one answer whenever it is asked: *does the Token this line names
+already hold the value this line asks for?* Two elements governed by one Token are
+both marked, which is right; the same Token later written to a different value marks
+neither, which is also right.
+
+**It is not `annotate()` twenty times over.** An Annotation carries its four standing
+paragraphs every time, which is right for one element and eight hundred lines for
+twenty — and the numbers, the only part that differs, are what gets lost in it. So the
+caveats are said once at the top, each block prints **only the axes that moved**, and
+the glossary nag becomes one footer naming every part that has no term.
+
+**It says when the measurements compose.** With `keep` on, something measured inside
+something already enlarged was measured against the enlarged one. That is what the
+author wanted to look at and it is also a fact about the numbers, so `release()` tells
+the log the first time it actually happens rather than the log reading it off the
+toggle.
+
+**Entries whose element has left the document are kept.** A re-bake rebuilds the tree,
+so its measurements outlive their nodes — and the numbers and the selector are still a
+valid instruction. Nothing prunes them, and *clear the Recording* is the press for it.
+
+**It is a surface of its own and not a corner of Measure**, and the ordering is the
+reason rather than a preference: it is a document about a whole session, it grows to a
+screenful of text, and reading it is the one moment in this tool when the author is
+*not* measuring — so being there disarms the page, which is what should happen while
+somebody is selecting text in a box.
+
 ## Scrubbing a Timeline
 
 The Motion surface is the other thing ADR 0003's named seekable Timeline was for,
@@ -789,7 +927,7 @@ list is `translate`, `width`, `height` because `translate` composes with GSAP's
 `!important` over a Timeline's own writes, and the symptom is motion that stopped
 with no error anywhere.
 
-## Four files on the client, and why the splits are there
+## Five files on the client, and why the splits are there
 
 `client/editor.js` is one `Editor` class doing Content binding, in-place editing,
 the field list, publishing and listening. It said of itself that it wanted
@@ -797,14 +935,17 @@ splitting and was not split because its seams share one piece of state — the f
 index that binds an element is the index the panel renders and the index a write
 updates — and that the calculus would change if the Editor grew a second surface.
 
-It has, three times, and it did. `client/tokens.js` is the Tokens surface and the
+It has, four times, and it did. `client/tokens.js` is the Tokens surface and the
 Timeline scrub; `client/bakes.js` is the Bakes; `client/measure.js` is Measure —
 the Annotations and the Overrides, addressed by a selector built out of the page,
 and handed the Tokens surface ITSELF so that a Token a measurement landed on is
-written through the control that already owns it. The splits are at real seams
+written through the control that already owns it; and `client/changes.js` is the
+Recording, handed to Measure so a completed gesture reaches it as it happens rather
+than being collected afterwards. The splits are at real seams
 rather than tidy ones: a Token is addressed by a rule and a property and is bound
-to no element at all, and a Bake's parameter is not on the page in any form until
-a generator has run — so neither shares that field index. What is shared is the
+to no element at all, a Bake's parameter is not on the page in any form until
+a generator has run, and the Recording is addressed by nothing at all — it is keyed
+by the element node itself — so none of them shares that field index. What is shared is the
 panel, the one report line and Publish, and those are passed in, which is why "3
 edited" and "refused: …" mean the same thing whichever surface produced them. The
 cost was one entry in the server's `CLIENT` map each rather than a bundler,
@@ -813,6 +954,11 @@ because both surfaces were already modules.
 The Bakes surface reads itself from the server rather than out of `state`, and
 that is not a third pattern: it POLLS while a generator runs, and `/state`
 re-reads every Content and Tokens file in the tree.
+
+The Recording is wired in the one order that works, and `editor.js` says so where
+it does it: the Recording is constructed BEFORE Measure because Measure is handed
+it, and the one thing that goes the other way — *put the page back*, which is
+Measure's to do — is assigned once both exist and before the Recording is mounted.
 
 **The surface imports the boundary.** `lib/tokens.mjs` has no node imports — only
 `Refused` out of `lib/content.mjs`, which has none either — so it is served to the
@@ -832,11 +978,13 @@ elsewhere.
 | `lib/annotations.test.mjs` | the Annotation's own text — the glossary read out of the real `CONTEXT.md`, what an element is called, and every number restated |
 | `lib/bakes.test.mjs` | the bytes of a Bake's parameters, the argv a Bake is run with, and every refusal |
 | `lib/corners.test.mjs` | the corner arithmetic: per corner, that the opposite one does not move — through the clamp as well — and whether the anchor actually held |
+| `lib/typefit.test.mjs` | the `scale text` ratio: that the smaller of the two wins, that it is taken from the picked box so a drag does not compound, and that nothing resized is no answer rather than a ratio of one |
+| `lib/changes.test.mjs` | the Recording's own text — that only what moved takes a row, that an already-written Token is marked and a differently-written one is not, and that the caveats are said once however many elements there are |
 | `lib/boxes.test.mjs` | the border box a size is measured as against the content box it is written as, and that an axis nothing asked for stays unasked for |
 | `lib/runs.test.mjs` | whether a run is in flight, how it ended, and what it says when it did not end well |
 | `lib/sections.test.mjs` | that a request cannot name a file, against every resolver and all three families |
 | `lib/publish.test.mjs` | which arguments git is handed, and what counts as one of the Editor's paths |
-| `scripts/checks/checks/editor.mjs` | one smoke Check: click, type, drag, scrub, measure, resize by every corner, override, discard, and find each in the file |
+| `scripts/checks/checks/editor.mjs` | one smoke Check: click, type, drag, scrub, measure, resize by every corner, scale the type with the box, keep a change standing, record the session, override, discard, and find each in the file |
 
 `pnpm test` runs everything but the last; `pnpm check` runs them and then the
 Check. `lib/runs.test.mjs` drives a fake child process rather than a real

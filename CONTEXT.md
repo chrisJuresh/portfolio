@@ -117,6 +117,15 @@ The Editor's output when a wanted change is not expressible as a Token: a
 measured instruction, in words and numbers, for an agent to apply.
 _Avoid_: comment, note, feedback, request
 
+**Recording**:
+Every measurement a session of the Editor made, as one document: one block per
+element, holding the latest state of each and naming separately whatever the
+Editor has already written. An Annotation is one element's instruction and is
+written to be read on its own; a Recording is a screenful of rearranging, handed
+over once. It reaches no file — the two lists it keeps apart are what stop an
+agent applying a change that has already landed.
+_Avoid_: log, history, changelog, transcript, session
+
 **Override**:
 A value the Editor wrote outside a Section's composition so the page looks right
 now, pending an agent folding it in properly.

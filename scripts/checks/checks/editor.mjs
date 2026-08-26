@@ -1535,6 +1535,226 @@ export const check = {
         for (const element of document.querySelectorAll('[data-editor-check-series]')) element.remove();
       });
 
+      // ---- the two toggles, and the Recording -----------------------------
+      //
+      // THREE THINGS A BOUNDARY CANNOT SEE, and each of them is a whole feature
+      // that would fail silently. `lib/typefit.mjs` and `lib/changes.mjs` are
+      // tested at their own bytes; what is asserted here is that the toggles are
+      // WIRED — that ticking one changes what the next gesture does, and that a
+      // gesture reaches the document the author pastes.
+      //
+      // Injected elements again, and for the series' own reason: this needs two
+      // boxes of a known size with a known text size and nothing else governing
+      // either, and naming an element of a composition would make the Check fail
+      // the next time somebody chose that number differently.
+      //
+      // The tree as it stands NOW, and not the measure section's own baseline: that
+      // section has legitimately written an Override and a Token since, so what is
+      // asserted at the foot of this half is the narrower and stronger thing —
+      // three features that touch the page on every frame, and not one byte on disk.
+      const untouched = snapshot(root);
+      // How many elements the Recording already holds. RELATIVE and not absolute,
+      // because the Recording is the SESSION's: every drag, corner and series
+      // earlier in this Check is legitimately in it, so an assertion of "two"
+      // would be an assertion about how many halves run before this one.
+      const recordedBefore = await page.locator('[data-editor-record-row]').count();
+      await page.evaluate(() => {
+        for (const [at, left] of [
+          [0, 420],
+          [1, 560],
+        ]) {
+          const element = document.createElement('div');
+          element.dataset.editorCheckFit = String(at);
+          element.textContent = 'measured';
+          element.style.cssText =
+            `position: fixed; left: ${left}px; bottom: 90px; width: 100px; height: 30px; font-size: 10px;`;
+          document.body.append(element);
+        }
+      });
+      /** One of the two injected boxes, as the page has it now. */
+      const fitBox = (at) =>
+        page.evaluate((which) => {
+          const element = document.querySelector(`[data-editor-check-fit="${which}"]`);
+          return {
+            width: Math.round(element.getBoundingClientRect().width),
+            size: Math.round(Number.parseFloat(getComputedStyle(element).fontSize)),
+          };
+        }, at);
+      /** Pick one of them, the way a pointer would. */
+      const pickFit = (at) =>
+        page.evaluate((which) => {
+          const element = document.querySelector(`[data-editor-check-fit="${which}"]`);
+          for (const kind of ['pointerdown', 'pointerup']) {
+            element.dispatchEvent(new PointerEvent(kind, { bubbles: true, cancelable: true }));
+          }
+        }, at);
+      /** Set the primary's width through the row, which is the deliberate half of
+       *  the same gesture a corner drag makes. */
+      const widen = async (to) => {
+        await page.locator('[data-editor-nudge="width"]').fill(String(to));
+        await page.locator('[data-editor-nudge="width"]').press('Enter');
+      };
+
+      // SCALE TEXT. Off, a resize changes the box and nothing else — which is the
+      // half worth asserting first, because a toggle that was on by default would
+      // pass every assertion below and change the tool for everybody.
+      await pickFit(0);
+      await widen(200);
+      const unscaled = await fitBox(0);
+      if (unscaled.size !== 10) {
+        failures.push(
+          `resizing with "scale text" off moved the text size to ${unscaled.size}px — off, a resize has to` +
+            ' change the box and nothing else',
+        );
+      }
+      await page.locator('[data-editor-measure="restore"]').click();
+
+      await page.locator('[data-editor-toggle="fit"]').check();
+      await pickFit(0);
+      await widen(200);
+      const scaled = await fitBox(0);
+      // Twice the width and nothing asked of the height, so the ratio is the
+      // width's alone: 10px of type becomes 20px.
+      if (Math.abs(scaled.width - 200) > 2 || scaled.size !== 20) {
+        failures.push(
+          `doubling the width with "scale text" on left the box ${scaled.width}px wide at ${scaled.size}px type` +
+            ' — the text has to follow the box by the ratio the box changed by',
+        );
+      } else {
+        notes.push('scaled the text with the box: 100px → 200px took 10px of type to 20px');
+      }
+      // And the row says so, because the number the author reads is the measured
+      // one and not the one that was asked for.
+      const typeRow = await page.inputValue(`[data-editor-nudge="text size"]`);
+      if (Math.round(Number(typeRow)) !== 20) {
+        failures.push(`the text size row reads ${typeRow} after a scaled resize rather than the 20 on the page`);
+      }
+      // A deliberate scrub of the text size still sets it outright: a toggle that
+      // made its own row unusable would be a worse tool than no toggle.
+      await page.locator(`[data-editor-nudge="text size"]`).fill('13');
+      await page.locator(`[data-editor-nudge="text size"]`).press('Enter');
+      const typed = await fitBox(0);
+      if (typed.size !== 13) {
+        failures.push(
+          `scrubbing the text size with "scale text" on left it at ${typed.size}px — the toggle derives a size` +
+            ' from a RESIZE, and must never overwrite one the author set',
+        );
+      }
+
+      // KEEP. Off, picking something else puts the last thing back — the behaviour
+      // that has always been there, asserted so the toggle cannot quietly become
+      // the only one.
+      await pickFit(1);
+      const unkept = await fitBox(0);
+      if (Math.abs(unkept.width - 100) > 2) {
+        failures.push(
+          `with "keep" off, picking something else left the first box at ${unkept.width}px — off, letting go` +
+            ' has to put it back',
+        );
+      }
+
+      await page.locator('[data-editor-toggle="keep"]').check();
+      await pickFit(0);
+      await widen(200);
+      await pickFit(1);
+      const kept = await fitBox(0);
+      if (Math.abs(kept.width - 200) > 2 || kept.size !== 20) {
+        failures.push(
+          `with "keep" on, picking something else put the first box back to ${kept.width}px at ${kept.size}px` +
+            ' — the whole point of the toggle is that a change made stays on the page',
+        );
+      } else {
+        notes.push('kept a change standing while something else was picked');
+      }
+
+      // AND PICKING IT AGAIN RESUMES ITS OWN RECORD, which is the assertion this
+      // half exists for. Recorded afresh, the row would read "was 200" — the box
+      // as this surface had already left it — so a second nudge would report as
+      // the whole change and the first would vanish from every document the Editor
+      // produces. Resumed, it reads "was 100": one change, from where the page had
+      // it before anything was measured.
+      await pickFit(0);
+      const resumed = (await page.textContent('[data-editor-axis="width"] > small:not([data-editor-offer])')) ?? '';
+      if (!resumed.includes('was 100')) {
+        failures.push(
+          `picking a kept element again reported "${resumed.trim()}" — it has to resume the record it was` +
+            ' measured with, or the change it already carries is lost from the read-out and the Recording',
+        );
+      } else {
+        notes.push(`picking a kept element again resumed its measurement (${resumed.trim()})`);
+      }
+
+      // THE RECORDING. Both boxes moved, so both are in it — one block each, with
+      // the numbers and the sentence that says the type followed the box.
+      await pickFit(1);
+      await widen(150);
+      await page.locator('[data-editor-choose="changes"]').click();
+      const recording = await page.inputValue('[data-editor-record]');
+      for (const [what, wantedIn] of [
+        ['both elements', `${recordedBefore + 2} elements measured`],
+        ['the block numbers', '100px'],
+        ['what changed', '+100px'],
+        ['the axis that moved', 'width'],
+        ['the scaled text size', 'followed the box'],
+        ['the note that kept measurements compose', 'they COMPOSE'],
+        ['the standing caveat', 'not an instruction to hard-code them'],
+      ]) {
+        if (!recording.includes(wantedIn)) {
+          failures.push(
+            `the Recording carries no ${what} ("${wantedIn}") — the text is the whole output of the surface,` +
+              ' so it has to',
+          );
+        }
+      }
+      const blocks = await page.locator('[data-editor-record-row]').count();
+      if (blocks !== recordedBefore + 2) {
+        failures.push(
+          `the Recording listed ${blocks} elements after two more were measured, and held ${recordedBefore}` +
+            ' before — every completed gesture has to reach it, and each element only once',
+        );
+      } else {
+        notes.push(`recorded ${blocks} measured elements in ${recording.split('\n').length} lines`);
+      }
+      // Measuring still writes nothing, toggles and Recording included: the same
+      // assertion the drag half makes, made again after three features that each
+      // touch the page on every frame.
+      for (const [where, was] of snapshot(root)) {
+        if (was !== untouched.get(where)) {
+          failures.push(`the toggles or the Recording reached ${where} — neither writes to any source`);
+        }
+      }
+
+      // And the page goes back, which is the only way out of a kept arrangement
+      // short of a reload — and a reload would take the Recording with it.
+      await page.locator('[data-editor-record-back]').click();
+      const restored = await Promise.all([fitBox(0), fitBox(1)]);
+      if (restored.some((box) => Math.abs(box.width - 100) > 2 || box.size !== 10)) {
+        failures.push(
+          `"put the page back" left the boxes at ${restored.map((box) => `${box.width}px/${box.size}px`).join(' and ')}` +
+            ' rather than back at 100px/10px',
+        );
+      } else {
+        notes.push('put the page back, and every kept change came off it');
+      }
+      // The two it put back are off the Recording, and nothing else is: putting a
+      // change back is undoing it, and a document that still asked for it would be
+      // asking for a change nobody wants — but this button reaches what is STANDING
+      // on the page, so anything already put back by hand stays exactly as it was.
+      const blocksAfter = await page.locator('[data-editor-record-row]').count();
+      if (blocksAfter !== recordedBefore) {
+        failures.push(
+          `putting the page back left ${blocksAfter} elements in the Recording rather than the ${recordedBefore}` +
+            ' that were in it before this half — a change taken off the page has to come off the document too',
+        );
+      }
+
+      await page.locator('[data-editor-choose="measure"]').click();
+      await page.locator('[data-editor-toggle="fit"]').uncheck();
+      await page.locator('[data-editor-toggle="keep"]').uncheck();
+      await page.evaluate(() => {
+        for (const element of document.querySelectorAll('[data-editor-check-fit]')) element.remove();
+      });
+
       await page.locator('[data-editor-choose="content"]').click();
 
       // Publishing is off for this Check, and it has to say so rather than run.

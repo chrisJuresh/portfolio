@@ -259,7 +259,22 @@ nothing stays a measurement and hands back an **Annotation** to paste to an agen
 or writes an **Override** into `src/overrides.css` so the page looks right while
 the composition is corrected later. That asymmetry is ADR 0004 and not an
 unfinished half: a Token is a named number the author may move, a coordinate in a
-composition is not. It writes Content, Tokens, a Bake's parameters and that one
+composition is not.
+
+**Two toggles on that surface and a sixth surface make it a session's tool rather
+than one element's**, and an agent is most likely to meet the third of them:
+**scale text** carries the text size through a resize by the ratio the box changed
+by, so letting the row go writes BOTH Tokens; **keep** leaves a change standing on
+the page when the selection moves off it, and picking that element again *resumes*
+its record rather than measuring afresh from where it got to; and the
+**Recording** is every measurement of the session as one document, one block per
+element, which is what the author will paste. Read that document's own headings
+before acting on it — **ALREADY WRITTEN** means the Token holds that value now and
+applying it again is arithmetic on a number that has already moved, and **they
+COMPOSE** means a block measured inside an earlier one was measured with that
+earlier change standing.
+
+It writes Content, Tokens, a Bake's parameters and that one
 stylesheet, and nothing else (ADR 0004), and
 [`scripts/editor/NOTES.md`](scripts/editor/NOTES.md) is the authority: read it
 before touching `scripts/editor/`. Six things there are easy to get wrong and

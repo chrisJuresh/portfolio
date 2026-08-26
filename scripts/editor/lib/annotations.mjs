@@ -143,8 +143,13 @@ export function name(where, glossary = []) {
 // ---------------------------------------------------------------------------
 
 /** A number, written the way a stylesheet is read: no float noise, no trailing
- *  zeros, and never in exponent form. */
-function figure(n, places = PLACES) {
+ *  zeros, and never in exponent form.
+ *
+ *  Exported for the same reason `AXES` and `list` are: `lib/changes.mjs` reports
+ *  the same numbers about a whole session that this file reports about one
+ *  element, and a second spelling of "how a number is written here" is exactly
+ *  the thing that drifts. */
+export function figure(n, places = PLACES) {
   if (!Number.isFinite(n)) return null;
   const fixed = n.toFixed(places);
   return places === 0 ? fixed : fixed.replace(/0+$/, '').replace(/\.$/, '');
@@ -232,12 +237,32 @@ export function nudge(value, delta, ctx = {}) {
 // The Annotation
 // ---------------------------------------------------------------------------
 
-const px = (n) => `${figure(n, 2)}px`;
+export const px = (n) => `${figure(n, 2)}px`;
 const signed = (n) => (n === 0 ? 'unchanged' : `${n > 0 ? '+' : '-'}${px(Math.abs(n))}`);
 /** "a", "a and b", "a, b and c". Exported for the same reason `AXES` is: the
  *  surface says the same kind of sentence about the Tokens it found. */
 export const list = (words) =>
   words.length <= 1 ? (words[0] ?? '') : `${words.slice(0, -1).join(', ')} and ${words.at(-1)}`;
+
+/**
+ * The repo-relative file a Token holder's `tokens.css` is, which is what an agent
+ * handed one of these reports has to open.
+ *
+ * TWO FAMILIES AND NOT ONE. A Section is a folder under `src/sections`, and a part
+ * of the Kernel answers to `kernel-<stem>` and lives at
+ * `src/kernel/tokens/<stem>.css` — `lib/sections.mjs`'s `tokensFile` is where that
+ * is decided for a WRITE, and this is the same fact said for a READER. It used to
+ * be spelled `src/sections/${section}/tokens.css` inline below, which named a path
+ * that does not exist for every Kernel Token the Measure surface can reach: the
+ * Effect Stack's hundred numbers and the corner pictures' placement are all in
+ * `state.tokens`, so `declaring()` finds them and offers to write them.
+ *
+ * @param {string} section  a Section's folder name, or `kernel-<stem>`
+ */
+export const holderFile = (section) =>
+  String(section).startsWith('kernel-')
+    ? `src/kernel/tokens/${String(section).slice('kernel-'.length)}.css`
+    : `src/sections/${section}/tokens.css`;
 
 /** A paragraph, wrapped to the width the rest of the report is written to, so a
  *  pasted Annotation reads the same in a terminal as it does in a text box. */
@@ -386,7 +411,7 @@ export function annotate(measured) {
             ? `${token.axis} is set from ${token.token} on ${token.selector}, which holds "${token.was}" —` +
                 ` and the Editor will not write it: ${token.why ?? 'it is a relationship rather than a length'}.`
             : `${token.axis} maps onto a Token: ${token.token}, declared on ${token.selector} in` +
-                ` src/sections/${token.section}/tokens.css. It holds ${token.was}, and the measurement` +
+                ` ${holderFile(token.section)}. It holds ${token.was}, and the measurement` +
                 ` makes it ${token.wants} — the Editor can write that one directly.`,
         ),
       );
