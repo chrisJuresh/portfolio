@@ -2,7 +2,9 @@ import { atMoments } from '../lib/moment.mjs';
 import { DESK, open, settle } from '../lib/page.mjs';
 
 /**
- * The photograph strip: its Timeline, its two ends, its keys and its dissolve.
+ * The photograph strip: its Timeline, its two ends, its keys, its dissolve — and
+ * the one thing outside the Section that is measured off it, the Kernel's corner
+ * eye.
  *
  * This is the Check ADR 0003 was written for. `moments` already asserts the
  * MECHANISM — that a Timeline can be asked for a moment and the frame stays put —
@@ -20,9 +22,11 @@ import { DESK, open, settle } from '../lib/page.mjs';
  * NO ASSERTION IN HERE COMPARES AGAINST A NUMBER SOMEBODY CHOSE. Every one is a
  * relationship: the position at a moment against the position the Timeline's own
  * progress predicts, the first photograph against the column's left edge, the
- * strip's height against the floor the Section's own Token states, the dissolve's
- * two ends against its middle. Every Token can be set to anything without failing
- * this — the floor to zero, the dissolve's span to nothing, the settle to an hour.
+ * corner eye against that same photograph, the strip's height against the floor
+ * the Section's own Token states, the dissolve's two ends against its middle.
+ * Every Token can be set to anything without failing this — the floor to zero,
+ * the dissolve's span to nothing, the settle to an hour, the eye's gap through
+ * zero and out the other side.
  *
  * The two WINDOWS are chosen, as every Check's are, and `SHORT` says why it is
  * the one it is.
@@ -115,6 +119,67 @@ async function readStrip(page) {
           src: image?.getAttribute('src') ?? null,
         };
       }),
+    };
+  });
+}
+
+/**
+ * Where the corner eye's left edge lands, and where the strip's first
+ * photograph does, in document coordinates and in one round trip.
+ *
+ * `backgroundPosition` is where the answer is, because the picture is a
+ * background and its box is the whole band — there is no element to take a rect
+ * off. Chromium computes the four-value form down to two, and the horizontal one
+ * stays a LENGTH only while the offset is measured from `left`; measured from
+ * `right` it comes back as a percentage, which parses to a plausible small
+ * number and would make this assert nothing. So the unit is checked rather than
+ * assumed — `pinned` is that check and not a formality.
+ */
+async function readEye(page) {
+  return page.evaluate(() => {
+    const eye = document.querySelector('.kernel-corners .eye');
+    const first = document.querySelector('.front-screen__slide');
+    if (!eye || !first) {
+      return {
+        missing:
+          'the corner eye or the first photograph is not on the page: ' +
+          [
+            ['.kernel-corners .eye', eye],
+            ['.front-screen__slide', first],
+          ]
+            .filter(([, found]) => !found)
+            .map(([name]) => name)
+            .join(', '),
+      };
+    }
+
+    // The Token, resolved: `getPropertyValue` gives back the token sequence it
+    // was declared as, so it is spent on a throwaway box's MARGIN instead — in
+    // the eye's own frame, so a length written in rem resolves against the font
+    // size the picture is drawn at rather than some other one. A margin and not
+    // a padding, which is what the landing's restatements are spent on: the gap
+    // is allowed to be negative — the tuner it came from ran to -200px — and a
+    // negative padding clamps to zero, which would read as a picture standing on
+    // the photograph and pass.
+    const probe = document.createElement('div');
+    probe.style.position = 'absolute';
+    probe.style.visibility = 'hidden';
+    probe.style.marginLeft = 'var(--eye-x)';
+    eye.append(probe);
+    const x = Number.parseFloat(getComputedStyle(probe).marginLeft);
+    probe.remove();
+
+    const style = getComputedStyle(eye);
+    const position = style.backgroundPosition;
+    const across = position.trim().split(/\s+/)[0] ?? '';
+    const box = eye.getBoundingClientRect();
+    return {
+      position,
+      pinned: across.endsWith('px'),
+      left: box.left + Number.parseFloat(across),
+      width: Number.parseFloat(style.backgroundSize),
+      photograph: first.getBoundingClientRect().left,
+      x,
     };
   });
 }
@@ -278,6 +343,46 @@ export const check = {
               `from ${from.x.toFixed(0)}px to ${(from.x - read.travel).toFixed(0)}px`,
           );
         }
+      }
+
+      // ---- and the corner eye is measured off that same edge ---------------
+      // The Kernel's third corner picture is the one thing outside this Section
+      // that hangs off the strip: --eye-x is the gap between the first
+      // photograph and the picture's own left edge, and src/kernel/corners.css
+      // RESTATES the column's measure and the page's side to find that edge,
+      // because the Kernel may not read a Section. So the two can drift apart,
+      // and the way they drift is the failure this Check exists to catch in the
+      // strip's own case — a length pinned to the window against a column pinned
+      // to the centre parts company at half a pixel per pixel of width, which is
+      // right on the display it was placed on and wrong on every other. It is
+      // how the placement was lost once already: #133 could not restate it,
+      // parked --eye-x at 0 against the page's right edge, and nothing said so.
+      //
+      // The gap is read off the page and never compared against a number chosen
+      // here, so --eye-x may be dragged anywhere — including through zero and
+      // past it — without failing this.
+      const eye = await readEye(page);
+      if ('missing' in eye) {
+        failures.push(eye.missing);
+      } else if (!eye.pinned) {
+        failures.push(
+          `the corner eye's background-position begins '${eye.position}' — it is a share of the box less the ` +
+            'picture rather than a length, so it is no longer measured off the photographs at all and moves ' +
+            'every time --eye-w does',
+        );
+      } else {
+        const gap = eye.left - eye.photograph;
+        if (Math.abs(gap - eye.x) > PLACED) {
+          failures.push(
+            `the corner eye stands ${gap.toFixed(2)}px right of the first photograph and --eye-x asks for ` +
+              `${eye.x.toFixed(2)}px — the Kernel is measuring it off a datum the strip is not on. ` +
+              'src/kernel/corners.css restates --front-screen-measure and --front-screen-side to find the ' +
+              "column's edge; one of the two has drifted from the Section's own.",
+          );
+        }
+        notes.push(
+          `the corner eye stands ${gap.toFixed(0)}px right of the first photograph, ${eye.width.toFixed(0)}px wide`,
+        );
       }
 
       // ---- the dissolve is a function of where the strip is ---------------

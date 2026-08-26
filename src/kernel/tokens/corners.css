@@ -29,12 +29,21 @@
   --car-crop: 0;
   --car-src: none;
 
-  /* The eye, bottom-right. The car's anchoring with the plate's geometry: sized
-     against the fold, cropped at the foot. */
+  /* The eye, bottom-right. The plate's geometry — sized against the fold and
+     cropped at the foot — and NEITHER of the other two's anchoring sideways:
+     this one is measured off the photograph strip, so --eye-x is a gap and not
+     a distance from an edge. corners.css is the rule and says why. */
   --eye-opacity: 0.131;
   --eye-fill: 0.582;
   --eye-w: min(calc(var(--eye-fill) * var(--fold)), 2400px);
-  --eye-x: 0px;
+  /* The gap between the strip's first photograph and this picture's own LEFT
+     edge, positive → right, away from the strip. The left edge is what is
+     pinned because the frame is not mirrored: the subject ends at 59.9% of the
+     file's width and the rest is sky, so holding the left spends every extra
+     pixel --eye-w gets on a taller window pushing that dead sky towards the
+     page's edge, where holding the right would walk the mast in over the
+     column. */
+  --eye-x: 292.94px;
   --eye-y: 0px;
   --eye-crop: 0;
   --eye-src: none;

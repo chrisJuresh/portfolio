@@ -308,12 +308,49 @@ printed on arrives, and `--car-fade`, the one-sided dissolve on the car's inner
 edge. `--car-fade` is 0 on the live page today, so nothing is missing from what
 ships; the mask is not written at all rather than written and inert.
 
-`--eye-x` diverges: on the live page it is measured inboard from the Front
-Screen's photo strip, which did not exist here when this was written, so
-here it is measured out from the right edge and parked at 0. The strip landed with
-#137, so the thing it was waiting for is there — and it is still parked, because
-where the eye stands against the photographs is a judgement made by looking and
-not a length anything here can derive.
+**`--eye-x` is a GAP and not a distance from an edge**, and the eye is the one
+corner picture that is not measured off the page at all: it stands beside the
+Front Screen's photograph strip, so what has to hold still is the distance from
+the last photograph to the wheel. The strip is pinned to a CENTRED column and a
+corner offset is pinned to the window, so measured off the edge the two part
+company at half a pixel per pixel of width — right on the one display it was
+placed on, wrong on every other.
+
+It was lost once for exactly one reason, and the reason is worth keeping: the
+strip did not exist here when the Kernel was ported, so #133 parked `--eye-x` at
+0 against the page's right edge, wrote this paragraph saying so, and nothing on
+the page or in the suite disagreed. The picture is at 0.13 opacity, so it drifted
+250px without anybody's eye catching it.
+
+The Kernel may not read a Section (CONTEXT.md), so `corners.css` **restates**
+`--front-screen-measure` and `--front-screen-side` to find the column's edge, the
+way `tokens/landing.css` restates the Panel's constants — but as the drawing's
+own measurement rather than as a Token, because a second draggable copy of a
+number that has to agree with a Section's is a disagreement waiting to happen.
+The `carousel` Check is what holds it: it measures the gap on the page against
+`--eye-x` itself, so either restated number drifting fails the build, and so does
+re-anchoring the picture to an edge.
+
+**It uses `--page-across` and never a percentage.** A percentage in
+`background-position` is a share of the positioning area LESS the image, not of
+the box, so `50% - 13.5rem` would move every time `--eye-w` did — and `--eye-w`
+is a share of the fold, so it would have moved with the window's HEIGHT.
+
+The Check's strength, shown rather than asserted — three mutations run against
+`pnpm check -- --only carousel`:
+
+| mutation                                             | wanted | got                                       |
+| ---------------------------------------------------- | ------ | ----------------------------------------- |
+| the picture re-anchored to `right var(--eye-x)`      | fail   | fail, on the unit: `calc(100% - 292.94px)` |
+| `--eye-measure` drifted from 27rem to 30rem          | fail   | fail: a 271.36px gap against a 292.94px Token |
+| `--eye-x` dragged to -150px, through zero            | pass   | pass, and the note reads `-150px`         |
+
+The phone is where this placement runs out, and it did on the live page too: the
+column's edge is floored at the page's own margin, so below about 475px the gap
+carries the picture clean off the right of the page and the eye is simply not
+part of the composition there. That is the shipped behaviour restored and not a
+new hole — at 0.13 opacity what the page-edge anchor showed on a phone was a
+sliver of cable behind the type.
 
 ## The build fingerprints anything it can see
 

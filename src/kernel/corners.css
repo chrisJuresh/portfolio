@@ -57,11 +57,40 @@
   opacity: var(--car-opacity);
 }
 
+/* THE ONE PICTURE OF THE THREE THAT IS NOT MEASURED OFF A PAGE EDGE. It stands
+   beside the Front Screen's photograph strip rather than in a corner, so what
+   has to stay put is the gap between the last photograph and the wheel — and
+   the strip is pinned to a CENTRED column while a corner offset is pinned to
+   the window. Measured off the edge the two part company at half a pixel per
+   pixel of width: right on the one display it was placed on and drifting on
+   every other. --eye-x is that gap; the line below is where it is measured from.
+
+   RESTATED, AND DELIBERATELY NOT A TOKEN. It is the Front Screen's
+   --front-screen-measure and --front-screen-side, and the Kernel may not read a
+   Section (CONTEXT.md) — but a second DRAGGABLE copy of a number that has to
+   agree with a Section's is a disagreement waiting to happen, so this is the
+   drawing's own measurement the way tokens/landing.css's restated terms are
+   the landing's. The `carousel` Check holds it honest by measuring the gap on
+   the page rather than by comparing two spellings, so either number drifting
+   fails the build from this end too.
+
+   --page-across AND NOT 50%: a percentage in `background-position` is a share
+   of the positioning area LESS the image, not of the box, so `50% - 13.5rem`
+   would move every time --eye-w did. --page-across is the page without the
+   scrollbar's gutter, which is the same box .kernel-corners spans and the same
+   one the column is centred in, so the two land on the same edge. */
 .kernel-corners .eye {
+  /* --front-screen-measure and --front-screen-side, spelled out. */
+  --eye-measure: 27rem;
+  --eye-side: 1.35rem;
+  --eye-column: max(var(--eye-side), calc((var(--page-across) - var(--eye-measure)) / 2));
+
   top: 0;
   height: calc(var(--fold) - var(--eye-y));
   background-image: var(--eye-src);
-  background-position: right var(--eye-x) bottom calc(-1 * var(--eye-crop) * var(--eye-w));
+  background-position:
+    left calc(var(--eye-column) + var(--eye-x))
+    bottom calc(-1 * var(--eye-crop) * var(--eye-w));
   background-size: var(--eye-w) auto;
   opacity: var(--eye-opacity);
 }
