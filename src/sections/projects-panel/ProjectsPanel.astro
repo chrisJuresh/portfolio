@@ -248,9 +248,13 @@ const selected = (project: { href?: string }) => project.href === `#${here}`;
     );
     --projects-panel-sub-size: calc(var(--projects-panel-sub-share) * var(--projects-panel-w));
     --projects-panel-copy-size: calc(var(--projects-panel-copy-share) * var(--projects-panel-w));
-    --projects-panel-small-size: max(
-      var(--projects-panel-small-floor),
-      calc(var(--projects-panel-small-share) * var(--projects-panel-w))
+    --projects-panel-point-size: max(
+      var(--projects-panel-point-floor),
+      calc(var(--projects-panel-point-share) * var(--projects-panel-w))
+    );
+    --projects-panel-figure-size: max(
+      var(--projects-panel-figure-floor),
+      calc(var(--projects-panel-figure-share) * var(--projects-panel-w))
     );
     --projects-panel-rail-size: max(
       var(--projects-panel-rail-floor),
@@ -541,31 +545,70 @@ const selected = (project: { href?: string }) => project.href === `#${here}`;
   }
 
   /* An <ol> because the order IS the ranking; the numbers are off because the
-     figures are the numbers this column is about. */
+     figures are the numbers this column is about.
+
+     IT TAKES THE WHOLE OF THE COLUMN AND SPREADS ITSELF DOWN IT, which is one
+     decision doing two jobs. Today it is four titles and four figures with a
+     great deal of air between them, which is what the drawing asks for; when each
+     point grows a paragraph the air is what gets spent, down to
+     --projects-panel-points-gap and no further. Stated as `stretch` plus
+     `space-between` rather than as a gap somebody has to keep re-choosing, so the
+     same rule draws both. `grid-auto-rows: min-content` says the other half of
+     that out loud: a row is its own content and the slack goes BETWEEN the rows,
+     never into them. NOTES.md.
+
+     `stretch` costs row two nothing: what an item contributes to a row's size is
+     its max-content height either way, so this changes what the box does with the
+     height it is given and not how much it is given. */
   .projects-panel__points {
     grid-area: 2 / 1 / 3 / 4;
-    align-self: start;
-    /* One hanging subheading line, plus air. A longhand would be shorter and
-       would also reset the list-style and the padding below it. */
-    margin: calc(var(--projects-panel-sub-line) + var(--projects-panel-points-air)) 0 0;
+    align-self: stretch;
+    /* One hanging subheading line, plus air, and ITS FOOT IS THE WINDOW'S FOOT.
+       Row two runs to the composition's foot, which is where the Plinth stands —
+       and the slab overhangs the Frame to the LEFT by more than this column's own
+       clearance from it, so a list spread down the whole of that lands its last
+       figure in the marble. One Plinth depth short puts the last line on the line
+       the window's own foot stands on.
+
+       THE DEPTH AND NOT THE SLAB'S WHOLE BOX, which was tried: the box begins
+       `--projects-panel-plinth-back` higher, behind the window, and clearing that
+       too is 30px this list cannot afford at the narrow end of the band — where it
+       is what sizes row two, so every pixel of margin is a pixel the composition
+       grows by. It buys nothing either. The plate is a rendered block in
+       perspective, so the stone at its left end is drawn well below the top of the
+       box that holds it, and the line above the window's foot is over the
+       picture's own empty corner.
+
+       A longhand would be shorter and would also reset the list-style and the
+       padding below it. */
+    margin: calc(var(--projects-panel-sub-line) + var(--projects-panel-points-air)) 0
+      var(--projects-panel-plinth-depth);
     list-style: none;
     padding: 0;
     display: grid;
+    grid-auto-rows: min-content;
+    align-content: space-between;
     row-gap: var(--projects-panel-points-gap);
   }
 
   .projects-panel__points h3 {
     margin: 0;
-    font-size: var(--projects-panel-small-size);
+    font-size: var(--projects-panel-point-size);
     font-weight: var(--projects-panel-point-weight);
     line-height: var(--projects-panel-point-leading);
     letter-spacing: var(--projects-panel-point-tracking);
     color: var(--projects-panel-ink);
+    /* The title is set to fit its column on one line at the window it was drawn
+       at, and the column is a share of a composition that is narrower on a tall
+       screen — so a long title wraps there rather than being made to fit by a
+       size nobody chose. `balance` is what makes the two lines halves of a title
+       instead of a line and a straggler. */
+    text-wrap: balance;
   }
 
   .projects-panel__points p {
     margin: var(--projects-panel-figure-air) 0 0;
-    font-size: var(--projects-panel-small-size);
+    font-size: var(--projects-panel-figure-size);
     line-height: var(--projects-panel-figure-leading);
     letter-spacing: var(--projects-panel-figure-tracking);
     color: var(--projects-panel-muted);
@@ -1234,7 +1277,8 @@ const selected = (project: { href?: string }) => project.href === `#${here}`;
       --projects-panel-masthead-size: var(--projects-panel-masthead-stacked);
       --projects-panel-sub-size: var(--projects-panel-sub-stacked);
       --projects-panel-copy-size: var(--projects-panel-copy-stacked);
-      --projects-panel-small-size: var(--projects-panel-small-stacked);
+      --projects-panel-point-size: var(--projects-panel-point-stacked);
+      --projects-panel-figure-size: var(--projects-panel-figure-stacked);
       --projects-panel-rail-size: var(--projects-panel-rail-stacked);
 
       padding: var(--projects-panel-inset) var(--projects-panel-side);
@@ -1319,12 +1363,19 @@ const selected = (project: { href?: string }) => project.href === `#${here}`;
       width: calc((1 + 2 * var(--projects-panel-plinth-overhang)) * 100%);
     }
 
-    /* A multiple of the points' own size, and it has to beat the 0.35em inside
-       each point or the list reads as eight lines rather than four pairs. */
+    /* A multiple of the point's TITLE — the larger of the two sizes inside a
+       point, now that they are two — and it has to beat the 0.35em of the figure
+       inside each one or the list reads as eight lines rather than four pairs.
+       `align-content` goes back to its default with it: one column has no height
+       to spread the list down, so the gap here is the gap rather than a floor. */
     .projects-panel__points {
       grid-row: 4;
       margin-top: 0;
-      row-gap: calc(var(--projects-panel-stack-points-gap) * var(--projects-panel-small-size));
+      /* The list is the last row here rather than a column beside the window, so
+         there is no stone under it to keep off. */
+      margin-bottom: 0;
+      align-content: normal;
+      row-gap: calc(var(--projects-panel-stack-points-gap) * var(--projects-panel-point-size));
     }
   }
 
@@ -1352,11 +1403,40 @@ const selected = (project: { href?: string }) => project.href === `#${here}`;
          has to know the landing exists. */
       --projects-panel-w: var(--landing-w);
 
+      /* ---- THE LIFT: how far above the screen's top edge this Section begins --
+         The Section starts above the fold so the word can be cut off the screen
+         above, and this is that overhang: the landing's own top margin less the
+         drop the masthead's cap top sits at. Two things need it and used to say
+         it twice — the port the turn rests on, and the Rail, which runs the
+         SCREEN's height rather than the Section's box and therefore has to
+         subtract it back off. */
+      --projects-panel-lift: calc(var(--landing-top) - var(--projects-panel-mast-top));
+
+      /* ---- THE REACH: what the drawing could not spend, and the three things
+         that spend it ---------------------------------------------------------
+         WHERE THE HEIGHT BRANCH BINDS, THE COMPOSITION IS NARROWER THAN THE PAGE.
+         The width branch solves `inset + (1 + stone) x W = --page-across`, so
+         this expression is that equation's residue: exactly 0 wherever the width
+         branch is the one that bound, and it only opens up by however much the
+         height cap cost the drawing. It cannot go negative either — W is the
+         SMALLER of the two branches.
+
+         THE STAGE MOVES BY IT AND THE TWO TYPE BLOCKS BESIDE IT GROW BY IT, which
+         is what keeps their edges on the window's when the window walks right.
+         The copy's right edge is the Frame's right edge; the points' is one
+         gutter short of the Frame's LEFT edge. Both hold at every window in the
+         band, because at reach 0 the Frame is flush with the composition and both
+         are back on the grid they were placed by. NOTES.md. */
+      --projects-panel-reach: calc(
+        var(--page-across) - var(--landing-inset) -
+          (1 + var(--landing-plinth-share)) * var(--projects-panel-w)
+      );
+
       /* The port the turn comes to rest on, which is the word's landing and not
          this Section's own edge: the cap top lands on the same line the Front
          Screen's name starts on, one screen up. The base rule says the same thing
          one term shorter, for a Section whose top edge IS the fold. */
-      scroll-margin-top: calc(var(--landing-top) - var(--projects-panel-mast-top));
+      scroll-margin-top: var(--projects-panel-lift);
 
       /* Exactly what the Section takes and no more, so the document is two
          screens: the Front Screen's height plus this is the fold plus the
@@ -1513,12 +1593,9 @@ const selected = (project: { href?: string }) => project.href === `#${here}`;
          So the stage carries the Frame and the slab out to the edge together.
 
          ZERO WHEN THE WIDTH BRANCH BINDS, and that is the whole reason this is
-         safe rather than a second thing to keep in step. The branch solves
-         `inset + (1 + stone) x W = --page-across`, so this expression IS that
-         equation's residue: it is exactly 0 there, by construction and not by
-         tuning, and it only opens up by however much the height cap cost the
-         drawing. It also cannot go negative — W is the SMALLER of the two
-         branches, so `(1 + stone) x W` can only be less than the page across.
+         safe rather than a second thing to keep in step — the length itself is
+         --projects-panel-reach, at the top of this block, where its derivation
+         and the two type blocks that follow it are written down.
 
          WHICH IS WHY IT MOVES RIGHT AND NOT LEFT. A leftward nudge is the thing
          NOTES.md forbids: it walks the Frame into the gutter the engineering
@@ -1528,13 +1605,13 @@ const selected = (project: { href?: string }) => project.href === `#${here}`;
          to 139px — and the Frame's right edge still stops one overhang short of
          the page, because that overhang is what lands on it.
 
-         WHAT IT COSTS, stated because it is a real cost and was chosen over two
-         alternatives: the Frame stops being flush with the composition's right
-         edge, so on a height-capped window the window ends past the right edge of
-         the copy paragraph above it — 119px at 1920x980. The slab stays symmetric
-         about the window, which is what buys that: the two ends are one number,
-         the reflection and the contact shadow are one percentage of the slab, and
-         the render's camera is still centred on the stone it drew.
+         WHAT IT USED TO COST, and no longer does: the Frame stops being flush
+         with the composition's right edge, so on a height-capped window it ended
+         past the right edge of the copy paragraph above it — 119px at 1920x980.
+         The copy comes with it now. The slab stays symmetric about the window,
+         which is what buys the rest: the two ends are one number, the reflection
+         and the contact shadow are one percentage of the slab, and the render's
+         camera is still centred on the stone it drew.
 
          A RELATIVE OFFSET AND NOT A TRANSFORM. `transform` would make the stage a
          stacking context, which traps the Frame's z-index inside it and stops the
@@ -1543,10 +1620,38 @@ const selected = (project: { href?: string }) => project.href === `#${here}`;
          is already `position: relative` moves the paint and leaves the layout
          alone, so the slab's percentages, the stage's measured height and the
          fall above it are all untouched. */
-      left: calc(
-        var(--page-across) - var(--landing-inset) -
-          (1 + var(--landing-plinth-share)) * var(--projects-panel-w)
-      );
+      left: var(--projects-panel-reach);
+    }
+
+    /* ---- and the two type blocks that keep their edges on the window's ------
+       THE COPY TAKES THE COLUMN THE MASTHEAD STOPPED USING. Down here the
+       masthead draws nothing — the Cut Title stands in its slot — so the sixth
+       column is free, and the paragraph starts one gutter to the right of where
+       the word ends rather than a whole column further over. That is only true
+       in the band, which is why the base rule still places it at the seventh:
+       out there the masthead is on the page and the copy would be printed over
+       the last two letters of it.
+
+       AND ITS RIGHT EDGE IS THE WINDOW'S. A negative margin rather than a width,
+       so the box still stretches to the grid area it was placed in and the reach
+       is added to whatever that came out as — no second copy of the column
+       arithmetic to keep in step. */
+    .projects-panel__copy {
+      grid-column: 6 / 13;
+      margin-right: calc(-1 * var(--projects-panel-reach));
+    }
+
+    /* THE POINTS RUN TO ONE GUTTER SHORT OF THE WINDOW'S LEFT EDGE. Same margin
+       and the same reason: the Frame's left edge is a column and a gutter into
+       the stage, and the stage has just moved right by the reach, so a list left
+       on the grid would leave a widening band of nothing between itself and the
+       window it is set beside. Growing by the same length holds the gutter
+       between them at exactly one, at every window in the band — which is the
+       clearance NOTES.md forbids spending, from the other side. The list's FOOT is
+       already the window's foot: the base rule keeps it one Plinth depth off the
+       composition's, which is the same length in both regimes. */
+    .projects-panel__points {
+      margin-right: calc(-1 * var(--projects-panel-reach));
     }
 
     /* WHY THE MASTHEAD STAYS IN THE MARKUP AND ONLY GOES INVISIBLE. Its box is
@@ -1661,13 +1766,56 @@ const selected = (project: { href?: string }) => project.href === `#${here}`;
        The insets are against the Section's padding box, which is its whole box —
        absolute insets ignore padding — so `left: 0` is the window's edge and the
        width IS the margin, with the items' own centring putting the type down the
-       middle of it. */
+       middle of it.
+
+       AND IT RUNS THE SCREEN'S HEIGHT AND NOT THE SECTION'S, which is the half of
+       that sentence the box used to get wrong. An index in a margin runs the
+       height of the PAGE, and down here the page is the screen: the Section
+       begins --projects-panel-lift above the screen's top edge, so subtracting
+       the lift back off is what puts the first name at the top of the window
+       instead of a page margin down from it, and dropping the bottom inset is
+       what puts the last one at the foot. What is left at each end is
+       --projects-panel-side, the page's own small margin — the three names are
+       spread `space-between`, so those two lengths are exactly where the first
+       and the last of them stand. */
     .projects-panel__rail {
       position: absolute;
       left: 0;
-      top: 0;
-      bottom: var(--projects-panel-inset);
+      top: calc(var(--projects-panel-side) - var(--projects-panel-lift));
+      bottom: var(--projects-panel-side);
       width: var(--projects-panel-inset);
+
+      /* AND IT ARRIVES WITH THE PAGE, for the reason the paragraph above it does
+         and which the lift has just made true of the Rail as well: the top of this
+         box is on the screen ABOVE, and the only thing that strip is for is the
+         cut word. A name standing there is half a name — the box runs off the top
+         of the Front Screen mid-letter — so it reads as a fragment beside the one
+         word the composition cut on purpose.
+
+         --turn AND NO WINDOW OF ITS OWN, which is the difference between this and
+         the copy's arrival. The paragraph waits until a third of the way across
+         because it answers a question the reader has not been asked yet; three
+         words in a margin answer nothing, so they can simply come up with the
+         page. Linear on the Kernel's own number, so it inherits the page turn's
+         ease, is exact at both resting places and at a deep link, and is a state
+         rather than a movement for a reader who asked for less motion.
+
+         `opacity` AND NOT A MIX, which is the other way round from the copy: what
+         a mix buys there is the paragraph's subpixel antialiasing, and every name
+         in here is drawn through a rotation, which has already cost it. What
+         opacity buys instead is one declaration for the whole box — the two inks,
+         the hover and the focus ring — and it costs the resting page nothing,
+         because --turn is exactly 1 where the turn comes to rest. */
+      opacity: var(--turn);
+    }
+
+    /* A BROWSER THAT RUNS NOTHING GETS THE RAIL, the same reader and the same
+       answer as the paragraph's: nothing would ever drive --turn for them, so an
+       arrival is an index deleted rather than an index waiting. */
+    @media (scripting: none) {
+      .projects-panel__rail {
+        opacity: 1;
+      }
     }
   }
 </style>

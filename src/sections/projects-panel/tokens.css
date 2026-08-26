@@ -20,32 +20,50 @@
   --projects-panel-side: 1.35rem;
 
   /* ---- the two constants the composition's width is solved from ----------- */
-  --projects-panel-fit: 0.5651;
-  --projects-panel-across: 0.972;
+  --projects-panel-fit: 0.6042;
+  --projects-panel-across: 0.9597;
 
-  /* ---- the type scale: shares of the composition, not of the window ------- */
-  --projects-panel-masthead-share: 0.0598;
-  --projects-panel-sub-share: 0.038;
-  --projects-panel-copy-share: 0.01;
-  --projects-panel-small-share: 0.00668;
-  --projects-panel-rail-share: 0.00549;
+  /* ---- the type scale: shares of the composition, not of the window -------
+     SIX, and it was five: the engineering point's title and its figure were one
+     size called `small` and are now two. NOTES.md has where each of these came
+     from, and the rule that binds them — MOVING EITHER OF THE FIRST TWO MEANS
+     RE-DERIVING `--projects-panel-fit`, and `--landing-fit` beside it, because
+     those two shares ARE the composition's height. */
+  --projects-panel-masthead-share: 0.0885;
+  --projects-panel-sub-share: 0.0466;
+  --projects-panel-copy-share: 0.01634;
+  --projects-panel-point-share: 0.01863;
+  --projects-panel-figure-share: 0.00858;
+  --projects-panel-rail-share: 0.01397;
 
-  /* Two of the five get a floor, and it is in px. NOTES.md says which and why. */
-  --projects-panel-small-floor: 11px;
+  /* Three of the six get a floor, and it is in px. NOTES.md says which and why. */
+  --projects-panel-point-floor: 14px;
+  --projects-panel-figure-floor: 11px;
   --projects-panel-rail-floor: 10px;
 
-  /* ---- the same five, for the one column outside the band ----------------- */
+  /* ---- the same six, for the one column outside the band -----------------
+     Two are stated against a neighbour rather than on their own, so the ratio
+     the band was drawn at survives into the one column: the subheading against
+     the masthead, and the point's title against its figure. The title's is 1.6
+     and not the band's 2.17 for the only reason a phone ever changes a ratio —
+     at 2.17 the longest title is two lines on a 375px screen before it has said
+     anything. */
   --projects-panel-masthead-stacked: clamp(2.5rem, 12vw, 5rem);
-  --projects-panel-sub-stacked: calc(0.625 * var(--projects-panel-masthead-size));
+  --projects-panel-sub-stacked: calc(0.527 * var(--projects-panel-masthead-size));
   --projects-panel-copy-stacked: clamp(0.85rem, 3.8vw, 1.05rem);
-  --projects-panel-small-stacked: clamp(0.8rem, 3.2vw, 0.95rem);
+  --projects-panel-point-stacked: calc(1.6 * var(--projects-panel-figure-stacked));
+  --projects-panel-figure-stacked: clamp(0.8rem, 3.2vw, 0.95rem);
   --projects-panel-rail-stacked: clamp(0.7rem, 2.9vw, 0.9rem);
 
   /* ---- the gutters, as shares for the same reason ------------------------- */
   --projects-panel-gap-share: 0.01935;
   --projects-panel-gutter-share: 0.01231;
   --projects-panel-copy-inset-share: 0.01407;
-  --projects-panel-points-gap-share: 0.01337;
+  /* THE POINTS' GAP IS A FLOOR AND NOT THE GAP. The list spreads itself down
+     whatever height row two leaves it, so what this states is the least air two
+     points may come to have — which is the air they will have once each of them
+     carries a paragraph instead of a figure. NOTES.md. */
+  --projects-panel-points-gap-share: 0.0224;
   --projects-panel-points-air-share: 0.01583;
 
   /* ---- how it is set ------------------------------------------------------ */

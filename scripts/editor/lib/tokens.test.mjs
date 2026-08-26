@@ -162,11 +162,11 @@ test('a value survives being read and written back, to the digit', () => {
   // The assertion that matters, and the one the first version of this got wrong
   // by asserting a bound on the step instead. A step coarser than the value's own
   // precision rounds a digit away the first time the control is touched — and
-  // `--projects-panel-fit: 0.5651` is a measured constant the composition's whole
+  // `--projects-panel-fit: 0.6042` is a measured constant the composition's whole
   // width is solved from, so a slider nudge would move the layout by dropping a
   // digit nobody asked it to drop.
   for (const value of [
-    '0.5651',
+    '0.6042',
     '0.0095',
     '0.00668',
     '0.972',
@@ -189,7 +189,7 @@ test('a value survives being read and written back, to the digit', () => {
 test('a step has no float noise in it, because it is written into the control', () => {
   // `10 ** -4` is 0.00009999999999999999, and that is what a `step` attribute and
   // the panel beside it would have read.
-  assert.equal(control('0.5651').step, 0.0001);
+  assert.equal(control('0.6042').step, 0.0001);
   assert.equal(control('0.0095').step, 0.00001);
   assert.equal(control('400').step, 1);
 });

@@ -35,24 +35,35 @@ Two things can bind it, and the smaller wins:
 
 | branch     | what it is                                                                 |
 | ---------- | -------------------------------------------------------------------------- |
-| the width  | what the page has across, less the Rail and its gap. `--projects-panel-across` is 1 − 0.0274, and 0.0274 is the Rail's own width plus the gap as a share of the composition — added up once, because a grid track cannot be sized from its own siblings. It rounds towards asking for LESS, which is safe twice over: the Rail's floor makes it relatively wider on a small window, and `100vw` counts a scrollbar the layout does not get. Over-asking cannot overflow either way, because the track is `minmax(0, …)`. |
+| the width  | what the page has across, less the Rail and its gap. `--projects-panel-across` is 1 − 0.0403, and 0.0403 is the Rail's own width plus the gap as a share of the composition — added up once, because a grid track cannot be sized from its own siblings. It rounds towards asking for LESS, which is safe twice over: the Rail's floor makes it relatively wider on a small window, and `100vw` counts a scrollbar the layout does not get. Over-asking cannot overflow either way, because the track is `minmax(0, …)`. |
 | the height | the screen less the page's two margins, divided by `--projects-panel-fit` — the composition's height as a share of its width. |
 
-### Where 0.5651 comes from, and when to re-derive it
+### Where 0.6042 comes from, and when to re-derive it
 
-The height ratio measures 0.5634:
+The height ratio measures 0.6024:
 
 ```
-  0.86  × 0.0598      the masthead's line, which is row one's top
-+ 1.66  × 0.0380      one subheading line (the rest of row one), plus the 0.66
+  0.86  × 0.0885      the masthead's line, which is row one's top
++ 1.66  × 0.0466      one subheading line (the rest of row one), plus the 0.66
                       the Frame is dropped by
 + 0.746923 / 1.945    the Frame: nine columns of twelve less a quarter of a
                       gutter, over its aspect ratio
 + 0.0869 × 0.746923   the Plinth the Frame stands on, which hangs below its foot
 ```
 
-`--projects-panel-fit` is 0.5651, which is that plus a third of a percent of
+`--projects-panel-fit` is 0.6042, which is that plus a third of a percent of
 slack for sub-pixel rounding and for the copy's floor on a small window.
+
+**THE TWO SHARES AT THE TOP ARE WHY THE DRAWING GOT SMALLER WHEN THE TYPE GOT
+BIGGER**, and that is the constant answering rather than fighting. The composition
+is self-similar and solved to a screen's height, so the masthead and the
+subheading are not free: every point the two of them gain comes out of the Frame
+and the stone below it. Raising them from 0.0598 and 0.0380 cost the drawing 6.2%
+of its width at 2560×1311 — the type went up by a third against the window it
+stands beside, which is the change that was asked for, and the window came down
+by that 6.2% to pay for it. Anything measured off the running page in pixels is
+therefore about six per cent larger than what the same ratios produce once they
+are shares; the ratios are the thing to keep.
 
 **One of those four terms is for something this folder does not contain yet** —
 the Plinth, which is #140's — and it is counted anyway. The alternative, fitting
@@ -65,7 +76,7 @@ of the four before the Frame landed, and the constant did not move.
 columns or its aspect, or either of the Plinth's two depths. Those seven numbers
 *are* this one. It was 0.5 before the Plinth arrived.
 
-### Two of the five sizes get a floor, and it is in px
+### Three of the six sizes get a floor, and it is in px
 
 A share of the composition stops being readable somewhere — a 1280×720 laptop
 draws the drawing at half the width a 2560 display does — so a floor is wanted.
@@ -74,7 +85,12 @@ that stops shrinking eventually outgrows the space the drawing left it.
 
 The points and the Rail can afford one because they sit in slack: the points
 column runs to two fifths of its row and the Rail is three words against the
-whole screen's height. **The copy cannot**, and it is the one that would most
+whole screen's height. Both of the points' two sizes get their own, and they are
+not one number times a ratio — a floor is about what is still readable, and the
+title being 2.17× the figure at the size the drawing wants it does not mean it
+has to be 2.17× the smallest the figure may be. Neither of the two binds inside
+the landing band, where the composition never gets below about 930px wide; they
+are there for the short windows outside it. **The copy cannot**, and it is the one that would most
 like to: its height goes as the *square* of its type against its column — a floor
 makes the type bigger and the column no wider — and it is measured against row
 one, which is a stated height. Floored at 0.7rem it ran 30px past a row of 71 at
@@ -121,6 +137,68 @@ the first line and push the subheading apart. Everything that wants air below th
 head asks for it by margin — which is what `--projects-panel-points-air-share`
 is, on top of the one hanging line the points have to clear.
 
+## The points spread themselves down the column
+
+The list is `align-self: stretch` in row two and `align-content: space-between`
+inside itself, so it takes the whole of the column and shares whatever is left
+between the four items. Today that is four titles and four figures with a great
+deal of air between them, which is what the drawing asks for; **when each point
+grows a paragraph the air is what gets spent**, down to
+`--projects-panel-points-gap` and no further. So that Token is a floor rather than
+the gap, and there is one rule drawing both states instead of a number somebody
+has to keep re-choosing as the words arrive.
+
+`stretch` costs row two nothing, which is the part worth checking rather than
+assuming: what an item contributes to a row's size is its max-content height
+either way, so this changes what the box does with the height it is given and not
+how much it is given. Row two is still the stage's, until the day the points
+outgrow it — at which point row two grows, and inside the band the composition is
+no longer one screen. That is the one thing to watch as the paragraphs land, and
+it is a content decision rather than a bug.
+
+**Its foot is the window's foot and not the page's.** Row two runs to the
+composition's foot, and the composition's foot is the page's — the Plinth stands
+on it, and there is no margin under a thing standing on the floor — so a list
+spread down the whole of that lands its last figure on the bottom edge of the
+screen. Worse than that: the slab overhangs the Frame to the LEFT by 0.0585 of the
+composition more than this column's own clearance from the window, so the bottom
+of the column is over stone. The bottom margin is one Plinth depth, which puts the
+last line on the line the window's own foot stands on and leaves the depth below
+it to the marble.
+
+One Plinth depth and **not the slab's whole box**, which was tried and reverted.
+The box begins `--projects-panel-plinth-back` higher — the strip of stone behind
+the window — and clearing that as well costs 30px at the narrow end of the band,
+where this list is what sizes row two and every pixel of margin is a pixel the
+composition grows by. It also buys nothing: the plate is a rendered block in
+perspective, so the stone at its left end is drawn well below the top of the box
+that holds it, and the line above the window's foot is over the picture's own
+empty corner. Checked at 1280×900 and 2560×1311 by looking, which is the only way
+that question can be answered — it is a fact about the plate, not about the boxes.
+
+### The one window this does not come out exact at
+
+Swept over 120 window shapes in the band — twelve widths from 1100 to 3440, ten
+heights from 700 to 1440 — the marble lands in the page's bottom-right corner to
+within half a pixel, the copy's right edge is the window's to within nothing at
+all, and the composition is exactly one screen. **Three shapes are not: 1100 wide
+at 1200, 1311 and 1440 tall, where the composition comes out 16px too tall and the
+marble stops that far above the screen's foot.**
+
+It is this list that does it, and the cause is worth stating because it is the one
+that will come back. At 1100 the composition is at its narrowest — the width
+branch binds — so the points' column is 224px, three of the four titles wrap, and
+the list's content plus its two margins finally exceeds what the stage asks of row
+two. Row two is the larger of the two, so the composition grows.
+
+It was left rather than tuned away, and the two obvious tunings are why. Shrinking
+the title until the longest one fits 224px on one line means a share of 0.0148
+against 0.0186 — a fifth off the type at *every* window, to square one. Shrinking
+the minimum gap by 5px each does it too, and makes the state this list is actually
+being built for — four paragraphs rather than four figures — tighter everywhere,
+for the same one window. Both are the author's Tokens and both are one drag away
+if that window ever matters.
+
 ## The masthead, the Cut Title, and why this is a relationship
 
 The word **PROJECTS** is drawn twice and appears once: in the one-screen band the
@@ -164,10 +242,19 @@ Inside the band this Section's box begins above the fold — by the cut the word
 shown at plus `--landing-mast-top`, 39px at 1440x900 — and that is the device
 rather than an overshoot: the strip is exactly where the Cut Title stands. What
 that costs is that **anything drawn in row one is drawn on the screen above.** The
-masthead there is invisible and the subheading hangs below it, so the paragraph in
-columns seven to twelve was the one thing left, and it showed as two lines of small
-type in the white beside the word, answering a question the reader had not been
-asked yet.
+masthead there is invisible and the subheading hangs below it, so the paragraph
+beside them was the one thing left, and it showed as two lines of small type in
+the white beside the word, answering a question the reader had not been asked yet.
+
+**Which column it starts in is the band's decision and not the base rule's.**
+Outside the band the paragraph is columns seven to twelve, because the masthead is
+on the page and a paragraph starting at the sixth would be printed over the last
+two letters of it. Inside the band the masthead draws nothing — the Cut Title
+stands in its slot — so the sixth column is free, and the copy starts one gutter
+to the right of where the word ends rather than a whole column further over. That
+is the only thing the base rule and the landing block disagree about here, and
+what it turns on is the masthead being invisible rather than anything about the
+width.
 
 So it arrives instead. Three Tokens say when — `--projects-panel-copy-arrive-from`
 and `-to` are the two points of the crossing it runs between, and
@@ -314,6 +401,40 @@ anything listening.
 `role="list"` on a list that already is one, because the items carry
 `list-style: none` and VoiceOver drops list semantics from a list with no
 markers.
+
+### In the band it runs the SCREEN's height, and it arrives with the page
+
+An index in a margin runs the height of the **page**, and inside the landing band
+the page is the screen — which the Section's own box is not. The Section begins
+`--projects-panel-lift` above the screen's top edge so the word can be cut off the
+screen above, and it ends on the screen's bottom edge because the Plinth stands
+there. So the Rail subtracts the lift back off its top and drops the bottom inset
+the base rule carries, leaving `--projects-panel-side` at each end: the three
+names are spread `space-between`, so those two lengths are exactly where the first
+and the last of them stand.
+
+`--projects-panel-lift` is `--landing-top` less the masthead's drop, and it was
+already written out once as the Section's `scroll-margin-top` — the port the turn
+rests on is the same length measured from the other end. Naming it is what stops
+the two drifting.
+
+**And that puts the Rail in the strip the copy's arrival exists for.** The top of
+the box is on the Front Screen, and the only thing that strip is for is the cut
+word; a name standing there is half a name, because the box runs off the top of
+the screen mid-letter. So the Rail is drawn against `--turn`, the same device and
+for the same reason — the `turn` Check states that rule for the paragraph, in the
+failure it raises.
+
+Two differences from the paragraph's, both deliberate. It takes **no window of its
+own**: the copy waits until a third of the way across because it answers a
+question the reader has not been asked yet, and three words in a margin answer
+nothing. And it is written as **`opacity` rather than a mix**: what the mix buys
+the paragraph is its subpixel antialiasing, and every name in here is drawn
+through a rotation, which has already cost it — so opacity is one declaration for
+the two inks, the hover and the focus ring, and it costs the resting page nothing
+because `--turn` is exactly 1 where the turn comes to rest. A browser that runs no
+script gets the Rail outright, the same escape and the same reader as the
+paragraph's.
 
 ## The words
 
@@ -769,7 +890,7 @@ with whichever ticket gives the Portfolio a print sheet.
 The marble slab the Frame stands on, the Frame's live reflection lying in it, the
 contact shadow where the two meet, and the recording inside the window. It is the
 last quarter of the composition's height and the reason the fit constant is
-0.5651 rather than 0.5.
+0.6042 rather than 0.5.
 
 ### Every length is a share of the FRAME's width
 
@@ -913,10 +1034,39 @@ Check measures the gutter against the composition's own and fails if the window 
 moved *towards* the list. It fires at 0.59px of gutter if the width branch and the
 reach are ever given different ideas of how wide the page is.
 
-What it costs is that the Frame stops being flush with the composition's right
-edge on a height-capped window: at 1920×980 the window ends 119px past the right
-edge of the copy paragraph above it. That was chosen over letting the slab go
-asymmetric, and over leaving the stone short.
+What it used to cost is that the Frame stopped being flush with the composition's
+right edge on a height-capped window: at 1920×980 the window ended 119px past the
+right edge of the copy paragraph above it. That was chosen over letting the slab
+go asymmetric, and over leaving the stone short — and it is no longer the choice,
+because the two type blocks beside the window come with it now.
+
+#### The reach is named, and three boxes spend it
+
+`--projects-panel-reach` is the length, declared once at the top of the landing
+block. The stage **moves** by it; the copy and the points **grow** by it, through
+a negative right margin, so each of them still stretches to the grid area it was
+placed in and there is no second copy of the column arithmetic to keep in step.
+
+What that buys is two edges that hold at every window in the band rather than at
+the ones the width branch happens to bind on:
+
+| block | its right edge | why |
+| --- | --- | --- |
+| the copy | the Frame's right edge | the paragraph and the window it stands over are one block of the page, and a window 119px wider than the text above it reads as two |
+| the points | one gutter short of the Frame's **left** edge | the list is set beside the window, and a list left on the grid opens a widening band of nothing between itself and the thing it is beside |
+
+Both degenerate correctly, which is what makes them safe rather than a third thing
+to keep in step: at reach 0 the Frame is flush with the composition and both boxes
+are back on the columns they were placed by. The points' clearance is the same one
+the leftward nudge is forbidden for spending, held from the other side — growing
+by the same length the window moved holds it at exactly one gutter.
+
+**The points' width is what decides whether a title is one line.** The longest of
+the four wants about 0.304×W at the share the title is set at, and three columns
+is 0.241×W — so on a window with little reach the longest two wrap. That is the
+intended degradation and not a size to solve backwards from: `text-wrap: balance`
+makes the two lines halves of a title, and the list spreads down its column
+anyway.
 
 ### The heights this was got wrong at
 
@@ -1239,8 +1389,8 @@ same `dist/`, at 1440×900.
 **The landing has landed, and the base regime is what is left below the band.**
 Inside the band the two numbers that used to be parked here are in the landing
 block at the foot of the component: the Rail leaves the grid to stand in the
-page's own margin (so the width branch loses the 0.972), and the fit constant is
-re-derived to 0.5603 for the height the Section gives up above the fold. Both come
+page's own margin (so the width branch loses the 0.9597), and the fit constant is
+re-derived to 0.5971 for the height the Section gives up above the fold. Both come
 from `--landing-w`, so neither is written here. The masthead comes out 76.42px in
 the band against 74.28px outside it, 2.9% larger, and the Rail stands at x 0..81
 rather than inside the composition at x 81..96 — which is the live page's own

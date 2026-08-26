@@ -285,7 +285,7 @@ export function control(value) {
       // thousandth of the range is a slider a finger can use; the value's OWN
       // precision is what the file already holds, and a step coarser than that
       // rounds a digit away the first time the control is touched.
-      // `--projects-panel-fit: 0.5651` is the case: a thousandth writes 0.565
+      // `--projects-panel-fit: 0.6042` is the case: a thousandth writes 0.604
       // back, and the composition's solved width moves because a slider was
       // nudged. Whichever is finer wins.
       step: Math.min(power(-decimals(measured[1])), power(Math.floor(Math.log10(span / 1000)))),

@@ -42,7 +42,7 @@
     /* The Panel composition's width, re-solved for the landing. Two terms move
        against the Panel's own base solve: the Rail leaves the grid to stand in
        the page's margin, so the width branch is the page's own margin ONCE rather
-       than 0.972 of the screen, and the height branch is the screen less the two
+       than 0.9597 of the screen, and the height branch is the screen less the two
        margin ONCE and the half-leading the word's cap top stands on.
 
        THE WIDTH BRANCH SPENDS THE PAGE ACROSS ON THE DRAWING AND THE STONE. The
