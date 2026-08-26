@@ -78,7 +78,7 @@ cannot be verified there even by hand.
 | `console`        | anything logs an error or throws, including across a theme flip — warnings deliberately not, because on this page they are nearly always Chromium's own |
 | `faces`          | a declared `@font-face` will not load, or no face Token names a declared family |
 | `front-screen`   | the Front Screen's rhyme, its one-screen budget, the Cut Title's cut or its accessible name, the crossing's span, the switch's ARIA, or the type's place in the Effect Stack breaks |
-| `projects-panel` | a control in the Frame leaves the centre its own Token names, the window and its titlebar are cut to two radii, the recording's box stops being inset on three sides, the occlusion of the subheading's second line moves or stops being painted, the titlebar reports a rung it is not made of, the chrome grows a control, the small-Frame reduction starts asking about the window instead of the Frame, the Plinth's depths stop being shares of the Frame, its slab stops being symmetric about it, its bottom-right corner comes off the page's on either branch of the fit, or the Frame moves towards the engineering points instead of away from them, the reflection stops being a life-size fold of the window, the marble stops being drawn without script, a reader who asked for reduced motion is charged for the recording, or a reader who runs no script at all loses the copy that arrives with the page turn |
+| `projects-panel` | a control in the Frame leaves the centre its own Token names, the window and its titlebar are cut to two radii, the recording's box stops being inset on three sides, the occlusion of the subheading's second line moves or stops being painted, the titlebar reports a rung it is not made of, the chrome grows a control, the small-Frame reduction starts asking about the window instead of the Frame, the Plinth's depths stop being shares of the Frame, its slab stops being symmetric about it, its bottom-right corner comes off the page's on either branch of the fit, or the Frame moves towards the engineering points instead of away from them, the reflection stops being a life-size fold of the window, the marble stops being drawn without script, a reader who asked for reduced motion is charged for the recording, a reader who runs no script at all loses the copy that arrives with the page turn, the titlebar grows past the clearance the clip on disk was cut with, or that clip stops opening on that many rows of flat, light ground |
 | `ground`         | paper is not light, or the Turn does not arrive dark, in either theme         |
 | `turn`           | the Kernel's published landing measure — cap, drop or the stone the width branch leaves room for — disagrees with the Panel's own arithmetic, the Panel's masthead is visible or has lost its box, the Cut Title is not standing in that masthead's slot, the word moves or resizes across the crossing, either end of the morph is not the outline the Bake wrote, a wheel notch does not turn the page or bring it back, a notch begun on the photographs turns it, or the paragraph that arrives with the crossing is painted at the top of the document, is still arriving at the landing, moves to get there, or is left on its own compositing layer once it has |
 | `moments`        | a Timeline cannot be seeked, does not survive a scroll, moves nothing, or will not release |
@@ -128,6 +128,22 @@ files, and that is where it had to be read. #141 deleted the second declaration
 and the assertion went with it; `run(ctx)` still hands over `repoRoot` for the
 next one of these. **A Check may read the repository, and should, when the thing
 that can break is an agreement between two files rather than anything on screen.**
+
+The next one turned up, and it is the same shape at a different scale: the Frame's
+titlebar sits OVER the recording, so it covers the first rows of the page that was
+filmed, and the clip in `portfolio/video/` is cut with exactly that many rows of
+clear ground at the top so the vault's own toolbar is not sliced in half by the
+glass. Neither half is visible: the clip is a video, so what the strip covers is a
+picture, and a titlebar that has grown past the clearance looks like a titlebar.
+So the Check imports the number from `design/censor/capture-frame.mjs` and asserts
+BOTH directions — the strip fits inside it, and the poster (frame 0 by
+construction, and the still a reduced-motion reader gets) opens on that many rows
+of one flat light value. **Where a Check reads a number out of the repo, it has to
+assert both ends of the agreement.** Asserting only that the page fits the number
+passes a Lens trimmed to fit a recording nobody re-cut; asserting only the file
+passes a recording with room for a strip that has since grown. It is also a
+CEILING rather than an equality in both halves, because a shorter strip is free —
+it shows a little more of a margin that is white either way.
 
 It is also the first Check to measure at a window chosen for a REGIME rather than
 for a size. The Frame's chrome sheds its small glyphs below a Frame of 520px and

@@ -1,4 +1,10 @@
 import { DESK, open, settle, withoutOrigin } from '../lib/page.mjs';
+/* How many rows of the page the recording in `portfolio/video/` was cut with
+   clear at the top. Imported rather than restated because that is the whole
+   point of the assertion it feeds: the two numbers have to be the same one, and
+   a Check holding its own copy of the thing it is checking checks nothing. It
+   is a dev-only module of Node builtins, like this file. */
+import { BAR as CLIP_CLEARANCE } from '../../../design/censor/capture-frame.mjs';
 
 /**
  * The Frame's measured geometry, as assertions.
@@ -28,6 +34,17 @@ import { DESK, open, settle, withoutOrigin } from '../lib/page.mjs';
  * small Frame, and that is the one window where the two questions give different
  * answers. Measured at DESK alone, the whole of that mechanism could be a media
  * query and this Check would not notice.
+ *
+ * AND ONE AGREEMENT THAT IS NOT ABOUT THE PAGE AT ALL. The titlebar sits over
+ * the recording rather than above it, so the strip covers the first rows of the
+ * page that was filmed — and the clip is filmed with exactly that many rows of
+ * clear ground at the top so the vault's own toolbar is not cut in half by it.
+ * Neither half of that can be seen on screen: the clip is a video, so what the
+ * strip covers is a picture. `drawn()` asserts the strip fits inside the
+ * clearance the module declares, and `opensClear()` asserts the file on disk
+ * carries it. Both halves are needed — one on its own passes a Lens trimmed to
+ * fit a recording nobody re-cut, and the other passes a recording with room for
+ * a strip that has since grown.
  */
 
 /** Wide enough that a viewport gate at 520 would not fire, short enough that the
@@ -284,6 +301,23 @@ async function readPage(page) {
         frame: { width: fr.width, height: fr.height, ratio: fr.width / fr.height },
         ratioToken: token('ratio'),
         bar: bar.getBoundingClientRect().height,
+        /* The titlebar's height in the RECORDING's own pixels — the coordinates
+           the clip was cut in, and the only ones the clearance can be compared
+           in. `object-fit: cover` resolves to the larger of the two scales;
+           taking the max rather than assuming the width branch means this
+           survives a Frame whose ratio stops being wider than the recording's.
+           `null` when there is no recording to measure against. */
+        barRows: (() => {
+          const lead = document.querySelector('.projects-panel__clip');
+          if (lead === null) return null;
+          const box = lead.getBoundingClientRect();
+          const scale = Math.max(
+            box.width / Number(lead.getAttribute('width')),
+            box.height / Number(lead.getAttribute('height')),
+          );
+          if (!(scale > 0)) return null;
+          return bar.getBoundingClientRect().height / scale;
+        })(),
         cornerToken: token('corner'),
         insetToken: token('inset'),
         barToken: token('bar'),
@@ -513,6 +547,37 @@ function drawn(read) {
     failures.push(
       `at ${where} the titlebar is ${read.bar.toFixed(2)}px against the ${px(read.barToken).toFixed(2)}px its ` +
         'share of the Frame asks for',
+    );
+  }
+
+  // ---- and that the recording was cut with room for it --------------------
+  // THE ONE ASSERTION HERE THAT IS ABOUT A FILE ON DISK RATHER THAN THE PAGE,
+  // and it is the shape NOTES.md says to reach for: the thing that can break is
+  // an agreement between two artefacts, and nothing on screen looks wrong when
+  // it does.
+  //
+  // The recording is laid in flush to the window and the titlebar is over the
+  // top of it, so the strip eats the first N rows of the page that was filmed.
+  // The clip is filmed with exactly `BAR` rows of the page's own ground above
+  // the vault's toolbar — design/censor/capture-frame.mjs — and a titlebar that
+  // grows past that clearance puts the toolbar back under the glass. Which is
+  // NOT a thing a Check could see: the clip on disk is a video, so what the
+  // strip covers is a picture, and the only place the disagreement exists is
+  // between the Lens's Token and the number the capture was made with.
+  //
+  // It is a CEILING and not an equality, deliberately. Making the strip shorter
+  // is free — it leaves a little more of the margin showing, which is white
+  // either way — and only a strip that needs more room than the clip was given
+  // is a fault. So this is quiet about a Lens the author has trimmed and loud
+  // about one that would need the clip re-cut.
+  if (read.barRows === null) {
+    failures.push(`at ${where} there is no recording in the Frame to measure the titlebar against`);
+  } else if (read.barRows > CLIP_CLEARANCE + LENGTH_TOLERANCE) {
+    failures.push(
+      `at ${where} the titlebar covers the recording's first ${read.barRows.toFixed(2)} rows and the clip ` +
+        `was cut with ${CLIP_CLEARANCE} of clear ground at the top — the vault's toolbar is back under ` +
+        'the glass. Either trim the Lens, or re-cut the clip against a larger BAR in ' +
+        'design/censor/capture-frame.mjs (design/censor/README.md is the procedure)',
     );
   }
 
@@ -1495,6 +1560,102 @@ async function frosted(browser, origin) {
   }
 }
 
+/**
+ * The other end of the clearance: does the CLIP ON DISK actually carry the band
+ * the titlebar is allowed to cover?
+ *
+ * `drawn()` asserts that the strip fits inside `CLIP_CLEARANCE`. That is half an
+ * agreement, and on its own it is the wrong half — the number lives in a module,
+ * so a Lens trimmed to fit it passes while a recording that was never re-cut
+ * sits in `portfolio/video/` with the vault's toolbar back under the glass. This
+ * is the half that reads the file.
+ *
+ * The POSTER is what it reads, and not a frame of the video: the poster is
+ * frame 0 by construction — design/censor/README.md extracts it from the first
+ * frame — and frame 0 is the only moment the band is meant to be clear. It is
+ * also the still a reduced-motion reader is given, so it is the frame that has
+ * to be right whether or not anything ever plays. Decoded in the page because
+ * that is where the WebP decoder is; there is none in Node and adding one for
+ * this would be a dependency for one assertion.
+ *
+ * WHAT IT ASSERTS IS FLATNESS AND NOT A COLOUR. "The clip opens with `BAR` rows
+ * of the page's own unbroken ground at the top" is the promise; that the ground
+ * is white is the vault's business and the seeded theme's, and pinning the value
+ * here would be a Check with an opinion about somebody else's palette. Light it
+ * does insist on, in a band as wide as `ground`'s are, because a dark band would
+ * mean the capture lost its theme — and that is a failure with its own history
+ * in this folder.
+ */
+async function opensClear(browser, origin) {
+  const { context, page } = await open(browser, origin, { viewport: DESK });
+  try {
+    const read = await page.evaluate(async (rows) => {
+      const clip = document.querySelector('.projects-panel__clip');
+      const url = clip?.getAttribute('poster');
+      if (!url) return { missing: 'the recording carries no poster to read the clip from' };
+
+      const response = await fetch(url);
+      if (!response.ok) return { missing: `the poster at ${url} answered ${response.status}` };
+      const bitmap = await createImageBitmap(await response.blob());
+      const canvas = new OffscreenCanvas(bitmap.width, bitmap.height);
+      const context2d = canvas.getContext('2d', { willReadFrequently: true });
+      context2d.drawImage(bitmap, 0, 0);
+
+      /* The band, in the poster's own pixels — which are the page's, because the
+         poster is the capture at its own size. One row short of `rows`: the
+         clearance is a ceiling on what the strip covers, and the row at exactly
+         that offset is the first one it is allowed not to. */
+      const band = context2d.getImageData(0, 0, bitmap.width, Math.min(rows - 1, bitmap.height));
+      let min = [255, 255, 255];
+      let max = [0, 0, 0];
+      let sum = 0;
+      const pixels = band.data.length / 4;
+      for (let at = 0; at < band.data.length; at += 4) {
+        for (let channel = 0; channel < 3; channel++) {
+          const value = band.data[at + channel];
+          if (value < min[channel]) min[channel] = value;
+          if (value > max[channel]) max[channel] = value;
+        }
+        sum += (band.data[at] + band.data[at + 1] + band.data[at + 2]) / 3;
+      }
+      return {
+        url,
+        width: bitmap.width,
+        height: bitmap.height,
+        spread: Math.max(...max.map((high, channel) => high - min[channel])),
+        mean: sum / pixels,
+      };
+    }, CLIP_CLEARANCE);
+
+    /** @type {string[]} */
+    const failures = [];
+    if ('missing' in read) return [read.missing];
+
+    /* Wide enough that a re-encode at a different quality cannot trip it, tight
+       enough that a row of tiles or the top of a pill cannot hide in it: the
+       band as filmed is one flat value, and anything with a photograph or a
+       control in it spreads by a hundred and more. */
+    if (read.spread > 24) {
+      failures.push(
+        `the clip's first ${CLIP_CLEARANCE - 1} rows spread ${read.spread} levels — the recording was not cut ` +
+          `with ${CLIP_CLEARANCE} rows of clear ground at the top, so the Frame's titlebar is over the vault's ` +
+          'own chrome. Re-cut it: design/censor/README.md, and design/censor/capture-frame.mjs for the number',
+      );
+    }
+    if (read.mean < 178) {
+      failures.push(
+        `the clip's first ${CLIP_CLEARANCE - 1} rows average ${read.mean.toFixed(1)} of 255 — the band behind ` +
+          'the titlebar is meant to be the page\'s light ground, so this clip was captured against a dark ' +
+          'grid. The origin seeds the theme; design/tools/check-capture-origin.mjs is what refuses one that ' +
+          'stopped',
+      );
+    }
+    return failures;
+  } finally {
+    await context.close();
+  }
+}
+
 export const check = {
   name: 'projects-panel',
   title: "the Frame and the Plinth: geometry, occlusion, reflection, ladder and reduction",
@@ -1545,7 +1706,9 @@ export const check = {
         }
         notes.push(
           `at ${viewport.width}x${viewport.height}: a Frame ${read.frame.width.toFixed(0)}px wide, titlebar ` +
-            `"${read.ladder.tier}", dropped ${read.occlusion.drop.toFixed(1)}px into the second line`,
+            `"${read.ladder.tier}", dropped ${read.occlusion.drop.toFixed(1)}px into the second line, ` +
+            `covering ${read.barRows === null ? '?' : read.barRows.toFixed(2)} of the clip's ` +
+            `${CLIP_CLEARANCE} clear rows`,
         );
       } finally {
         await context.close();
@@ -1558,6 +1721,10 @@ export const check = {
     notes.push('with reduced motion: the poster, and not one byte of the recording');
     failures.push(...(await frosted(browser, origin)));
     notes.push('with url() refused: the Lens falls back to frosted, and the strip is still a strip');
+    failures.push(...(await opensClear(browser, origin)));
+    notes.push(
+      `the clip on disk: its first ${CLIP_CLEARANCE - 1} rows are the page's own flat, light ground`,
+    );
 
     return { failures, notes };
   },

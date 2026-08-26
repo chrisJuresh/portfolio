@@ -17,6 +17,8 @@ design/censor/
   mosaic.py                bakes the confirmed ones down to a handful of blocks
   mosaic/                  where it puts them — gitignored, a derivative
   capture-origin.mjs       the origin the clip is recorded against
+  capture-frame.mjs        the room the Frame's titlebar needs at the top of the
+                           page, and the travel that follows from it
 ../record/
   projects/photos-censored the settings the clip is made with — a record workspace
 ../tools/
@@ -102,15 +104,16 @@ node design/tools/check-capture-origin.mjs      # is this the signed origin?
 The origin stands in front of the vault and serves the baked mosaic wherever the
 vault would serve a confirmed photograph, so nothing downstream of it — the
 browser included — is ever sent an unobscured one. It also seeds **stacking and
-the theme**, which is the other half of what it exists for; see below. It refuses
+the theme** and serves **the Frame's titlebar its room**, which is the other half
+of what it exists for; see below. It refuses
 to start against an unsigned list, a list signed against a different roll, a
 stale bake, or one baked finer than the ceiling above.
 
 The two checks are both needed and neither implies the other. `collect-roll
 --check` asks whether the roll still describes the live grid; `check-capture-origin`
-asks whether the origin serves what was signed and whether the grid mounts
-stacked and light, by driving the origin the way the clip does and reading the
-bytes off the network.
+asks whether the origin serves what was signed, whether the grid mounts
+stacked and light, and whether the vault's toolbar clears the Frame's titlebar, by
+driving the origin the way the clip does and reading the bytes off the network.
 
 **6. Record.**
 
@@ -183,9 +186,10 @@ the mosaic is weakened, this list stops being a defence.
 | | | from |
 |---|---|---|
 | viewport | 1440×900 | `record/projects/photos/project.toml` |
-| scroll | 0 → 1200 | `record/projects/photos/actions/scroll-peek.overrides.toml` |
-| band | document y ∈ [0, 2100] | scroll range plus one viewport |
+| scroll | 0 → 1250 | `capture-frame.mjs` — `TRAVEL` |
+| band | document y ∈ [0, 2150] | scroll range plus one viewport |
 | stacking | **on** | the view the Panel is meant to show off |
+| the titlebar's room | `--header-top: 64px` | `capture-frame.mjs` — the Frame's strip plus the vault's own 14 |
 
 The **theme is deliberately not in that table**, and that is a measurement rather
 than an oversight. It repaints the ground behind the photographs and moves
@@ -195,6 +199,16 @@ clip captured under either, `collect-roll.mjs` has no theme flag and needs none,
 and the light clip is covered by the review signed against the dark one. What
 does have to be held is the *capture*, and that is the origin's job and
 `check-capture-origin`'s — see below.
+
+**The last two rows move together, and that is the only reason the margin was
+free.** Pushing the page down by the titlebar's 50px moves every tile down by
+50, so on an unchanged travel the last row leaves the band, the digest changes,
+and a review of 84 photographs is orphaned. The travel is 50 longer instead, so
+the band's far edge moves down by exactly as much and `top + 50 < travel + 50 +
+height` is the test that was already being applied — the same 84 photographs, in
+the same order, under the same `roll_digest`. Verified rather than reasoned:
+`e7e9362c…` before and after. `capture-frame.mjs` is where both halves live, and
+they cannot be moved apart without a re-review.
 
 The vault sorts newest-first, so importing a single photograph shifts the whole
 roll and the confirmed list silently stops covering the clip. Same if record's
@@ -206,9 +220,12 @@ node design/tools/collect-roll.mjs --check
 
 It exits non-zero and says `DRIFTED` when the roll it finds is not the roll on
 disk, or when the geometry asked for is not the geometry the roll was assembled
-at. A drifted roll means collect and review again — there is no partial re-review,
-because the photographs a shifted roll brings in are exactly the ones nobody has
-looked at.
+at, and it says WHICH of the two. A roll whose photographs changed means collect
+and review again — there is no partial re-review, because the photographs a
+shifted roll brings in are exactly the ones nobody has looked at. A roll that
+reproduces the digest and disagrees only about the geometry needs collecting and
+nothing else: the review still covers the clip, and the boxes are what
+`review.html` lays out.
 
 Two habits are guarded against rather than documented away, because both end in a
 signed review quietly not covering the clip:
@@ -317,6 +334,52 @@ the review signed against the dark grid covers the light clip unchanged. That is
 why there is no `theme` field in `roll.json` beside `stacking`, and why the two
 are not symmetrical — stacking changes what the camera passes over, and the theme
 changes only what it looks like.
+
+### And it must be filmed with room for the Frame's titlebar
+
+The Panel stands the clip inside a Safari-style window whose titlebar is a Lens,
+and the recording runs **flush to the window on all four sides** so that there is
+a photograph behind the glass rather than a flat fill. Which means the strip is
+over the top of the page rather than above it: at the size the Panel draws the
+Frame, it covers the recording's **first 50 rows**, at every window, because the
+clip is scaled to the Frame's width and 0.034583 × 1440 = 49.79 whatever that
+width is.
+
+The vault's floating toolbar sits 14px down and stands 56px tall, so the glass
+cut it through the middle and what showed under the strip was the bottom two
+pixels of a pill. So the page is filmed with the strip's height of **its own
+ground** above that toolbar — `--header-top: 64px`, one custom property, served
+as a stylesheet from the capture origin. At rest the glass has the page's white
+ground behind it and the toolbar is clear of it; the moment the clip scrolls,
+photographs travel up into that band and pass under the Lens, which is the thing
+the Lens is for.
+
+It is the stacking problem in one respect and not in the others. Like stacking it
+has to be in the page before record's own hook could put it there — record
+photographs a settled page once before the first Frame of the Timeline, and that
+is the one frame the whole margin is for. Unlike stacking it is not a setting at
+all: `--header-top` is a tunable of the vault's material, written **inline** on
+the root by `ui/src/main.js` before the app mounts, which is why the capture's one
+declaration is `!important` and why both tools read the toolbar's box back
+afterwards instead of trusting that it landed. A sheet that was served, parsed and
+lost the cascade is the failure shape this whole folder is built to refuse.
+
+And unlike either of them it is **not the vault's to fix**. Nothing about the
+photo vault wants 64px of white above its toolbar; the margin exists because of
+something standing in front of the page, so it belongs to the capture.
+
+Two guards, and both halves are needed:
+
+- `check-capture-origin.mjs` asks the ORIGIN whether the toolbar clears the
+  strip, and deliberately does not lay the margin on itself — a check that did
+  would pass against an origin that had stopped serving it.
+- the `projects-panel` Check, in the blocking suite, asserts it from both ends:
+  that the Frame's titlebar still fits inside the clearance `capture-frame.mjs`
+  declares, and that the **clip on disk** opens with that many rows of flat,
+  light ground. Either half alone is worthless — one passes a Lens trimmed to fit
+  a recording nobody re-cut, the other passes a recording with room for a strip
+  that has since grown. A Lens made SHORTER is free and passes quietly; one that
+  grows past the clearance fails the build and says which of the two to move.
 
 ### Two more things [#65] hit, and why neither is worked around any more
 

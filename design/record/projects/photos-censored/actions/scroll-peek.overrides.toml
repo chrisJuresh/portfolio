@@ -1,4 +1,17 @@
 # The travel design/censor/roll.json was collected over. Moving it moves which
 # photographs the clip passes over, so the signed list stops covering it and
 # `node design/tools/collect-roll.mjs --check` says DRIFTED.
-distance = 1200
+#
+# THIS NUMBER IS NOT FREE AND IT IS NOT RECORD'S. It is 1200 -- the travel the
+# review was signed against -- plus the 50px the page is pushed down by so that
+# the vault's toolbar clears the Frame's glass titlebar. The two move together
+# by construction: every tile's top goes down by 50 and so does the band's far
+# edge, so the clip passes over exactly the same 84 photographs in the same
+# order and roll_digest does not change. Change one without the other and the
+# signed review stops covering the clip.
+#
+# design/censor/capture-frame.mjs is where both halves are stated and is the
+# authority. It exports this as TRAVEL, and collect-roll.mjs and
+# check-capture-origin.mjs read it from there; record reads this file, which is
+# why the number is written out here as well and has to be kept equal.
+distance = 1250

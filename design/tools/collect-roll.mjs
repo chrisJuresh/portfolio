@@ -26,20 +26,31 @@
    in the safe direction is not possible: a photograph missing from the roll is
    one the author never reviews and the mosaic never covers.
 
-   THE GEOMETRY IS RECORD'S, RESTATED
-   -----------------------------------
+   THE GEOMETRY IS RECORD'S, RESTATED — EXCEPT THE TRAVEL, WHICH IS OURS
+   ----------------------------------------------------------------------
    The defaults below are the settings the recording is made with, and they are
    the whole reason the roll is what it is:
 
      viewport 1440x900   record/projects/photos/project.toml   [viewport]
-     scroll 0 -> 1200    record/projects/photos/actions/scroll-peek.overrides.toml
+     scroll 0 -> 1250    design/censor/capture-frame.mjs       TRAVEL
      document scroller   record/packages/core/src/page.ts      findScroller
 
-   They are copied rather than imported: this repo does not depend on record's
-   source tree, and a silent import would let record's settings move without
-   anything here noticing. Copied means they can go stale instead — so they are
-   written into roll.json, and --check reports a roll assembled at a geometry
-   that no longer matches. If record's viewport or distance changes, re-run.
+   The viewport is copied rather than imported: this repo does not depend on
+   record's source tree, and a silent import would let record's settings move
+   without anything here noticing. Copied means it can go stale instead — so it
+   is written into roll.json, and --check reports a roll assembled at a geometry
+   that no longer matches. If record's viewport changes, re-run.
+
+   THE TRAVEL IS THE OTHER WAY ROUND NOW, and that is the one thing about this
+   file that has changed since the review was signed. The page is filmed with
+   the Frame's titlebar's height of clear ground above the vault's toolbar
+   (design/censor/capture-frame.mjs says why), which pushes every tile down by
+   that shift — and the travel is the same shift longer, so the band's far edge
+   moves down by exactly as much. `top + BAR < travel + BAR + height` is the
+   test that was already being applied: the same photographs, in the same order,
+   under the same `roll_digest`. So the number is computed HERE and record's
+   own overrides file is what has to agree, rather than the reverse. Moving one
+   without the other is what a re-review costs.
 
    STACKING, AND WHY IT HAS TO BE SEEDED
    --------------------------------------
@@ -65,10 +76,25 @@
    already mounted unstacked. See design/censor/README.md; this is the thing
    most likely to produce a correct-looking clip of the wrong view.
 
+   AND SO DOES THE TITLEBAR'S ROOM, FOR A DIFFERENT REASON
+   -------------------------------------------------------
+   The capture is served the margin as a stylesheet from an origin standing in
+   front of the vault. This walks the VAULT — the origin refuses to start until
+   the list it serves has been signed, so the collector cannot go through it —
+   and therefore has to lay the same band over the page itself, which
+   `addInitScript` below does. If it did not, the boxes in the roll would
+   describe a page 50px above the one the camera sees: the band test would run
+   on the wrong geometry, and review.html, which lays the roll out in the clip's
+   own rows, would be a picture of a page that was never filmed.
+
+   Playwright's `addStyleTag` cannot do it — it builds a `<style>` element, and
+   the vault's `style-src 'self'` refuses one without throwing. The sheet is
+   constructed instead. capture-frame.mjs carries both measurements.
+
    WHAT COUNTS AS "PASSED OVER"
    -----------------------------
    The band of the document the camera ever sees is [0, distance + height] —
-   scroll 0 puts the top 900px on screen, scroll 1200 puts [1200, 2100] on
+   scroll 0 puts the top 900px on screen, scroll 1250 puts [1250, 2150] on
    screen, and the legs between are continuous. Any tile whose box touches that
    band is in the roll, including one showing a single pixel at the far edge.
    That is deliberate: the reviewer's job is to look, and a sliver of a face is
@@ -86,12 +112,18 @@ import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { chromium } from "playwright";
 
+/* The band the capture lays above the page, the travel that follows from it,
+   and the two expressions that put it there and check it landed. One module
+   rather than a constant here and another in capture-origin.mjs: the shift and
+   the travel are two halves of one piece of arithmetic. */
+import { ADOPT, BAR, TOOLBAR_TOP, TRAVEL, clearance } from "../censor/capture-frame.mjs";
+
 const HERE = dirname(fileURLToPath(import.meta.url));
 
 /* ---- record's settings, restated ---------------------------------------- */
 const GRID_URL = "http://127.0.0.1:8770/";
 const VIEWPORT = { width: 1440, height: 900 };
-const DISTANCE = 1200;
+const DISTANCE = TRAVEL;
 
 /* The vault's own key and its own shape — the two knobs stay null, meaning
    "whichever assignment the server is pointed at", which is what the grid opens
@@ -225,6 +257,12 @@ async function collect() {
   if (stacking) {
     await context.addInitScript(`localStorage.setItem(${JSON.stringify(STACK_KEY)}, ${JSON.stringify(STACK_ON)})`);
   }
+  /* The band the Frame's titlebar needs, laid on from the same hook and for a
+     nearby reason: the sheet's top padding is read at layout, and a margin
+     applied after the rows have been laid out would move every box the walk is
+     about to measure. Unconditional — the roll describes the page the camera
+     sees, and the camera always sees it through the Frame. */
+  await context.addInitScript(ADOPT);
   const page = await context.newPage();
   try {
     await page.goto(url, { waitUntil: "domcontentloaded" });
@@ -276,7 +314,13 @@ async function collect() {
       `document.querySelectorAll(".tile .card:not([hidden])").length`,
     );
 
-    return { tiles: inBand, mounted: seen.size, decks };
+    /* And whether the band actually landed, asked the same way and for the same
+       reason. A constructed stylesheet that was adopted and lost the cascade —
+       the vault writes this property inline, so the declaration is `!important`
+       — collects a perfectly good roll of a page the camera never sees. */
+    const toolbar = await page.evaluate(TOOLBAR_TOP);
+
+    return { tiles: inBand, mounted: seen.size, decks, toolbar };
   } finally {
     await browser.close();
   }
@@ -289,8 +333,15 @@ async function collect() {
 const digestOf = (tiles) =>
   createHash("sha256").update(tiles.map((t) => t.sha).join("\n")).digest("hex");
 
-const { tiles, mounted, decks } = await collect();
+const { tiles, mounted, decks, toolbar } = await collect();
 const digest = digestOf(tiles);
+
+const covered = clearance(toolbar);
+if (covered !== null) {
+  console.error(`error: ${covered}`);
+  console.error("       refusing to write a roll of a page the camera does not see.");
+  process.exit(1);
+}
 
 if (stacking && decks === 0) {
   console.error("error: asked for the stacked grid and got an unstacked one — no tile drew a card.");
@@ -331,6 +382,23 @@ if (checking) {
   if (same && geometry) {
     console.log("unchanged — a review signed against this roll still covers the clip");
     process.exit(0);
+  }
+  /* TWO DRIFTS, AND ONLY ONE OF THEM COSTS A RE-REVIEW. The roll's identity is
+     the hashes it holds in the order the clip meets them, so a run that
+     reproduces the digest is a run over the same photographs however much the
+     geometry moved — which is exactly what happens when the page is pushed down
+     and the travel is pushed down with it. Saying "re-review" there would send
+     somebody to look at 84 photographs they have already signed for, and the
+     review surface would refuse them anyway. Still exit 1 either way: the roll
+     on disk describes a page the camera no longer sees, and the boxes in it are
+     what review.html lays out. */
+  if (same) {
+    console.log(
+      "DRIFTED — but only the geometry: the same photographs, in the same order, under the same " +
+        "digest. The confirmed list still covers the clip and there is nothing to re-review — " +
+        "re-collect (run without --check) so the roll records the page that is actually filmed.",
+    );
+    process.exit(1);
   }
   console.log("DRIFTED — the confirmed list no longer covers the clip; re-collect and re-review");
   process.exit(1);
@@ -377,6 +445,13 @@ await writeFile(
       distance,
       band,
       stacking,
+      /* Reporting, like the boxes: it is not part of the roll's identity, and it
+         cannot be — the travel moves with it, so a change here leaves the
+         digest alone by construction. It is written down because every `top`
+         below is measured on a page carrying it, and a reader of this file with
+         no way to know that would put every tile 50px too high. What catches a
+         change is `distance`, which --check does compare. */
+      header_top: toolbar,
       roll_digest: digest,
       tiles,
     },
@@ -388,7 +463,8 @@ await writeFile(
 
 console.log(
   `${tiles.length} photographs in the band [0, ${band}] ` +
-    `(${mounted} tiles mounted in all, grid ${stacking ? "stacked" : "unstacked"})`,
+    `(${mounted} tiles mounted in all, grid ${stacking ? "stacked" : "unstacked"}, ` +
+    `toolbar ${toolbar}px down, clear of the Frame's ${BAR}px titlebar)`,
 );
 console.log(`roll_digest ${digest}`);
 console.log(`written ${out}`);

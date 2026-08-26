@@ -7,7 +7,7 @@
    Node builtins only; nothing here is deployed (.vercelignore excludes design/).
 
    The vault as it stands is not the thing #65 is allowed to photograph, in
-   three separate ways. This stands in front of it and fixes all three, and
+   four separate ways. This stands in front of it and fixes all four, and
    record then records this rather than the vault:
 
      the confirmed tiles     served as the mosaics design/censor/mosaic.py baked,
@@ -17,6 +17,11 @@
                              served from this origin, so the grid mounts stacked
      the theme               seeded the same way, so the grid mounts light — the
                              vault's default is dark and the clip is not
+     the titlebar's room     a stylesheet served from this origin, so the page is
+                             filmed with the Frame's glass strip's height of its
+                             own ground above the vault's toolbar rather than
+                             with the toolbar cut through the middle by it.
+                             design/censor/capture-frame.mjs is the whole of it
 
    Everything else is forwarded untouched, headers included — the vault's own
    Content-Security-Policy above all, so the page being photographed is under
@@ -46,6 +51,14 @@
    read once from localStorage before the app mounts, so a Timeline that flipped
    it would flip it after the settled frame had already been photographed.
 
+   The titlebar's room is the fourth, and the reason it is here rather than in
+   the Timeline is the SETTLED FRAME again: record photographs the page once
+   before the first Frame of the Timeline, so a margin the Timeline laid on
+   would be missing from the picture that decides what the clip opens on — which
+   is the one frame the whole margin is for. Not a fifth reason, then: the fourth
+   one, met by a second thing that has to be in the page before record looks at
+   it.
+
    One proxy answers all four, and it answers them in the only place that is
    strictly earlier than the page: the bytes.
 
@@ -68,6 +81,13 @@ import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+
+/* The capture's geometry, stated once. Imported rather than restated because
+   this file, collect-roll.mjs and check-capture-origin.mjs have to agree about
+   it exactly — and unlike record's viewport, which is a copy of something in
+   another repository, the shift and the travel are two halves of one piece of
+   arithmetic that only works if nothing can move one without the other. */
+import { BAR, CSS, CSS_PATH, HEADER_TOP, LINK_TAG } from "./capture-frame.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const CONFIRMED = resolve(HERE, "censored.json");
@@ -242,6 +262,15 @@ function proxy(substitutes, counts) {
       return serve(res, 200, SEED, { "content-type": "text/javascript; charset=utf-8" });
     }
 
+    /* Same origin, which is what gets it past `style-src 'self'` — the CSP the
+       vault really serves, forwarded untouched below. A <style> element built
+       in the page would be refused by that same policy without throwing;
+       capture-frame.mjs has the measurement. */
+    if (path === CSS_PATH) {
+      counts.css++;
+      return serve(res, 200, CSS, { "content-type": "text/css; charset=utf-8" });
+    }
+
     const thumbnail = THUMBNAIL.exec(path);
     if (thumbnail !== null) {
       const obscured = substitutes.get(`${thumbnail[1]}/${thumbnail[2]}`);
@@ -270,11 +299,15 @@ function proxy(substitutes, counts) {
 
     let body = Buffer.from(await response.arrayBuffer());
 
-    /* The one rewrite. The seed goes in immediately after <head>, so it is the
-       first script the document has and runs before the deferred module the app
-       mounts from. Refusing rather than serving an unseeded document: a page
-       that quietly mounted unstacked, or dark, is exactly the failure this
-       exists to stop, and it would look like a working capture. */
+    /* The one rewrite, and it inserts two things. The seed goes in immediately
+       after <head>, so it is the first script the document has and runs before
+       the deferred module the app mounts from; the stylesheet follows it, and
+       where in the head it lands does not matter, because its one declaration
+       is `!important` and has to outrank an inline style rather than another
+       rule. Refusing rather than serving an unseeded document: a page that
+       quietly mounted unstacked, or dark, or with its toolbar under the glass,
+       is exactly the failure this exists to stop, and every one of them would
+       look like a working capture. */
     if ((headers["content-type"] ?? "").startsWith("text/html")) {
       const html = body.toString("utf8");
       const at = html.indexOf("<head>");
@@ -284,7 +317,10 @@ function proxy(substitutes, counts) {
         });
       }
       counts.seeded++;
-      body = Buffer.from(html.slice(0, at + 6) + "\n" + SEED_TAG + html.slice(at + 6), "utf8");
+      body = Buffer.from(
+        html.slice(0, at + 6) + "\n" + SEED_TAG + "\n" + LINK_TAG + html.slice(at + 6),
+        "utf8",
+      );
     }
 
     res.writeHead(response.status, { ...headers, "content-length": body.length });
@@ -305,7 +341,7 @@ try {
 }
 
 const { signed, manifest, substitutes } = loaded;
-const counts = { obscured: 0, seed: 0, seeded: 0 };
+const counts = { obscured: 0, seed: 0, css: 0, seeded: 0 };
 const server = http.createServer(proxy(substitutes, counts));
 
 server.on("error", (error) => {
@@ -323,7 +359,8 @@ server.on("error", (error) => {
 process.on("SIGINT", () => {
   console.log(
     `\n${counts.obscured} obscured tile(s) served, ` +
-      `${counts.seeded} document(s) seeded, seed.js fetched ${counts.seed} time(s)`,
+      `${counts.seeded} document(s) seeded, seed.js fetched ${counts.seed} time(s), ` +
+      `frame.css fetched ${counts.css} time(s)`,
   );
   server.close(() => process.exit(0));
 });
@@ -337,5 +374,9 @@ server.listen(port, "127.0.0.1", () => {
   );
   console.log(`signed by        ${signed.confirmed_by} at ${signed.confirmed_at}`);
   console.log(`stacking, theme  seeded before the app mounts — stacked, light`);
+  console.log(
+    `titlebar's room  --header-top ${HEADER_TOP}px, ` +
+      `so the toolbar sits clear of the Frame's ${BAR}px strip`,
+  );
   console.log(`\nverify with      node design/tools/check-capture-origin.mjs`);
 });

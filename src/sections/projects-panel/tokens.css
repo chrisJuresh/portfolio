@@ -100,7 +100,18 @@
   /* The render's Frame measured 1430 x 735 including its titlebar. */
   --projects-panel-frame-ratio: 1.945;
   /* The titlebar's height, the corner every part of the window is cut to, and
-     the band between the recording and the window's edge. */
+     the band between the recording and the window's edge.
+
+     THE TITLEBAR'S IS THE ONE TOKEN HERE WITH A CEILING OUTSIDE THIS FILE, and
+     the ceiling is in a video. The strip is over the recording rather than above
+     it, so it covers the first 0.034583 x 1440 = 49.79 rows of the page that was
+     filmed — and the clip in portfolio/video/ is cut with 50 rows of clear white
+     ground at the top so that the vault's own toolbar is not sliced in half by
+     the glass. SHORTER IS FREE. Longer means re-cutting the clip, which is a
+     censorship review and a recording session: design/censor/capture-frame.mjs
+     holds the number and design/censor/README.md is the procedure. The
+     `projects-panel` Check fails the build rather than letting a nudge here ship
+     a covered toolbar. */
   --projects-panel-frame-bar: 0.034583;
   --projects-panel-frame-corner: 0.016333;
   /* ZERO, and that is a decision rather than a number left out. The render's own

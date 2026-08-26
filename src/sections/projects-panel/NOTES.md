@@ -690,7 +690,7 @@ AND what is expected of it, and nothing fails. What cannot change without failin
 is the relationship.
 
 **Each one was broken on purpose and seen to fail**, which is the only way to know
-what a Check is worth. Twelve mutations, each applied on its own, rebuilt, and
+what a Check is worth. Nineteen mutations, each applied on its own, rebuilt, and
 reverted:
 
 | broken | caught by |
@@ -712,9 +712,14 @@ reverted:
 | the address field's height halved | its measured share |
 | the reload placed at its own absolute centre | its clearance inside the field |
 | the address field moved off the Frame's middle | its centre |
+| the titlebar's share raised to 0.04 | the strip covering 57.60 of the clip's 50 clear rows, at both wide windows |
+| the previous clip's poster served in place of this one | its first 49 rows spreading 241 levels instead of lying flat |
 
-and three Token moves that must NOT fail, and do not: the sidebar's centre to
-0.09, the drop to 0.4, the corner to 0.03.
+and four Token moves that must NOT fail, and do not: the sidebar's centre to
+0.09, the drop to 0.4, the corner to 0.03, and the titlebar's share DOWN to 0.03
+— which is the point of the clearance being a ceiling rather than an equality: a
+shorter strip shows a little more of a margin that is white either way, so it
+passes with the measurement printed and nothing said.
 
 **The centre tolerance is 0.0003 of the Frame's width, and it is tight on
 purpose.** At the three quarters of a pixel it started at, the first mutation in
@@ -1084,6 +1089,35 @@ so the whole cut comes off the bottom — which keeps the vault's own toolbar ha
 against the top of the box, and is the only direction the censored list is safe
 in: removing what the clip shows can only ever remove, and re-centring the crop
 shows rows nobody reviewed.
+
+**Near the top of the box, then — not hard against it, and the difference is in
+the file rather than in this stylesheet.** The titlebar is over the recording and
+not above it, which is what puts a photograph behind the Lens instead of a flat
+fill, and what it costs is the first rows of the page that was filmed: 0.034583 ×
+1440 = **49.79 rows**, at every window, because the clip is scaled to the Frame's
+width and the strip is a share of that same width. Measured as well as derived —
+a 1271.5px Frame draws a 43.97px strip, which is 49.79 recording rows. That was
+cutting the vault's toolbar through the middle, and what showed under the glass
+was the bottom two pixels of a pill.
+
+So the page is FILMED with 50 rows of its own white ground above that toolbar.
+Nothing in this Section arranges it and nothing here could: at rest the strip has
+the page's ground behind it, and the moment the clip scrolls, photographs travel
+up into that band and pass under the Lens — which is a property of the recording,
+decided when it was cut. `design/censor/capture-frame.mjs` is where the number
+lives and `design/censor/README.md` is the procedure that applies it; the travel
+moved by the same 50 so that the clip passes over the same 84 photographs and the
+signed review still covers it.
+
+**The clearance is a ceiling, and the Check holds both ends of it.** The strip may
+be made shorter for free — it shows a little more of a margin that is white either
+way — and may not grow past the 50 rows the clip on disk was cut with. Neither end
+is visible: the clip is a video, so what the strip covers is a picture, and a
+titlebar that has outgrown its room looks like a titlebar. So the Check asserts
+that the strip fits inside the number, AND that the poster still opens on that
+many rows of one flat light value. Either half alone is worthless — one passes a
+Lens trimmed to fit a recording nobody re-cut, the other passes a recording with
+room for a strip that has since grown.
 
 **The reflection's copy is served late, and that is why `clip.ts` is not a loop.**
 Both elements name one URL, and two media elements asking for it at the same
