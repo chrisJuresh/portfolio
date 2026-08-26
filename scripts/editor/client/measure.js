@@ -1751,8 +1751,8 @@ export class Measure {
    * Token's page and its file are two different things" exists to prevent, and the
    * author would be looking at a page that disagreed with the source.
    *
-   * @returns {number|null} how many of the step's elements this surface is no
-   *   longer holding — so the report can say that much of it stayed — or null where
+   * @returns {Promise<number|null>} how many of the step's elements this surface is
+   *   no longer holding — so the report can say that much of it stayed — or null where
    *   a write was refused and the line has already been said
    */
   async replay(step, back) {
@@ -1972,8 +1972,8 @@ export class Measure {
    * the old one. Each entry carries the line the Recording was given as well, so a
    * redo can put that line back rather than composing a second spelling of it.
    *
-   * @returns {{ section: string, key: string, token: string, was: string,
-   *   wants: string, record: object }[]}
+   * @returns {Promise<{ section: string, key: string, token: string, was: string,
+   *   wants: string, record: object }[]>}
    */
   async writeTokens(found, gesture = null) {
     if (!this.surface) {
