@@ -627,7 +627,7 @@ re-running the bake, which is the same division as the plate tuner's:
 python design/effects/build-textures.py all
 ```
 
-It needs the two XL JPEGs at the repo root; they are gitignored, and
+It needs the two XL JPEGs in `design/effects/sources/`; they are gitignored, and
 `portfolio/img/tex/README.md` says where they come from and how they are
 attributed. Paste the `TEX_VERSION` it prints over the `?v=` on `--fx-film-src`
 and `--fx-paper-src` in the same commit as the re-baked files.

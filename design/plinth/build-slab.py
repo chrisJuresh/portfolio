@@ -36,7 +36,7 @@ them to be in, and the silhouette comes out of the alpha channel instead of bein
 assumed.
 
 THE CAMERA IS SOLVED FROM THE RENDER, NOT CHOSEN. IMG_20260815_153956.jpg is not
-in this repository — see the Projects Panel's NOTES.md for why — so
+in this repository — it sits in design/reference/, whose README says why — so
 these are constants of the composition, but they are measurements and the camera
 that reproduces them is arithmetic:
 
@@ -757,11 +757,12 @@ missing %s
 
 The photo-backed stones need the maps that design/plinth/build-portoro-maps.py
 writes, and neither those nor the photograph they come from are committed - see
-the .gitignore note about /Texturelabs_*.jpg, which these follow. Run:
+the .gitignore note about design/effects/sources/, which these follow. Run:
 
     python design/plinth/build-portoro-maps.py
 
-...from a tree that has the source photograph at its root. NOTE THAT A WORKTREE
+...from a tree that has the source photograph in design/plinth/sources/. NOTE
+THAT A WORKTREE
 DOES NOT: git only puts tracked files in one, so an ignored source sitting in
 the main checkout is simply absent here. Copy it across first."""
 

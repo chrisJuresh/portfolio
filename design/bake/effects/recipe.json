@@ -1,7 +1,7 @@
 {
   "title": "The two Texturelabs plates",
   "note": "The film frame and the paper tile the Effect Stack draws. Both leave here centred on mid-grey, which is the decision the rest of the pipeline hangs off: overlay and soft-light are no-ops at exactly 128, so the flat field costs nothing and only the marks land. The stack's own numbers - strength, blend, lift, contrast, size - are Tokens under kernel-effects and move live; these are what is IN the picture.",
-  "needs": "Texturelabs_Film_185XL.jpg and Texturelabs_Paper_349XL.jpg at the repository root. They are 9 MB and 12 MB, gitignored under texturelabs.org's own licence, and free downloads from there.",
+  "needs": "Texturelabs_Film_185XL.jpg and Texturelabs_Paper_349XL.jpg in design/effects/sources/. They are 9 MB and 12 MB, gitignored under texturelabs.org's own licence, and free downloads from there.",
   "run": [
     "python",
     "design/effects/build-textures.py",

@@ -46,9 +46,14 @@ both of these ARE grain.
 WHY THE SOURCES ARE NOT IN THE REPO
 -----------------------------------
 The two XL JPEGs are 9 MB and 12 MB and are gitignored, exactly as photos/, the
-RW2s and the cut-out plate PNG are — see .gitignore, which now carries a
-/Texturelabs_*.jpg line for them. Drop them at the repo root and run this; what
-gets committed is what this writes into portfolio/img/tex/.
+RW2s and the cut-out plate PNGs are — see .gitignore, which carries a
+design/effects/sources/ line for them. Drop them in **design/effects/sources/**
+and run this; what gets committed is what this writes into portfolio/img/tex/.
+
+Beside this script rather than at the repo root, which is where they used to go.
+Every ignored input in design/ now sits in a `sources/` directory next to the one
+generator that reads it, so "what is this tree missing" is answered by listing a
+directory instead of by reading four docstrings.
 
 They are free-for-commercial-use downloads from texturelabs.org under its own
 licence, which asks for attribution and forbids redistributing the source files
@@ -70,6 +75,11 @@ from scipy.ndimage import gaussian_filter
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 OUT_DIR = os.path.join(ROOT, "portfolio", "img", "tex")
+# where the two XL JPEGs live. Beside this script rather than at the repo root,
+# the way design/plinth/sources/ sits beside build-portoro-maps.py: an ignored
+# input belongs next to the one generator that reads it, so what a tree is
+# missing is answerable by listing one directory.
+SRC_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "sources")
 
 # design/bake/ is a sibling of this folder and is not a package, so it is put on
 # the path rather than imported through a name that does not exist. The constants
@@ -102,7 +112,7 @@ def load_luma(path: str) -> np.ndarray:
             "missing source: %s\n"
             "The XL JPEGs are gitignored — see WHY THE SOURCES ARE NOT IN THE REPO\n"
             "in this file's docstring. Download them from texturelabs.org and drop\n"
-            "them at the repo root." % path
+            "them in design/effects/sources/." % path
         )
     im = Image.open(path)
     return np.asarray(im.convert("L"), dtype=np.float32)
@@ -189,7 +199,7 @@ def save_webp(a: np.ndarray, name: str, lossless: bool, quality: int) -> str:
 # film — one frame, stretched over the band, never repeated
 # ---------------------------------------------------------------------------
 
-FILM_SRC = os.path.join(ROOT, "Texturelabs_Film_185XL.jpg")
+FILM_SRC = os.path.join(SRC_DIR, "Texturelabs_Film_185XL.jpg")
 
 # The plate edge. The scan runs right to the border of the emulsion and the
 # outermost band of it is the holder, not the film — a hard dark rim that would
@@ -307,7 +317,7 @@ def build_film() -> None:
 # paper — one small square, tiled, and it has to wrap
 # ---------------------------------------------------------------------------
 
-PAPER_SRC = os.path.join(ROOT, "Texturelabs_Paper_349XL.jpg")
+PAPER_SRC = os.path.join(SRC_DIR, "Texturelabs_Paper_349XL.jpg")
 
 # Where on the sheet the tile is cut from, as (left, top) shares of the frame.
 # Off-centre on purpose: the middle of this scan carries the sheet's brightest

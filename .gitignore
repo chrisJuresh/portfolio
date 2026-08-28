@@ -94,21 +94,33 @@ photos/
 *.rw2
 
 # ...and the same for a cut-out plate source, which is a 20MB RGBA PNG and gets
-# dropped in the same place. Root only, by path rather than by extension: the
-# repo's other PNGs are design/og/og-source.png and the committed shots, and a
-# blanket *.png would take those with it.
-/*.png
+# dropped in the same place — three of them, one per corner picture, under opaque
+# content-hash filenames. They are handed to design/plate/build-plate.py by path,
+# and design/plate/sources/README.md records which hash feeds which picture,
+# because nothing in the filename does.
+design/plate/sources/*
 
-# the Texturelabs plates the textures are baked from — two for the effect stack
-# at 9MB and 12MB, and three marble slabs for the Projects Panel's plinth at
-# about 15MB each. All of them are handed to their build script by path from the
-# repo root, so they land here the way an RW2 does. What ships is
-# portfolio/img/tex/, which IS committed. There is a licence reason as well as a
-# size one: texturelabs.org asks that the source files not be redistributed as
-# textures, and a baked, cut-down, blended derivative is a different thing from
-# the original asset. Attribution is in portfolio/img/tex/README.md, and the two
-# scripts are design/effects/build-textures.py and design/plinth/build-marble.py.
-/Texturelabs_*.jpg
+# the Texturelabs plates the textures are baked from, two of them at 9MB and
+# 12MB. What ships is portfolio/img/tex/, which IS committed. There is a licence
+# reason as well as a size one: texturelabs.org asks that the source files not be
+# redistributed as textures, and a baked, cut-down, blended derivative is a
+# different thing from the original asset. Attribution is in
+# portfolio/img/tex/README.md, and the script is design/effects/build-textures.py.
+design/effects/sources/*
+
+# EVERY ONE OF THESE USED TO BE A ROOT-ANCHORED RULE — `/*.png`,
+# `/Texturelabs_*.jpg`, `/Gemini_Generated_Image_*.jpg` — because each generator
+# took its input "from the repo root". That put 110MB of unrelated pictures in the
+# one directory a reader looks at first, told them nothing about which script
+# wanted which file, and — the reason this changed rather than merely the reason
+# it is tidier — made it impossible to see at a glance whether one of them was
+# TRACKED. A per-file root ignore is a rule about a name; a directory ignore is a
+# rule about a place, and a place can be listed. An ignored input now lives in a
+# `sources/` directory beside the ONE generator that reads it, and these three
+# lines are the safety net for the old habit:
+/*.png
+/*.jpg
+/*.jpeg
 
 # ...and the 2x2 lay-up build-textures.py writes beside the paper tile so its
 # seams can be looked at rather than taken on trust. A diagnostic, rebuilt on
@@ -126,11 +138,13 @@ design/sheets/
 .env
 .env.*
 
-# the AI-generated Nero Portoro plate design/plinth/build-portoro-maps.py takes
-# apart, and the maps it writes. Same rule as the Texturelabs plates above:
-# sources and intermediates stay out, the bake ships. Unlike those there is no
-# upstream to re-fetch this one from - see docs/agents/plinth-marble.md.
-/Gemini_Generated_Image_*.jpg
+# the maps design/plinth/build-portoro-maps.py writes from the AI-generated Nero
+# Portoro plate. Same rule as the Texturelabs plates above: sources and
+# intermediates stay out, the bake ships. The plate ITSELF is covered by the
+# design/plinth/sources/ rule below — it used to have a /Gemini_Generated_Image_*
+# line of its own at the root, and there were two copies of it, one at each
+# place. Unlike the Texturelabs plates there is no upstream to re-fetch this one
+# from - see docs/agents/plinth-marble.md.
 design/plinth/maps/
 
 # ...and where design/plinth/plinth-studio.py keeps the photographs dropped on
@@ -140,6 +154,21 @@ design/plinth/maps/
 # a stone can be looked at in a fresh checkout and can only be RE-BAKED in a tree
 # that still has this directory. Keep anything you care about elsewhere too.
 design/plinth/sources/
+
+# the design renders and reference photographs a composition was MEASURED off
+# rather than baked from — the Projects Panel's own render is the one that
+# matters, and design/reference/README.md is where the numbers in the `.panel`
+# block point. Ignored for a reason that is not size: it is a screenshot of the
+# real photo grid and carries uncensored pictures of real people, which is the
+# rule photos/ above is under. The README is committed and the pictures are not,
+# so a fresh checkout gets the reason without the exposure.
+design/reference/*
+!design/reference/README.md
+
+# ...and the same negation for the source directories above, so the note saying
+# which file is which survives a clone that has none of them.
+!design/plate/sources/README.md
+!design/effects/sources/README.md
 
 # per-candidate plinth shots from render.mjs --stones. 1.4MB each and
 # regenerable in a minute; what is committed is the contact sheet built from
