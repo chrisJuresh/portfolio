@@ -12,6 +12,7 @@
 import { existsSync } from 'node:fs';
 import { git as gitOf } from './lib/git.mjs';
 import { ensureHooksPath, hooksReport } from './lib/hooks.mjs';
+import { carry, declared } from './lib/include.mjs';
 import { pick } from './lib/names.mjs';
 import { choosePort } from './lib/ports.mjs';
 import { logPath, start as startServer } from './lib/server.mjs';
@@ -66,6 +67,27 @@ export async function start({ sh, cwd, name, install, server }) {
     chosen.path = path;
   } finally {
     held.release();
+  }
+
+  // Before the install, because everything after this point runs under whatever
+  // permission mode the new tree has. A worktree is a checkout of TRACKED files
+  // and nothing else, so `.claude/settings.local.json` — this machine's mode, and
+  // gitignored — is simply absent from a fresh one, and the protocol's own writes
+  // start being refused in a tree cut minutes after one where they were allowed.
+  // `.worktreeinclude` is what names the files that have to be carried; `feature
+  // start` honours it because nothing else here does. ADR 0005 means
+  // `EnterWorktree`, which is what reads that file everywhere else, is never
+  // called.
+  const wanted = declared(root);
+  if (wanted.length > 0) {
+    const brought = carry({ root, worktree: chosen.path, entries: wanted });
+    // Said even when it carried everything: the failure this prevents is
+    // invisible, so a run that carried nothing has to say it carried nothing.
+    console.log(
+      `feature: carried ${brought.carried.length ? brought.carried.join(', ') : 'nothing'} ` +
+        `from the main checkout (.worktreeinclude)` +
+        (brought.missing.length > 0 ? ` — not there to carry: ${brought.missing.join(', ')}` : ''),
+    );
   }
 
   if (install) {

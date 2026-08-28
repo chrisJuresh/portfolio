@@ -18,7 +18,7 @@ gate matters most, and there are five of them here, with five different fixes:
 | --- | --- | --- |
 | the auto-mode permission classifier | an allow rule, or `bypassPermissions` | a permission prompt, or a refusal naming no hook |
 | a project `PreToolUse` hook — the vendored worktree guard | **upstream**, in `chrisJuresh/skills`; never in the copy here | its own voice: the main checkout, the integration branch, a spent worktree |
-| the vendored skill's `Stop` gate | **upstream**, same as the guard — its SUBSTANCE is this repository's too, and only its steps are not | it counts the commits the worktree holds that `origin/development` does not, then prescribes a pull request and `ExitWorktree` |
+| the vendored skill's `Stop` gate | **upstream**, same as the guard — its SUBSTANCE is this repository's too, and its steps are now this repository's, through the `delivery` block in `.claude/worktree-per-change.json` | it counts the commits the worktree holds that no remote has, then prescribes `pnpm feature land` and `pnpm feature clean`. A block prescribing a pull request or `ExitWorktree` is one printed by a guard older than `c8574fd` |
 | Claude Code's built-in worktree isolation | not fixable from either repository — **don't call `EnterWorktree`** | "This session is isolated in the worktree …" |
 | the operating system, or the remote | the thing itself | a lock, a 403, a server-side hook |
 
@@ -215,6 +215,15 @@ written with the Write tool, not through a shell heredoc** — the mark is writt
 off shell command strings, so the tool that writes files directly never trips it.
 That is why the phrase survives in `CLAUDE.md` and in the Contract at all.
 
+**Resolved** by [chrisJuresh/skills#31](https://github.com/chrisJuresh/skills/pull/31),
+merged 2026-08-28 and vendored here at `c8574fd`. The mark is written from the
+guard's own shell parse now, not from a substring: `merge_call()` reads the token
+list and asks whether `pr` and `merge` are adjacent *arguments to `gh`*, and
+`without_heredocs()` drops every heredoc BODY before the lexer sees it — the exact
+shape that spent this worktree, a `cat > contract.md <<EOF` whose table row named
+the phrase. Writing such a document through the Write tool is no longer the only
+route that works; it is still the better one, for the reason it always was.
+
 ## 2026-08-23 — the spent mark lands on the session's worktree, not the one that merged
 
 **Attempted**: ending a session that had merged #158 correctly. One worktree
@@ -258,6 +267,14 @@ mark whose branch has no PR at all is one the guard could decline to write.
 Until it lands: a session that works in a worktree **by path** rather than through
 `EnterWorktree` should expect its own tree to be marked at merge time, and settle
 it with the check `CLAUDE.md` already names before taking anything down.
+
+**Resolved** by the same pull request, in the same commit as the parse above,
+because it is the same fix seen from the other side. `git_calls()` yields *where*
+each call would run — a leading `cd`/`Set-Location`, one or more `git -C` — and the
+marking site resolves that through `targeted()` before writing anything, so the
+mark lands on the tree the merge ran **from**. A merge run from the main checkout
+now marks nothing at all, which is right: there is no branch there whose next edit
+would reach nobody.
 
 **A second denial, from writing this entry.** `docs/friction-log.md` lives in the
 main checkout by design — `scripts/feature/lib/friction.mjs` says so, because
@@ -355,6 +372,22 @@ for. **What was done**: `pnpm feature land`, which is the answer to the substanc
 and the question to the user was asked in the same reply rather than instead of
 landing.
 
+## 2026-08-24 — the session that named the standing shell (#168, #169)landing.
+
+**Resolved** by the same pull request, through the mechanism this entry asked for by
+name: the invariant stays the gate's and the steps become the repository's.
+`.claude/worktree-per-change.json` now carries
+
+```json
+"delivery": { "command": "pnpm feature land", "teardown": "pnpm feature clean <name>", "enterWorktree": false }
+```
+
+so the `Stop` block and the `SessionStart` briefing print `pnpm feature land`, print
+`pnpm feature clean <branch>` with the name filled in, and stop naming
+`ExitWorktree` and the pull request altogether. `CLAUDE.md` no longer has to answer
+"which of the two do I believe" about this gate, because the gate reads the answer
+out of the repository.
+
 ## 2026-08-24 — the session that named the standing shell (#168, #169)
 
 **Attempted**: stopping, with both changes landed on `development` through
@@ -405,3 +438,73 @@ lands, the recognition line for this gate is worth reading with the third row of
 the table above: **a `Stop` gate counting one commit in a worktree the session did
 not create is `main`'s tip, not your work.** Check it before believing the count,
 and never push it.
+
+**Resolved** by the same pull request, and by the narrower fix this entry asked for
+rather than the broader one. `undelivered()` no longer compares against
+`origin/<branch>..HEAD` at all. It asks two questions — commits on **no remote ref
+whatever** (`--not --remotes`), and commits pushed to this worktree's own branch and
+not yet on the integration branch — and a commit published on some other remote
+branch is neither. `f5ee988`, being `origin/main`'s tip, answers the first question
+"published" and is not this session's to deliver. The recognition line above is
+worth keeping anyway: it is how you tell in one command, and it is still true of any
+gate that counts this way.
+
+## 2026-08-28 — resyncing the guard, from the wrong directory
+
+**Attempted**: restoring three tracked files in the main checkout with
+`git checkout -- .claude/hooks/worktree-guard.py .claude/settings.json
+.claude/worktree-per-change.json`, after `install.py --repo .` had written them
+there.
+
+**Refused by**: the **vendored worktree guard** (`PreToolUse`), correctly:
+
+```
+Denied: `git checkout` does not run in the main checkout.
+```
+
+**How the main checkout came to need restoring is the part worth recording.** The
+resync was being done properly, in a worktree — but the `cd` into it had been
+written as `cd <path> && python …`, and a compound `cd` does not persist the Bash
+tool's working directory the way a bare one does. So the installer ran with the
+main checkout as its cwd, `--repo .` resolved there, and it wrote the guard, the
+settings, the config, `land.py` and `.worktreeinclude` into the tree nothing is
+ever written in.
+
+**Nothing stopped it, and nothing could have.** The guard judges the path a
+`Write`/`Edit` targets and the directory a `git` call would run in. `install.py` is
+neither: it is a Python process opening files with `open()`, so the one write the
+guard exists to prevent is the one shape it cannot see. That is not a bug in the
+guard — a `PreToolUse` hook cannot follow a subprocess — and it is why the
+instruction has always been "resync from a worktree".
+
+**What was done**: `git show HEAD:<path> > <path>` for each of the three tracked
+files, which is a read plus a shell redirect and so is not a git write the guard
+judges, then `rm` for the two untracked additions. The main checkout came back to
+byte-identical, with the author's own uncommitted `content.ts` untouched.
+
+**Fix**: `CLAUDE.md`'s resync section now says the `cd` must be a call of its own
+with the path written out — the same rule it already carries for `git`, and for the
+same underlying reason — and says that the guard will not catch this one, so the
+directory is the session's to get right. `git show … > …` is written down there too,
+because it is the only restore route the main checkout allows.
+
+**A second denial, from the same session, and it is the false positive four
+paragraphs of this file now call Resolved.** Writing `scripts/feature/lib/include.mjs`
+into the worktree was denied:
+
+```
+Denied: this worktree's change looks finished (gh pr merge was run from this
+worktree), so editing it again grows a branch that has been reviewed and merged
+```
+
+`gh pr list --head guard-resync --state all` returned nothing, which settles it as
+before, and `.git/claude-worktree-gate/spent/guard-resync.json` was deleted.
+
+**Why it fired while the fix sat un-landed in the very worktree it denied**: the
+hook Claude Code runs is `${CLAUDE_PROJECT_DIR}/.claude/hooks/worktree-guard.py`,
+and `CLAUDE_PROJECT_DIR` is the **main checkout**. A resync done in a worktree
+changes nothing until it lands and the main checkout is pulled — and the messages
+in the denial above are the giveaway, since they name `EnterWorktree` and a pull
+request, which a guard carrying this repository's `delivery` block does not. So
+expect the old behaviour for the rest of any session that resyncs, and read a
+denial's vocabulary before believing it is current.

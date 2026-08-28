@@ -63,10 +63,13 @@ the legitimate one that removes a sibling worktree. Three entries in
 `docs/friction-log.md` are that gate, five refusals between them, and every one is
 avoided by not entering the tree in the first place.
 
-The guard's own `SessionStart` message says to call `EnterWorktree`, and will keep
-saying it: that is upstream's protocol, vendored along with the guard, and this
-repository is not upstream. Where the two disagree — `EnterWorktree`, the pull
-request, the merge command, the teardown by hand — ADR 0005 and the two commands
+**The guard used to say the opposite, and no longer does.** Its `SessionStart`
+briefing and its `Stop` block both read their steps out of the `delivery` block in
+`.claude/worktree-per-change.json` now, and this repository declares
+`enterWorktree: false` — so they print the `cd` rule and `pnpm feature land`, and
+`ExitWorktree` and the pull request are gone from them rather than renumbered
+around. A message that still names either is coming from a guard older than
+`c8574fd`; resync. Where anything else disagrees, ADR 0005 and the two commands
 win. `/worktree-per-change` is still the authority on the *worktree* half, and on
 nothing past it.
 
@@ -111,20 +114,38 @@ reply, log it, and stop.
 this repo** — a fix made here is lost at the next resync and leaves the copy
 undatable. Fix it upstream and resync.
 
-One known false positive, so a session that hits it does not spend a turn deciding
-the guard is right: the spent-worktree mark is written whenever the phrase that
-merges a pull request appears **anywhere in a shell command string**, matched by
-regex rather than by what ran. So a `grep` for that phrase — or a document
-quoting it — marks the worktree it was run in as merged, and the next edit in that
-tree is denied. The check the denial names settles it: `gh pr list --head <branch>
---state all` returning nothing means there is no pull request to have merged, and
-this repository stopped opening them. Delete the marker it names. Report it
-upstream; do not patch it here, and do log it.
+**The guard's messages are this repository's now, and that is a declaration in a
+file rather than a fork.** `.claude/worktree-per-change.json` carries a `delivery`
+block — `pnpm feature land`, `pnpm feature clean <name>`, `enterWorktree: false` —
+and the guard prints those instead of `git push`, `gh pr create`, `gh pr merge` and
+`ExitWorktree`. The invariant is still the guard's; only the steps are ours. So a
+`Stop` block or a `SessionStart` briefing that names a pull request is one printed
+by a guard older than `c8574fd`, and the answer to it is a resync rather than a
+judgement about which document wins.
+
+Four false positives this file used to warn about are gone with that resync, and
+`docs/friction-log.md` marks each **Resolved** with what landed. The one worth
+knowing by name, because a session that meets an old marker still has to clear it:
+the spent-worktree mark used to be written whenever the phrase that merges a pull
+request appeared **anywhere in a shell command string**, so a `grep` for it — or a
+document quoting it — spent the worktree it ran in. It is a token parse now, with
+heredoc bodies dropped before the lexer sees them. If a denial like that ever
+appears again, `gh pr list --head <branch> --state all` returning nothing settles
+it: there is no pull request to have merged, and this repository stopped opening
+them. Delete the marker it names, log it, and report it upstream — do not patch it
+here.
 
 `.claude/worktree-per-change.json` records which upstream commit the copy came
 from and the sha256 of its LF-normalised bytes, so "is this current" is a question
 this repo can answer on its own. Both are written by the installer; to resync,
-from a worktree:
+**`cd` into a worktree in a call of its own, with the path written out** — a
+compound `cd <path> && python …` does not persist the working directory, and the
+installer is a Python process opening files, so the guard cannot see where it is
+writing and will not stop it landing the whole install in the main checkout. That
+happened once; the restore is `git show HEAD:<path> > <path>` per tracked file,
+since `git checkout` is denied there, and it is in the friction log.
+
+From that worktree:
 
 ```bash
 python ~/.claude/skills/worktree-per-change/scripts/install.py --repo . --branch development --dry-run
@@ -133,10 +154,20 @@ python ~/.claude/skills/worktree-per-change/scripts/install.py --repo . --branch
 Then without `--dry-run`. That path is the skill link the installer makes itself,
 so it works wherever the skill is installed; `${CLAUDE_SKILL_DIR}` is only set
 while a skill is running and is unset in a plain shell. `--status` alone reports
-what is installed and what each worktree is still holding.
+what is installed and what each worktree is still holding — and it reads the
+**main checkout**, so a declaration made in a worktree does not show up there until
+it has landed.
 
-The install also rewrites `.claude/settings.json` — revert it if the only change
-is line endings — and leaves a `settings.json.*.bak` to delete.
+**Three things the install leaves that this repository does not take**, so a resync
+is four steps and not one. It rewrites `.claude/settings.json` — revert it if the
+only change is line endings — and leaves a `settings.json.*.bak` to delete. It
+writes the installer's own line endings, which are CRLF here; normalise the files
+it touched to LF. And it installs `.claude/scripts/land.py` with a `land` record
+beside the `guard` one and a `Bash(python .claude/scripts/land.py:*)` grant —
+**delete all three every time**. `land.py` pushes, opens a pull request and merges
+it, which is exactly what ADR 0005 removed, and an allowlisted copy of it sitting
+in the tree is a pre-approved way to land without the Checks. `pnpm feature land`
+is the only route, and the Checks failing is the only gate.
 
 `.gitignore` ignores `.claude/` except what every worktree needs: `settings.json`,
 `hooks/worktree-guard.py`, `worktree-per-change.json`, the `launch.json` the

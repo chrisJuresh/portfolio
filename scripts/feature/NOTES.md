@@ -305,6 +305,25 @@ see **Landing and taking down are two things** above.
 broken tree. `lib/ports.mjs` skips them; `scripts/checks/lib/serve.mjs` carries
 the same list for its ephemeral allocation.
 
+## What a fresh worktree does not get, and `start` carries in
+
+A worktree is a checkout of **tracked** files and nothing else, so everything
+`.gitignore` covers is simply absent from one. `node_modules` is the loud case and
+`start` installs it. The quiet case is `.claude/settings.local.json`, which holds
+this machine's permission mode: without it a new worktree falls back to the
+default, and the protocol's own writes start being refused in a tree cut minutes
+after one where they were allowed. That reads as the tool being broken rather than
+as a file being missing, which is the whole reason it is worth a section.
+
+`.worktreeinclude` at the repository root is what names them, one path a line. It
+is the vendored `worktree-per-change` installer's file, and everywhere else it is
+Claude Code's `EnterWorktree` that reads it — which this repository never calls
+(ADR 0005). So `start` reads it, because `start` is what cuts worktrees here, and
+a file naming a requirement that nothing acts on is worse than no file.
+`lib/include.mjs` is the parse and the copy, both tested; the report says what was
+carried **even when it carried everything**, because the failure it prevents is
+invisible and a run that carried nothing has to say so.
+
 ## The pre-commit hook
 
 `.githooks/pre-commit` runs `pnpm check` and blocks the commit if it fails
