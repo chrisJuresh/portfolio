@@ -1,8 +1,106 @@
-/* The Front Screen's Variants: none.
-   Not an oversight and not an empty stub waiting to be filled. This is the one
-   Section whose composition the author has already arrived at by looking at it
-   for months on the live site, so there is no alternative direction to judge it
-   against — a Variant is for a question that is still open. The next change that
-   opens one writes it here, and `pnpm variants` renders it.
-   docs/agents/variants.md is the authority; NOTES.md says why this file is
-   empty. */
+/* The Front Screen's Variants: five arguments about ONE distance.
+
+   THE QUESTION. The Cut Title stands flush on the page's left margin, and the
+   white between the S and the resume column is whatever is left over. Those two
+   whites are not equal and cannot be made equal by one number, because they are
+   functions of different things: the margin is the page's, and the word's width
+   is the Panel masthead's cap re-solved through --landing-w, which is bound by
+   the window's HEIGHT for most of the band. So the gap swings from a few pixels
+   to a couple of hundred across the band while the margin barely moves.
+
+   THE CONSTRAINT THAT RULES OUT THE OBVIOUS ANSWER. The word is not the Front
+   Screen's alone. It is pinned to the fold, it never moves, and on the screen
+   below it stands in the Projects Panel masthead's slot — where SELF-STACKING
+   PHOTO GALLERY, the three project headings, the Frame and the Plinth are all
+   flush to the same left rule. Moving the word right buys the Front Screen its
+   equality and costs the Panel its flush left edge, and the word has to look
+   proportional on BOTH. `gutter` and `gutter-half` are that trade taken; the
+   three after them are the same equality bought by moving the RESUME instead,
+   and they leave the word — and so the Panel — exactly where it is.
+
+   THE TERMS, once, so the five expressions below can be read:
+
+     M   --front-screen-rhyme          the page's margin, where the word starts
+     W   --front-screen-cut-fit        the word's ink, drawn at the masthead's cap
+     P   --page-across                 the page, without the scrollbar's gutter
+     Msr --front-screen-measure        the resume column's measure
+     S   --front-screen-side           the Section's own padding
+     C   (P - Msr) / 2                 the column's left edge, it being centred
+     G   C - 2M - W                    the surplus the equality has to divide
+
+   G is the whole of it. Equality means the left white and the right white are
+   both M + G/4 after the word has moved G/2, or both M after the column has moved
+   G. Every Variant below is one way of spending G.
+
+   docs/agents/variants.md is the authority on the file; NOTES.md carries why the
+   word is drawn where it is. */
+
+/* ---- gutter: the word takes the whole surplus -----------------------------
+   The word moves right by G/2 and the two whites come out equal at M + G/4. This
+   is the ask taken literally, and the honest form of what it costs is on the
+   screen below: the word is then indented from its own composition by G/2. */
+:root[data-variant='gutter'] .front-screen__cut {
+  left: calc(
+    ((var(--page-across) - var(--front-screen-measure)) / 2 - var(--front-screen-cut-fit)) / 2
+  );
+}
+
+/* ---- gutter-half: the word takes half the surplus -------------------------
+   Moves G/4 rather than G/2, so the left white grows and the right white shrinks
+   without meeting. Half the correction on the Front Screen, half the indent on
+   the Panel — the argument that the Panel's flush edge is worth more than the
+   last half of the equality. */
+:root[data-variant='gutter-half'] .front-screen__cut {
+  left: calc(
+    var(--front-screen-rhyme) +
+      ((var(--page-across) - var(--front-screen-measure)) / 2 - 2 * var(--front-screen-rhyme) -
+          var(--front-screen-cut-fit)) / 4
+  );
+}
+
+/* ---- column-in: the resume takes the whole surplus ------------------------
+   The word does not move, so the Panel is untouched and the word stays flush on
+   both screens. The column comes IN to the word instead, until the white it
+   leaves is the page's own margin. What it spends is the column's centring: the
+   resume sits G left of centre, and on a wide window that is a page whose
+   text block is visibly off to one side. */
+:root[data-variant='column-in'] .front-screen__col {
+  margin-left: calc(
+    2 * var(--front-screen-rhyme) + var(--front-screen-cut-fit) - var(--front-screen-side)
+  );
+  margin-right: auto;
+}
+
+/* ---- meet: the word takes a quarter, the column takes a half --------------
+   Both move, so neither pays the whole price: the word is indented on the Panel
+   by G/4 rather than G/2, and the column is G/2 off centre rather than G. The
+   two whites still come out equal, at M + G/4. */
+:root[data-variant='meet'] .front-screen__cut {
+  left: calc(
+    var(--front-screen-rhyme) +
+      ((var(--page-across) - var(--front-screen-measure)) / 2 - 2 * var(--front-screen-rhyme) -
+          var(--front-screen-cut-fit)) / 4
+  );
+}
+
+:root[data-variant='meet'] .front-screen__col {
+  margin-left: calc(
+    2 * var(--front-screen-rhyme) + var(--front-screen-cut-fit) +
+      ((var(--page-across) - var(--front-screen-measure)) / 2 - 2 * var(--front-screen-rhyme) -
+          var(--front-screen-cut-fit)) / 2 - var(--front-screen-side)
+  );
+  margin-right: auto;
+}
+
+/* ---- measure-wide: the resume takes the surplus by GROWING ----------------
+   The column stays centred and its measure widens until its left edge lands on
+   the word's right white. Nothing moves off centre, the word does not move, and
+   the Panel is untouched — the whole of the cost is in the line length, which
+   goes from about 65 characters to about 80. The argument is that a page has one
+   left rule for the word and one centred column, and the way to close a gap
+   between them is to set the column wider rather than to shove either sideways. */
+:root[data-variant='measure-wide'] .front-screen {
+  --front-screen-measure: calc(
+    var(--page-across) - 4 * var(--front-screen-rhyme) - 2 * var(--front-screen-cut-fit)
+  );
+}
