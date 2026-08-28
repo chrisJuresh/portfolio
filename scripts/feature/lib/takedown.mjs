@@ -171,8 +171,13 @@ export async function takeDown({ sh, common, root, worktree, branch, orphan = fa
   // directory inside the tree blocks the top-level rmdir on Windows while
   // everything underneath deletes, so this is the signature `land` reports on
   // every land: twelve attempts, `EBUSY`, no cause named (#168).
-  const standingIn = stillThere && !dirt ? standing({ worktree, startedIn }) : [];
-  for (const row of standingIn) {
+  // `standingRows` and not `standingIn`: the module-level import of `standingIn`
+  // is what the decision above is made with, and a local const of that name puts
+  // it in the temporal dead zone for the WHOLE function — so the earlier call
+  // throws `Cannot access 'standingIn' before initialization`, after the push and
+  // in the one code path no Check runs.
+  const standingRows = stillThere && !dirt ? standing({ worktree, startedIn }) : [];
+  for (const row of standingRows) {
     console.log(`  standing   ${row.pid === null ? '' : `pid ${row.pid} — `}${row.from}`);
   }
 
@@ -180,7 +185,7 @@ export async function takeDown({ sh, common, root, worktree, branch, orphan = fa
   // working-directory property, so a shell sitting in the tree that is not the
   // one that ran this is undetectable from here — and `EBUSY` on its own is what
   // sent two sessions to `netstat -ano` by hand and a third to guess.
-  if (stillThere && !dirt && holding.length === 0 && standingIn.length === 0) {
+  if (stillThere && !dirt && holding.length === 0 && standingRows.length === 0) {
     console.log(
       '  holding    nothing is on a port, and no process names a path inside it — check that no\n' +
         '             shell, editor or terminal has this directory as its working directory. On\n' +
@@ -200,7 +205,7 @@ export async function takeDown({ sh, common, root, worktree, branch, orphan = fa
     // contents have just been deleted. Measured on #167 — `cd`, then `clean`,
     // removed it on the first attempt with nothing else changed.
     left.push(
-      standingIn.some((row) => row.confirmed)
+      standingRows.some((row) => row.confirmed)
         ? `the worktree at ${worktree} — something is still standing in it, so: ` +
             `\`cd ${root}\` on its own, then \`pnpm feature clean ${branch}\``
         : `the worktree at ${worktree} — \`pnpm feature clean ${branch}\` finishes it`,
