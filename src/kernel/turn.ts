@@ -1,5 +1,6 @@
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
+import { crossOwnsTurn } from './cross';
 import { register } from './handles';
 
 gsap.registerPlugin(ScrollTrigger);
@@ -66,7 +67,14 @@ export function createTurn(): gsap.core.Timeline {
     trigger,
     start: 'top top',
     end: 'bottom bottom',
-    onUpdate: (self) => timeline.progress(self.progress),
+    // The `turn` candidate re-anchors the crossing to the word rather than to
+    // the document's whole scroll (src/kernel/cross.ts), and then it drives this
+    // Timeline itself. Standing aside rather than fighting it: two writers on one
+    // progress is a frame of whichever ran second.
+    onUpdate: (self) => {
+      if (crossOwnsTurn()) return;
+      timeline.progress(self.progress);
+    },
   });
 
   register(TURN, timeline);

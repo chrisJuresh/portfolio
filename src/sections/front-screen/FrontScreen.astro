@@ -196,7 +196,7 @@ const EAGER = 2;
   {/* The Cut Title. The word is a picture of Friz Quadrata rather than type, so
       the text beside it is what a screen reader announces and a crawler indexes —
       the only text in here, and the reason the picture is allowed to be one. */}
-  <div class="front-screen__cut">
+  <div class="front-screen__cut" data-landing-word>
     <a href={content.projects.href}>
       <svg
         class="front-screen__cut-word"
@@ -1183,5 +1183,92 @@ const EAGER = 2;
       height: var(--front-screen-cut-slab);
       margin-top: calc(-1 * var(--front-screen-cut-show) * var(--front-screen-cut-slab));
     }
+  }
+  /* ---- the spine of the out-of-band candidates -------------------------
+     SPIKE — src/kernel/cross.ts is the whole argument, and the four candidates.
+
+     Outside the landing band this word is the last line of the column, clipped
+     to 0.62 of its own cap because the document ends beneath it, centred in the
+     column's measure — and the Panel prints a SECOND PROJECTS, in the sans, at
+     another size, on the page's left margin about a hundred and fifty pixels
+     lower. Here it does what it does in the band instead: it leaves the column,
+     stands on the page's own margin, is fitted to the masthead's cap and is put
+     in the masthead's slot, and the masthead goes invisible underneath it.
+
+     THE TWO NUMBERS ARE MEASURED AND ARRIVE ON THE BODY. In the band both
+     Sections are solved from --landing-w, so the cap and the drop are
+     arithmetic. Out here the Panel is a stack whose masthead stands under a Rail
+     of names that WRAP, so its drop is a height layout works out and CSS cannot
+     read back — the same reason the Timeline measures a photograph rather than
+     deriving one. cross.ts measures it once per resize and publishes
+     --landing-stack-cap and --landing-stack-drop; both carry a fallback so the
+     first paint before any script has run is the word where the flow put it.
+
+     THE ATTRIBUTE IS THE GATE AND THERE IS NO MEDIA QUERY, and it is on this
+     Section's own root: a scoped stylesheet cannot match <html>, which is the
+     trap tokens.css carries a paragraph about. cross.ts writes it only when a
+     candidate is chosen and the band does not apply.
+
+     `top: 100%` IS THE SEAM. The Section's padding box is its border box, so
+     100% is its own foot — which is the line the Panel's paper begins on. The
+     drop carries the word from there down to the masthead's cap top, past the
+     Rail, and the word paints over the Panel's ground because it is a positioned
+     descendant with a z-index and the ground is a block background. */
+  .front-screen[data-cross] {
+    position: relative;
+    /* The word is out of the flow now, so the column's own foot is the last
+       contact line plus the page's vertical rhyme. */
+    padding-bottom: var(--front-screen-rhyme);
+  }
+
+  .front-screen[data-cross] .front-screen__cut {
+    position: absolute;
+    top: calc(100% + var(--landing-stack-drop, 0px));
+    left: var(--front-screen-side);
+    width: calc(var(--landing-stack-cap, 0px) / var(--front-screen-cut-cap-share));
+    max-width: none;
+    margin: 0;
+    /* Fitted to its INK and not to the advance box a line of type would carry,
+       for the reason the band's block gives: the word is set flush to the page's
+       margin here, and a bearing's width off it is a bearing's width wrong. */
+    --front-screen-cut-ink: 100cqw;
+    --front-screen-cut-lead: 0px;
+  }
+
+  /* THE CLIP COMES OFF, and the box stays the cap slab — the hover underline
+     lands on its bottom edge and so on the baseline, where a descender's worth of
+     extra box would put it under the J. The box's TOP is therefore the cap top,
+     which is what lets cross.ts do its arithmetic on one rectangle. */
+  .front-screen[data-cross] .front-screen__cut > a {
+    overflow: visible;
+    height: var(--front-screen-cut-slab);
+    margin-top: 0;
+  }
+
+  /* `stagger`: the eight letters turn one at a time across the crossing rather
+     than nearly together. 0.11 of the crossing each leaves the last letter
+     0.23 of it to travel in. */
+  .front-screen[data-cross='stagger'] {
+    --front-screen-cut-stagger: 0.11;
+  }
+
+  /* `seam`: the word never goes down to the masthead's slot. It stands ON the
+     boundary between the two papers, cut by the light one and finished on the
+     dark one — which is what the fold does to it in the band, drawn by the two
+     Sections' own edge instead of by the window's. The cap top is the seam less
+     the slice that shows, so the same --front-screen-cut-show governs both
+     regimes. The container is an inline-size container fitted to the cap, so its
+     100cqw ink makes the slab exactly --landing-stack-cap. */
+  .front-screen[data-cross='seam'] {
+    /* The column has to stop above the slice of the word that stands on the
+       light paper, or it is printed over the last contact line — which is the
+       same debt --front-screen-cut-gap pays in the band, and the same slice. */
+    padding-bottom: calc(
+      var(--front-screen-rhyme) + var(--front-screen-cut-show) * var(--landing-stack-cap, 0px)
+    );
+  }
+
+  .front-screen[data-cross='seam'] .front-screen__cut {
+    top: calc(100% - var(--front-screen-cut-show) * var(--landing-stack-cap, 0px));
   }
 </style>

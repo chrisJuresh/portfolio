@@ -1,3 +1,4 @@
+import { mode, onCross } from '../../kernel/cross';
 import { onTurn } from '../../kernel/turn';
 import data from './assets/cut-morph.json';
 
@@ -195,5 +196,20 @@ export default function mountCutMorph(root: HTMLElement): void {
   // eight letters are built — so the drawing is the same one either way — and
   // nothing ever advances them off Friz.
   if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return;
-  onTurn(draw);
+
+  /* SPIKE — src/kernel/cross.ts. Outside the landing band the Turn spans the
+     WHOLE document, so drawn against it the word finishes turning about a screen
+     and a half before it is anywhere near the Panel, and a second sans PROJECTS
+     is on the page beneath it while it does. Every candidate draws the word
+     against its OWN crossing of the window instead, which in the band is the same
+     measurement — one screen, from the cap top on the bottom edge to the cap top
+     at the landing. Both are watched, and whichever is not driving the page reads
+     its own number: `mode()` is null in the band and null with no candidate
+     chosen, and then this is exactly the shipped file. */
+  onCross((cross) => {
+    if (mode() !== null) draw(cross);
+  });
+  onTurn((turn) => {
+    if (mode() === null) draw(turn);
+  });
 }

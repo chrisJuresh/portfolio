@@ -1,4 +1,5 @@
 import { mountCorners } from './corners';
+import { cross, mountCross } from './cross';
 import { mountGrain } from './effect-stack/grain';
 import { handles } from './handles';
 import { mountSections, observeSection } from './loader';
@@ -24,6 +25,9 @@ followSystemTheme();
 mountWheel();
 mountPageTurn();
 mountSections();
+// After the Sections: the crossing measures the Panel's masthead, which has to be
+// laid out before it can be measured.
+mountCross();
 
 const kernel = handles();
 kernel.observeSection = observeSection;
@@ -32,3 +36,4 @@ kernel.hold = hold;
 kernel.release = release;
 kernel.snapping = snapping;
 kernel.ports = ports;
+kernel.cross = cross;

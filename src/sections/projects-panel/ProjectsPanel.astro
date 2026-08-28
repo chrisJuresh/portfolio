@@ -50,7 +50,14 @@ const selected = (project: { href?: string }) => project.href === `#${here}`;
   </nav>
   <div class="projects-panel__inner">
     <header class="projects-panel__head">
-      <h2 class="projects-panel__masthead" id="projects-panel-masthead">{content.masthead}</h2>
+      {/* data-landing-mast is the Kernel's handle on this box, the way
+          data-section is on the Section: outside the landing band the crossing
+          measures this masthead's cap and its drop and stands the Cut Title in
+          its slot, and neither number can be computed — the Rail above it wraps.
+          src/kernel/cross.ts. */}
+      <h2 class="projects-panel__masthead" id="projects-panel-masthead" data-landing-mast>
+        {content.masthead}
+      </h2>
       <p class="projects-panel__sub">
         {content.subheading.map((line) => (
           <span>{line}</span>
@@ -1845,6 +1852,42 @@ const selected = (project: { href?: string }) => project.href === `#${here}`;
         opacity: 1;
       }
     }
+  }
+  /* ---- the spine of the out-of-band candidates -------------------------
+     SPIKE. Outside the landing band the page shows PROJECTS twice: a Friz word
+     clipped at the foot of the Front Screen's column and this masthead about a
+     hundred and fifty pixels below it, at another size, in another face. Every
+     candidate in src/kernel/cross.ts makes it one word the same way the band
+     does — this masthead goes invisible and the Cut Title stands in its slot.
+
+     THE ATTRIBUTE IS THE GATE AND THERE IS NO MEDIA QUERY. cross.ts writes
+     data-cross onto a Section's root only when a candidate is chosen AND the
+     band does not apply, so a query here would be a second copy of that
+     decision. It is on the Section's own element rather than on :root because a
+     scoped stylesheet cannot match <html> at all — the trap tokens.css carries
+     its own paragraph about. */
+  .projects-panel[data-cross] .projects-panel__masthead {
+    visibility: hidden;
+  }
+
+  /* `seam` is the one candidate the word does not come down here for — it stands
+     on the boundary above the Rail — so the slot goes with the masthead and the
+     head closes up under it. `display: none` and not `visibility: hidden`, which
+     is the difference between the two candidates and the whole of it.
+
+     WHAT IT COSTS, so the spike is not read as finished: this Section's
+     `aria-labelledby` names this element, and a display:none element supplies no
+     accessible name. Whichever candidate wins, if it is this one, owes the
+     Section a name from somewhere else. */
+  .projects-panel[data-cross='seam'] .projects-panel__masthead {
+    display: none;
+  }
+
+  /* And the air the word's own tail needs on this side of the boundary, so the
+     Rail is not printed through the descenders. cross.ts measures it off the
+     drawing rather than off the cap: the J hangs below the cap slab. */
+  .projects-panel[data-cross='seam'] {
+    padding-top: calc(var(--projects-panel-inset) + var(--landing-stack-under, 0px));
   }
 </style>
 

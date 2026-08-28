@@ -19,6 +19,9 @@ export interface Handles {
   snapping?: (on: boolean) => void;
   /** The resting places the page turn moves between, in document pixels. */
   ports?: () => number[];
+  /** Choose one of the out-of-band PROJECTS candidates, or clear it — cross.ts.
+   *  A spike's handle: this is how a Run picks which candidate it is a clip of. */
+  cross?: (named: string | null) => void;
 }
 
 declare global {
