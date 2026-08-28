@@ -6,8 +6,6 @@ import { defineContent, z } from '../../kernel/content';
  */
 const entry = z.object({
   org: z.string().min(1),
-  /** the role or the subject — the second line under the organisation */
-  detail: z.string().min(1),
   years: z.string().min(1),
 });
 
@@ -21,9 +19,9 @@ const schema = z.object({
   location: z.string().min(1),
   /** The first paragraph is the lead and is set in italics. */
   bio: z.array(z.string().min(1)).min(1),
-  /** The masthead's one link, and the Cut Title's: both point at the same place. */
+  /** Where the Cut Title points. The masthead said the same word in small type
+      above a word cut off the page's own bottom edge, so it no longer says it. */
   projects: z.object({
-    label: z.string().min(1),
     href: z.string().min(1),
   }),
   work: listing,
@@ -81,18 +79,16 @@ export const content = defineContent(schema, {
   bio: [
     'I’m a software engineer on an integration team, shipping work end to end — backend, platform and frontend.',
   ],
-  projects: { label: 'Projects', href: '#projects' },
+  projects: { href: '#projects' },
   work: {
     heading: 'Work Experience',
     entries: [
       {
         org: 'Third Bridge Group Limited',
-        detail: 'Associate Software Engineer',
         years: '2024–Present',
       },
       {
         org: 'Royal College of Radiologists',
-        detail: 'Professional Services Administrator',
         years: '2022–2024',
       },
     ],
@@ -102,7 +98,6 @@ export const content = defineContent(schema, {
     entries: [
       {
         org: 'Queen Mary University of London',
-        detail: 'BSc Computer Science',
         years: '2021–2024',
       },
     ],

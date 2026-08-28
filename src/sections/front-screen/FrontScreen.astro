@@ -65,10 +65,12 @@ const EAGER = 2;
   <div class="front-screen__col">
     <header class="front-screen__masthead">
       <h1 class="front-screen__name" id="front-screen-name">{content.name}</h1>
-      <div class="front-screen__meta">
-        <p class="front-screen__location">{content.location}</p>
-        <a class="front-screen__projects" href={content.projects.href}>{content.projects.label}</a>
-      </div>
+      {/* The masthead's second line, and it used to be a two-column grid: the
+          location, and a small "Projects" link set against the right edge. The
+          link is gone and the grid with it — the Cut Title says that word at the
+          foot of the same screen, at the size the whole page turns on, and one
+          word said twice is the smaller one saying nothing. */}
+      <p class="front-screen__location">{content.location}</p>
     </header>
 
     <div class="front-screen__intro">
@@ -127,13 +129,16 @@ const EAGER = 2;
       listings.map((listing) => (
         <section class="front-screen__listing">
           <h2 class="front-screen__heading">{listing.heading}</h2>
+          {/* One line each, and it used to be two: an italic role or subject
+              stood under the organisation. An entry is still the content's own
+              unit — an organisation and the years beside it — so the box stays,
+              and what its margin separates is now one line from the next. */}
           {listing.entries.map((entry) => (
             <div class="front-screen__entry">
               <p class="front-screen__line">
                 <span>{entry.org}</span>
                 <em class="front-screen__years">{entry.years}</em>
               </p>
-              <p class="front-screen__detail">{entry.detail}</p>
             </div>
           ))}
         </section>
@@ -348,7 +353,7 @@ const EAGER = 2;
      collapse, so a pair of them would add where they used to merge. */
   .front-screen__col > * {
     flex: none;
-    margin-top: var(--front-screen-space-s);
+    margin-top: var(--front-screen-space-m);
   }
 
   .front-screen__masthead {
@@ -367,11 +372,6 @@ const EAGER = 2;
     z-index: var(--front-screen-type-z);
   }
 
-  .front-screen__intro,
-  .front-screen__strip {
-    margin-top: var(--front-screen-space-m);
-  }
-
   /* ---- the masthead ------------------------------------------------------ */
   .front-screen__name {
     margin: 0;
@@ -382,38 +382,12 @@ const EAGER = 2;
     text-transform: lowercase;
   }
 
-  .front-screen__meta {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
-    align-items: baseline;
-    column-gap: var(--front-screen-gutter);
-    margin-top: var(--front-screen-space-2xs);
-  }
-
   .front-screen__location {
-    margin: 0;
+    margin: var(--front-screen-space-2xs) 0 0;
     font-family: var(--face-label);
     font-size: var(--front-screen-label-size);
     letter-spacing: var(--front-screen-label-tracking);
     color: var(--front-screen-muted);
-  }
-
-  .front-screen__projects {
-    font-family: var(--face-label);
-    font-size: var(--front-screen-label-size);
-    letter-spacing: var(--front-screen-label-tracking);
-    color: var(--front-screen-muted);
-    text-decoration: none;
-    border-bottom: var(--front-screen-hairline) solid var(--front-screen-rule);
-    transition:
-      color var(--front-screen-hover-fade) ease,
-      border-color var(--front-screen-hover-fade) ease;
-  }
-
-  .front-screen__projects:hover,
-  .front-screen__projects:focus-visible {
-    color: var(--ink);
-    border-color: var(--ink);
   }
 
   /* ---- the bio ----------------------------------------------------------- */
@@ -748,13 +722,6 @@ const EAGER = 2;
     white-space: nowrap;
   }
 
-  .front-screen__detail {
-    margin: var(--front-screen-space-4xs) 0 0;
-    font-size: var(--front-screen-detail-size);
-    font-style: italic;
-    color: var(--front-screen-muted);
-  }
-
   .front-screen__contact {
     margin: 0;
     padding: 0;
@@ -912,7 +879,6 @@ const EAGER = 2;
      a control the reader tabs to, and every control on this Section is ringed the
      same way. Losing it makes the photographs unoperable by anyone who cannot
      see where the focus went — which is why #137 asks for it by name. */
-  .front-screen__projects:focus-visible,
   .front-screen__toggle:focus-visible,
   .front-screen__contact a:focus-visible,
   .front-screen__photos:focus-visible,

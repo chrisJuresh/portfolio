@@ -39,16 +39,19 @@
      PHOTOGRAPHS bigger is a change to the Section's type ladder and not to this
      number.
 
-     WHAT PAID FOR THE VALUE BELOW WAS THE PAGE'S MARGIN. 1.428 is a fifth of the
-     screen's height more type than the page used to carry, and at the margin the
-     page used to carry it took a 1920x1080 photograph from 312px to 96px. What
-     made it affordable is `--front-screen-rhyme` and the two Tokens that restate
-     it coming down from 9% of the screen at each end to 2.7% — the three of them
-     and this one are one change and land together.
+     WHAT PAID FOR THE VALUE BELOW WAS THE PAGE'S MARGIN, and what makes it cost
+     a short screen NOTHING is the give-way below. The two multiply, so this
+     number alone is the CEILING and the two together are the give-way: at 1.192
+     the ceiling is 1.192rem where it was 1rem, and `--type-scale` is 0.016
+     divided by this, so the slope a short screen gives way along is the one it
+     always had. Move them together — pick this, divide 0.016 by it — or a lift
+     here is a lift on the screens with nothing to give, and `carousel` refuses
+     it: 1.428 against an unchanged 0.016 takes a 1920x1080 photograph from 312px
+     to 96px.
 
      The Editor drags it from the page as well as from the panel: pick anything,
      turn on `scale everything`, and a corner drag moves this — scripts/editor/NOTES.md. */
-  --type-zoom: 1.428;
+  --type-zoom: 1.192;
 
   /* THE CEILING, in rem rather than px on purpose: on the root's own font-size a
      rem is the initial value, which is the READER's default. A tall screen
@@ -60,15 +63,16 @@
      is still a photograph of something. Measured at the band's corners and not
      derived — NOTES.md is the measurement, and `carousel` is what holds it.
 
-     READ IT WITH THE ZOOM, WHICH MULTIPLIES IT. What a short screen actually gets
-     is the two of them: 1.428 x 0.0122 is 0.01742, against the 1 x 0.016 the page
-     used to give way at — so a short screen is 9% larger than it was and not 43%,
-     and the ceiling above is what the extra 43% is spent on once a screen is tall
-     enough to hold it. The knee between the two is at 1311px of height.
+     READ IT WITH THE ZOOM, WHICH MULTIPLIES IT. What a short screen actually
+     gives way along is the two of them: 1.192 x 0.01342 is 0.016, which is the
+     slope this was measured at, so every window under about 1192px of height is
+     the size it always was — to the pixel — and the zoom is spent entirely on the
+     ceiling above that knee.
 
-     SO THE TWO MOVE TOGETHER. Dragging the zoom alone drags the give-way with it,
-     which is the whole of why 1.428 at 0.016 fails `carousel` at every window in
-     the band bar the tallest. Raise one, lower the other; `carousel` measures at
-     1440x700, and there is 36px of slot above the floor there to spend. */
-  --type-scale: 0.0122;
+     SO THE TWO MOVE TOGETHER, and the arithmetic is one line: this is 0.016
+     divided by the zoom. Dragging the zoom alone drags the give-way with it,
+     which is why a zoom the band's short corner cannot pay for is a zoom
+     `carousel` refuses. It measures at 1440x700, and there is 90px of slot above
+     the floor there. */
+  --type-scale: 0.01342;
 }

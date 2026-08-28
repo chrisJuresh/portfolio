@@ -140,9 +140,18 @@ their own.
 budget was.** Not the column — the gaps down it are a φ ladder and the largest is
 1.618rem. `--front-screen-rhyme` was 9% of the screen at each end, so a short
 window spent a fifth of itself on white; at 2.7% the slot clears the floor by
-**36–184px**, the listing headings are at the size they were dragged to, and the
+**90–153px**, the listing headings are at the size they were dragged to, and the
 photographs are LARGER at every window than they were before any of it. A fifth of
 a screen is what a fifth of a screen buys.
+
+**AND THE SLOT NOW STANDS ON ITS CEILING AT EVERY WINDOW IN THE BAND, which turns
+the leftover back into the margin.** Dropping the entries' second line took a
+third of the listings' height out of the column, and past `--front-screen-strip-max`
+the surplus is split at both ends by `justify-content: center` — so the white above
+the name is 33px at the band's short corner and 112px at 2560x1311, and
+`--front-screen-rhyme` is now the FLOOR under that rather than the whole of it.
+What the Token still sets on its own is the Cut Title's left margin, which is why
+it is not simply inert.
 
 **Which makes it a page-wide change and not this Section's**, and that is the
 thing to know before moving it again: the same clamp is written three times, as
@@ -214,7 +223,7 @@ called that too for one build. Astro's scoping does not help: both are this
 component's, so the switch's own `width` and `height` landed on the scroller and
 the scroller's `position` and `overflow` landed on the pill. The scroller is
 `.front-screen__photos`. Worth knowing before adding any part named for a generic
-mechanism — this Section already has a `__thumb`, a `__meta` and a `__line`.
+mechanism — this Section already has a `__thumb` and a `__line`.
 
 ### The dissolve is a mask, not a veil
 

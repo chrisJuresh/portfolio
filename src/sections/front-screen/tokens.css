@@ -3,13 +3,20 @@
    these are Tokens and the drawing's own measurements are not, what the two
    colours are mixed out of, and why one rule here is gated on the theme. */
 .front-screen {
-  --front-screen-measure: 31rem;
+  --front-screen-measure: 27rem;
   --front-screen-side: 1.35rem;
   /* The page's top margin, and — through --front-screen-cut-gap — its bottom one.
      2.7% of the screen at each end and not the 9% it was: at 9% a short window
      spent a fifth of itself on margin, and the composition cleared the
      photographs' floor by six pixels. This is where the type's own size came
      from, and it is why `--type-zoom` could be lifted at all.
+
+     IT IS A FLOOR AND NOT THE MARGIN ITSELF. The composition stands on
+     `--front-screen-strip-max` at every window in the band, so the white above the
+     name is this plus half the surplus — 33px at the band's short corner, 112px at
+     2560x1311 — and moving this number only shows on a screen with no surplus
+     left. What it does set on its own, at every screen, is the Cut Title's left
+     margin.
 
      WRITTEN THREE TIMES AND THE THREE ARE ONE NUMBER: this, the Panel's
      --projects-panel-inset, and the Kernel's --landing-inset, which the Cut
@@ -18,7 +25,6 @@
      the masthead it is drawn to stand in. */
   --front-screen-rhyme: clamp(1.25rem, 2.7vh, 2rem);
 
-  --front-screen-space-4xs: 0.146rem;
   --front-screen-space-3xs: 0.236rem;
   --front-screen-space-2xs: 0.382rem;
   --front-screen-space-xs: 0.618rem;
@@ -30,10 +36,17 @@
      the three into a stated height; inside it, the slot is the budget's remainder
      with `-strip-max` as the ceiling and no floor — the component says why. The
      clamp is a relationship and is therefore the composition's rather than
-     Editor's; these three are the values. */
+     Editor's; these three are the values.
+
+     `-strip-max` IS THE PAGE'S TOP MARGIN AS MUCH AS IT IS THE PHOTOGRAPHS'
+     CEILING, now that the composition is short enough to stand on it at every
+     window in the band: past it the surplus is split at both ends, so a rem taken
+     off here is half a rem of white added above the name and half below the last
+     contact line. It is the Token to move to trade one against the other, and
+     `--front-screen-rhyme` is only the floor under the result. */
   --front-screen-strip-min: 15rem;
   --front-screen-strip-fill: 40vh;
-  --front-screen-strip-max: 24rem;
+  --front-screen-strip-max: 23rem;
 
   /* ---- the photographs ---------------------------------------------------
      The strip's HEIGHT is not here: it is the one-screen budget's remainder,
@@ -131,7 +144,6 @@
   --front-screen-heading-leading: 1.2;
   --front-screen-heading-weight: 700;
   --front-screen-heading-tracking: 0.01em;
-  --front-screen-detail-size: 0.86rem;
   --front-screen-indent: 1.1rem;
   /* How far a listing's body stands in from its heading. The heading hangs back
      out to the column's left edge, so this is the whole of the step between the

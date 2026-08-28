@@ -223,22 +223,26 @@ no budget to give. `1.428` at the `0.016` the give-way was measured at fails
 1920x1080 photograph from 312px to 96px and a 1600x900 one to 31px, which is the
 whole failure, not a corner case.
 
-Paired, it is affordable, and `0.0122` is that pairing re-solved: `1.428 x 0.0122`
-is `0.01742` against the old `1 x 0.016`, so a short screen is 9% larger than it
-was rather than 43%, the knee where the ceiling takes over is at 1311px of height,
-and the 43% is spent only above it. **What paid for even the 9% is the page's
-margin** — `--front-screen-rhyme` and its two restatements went from 9% of the
-screen at each end to 2.7%, which is a fifth of a short screen handed back — and
-the two are one change. Re-solve them together: raise the zoom, lower the scale,
-and read `carousel`'s slot-against-floor line at 1440x700, where there is now 36px
-of room rather than the 6px the composition used to ship with.
+**Paired, it is free, and the pairing is one line of arithmetic: the PRODUCT is
+the give-way, and the ZOOM alone is the ceiling.** `1.192 x 0.01342` is `0.016` —
+exactly the slope the give-way was measured at — so every window under about
+1192px of height gets the size it always got, to the pixel, and the ceiling above
+that is `1.192rem` instead of `1rem`. Nothing was taken from a short screen to
+pay for a tall one. Re-solve it that way whenever the zoom moves: pick the zoom,
+divide `0.016` by it, and the give-way is unchanged by construction.
+
+**What paid for the ceiling is the page's margin** — `--front-screen-rhyme` and
+its two restatements went from 9% of the screen at each end to 2.7%, a fifth of a
+short screen handed back — and the two are one change. `carousel`'s
+slot-against-floor line at 1440x700 is where the room shows: 90px, against the
+6px the composition used to ship with.
 
 **A zoom is a REDISTRIBUTION inside the band, which is the sentence to have ready
 when somebody asks why the photographs got smaller.** The strip is the remainder,
 so it cannot grow with the rest — it funds the rest. Measured at 2560x1311, ×1.3
 takes the column from 432px to 562px and every glyph with it, and takes a
 photograph from 288px wide to 250px, because at 100% the strip was already standing
-on its own `24rem` ceiling and the fold had nothing left to give. Making the
+on its own `--front-screen-strip-max` ceiling and the fold had nothing left to give. Making the
 photographs BIGGER is therefore not a zoom at all: it is the type giving up some of
 the budget, which is a change to the Section's ladder rather than to this number.
 
