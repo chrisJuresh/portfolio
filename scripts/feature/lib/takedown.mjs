@@ -16,9 +16,10 @@
 
 import { existsSync } from 'node:fs';
 import { git as gitOf } from './git.mjs';
+import { standingIn } from './listeners.mjs';
 import { serving, standing, stopCommand, stop as stopServer } from './server.mjs';
 import { load, lock, remove, save, statePath } from './state.mjs';
-import { inside, refusedForDirt, removeTree } from './teardown.mjs';
+import { attemptsFor, inside, refusedForDirt, removeTree } from './teardown.mjs';
 
 /**
  * @param {object} options
@@ -84,6 +85,16 @@ export async function takeDown({ sh, common, root, worktree, branch, orphan = fa
   if (inside(worktree, startedIn)) process.chdir(root);
   const git = gitOf(sh, root);
 
+  // How long the removal below is worth waiting out. Asked HERE, before the
+  // removal, because that is when the answer is free: `standingIn`'s confirmed
+  // row is `startedIn` compared against the worktree and costs no syscall, while
+  // the command-line scan `standing()` adds is about a second and could not move
+  // the decision anyway. A lock nothing can clear while this command runs is not
+  // worth twelve seconds; a `node_modules` lock behind it is still worth a few
+  // (#170).
+  const alreadyHeld = standingIn({ worktree, startedIn });
+  const waited = attemptsFor({ standing: alreadyHeld });
+
   // Captured BEFORE the removal, and that ordering is load-bearing: `git
   // worktree remove` unregisters the tree before it deletes the files, so a
   // list taken afterwards would not contain the path the guard is about to be
@@ -105,7 +116,7 @@ export async function takeDown({ sh, common, root, worktree, branch, orphan = fa
   const dirt = removed.status !== 0 && refusedForDirt(removed.stderr || removed.stdout);
   const byHand =
     existsSync(worktree) && !dirt
-      ? await removeTree({ path: worktree, root, listed, orphan })
+      ? await removeTree({ path: worktree, root, listed, orphan, attempts: waited.attempts })
       : null;
   git.pruneWorktrees();
 
@@ -131,6 +142,11 @@ export async function takeDown({ sh, common, root, worktree, branch, orphan = fa
       ? ` — ${byHand.why}`
       : '';
   console.log(`  worktree   ${stillThere ? `STILL THERE at ${worktree}${because}` : `gone${how}`}`);
+  // Only when the by-hand removal was tried and failed, which is the one moment
+  // the length of the wait is a question. `after 3 attempts: EBUSY` on its own
+  // reads as a removal that was barely tried; this is the sentence that says the
+  // three were chosen and what they were chosen from.
+  if (byHand !== null && !byHand.removed) console.log(`  waited     ${waited.why}`);
   console.log(`  branch     ${stillLocal ? `STILL THERE — ${branch}` : 'gone'}`);
   console.log(
     `  remote     ${stillRemote ? `STILL THERE — origin/${branch}` : remoteWas ? 'gone' : 'there was none'}`,

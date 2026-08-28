@@ -3,7 +3,15 @@ import { existsSync, mkdirSync, mkdtempSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { test } from 'node:test';
-import { deletable, inside, listsWorktree, refusedForDirt, removeTree, samePath } from './teardown.mjs';
+import {
+  attemptsFor,
+  deletable,
+  inside,
+  listsWorktree,
+  refusedForDirt,
+  removeTree,
+  samePath,
+} from './teardown.mjs';
 
 const root = 'C:/Users/Chris/Desktop/portfolio';
 const under = `${root}/.claude/worktrees/port-the-panel`;
@@ -231,4 +239,50 @@ test('removeTree deletes a tree the guard allows, node_modules depth and all', a
   const found = await removeTree({ path: tree, root: scratch, listed: [tree] });
   assert.equal(found.removed, true, found.why);
   assert.equal(existsSync(tree), false);
+});
+
+test('attemptsFor spends the whole wait when nothing is known to be holding it', () => {
+  // The cause `removeTree`'s wait was written for: something under node_modules
+  // still holding a file after a build, which lets go on its own. Nothing here
+  // knows about it in advance, so the absence of a standing row is what buys it
+  // the full wait.
+  const chosen = attemptsFor({ standing: [] });
+  assert.equal(chosen.attempts, 12);
+  assert.match(chosen.why, /12 attempts/);
+});
+
+test('attemptsFor cuts the wait when something is already standing in the tree', () => {
+  // A working directory inside the tree blocks the top-level rmdir, and the
+  // process holding it is the shell blocked waiting for `land` to return — so it
+  // cannot let go until after the last attempt. Twelve seconds spent on a lock
+  // that cannot clear (#170).
+  const chosen = attemptsFor({
+    standing: [{ pid: null, from: 'the directory this command was run in', confirmed: true }],
+  });
+  assert.ok(chosen.attempts < 12, 'it does not spend the whole wait');
+  assert.ok(chosen.attempts >= 2, 'a node_modules lock behind it still gets a chance');
+});
+
+test('attemptsFor is not moved by a row that is only named', () => {
+  // `standingIn`'s second source is a command line naming a path inside the tree,
+  // and a command line is not a working directory. Cutting the wait on one would
+  // give up on a lock that would have cleared, on evidence the report itself
+  // says not to believe.
+  const chosen = attemptsFor({
+    standing: [{ pid: 4321, from: 'its command line names a path inside this worktree', confirmed: false }],
+  });
+  assert.equal(chosen.attempts, 12);
+});
+
+test('attemptsFor says which cause it acted on, in both directions', () => {
+  // A short wait must never read as a removal that was not tried, and a long one
+  // must say what it was waiting for. The report prints this verbatim.
+  const cut = attemptsFor({
+    standing: [{ pid: null, from: 'the directory this command was run in', confirmed: true }],
+  });
+  const whole = attemptsFor({ standing: [] });
+  assert.ok(cut.why.length > 0 && whole.why.length > 0);
+  assert.notEqual(cut.why, whole.why);
+  assert.match(cut.why, /standing/i);
+  assert.match(whole.why, /nothing/i);
 });

@@ -126,6 +126,58 @@ export function deletable({ path, root, listed, orphan = false }) {
 }
 
 /**
+ * How long a removal is worth waiting out, given what is already known to be
+ * holding the tree.
+ *
+ * `removeTree`'s wait was measured against one cause: something under
+ * `node_modules` still holding a file after a build, which lets go on its own
+ * about a minute later. Twelve attempts a second apart is right for that.
+ *
+ * It is wrong for the cause that turned out to be commoner (#168). A process's
+ * working directory blocks the final `rmdir` for as long as that process lives,
+ * and the process in question is the shell blocked waiting for `land` to
+ * return — so it cannot let go until after the last attempt. Every land then
+ * spends twelve seconds on a lock that cannot clear, and prints the reason it
+ * could not.
+ *
+ * So the wait is chosen rather than fixed, and the thing it is chosen from is
+ * known **before** the removal: `standingIn`'s confirmed row is a comparison
+ * against the directory this process started in, and costs no syscall. This is
+ * not "skip the wait" — a `node_modules` lock can sit behind a standing shell,
+ * and cutting to nothing would give up on the one that would have cleared.
+ *
+ * Only a **confirmed** row moves it. `standingIn`'s other source is a command
+ * line naming a path inside the tree, and a command line is not a working
+ * directory; cutting the wait on evidence the report itself says not to believe
+ * would give up on a clearable lock for nothing.
+ *
+ * @param {object} options
+ * @param {{ confirmed: boolean, from: string }[]} [options.standing] what
+ *   `standingIn` said, given rather than asked for
+ * @param {number} [options.full] the wait for a lock that clears on its own
+ * @param {number} [options.cut] what is left when one that cannot is known about
+ * @returns {{ attempts: number, why: string }} `why` is printed verbatim, so a
+ *   short wait never reads as a removal that was not tried
+ */
+export function attemptsFor({ standing = [], full = 12, cut = 3 } = {}) {
+  if (!standing.some((row) => row.confirmed)) {
+    return {
+      attempts: full,
+      why:
+        `${full} attempts — nothing was standing in the tree before the removal, so the ` +
+        'whole wait went on the lock that clears on its own',
+    };
+  }
+  return {
+    attempts: cut,
+    why:
+      `${cut} attempts rather than ${full} — something was already standing in the tree, and ` +
+      'a working directory does not let go while the process holding it is blocked waiting ' +
+      'for this command. What is left of the wait is for a node_modules lock behind it',
+  };
+}
+
+/**
  * Delete it, if the guard allows — and wait for a lock rather than giving up on
  * one.
  *
