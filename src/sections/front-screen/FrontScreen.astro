@@ -23,7 +23,14 @@ if (!box || !inside || !wide || !tall) {
   );
 }
 
-const listings = [content.work, content.education];
+/* Each listing carries the key its Content is under, so an entry can say which
+   entry it is — `work.0`, `education.0` — and the stylesheet can hold the widths
+   measured off those particular words. Same address the Editor writes a Content
+   edit to, which is the point: one name for one entry, wherever it is named. */
+const listings = [
+  { key: 'work', listing: content.work },
+  { key: 'education', listing: content.education },
+];
 
 /**
  * Where the photographs' bytes are, and the ONE LINE in this Section that knows.
@@ -126,17 +133,26 @@ const EAGER = 2;
     </div>
 
     {
-      listings.map((listing) => (
+      listings.map(({ key, listing }) => (
         <section class="front-screen__listing">
           <h2 class="front-screen__heading">{listing.heading}</h2>
           {/* One line each, and it used to be two: an italic role or subject
               stood under the organisation. An entry is still the content's own
               unit — an organisation and the years beside it — so the box stays,
               and what its margin separates is now one line from the next. */}
-          {listing.entries.map((entry) => (
-            <div class="front-screen__entry">
+          {listing.entries.map((entry, index) => (
+            <div class="front-screen__entry" data-front-screen-entry={`${key}.${index}`}>
               <p class="front-screen__line">
-                <span>{entry.org}</span>
+                {/* Every form of the organisation is in the markup and the
+                    stylesheet shows the longest one the column can hold — the
+                    same posture the theme toggle's two words take, and for the
+                    same reason: the right one is on the page at first paint
+                    rather than a script-load later. */}
+                <span class="front-screen__org">
+                  <span>{entry.org}</span>
+                  {(entry.orgNarrow ?? []).map((form) => <span>{form}</span>)}
+                </span>
+                {entry.grade && <em class="front-screen__grade">{entry.grade}</em>}
                 <em class="front-screen__years">{entry.years}</em>
               </p>
             </div>
@@ -704,7 +720,10 @@ const EAGER = 2;
     margin-bottom: 0;
   }
 
+  /* Positioned so the grade below has an edge to be pinned to, and so it is the
+     LINE rather than the entry's containment that owns it. */
   .front-screen__line {
+    position: relative;
     display: flex;
     align-items: baseline;
     gap: var(--front-screen-gutter);
@@ -720,6 +739,146 @@ const EAGER = 2;
     font-style: normal;
     color: var(--ink);
     white-space: nowrap;
+  }
+
+  /* What the entry was awarded, standing directly under the years — and STANDING
+     OUT OF FLOW, which is the whole of why it costs the composition nothing.
+
+     THE SECTION IS ONE SCREEN, so a real second line here is a line taken off the
+     photograph strip, which is the budget's remainder. Out of flow it is a line
+     drawn in white the column already had: the gap under the last listing is
+     `--front-screen-space-m`, the line box it needs is the body's size times its
+     leading, and the first is the larger of the two. Nothing below it moves, at
+     any window in the band or out of it.
+
+     THE YEAR FACE, AND THAT IS THE WHOLE REASON IT IS A FIELD OF ITS OWN. A
+     figure on this page is set in `--face-year`, so a class and a mark — which
+     are figures and almost nothing else — belong to the years' own column and
+     not to the body face beside them. Written into the organisation's string
+     instead, the seam between the two faces would fall inside a word. Muted,
+     because the qualification is the entry's subject and this is a footnote to
+     it.
+
+     `right: 0` and not an alignment: the years are pinned to the column's right
+     edge by their own `margin-left: auto`, and this is pinned to the same edge,
+     so the two agree by construction rather than by a number. */
+  .front-screen__grade {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    font-family: var(--face-year);
+    font-variant-numeric: oldstyle-nums;
+    font-style: normal;
+    color: var(--front-screen-muted);
+    white-space: nowrap;
+  }
+
+  /* ---- the organisation, said as short as the column needs ----------------
+     One entry is ONE LINE. When the column is too narrow for the organisation's
+     full form the words give way, in the order the author put them in
+     `orgNarrow`, rather than the line wrapping under the years.
+
+     A CONTAINER AND NOT THE VIEWPORT, because what decides this is the width of
+     the entry and nothing else: `min(100%, --front-screen-measure)` less the
+     listing's indent, which a media query would have to restate and then keep in
+     step. `em` in the query resolves against the container's own font-size —
+     the body size — so every threshold below is in the same units the words are
+     drawn in, and the whole ladder moves with `--type-zoom` instead of drifting
+     off it.
+
+     THE THRESHOLDS ARE MEASUREMENTS AND NOT CHOICES, which is why they are here
+     and not in tokens.css: each is the width at which the form above it stops
+     fitting beside the years, measured on the page. Re-measure them if the words
+     change; nudging one only makes a line wrap somewhere else. */
+  .front-screen__entry {
+    container: front-screen-entry / inline-size;
+  }
+
+  /* The longest form is the one on the page, and the rest are not. */
+  .front-screen__org > :not(:first-child) {
+    display: none;
+  }
+
+  /* EVERY LADDER IS ONE ENTRY'S, and that is the thing this is easy to get wrong
+     by not doing. Where a form stops fitting is a fact about ITS OWN words beside
+     ITS OWN years, and the three entries here disagree by three ems: the degree
+     runs out of room at 22.0em, Third Bridge Group Limited at 19.5em and Royal
+     College of Radiologists at 18.6em. On one shared ladder the two shorter names
+     would give way at the widest of those, three and a half ems before they had
+     to — a phone's whole width of column, given up while the words still fitted.
+     So each ladder is gated on the entry it was measured from, named as the
+     Content key its words are at.
+
+     A KEY AND NOT THE WORDS. Reordering a listing therefore moves a ladder onto
+     the wrong entry, silently, which is the one way to break this that a glance
+     does not catch. It is the same address the Editor writes to, so the entry a
+     ladder belongs to is findable by grep from either end.
+
+     Within a ladder the steps are widest first, so the narrowest one that matches
+     is read last and wins, and each step hides everything above it. The hides
+     carry one more compound than the shows they meet, which settles the rest.
+     `:not(:last-child)` is the floor under all of it: whatever the thresholds
+     say, the shortest form the author wrote cannot be hidden, so no entry is ever
+     left showing no name at all. */
+
+  /* work.0 — Third Bridge Group Limited · Third Bridge Group · Third Bridge */
+  @container front-screen-entry (max-width: 19.6em) {
+    [data-front-screen-entry='work.0'] .front-screen__org > :first-child:not(:last-child) {
+      display: none;
+    }
+    [data-front-screen-entry='work.0'] .front-screen__org > :nth-child(2) {
+      display: inline;
+    }
+  }
+
+  @container front-screen-entry (max-width: 16em) {
+    [data-front-screen-entry='work.0'] .front-screen__org > :nth-child(-n + 2):not(:last-child) {
+      display: none;
+    }
+    [data-front-screen-entry='work.0'] .front-screen__org > :nth-child(3) {
+      display: inline;
+    }
+  }
+
+  /* work.1 — Royal College of Radiologists · RCR. One step and a long one: the
+     initials are the only shorter form the name has, so there is nothing to put
+     between them. */
+  @container front-screen-entry (max-width: 18.7em) {
+    [data-front-screen-entry='work.1'] .front-screen__org > :first-child:not(:last-child) {
+      display: none;
+    }
+    [data-front-screen-entry='work.1'] .front-screen__org > :nth-child(2) {
+      display: inline;
+    }
+  }
+
+  /* education.0 — the degree, giving up the honours, then the subject's full
+     name, then the degree itself. */
+  @container front-screen-entry (max-width: 22.2em) {
+    [data-front-screen-entry='education.0'] .front-screen__org > :first-child:not(:last-child) {
+      display: none;
+    }
+    [data-front-screen-entry='education.0'] .front-screen__org > :nth-child(2) {
+      display: inline;
+    }
+  }
+
+  @container front-screen-entry (max-width: 19.1em) {
+    [data-front-screen-entry='education.0'] .front-screen__org > :nth-child(-n + 2):not(:last-child) {
+      display: none;
+    }
+    [data-front-screen-entry='education.0'] .front-screen__org > :nth-child(3) {
+      display: inline;
+    }
+  }
+
+  @container front-screen-entry (max-width: 15.3em) {
+    [data-front-screen-entry='education.0'] .front-screen__org > :nth-child(-n + 3):not(:last-child) {
+      display: none;
+    }
+    [data-front-screen-entry='education.0'] .front-screen__org > :nth-child(4) {
+      display: inline;
+    }
   }
 
   .front-screen__contact {

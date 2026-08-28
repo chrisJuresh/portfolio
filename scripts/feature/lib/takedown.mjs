@@ -16,9 +16,10 @@
 
 import { existsSync } from 'node:fs';
 import { git as gitOf } from './git.mjs';
+import { standingIn } from './listeners.mjs';
 import { serving, standing, stopCommand, stop as stopServer } from './server.mjs';
 import { load, lock, remove, save, statePath } from './state.mjs';
-import { inside, refusedForDirt, removeTree } from './teardown.mjs';
+import { attemptsFor, inside, refusedForDirt, removeTree } from './teardown.mjs';
 
 /**
  * @param {object} options
@@ -84,6 +85,16 @@ export async function takeDown({ sh, common, root, worktree, branch, orphan = fa
   if (inside(worktree, startedIn)) process.chdir(root);
   const git = gitOf(sh, root);
 
+  // How long the removal below is worth waiting out. Asked HERE, before the
+  // removal, because that is when the answer is free: `standingIn`'s confirmed
+  // row is `startedIn` compared against the worktree and costs no syscall, while
+  // the command-line scan `standing()` adds is about a second and could not move
+  // the decision anyway. A lock nothing can clear while this command runs is not
+  // worth twelve seconds; a `node_modules` lock behind it is still worth a few
+  // (#170).
+  const alreadyHeld = standingIn({ worktree, startedIn });
+  const waited = attemptsFor({ standing: alreadyHeld });
+
   // Captured BEFORE the removal, and that ordering is load-bearing: `git
   // worktree remove` unregisters the tree before it deletes the files, so a
   // list taken afterwards would not contain the path the guard is about to be
@@ -105,7 +116,7 @@ export async function takeDown({ sh, common, root, worktree, branch, orphan = fa
   const dirt = removed.status !== 0 && refusedForDirt(removed.stderr || removed.stdout);
   const byHand =
     existsSync(worktree) && !dirt
-      ? await removeTree({ path: worktree, root, listed, orphan })
+      ? await removeTree({ path: worktree, root, listed, orphan, attempts: waited.attempts })
       : null;
   git.pruneWorktrees();
 
@@ -131,6 +142,11 @@ export async function takeDown({ sh, common, root, worktree, branch, orphan = fa
       ? ` — ${byHand.why}`
       : '';
   console.log(`  worktree   ${stillThere ? `STILL THERE at ${worktree}${because}` : `gone${how}`}`);
+  // Only when the by-hand removal was tried and failed, which is the one moment
+  // the length of the wait is a question. `after 3 attempts: EBUSY` on its own
+  // reads as a removal that was barely tried; this is the sentence that says the
+  // three were chosen and what they were chosen from.
+  if (byHand !== null && !byHand.removed) console.log(`  waited     ${waited.why}`);
   console.log(`  branch     ${stillLocal ? `STILL THERE — ${branch}` : 'gone'}`);
   console.log(
     `  remote     ${stillRemote ? `STILL THERE — origin/${branch}` : remoteWas ? 'gone' : 'there was none'}`,
@@ -155,8 +171,13 @@ export async function takeDown({ sh, common, root, worktree, branch, orphan = fa
   // directory inside the tree blocks the top-level rmdir on Windows while
   // everything underneath deletes, so this is the signature `land` reports on
   // every land: twelve attempts, `EBUSY`, no cause named (#168).
-  const standingIn = stillThere && !dirt ? standing({ worktree, startedIn }) : [];
-  for (const row of standingIn) {
+  // `standingRows` and not `standingIn`: the module-level import of `standingIn`
+  // is what the decision above is made with, and a local const of that name puts
+  // it in the temporal dead zone for the WHOLE function — so the earlier call
+  // throws `Cannot access 'standingIn' before initialization`, after the push and
+  // in the one code path no Check runs.
+  const standingRows = stillThere && !dirt ? standing({ worktree, startedIn }) : [];
+  for (const row of standingRows) {
     console.log(`  standing   ${row.pid === null ? '' : `pid ${row.pid} — `}${row.from}`);
   }
 
@@ -164,7 +185,7 @@ export async function takeDown({ sh, common, root, worktree, branch, orphan = fa
   // working-directory property, so a shell sitting in the tree that is not the
   // one that ran this is undetectable from here — and `EBUSY` on its own is what
   // sent two sessions to `netstat -ano` by hand and a third to guess.
-  if (stillThere && !dirt && holding.length === 0 && standingIn.length === 0) {
+  if (stillThere && !dirt && holding.length === 0 && standingRows.length === 0) {
     console.log(
       '  holding    nothing is on a port, and no process names a path inside it — check that no\n' +
         '             shell, editor or terminal has this directory as its working directory. On\n' +
@@ -184,7 +205,7 @@ export async function takeDown({ sh, common, root, worktree, branch, orphan = fa
     // contents have just been deleted. Measured on #167 — `cd`, then `clean`,
     // removed it on the first attempt with nothing else changed.
     left.push(
-      standingIn.some((row) => row.confirmed)
+      standingRows.some((row) => row.confirmed)
         ? `the worktree at ${worktree} — something is still standing in it, so: ` +
             `\`cd ${root}\` on its own, then \`pnpm feature clean ${branch}\``
         : `the worktree at ${worktree} — \`pnpm feature clean ${branch}\` finishes it`,

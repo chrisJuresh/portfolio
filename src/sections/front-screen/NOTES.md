@@ -185,6 +185,82 @@ reads as the bottom of the column. `--front-screen-cut-gap` is
 `rhyme + half-leading − tail` for exactly that reason, and dropping either
 correction drifts the two margins about three pixels apart — which is a Check.
 
+## A listing entry is one line, and both halves of that are enforced
+
+An entry is an organisation and the years beside it. Two things were added to
+that without a second line being added to the composition, and each pays for
+itself in a different way.
+
+**The grade stands OUT OF FLOW.** `1st · 82%` is pinned under the years at
+`top: 100%; right: 0` on the line, so it is drawn in white the column already
+had — the gap under the last listing is `--front-screen-space-m`, the line box it
+needs is the body size times its leading, and the first is the larger by about
+four pixels at every window measured. **Nothing below it moves**, which inside
+the band means the photograph strip — the budget's remainder — does not pay for
+it. Put it in flow and it would: a line here is a line off the strip.
+
+It is a Content field of its own rather than a clause of the organisation
+because **a figure on this page is set in `--face-year`**, and a class and a
+mark are figures and almost nothing else. Written into `org`, the digits would
+have to be picked out of the string one run at a time and the seam between the
+two faces would fall inside a word.
+
+**The organisation gives way rather than wrapping.** `orgNarrow` carries the
+same organisation said shorter, longest first, every form is in the markup, and
+`@container front-screen-entry` shows the longest one that fits — the same
+posture the switch's two words take, so the right one is on the page at first
+paint rather than a script-load later. A container and not a media query
+because what decides it is the entry's width, which is
+`min(100%, --front-screen-measure)` less the listing's indent; a media query
+would restate that and then have to be kept in step with it.
+
+Three entries carry narrow forms, and each has to give way at its own width:
+
+| entry | the words, longest first | gives way at |
+| --- | --- | --- |
+| `work.0` | Third Bridge Group Limited · Third Bridge Group · Third Bridge | 19.6em, 16em |
+| `work.1` | Royal College of Radiologists · RCR | 18.7em |
+| `education.0` | BSc (Hons) Computer Science, QMUL · BSc Computer Science, QMUL · BSc Comp Sci, QMUL · Comp Sci, QMUL | 22.2em, 19.1em, 15.3em |
+
+Three things about those rules are easy to get wrong:
+
+- **The thresholds are measurements, not choices**, which is why they are in the
+  component and not in `tokens.css`. Each is the width at which the form above it
+  stops fitting beside the years, measured on the page in the container's own
+  `em` — the body size — so the whole ladder moves with `--type-zoom` instead of
+  drifting off it. **Re-measure them if the words change.** Nudging one only
+  makes a line wrap somewhere else. What a form needs is its own width set
+  `white-space: nowrap`, plus `--front-screen-gutter`, plus the years beside it,
+  all over the entry's `font-size`; the threshold is that plus about 0.15em of
+  margin, so a form gives way a shade before it stops fitting rather than a shade
+  after.
+- **A ladder belongs to one entry, and is gated on that entry's Content key.**
+  Where a form stops fitting is a fact about its own words beside its own years,
+  and these three disagree by three ems — the degree runs out of room at 22.0em,
+  Third Bridge Group Limited at 19.5em, Royal College of Radiologists at 18.6em.
+  On one shared ladder the two shorter names would give way at the widest of
+  those — three and a half ems early, which is a phone's whole width of column
+  given up while the words still fitted. The cost of
+  gating on the key rather than on the words is that **reordering a listing moves
+  a ladder onto the wrong entry, silently** — the one way to break this a glance
+  does not catch. It is the address the Editor writes a Content edit to, so
+  either end of the pair is findable by grep from the other.
+- **`:not(:last-child)` on every hide is load-bearing.** Within a ladder every
+  `max-width` query matches at the narrowest width, and each hides everything
+  above its own form; without that guard a threshold measured a shade too wide
+  would leave an entry showing no organisation at all. The hides carry one more
+  compound than the shows they meet, so the narrowest matching step survives.
+
+Below about 280px, or on a phone with the page zoomed past about 1.4, the
+shortest form the author wrote is itself wider than the column and the line
+wraps. That is the floor rather than a bug: there is nothing shorter to show, and
+the answer is another form in `orgNarrow` and its threshold, not a smaller size.
+
+**In the Editor only the form currently on screen is clickable**, because the
+others are `display: none` and there is nothing to click. That is the right
+behaviour rather than a gap — narrow the window until the form you want to retype
+is the one being shown, and edit it there.
+
 ## The photographs
 
 The strip, its dissolve and its motion, ported from `portfolio/app.js` and

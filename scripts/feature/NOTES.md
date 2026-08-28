@@ -36,14 +36,29 @@ which a build and a headless browser have just run — and something under
 `node_modules` is sometimes still holding a file when it does. Measured: a
 removal that failed succeeded about a minute later with nothing done in between.
 
-So `removeTree` waits (twelve attempts a second apart), and when a wait ends the
-work is already on `development` and the only thing left is a directory.
-`pnpm feature clean <name>` finishes it, and `land` names that command in its own
-report rather than leaving the author to work out what is safe to delete.
+So `removeTree` waits, and when a wait ends the work is already on `development`
+and the only thing left is a directory. `pnpm feature clean <name>` finishes it,
+and `land` names that command in its own report rather than leaving the author to
+work out what is safe to delete.
 
 `node_modules` is not the commonest reason it is needed, though — the shell `land`
 was run from is. See **`EBUSY` does not name what is holding it** below, and note
 that the remedy is two commands and not one.
+
+**And that is why the length of the wait is chosen rather than fixed** (#170).
+Twelve attempts a second apart is the right wait for a `node_modules` lock, which
+lets go on its own; it is the wrong wait for a working directory, which cannot let
+go until the process holding it moves — and that process is the shell blocked
+waiting for `land` to return, so it cannot move until after the last attempt. Every
+land spent twelve seconds on a lock that could not clear and then printed the reason
+it could not. `teardown.mjs`'s `attemptsFor` is the choice, given the standing rows
+rather than asking for them, and `takedown.mjs` asks it **before** the removal — the
+confirmed row is `startedIn` compared against the worktree and costs no syscall,
+while the command-line scan is about a second and could not move the decision
+anyway. It is a choice and not a skip: a `node_modules` lock can sit behind a
+standing shell, so what is left when one is found is a shorter wait and never none.
+And the report prints which of the two it acted on, because `after 3 attempts:
+EBUSY` on its own reads as a removal that was barely tried.
 
 **What makes `clean` safe to have at all is that it refuses unless the work
 landed**, and it asks that twice, in this order:
@@ -275,13 +290,15 @@ nothing at all is found — no port, no directory, no named process — the repo
 says to check for exactly that rather than saying nothing. `EBUSY` alone is what
 sent two sessions to `netstat -ano` by hand and a third to guessing.
 
-Two things it deliberately does not do. It does not shorten the twelve-attempt
-wait when a standing directory is found, though that wait is knowably futile:
-a `node_modules` lock can coexist with it, and ending the wait is what `feature
-clean` is for. And it writes **no friction-log entry** — `git worktree remove`
-failing already passes `expected: true`, and per the rules below a refusal with a
-documented completion in `feature clean` earns no entry. An identical line on
-every land is what blocked the next land's `pull --ff-only` once already.
+One thing it deliberately does not do: it writes **no friction-log entry** — `git
+worktree remove` failing already passes `expected: true`, and per the rules below a
+refusal with a documented completion in `feature clean` earns no entry. An identical
+line on every land is what blocked the next land's `pull --ff-only` once already.
+
+What it *used* to not do was shorten the wait, on the grounds that a `node_modules`
+lock can coexist with a standing directory. That was the right objection to
+skipping the wait and the wrong one to choosing it, and #170 is the difference —
+see **Landing and taking down are two things** above.
 
 **A browser refuses to fetch from some ports.** A dev server on one answers
 `curl` and fails every page load with `net::ERR_UNSAFE_PORT`, which reads like a

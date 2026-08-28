@@ -6,6 +6,30 @@ import { defineContent, z } from '../../kernel/content';
  */
 const entry = z.object({
   org: z.string().min(1),
+  /**
+   * The same organisation, said shorter, longest first — for a column too narrow
+   * for the one above. Optional, because most entries never need one: an entry
+   * with no narrow form simply keeps `org` at every width and wraps if it must.
+   *
+   * WHOLE FORMS AND NOT REMOVABLE PIECES, so each one is a sentence the author
+   * can read and retype in the Editor. What gets given up at each step is
+   * therefore the author's decision and not a rule in a stylesheet — here it is
+   * the honours, then the subject's full name, then the degree itself, which is
+   * the order the words matter in.
+   */
+  orgNarrow: z.array(z.string().min(1)).optional(),
+  /**
+   * What the entry was awarded, standing directly under the years — optional,
+   * because most entries have nothing to put there and an absent field is what
+   * says so.
+   *
+   * IT IS ALL FIGURES, WHICH IS WHY IT IS ITS OWN FIELD rather than a clause of
+   * the organisation. A figure on this page is set in `--face-year` and never in
+   * the body face, and a class and a mark are almost entirely figures — written
+   * into `org` they would need the digits picked out of the string one run at a
+   * time, and the seam between the two faces would fall inside a word.
+   */
+  grade: z.string().min(1).optional(),
   years: z.string().min(1),
 });
 
@@ -85,10 +109,12 @@ export const content = defineContent(schema, {
     entries: [
       {
         org: 'Third Bridge Group Limited',
+        orgNarrow: ['Third Bridge Group', 'Third Bridge'],
         years: '2024–Present',
       },
       {
         org: 'Royal College of Radiologists',
+        orgNarrow: ['RCR'],
         years: '2022–2024',
       },
     ],
@@ -97,7 +123,9 @@ export const content = defineContent(schema, {
     heading: 'Education',
     entries: [
       {
-        org: 'Queen Mary University of London',
+        org: 'BSc (Hons) Computer Science, QMUL',
+        orgNarrow: ['BSc Computer Science, QMUL', 'BSc Comp Sci, QMUL', 'Comp Sci, QMUL'],
+        grade: '1st · 82%',
         years: '2021–2024',
       },
     ],
