@@ -1428,7 +1428,7 @@ const selected = (project: { href?: string }) => project.href === `#${here}`;
          band, because at reach 0 the Frame is flush with the composition and both
          are back on the grid they were placed by. NOTES.md. */
       --projects-panel-reach: calc(
-        var(--page-across) - var(--landing-inset) -
+        var(--page-across) - var(--landing-side) -
           (1 + var(--landing-plinth-share)) * var(--projects-panel-w)
       );
 
@@ -1470,6 +1470,12 @@ const selected = (project: { href?: string }) => project.href === `#${here}`;
          to do but that. */
       padding-bottom: 0;
       padding-right: 0;
+      /* AND THE ONE THAT IS LEFT IS THE LANDING'S AND NOT THIS SECTION'S. The
+         base rule pays --projects-panel-inset on all four sides; three of them
+         are struck out above and the fourth is the page's left margin, which in
+         the band is a length the Front Screen has to agree about — the word
+         stands on it. So it comes from the Kernel here. */
+      padding-left: var(--landing-side);
 
       /* ---- THE FALL: what the drawing comes down by ------------------------
          THE PLINTH SITS SQUARE IN THE PAGE'S BOTTOM-RIGHT CORNER. The right half
@@ -1638,6 +1644,21 @@ const selected = (project: { href?: string }) => project.href === `#${here}`;
        arithmetic to keep in step. */
     .projects-panel__copy {
       grid-column: 6 / 13;
+      /* AND THE RULE STANDS ONE GUTTER INTO THAT COLUMN RATHER THAN ON ITS LINE.
+         The sixth column is shared: the head is placed across 1–6 and this is
+         placed across 6–12, so a rule set on column six's own line is a mark
+         drawn inside the box the subheading is set in, with none of the
+         composition's own clearance between the two. The gutter is that
+         clearance and is what every other pair of neighbours in this grid gets —
+         the list and the Frame included, which is the one NOTES.md forbids
+         spending. A margin and not a column, because a whole column is 3.5 times
+         too much: it would carry the rule past the subheading's box entirely and
+         hand the paragraph a measure the Frame's right edge could not pay for.
+
+         MARGIN-LEFT AND NOT PADDING, so the rule moves with it. The padding this
+         box already carries is the white BETWEEN the rule and the words, which is
+         a different length doing a different job. */
+      margin-left: var(--projects-panel-gutter);
       margin-right: calc(-1 * var(--projects-panel-reach));
     }
 
@@ -1783,7 +1804,14 @@ const selected = (project: { href?: string }) => project.href === `#${here}`;
       left: 0;
       top: calc(var(--projects-panel-side) - var(--projects-panel-lift));
       bottom: var(--projects-panel-side);
-      width: var(--projects-panel-inset);
+      /* THE WIDTH IS THE MARGIN, and the margin is the landing's — the same
+         length the Section is padded by above and the word is set on. It was
+         --projects-panel-inset while the two were the same clamp, and what that
+         cost once the clamp was cut to 2.7vh was three rotated names wider than
+         the column they are centred in: one line of --projects-panel-rail-size at
+         its 1.5 leading is about 2.1% of the composition, and the margin was
+         1.7%. The names ran off the left of the page and nothing said so. */
+      width: var(--landing-side);
 
       /* AND IT ARRIVES WITH THE PAGE, for the reason the paragraph above it does
          and which the lift has just made true of the Rail as well: the top of this

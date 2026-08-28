@@ -12,20 +12,56 @@
    drifting into a wrong one. */
 
 :root {
-  /* The page's own top and bottom margin, and the half-leading above the Front
-     Screen's name. Both are restated from a Section — the first is
-     --front-screen-rhyme and --projects-panel-inset, which are the same clamp,
-     and the second is --front-screen-half-leading. The landing's height budget
-     is a function of both and cannot be written without them. */
-  --landing-inset: clamp(1.25rem, 2.7vh, 2rem);
+  /* THE PAGE'S TWO MARGINS IN THE BAND, AND THEY ARE TWO NUMBERS. The landing
+     has a margin at the top and one on the left and nowhere else — the
+     composition's foot is the page's bottom edge, because the Plinth stands on
+     it, and its right end is the page's right edge, because the width branch
+     below is solved to put the marble there. So these two are the whole of the
+     white the page leaves, and each has one job.
+
+     THEY USED TO BE ONE NUMBER, AND THE ONE NUMBER WAS A SECTION'S. Both were
+     `clamp(1.25rem, 2.7vh, 2rem)`, restated from --front-screen-rhyme and
+     --projects-panel-inset. That clamp is the Front Screen's own vertical rhyme
+     and it was cut from 9vh to 2.7vh to pay for --type-zoom — a fifth of a short
+     screen handed back to the type, which is the right trade for a Section
+     composed to exactly one screen. THE PANEL PAID A BILL IT DOES NOT OWE. It is
+     not composed to a budget with a remainder in it; what the cut bought there
+     was type standing on the page's own edge, a Rail whose three rotated names
+     were wider than the margin they are set in, and a word in the very corner of
+     the screen. So the landing takes its own two margins here, and the Front
+     Screen's rhyme goes back to being about the Front Screen.
+
+     THE LEFT ONE IS ALSO THE RAIL'S COLUMN, which is the floor under it: the
+     Rail is `width: var(--landing-side)` and its names are set across that width,
+     so a side margin narrower than one rotated line of --projects-panel-rail-size
+     is a name running off the page. At 0.01397 of the composition and a 1.5
+     leading that is about 2.1% of --landing-w, and this clears it at every window
+     in the band — `projects-panel` is what would say so if it stopped.
+
+     THE TOP ONE IS THE AIR ABOVE THE WORD'S CAP, and it is the term the height
+     branch spends. It is smaller than the side on purpose and by about the ratio
+     the page was dragged at: a margin at the head of a composition reads deeper
+     than the same measure beside it, and the composition is a great deal wider
+     than it is tall.
+
+     BOTH IN vh AND NOT vw, which is not the oddity it looks. The height branch
+     binds at nearly every window in the band, so the whole drawing — every
+     column, every gutter, the word itself — is a function of the screen's HEIGHT.
+     A margin in vw would grow while the drawing beside it shrank.
+
+     --landing-name-lead is the half-leading above the Front Screen's name,
+     restated from --front-screen-half-leading, and the height budget cannot be
+     written without it. */
+  --landing-side: clamp(2.25rem, 6.5vh, 5rem);
+  --landing-inset: clamp(1.5rem, 4.4vh, 3.4rem);
   --landing-name-lead: calc(0.294 * 0.78rem);
 
   /* The Panel composition's height as a share of its width, RE-SOLVED for the
      landing. Outside the landing the Panel spends the screen less two margins
      and the constant is 0.6042; here the Section begins above the fold by the
      masthead's own drop, which collects onto the left of the same equation. The
-     budget on the right spends the page's margin ONCE, because the Plinth stands
-     on the page's bottom edge and there is no margin under it:
+     budget on the right spends the page's TOP margin ONCE, because the Plinth
+     stands on the page's bottom edge and there is no margin under it:
 
        0.6024 W - 0.080 x 0.0885 W = --fold - --landing-inset - --landing-name-lead
        0.595316 W                  = ...

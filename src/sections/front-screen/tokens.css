@@ -15,14 +15,23 @@
      `--front-screen-strip-max` at every window in the band, so the white above the
      name is this plus half the surplus — 33px at the band's short corner, 112px at
      2560x1311 — and moving this number only shows on a screen with no surplus
-     left. What it does set on its own, at every screen, is the Cut Title's left
-     margin.
+     left.
 
-     WRITTEN THREE TIMES AND THE THREE ARE ONE NUMBER: this, the Panel's
-     --projects-panel-inset, and the Kernel's --landing-inset, which the Cut
-     Title's own size is solved from. A Section may not read another (CONTEXT.md),
-     so the copies are the price; moving one alone silently drifts the word off
-     the masthead it is drawn to stand in. */
+     AND IT IS THIS SECTION'S ALONE NOW, which is the thing that changed. It used
+     to be written three times — here, as --projects-panel-inset and as the
+     Kernel's --landing-inset — and the Cut Title's own left margin and size were
+     solved from the third copy, so a rhyme dragged for the photographs' sake
+     moved the word, the Panel's whole composition and the Rail's column with it.
+     That is exactly what happened when this went from 9vh to 2.7vh to pay for
+     --type-zoom: the trade is right for a Section composed to one screen, and the
+     Panel is not composed to one. The landing has its own --landing-side and
+     --landing-inset now — src/kernel/tokens/landing.css — and this number's whole
+     remaining job is the white at the two ends of THIS column.
+
+     --projects-panel-inset is still the same clamp, and still restated: it is the
+     Panel's padding OUTSIDE the band, where that Section is a scroll like any
+     other and its margin is the page's own vertical one. In the band the Panel
+     reads the landing's instead. */
   --front-screen-rhyme: clamp(1.25rem, 2.7vh, 2rem);
 
   --front-screen-space-3xs: 0.236rem;

@@ -51,7 +51,7 @@
        the composition PLUS that overhang — which is why the margin appears once
        and the answer is divided by one plus the stone's share rather than the
        page across being handed to the composition alone. Solve
-       `inset + W + stone x W = --page-across` for W and this is it, and what it
+       `side + W + stone x W = --page-across` for W and this is it, and what it
        buys is the marble's right end landing ON the page's right edge instead of
        running off it. The overhang is a share of the composition, so the stone
        scales with the drawing and the equation holds at every width.
@@ -84,9 +84,15 @@
        whose height is a whole screen — 900, 1080, 1440 — is not a window anybody
        has: a maximised browser gives up about 100px of it to its own chrome, and
        at 1920x980 the height branch binds by 194px. Measure the band at heights a
-       browser actually has. */
+       browser actually has.
+
+       THE TWO BRANCHES SPEND TWO DIFFERENT MARGINS, and they always did — it is
+       only that the two used to be the same number. Across, what the drawing has
+       to leave is --landing-side, the margin the word stands on and the column
+       the Rail is set in; down, what it has to leave is --landing-inset, the air
+       above the word's cap. tokens/landing.css is why those parted company. */
     --landing-w: min(
-      calc((var(--page-across) - var(--landing-inset)) / (1 + var(--landing-plinth-share))),
+      calc((var(--page-across) - var(--landing-side)) / (1 + var(--landing-plinth-share))),
       calc((var(--fold) - var(--landing-inset) - var(--landing-name-lead)) / var(--landing-fit))
     );
     --landing-mast-size: calc(var(--landing-mast-share) * var(--landing-w));
@@ -99,8 +105,19 @@
     --landing-cap: calc(0.7 * var(--landing-mast-size));
     --landing-mast-top: calc(0.08 * var(--landing-mast-size));
 
-    /* Where the word's cap top comes to rest: the same line the Front Screen's
-       own name starts on, one screen up. */
+    /* Where the word's cap top comes to rest: the page's top margin in the band,
+       plus the half-leading a line of type would have stood on.
+
+       IT USED TO SAY "the same line the Front Screen's own name starts on, one
+       screen up", AND THAT STOPPED BEING TRUE BEFORE THIS TOKEN PARTED COMPANY
+       WITH THE RHYME. The Front Screen's column stands on its strip's ceiling at
+       every window in the band, so the surplus is split above the name and below
+       the last contact line and the rhyme is only the FLOOR under the white up
+       there — 112px at 2560x1311 against the 35px the clamp gave. The two lines
+       were 76px apart while they were spelled the same. --landing-inset is the
+       landing's own margin now and the rhyme is the Front Screen's own; the
+       distance between the two names is a consequence, and it is a smaller one
+       than it was. */
     --landing-top: calc(var(--landing-inset) + var(--landing-name-lead));
   }
 

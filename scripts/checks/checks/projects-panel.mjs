@@ -263,7 +263,10 @@ async function readPage(page) {
         probe.remove();
         return read;
       };
-      const inset = spend('var(--landing-inset)');
+      // The LEFT margin and not the top one — the width branch is what this is
+      // read for, and the two parted company when the landing stopped restating
+      // the Front Screen's rhyme.
+      const inset = spend('var(--landing-side)');
       const landingW = spend('var(--landing-w)');
       const stone = spend('calc(var(--landing-plinth-share) * var(--landing-w))');
       const pageAcross = spend('var(--page-across)');

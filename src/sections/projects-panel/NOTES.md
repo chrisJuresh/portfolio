@@ -250,11 +250,22 @@ the white beside the word, answering a question the reader had not been asked ye
 Outside the band the paragraph is columns seven to twelve, because the masthead is
 on the page and a paragraph starting at the sixth would be printed over the last
 two letters of it. Inside the band the masthead draws nothing — the Cut Title
-stands in its slot — so the sixth column is free, and the copy starts one gutter
-to the right of where the word ends rather than a whole column further over. That
-is the only thing the base rule and the landing block disagree about here, and
-what it turns on is the masthead being invisible rather than anything about the
-width.
+stands in its slot — so the sixth column is free, and the copy takes it rather
+than standing a whole column further over. What that turns on is the masthead
+being invisible rather than anything about the width.
+
+**And its rule stands one gutter INTO that column rather than on its line.** The
+sixth is shared — the head is placed across one to six and the paragraph across
+six to twelve — so a hairline set on the column's own line is a mark drawn inside
+the box the subheading is set in with none of the composition's clearance between
+the two. The gutter is that clearance and is what every other pair of neighbours
+in this grid gets, the list and the Frame included. A whole column would be about
+three and a half times too much: it would carry the rule clear of the subheading's
+box altogether and leave the paragraph a measure the Frame's right edge cannot
+pay for, because that edge is where this box ends. It is a `margin-left` and not a
+padding, so the rule moves with it — the padding this box already carries is the
+white between the rule and the words, which is a different length doing a
+different job.
 
 So it arrives instead. Three Tokens say when — `--projects-panel-copy-arrive-from`
 and `-to` are the two points of the crossing it runs between, and
@@ -417,6 +428,18 @@ and the last of them stand.
 already written out once as the Section's `scroll-margin-top` — the port the turn
 rests on is the same length measured from the other end. Naming it is what stops
 the two drifting.
+
+**Across, the Rail's width IS the page's left margin, and that margin has a floor
+under it that nothing used to check.** The box is `width: var(--landing-side)` —
+the same length the Section is padded by and the word is set on — and the names
+are centred across it. So a side margin narrower than one rotated line of
+`--projects-panel-rail-size` at its leading is three names running off the left of
+the page. That is not hypothetical: while the margin restated
+`--front-screen-rhyme` and the rhyme had been cut to 2.7vh, the list was 44.6px
+wide in a 35.4px column at 2560×1311 and all three were clipped. One line is about
+2.1% of the composition — `0.01397 × 1.5` — and `--landing-side` clears it at
+every window in the band with room to spare, which is one of the two floors that
+Token is chosen against.
 
 **And that puts the Rail in the strip the copy's arrival exists for.** The top of
 the box is on the Front Screen, and the only thing that strip is for is the cut
@@ -1113,10 +1136,13 @@ agree to a hundredth of a pixel at fifteen windows across the band.
 
 Three paddings go with it. **The page's margin is on the left in the landing band
 and nowhere else**: the top's is spent by the landing, and the foot's and the
-right's are the stone's. The right one is not cosmetic — the width branch asks for
-a column wider than `100vw − 2 × inset` on every window over about 1156px tall,
-where the margin hits its 6.5rem cap, and a right padding caps the grid track
-there without saying so. Then `--projects-panel-w` over-states the box that was
+right's are the stone's. And the one that survives is `--landing-side` rather than
+this Section's own inset — the word is set on that margin and the Rail is set
+across it, so in the band it is a length two Sections have to agree about and it
+comes from the Kernel. The right one is not cosmetic — the width branch asks for a
+column wider than `100vw − 2 × side` on every window where the side margin has hit
+its `5rem` cap, above about 1467px of height, and a right padding caps the grid
+track there without saying so. Then `--projects-panel-w` over-states the box that was
 actually laid out, the fall subtracts a Frame height that is not the Frame's, and
 the marble stops short of **both** edges at once: 41px across and 15px down at
 1100×1440, which is the window that found it.

@@ -988,7 +988,15 @@ const EAGER = 2;
     .front-screen__cut {
       position: absolute;
       top: var(--fold);
-      left: var(--front-screen-rhyme);
+      /* --landing-side AND NOT --front-screen-rhyme, which is what it was while
+         the two were the same clamp. The word is set on the page's LEFT margin in
+         the band, and down here that margin belongs to the landing: the Panel's
+         composition begins on it and the Rail is set across it, and the word has
+         to start where the composition does or it is not standing in the
+         masthead's slot. The rhyme is this Section's own vertical measure and is
+         a function of a one-screen budget the Panel has no share of —
+         src/kernel/tokens/landing.css is the whole of why they parted. */
+      left: var(--landing-side);
       width: var(--front-screen-cut-fit);
       max-width: none;
       margin: 0;

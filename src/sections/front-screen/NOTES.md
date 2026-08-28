@@ -150,15 +150,24 @@ third of the listings' height out of the column, and past `--front-screen-strip-
 the surplus is split at both ends by `justify-content: center` — so the white above
 the name is 33px at the band's short corner and 112px at 2560x1311, and
 `--front-screen-rhyme` is now the FLOOR under that rather than the whole of it.
-What the Token still sets on its own is the Cut Title's left margin, which is why
-it is not simply inert.
 
-**Which makes it a page-wide change and not this Section's**, and that is the
-thing to know before moving it again: the same clamp is written three times, as
-`--projects-panel-inset` and as `--landing-inset`, and the landing solves the Cut
-Title's own size from it — so the Panel's whole composition grows when this
-shrinks. All three move together or none do, and `--type-zoom` moves with them:
-`src/kernel/NOTES.md` carries why the zoom and the give-way are one pair.
+**And it is this Section's own number again, which it was not.** It used to be
+written three times — here, as `--projects-panel-inset` and as `--landing-inset` —
+and the landing solved the Cut Title's left margin and its size out of the third
+copy, so the Panel's whole composition grew when this shrank. That is what made
+cutting it from 9vh to 2.7vh to pay for `--type-zoom` a page-wide change rather
+than this Section's: the trade buys a photograph strip that is still a photograph
+of something, which is a one-screen budget's problem, and the Panel does not have
+one. What the Panel got instead was type on the page's own edge and a Rail
+narrower than its own names. The landing has `--landing-side` and
+`--landing-inset` of its own now — `src/kernel/tokens/landing.css` — so this and
+`--type-zoom` still move as a pair (`src/kernel/NOTES.md` is why), and neither of
+them moves the word any more.
+
+**The Cut Title's left margin is `--landing-side`**, and that is the one line in
+this Section's band block where the change shows: the word is set on the page's
+left margin, and in the band that margin is the landing's, because the Panel's
+composition begins on it and the Rail is set across it.
 
 **Past the slot's ceiling the leftover is split at both ends**, by
 `justify-content: center` on the column. Below the ceiling the slot has taken

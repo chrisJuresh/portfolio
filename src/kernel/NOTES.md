@@ -40,30 +40,53 @@ its own component; what is here is the part neither could own.
 masthead's cap, and the Panel's composition is solved for the height the Front
 Screen gives up — and a Section may read only the Kernel. So the width both are
 functions of is solved here, once, and each Section reads the answer:
-`--landing-w`, `--landing-cap`, `--landing-mast-top`, `--landing-top`.
+`--landing-w`, `--landing-cap`, `--landing-mast-top`, `--landing-top`, and
+`--landing-side`, which is a term rather than an answer but has to cross the same
+boundary — the word is set on it and the composition begins on it.
 `tokens/landing.css` holds the terms it is solved from and names the Section each
-was taken from. Four of them are restated rather than shared, which is what the
+was taken from. Three of them are restated rather than shared, which is what the
 `turn` Check exists for: it compares the Kernel's published cap, drop and stone
 against the Panel's own arithmetic, because a drift in any of them draws a page
 nobody can see is wrong.
 
+**The landing's two margins are two numbers, and that is the change worth
+knowing.** In the band the page has a margin at the top and one on the left and
+nowhere else — the Plinth stands on the page's bottom edge and the width branch
+puts the marble's far end on its right one. `--landing-side` is the left and
+`--landing-inset` is the top. They were one number until they were two, and the
+one number was `--front-screen-rhyme`: that clamp is the Front Screen's own
+vertical rhyme, and it was cut from 9vh to 2.7vh to pay for `--type-zoom` — the
+right trade for a Section composed to exactly one screen with a photograph strip
+for a remainder. **The Panel has no such budget and paid the bill anyway.**
+What the cut bought down here was type standing on the page's own edge, a word in
+the very corner of the screen, and a Rail whose three rotated names were wider
+than the margin they are centred in: a 44.6px list in a 35.4px column at
+2560x1311, so all three ran off the left of the page and nothing said so. So the
+landing has its own two now, and the rhyme is about the Front Screen again.
+
 **The width branch spends the page across on the drawing AND the stone.** The
 Panel's Plinth overhangs the Frame's right foot and the Frame is flush with the
 composition's right edge, so the widest thing in that Section is the composition
-plus that overhang — which is why the page's margin appears once in the branch and
+plus that overhang — which is why `--landing-side` appears once in the branch and
 the answer is divided by one plus `--landing-plinth-share`. Solve
-`inset + W + stone × W = 100vw` for `W` and that is the line. What it buys is the
+`side + W + stone × W = 100vw` for `W` and that is the line. What it buys is the
 marble's right end landing **on** the page's right edge, and it is the reason a
 Kernel file knows a Section's overhang exists at all: the Kernel may not ask the
 Panel, so the share is restated here beside the masthead's.
 
-**And the height branch spends the page's margin once, not twice.** The Panel's
-composition now runs from the page's top margin to the page's bottom **edge** —
-the Plinth stands on it — so the height it has to fit into is the screen less one
-margin. Subtracting the second is what used to leave the stone short of the corner
-at ordinary window sizes, because the branch that bound was solving for a bottom
-margin that no longer exists. `src/sections/projects-panel/NOTES.md` has the other
-half, which is the Panel's own.
+**And the height branch spends the page's top margin once, not twice.** The
+Panel's composition now runs from `--landing-inset` to the page's bottom **edge**
+— the Plinth stands on it — so the height it has to fit into is the screen less
+one margin. Subtracting the second is what used to leave the stone short of the
+corner at ordinary window sizes, because the branch that bound was solving for a
+bottom margin that no longer exists. `src/sections/projects-panel/NOTES.md` has
+the other half, which is the Panel's own.
+
+**Both margins are in `vh`, and the left one being in `vh` is not a slip.** The
+height branch binds at nearly every window in the band, so the composition —
+every column, every gutter, the word's own size — is a function of the screen's
+HEIGHT. A left margin in `vw` would grow on a wide short window while the drawing
+beside it shrank.
 
 **The page across is `--page-across`, which `ground.css` owns, and not `100vw`.**
 `vw` counts a classic scrollbar's gutter and the boxes the page is laid out in do
@@ -236,6 +259,13 @@ its two restatements went from 9% of the screen at each end to 2.7%, a fifth of 
 short screen handed back — and the two are one change. `carousel`'s
 slot-against-floor line at 1440x700 is where the room shows: 90px, against the
 6px the composition used to ship with.
+
+**What it should NOT have paid for is the landing, and the landing has since
+stopped paying.** The rhyme is a one-screen budget's term and the Panel is not on
+that budget; the two came down together only because they were spelled the same.
+The landing's own two margins are in `tokens/landing.css` now — see the landing
+section above — so a rhyme dragged for the photographs' sake no longer moves the
+word, the Rail's column or the Panel's composition with it.
 
 **A zoom is a REDISTRIBUTION inside the band, which is the sentence to have ready
 when somebody asks why the photographs got smaller.** The strip is the remainder,
