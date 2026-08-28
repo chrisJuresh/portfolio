@@ -136,7 +136,15 @@ const EAGER = 2;
           {listing.entries.map((entry) => (
             <div class="front-screen__entry">
               <p class="front-screen__line">
-                <span>{entry.org}</span>
+                {/* Every form of the organisation is in the markup and the
+                    stylesheet shows the longest one the column can hold — the
+                    same posture the theme toggle's two words take, and for the
+                    same reason: the right one is on the page at first paint
+                    rather than a script-load later. */}
+                <span class="front-screen__org">
+                  <span>{entry.org}</span>
+                  {(entry.orgNarrow ?? []).map((form) => <span>{form}</span>)}
+                </span>
                 {entry.grade && <em class="front-screen__grade">{entry.grade}</em>}
                 <em class="front-screen__years">{entry.years}</em>
               </p>
@@ -705,7 +713,10 @@ const EAGER = 2;
     margin-bottom: 0;
   }
 
+  /* Positioned so the grade below has an edge to be pinned to, and so it is the
+     LINE rather than the entry's containment that owns it. */
   .front-screen__line {
+    position: relative;
     display: flex;
     align-items: baseline;
     gap: var(--front-screen-gutter);
@@ -723,26 +734,31 @@ const EAGER = 2;
     white-space: nowrap;
   }
 
-  /* What the entry was awarded, standing beside the date in the line's own empty
-     middle rather than on a second line under it — a listing entry is one line
-     here, and there is room: the longest organisation on the page leaves better
-     than a third of the measure unused.
+  /* What the entry was awarded, standing directly under the years — and STANDING
+     OUT OF FLOW, which is the whole of why it costs the composition nothing.
+
+     THE SECTION IS ONE SCREEN, so a real second line here is a line taken off the
+     photograph strip, which is the budget's remainder. Out of flow it is a line
+     drawn in white the column already had: the gap under the last listing is
+     `--front-screen-space-m`, the line box it needs is the body's size times its
+     leading, and the first is the larger of the two. Nothing below it moves, at
+     any window in the band or out of it.
 
      THE YEAR FACE, AND THAT IS THE WHOLE REASON IT IS A FIELD OF ITS OWN. A
      figure on this page is set in `--face-year`, so a class and a mark — which
-     are figures and almost nothing else — belong to the same column as the date
-     and not to the body face beside them. Written into the organisation's own
-     string instead, the seam between the two faces would fall inside a word.
-     Muted, so the qualification stays the thing the eye lands on.
+     are figures and almost nothing else — belong to the years' own column and
+     not to the body face beside them. Written into the organisation's string
+     instead, the seam between the two faces would fall inside a word. Muted,
+     because the qualification is the entry's subject and this is a footnote to
+     it.
 
-     AND IT TAKES THE `auto` OFF THE YEARS, which is the one thing here that is
-     not obvious. `--front-screen-years`'s own `margin-left: auto` is what pins
-     the right-hand group to the column's edge; a SECOND auto beside it would
-     split the free space between the two and leave this floating in the middle
-     of the gap, anchored to nothing. So the auto moves to whichever comes first
-     and the pair travels to the edge together, a gutter apart. */
+     `right: 0` and not an alignment: the years are pinned to the column's right
+     edge by their own `margin-left: auto`, and this is pinned to the same edge,
+     so the two agree by construction rather than by a number. */
   .front-screen__grade {
-    margin-left: auto;
+    position: absolute;
+    top: 100%;
+    right: 0;
     font-family: var(--face-year);
     font-variant-numeric: oldstyle-nums;
     font-style: normal;
@@ -750,8 +766,63 @@ const EAGER = 2;
     white-space: nowrap;
   }
 
-  .front-screen__grade + .front-screen__years {
-    margin-left: 0;
+  /* ---- the organisation, said as short as the column needs ----------------
+     One entry is ONE LINE. When the column is too narrow for the organisation's
+     full form the words give way, in the order the author put them in
+     `orgNarrow`, rather than the line wrapping under the years.
+
+     A CONTAINER AND NOT THE VIEWPORT, because what decides this is the width of
+     the entry and nothing else: `min(100%, --front-screen-measure)` less the
+     listing's indent, which a media query would have to restate and then keep in
+     step. `em` in the query resolves against the container's own font-size —
+     the body size — so every threshold below is in the same units the words are
+     drawn in, and the whole ladder moves with `--type-zoom` instead of drifting
+     off it.
+
+     THE THRESHOLDS ARE MEASUREMENTS AND NOT CHOICES, which is why they are here
+     and not in tokens.css: each is the width at which the form above it stops
+     fitting beside the years, measured on the page. Re-measure them if the words
+     change; nudging one only makes a line wrap somewhere else. */
+  .front-screen__entry {
+    container: front-screen-entry / inline-size;
+  }
+
+  /* The longest form is the one on the page, and the rest are not. */
+  .front-screen__org > :not(:first-child) {
+    display: none;
+  }
+
+  /* Each step hides everything above it and shows its own. `:not(:last-child)`
+     on every hide is the guard that makes this safe for an entry with NO narrow
+     forms: the only form there is is also the last, so nothing can hide it and
+     a Work entry keeps its organisation at every width. The hides outrank the
+     shows they meet — one more compound than a bare `:nth-child()` — so the
+     narrowest matching step is the one that survives all three matching at once. */
+  @container front-screen-entry (max-width: 22.2em) {
+    .front-screen__org > :first-child:not(:last-child) {
+      display: none;
+    }
+    .front-screen__org > :nth-child(2) {
+      display: inline;
+    }
+  }
+
+  @container front-screen-entry (max-width: 19.1em) {
+    .front-screen__org > :nth-child(-n + 2):not(:last-child) {
+      display: none;
+    }
+    .front-screen__org > :nth-child(3) {
+      display: inline;
+    }
+  }
+
+  @container front-screen-entry (max-width: 15.3em) {
+    .front-screen__org > :nth-child(-n + 3):not(:last-child) {
+      display: none;
+    }
+    .front-screen__org > :nth-child(4) {
+      display: inline;
+    }
   }
 
   .front-screen__contact {

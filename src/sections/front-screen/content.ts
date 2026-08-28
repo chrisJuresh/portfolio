@@ -7,7 +7,19 @@ import { defineContent, z } from '../../kernel/content';
 const entry = z.object({
   org: z.string().min(1),
   /**
-   * What the entry was awarded, in the empty middle of its own line — optional,
+   * The same organisation, said shorter, longest first — for a column too narrow
+   * for the one above. Optional, because most entries never need one: an entry
+   * with no narrow form simply keeps `org` at every width and wraps if it must.
+   *
+   * WHOLE FORMS AND NOT REMOVABLE PIECES, so each one is a sentence the author
+   * can read and retype in the Editor. What gets given up at each step is
+   * therefore the author's decision and not a rule in a stylesheet — here it is
+   * the honours, then the subject's full name, then the degree itself, which is
+   * the order the words matter in.
+   */
+  orgNarrow: z.array(z.string().min(1)).optional(),
+  /**
+   * What the entry was awarded, standing directly under the years — optional,
    * because most entries have nothing to put there and an absent field is what
    * says so.
    *
@@ -110,6 +122,7 @@ export const content = defineContent(schema, {
     entries: [
       {
         org: 'BSc (Hons) Computer Science, QMUL',
+        orgNarrow: ['BSc Computer Science, QMUL', 'BSc Comp Sci, QMUL', 'Comp Sci, QMUL'],
         grade: '1st · 82%',
         years: '2021–2024',
       },
