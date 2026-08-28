@@ -88,6 +88,31 @@ every column, every gutter, the word's own size — is a function of the screen'
 HEIGHT. A left margin in `vw` would grow on a wide short window while the drawing
 beside it shrank.
 
+**AIR AT THE TOP IS PAID FOR IN WIDTH, AND THE WHOLE COMPOSITION COMES DOWN WITH
+IT.** This is the thing to have ready before promising anybody that one part of
+the Panel will move and the rest will stay, because the answer is that it cannot.
+The composition is self-similar — `--landing-fit` is its one height for its width
+— and on the height branch it fills the screen exactly: `--landing-inset` at the
+top, the Plinth on the page's bottom edge, and `--projects-panel-fall` solved so
+those two meet. So a top margin `d` deeper is a composition `d / --landing-fit`
+narrower, which is about `1.7 d`, and everything in it comes down by `d` and in by
+its share of that. Measured at 2560x1311: 22px of extra air at the top took 37px
+off the width, moved the word and the subheading's first line down 22, and moved
+the hanging second line and the points down 15 — where the drawing they were being
+matched to wanted them left alone.
+
+**There is nowhere else for it to come from, and each of the alternatives fails in
+its own way.** Growing row one's track and shrinking row two's puts the composition
+`d` past the page's foot, because `1fr` here resolves to its content and the fall
+is what makes that content reach the edge — and the fall is 4px at this window, so
+there is nothing in it to give. Letting the drawing keep its width and hang off the
+bottom gives up the Plinth's corner, which is the whole of what the width branch
+and the fall are for. And taking `d` out of the air between the two rows —
+`--projects-panel-points-air` is right there and is a Token — is reading a
+coordinate as a spec: it hits an absolute pixel by spending a length nobody asked
+to change. The honest move is to pick the top margin, let the rest follow, and say
+which targets it could not reach.
+
 **The page across is `--page-across`, which `ground.css` owns, and not `100vw`.**
 `vw` counts a classic scrollbar's gutter and the boxes the page is laid out in do
 not — half a gutter at each end for anything centred, which nothing notices, and
