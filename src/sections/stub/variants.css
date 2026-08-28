@@ -1,0 +1,73 @@
+/* The stub Section's Variants — complete alternative directions, selected by
+   attribute, rendered side by side with `pnpm variants`. Nothing imports this
+   file. NOTES.md is the grammar every selector below keeps, why `:root` is
+   load-bearing, and why a Variant may not centre anything vertically here. */
+
+/* Tokens only — a typographic and rhythmic direction. */
+:root[data-variant='tight'] .stub {
+  --stub-measure: 26rem;
+  --stub-gap: 0.75rem;
+  --stub-heading-size: clamp(2rem, 6vmin, 4rem);
+  --stub-lead-leading: 1.4;
+}
+
+:root[data-variant='airy'] .stub {
+  --stub-measure: 42rem;
+  --stub-inset: 14vmin;
+  --stub-gap: 2.25rem;
+  --stub-heading-size: clamp(3rem, 12vmin, 8rem);
+  --stub-lead-leading: 1.75;
+}
+
+/* Layout: the measure becomes two columns, the points a row across the foot. */
+:root[data-variant='split'] .stub {
+  --stub-measure: 66rem;
+  --stub-gap: 2rem;
+  justify-content: center;
+}
+
+:root[data-variant='split'] .stub__measure {
+  display: grid;
+  grid-template-columns: minmax(0, 6fr) minmax(0, 11fr);
+  align-items: start;
+}
+
+:root[data-variant='split'] .stub__heading {
+  grid-row: 1 / span 2;
+  text-align: right;
+  line-height: 0.85;
+}
+
+:root[data-variant='split'] .stub__points {
+  flex-direction: row;
+}
+
+:root[data-variant='split'] .stub__points li {
+  flex: 1 1 0;
+}
+
+/* Surface: the same copy on a plate, drawn from the Kernel's ink so it holds in
+   both papers and across the Turn. */
+:root[data-variant='plate'] .stub {
+  --stub-inset: 10vmin;
+  justify-content: center;
+}
+
+:root[data-variant='plate'] .stub__measure {
+  padding: calc(var(--stub-gap) * 1.75);
+  background: color-mix(in oklab, var(--ink), transparent 93%);
+  border: var(--stub-rule) solid color-mix(in oklab, var(--ink), transparent 82%);
+  border-radius: calc(var(--stub-gap) / 2);
+}
+
+:root[data-variant='plate'] .stub__heading {
+  font-family: var(--face-lead);
+  font-style: italic;
+}
+
+/* Motion, and NOTHING else, which is what makes it worth having here: at rest it
+   is the unselected direction to the byte, and the sheet says so.
+   `pnpm variants -- --progress 0,0.5,1`. */
+:root[data-variant='drift'] .stub {
+  --stub-rise: 56px;
+}

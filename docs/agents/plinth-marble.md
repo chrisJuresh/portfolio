@@ -141,7 +141,46 @@ Then:
 
 `proc` | `photo` | `relit` | `all` | a single stone name. ~5 s each.
 
-### Putting a different photograph on the plinth
+### Putting a different photograph on the plinth, without a terminal
+
+`python design/legacy/plinth-studio.py`, then open what it prints. It is the
+whole pipeline behind one page: drop an image, move every slider a stone has,
+bake, look at it standing under the real Frame, write it into the Panel's
+Tokens. Its
+own docstring is the reference; what matters from outside it is:
+
+- **It serves the tree it is started in**, like `render.mjs` and unlike
+  `preview_start` — so a stone tried out in a worktree is tried out against that
+  worktree's `/portfolio`.
+- **Maps are cached per photograph**, keyed by a digest of the image bytes and
+  the two options that change what the maps are (`size`, `square`). So a second
+  bake of one photograph at a different `scale` is fifteen seconds of Cycles and
+  not another fifty megabytes of PNG — which is the one thing `add-stone.py`
+  cannot do, because it is a one-shot and rebuilds them every run.
+- **It writes `--projects-panel-plinth-src` in
+  `src/sections/projects-panel/tokens.css`** when Apply is pressed, and nothing
+  else outside `design/plinth/` and `portfolio/img/tex/`. One declaration's bytes
+  and no re-serialising, the same rule the Editor obeys on that file, which is
+  what keeps its paragraphs. It does not commit; run `pnpm check` before landing
+  a stone.
+- **There is no `?v=` on it any more, and that is the fix rather than an
+  omission.** The hand-written page had no build, so its stylesheet carried the
+  plates' digest by hand and it drifted unnoticed for two bakes in #106–#114.
+  Astro fingerprints a `url()` it can see, so the plate ships as
+  `/_astro/plinth-….<hash>.webp` and a re-bake is a different filename by
+  construction. #141 deleted the second declaration, so there is one place the
+  stone is named and nothing to keep in step.
+- **The only thing it draws rather than renders is the window**: the **front
+  face's** footprint laid on the photograph, from `build_photo_material()`'s own
+  arithmetic. That answers `scale` and `offset` before paying for a bake, and it
+  is honest about answering nothing else. It drew a top-face band above the arris
+  until the render was measured against it — see "What the box projection
+  actually does"; the top face is read a quarter turn round and cannot be shown
+  in the same picture, so it is not shown at all. There is deliberately no GLSL
+  previz of a photographic material — see "Still open" for why the tuner does not
+  have one either.
+
+### Putting a different photograph on the plinth, from the command line
 
 `design/plinth/add-stone.py`, and **not** by running `build-portoro-maps.py` by
 hand — that writes `maps/`, which every `gemini-*` stone reads, so it silently
@@ -191,16 +230,23 @@ almost all calcite and wants `--grade asis` rather than `deep`.
 
 ### Three things in the material worth not undoing
 
-- **`BOX` projection, not `FLAT`.** The top face reads (x, y) and the front face
-  reads (x, z), and both agree at the arris — the top face's y is 0 there and
-  the front face's z is 0 there — so **the vein pattern runs over the edge and
-  continues down the face**, the way a block cut from one slab does. The
-  `offset` therefore goes on Y *and* Z by the same amount; different numbers is
-  the one edit that silently breaks this.
+- **`BOX` projection, not `FLAT`** — for the seamless front face and the free
+  chamfer, and **not** for continuity over the arris, which it does not give.
+  See "What the box projection actually does" below: the front face reads
+  (x, z) as expected, the top face is read 90° round, and the two cannot line up
+  at the edge at any offset.
+- **The two V offsets are DIFFERENT numbers, and have to be.** `Object` texture
+  coordinates are the block's *local* space, and `build_scene()` applies the
+  cube's scale but not its location — so local space is centred on the block and
+  the arris sits at `(y = -DEPTH/2, z = +HEIGHT/2)`, not at the origin.
+  `ARRIS_Y` and `ARRIS_Z` are subtracted per axis to put the arris at
+  `V = offset`. Written as `offset` on both, as it was until this was measured,
+  the front face lands half a block-height up the photograph from where the
+  studio's window guide draws it.
 - **The mapping `Scale` is NOT uniform, and must not be** — see "The stretch"
-  below. Y and Z carry `scale × aspect` where X carries `scale`. They still carry
-  it *as each other*, which is what the arris rule actually asks for: continuity
-  wants the two V axes to agree with one another, not with U.
+  below. Y and Z carry `scale × aspect` where X carries `scale`. That is right
+  for the front face, which is the face the fit was measured on; on the top face
+  the roles swap and the correction does not apply.
 - **Subsurface Weight through the calcite mask.** Calcite is translucent, and
   that is most of why real marble looks deep and wet while a flat albedo looks
   like painted card. One socket, never connected in any earlier version.
@@ -211,6 +257,69 @@ almost all calcite and wants `--grade asis` rather than `deep`.
   texture to the top face, it is adding **distortion to a reflection**, and the
   amplification at grazing incidence is severe. At 0.0016 the plinth reads
   honed rather than polished.
+
+---
+
+## What the box projection actually does
+
+Two things this file asserted for four issues, both wrong, and both found by the
+same complaint: **the studio's window guide did not agree with the page.** The
+guide is drawn from `build_photo_material()`'s own arithmetic, so a disagreement
+between it and the render is the material lying to the file it is documented in.
+
+Everything below is measured rather than reasoned: an unlit orthographic render
+of each face on its own — emission straight off the base colour map, no room, no
+Fresnel — correlated against the window each hypothesis predicts.
+
+### 1. The block's texture space is CENTRED, not anchored at the arris
+
+`build_scene()` runs `transform_apply(location=False, ..., scale=True)`. That is
+right — the scale has to be baked in or every texture is stretched seventeen to
+one — but it leaves the *location* on the object, and `Texture Coordinate →
+Object` is local space:
+
+| | y | z |
+|---|---|---|
+| local (what the shader reads) | −0.150 … +0.150 | −0.035 … +0.035 |
+| world (what every comment assumed) | 0 … 0.300 | −0.070 … 0 |
+
+So the arris was half a block away from where the mapping put `offset`. Measured
+on the shipped `gemini-noir` plate, correlating its front face against
+`basecolor-deep.png` over a scan of V:
+
+| V at the arris | correlation |
+|---|---|
+| 0.452 — where the plate actually sat | **0.66** |
+| 0.400 — where `offset` said it was | 0.00 |
+
+`ARRIS_Y` / `ARRIS_Z` are subtracted per axis now. The same scan on the re-baked
+plate peaks at 0.398, and the unlit front face correlates **0.89** against the
+window the studio draws.
+
+### 2. The top face is read 90° round, so the arris never ran continuously
+
+The claim was that BOX gives the top face (x, y) and the front face (x, z), so
+the pattern crosses the edge. Half of it is true. Correlating the unlit top face
+against each of the eight ways BOX could orient it:
+
+| top face reads | correlation |
+|---|---|
+| U from −y, V from x | **0.88** |
+| U from x, V from y — the assumption | 0.04 |
+| the other six | ≤ 0.02 |
+
+So the top face samples the photograph's **height across the plinth's width**,
+turned a quarter turn against the front face. The two faces cannot line up at
+the arris at any `offset`, the aspect correction does not apply up there, and the
+top face's V spans `PLINTH_W × scale` rather than `DEPTH × scale × aspect`.
+
+**None of it is visible, which is why it survived.** At 7.8° the top face is
+essentially a mirror: correlating a *baked* plate's top face against the
+photograph finds nothing at any offset (peak 0.02, i.e. noise), exactly as the
+bump note below predicts, and on the page the Frame's CSS reflection covers most
+of it. Fixing it properly means hand-rolling the box — two samples per map, mixed
+on the geometry normal — for a face that shows no albedo. Not done, deliberately.
+The studio no longer draws a top-face band rather than drawing a wrong one.
 
 ---
 
@@ -253,13 +362,15 @@ Three consequences worth knowing:
   there is before the pattern repeats. `add-stone.py` warns on width alone.
 - **It broke the V-seam argument at fine scales.** `build-portoro-maps.py`
   cross-fades U and not V, which was sound while under one tile of V was ever
-  visible. V now advances 1.83× faster, so `0.37 × scale × aspect > 1` — any
-  scale over about 1.48 for this stone — crosses a whole tile. `build-slab.py`
-  prints a per-stone warning when it does. It fires on `gemini-fine` and
-  `gemini-noir-fine` (1.19 tiles); the wrap lands around row 23 of 269, in the
-  far strip of the top face at ~3° grazing, and does not measure above the
-  row-to-row noise. Left alone deliberately — cross-fading V costs a smeared band
-  across every map to fix something nothing can currently see.
+  visible. `build-slab.py` prints a per-stone warning when it is not. The test
+  used to be `(DEPTH + HEIGHT) × scale × aspect > 1`, on the reading that the two
+  faces stack in V; they do not, so it now measures the top face's own span,
+  `PLINTH_W × scale`, which is the larger for every stone here. It fires on
+  `gemini-fine` and `gemini-noir-fine` at 2.08 tiles and on `gemini-gold-1` at
+  1.12, all on the top face — which is a mirror at 7.8° and carries no
+  measurable albedo, so the seam has nothing to show through. Left alone
+  deliberately: cross-fading V costs a smeared band across every map to fix
+  something nothing can currently see.
 
 ### What it obsoleted
 
@@ -357,27 +468,59 @@ do not pick a stone off it. Nothing generates it; it was assembled by hand, and
 re-shooting it is its own job.
 `design/shots/*__stone-*.png` are gitignored — 1.4 MB each and regenerable.
 
-The capture contract (`python design/tools/check-capture-contract.py`) passes and
-is unaffected: nothing here touches `/portfolio`'s markup, layout, spacing or
-colour. It stays a gate for any change that points the stylesheet at a new stone.
+The capture contract was the gate for a change that pointed the old stylesheet at
+a new stone. #141 deleted the page it measured and #148 deleted the contract;
+`pnpm check` is the gate now, and it says nothing about which stone is right —
+that is still made by eye, here.
 
 ---
 
 ## Still open
 
-- ~~**Nothing ships yet.**~~ **`gemini-noir` ships.** `--panel-plinth-src` in
-  `portfolio/styles.css` points at `plinth-gemini-noir.webp?v=912aa827` — the
-  user's pick, made in the tuner. The `?v=` had drifted while nothing shipped:
+- ~~**Nothing ships yet.**~~ **`gemini-noir` ships.** It is named once, by
+  `--projects-panel-plinth-src` in `src/sections/projects-panel/tokens.css` —
+  the user's pick, made in the tuner. It was `--panel-plinth-src` in
+  `portfolio/styles.css` at the time, with a `?v=` that had drifted while nothing
+  shipped:
   the stylesheet still carried `de287c12` from #106 while two further bakes (#108
   and #114) had moved `slab.json`'s `version` to `912aa827`, so every plate URL
   on the deployment was a day-stale name for a file that had changed twice. All
   five are now stamped with the digest `slab.json` actually holds. The capture
   contract passes at the new stone; `nero` is kept as a `data-marble` candidate
   because every proportion in the `.panel` block was measured against it.
-- **`plinth-tuner.html` is stale and now more so.** It reimplements the
-  procedural material in GLSL and cannot preview a photo-backed stone at all.
-  `slab.json` carries `photo_candidates` so the tuner can list them and say it
-  cannot draw them. Issue #69 covers tuner work.
+  **Every photo plate was re-baked at the arris fix**, so each one is a different
+  crop of its photograph than the one it was picked as — same stone, same scale,
+  the window moved half a block-height. Worth a second look at any stone chosen
+  before it, `gemini-noir` included.
+- **`plinth-tuner.html`'s PREVIZ is stale; the rest of the page is not.** The
+  page is now the Panel's variant tuner and covers all four of the things #57
+  left to be chosen by eye — the stone, the subheading's wording, what sits
+  behind the titlebar's glass, and the glass itself — plus #74's exit
+  treatments, which are the fifth. All of those are
+  driven over the real `/portfolio` in the iframe and are exact: the stone is a
+  `data-marble` attribute, the wording is the two text nodes `.panel-sub` already
+  carries, the glass is `portfolio/frame-glass.js`'s own uniforms moved
+  through the seam at the foot of that file, and the exit is three attributes and
+  one signed custom property on the section — `--exit`, which is 0 on the
+  shipping page and only a crossing between Panels moves. What is stale is only the GLSL
+  material previz, which still draws the pre-bedding level sets and cannot
+  preview a photo-backed stone at all — `slab.json` carries `photo_candidates`
+  so the tuner can list them and say it cannot draw them. **The studio does not
+  replace it and does not try to**: the tuner previews a PROCEDURAL stone without
+  rendering it, which is the thing it is for, and the studio bakes a
+  PHOTOGRAPHIC one and shows the render. Neither can do the other's job — a
+  photograph cannot be previewed in GLSL without the photograph, and a
+  procedural stone has no photograph to drop on the studio.
+- **The three behind-the-glass treatments are in the shipping file, and `dark`
+  ships.** `paintScene()` in `frame-glass.js` branches three ways and the default
+  is what #66 settled, so the page still renders once and nothing a reader does
+  can move it. Measured off the glass's own canvas at `--dark 1`: `dark`
+  (44,38,49), which is the design render's chrome body to the integer, `marble`
+  (27,19,28), `clip` (65,65,85). **The first two are the SAME colour at the top
+  of the page** — both tokens are a `color-mix` against the page's own ground, so
+  they only separate as `--dark` crosses. Choosing between them on what can be
+  seen is choosing nothing; `clip` is the only one that is visibly not the render,
+  and the only one that costs a redraw per frame forever.
 - **The top face is still the weak face.** In the dark room it is dark, which is
   correct for polished black stone in a dark room, but it leans entirely on the
   CSS reflection for interest.
@@ -407,10 +550,12 @@ The user has approved installing software and using external services.
 
 ## Sources
 
-`Gemini_Generated_Image_13pkuz13pkuz13pk.jpg`, AI-generated by the author,
-2814×1536. **Not committed** — it follows the `/Texturelabs_*.jpg` and `/*.png`
-rules in `.gitignore`: sources stay out, bakes ship. Drop it at the repo root and
-run the maps script.
+`design/plinth/sources/Gemini_Generated_Image_13pkuz13pkuz13pk.jpg`, AI-generated
+by the author, 2814×1536. **Not committed** — it follows the
+`design/plinth/sources/` rule in `.gitignore`: sources stay out, bakes ship. Drop
+it in that directory and run the maps script. It used to go at the repo root,
+along with the Texturelabs plates and the plate PNGs; every one of those now sits
+in a `sources/` directory beside the generator that reads it.
 
 **A worktree does not have it.** Git only puts tracked files in one, so an
 ignored source sitting in the main checkout is simply absent — copy it across

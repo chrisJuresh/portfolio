@@ -1,0 +1,50 @@
+#!/bin/sh
+#
+# The Checks, blocking a commit (ADR 0006).
+#
+# Reached through core.hooksPath, which `pnpm feature start` sets and
+# `pnpm feature hooks` sets on its own. The path is RELATIVE — `.githooks` — and
+# git resolves a relative hooksPath against the root of the working tree the hook
+# runs in, so each worktree runs its own tracked copy of this file against its own
+# tree. That is the point: a hook resolved to the main checkout would build and
+# check `development` while appearing to gate the branch.
+#
+# It is not fast. `pnpm check` builds this tree, serves it, and drives headless
+# Chromium — call it a minute. That is the price of the Checks blocking rather
+# than warning, and ADR 0006 pays it on purpose: an advisory check inside an
+# agent loop is one that gets read and stepped over.
+#
+# Two ways past it, and they are different things:
+#
+#   git commit --no-verify      skip this hook for one commit. `pnpm feature
+#                               land` re-runs the Checks itself, so a commit
+#                               made this way is still gated before it lands.
+#   FEATURE_NO_CHECK=1 git ...  the same thing, said in a way that survives a
+#                               commit made by a tool that does not pass --no-verify.
+#
+# Nothing skips `pnpm feature land`'s run. That is the only gate that matters.
+
+set -e
+
+if [ -n "$FEATURE_NO_CHECK" ]; then
+	echo "pre-commit: FEATURE_NO_CHECK is set — the Checks did NOT run." >&2
+	exit 0
+fi
+
+# A commit in a tree with no node_modules cannot run anything, and saying so
+# beats a hundred lines of pnpm telling the author that astro is not installed.
+if [ ! -d node_modules/astro ]; then
+	echo "pre-commit: node_modules is missing from $(pwd), so the Checks cannot run." >&2
+	echo "pre-commit:   pnpm install --frozen-lockfile" >&2
+	echo "pre-commit: or commit with --no-verify and let \`pnpm feature land\` be the gate." >&2
+	exit 1
+fi
+
+echo "pre-commit: running the Checks. --no-verify skips this; nothing skips \`pnpm feature land\`."
+
+if ! pnpm check; then
+	echo "" >&2
+	echo "pre-commit: a Check failed, so nothing was committed." >&2
+	echo "pre-commit: iterate with \`pnpm check -- --no-build --only <name>\`." >&2
+	exit 1
+fi

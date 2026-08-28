@@ -1,0 +1,14 @@
+{
+  "extends": "astro/tsconfigs/strict",
+  "include": [".astro/types.d.ts", "src/**/*", "scripts/**/*", "astro.config.mjs"],
+  "exclude": ["dist", "design", "node_modules"],
+  "compilerOptions": {
+    "strictNullChecks": true,
+    "noUncheckedIndexedAccess": true,
+    // A Section's Content is typed so that renaming a field is a build error
+    // rather than a blank space on the page (ADR 0002). Unused locals are on so
+    // that a field left behind by a rename is one too.
+    "noUnusedLocals": true,
+    "noUnusedParameters": true
+  }
+}

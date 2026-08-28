@@ -1,0 +1,581 @@
+/* The Frame, drawn the way the Section draws it, plus the material's own rules.
+   README.md says why this is a copy and when it stops being one.
+
+   The GEOMETRY is not restated: this file links
+   ../../src/sections/projects-panel/tokens.css and reads
+   --projects-panel-frame-* out of it, so every share of the window in here is
+   the shipped Token. What IS restated is the layout — the rules that turn those
+   shares into a window — because they live inside an Astro component and cannot
+   be reached from a plain page. Where the two disagree, the component wins. */
+
+:root {
+  color-scheme: dark;
+  --ui: #e9e9ec;
+  --ui-dim: #8e8e97;
+  --ui-bg: #0d0d10;
+  --ui-panel: #16161a;
+  --ui-line: #2c2c33;
+  --ui-hit: #d8a76a;
+  --ui-good: #7fbf8f;
+
+  /* The Section's own two ends, so the studio can cross the Turn. `--turn` is
+     0 at the paper end and 1 in the dark, matching the Kernel's. */
+  --turn: 1;
+  --paper: #f2f1ee;
+  /* PURE black, not a near-black: #164 landed on the commit this branch is cut
+     from, and the `ground` Check now reads #000000 at the end of the Turn. A
+     material judged against a #0a0a0c ground is judged against a page that no
+     longer exists — and the far end is where the reader actually arrives. */
+  --dark: #000000;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--ui-bg);
+  color: var(--ui);
+  font: 13px/1.5 "Segoe UI", system-ui, sans-serif;
+}
+
+/* ------------------------------------------------------------------ the panel */
+
+.top {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 0.9rem;
+  align-items: flex-end;
+  padding: 0.7rem 1rem;
+  background: var(--ui-panel);
+  border-bottom: 1px solid var(--ui-line);
+}
+
+.top h1 {
+  margin: 0 0.6rem 0 0;
+  font-size: 12px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ui-dim);
+  align-self: center;
+}
+
+label.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  font-size: 10px;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--ui-dim);
+}
+
+select,
+input[type="range"] {
+  font: inherit;
+  color: var(--ui);
+  background: var(--ui-bg);
+  border: 1px solid var(--ui-line);
+  border-radius: 5px;
+  padding: 0.15rem 0.3rem;
+}
+
+input[type="range"] {
+  padding: 0;
+  width: 9rem;
+}
+
+button {
+  font: inherit;
+  color: var(--ui);
+  background: transparent;
+  border: 1px solid var(--ui-line);
+  border-radius: 5px;
+  padding: 0.25rem 0.6rem;
+  cursor: pointer;
+}
+
+button[aria-pressed="true"] {
+  background: var(--ui);
+  color: var(--ui-bg);
+  border-color: var(--ui);
+}
+
+.rung {
+  align-self: center;
+  font: 11px/1 ui-monospace, Consolas, monospace;
+  color: var(--ui-dim);
+}
+
+.rung b {
+  color: var(--ui-good);
+}
+
+.rung b[data-frosted] {
+  color: var(--ui-hit);
+}
+
+/* ------------------------------------------------------------------ the sheet */
+
+main {
+  padding: 1.2rem 1rem 4rem;
+}
+
+section.axis {
+  margin: 0 0 2.4rem;
+}
+
+section.axis > h2 {
+  margin: 0 0 0.2rem;
+  font-size: 12px;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--ui-hit);
+}
+
+section.axis > p {
+  margin: 0 0 0.8rem;
+  max-width: 62ch;
+  color: var(--ui-dim);
+}
+
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.card {
+  flex: 0 0 auto;
+}
+
+.card > figcaption {
+  margin: 0.35rem 0 0;
+  max-width: var(--card-w);
+  font-size: 11px;
+  color: var(--ui-dim);
+}
+
+.card > figcaption b {
+  display: block;
+  color: var(--ui);
+  font-size: 12px;
+}
+
+.composer {
+  margin: 0 0 2.4rem;
+}
+
+/* ----------------------------------------------------------------- the ground */
+
+/* What the Frame stands on. The Section's ground is the Kernel's paper crossing
+   into dark, so the studio mixes the two ends by --turn rather than picking one:
+   a material judged on one ground has not been judged. */
+.ground {
+  position: relative;
+  padding: var(--ground-top, 3.2%) var(--ground-pad, 3.2%) 0;
+  background: color-mix(in srgb, var(--dark) calc(var(--turn) * 100%), var(--paper));
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+/* The subheading's second line, which the Frame's top edge cuts into at
+   --projects-panel-frame-drop-share of the line — so the line's own top sits
+   that share of a line ABOVE the window, and what is left below the cut is the
+   sliver the titlebar has over it. In the Section this is real type in the
+   composition; here it is drawn at the share of the FRAME'S width the render
+   measures it at (82px of a 1430px Frame), which is close enough to judge a
+   material through and is not close enough to measure anything off. */
+.ground:has(> .words) {
+  --ground-top: calc(3.2% + var(--frame-w) * 0.0574 * 0.98 * var(--projects-panel-frame-drop-share));
+}
+
+.ground > .words {
+  position: absolute;
+  left: var(--ground-pad, 3.2%);
+  top: calc(
+    var(--ground-top) - var(--frame-w) * 0.0574 * 0.98 *
+      var(--projects-panel-frame-drop-share)
+  );
+  font-family: "Segoe UI", system-ui, sans-serif;
+  font-weight: 500;
+  font-size: calc(var(--frame-w) * 0.0574);
+  line-height: 0.98;
+  letter-spacing: -0.005em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: color-mix(in srgb, var(--paper) calc(var(--turn) * 78%), #2a2a2e);
+  pointer-events: none;
+}
+
+/* ------------------------------------------------------------------ the Frame */
+
+.frame {
+  position: relative;
+  width: var(--frame-w);
+  aspect-ratio: var(--projects-panel-frame-ratio);
+  background: var(--frame-fill);
+  /* A PERCENTAGE and never a cqw: an element is not its own container, so a cqw
+     here resolves against the viewport. The second half is the same length
+     against the height, or the corner is an ellipse. */
+  border-radius: calc(var(--projects-panel-frame-corner) * 100%) /
+    calc(var(--projects-panel-frame-corner) * var(--projects-panel-frame-ratio) * 100%);
+  container-type: inline-size;
+
+  --projects-panel-frame-bar-h: calc(var(--projects-panel-frame-bar) * 100cqw);
+  --projects-panel-frame-radius: calc(var(--projects-panel-frame-corner) * 100cqw);
+  --projects-panel-frame-band: calc(var(--band) * 100cqw);
+
+  --frame-fill: #131518;
+  --frame-edge: rgba(242, 241, 238, 0.32);
+  --band: var(--projects-panel-frame-inset);
+}
+
+/* THE WINDOW'S RIM IS AN OVERLAY AND NOT AN INSET SHADOW ON THE FRAME. An inset
+   box-shadow paints on the element's own background and therefore UNDER every
+   child, so with the band at 0 — the recording flush to the window's edge — the
+   ring is completely covered and `bar` and `none` render identically. That is not
+   a tie between two directions, it is one of them not being drawn.
+
+   It also has to sit above the TITLEBAR, not just the recording. NOTES.md's
+   reason for the bar drawing no rim of its own is that "the Frame's ring already
+   runs round the whole window and shows through at this alpha" — which holds at
+   the shipped 0.135 and does not hold at 0.75. A tint that heavy is a wall, so
+   the ring has to be in front of it or the window has an outline on three sides
+   and a gap along the top. z-index 2: above the content (auto) and above the bar
+   (1). Inert, like everything else in the window. */
+.frame > .rim {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  border-radius: inherit;
+  corner-shape: inherit;
+  box-shadow: inset 0 0 0 1px var(--frame-edge);
+  pointer-events: none;
+}
+
+.frame[data-rim="none"] > .rim,
+.frame[data-rim="one"] > .rim,
+.frame[data-rim="whole"] > .rim {
+  display: none;
+}
+
+/* One glass object: the window's rim is the material's own Fresnel ring rather
+   than a hairline that merely matches it, so the edge round the recording and
+   the edge round the bar are the same declaration. */
+.frame[data-rim="one"],
+.frame[data-rim="whole"] {
+  box-shadow: var(--glass-shadow-geometry, 0 10px 25px)
+    rgba(0, 0, 0, var(--glass-shadow-alpha, 0.5));
+}
+
+/* The whole window is the pane, and the recording is a hole cut in it. */
+.frame[data-rim="whole"] {
+  background: var(--glass-tint);
+  backdrop-filter: var(--glass-pre, ) blur(var(--glass-blur, 2px))
+    saturate(var(--glass-saturate, 130%)) var(--glass-post, );
+}
+
+/* ---------------------------------------------------------------- the titlebar */
+
+.bar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: var(--projects-panel-frame-bar-h);
+  /* Above the recording: the glass is a lens, and a lens is in front of what it
+     bends. */
+  z-index: 1;
+  border-radius: var(--projects-panel-frame-radius) var(--projects-panel-frame-radius) 0 0;
+  corner-shape: superellipse(var(--glass-roundness, 1));
+  isolation: isolate;
+}
+
+/* The frosted rung, and the ground every rung stands on: tint, blur, saturation
+   and shadow are all this. --glass-pre and --glass-post are the two slots the
+   refraction can be spliced into — exactly one of them ever holds it, and which
+   is upstream's blurEdge: before the blur the rim lenses the sharp backdrop and
+   the blur softens the result; after it, the rim lenses an already-smeared one. */
+.bar[data-material="glass"] {
+  background: var(--glass-tint);
+  backdrop-filter: var(--glass-pre, ) blur(var(--glass-blur, 2px))
+    saturate(var(--glass-saturate, 130%)) var(--glass-post, );
+}
+
+/* Two identical masks, one clipped to the content box, subtracted from the
+   other: what survives is the padding, which is the ring. A real border cannot
+   hold a gradient and an outline cannot follow a radius. The blur runs before
+   the mask, so it softens inwards and is clipped outwards — which is the
+   direction a Fresnel falloff goes. */
+.bar[data-material="glass"]::before,
+.bar[data-material="glass"]::after,
+.frame[data-rim="one"]::before,
+.frame[data-rim="one"]::after,
+.frame[data-rim="whole"]::before,
+.frame[data-rim="whole"]::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  border-radius: inherit;
+  corner-shape: inherit;
+  mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+.bar[data-material="glass"]::before,
+.frame[data-rim="one"]::before,
+.frame[data-rim="whole"]::before {
+  padding: var(--glass-fresnel-w, 0.4px);
+  background: var(--glass-fresnel, rgba(255, 255, 255, 0.11));
+  filter: blur(var(--glass-fresnel-blur, 0.32px));
+}
+
+.bar[data-material="glass"]::after,
+.frame[data-rim="one"]::after,
+.frame[data-rim="whole"]::after {
+  padding: var(--glass-glare-w, 1.1px);
+  background: var(--glass-glare, none);
+  filter: blur(var(--glass-glare-blur, 1.1px));
+}
+
+/* Under `whole` the window IS the pane, so the bar must not be a second one:
+   two backdrop filters in the same subtree means the inner one samples the
+   outer one's already-filtered output, which is a pane behind a pane and costs
+   a composite pass to say so. The strip keeps only its rings. */
+.frame[data-rim="whole"] .bar[data-material="glass"] {
+  background: none;
+  backdrop-filter: none;
+}
+
+/* The rim is the bar's own business only while the window has one of its own.
+   Under `none` the glare draws the whole edge and there is nothing else. */
+.bar[data-rings="off"]::before {
+  display: none;
+}
+
+/* The rung the Section ships today, for comparison: #66's flat translucent fill
+   and nothing else. */
+.bar[data-material="flat"] {
+  background: color-mix(
+    in srgb,
+    var(--projects-panel-frame-tint) calc(var(--projects-panel-frame-tint-alpha) * 80%),
+    transparent
+  );
+}
+
+/* ---------------------------------------------------------------- the controls */
+
+.chrome {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  /* In to the first light's centre, less half the disc that stands on it. */
+  padding-left: calc(
+    (var(--projects-panel-frame-light-centre) - var(--projects-panel-frame-light-w) / 2) * 100cqw
+  );
+  /* And in from the right: what is left past the LAST glyph's outer edge, which
+     after the cull is the share button rather than the tab pile. The gap is two
+     controls' business, so dropping one re-derives its neighbour's number. */
+  padding-right: calc(
+    (1 - var(--projects-panel-frame-share-centre) - var(--projects-panel-frame-share-w) / 2) * 100cqw
+  );
+  pointer-events: none;
+  user-select: none;
+}
+
+.lights {
+  display: flex;
+  gap: calc(
+    (var(--projects-panel-frame-light-pitch) - var(--projects-panel-frame-light-w)) * 100cqw
+  );
+}
+
+.lights i {
+  width: calc(var(--projects-panel-frame-light-w) * 100cqw);
+  height: calc(var(--projects-panel-frame-light-w) * 100cqw);
+  border-radius: 50%;
+  background: var(--projects-panel-frame-light);
+}
+
+.lights[data-lights="traffic"] i:nth-child(1) {
+  background: #ff5f57;
+}
+.lights[data-lights="traffic"] i:nth-child(2) {
+  background: #febc2e;
+}
+.lights[data-lights="traffic"] i:nth-child(3) {
+  background: #28c840;
+}
+
+.lights[data-lights="rings"] i {
+  background: none;
+  box-shadow: inset 0 0 0 max(0.6px, 0.09em) var(--projects-panel-frame-light);
+}
+
+.icon {
+  display: block;
+  flex: 0 0 auto;
+  color: var(--projects-panel-frame-ink);
+}
+
+.icon svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+/* The back chevron's gap used to be measured off the sidebar toggle's right
+   edge. With the toggle gone it is measured off the lights, which is what it was
+   always a share of — two centres, less the two half-widths between them. */
+.back {
+  width: calc(var(--projects-panel-frame-chevron-w) * 100cqw);
+  margin-left: calc(
+    (
+        var(--projects-panel-frame-back-centre) - var(--projects-panel-frame-chevron-w) / 2 -
+          var(--projects-panel-frame-light-centre) - 2 * var(--projects-panel-frame-light-pitch) -
+          var(--projects-panel-frame-light-w) / 2
+      ) * 100cqw
+  );
+}
+
+.fwd {
+  width: calc(var(--projects-panel-frame-chevron-w) * 100cqw);
+  margin-left: calc(
+    (
+        var(--projects-panel-frame-fwd-centre) - var(--projects-panel-frame-back-centre) -
+          var(--projects-panel-frame-chevron-w)
+      ) * 100cqw
+  );
+  color: var(--projects-panel-frame-ink-off);
+}
+
+.address {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: calc(var(--projects-panel-frame-address-w) * 100cqw);
+  height: calc(var(--projects-panel-frame-address-h) * 100cqw);
+  border-radius: calc(var(--projects-panel-frame-address-corner) * 100cqw);
+  background: var(--projects-panel-frame-address-bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.address-text {
+  font-size: calc(var(--projects-panel-frame-address-size) * 100cqw);
+  line-height: 1;
+  letter-spacing: var(--projects-panel-frame-address-tracking);
+  color: var(--projects-panel-frame-address-ink);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* THE RELOAD'S CLEARANCE IS ITS OWN NUMBER NOW. It was the difference between
+   two measured centres — the field's and the glyph's — which came to 0.0033 of
+   the Frame, about 3.4px at a window 1033 wide, and reads as a glyph shoved
+   against a wall. Stated as a clearance it is one decision instead of the
+   residue of two, and it is the field's rather than the row's: the glyph belongs
+   to the field and travels with it. */
+.reload {
+  position: absolute;
+  right: calc(var(--reload-pad) * 100cqw);
+  width: calc(var(--projects-panel-frame-reload-w) * 100cqw);
+}
+
+.share {
+  width: calc(var(--projects-panel-frame-share-w) * 100cqw);
+  margin-left: auto;
+}
+
+/* ----------------------------------------------------------------- the content */
+
+.content {
+  position: absolute;
+  left: var(--projects-panel-frame-band);
+  right: var(--projects-panel-frame-band);
+  bottom: var(--projects-panel-frame-band);
+  /* Flush at the top by default — the recording begins exactly where the
+     titlebar ends, which is what the render shows and what the Section ships. */
+  top: var(--projects-panel-frame-bar-h);
+  border-radius: calc((var(--projects-panel-frame-corner) - var(--band)) * 100cqw);
+  overflow: hidden;
+}
+
+/* The recording runs UNDER the bar, so there is a photograph behind the glass
+   rather than a flat fill. The corner goes back to the window's own, because the
+   box is now concentric with it along the top. */
+.frame[data-backdrop="clip"] .content,
+.frame[data-backdrop="type"] .content {
+  top: var(--projects-panel-frame-band);
+  border-radius: calc(var(--projects-panel-frame-corner) * 100cqw);
+}
+
+/* Under `type` the recording stops at the bar again — what is meant to be
+   behind the glass there is the page's own words, not the clip. */
+.frame[data-backdrop="type"] .content {
+  top: var(--projects-panel-frame-bar-h);
+  border-radius: calc((var(--projects-panel-frame-corner) - var(--band)) * 100cqw);
+}
+
+/* ...which means the window's fill must not be there either. */
+.frame[data-backdrop="type"],
+.frame[data-backdrop="marble"] {
+  background: none;
+}
+
+.frame[data-backdrop="type"] .fill,
+.frame[data-backdrop="marble"] .fill {
+  position: absolute;
+  top: var(--projects-panel-frame-bar-h);
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: var(--frame-fill);
+  border-radius: 0 0 calc(var(--projects-panel-frame-corner) * 100cqw)
+    calc(var(--projects-panel-frame-corner) * 100cqw);
+}
+
+/* The Plinth's own stone, carried up behind the strip. */
+.frame[data-backdrop="marble"] .stone {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: var(--projects-panel-frame-bar-h);
+  background: var(--projects-panel-plinth-src) center / 260% auto no-repeat;
+  border-radius: var(--projects-panel-frame-radius) var(--projects-panel-frame-radius) 0 0;
+}
+
+.clip {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 50% 0;
+}
+
+/* What a re-record with the app's own page inset at zero would give: the
+   14px of near-black the grid keeps from every edge of its window, gone. Scaled
+   rather than re-encoded, because the question is whether it is worth
+   re-recording and that can be answered without doing it. */
+.frame[data-crop="cropped"] .clip {
+  transform: scale(1.0198);
+  transform-origin: 50% 0;
+}
+
+.band-neutral {
+  --frame-fill: color-mix(in srgb, #f2f1ee 14%, #131518);
+}

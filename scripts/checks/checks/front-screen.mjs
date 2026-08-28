@@ -1,0 +1,556 @@
+import { DESK, open, settle } from '../lib/page.mjs';
+
+/**
+ * The Front Screen's former invariants, as assertions.
+ *
+ * Every one of these was a paragraph in the hand-written page's stylesheet
+ * saying "do not break this", and every one of them fails in a way a person
+ * looking at the running page would not notice: a word that is a picture losing
+ * the text a screen reader announces, a drawing cut two and a half per cent of a
+ * capital too high, the two margins the composition is built on drifting apart
+ * by four pixels, a switch whose ARIA stops agreeing with the paper it is on.
+ *
+ * None of them is aesthetic. The sizes, the gaps and the colours are the
+ * author's, exercised through Tokens; what is asserted here is only ever a
+ * RELATIONSHIP between two things that have to stay equal, or a fact about the
+ * markup. `--front-screen-cut-show` may be set anywhere from 0 to 1 without
+ * failing this Check, and so may every other Token.
+ *
+ * TWO WINDOWS, AND THE SECOND ONE IS NOT PADDING. The composition is fitted to
+ * one screen by handing the leftover to the photographs' slot, and that slot has
+ * a ceiling — past it the leftover is split between the two margins instead, by
+ * a mechanism that is INERT at every ordinary desktop height. Measured only at
+ * DESK, this Check passes with that mechanism deleted, which is the shape of
+ * assertion `scripts/checks/NOTES.md` warns about three times. So the two
+ * relationships that hold across the whole band are asserted at both ends of it.
+ */
+
+/** Inside the one-screen band, and below the slot's ceiling: the slot is growing
+ *  and the two margins are the Tokens' own. */
+const GROWING = DESK;
+
+/** Inside the band and past the ceiling: the slot has stopped growing and the
+ *  leftover is what keeps the two margins equal. */
+const CAPPED = { width: 1440, height: 1440 };
+
+/** Two phone widths, and two because the three ladders are in different places at
+ *  each: one entry has given way at the first and all three have by the second.
+ *  Neither number is asserted against — a scrollbar moves what the column comes
+ *  to at a given window, which is the whole reason the thresholds are the
+ *  container's and not the viewport's. They are two windows to look at an entry
+ *  in, and the assertion is about the entry. */
+const NARROW = [
+  { width: 414, height: 800 },
+  { width: 375, height: 800 },
+];
+
+/** Rects are subpixel and each white is a sum of six boxes. */
+const RHYME_TOLERANCE = 1.5;
+
+/** The overshoot lift is between 0.8px and 3.4px across the band, so this has to
+ *  be small enough to catch it having been dropped altogether. */
+const LIFT_TOLERANCE = 0.5;
+
+/** The picture is drawn from its own viewBox, so the two agree to the
+ *  rasteriser's own rounding or the drawing is letterboxed inside its box. */
+const RATIO_TOLERANCE = 0.01;
+
+/**
+ * The reveal has to be over before anything is measured.
+ *
+ * It translates the whole Section 8px down for its first 0.9 seconds, and three
+ * of the assertions below are in viewport coordinates — a reading taken mid-fade
+ * puts the Cut Title 8px LOWER than it belongs, which makes "is it cut by the
+ * fold" easier to satisfy rather than harder. `settle()` usually outlasts the
+ * animation, and "usually" is how a Check comes to assert less than it says.
+ *
+ * The Section's own animations only, and bounded: `document.getAnimations()`
+ * would wait on anything infinite the Effect Stack is running, and an await that
+ * never resolves is a hang rather than a failure.
+ */
+async function revealed(page) {
+  await page.evaluate(async () => {
+    const section = document.querySelector('.front-screen');
+    if (!section) return;
+    const done = Promise.all(section.getAnimations().map((one) => one.finished.catch(() => {})));
+    await Promise.race([done, new Promise((give) => setTimeout(give, 2000))]);
+  });
+}
+
+/**
+ * Every listing entry, and which of its organisation's forms is on the page.
+ *
+ * The line count is `getClientRects().length` on the shown form, which is one
+ * rect per line box — a count rather than a height divided by a leading, so it
+ * needs no line-height and is right whatever face the page ends up in.
+ */
+async function readEntries(page) {
+  return page.evaluate(() =>
+    [...document.querySelectorAll('.front-screen__entry')].map((entry) => {
+      const forms = [...(entry.querySelector('.front-screen__org')?.children ?? [])];
+      const shown = forms.filter((form) => getComputedStyle(form).display !== 'none');
+      return {
+        key: entry.getAttribute('data-front-screen-entry') ?? '(unnamed)',
+        shown: shown.map((form) => form.textContent ?? ''),
+        lines: shown.length === 1 ? shown[0].getClientRects().length : null,
+        // The shortest form the author wrote. There is nothing below it, so its
+        // wrapping is the floor of the mechanism rather than a broken threshold.
+        atFloor: shown.length === 1 && shown[0] === forms[forms.length - 1],
+      };
+    }),
+  );
+}
+
+/** Everything this Check reads off the page, in one round trip. */
+async function readPage(page) {
+  return page.evaluate(() => {
+    const section = document.querySelector('.front-screen');
+    if (!section) return { missing: 'no .front-screen is on the page — the Section did not render' };
+
+    const link = section.querySelector('.front-screen__cut > a');
+    const word = section.querySelector('.front-screen__cut-word');
+    const masthead = section.querySelector('.front-screen__masthead');
+    const listings = [...section.querySelectorAll('.front-screen__listing')];
+    const last = listings[listings.length - 1];
+    const absent = [
+      ['the Cut Title link', link],
+      ['the Cut Title drawing', word],
+      ['the masthead', masthead],
+      ['a listing', last],
+    ].filter(([, found]) => !found);
+    if (absent.length > 0) {
+      return {
+        missing: `the Front Screen is missing a part this Check reads: ${absent.map(([what]) => what).join(', ')}`,
+      };
+    }
+
+    // The two measured constants, RESOLVED. A custom property comes back off
+    // getComputedStyle as the token sequence it was declared as — `calc(0.294 *
+    // 0.78rem)` — so it is spent on a throwaway element's padding instead, which
+    // computes to px. Absolutely positioned, so measuring cannot move anything.
+    const probe = document.createElement('div');
+    probe.style.position = 'absolute';
+    probe.style.paddingTop = 'var(--front-screen-half-leading)';
+    probe.style.paddingBottom = 'var(--front-screen-contact-tail)';
+    // ...and the two the landing spends: the slice of the word that hangs below
+    // the fold, and the drop the Panel's masthead needs above its own top edge.
+    probe.style.marginTop = 'var(--front-screen-cut-clip)';
+    probe.style.marginBottom = 'var(--landing-mast-top)';
+    section.append(probe);
+    const spent = getComputedStyle(probe);
+    const halfLeading = parseFloat(spent.paddingTop);
+    const tail = parseFloat(spent.paddingBottom);
+    const clip = parseFloat(spent.marginTop);
+    const mastTop = parseFloat(spent.marginBottom);
+    probe.remove();
+
+    const rect = (element) => {
+      const r = element.getBoundingClientRect();
+      return {
+        top: r.top,
+        bottom: r.bottom,
+        left: r.left,
+        right: r.right,
+        width: r.width,
+        height: r.height,
+      };
+    };
+    const viewBox = (word.getAttribute('viewBox') ?? '').trim().split(/\s+/);
+
+    // The type's own z, and the two Effect Stack layers it is lifted over — read
+    // off the elements rather than written down here, so the Kernel renumbering
+    // its layers is caught rather than silently un-lifting the type.
+    const layerZ = (selector) => {
+      const layer = document.querySelector(selector);
+      return layer ? Number(getComputedStyle(layer).zIndex) : null;
+    };
+
+    return {
+      typeZ: Number(getComputedStyle(masthead).zIndex),
+      paperZ: layerZ('.fx-paper'),
+      halftoneZ: layerZ('.fx-halftone'),
+      section: rect(section),
+      masthead: rect(masthead),
+      lastListing: rect(last),
+      cut: rect(link),
+      word: rect(word),
+      halfLeading,
+      tail,
+      clip,
+      mastTop,
+      show: Number(getComputedStyle(section).getPropertyValue('--front-screen-cut-show')),
+      overshoot: Number(getComputedStyle(section).getPropertyValue('--front-screen-cut-overshoot')),
+      viewBox: { wide: Number(viewBox[2]), tall: Number(viewBox[3]) },
+      drawingHidden: word.getAttribute('aria-hidden') === 'true',
+      announced: (link.textContent ?? '').trim(),
+      viewport: { width: window.innerWidth, height: window.innerHeight },
+      turnAtTop: Number(getComputedStyle(document.documentElement).getPropertyValue('--turn')),
+    };
+  });
+}
+
+/**
+ * The two things that hold everywhere inside the one-screen band: the page's
+ * vertical rhyme, and the composition standing inside exactly one screen.
+ *
+ * The rhyme is the assertion that replaces `--cv-static`. That was a measured
+ * constant with a comment asking whoever changed the ladder to re-measure it, and
+ * being out of date drifted the two margins apart with nothing to say so.
+ */
+function composed(read) {
+  /** @type {string[]} */
+  const failures = [];
+  const where = `${read.viewport.width}x${read.viewport.height}`;
+
+  // Measured to the INK at both ends, which is what the two constants are for:
+  // the name's line box stands half a leading above its own ascenders, and the
+  // switch beside the last contact line hangs a tail below its baseline.
+  const above = read.masthead.top - read.section.top + read.halfLeading;
+  const below = read.cut.top - (read.lastListing.bottom - read.tail);
+  if (Math.abs(above - below) > RHYME_TOLERANCE) {
+    failures.push(
+      `at ${where} the page's vertical rhyme is broken: ${above.toFixed(1)}px of white above the name's ink ` +
+        `and ${below.toFixed(1)}px below the last contact line's, which have to be the same measure`,
+    );
+  }
+
+  // ONE SCREEN LESS WHAT THE LANDING TAKES, which is the band's definition now
+  // that there is a Section below to land on: the Front Screen gives up the slice
+  // of the word standing below the fold and the drop the Panel's masthead needs
+  // above it, so the Panel begins above the fold and the word stands in that
+  // masthead's slot. Both terms are read off the page, so this asserts that the
+  // composition spends exactly the budget and not that the budget is any number.
+  if (Math.abs(read.section.height + read.clip + read.mastTop - read.viewport.height) > 1) {
+    failures.push(
+      `at ${where} the Front Screen is ${read.section.height.toFixed(1)}px tall and gives ` +
+        `${(read.clip + read.mastTop).toFixed(1)}px to the landing, which is not the ` +
+        `${read.viewport.height}px screen the band composes to`,
+    );
+  }
+  if (read.lastListing.bottom > read.cut.top) {
+    failures.push(
+      `at ${where} the composition runs into the Cut Title: the contact block ends at ` +
+        `${read.lastListing.bottom.toFixed(1)}px and the word's cap top is at ${read.cut.top.toFixed(1)}px. ` +
+        'The one-screen budget has overflowed.',
+    );
+  }
+  // THE CUT LANDS ON THE PAGE'S OWN BOTTOM EDGE, which is what makes it read as
+  // a cut rather than as a word with an odd baseline. Inside the band the BOX is
+  // the whole cap slab and the WINDOW does the cutting — the rest of the letters
+  // stand on the screen below, in the Panel masthead's slot — so what has to land
+  // on the fold is the cut LINE: --front-screen-cut-show of the slab down from
+  // the cap top. Stated that way rather than as the box's foot, so
+  // --front-screen-cut-show may legitimately be set anywhere from 0 to 1 and the
+  // cut is on the fold at all of them.
+  const cutLine = read.cut.top + read.show * read.cut.height;
+  if (Math.abs(cutLine - read.viewport.height) > 1) {
+    failures.push(
+      `at ${where} the Cut Title is cut at ${cutLine.toFixed(1)}px rather than on the page's own bottom ` +
+        `edge at ${read.viewport.height}px — the cut has come off the fold`,
+    );
+  }
+  // ...and there is more word below the cut than it shows, or nothing has been
+  // cut off at all.
+  if (!(read.word.bottom > cutLine)) {
+    failures.push(
+      `at ${where} the whole drawing fits above the cut: it ends at ${read.word.bottom.toFixed(1)}px ` +
+        `against a cut at ${cutLine.toFixed(1)}px, so nothing is being cut`,
+    );
+  }
+  if (read.section.left < -1 || read.section.right > read.viewport.width + 1) {
+    failures.push(
+      `at ${where} the Front Screen runs ${read.section.left.toFixed(1)}px to ` +
+        `${read.section.right.toFixed(1)}px — something in it is wider than the page`,
+    );
+  }
+
+  return {
+    failures,
+    note: `at ${where}: ${above.toFixed(1)}px of white above the name, ${below.toFixed(1)}px below the contact block`,
+  };
+}
+
+export const check = {
+  name: 'front-screen',
+  title: "the Front Screen's invariants: the rhyme, the cut, the listings, the switch and the paper",
+
+  /** @param {{ browser: import('playwright').Browser, origin: string }} ctx */
+  async run({ browser, origin }) {
+    /** @type {string[]} */
+    const failures = [];
+    /** @type {string[]} */
+    const notes = [];
+
+    // The composition, at both ends of the band.
+    for (const viewport of [GROWING, CAPPED]) {
+      const { context, page } = await open(browser, origin, { viewport });
+      try {
+        failures.push(...(await settle(page)));
+        await revealed(page);
+        const read = await readPage(page);
+        if ('missing' in read) {
+          failures.push(read.missing);
+          continue;
+        }
+        const { failures: broken, note } = composed(read);
+        failures.push(...broken);
+        notes.push(note);
+      } finally {
+        await context.close();
+      }
+    }
+
+    // ---- a listing entry is one line, and it gives way to stay one ---------
+    // Each organisation's ladder is gated on its own Content key, so reordering
+    // a listing puts a ladder on the wrong entry and the wrong form gives way at
+    // the wrong width — invisible from the window the author works at, and the
+    // only way to break this that a glance does not catch. Nothing here is a
+    // number anybody chose: the assertion is that ONE form is on the page and
+    // that it takes ONE line, or that it is the shortest one written and there
+    // was nothing shorter to show.
+    for (const viewport of NARROW) {
+      const { context, page } = await open(browser, origin, { viewport });
+      try {
+        failures.push(...(await settle(page)));
+        await revealed(page);
+        const entries = await readEntries(page);
+        if (entries.length === 0) {
+          failures.push(`no listing entry is on the page at ${viewport.width}px`);
+          continue;
+        }
+        for (const entry of entries) {
+          if (entry.shown.length !== 1) {
+            failures.push(
+              `at ${viewport.width}px the entry ${entry.key} shows ${entry.shown.length} forms of its ` +
+                `organisation (${entry.shown.join(', ') || 'none'}) — exactly one of them is on screen`,
+            );
+          } else if (entry.lines !== 1 && !entry.atFloor) {
+            failures.push(
+              `at ${viewport.width}px the entry ${entry.key} wraps "${entry.shown[0]}" over ${entry.lines} ` +
+                'lines with a shorter form of the name still unused — the ladder gave way at the wrong width',
+            );
+          }
+        }
+        notes.push(
+          `at ${viewport.width}px the listings read: ${entries.map((one) => one.shown.join('+')).join(' | ')}`,
+        );
+      } finally {
+        await context.close();
+      }
+    }
+
+    // Everything else, in the one window the rest of the suite uses.
+    const { context, page } = await open(browser, origin, { viewport: GROWING });
+    try {
+      failures.push(...(await settle(page)));
+      await revealed(page);
+      const read = await readPage(page);
+      if ('missing' in read) return { failures: [...failures, read.missing], notes };
+
+      // ---- the word is a picture, so the text has to still be there --------
+      // This is what the whole device rests on: the visible word is an outline
+      // and cannot be read, selected or indexed, and the only reason that is
+      // allowed is the text beside it.
+      if (read.announced.length === 0) {
+        failures.push(
+          'the Cut Title announces nothing — its word is a picture, so the text beside it is the only thing a ' +
+            'screen reader reads and a crawler indexes. Losing it makes the link nameless.',
+        );
+      }
+      if (!read.drawingHidden) {
+        failures.push(
+          "the Cut Title's drawing is not aria-hidden — the word is then announced twice, once as a picture " +
+            'with no name and once as the text beside it',
+        );
+      }
+
+      // ---- the drawing keeps its own proportion ---------------------------
+      // The picture is fitted to a measure and its height follows from its
+      // viewBox. If the two ever disagree the word letterboxes inside its own
+      // box rather than distorting: a smaller word, sitting off the margin it is
+      // set to, and nothing that reads as an error.
+      const drawn = read.word.width / read.word.height;
+      const declared = read.viewBox.wide / read.viewBox.tall;
+      if (!(declared > 0)) {
+        failures.push(
+          `the Cut Title's drawing has no usable viewBox — read "${read.viewBox.wide} ${read.viewBox.tall}"`,
+        );
+      } else if (Math.abs(drawn - declared) > RATIO_TOLERANCE) {
+        failures.push(
+          `the Cut Title is drawn at ${drawn.toFixed(4)} and its viewBox says ${declared.toFixed(4)} — the ` +
+            'picture is letterboxed inside its own box',
+        );
+      }
+
+      // ---- the cut is taken from the CAP LINE, not from the ink -----------
+      // The round letters overshoot the cap, so the picture's top edge is the
+      // O's and not the line the cut is measured from. Drop the lift and every
+      // letter is cut a fraction of a capital too high, which is invisible
+      // unless the two versions are put side by side.
+      const lift = read.cut.top - read.word.top;
+      const wanted = read.overshoot * read.word.width;
+      if (!(read.overshoot > 0)) {
+        failures.push(
+          `--front-screen-cut-overshoot read ${read.overshoot} — without it the cut is taken from the ink's ` +
+            'top edge rather than from the cap line, and every letter is cut too high',
+        );
+      } else if (Math.abs(lift - wanted) > LIFT_TOLERANCE) {
+        failures.push(
+          `the Cut Title's drawing is lifted ${lift.toFixed(2)}px and its overshoot asks for ` +
+            `${wanted.toFixed(2)}px — the cut is not being taken from the cap line`,
+        );
+      }
+
+      // ---- the paper and the halftone stay off the type -------------------
+      // Paint order, so the glyphs come out untouched while the paper around
+      // them takes the texture. The live page recomputed the number in script;
+      // this Section states it, so what keeps the statement honest is reading
+      // the two layers' own z-indexes back and comparing. The failure is type
+      // printed through by two textures — which reads as the strengths being too
+      // high, and is a day spent tuning the wrong numbers.
+      for (const [layer, z] of [
+        ['the paper', read.paperZ],
+        ['the halftone', read.halftoneZ],
+      ]) {
+        if (z === null) {
+          failures.push(`${layer} layer is not on the page — the Effect Stack did not render`);
+        } else if (!(read.typeZ > z)) {
+          failures.push(
+            `the type stands at z-index ${read.typeZ} and ${layer} at ${z} — the layer is painting over the ` +
+              'glyphs instead of around them',
+          );
+        }
+      }
+
+      // ---- the page opens on paper ---------------------------------------
+      // The Front Screen carries no data-turn, and this is why: it is one screen
+      // tall, so `top top` and `bottom bottom` are the same scroll position and
+      // the crossing would be complete before the reader had moved. The failure
+      // is a page that opens half dark, which reads as a theme bug.
+      if (read.turnAtTop !== 0) {
+        failures.push(
+          `the page is already crossing at the top: --turn is ${read.turnAtTop}. The Turn has to span the ` +
+            'Section AFTER this one — a data-turn on a one-screen Section completes at scroll 0.',
+        );
+      }
+      // And it crosses over a STRETCH of scroll rather than at a point. This is
+      // the half that catches the mistake: marking a one-screen Section leaves
+      // `top top` and `bottom bottom` at the same scroll position, and GSAP does
+      // not report that as an error — it reports 0 at the top and 1 one pixel
+      // later. The page still opens on paper, so the only symptom is that the
+      // crossing is a flip, which is the one thing it may not be.
+      const crossing = await page.evaluate(async () => {
+        const root = document.documentElement;
+        const turn = () => Number(getComputedStyle(root).getPropertyValue('--turn'));
+        const travel = document.body.scrollHeight - window.innerHeight;
+        // THE SNAPPING COMES OFF FIRST, or this sweep reads a document that jumps
+        // rather than one that crosses. Inside the landing band the page is two
+        // ports and nothing between (src/kernel/landing.css), so every scrollTo in
+        // between is pulled straight back onto the port it left — and the sweep
+        // would find --turn at 0 at forty of its forty-one samples and report the
+        // crossing as a flip, which is exactly the failure it exists to catch.
+        window.portfolio?.snapping?.(false);
+        /** @type {{ y: number, turn: number }[]} */
+        const sampled = [];
+        for (let step = 0; step <= 40; step += 1) {
+          const y = (travel * step) / 40;
+          window.scrollTo(0, y);
+          await new Promise((next) => requestAnimationFrame(next));
+          sampled.push({ y, turn: turn() });
+        }
+        window.scrollTo(0, 0);
+        window.portfolio?.snapping?.(true);
+        const leaves = sampled.find((one) => one.turn > 0.01);
+        const arrives = sampled.find((one) => one.turn > 0.99);
+        return {
+          span: leaves && arrives ? arrives.y - leaves.y : null,
+          reached: Math.max(...sampled.map((one) => one.turn)),
+          screen: window.innerHeight,
+        };
+      });
+      if (!(crossing.reached > 0.99)) {
+        failures.push(
+          `--turn never gets past ${crossing.reached.toFixed(3)} anywhere in the document — the crossing does ` +
+            'not arrive, so nothing marks where the page turns',
+        );
+      } else if (crossing.span === null || crossing.span < crossing.screen / 2) {
+        failures.push(
+          `the crossing spans ${crossing.span === null ? 'no' : `${crossing.span.toFixed(0)}px of`} scroll in a ` +
+            `${crossing.screen}px window — a stretch that short is one wheel notch, which makes the Turn a flip ` +
+            'rather than a crossing. A one-screen Section marked data-turn does exactly this.',
+        );
+      }
+      notes.push(
+        `the Turn: ${read.turnAtTop} at the top, crossing over ${crossing.span === null ? '?' : crossing.span.toFixed(0)}px of scroll`,
+      );
+
+      // ---- the switch and the paper agree --------------------------------
+      // The pill moving is the half a person sees. `aria-checked` drifting from
+      // the theme is the half nobody does, and it is the half that makes the
+      // control a lie to anyone who is not looking at it.
+      const thrown = await page.evaluate(async () => {
+        const at = () => {
+          const button = document.querySelector('.front-screen__toggle');
+          const thumb = document.querySelector('.front-screen__thumb');
+          const words = [
+            ...document.querySelectorAll('.front-screen__word-paper, .front-screen__word-dark'),
+          ];
+          return {
+            theme: document.documentElement.dataset.theme,
+            checked: button?.getAttribute('aria-checked'),
+            thumb: thumb ? thumb.getBoundingClientRect().left : null,
+            shown: words
+              .filter((one) => getComputedStyle(one).display !== 'none')
+              .map((one) => one.textContent),
+          };
+        };
+        const before = at();
+        document.querySelector('.front-screen__toggle')?.click();
+        // The pill travels on a transition, so it is read once it has arrived
+        // rather than while it is on its way.
+        await new Promise((done) => setTimeout(done, 600));
+        return { before, after: at() };
+      });
+
+      const { before, after } = thrown;
+      if (before.theme === after.theme) {
+        failures.push(`the toggle did not change the paper — data-theme stayed "${before.theme}"`);
+      }
+      if (before.checked === after.checked) {
+        failures.push(
+          `the toggle's aria-checked stayed "${before.checked}" across a change of paper — the switch's state ` +
+            'is what a reader who cannot see the pill is told',
+        );
+      }
+      for (const state of [before, after]) {
+        const wantsChecked = state.theme === 'dark' ? 'true' : 'false';
+        if (state.checked !== wantsChecked) {
+          failures.push(
+            `on the ${state.theme} paper the switch reads aria-checked="${state.checked}" — it has to be ` +
+              `"${wantsChecked}"`,
+          );
+        }
+        if (state.shown.length !== 1) {
+          failures.push(
+            `on the ${state.theme} paper the switch shows ${state.shown.length} words ` +
+              `(${state.shown.join(', ') || 'none'}) — exactly one of the two is on screen`,
+          );
+        }
+      }
+      if (before.shown[0] === after.shown[0]) {
+        failures.push(`the switch's word stayed "${before.shown[0]}" across a change of paper`);
+      }
+      if (before.thumb !== null && after.thumb !== null && before.thumb === after.thumb) {
+        failures.push(`the switch's pill did not move — its thumb stayed at ${before.thumb.toFixed(1)}px`);
+      }
+      notes.push(
+        `the switch: ${before.theme}/${before.checked}/"${before.shown[0]}" became ` +
+          `${after.theme}/${after.checked}/"${after.shown[0]}"`,
+      );
+
+      return { failures, notes };
+    } finally {
+      await context.close();
+    }
+  },
+};

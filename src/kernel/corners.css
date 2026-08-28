@@ -1,0 +1,96 @@
+/* The corner pictures: the plate bottom-left, the car top-right, the eye
+   bottom-right. Three baked photographs run in behind the opening composition,
+   scaled to --fold so they grow together, and graded in the file rather than by
+   a filter here.
+
+   Every number they are drawn from is in tokens/corners.css, imported first so
+   this file's rules stand after them, and so the Editor has one file per part of
+   the Kernel that is nothing but Tokens. src/kernel/NOTES.md says what each one
+   is measured from and which of them the ladder in corners.ts has to agree
+   with. */
+
+@import './tokens/corners.css';
+
+/* One band, the height of the first screen, at the top of the document. The
+   nearest positioned ancestor is the BODY, and what this needs from it is that
+   its origin is the document's — which it is, at `margin: 0`, and which the
+   initial containing block it used to be measured against was too. Every offset
+   here is 0 or a length, so the two answer identically; ground.css is where the
+   body was positioned and why. What must not happen is a positioned ancestor
+   INSIDE the Shell, which would put these at the Shell's origin. */
+.kernel-corners {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: var(--fold);
+  z-index: -1;
+  pointer-events: none;
+  contain: paint;
+}
+
+.kernel-corners > * {
+  position: absolute;
+  left: 0;
+  right: 0;
+  background-repeat: no-repeat;
+}
+
+/* Width from the token, height auto from the file's own aspect — so the aspect
+   ratio lives in the file and the picture is never squeezed into a band it is
+   the wrong shape for. It overflows and the box does the cutting. */
+.kernel-corners .plate {
+  top: 0;
+  height: var(--plate-band);
+  background-image: var(--plate-src);
+  background-position: left var(--plate-x) bottom calc(-1 * var(--plate-crop) * var(--plate-w));
+  background-size: var(--plate-w) auto;
+  opacity: var(--plate-opacity);
+}
+
+.kernel-corners .car {
+  top: 0;
+  height: var(--fold);
+  background-image: var(--car-src);
+  background-position: right var(--car-x) top calc(var(--car-y) - var(--car-crop) * var(--car-w));
+  background-size: var(--car-w) auto;
+  opacity: var(--car-opacity);
+}
+
+/* THE ONE PICTURE OF THE THREE THAT IS NOT MEASURED OFF A PAGE EDGE. It stands
+   beside the Front Screen's photograph strip rather than in a corner, so what
+   has to stay put is the gap between the last photograph and the wheel — and
+   the strip is pinned to a CENTRED column while a corner offset is pinned to
+   the window. Measured off the edge the two part company at half a pixel per
+   pixel of width: right on the one display it was placed on and drifting on
+   every other. --eye-x is that gap; the line below is where it is measured from.
+
+   RESTATED, AND DELIBERATELY NOT A TOKEN. It is the Front Screen's
+   --front-screen-measure and --front-screen-side, and the Kernel may not read a
+   Section (CONTEXT.md) — but a second DRAGGABLE copy of a number that has to
+   agree with a Section's is a disagreement waiting to happen, so this is the
+   drawing's own measurement the way tokens/landing.css's restated terms are
+   the landing's. The `carousel` Check holds it honest by measuring the gap on
+   the page rather than by comparing two spellings, so either number drifting
+   fails the build from this end too.
+
+   --page-across AND NOT 50%: a percentage in `background-position` is a share
+   of the positioning area LESS the image, not of the box, so `50% - 13.5rem`
+   would move every time --eye-w did. --page-across is the page without the
+   scrollbar's gutter, which is the same box .kernel-corners spans and the same
+   one the column is centred in, so the two land on the same edge. */
+.kernel-corners .eye {
+  /* --front-screen-measure and --front-screen-side, spelled out. */
+  --eye-measure: 27rem;
+  --eye-side: 1.35rem;
+  --eye-column: max(var(--eye-side), calc((var(--page-across) - var(--eye-measure)) / 2));
+
+  top: 0;
+  height: calc(var(--fold) - var(--eye-y));
+  background-image: var(--eye-src);
+  background-position:
+    left calc(var(--eye-column) + var(--eye-x))
+    bottom calc(-1 * var(--eye-crop) * var(--eye-w));
+  background-size: var(--eye-w) auto;
+  opacity: var(--eye-opacity);
+}

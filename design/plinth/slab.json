@@ -648,8 +648,97 @@
       "rough": 1.0,
       "crack": false,
       "room": "screen"
+    },
+    "gemini-generated-image-13pkuz13pkuz13pk-noir": {
+      "title": "Gemini_Generated_Image_13pkuz13pkuz13pk \u2014 one slab across the block, dark room",
+      "grade": "asis",
+      "scale": 0.68,
+      "offset": 0.83,
+      "bump": [
+        0.22,
+        0.00035
+      ],
+      "sss": 0.65,
+      "coat": [
+        0.0,
+        0.0
+      ],
+      "rough": 1.0,
+      "crack": false,
+      "room": "noir"
+    },
+    "gemini-generated-image-ozfbfuozfbfuozfb-noir": {
+      "title": "Gemini_Generated_Image_ozfbfuozfbfuozfb \u2014 one slab across the block, dark room",
+      "grade": "asis",
+      "scale": 0.84,
+      "offset": 0.355,
+      "bump": [
+        0.22,
+        0.00035
+      ],
+      "sss": 0.65,
+      "coat": [
+        0.0,
+        0.0
+      ],
+      "rough": 1.0,
+      "crack": false,
+      "room": "noir"
+    },
+    "gemini-generated-image-zbkpg6zbkpg6zbkp-1-noir": {
+      "title": "Gemini_Generated_Image_zbkpg6zbkpg6zbkp (1) \u2014 one slab across the block, dark room",
+      "grade": "deep",
+      "scale": 0.82,
+      "offset": 0.36,
+      "bump": [
+        0.22,
+        0.00035
+      ],
+      "sss": 0.65,
+      "coat": [
+        0.0,
+        0.0
+      ],
+      "rough": 1.0,
+      "crack": false,
+      "room": "screen"
+    },
+    "gemini-gold-1": {
+      "title": "gemini-gold-1",
+      "grade": "asis",
+      "scale": 0.94,
+      "offset": 0.0,
+      "bump": [
+        0.24,
+        0.00035
+      ],
+      "sss": 0.7,
+      "coat": [
+        0.0,
+        0.0
+      ],
+      "rough": 1.0,
+      "crack": false,
+      "room": "noir"
     }
   },
-  "added_stones": {},
-  "version": "912aa827"
+  "added_stones": {
+    "gemini-generated-image-13pkuz13pkuz13pk-noir": {
+      "src": "Gemini_Generated_Image_13pkuz13pkuz13pk.jpg",
+      "stem": "gemini-generated-image-13pkuz13pkuz13pk-a1762c5c"
+    },
+    "gemini-generated-image-ozfbfuozfbfuozfb-noir": {
+      "src": "Gemini_Generated_Image_ozfbfuozfbfuozfb.jpg",
+      "stem": "gemini-generated-image-ozfbfuozfbfuozfb-5b089ea6"
+    },
+    "gemini-generated-image-zbkpg6zbkpg6zbkp-1-noir": {
+      "src": "Gemini_Generated_Image_fqjdu9fqjdu9fqjd.jpg",
+      "stem": "gemini-generated-image-fqjdu9fqjdu9fqjd-03f9b041"
+    },
+    "gemini-gold-1": {
+      "src": "Gemini_Generated_Image_13pkuz13pkuz13pk.jpg",
+      "stem": "gemini-generated-image-13pkuz13pkuz13pk-45476b2c"
+    }
+  },
+  "version": "a0b544da"
 }

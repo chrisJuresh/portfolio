@@ -1,0 +1,149 @@
+{
+  "title": "The two Texturelabs plates",
+  "note": "The film frame and the paper tile the Effect Stack draws. Both leave here centred on mid-grey, which is the decision the rest of the pipeline hangs off: overlay and soft-light are no-ops at exactly 128, so the flat field costs nothing and only the marks land. The stack's own numbers - strength, blend, lift, contrast, size - are Tokens under kernel-effects and move live; these are what is IN the picture.",
+  "needs": "Texturelabs_Film_185XL.jpg and Texturelabs_Paper_349XL.jpg in design/effects/sources/. They are 9 MB and 12 MB, gitignored under texturelabs.org's own licence, and free downloads from there.",
+  "run": [
+    "python",
+    "design/effects/build-textures.py",
+    "{which}"
+  ],
+  "shows": [
+    "portfolio/img/tex/"
+  ],
+  "groups": [
+    {
+      "name": "What is being baked",
+      "note": "The two are entirely different jobs: the film is used ONCE, stretched over the whole band, because the marks on it are singular events; the paper is cut small and tiled, and carries no marks at all.",
+      "params": [
+        {
+          "key": "which",
+          "label": "which plate",
+          "value": "all",
+          "options": [
+            "film",
+            "paper",
+            "all"
+          ],
+          "note": "`all` is both. Baking one is about twenty seconds and baking both is under a minute."
+        }
+      ]
+    },
+    {
+      "name": "The film - 185XL, one frame",
+      "note": "A high-pass at a tenth of the frame takes its gross shape off - its overall blackness and its corner falloff - which is far larger than any mark on it, so every scratch, speck and bloom comes through untouched. Without it the texture stops being a texture and starts being a vignette painted over the page.",
+      "params": [
+        {
+          "key": "FILM_INSET",
+          "label": "inset",
+          "value": "0.035",
+          "min": 0,
+          "max": 0.2,
+          "step": 0.005,
+          "note": "How much of each edge is cropped off before anything else, to lose the plate edge the scan carries."
+        },
+        {
+          "key": "FILM_SIGMA_FRAC",
+          "label": "high-pass radius",
+          "value": "0.035",
+          "min": 0.005,
+          "max": 0.2,
+          "step": 0.005,
+          "note": "As a fraction of the frame. Larger keeps more of the frame's own shape; smaller starts eating the marks."
+        },
+        {
+          "key": "FILM_FINE",
+          "label": "grain kept",
+          "value": "1.2",
+          "min": 0,
+          "max": 4,
+          "step": 0.1,
+          "note": "The fine detail the high-pass leaves, before the gain below."
+        },
+        {
+          "key": "FILM_GAIN",
+          "label": "gain",
+          "value": "4.6",
+          "min": 0.5,
+          "max": 12,
+          "step": 0.1,
+          "note": "How far what is left is pushed away from mid-grey. The band's own standard deviation is about seven levels once the grain is out, so this is what makes a scratch visible at all."
+        },
+        {
+          "key": "FILM_GAMMA",
+          "label": "gamma",
+          "value": "0.8",
+          "min": 0.2,
+          "max": 2,
+          "step": 0.05,
+          "note": "Open, and more open than the paper's: what is left here is events rather than field."
+        },
+        {
+          "key": "FILM_QUALITY",
+          "label": "WebP quality",
+          "value": "68",
+          "min": 40,
+          "max": 100,
+          "step": 1,
+          "note": "Lossy on purpose: a full-frame wash at 18% opacity or less, where an artefact arrives at a fifth of its strength."
+        }
+      ]
+    },
+    {
+      "name": "The paper - 349XL, tiled",
+      "note": "Most of build-textures.py is about making this WRAP. The mottle is low-frequency, and there a slow light-to-dark drift is worse than ugly: the drift itself is the seam, so removing it at a small radius is what makes the seamless step possible at all rather than merely tidier.",
+      "params": [
+        {
+          "key": "PAPER_CROP",
+          "label": "crop, x and y",
+          "value": "0.60 0.12",
+          "note": "Where in the sheet the tile is cut from, as two fractions of it. Two numbers in one control because it is one decision about one point, and build-textures.py reads it out of the parameters file rather than off a command line."
+        },
+        {
+          "key": "PAPER_SRC_SIZE",
+          "label": "cut at",
+          "value": "2048",
+          "min": 512,
+          "max": 4096,
+          "step": 64,
+          "note": "The square taken out of the source, in source pixels, before it is made to wrap and resampled down to the rungs."
+        },
+        {
+          "key": "PAPER_TILE",
+          "label": "tile size",
+          "value": "512",
+          "min": 128,
+          "max": 2048,
+          "step": 64,
+          "note": "The tile's own size. --fx-paper-size in kernel-effects is how big it is DRAWN, and that one is live."
+        },
+        {
+          "key": "PAPER_SIGMA",
+          "label": "high-pass radius",
+          "value": "1.6",
+          "min": 0.2,
+          "max": 8,
+          "step": 0.1,
+          "note": "In tile pixels, and small: the fibre is what is wanted and the mottle is what is not."
+        },
+        {
+          "key": "PAPER_GAIN",
+          "label": "gain",
+          "value": "2.6",
+          "min": 0.5,
+          "max": 12,
+          "step": 0.1,
+          "note": "As the film's, against a field that is already mid-grey rather than nearly black."
+        },
+        {
+          "key": "PAPER_GAMMA",
+          "label": "gamma",
+          "value": "0.9",
+          "min": 0.2,
+          "max": 2,
+          "step": 0.05,
+          "note": "Tighter than the film's: this one is asked only to put a tooth on the page."
+        }
+      ]
+    }
+  ]
+}

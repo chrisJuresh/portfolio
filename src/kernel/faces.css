@@ -1,0 +1,100 @@
+/* The faces. Five families, six files, all static instances under /fonts/.
+   Why each weight exists and why Host Grotesk's second cut is declared 500 while
+   being drawn at 514: src/kernel/NOTES.md.
+
+   The three numbers the page's own type size is solved from are in
+   tokens/faces.css, imported first so the Editor can reach every one. */
+@import './tokens/faces.css';
+
+@font-face {
+  font-family: 'Vollkorn';
+  src: url('/fonts/vollkorn-regular.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Vollkorn';
+  src: url('/fonts/vollkorn-bold.woff2') format('woff2');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Vollkorn';
+  src: url('/fonts/vollkorn-italic.woff2') format('woff2');
+  font-weight: 400;
+  font-style: italic;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Spectral';
+  src: url('/fonts/spectral-regular.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Source Serif 4';
+  src: url('/fonts/sourceserif4-regular.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Host Grotesk';
+  src: url('/fonts/hostgrotesk-regular.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+/* Drawn at wght 514 — the instance the cut title morphs into — and declared 500
+   because CSS has to be told a rung. Do not tidy to 500 in the build. */
+@font-face {
+  font-family: 'Host Grotesk';
+  src: url('/fonts/hostgrotesk-medium.woff2') format('woff2');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* The page's own size, in one shape written twice: the ZOOM times a ceiling, and
+   inside the Front Screen's one-screen band the type gives way under that ceiling
+   so the Section's photograph strip — the band's remainder — is still a photograph
+   on a short screen. The three numbers are Tokens in tokens/faces.css and say what
+   each of them is for; src/kernel/NOTES.md is the reasoning, and `carousel` is
+   what holds the give-way honest.
+
+   THE ZOOM IS THE OUTER FACTOR, AND IT IS OUTSIDE THE `min()` ON PURPOSE. Inside
+   it, it would be a second ceiling and could only ever make type smaller, which is
+   the one thing the page could already do. Outside it, it multiplies whichever of
+   the two the screen chose — so the give-way still gives way by the same
+   PROPORTION on a short screen, and the composition scales rather than being
+   clipped by a number that stopped moving.
+
+   Declared here as well as in the query so the zoom means the same thing on both
+   sides of the band: below it the page is a scroll at the reader's own size, and
+   `calc(1 × 1rem)` is exactly that size, so the default costs nothing.
+
+   The query is a second copy of the band in FrontScreen.astro. Keep them in step;
+   the Check measures at the band's own corner to catch them drifting. */
+:root {
+  font-size: calc(var(--type-zoom) * var(--type-ceiling));
+}
+
+@media (min-width: 1100px) and (min-height: 700px) {
+  :root {
+    font-size: calc(
+      var(--type-zoom) * min(var(--type-ceiling), calc(var(--type-scale) * 100vh))
+    );
+  }
+}
+
+:root {
+  --face-body: Vollkorn, 'Sitka Text', Charter, 'Iowan Old Style', Georgia, serif;
+  --face-label: Spectral, 'Sitka Text', Charter, 'Iowan Old Style', Georgia, serif;
+  /* Georgia on purpose, and sized against Georgia. See NOTES.md. */
+  --face-lead: Georgia, 'Iowan Old Style', 'Palatino Linotype', serif;
+  --face-year: 'Source Serif 4', Georgia, serif;
+  --face-panel: 'Host Grotesk', 'Segoe UI Variable Text', 'Segoe UI', system-ui, sans-serif;
+}

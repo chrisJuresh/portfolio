@@ -1,0 +1,164 @@
+/* Every term the landing is solved from is in tokens/landing.css, imported first
+   so the Editor's file stands before the arithmetic that spends it. */
+@import './tokens/landing.css';
+
+/* THE LANDING: the far end of the page turn, and the one measure two Sections
+   share.
+
+   THE WORD DOES NOT COME DOWN TO THE SECTION; THE SECTION COMES UP TO THE WORD.
+   That sentence is the whole of the device. PROJECTS is cut off the foot of the
+   Front Screen, it is drawn at the Projects Panel masthead's own cap, and the
+   Panel's masthead goes `visibility: hidden` underneath it — so the reader sees
+   one PROJECTS at rest on either screen and at every frame of the turn between
+   them, and the word neither travels nor resizes to get there. What moves is the
+   document.
+
+   WHY THIS IS THE KERNEL'S. Two things have to agree across a Section boundary
+   and a Section may read only the Kernel (CONTEXT.md): the cap the Cut Title is
+   cut to, which is the Panel's, and the height the Panel is solved for, which is
+   what the Front Screen gives up. So the measure both are functions of is solved
+   here, once, and each Section reads it. tokens/landing.css holds the four terms
+   it is solved from and says which Section each was taken from; the `landing`
+   Check asserts the answers still agree with the Panel's own arithmetic, which
+   is what stops a restated number becoming a wrong one.
+
+   ONE CYCLE TO NOT WRITE. --landing-w must never come to depend on anything the
+   Cut Title computes. It is a function of --fold and the four terms next door,
+   which is exactly why the fit constant substitutes the masthead's drop out of
+   the equation rather than referring to the word.
+
+   THE BAND IS A VIEWPORT'S AND CANNOT BE A TOKEN — the same two numbers the two
+   Sections compose to one screen inside, and the three blocks are one idea: below
+   1100 x 700 there is no landing, no page turn, and the two words stand apart. */
+
+@media (min-width: 1100px) and (min-height: 700px) {
+  /* ON THE BODY AND NOT THE ROOT, which is not a preference. The width branch
+     reads --page-across, and that is declared on the body — an element is not its
+     own container, so the root cannot resolve the container query it is the
+     container FOR. Everything that reads these is a Section, and every Section is
+     inside the body, so nothing loses sight of them. ground.css has the whole of
+     why the measure cannot be `100vw`. */
+  body {
+    /* The Panel composition's width, re-solved for the landing. Two terms move
+       against the Panel's own base solve: the Rail leaves the grid to stand in
+       the page's margin, so the width branch is the page's own margin ONCE rather
+       than 0.9597 of the screen, and the height branch is the screen less the two
+       margin ONCE and the half-leading the word's cap top stands on.
+
+       THE WIDTH BRANCH SPENDS THE PAGE ACROSS ON THE DRAWING AND THE STONE. The
+       Panel's Plinth overhangs the Frame's right foot, and the Frame is flush
+       with the composition's right edge, so the widest thing in the Section is
+       the composition PLUS that overhang — which is why the margin appears once
+       and the answer is divided by one plus the stone's share rather than the
+       page across being handed to the composition alone. Solve
+       `side + W + stone x W = --page-across` for W and this is it, and what it
+       buys is the marble's right end landing ON the page's right edge instead of
+       running off it. The overhang is a share of the composition, so the stone
+       scales with the drawing and the equation holds at every width.
+
+       --page-across AND NOT `100vw`, and that is the difference between landing
+       on the edge and 15px past it on every window with a classic scrollbar:
+       `100vw` counts the gutter and the box this is laid out in does not.
+       ground.css owns that length and says why it cannot be a viewport unit.
+
+       THE HEIGHT BRANCH SPENDS THE MARGIN ONCE FOR THE SAME REASON. The drawing
+       runs from the page's top margin to the page's bottom EDGE — the Plinth
+       stands on it — so the height it has to fit into is the screen less ONE
+       margin and the half-leading, not two margins. Subtracting the second one
+       here is what used to hand the width branch a composition 145px narrower
+       than the page could carry at 1440x900, and it is what left the stone 115px
+       short of the corner at 1600x900: the branch that bound was solving for a
+       bottom margin that no longer exists.
+
+       WHERE THE HEIGHT BRANCH WINS, THIS BRANCH CANNOT REACH THE EDGE AND THE
+       PANEL FINISHES THE JOB. The composition is then capped by what its height
+       will carry, so it is narrower than the page has room for and it starts at
+       the page's left margin because that is where the word stands. The Panel's
+       stage carries the Frame and the slab out to the edge together — see the
+       reach in ProjectsPanel.astro's landing block, which is exactly this
+       equation's residue and therefore exactly 0 whenever the branch above is the
+       one that bound.
+
+       THAT IS THE COMMON CASE AND NOT AN EDGE ONE, which is worth writing down
+       because it was got wrong once by measuring at the wrong heights. A viewport
+       whose height is a whole screen — 900, 1080, 1440 — is not a window anybody
+       has: a maximised browser gives up about 100px of it to its own chrome, and
+       at 1920x980 the height branch binds by 194px. Measure the band at heights a
+       browser actually has.
+
+       THE TWO BRANCHES SPEND TWO DIFFERENT MARGINS, and they always did — it is
+       only that the two used to be the same number. Across, what the drawing has
+       to leave is --landing-side, the margin the word stands on and the column
+       the Rail is set in; down, what it has to leave is --landing-inset, the air
+       above the word's cap. tokens/landing.css is why those parted company. */
+    --landing-w: min(
+      calc((var(--page-across) - var(--landing-side)) / (1 + var(--landing-plinth-share))),
+      calc((var(--fold) - var(--landing-inset) - var(--landing-name-lead)) / var(--landing-fit))
+    );
+    --landing-mast-size: calc(var(--landing-mast-share) * var(--landing-w));
+
+    /* Host Grotesk's metrics against the Panel's 0.86 line-height, and the same
+       two literals the Panel writes for itself: the cap is 0.700 em of the size,
+       and the cap top sits 0.080 em below the line box's own top edge. Face
+       measurements rather than choices, which is why neither is a Token — and
+       the `landing` Check is what holds these equal to the Panel's. */
+    --landing-cap: calc(0.7 * var(--landing-mast-size));
+    --landing-mast-top: calc(0.08 * var(--landing-mast-size));
+
+    /* Where the word's cap top comes to rest: the page's top margin in the band,
+       plus the half-leading a line of type would have stood on.
+
+       IT USED TO SAY "the same line the Front Screen's own name starts on, one
+       screen up", AND THAT STOPPED BEING TRUE BEFORE THIS TOKEN PARTED COMPANY
+       WITH THE RHYME. The Front Screen's column stands on its strip's ceiling at
+       every window in the band, so the surplus is split above the name and below
+       the last contact line and the rhyme is only the FLOOR under the white up
+       there — 112px at 2560x1311 against the 35px the clamp gave. The two lines
+       were 76px apart while they were spelled the same. --landing-inset is the
+       landing's own margin now and the rhyme is the Front Screen's own; the
+       distance between the two names is a consequence, and it is a smaller one
+       than it was. */
+    --landing-top: calc(var(--landing-inset) + var(--landing-name-lead));
+  }
+
+  /* ---- the two resting places ---------------------------------------------
+     The document is two ports and nothing between, which is what makes the turn
+     a turn: a mandatory snap means the scroller must COME TO REST on a port, so
+     there is nowhere to stop half way. page-turn.ts is what eases between them
+     on a wheel notch — the browser's own fling owns the scroller for as long as
+     it flies, and a notch the other way taken while it is in the air is filtered
+     out, so the turn back cannot be taken until it has landed.
+
+     A Check or the Editor that wants to place the page somewhere between them
+     asks the Kernel to lift the snapping first: `window.portfolio.snapping(false)`. */
+  html {
+    scroll-snap-type: y mandatory;
+  }
+
+  /* THE TOP PORT IS A ZERO-HEIGHT BOX AND DELIBERATELY NOT THE FIRST SECTION. A
+     snap area is the element's TRANSFORMED border box, and the Front Screen
+     spends its first 0.9s translated 8px down by its own reveal — which would
+     drag the resting place down with it and put a twitch on the load. body
+     itself is no good either: a snap area LARGER than the scrollport makes every
+     scroll position covering it valid, which switches the snapping off rather
+     than pinning it, and body is the whole document tall. */
+  body::before {
+    content: '';
+    display: block;
+    height: 0;
+    scroll-snap-align: start;
+  }
+
+  /* Every Section after the first is a port, and the first is the box above.
+     Stated as a relationship rather than as a list so a third Section is a port
+     the day it lands and nothing here has to know its name.
+
+     `scroll-margin-top` is each Section's own — the Panel's puts the port on the
+     word's landing rather than on the Section's edge. And when a composition is
+     taller than the window its snap area is larger than the scrollport, which
+     RELAXES snapping inside it rather than switching it off: the reader can read
+     to the foot of a tall Section without being pulled back up. */
+  [data-section] ~ [data-section] {
+    scroll-snap-align: start;
+  }
+}

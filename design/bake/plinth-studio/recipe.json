@@ -1,0 +1,179 @@
+{
+  "title": "A plinth stone from a photograph",
+  "note": "The other half of the plinth: a photograph of real marble taken apart into four maps and lit in Cycles. There is no honest way to preview one without rendering it - the studio page this replaces could only ever show WHICH RECTANGLE of the photograph lands on the block, which answers `slabs across` and `offset` and is honest about answering nothing else. add-stone.py runs both steps and writes the entry to design/plinth/stones/, which is the door build-slab.py already reads.",
+  "needs": "Blender on PATH, and a photograph of marble. Neither the photograph nor the maps are committed - what ships is the plate - so a stone can be LISTED from a fresh checkout and only RE-BAKED from a tree that still has the image.",
+  "run": [
+    "python",
+    "design/plinth/add-stone.py"
+  ],
+  "shows": [
+    "portfolio/img/tex/",
+    "design/plinth/stones/"
+  ],
+  "groups": [
+    {
+      "name": "The photograph",
+      "note": "Maps are per IMAGE and not per stone, and they are keyed by the CONTENT of the file: a second bake of the same photograph at a different scale is fifteen seconds of Cycles rather than fifty megabytes of PNG.",
+      "params": [
+        {
+          "key": "src",
+          "label": "the photograph",
+          "value": "",
+          "arg": "--src",
+          "note": "Required. A relative path is read from the repository root."
+        },
+        {
+          "key": "name",
+          "label": "the stone's stem",
+          "value": "my-marble",
+          "arg": "--name",
+          "note": "The STEM and not the key: add-stone.py appends each style to it, so this becomes my-marble-deep and its siblings."
+        },
+        {
+          "key": "title",
+          "label": "what it is",
+          "value": "",
+          "arg": "--title",
+          "note": "One line, shown beside its plate. Left empty, add-stone.py writes one from the name."
+        },
+        {
+          "key": "size",
+          "label": "map size",
+          "value": "3000",
+          "arg": "--size",
+          "min": 512,
+          "max": 8192,
+          "step": 256,
+          "note": "The longest edge the maps are built at. One of the two options that changes what the maps ARE, so moving it rebuilds them rather than reusing them."
+        },
+        {
+          "key": "square",
+          "label": "square the maps",
+          "value": "no",
+          "arg": "--square",
+          "when": "yes",
+          "note": "The other one. Squares the source before the maps are cut, for a photograph that is not close to the block's own aspect."
+        }
+      ]
+    },
+    {
+      "name": "What is baked",
+      "note": "One run writes a stone per style, so a bake-off is one command rather than four.",
+      "params": [
+        {
+          "key": "styles",
+          "label": "styles",
+          "value": "",
+          "arg": "--styles",
+          "note": "Comma-separated. Left empty, add-stone.py uses its own set, which is the four the gemini stones were compared as."
+        },
+        {
+          "key": "grade",
+          "label": "grade",
+          "value": "deep",
+          "arg": "--grade",
+          "note": "Which basecolor ladder is wired in. `asis` is the photograph as taken; `deep` and `gold` are the two the gemini bake-off compared."
+        },
+        {
+          "key": "replace",
+          "label": "replace an entry that exists",
+          "value": "no",
+          "arg": "--replace",
+          "when": "yes",
+          "note": "Off by default, so a name already taken is a refusal rather than a stone that quietly becomes a different one."
+        },
+        {
+          "key": "no-bake",
+          "label": "write the entry and do not render",
+          "value": "no",
+          "arg": "--no-bake",
+          "when": "yes",
+          "note": "The maps and the entry, with no Cycles at all. What it is for is checking the window before spending the render."
+        }
+      ]
+    },
+    {
+      "name": "The material",
+      "note": "Everything here is what the photograph cannot say on its own: how the surface stands off, how far light goes into it, and what is on top of it.",
+      "params": [
+        {
+          "key": "scale",
+          "label": "slabs across the block",
+          "value": "",
+          "arg": "--scale",
+          "min": 0.1,
+          "max": 3,
+          "step": 0.01,
+          "note": "One of the two strongest controls. Below 1 the figure grows and one swathe runs the length of the block; above it the network goes fine and dense. Empty is add-stone.py's own behaviour: the STYLE decides, and every style has an answer. A value here overrides the style on every one of them at once, which is a thing to do deliberately rather than by default."
+        },
+        {
+          "key": "offset",
+          "label": "offset along the slab",
+          "value": "",
+          "arg": "--offset",
+          "min": 0,
+          "max": 1,
+          "step": 0.01,
+          "note": "The other. Which part of the photograph lands on the front face. Empty is add-stone.py's own behaviour: the STYLE decides, and every style has an answer. A value here overrides the style on every one of them at once, which is a thing to do deliberately rather than by default."
+        },
+        {
+          "key": "bump",
+          "label": "bump, strength and distance",
+          "value": "",
+          "arg": "--bump",
+          "words": true,
+          "note": "Two words, because the generator takes two: how much relief, and over what distance in model units. Empty is add-stone.py's own behaviour: the STYLE decides, and every style has an answer. A value here overrides the style on every one of them at once, which is a thing to do deliberately rather than by default."
+        },
+        {
+          "key": "sss",
+          "label": "subsurface",
+          "value": "",
+          "arg": "--sss",
+          "min": 0,
+          "max": 1,
+          "step": 0.01,
+          "note": "How far light goes into the calcite before it comes back out. It is most of what tells marble from painted stone. Empty is add-stone.py's own behaviour: the STYLE decides, and every style has an answer. A value here overrides the style on every one of them at once, which is a thing to do deliberately rather than by default."
+        },
+        {
+          "key": "coat",
+          "label": "clear coat, weight and roughness",
+          "value": "",
+          "arg": "--coat",
+          "words": true,
+          "note": "The polish on top, as two words. Empty is add-stone.py's own behaviour: the STYLE decides, and every style has an answer. A value here overrides the style on every one of them at once, which is a thing to do deliberately rather than by default."
+        },
+        {
+          "key": "rough",
+          "label": "roughness map strength",
+          "value": "",
+          "arg": "--rough",
+          "min": 0,
+          "max": 1,
+          "step": 0.01,
+          "note": "How much of the derived roughness map is wired in. 0 is one flat polish over the lot, which is the deliberately crippled control gemini-plain is. Empty is add-stone.py's own behaviour: the STYLE decides, and every style has an answer. A value here overrides the style on every one of them at once, which is a thing to do deliberately rather than by default."
+        },
+        {
+          "key": "crack",
+          "label": "lay the fracture network over it",
+          "value": "no",
+          "arg": "--crack",
+          "when": "yes",
+          "note": "The hybrid: the photograph brings the branching network no noise field can make, and the procedural fracture lays a crisp hairline over the top of it."
+        },
+        {
+          "key": "room",
+          "label": "the room",
+          "value": "",
+          "arg": "--room",
+          "options": [
+            "noir",
+            "screen",
+            "flat",
+            "gallery"
+          ],
+          "note": "Which surround it is lit in. Same parameter as the procedural Bake's, and the same angular-size rule stands behind it. Empty is add-stone.py's own behaviour: the STYLE decides, and every style has an answer. A value here overrides the style on every one of them at once, which is a thing to do deliberately rather than by default."
+        }
+      ]
+    }
+  ]
+}

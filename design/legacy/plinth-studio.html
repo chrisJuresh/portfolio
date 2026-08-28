@@ -1,0 +1,956 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Plinth studio — photograph in, stone on the site out</title>
+  <!--
+    THE PAGE HALF OF design/plinth/plinth-studio.py. It does nothing on its own:
+    every button here is an endpoint on that server, which is also what serves
+    this file, /portfolio/ in the iframe below and the plates in the strip. Open
+    it off the filesystem and every fetch fails.
+
+    WHAT IS DRAWN BEFORE A BAKE, and what is not. The window guide is the
+    block's footprint laid on the photograph, from the same numbers
+    build_photo_material() projects with — that is `scale` and `offset`
+    answered exactly, without Cycles. Everything else on this page that claims
+    to show a stone is a real render. There is deliberately no GLSL previz of a
+    photographic material: plinth-tuner.html has one for the PROCEDURAL stones
+    and says out loud that it cannot draw these, and a plausible-looking
+    approximation of a path-traced mirror is worse than no approximation.
+  -->
+  <style>
+    :root { color-scheme: light dark; --ui: #1a1917; --ui-bg: #fcfbf8; --ui-panel: #f5f2ea; --ui-line: #d6d0c4; --ui-mut: #6f6a5d; --ui-hit: #8a5a2b; --ui-bad: #a8322a; --ui-ok: #2f6b3d; }
+    @media (prefers-color-scheme: dark) {
+      :root { --ui: #eaeaea; --ui-bg: #161616; --ui-panel: #1e1e1e; --ui-line: #3a3a3a; --ui-mut: #9a9a9a; --ui-hit: #d8a76a; --ui-bad: #e0796e; --ui-ok: #7fc08e; }
+    }
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+    body { margin: 0; display: flex; flex-direction: column; background: var(--ui-bg); color: var(--ui);
+           font: 13px/1.45 "Segoe UI", system-ui, sans-serif; }
+
+    .top { flex: 0 0 auto; display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem;
+           padding: 0.5rem 0.8rem; border-bottom: 1px solid var(--ui-line); }
+    .top strong { font-size: 11px; letter-spacing: 0.09em; text-transform: uppercase; color: var(--ui-mut); }
+    .grow { flex: 1 1 auto; }
+
+    button, select, input[type="text"], input[type="number"], textarea {
+      font: inherit; color: var(--ui); background: transparent; border: 1px solid var(--ui-line); border-radius: 5px; }
+    select, input[type="text"], input[type="number"], textarea { background: var(--ui-bg); color-scheme: light dark; }
+    input[type="number"] { width: 5.6rem; padding: 0.18rem 0.3rem; }
+    input[type="text"] { padding: 0.18rem 0.35rem; }
+    button { padding: 0.24rem 0.6rem; cursor: pointer; }
+    button:hover:not(:disabled) { border-color: var(--ui-mut); }
+    button:disabled { opacity: 0.45; cursor: default; }
+    button.go { background: var(--ui); color: var(--ui-bg); border-color: var(--ui); font-weight: 600; }
+    button.go:disabled { background: transparent; color: var(--ui); }
+    .chip { padding: 0.12rem 0.45rem; border-radius: 99px; border: 1px solid var(--ui-line); font-size: 11.5px; color: var(--ui-mut); }
+    .chip b { color: var(--ui); font-weight: 600; }
+    .chip.bad { border-color: var(--ui-bad); color: var(--ui-bad); }
+    .chip.ok { border-color: var(--ui-ok); color: var(--ui-ok); }
+
+    .wrap { flex: 1 1 auto; display: flex; min-height: 0; }
+    .side { flex: 0 0 25rem; display: flex; flex-direction: column; min-height: 0;
+            border-right: 1px solid var(--ui-line); background: var(--ui-panel); overflow: auto; }
+    .stage { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; overflow: auto; padding: 0.7rem; gap: 0.7rem; }
+
+    section.box { border-bottom: 1px solid var(--ui-line); padding: 0.6rem 0.75rem 0.75rem; }
+    section.box > h2 { margin: 0 0 0.5rem; font-size: 11px; letter-spacing: 0.09em; text-transform: uppercase; color: var(--ui-mut); }
+    .row { display: flex; align-items: center; gap: 0.4rem; margin-bottom: 0.35rem; flex-wrap: wrap; }
+    .row > label { flex: 0 0 7.4rem; color: var(--ui-mut); }
+    .row > input[type="range"] { flex: 1 1 6rem; min-width: 4rem; accent-color: var(--ui-hit); }
+    .row > input[type="text"] { flex: 1 1 8rem; }
+    .row > select { flex: 1 1 8rem; padding: 0.18rem 0.3rem; }
+    .hint { margin: -0.1rem 0 0.5rem 7.8rem; font-size: 11px; color: var(--ui-mut); }
+    .note { margin: 0.4rem 0 0; font-size: 11.5px; color: var(--ui-mut); }
+    .note.bad { color: var(--ui-bad); }
+    .note.ok { color: var(--ui-ok); }
+
+    .drop { border: 1px dashed var(--ui-line); border-radius: 6px; padding: 0.9rem; text-align: center;
+            color: var(--ui-mut); cursor: pointer; }
+    .drop.over { border-color: var(--ui-hit); color: var(--ui-hit); }
+
+    .presets { display: flex; flex-wrap: wrap; gap: 0.3rem; }
+    .presets button { font-size: 11.5px; }
+
+    canvas { display: block; max-width: 100%; border: 1px solid var(--ui-line); border-radius: 4px;
+             background: repeating-conic-gradient(#8883 0% 25%, transparent 0% 50%) 50% / 16px 16px; }
+    iframe { border: 1px solid var(--ui-line); background: #fff; width: 100%; flex: 0 0 auto; }
+
+    .strip { display: flex; flex-direction: column; gap: 0.35rem; max-height: 34rem; overflow: auto;
+             border: 1px solid var(--ui-line); border-radius: 4px; padding: 0.4rem; }
+    .stone { display: flex; flex-direction: column; gap: 0.2rem; }
+    .stone .bar { display: flex; align-items: center; gap: 0.4rem; font-size: 11.5px; }
+    .stone .bar .k { font: 12px/1 ui-monospace, Consolas, monospace; }
+    .stone .bar .t { color: var(--ui-mut); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .stone img { display: block; width: 100%; border-radius: 3px;
+                 background: repeating-conic-gradient(#8883 0% 25%, transparent 0% 50%) 50% / 12px 12px; }
+    .stone[data-live="true"] .k { color: var(--ui-hit); font-weight: 700; }
+
+    pre.log { margin: 0; padding: 0.5rem 0.6rem; border: 1px solid var(--ui-line); border-radius: 4px;
+              background: var(--ui-panel); font: 11.5px/1.5 ui-monospace, Consolas, monospace;
+              max-height: 18rem; overflow: auto; white-space: pre-wrap; word-break: break-word; }
+    pre.log:empty { display: none; }
+
+    .stagehead { display: flex; align-items: baseline; gap: 0.5rem; font-size: 11px; letter-spacing: 0.09em;
+                 text-transform: uppercase; color: var(--ui-mut); }
+    .stagehead span { text-transform: none; letter-spacing: 0; font-size: 11.5px; }
+    .cols { display: flex; gap: 0.7rem; align-items: flex-start; flex-wrap: wrap; }
+    .cols > div { flex: 1 1 20rem; min-width: 16rem; }
+    table.maps { border-collapse: collapse; font-size: 11.5px; width: 100%; }
+    table.maps td { padding: 0.12rem 0.3rem 0.12rem 0; color: var(--ui-mut); }
+    table.maps td.k { font: 11px/1.4 ui-monospace, Consolas, monospace; color: var(--ui); }
+  </style>
+</head>
+<body>
+
+<div class="top">
+  <strong>Plinth studio</strong>
+  <span class="chip" id="chipSite">site: —</span>
+  <span class="chip" id="chipVer">plates —</span>
+  <span class="chip" id="chipBlender">blender: —</span>
+  <span class="grow"></span>
+  <span class="chip" id="chipBusy" hidden></span>
+  <button id="btnReload">reload state</button>
+</div>
+
+<div class="wrap">
+  <aside class="side">
+
+    <section class="box">
+      <h2>1 &middot; the photograph</h2>
+      <div class="drop" id="drop">drop an image here, or click to choose<br>
+        <span style="font-size:11px">jpg &middot; png &middot; webp &middot; tif &middot; bmp</span></div>
+      <input type="file" id="file" accept="image/*" hidden>
+      <div class="row" style="margin-top:0.5rem">
+        <label for="src">source</label>
+        <select id="src"></select>
+      </div>
+      <div class="row">
+        <label for="size">size cap</label>
+        <input type="number" id="size" min="0" max="8000" step="100">
+        <label style="flex:0 0 auto"><input type="checkbox" id="square"> square crop</label>
+      </div>
+      <p class="hint" style="margin-left:0">Longest edge the maps are built at; 0 keeps the source, and
+        nothing is ever upscaled. Both of these change what the maps <em>are</em>, so moving either
+        costs one map build (a minute) on the next bake. Every other control below is Cycles only.</p>
+      <p class="note" id="srcNote"></p>
+    </section>
+
+    <section class="box">
+      <h2>2 &middot; the stone</h2>
+      <div class="row">
+        <label for="key">name</label>
+        <input type="text" id="key" spellcheck="false" placeholder="my-stone-noir">
+      </div>
+      <div class="row">
+        <label for="title">title</label>
+        <input type="text" id="title" placeholder="what the picker will call it">
+      </div>
+      <div class="row">
+        <label>start from</label>
+        <div class="presets" id="presets"></div>
+      </div>
+      <div class="row">
+        <label for="copy">copy a stone</label>
+        <select id="copy"></select>
+      </div>
+
+      <div class="row" style="margin-top:0.6rem">
+        <label for="grade">grade</label>
+        <select id="grade"></select>
+      </div>
+      <p class="hint" id="gradeHint"></p>
+      <div class="row">
+        <label for="room">room</label>
+        <select id="room"></select>
+      </div>
+      <p class="hint">Which surround Cycles lights it in. <code>noir</code> is the dark room that keeps a
+        black ground black; <code>screen</code> is the same room with the Frame standing in it as a real
+        emitter. The rooms themselves are in build-slab.py and are not per-stone.</p>
+
+      <div id="sliders"></div>
+
+      <div class="row" style="margin-top:0.5rem">
+        <label style="flex:0 0 auto"><input type="checkbox" id="crack"> procedural hairline cracks over the photo</label>
+      </div>
+
+      <div class="row" style="margin-top:0.7rem">
+        <button class="go" id="btnBake">bake this stone</button>
+        <button id="btnRevert" title="Back to the values this stone was last baked with">revert</button>
+      </div>
+      <p class="note" id="bakeNote"></p>
+    </section>
+
+    <section class="box">
+      <h2>3 &middot; the site</h2>
+      <p class="note" id="siteNote"></p>
+      <div class="row" style="margin-top:0.5rem">
+        <button class="go" id="btnApply">apply the shown stone</button>
+        <button id="btnForget" title="Delete this stone's entry and plate">delete stone</button>
+      </div>
+      <p class="hint" style="margin-left:0">Apply rewrites <code>--projects-panel-plinth-src</code> in
+        src/sections/projects-panel/tokens.css, and that one declaration's bytes only. Nothing else in
+        the repository is touched, and nothing is committed — that is still yours.</p>
+    </section>
+
+    <section class="box">
+      <h2>maps on disk</h2>
+      <table class="maps" id="mapTable"></table>
+      <div class="row" style="margin-top:0.5rem">
+        <button id="btnSweep">sweep unused</button>
+        <button id="btnRefresh" title="Rewrite slab.json without rendering">refresh slab.json</button>
+      </div>
+    </section>
+
+  </aside>
+
+  <main class="stage">
+    <div>
+      <div class="stagehead">the window <span id="winNote"></span></div>
+      <canvas id="guide" width="900" height="300"></canvas>
+    </div>
+    <div>
+      <div class="stagehead">the front face, albedo only <span>— what lands on the 7% of the block you
+        actually look at. No light, no relief, no translucency: this is the photograph, cropped.</span></div>
+      <canvas id="face" width="900" height="66"></canvas>
+    </div>
+    <div>
+      <div class="stagehead">the page <span id="frameNote"></span></div>
+      <iframe id="frame" src="/portfolio/" title="/portfolio" height="620"></iframe>
+    </div>
+    <div class="cols">
+      <div>
+        <div class="stagehead">the plates <span>— every bake, same width, newest of yours first</span></div>
+        <div class="strip" id="strip"></div>
+      </div>
+      <div>
+        <div class="stagehead">log</div>
+        <pre class="log" id="log"></pre>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  /* ---- what a stone is, on this page ------------------------------------
+     One object, the same shape as a design/plinth/stones/*.json entry minus the
+     two fields the server fills in (`maps`, `src`). Everything the form does is
+     read or write a field of P, and the bake posts P. There is no second copy
+     of the defaults anywhere: `presets` and the values of existing stones both
+     arrive from the server, which reads them from add-stone.py's STYLES table
+     and from slab.json. */
+  var P = null, PBAKED = null;
+
+  /* The sliders, in the order build-slab.py's PHOTO_FIELDS comment explains
+     them. `path` is where the value lives in P — the two pair-valued fields are
+     lists in the entry and two rows here, because a pair on one slider is a
+     pair nobody moves. */
+  var FIELDS = [
+    { path: ["scale"], label: "scale", min: 0.08, max: 4, step: 0.01,
+      hint: "Tiles across per model unit, and a model unit is a Frame width. 0.84 lays exactly one slab " +
+            "across the block; 0.42 crops into half a slab and the figure doubles; 1.75 lays two down and " +
+            "the veining goes fine. The strongest control here, and not a quality setting — it is how big " +
+            "the rock is." },
+    { path: ["offset"], label: "offset", min: 0, max: 1, step: 0.005,
+      hint: "Where in the slab the block was cut from, in tiles, applied after the scale — so the arris " +
+            "sits at exactly this fraction down the image whatever the scale is. Only a sliver of the slab " +
+            "is ever seen, so this decides which veins land on the plinth at all." },
+    { path: ["bump", 0], label: "bump strength", min: 0, max: 1, step: 0.01 },
+    { path: ["bump", 1], label: "bump distance", min: 0, max: 0.0018, step: 0.00001, fixed: 5,
+      hint: "The most delicate number in the table. The top face is seen at 7.8° where Fresnel is about " +
+            "0.5, so it is essentially a mirror and bump is not adding texture up there — it is adding " +
+            "distortion to a reflection, and the amplification at grazing incidence is severe. At 0.0016 " +
+            "the plinth reads honed rather than polished." },
+    { path: ["sss"], label: "subsurface", min: 0, max: 1, step: 0.01,
+      hint: "Subsurface Weight through the calcite mask. The most per unit of effort: calcite is " +
+            "translucent, and that is most of why real marble looks deep and wet where a flat albedo looks " +
+            "like painted card." },
+    { path: ["coat", 0], label: "coat weight", min: 0, max: 1, step: 0.01,
+      hint: "A second specular lobe — what \"polished\" looks like as opposed to \"shiny\". Off in the dark " +
+            "rooms on purpose: on a black ground it is a second thing lifting the floor." },
+    { path: ["coat", 1], label: "coat roughness", min: 0, max: 0.2, step: 0.001 },
+    { path: ["rough"], label: "roughness ×", min: 0, max: 2, step: 0.01,
+      hint: "Multiplies the roughness map. 0 pins it flat at BASE_ROUGH instead, which is the deliberately " +
+            "crippled control — see gemini-plain." }
+  ];
+
+  var S = null;                 /* the last /api/state */
+  var img = null;               /* the source, decoded, for the two canvases */
+  var squareCanvas = null;      /* ...centre-cropped, when `square` is on */
+  var doc = null, panel = null; /* the iframe's document and its .panel */
+  var shown = null;             /* which stone the frame and the strip are showing */
+  var poll = null, watching = null;
+
+  var $ = function (id) { return document.getElementById(id); };
+  var el = function (tag, cls, text) {
+    var n = document.createElement(tag);
+    if (cls) n.className = cls;
+    if (text != null) n.textContent = text;
+    return n;
+  };
+
+  function get(P0, path) { return path.length > 1 ? P0[path[0]][path[1]] : P0[path[0]]; }
+  function set(P0, path, v) { if (path.length > 1) { P0[path[0]][path[1]] = v; } else { P0[path[0]] = v; } }
+
+  /* ---- talking to the server --------------------------------------------- */
+
+  function api(path, body) {
+    var opt = body === undefined ? {} : {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body)
+    };
+    return fetch(path, opt).then(function (r) {
+      return r.json().then(function (j) {
+        if (!r.ok) { throw new Error(j && j.error ? j.error : r.status + " " + r.statusText); }
+        return j;
+      });
+    });
+  }
+
+  function logClear() { $("log").textContent = ""; }
+  function logLine(t) {
+    var pre = $("log");
+    var atEnd = pre.scrollTop + pre.clientHeight >= pre.scrollHeight - 8;
+    pre.textContent += t + "\n";
+    if (atEnd) pre.scrollTop = pre.scrollHeight;
+  }
+
+  /* A job is started by a POST and watched by polling, rather than streamed.
+     Blender writes its progress as carriage returns on one line and a bake is
+     forty lines in a minute; a poll is simpler than an event stream and cannot
+     leave a half-open response behind when this page is reloaded mid-bake. */
+  function watch(id, then) {
+    var from = 0;
+    busy(true, "running");
+    clearInterval(poll);
+    watching = id;
+    var stop = function () { clearInterval(poll); watching = null; busy(false); };
+    poll = setInterval(function () {
+      fetch("/api/job?id=" + id + "&from=" + from).then(function (r) { return r.json(); })
+        .then(function (j) {
+          (j.lines || []).forEach(logLine);
+          from = j.total;
+          if (!j.done) { busy(true, j.label); return; }
+          stop();
+          then(j);
+        }).catch(function (e) { stop(); logLine("! " + e.message); });
+    }, 400);
+  }
+
+  function busy(on, label) {
+    var chip = $("chipBusy");
+    chip.hidden = !on;
+    chip.textContent = label || "";
+    ["btnBake", "btnApply", "btnForget", "btnSweep", "btnRefresh"]
+      .forEach(function (b) { $(b).disabled = !!on; });
+  }
+
+  /* ---- state -------------------------------------------------------------- */
+
+  function refresh() {
+    return api("/api/state").then(function (s) {
+      S = s;
+      $("chipBlender").innerHTML = s.blender
+        ? "blender: <b>found</b>" : "blender: <b>not found</b>";
+      $("chipBlender").className = "chip" + (s.blender ? "" : " bad");
+      $("chipBlender").title = s.blender || "Set $BLENDER, put it on PATH, or start the server with --blender.";
+      $("chipSite").innerHTML = "site: <b>" + (s.site.stone || "?") + "</b>";
+      $("chipVer").innerHTML = "plates <b>" + (s.version || "—") + "</b>";
+      $("chipVer").className = "chip";
+      $("chipVer").title = "The digest of every plate on disk, which this page previews with. "
+        + "The Token carries none: the build fingerprints the plate by content, so a re-bake is a "
+        + "different filename on its own.";
+      fillSources();
+      fillPresets();
+      fillGrades();
+      fillRooms();
+      fillCopy();
+      fillStrip();
+      fillMaps();
+      siteNote();
+      /* A bake is a minute, and reloading this page during one used to lose the
+         log and leave every button live while Blender was still writing. The
+         job outlives the page, so pick it back up where it is. */
+      if (s.busy && watching !== s.busy) watch(s.busy, function () { refresh(); });
+      return s;
+    }).catch(function (e) {
+      logLine("! could not read the server state: " + e.message);
+    });
+  }
+
+  function siteNote() {
+    var n = $("siteNote");
+    var bits = ["the Projects Panel draws <code>" + (S.site.stone || "?") + "</code>."];
+    n.className = "note";
+    n.innerHTML = bits.join(" ");
+  }
+
+  /* ---- the form ----------------------------------------------------------- */
+
+  function fillSources() {
+    var sel = $("src"), was = sel.value;
+    sel.textContent = "";
+    if (!S.sources.length) {
+      sel.appendChild(el("option", null, "— nothing in design/plinth/sources/ yet —"));
+      sel.value = "";
+    }
+    S.sources.forEach(function (s) {
+      var o = el("option", null, s.name + (s.w ? "   " + s.w + "×" + s.h : "   unreadable"));
+      o.value = s.name;
+      sel.appendChild(o);
+    });
+    if (was && S.sources.some(function (s) { return s.name === was; })) sel.value = was;
+    else if (S.sources.length) sel.value = S.sources[S.sources.length - 1].name;
+    loadSource();
+  }
+
+  function currentSource() {
+    var name = $("src").value;
+    return S.sources.filter(function (s) { return s.name === name; })[0] || null;
+  }
+
+  function loadSource() {
+    var s = currentSource();
+    var note = $("srcNote");
+    if (!s) { note.textContent = "Drop a photograph above to begin."; img = null; draw(); return; }
+    if (s.error) { note.className = "note bad"; note.textContent = s.error; img = null; draw(); return; }
+    var bits = [s.w + "×" + s.h + " px, aspect " + s.aspect.toFixed(3) + ", "
+                + (s.bytes / 1e6).toFixed(1) + " MB."];
+    var cls = "note";
+    if (s.w < S.soft_px) {
+      cls = "note bad";
+      bits.push("Under " + S.soft_px + "px of width the fine structure will be soft on the front face, and "
+                + "resampling cannot put back what is not in the file. Not fatal — a soft stone is a look.");
+    }
+    note.className = cls;
+    note.textContent = bits.join(" ");
+    var probe = new Image();
+    probe.onload = function () { img = probe; squareCanvas = null; draw(); };
+    probe.onerror = function () { img = null; draw(); };
+    probe.src = s.url + "?t=" + Date.now();
+  }
+
+  function fillPresets() {
+    var box = $("presets");
+    box.textContent = "";
+    Object.keys(S.presets).forEach(function (name) {
+      var p = S.presets[name];
+      var b = el("button", null, name);
+      b.title = p.note;
+      b.addEventListener("click", function () { adopt(preset(name), name); });
+      box.appendChild(b);
+    });
+  }
+
+  /* A preset is one of add-stone.py's four STYLES, arriving from the server so
+     this page cannot hold a second, drifting copy of them. */
+  function preset(name) {
+    var p = S.presets[name];
+    return {
+      title: "", grade: "deep",
+      scale: p.scale, offset: p.offset,
+      bump: [p.bump[0], p.bump[1]], sss: p.sss,
+      coat: [p.coat[0], p.coat[1]], rough: p.rough,
+      crack: false, room: p.room, note: p.note
+    };
+  }
+
+  function fillGrades() {
+    var sel = $("grade");
+    sel.textContent = "";
+    Object.keys(S.grades).forEach(function (g) {
+      var o = el("option", null, g);
+      o.value = g;
+      o.title = S.grades[g];
+      sel.appendChild(o);
+    });
+  }
+
+  function fillRooms() {
+    var sel = $("room");
+    sel.textContent = "";
+    S.rooms.forEach(function (r) {
+      var o = el("option", null, r);
+      o.value = r;
+      sel.appendChild(o);
+    });
+  }
+
+  function fillCopy() {
+    var sel = $("copy");
+    sel.textContent = "";
+    sel.appendChild(el("option", null, "— pick a stone to load its numbers —"));
+    S.stones.filter(function (s) { return s.photo; }).forEach(function (s) {
+      var o = el("option", null, s.key + "  ·  " + s.title);
+      o.value = s.key;
+      sel.appendChild(o);
+    });
+    sel.value = "";
+  }
+
+  function stoneByKey(k) {
+    return S.stones.filter(function (s) { return s.key === k; })[0] || null;
+  }
+
+  function buildSliders() {
+    var box = $("sliders");
+    box.textContent = "";
+    FIELDS.forEach(function (f, i) {
+      var row = el("div", "row");
+      var lab = el("label", null, f.label);
+      lab.setAttribute("for", "f" + i);
+      var rng = el("input");
+      rng.type = "range"; rng.id = "f" + i;
+      rng.min = f.min; rng.max = f.max; rng.step = f.step;
+      var num = el("input");
+      num.type = "number";
+      num.min = f.min; num.max = f.max; num.step = f.step;
+      function push(v) {
+        if (!isFinite(v)) return;
+        set(P, f.path, v);
+        rng.value = v; num.value = fmt(f, v);
+        noteClear();
+        draw();
+      }
+      rng.addEventListener("input", function () { push(parseFloat(rng.value)); });
+      num.addEventListener("change", function () { push(parseFloat(num.value)); });
+      row.appendChild(lab); row.appendChild(rng); row.appendChild(num);
+      box.appendChild(row);
+      if (f.hint) box.appendChild(el("p", "hint", f.hint));
+      f._rng = rng; f._num = num;
+    });
+  }
+
+  function fmt(f, v) { return f.fixed ? Number(v).toFixed(f.fixed) : String(Number(v.toFixed(6))); }
+
+  function adopt(p, presetName) {
+    P = p;
+    if (presetName && !$("key").value.trim()) {
+      var s = currentSource();
+      var stem = s ? s.name.replace(/\.[^.]+$/, "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") : "stone";
+      $("key").value = stem + "-" + presetName;
+    }
+    if (presetName && !$("title").value.trim() && p.note) {
+      var s2 = currentSource();
+      $("title").value = (s2 ? s2.name.replace(/\.[^.]+$/, "") : "stone") + " — " + p.note;
+    }
+    toForm();
+    noteClear();
+    draw();
+  }
+
+  function toForm() {
+    $("grade").value = P.grade;
+    $("room").value = P.room;
+    $("crack").checked = !!P.crack;
+    FIELDS.forEach(function (f) {
+      var v = get(P, f.path);
+      f._rng.value = v; f._num.value = fmt(f, v);
+    });
+    $("gradeHint").textContent = S.grades[P.grade] || "";
+  }
+
+  function fromForm() {
+    P.grade = $("grade").value;
+    P.room = $("room").value;
+    P.crack = $("crack").checked;
+    $("gradeHint").textContent = S.grades[P.grade] || "";
+    noteClear();
+  }
+
+  /* ---- the window guide ---------------------------------------------------
+     THE ONLY THING ON THIS PAGE DRAWN RATHER THAN RENDERED, and it is drawn
+     from build_photo_material()'s own arithmetic rather than from an eyeball:
+
+       U = scale·x + 0.5              across the block
+       V = (scale·aspect)·z + offset  down the front face, offset AT THE ARRIS
+
+     x and z come from slab.json's `block`. Nothing here is a literal.
+
+     THE FRONT FACE ONLY, and that is a correction rather than a shortcut. This
+     used to draw a second band above the arris for the top face, on the reading
+     that a BOX projection gives the top face (x, y) where it gives the front
+     face (x, z), so the two would meet at V = offset and the pattern would run
+     over the edge. Measured against an unlit ortho render of each face, that is
+     not what Blender does: the front face is (x, z) as expected and correlates
+     0.89 against this window, but the TOP FACE IS READ 90° ROUND — U off the
+     block's y, V off its x — and correlates 0.88 that way against 0.04 the way
+     it was drawn. So the top face samples the photograph's height across the
+     plinth's WIDTH, the two faces cannot be continuous at the arris whatever
+     the offset, and a band above the line here was a picture of something that
+     does not happen. It is left undrawn rather than drawn wrong: at 7.8° the
+     top face is a mirror and carries no measurable albedo anyway — correlating
+     a baked plate's top face against the photograph finds nothing at any
+     offset — and on the page it is mostly under the Frame's own reflection.
+     docs/agents/plinth-marble.md has the numbers. */
+
+  function sourceBitmap() {
+    if (!img) return null;
+    if (!$("square").checked) return img;
+    if (squareCanvas) return squareCanvas;
+    var e = Math.min(img.naturalWidth, img.naturalHeight);
+    var c = document.createElement("canvas");
+    c.width = c.height = e;
+    c.getContext("2d").drawImage(img, (img.naturalWidth - e) / 2, (img.naturalHeight - e) / 2,
+                                 e, e, 0, 0, e, e);
+    squareCanvas = c;
+    return c;
+  }
+
+  function bitmapAspect(bm) { return (bm.width || bm.naturalWidth) / (bm.height || bm.naturalHeight); }
+
+  /* One tiled blit, used twice: the guide wants it isotropic and the face strip
+     wants it stretched to the plate's proportions, and the difference is only
+     which w/h it is handed. */
+  function tiled(ctx, bm, u0, u1, v0, v1, w, h) {
+    var tw = w / (u1 - u0), th = h / (v1 - v0);
+    for (var i = Math.floor(u0); i < u1; i++) {
+      for (var j = Math.floor(v0); j < v1; j++) {
+        ctx.drawImage(bm, (i - u0) * tw, (v1 - j - 1) * th, tw + 0.5, th + 0.5);
+      }
+    }
+  }
+
+  function draw() {
+    drawGuide();
+    drawFace();
+  }
+
+  /* The note under the bake button is about the LAST bake, so it is cleared by
+     moving something rather than by redrawing — draw() runs on every reload of
+     the state, which is the first thing a finished bake does, and clearing it
+     there wiped the "baked" message a tenth of a second after writing it. */
+  function noteClear() { $("bakeNote").className = "note"; $("bakeNote").textContent = ""; }
+
+  function drawGuide() {
+    var c = $("guide"), ctx = c.getContext("2d");
+    var bm = sourceBitmap();
+    var W = Math.max(320, Math.min(1100, (c.parentNode.clientWidth || 900)));
+    if (!bm || !P || !S || !S.block) {
+      c.width = W; c.height = 120;
+      ctx.clearRect(0, 0, W, 120);
+      ctx.fillStyle = getComputedStyle(document.body).color;
+      ctx.globalAlpha = 0.5;
+      ctx.font = "13px system-ui";
+      ctx.fillText(bm ? "waiting for design/plinth/slab.json" : "no source photograph", 12, 30);
+      ctx.globalAlpha = 1;
+      $("winNote").textContent = "";
+      return;
+    }
+    var B = S.block, A = bitmapAspect(bm);
+    var s = P.scale, v = s * A, off = P.offset;
+    var u0 = 0.5 - B.near_half * s, u1 = 0.5 + B.near_half * s;
+    var vFront = off - B.height * v, vArris = off;
+
+    /* Half a block of margin across, and enough of the picture above and below
+       to see where the window sits in it — the front face is only about a tenth
+       of a tile tall, so a margin proportional to IT would frame a slot. */
+    var padU = (u1 - u0) * 0.35;
+    var padV = Math.max((vArris - vFront) * 0.35, 0.22);
+    var U0 = u0 - padU, U1 = u1 + padU, V0 = vFront - padV, V1 = vArris + padV;
+    var k = W / (U1 - U0);                  /* px per U tile */
+    var kv = k / A;                         /* ...and per V tile, so a tile is the photo's own shape */
+    var H = Math.max(60, Math.round((V1 - V0) * kv));
+    c.width = W; c.height = H;
+    ctx.clearRect(0, 0, W, H);
+    tiled(ctx, bm, U0, U1, V0, V1, W, H);
+
+    var X = function (u) { return (u - U0) * k; };
+    var Y = function (vv) { return (V1 - vv) * kv; };
+
+    /* Everything outside the block, dimmed — the window is what is left. */
+    ctx.fillStyle = "rgba(0,0,0,0.55)";
+    ctx.fillRect(0, 0, W, Y(vArris));
+    ctx.fillRect(0, Y(vFront), W, H - Y(vFront));
+    ctx.fillRect(0, Y(vArris), X(u0), Y(vFront) - Y(vArris));
+    ctx.fillRect(X(u1), Y(vArris), W - X(u1), Y(vFront) - Y(vArris));
+
+    ctx.lineWidth = 1.5;
+    ctx.strokeStyle = "rgba(255,255,255,0.9)";
+    ctx.strokeRect(X(u0), Y(vArris), X(u1) - X(u0), Y(vFront) - Y(vArris));
+    /* The arris, which is the single most looked-at line in the picture, and
+       the top edge of the window rather than a line through the middle of it —
+       what is above it belongs to a face this cannot draw. */
+    ctx.strokeStyle = "#d8a76a";
+    ctx.setLineDash([6, 4]);
+    ctx.beginPath();
+    ctx.moveTo(X(u0), Y(vArris)); ctx.lineTo(X(u1), Y(vArris));
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = "#d8a76a";
+    ctx.font = "11px ui-monospace, Consolas, monospace";
+    ctx.fillText("arris", X(u0) + 4, Y(vArris) - 4);
+    ctx.fillStyle = "rgba(255,255,255,0.85)";
+    ctx.fillText("front face", X(u0) + 4, Y(vFront) - 4);
+
+    /* The unblended wrap is in V, and BOTH faces are measured against it: the
+       front face spans height·v of V, the top face — read 90° round — spans the
+       block's whole WIDTH of it, which is the one that goes over a tile first. */
+    var vTiles = Math.max(B.height * v, (u1 - u0));
+    $("winNote").innerHTML = "— front face " + (B.height * v).toFixed(3)
+      + " tiles of the photograph tall by " + (u1 - u0).toFixed(2) + " wide"
+      + (vTiles > 1
+         ? ". <b style='color:var(--ui-bad)'>The top face crosses " + vTiles.toFixed(2)
+           + " tiles of V, so the unblended vertical wrap lands on the block</b> "
+           + "(build-portoro-maps.py cross-fades U and only U)"
+         : "")
+      + ". The top face is not drawn — BOX reads it 90° round; see the comment.";
+  }
+
+  function drawFace() {
+    var c = $("face"), ctx = c.getContext("2d");
+    var bm = sourceBitmap();
+    var W = Math.max(320, Math.min(1100, (c.parentNode.clientWidth || 900)));
+    if (!bm || !P || !S || !S.block) { c.width = W; c.height = 40; ctx.clearRect(0, 0, W, 40); return; }
+    var B = S.block, A = bitmapAspect(bm);
+    var s = P.scale, v = s * A, off = P.offset;
+    /* The plate's own proportions for the strip's height, so this sits at the
+       same shape as the front face does on the page. */
+    var H = Math.max(28, Math.round(W * B.height / (2 * B.near_half)));
+    c.width = W; c.height = H;
+    ctx.clearRect(0, 0, W, H);
+    tiled(ctx, bm, 0.5 - B.near_half * s, 0.5 + B.near_half * s,
+          off - B.height * v, off, W, H);
+  }
+
+  /* ---- the strip and the frame -------------------------------------------- */
+
+  /* The digest of every plate on disk, so the strip and the frame can never be
+     showing two different renders of one stone. This page's own — the Token
+     carries none. Always a query, even when slab.json has no version yet,
+     because every caller appends `&t=` to it. */
+  function plateURL(k, base) {
+    return (base || "/portfolio/") + "img/tex/plinth-" + k + ".webp"
+      + "?v=" + ((S && S.version) || "0");
+  }
+
+  function fillStrip() {
+    var box = $("strip");
+    box.textContent = "";
+    S.stones.forEach(function (s) {
+      if (!s.plate) return;
+      var wrap = el("div", "stone");
+      wrap.dataset.live = String(s.key === shown);
+      var bar = el("div", "bar");
+      bar.appendChild(el("span", "k", s.key));
+      bar.appendChild(el("span", "t", s.title || ""));
+      var grow = el("span", "grow"); grow.style.flex = "1 1 auto";
+      bar.appendChild(grow);
+      var b1 = el("button", null, "show");
+      b1.addEventListener("click", function () { show(s.key); });
+      bar.appendChild(b1);
+      if (s.photo) {
+        var b2 = el("button", null, "load");
+        b2.title = "Load this stone's numbers into the form";
+        b2.addEventListener("click", function () { loadStone(s.key); });
+        bar.appendChild(b2);
+      }
+      wrap.appendChild(bar);
+      var im = el("img");
+      im.loading = "lazy";
+      im.alt = s.key;
+      im.src = plateURL(s.key, "/portfolio/") + "&t=" + Date.now();
+      wrap.appendChild(im);
+      box.appendChild(wrap);
+    });
+    if (!box.childNodes.length) box.appendChild(el("p", "note", "No plates on disk yet."));
+  }
+
+  function loadStone(k) {
+    var s = stoneByKey(k);
+    if (!s) return;
+    adopt({
+      title: s.title, grade: s.grade, scale: s.scale, offset: s.offset,
+      bump: s.bump.slice(), sss: s.sss, coat: s.coat.slice(), rough: s.rough,
+      crack: !!s.crack, room: s.room || "flat"
+    });
+    $("title").value = s.title || "";
+    /* A stone that came from a file can be re-baked in place; a built-in cannot
+       be shadowed, so its numbers arrive as a starting point under a new name
+       and the field is cleared rather than pre-filled with a name that will be
+       refused. */
+    $("key").value = s.mine ? k : "";
+    if (s.src) {
+      var match = S.sources.filter(function (x) { return x.name === s.src; })[0];
+      if (match) { $("src").value = s.src; loadSource(); }
+    }
+    PBAKED = JSON.parse(JSON.stringify(P));
+    show(k);
+  }
+
+  function show(k) {
+    shown = k;
+    if (panel) {
+      panel.dataset.marble = k;
+      /* SET the property, do not clear it: the stylesheet only carries
+         `.panel[data-marble="…"]` rules for a handful of stones, so anything
+         else would silently fall through to the default and the frame would
+         show the shipped stone while the strip highlighted this one. */
+      panel.style.setProperty("--panel-plinth-src",
+        'url("' + plateURL(k) + "&t=" + Date.now() + '")');
+    }
+    $("frameNote").textContent = "— showing " + k
+      + (S && S.site.stone === k ? " (which is what the site draws)" : "");
+    Array.prototype.forEach.call($("strip").querySelectorAll(".stone"), function (n) {
+      n.dataset.live = String(n.querySelector(".k").textContent === k);
+    });
+  }
+
+  function fillMaps() {
+    var t = $("mapTable");
+    t.textContent = "";
+    if (!S.maps.length) {
+      t.appendChild(el("tr")).appendChild(el("td", null, "none yet"));
+      return;
+    }
+    S.maps.forEach(function (m) {
+      var tr = el("tr");
+      tr.appendChild(el("td", "k", m.stem));
+      tr.appendChild(el("td", null, (m.bytes / 1e6).toFixed(0) + " MB"));
+      tr.appendChild(el("td", null, m.used_by.length
+        ? m.used_by.join(", ") : (m.complete ? "unused" : "incomplete, unused")));
+      t.appendChild(tr);
+    });
+  }
+
+  /* ---- the buttons -------------------------------------------------------- */
+
+  function bake() {
+    fromForm();
+    var key = $("key").value.trim().toLowerCase();
+    var src = $("src").value;
+    var note = $("bakeNote");
+    if (!src) { note.className = "note bad"; note.textContent = "Pick a source photograph first."; return; }
+    if (!key) { note.className = "note bad"; note.textContent = "Give the stone a name."; return; }
+    var body = {
+      key: key, src: src, size: parseInt($("size").value, 10) || 0,
+      square: $("square").checked,
+      title: $("title").value.trim() || key,
+      grade: P.grade, scale: P.scale, offset: P.offset, bump: P.bump,
+      sss: P.sss, coat: P.coat, rough: P.rough, crack: P.crack, room: P.room
+    };
+    note.className = "note";
+    note.textContent = "";
+    logClear();
+    api("/api/bake", body).then(function (j) {
+      watch(j.job, function (res) {
+        if (!res.ok) {
+          note.className = "note bad";
+          note.textContent = "The bake failed — see the log. Nothing was written to the stylesheet.";
+          return;
+        }
+        PBAKED = JSON.parse(JSON.stringify(P));
+        /* After the reload, not before: refresh() redraws the whole left column
+           from the new state and the message has to outlive that. */
+        refresh().then(function () {
+          show(key);
+          note.className = "note ok";
+          note.textContent = "Baked. It is in the strip and standing under the Frame below. "
+            + "“apply” writes it into the Projects Panel's tokens.css.";
+        });
+      });
+    }).catch(function (e) { note.className = "note bad"; note.textContent = e.message; });
+  }
+
+  function applyStone() {
+    if (!shown) return;
+    api("/api/apply", { key: shown }).then(function (r) {
+      logLine("src/sections/projects-panel/tokens.css: " + (r.was_stone === r.stone
+        ? "still " + r.stone : r.was_stone + " → " + r.stone) + ".");
+      logLine("Not committed — that is still yours. Run `pnpm check` before landing it.");
+      refresh();
+    }).catch(function (e) { logLine("! " + e.message); });
+  }
+
+  function forget() {
+    if (!shown) return;
+    var s = stoneByKey(shown);
+    if (!s || !s.mine) { logLine("! `" + shown + "` is a built-in — it is a table in build-slab.py, not a file."); return; }
+    if (!window.confirm("Delete " + shown + "?\n\nIts design/plinth/stones/ entry and its plate go; the "
+                        + "maps stay (other stones may share them) and are collected by `sweep unused`.")) return;
+    api("/api/forget", { key: shown }).then(function (r) {
+      r.removed.forEach(function (p) { logLine("removed " + p); });
+      shown = null;
+      return api("/api/refresh", {});
+    }).then(function (j) {
+      watch(j.job, function () { refresh(); });
+    }).catch(function (e) { logLine("! " + e.message); });
+  }
+
+  /* ---- wiring ------------------------------------------------------------- */
+
+  function upload(fileObj) {
+    if (!fileObj) return;
+    logLine("uploading " + fileObj.name + " (" + (fileObj.size / 1e6).toFixed(1) + " MB)…");
+    fetch("/api/upload", { method: "POST", headers: { "X-Filename": fileObj.name }, body: fileObj })
+      .then(function (r) { return r.json().then(function (j) { if (!r.ok) throw new Error(j.error); return j; }); })
+      .then(function (info) {
+        logLine("design/plinth/sources/" + info.name + "  " + info.w + "×" + info.h);
+        return refresh().then(function () { $("src").value = info.name; loadSource(); });
+      })
+      .catch(function (e) { logLine("! " + e.message); });
+  }
+
+  $("drop").addEventListener("click", function () { $("file").click(); });
+  $("file").addEventListener("change", function () { upload($("file").files[0]); $("file").value = ""; });
+  ["dragenter", "dragover"].forEach(function (t) {
+    $("drop").addEventListener(t, function (e) { e.preventDefault(); $("drop").classList.add("over"); });
+  });
+  ["dragleave", "drop"].forEach(function (t) {
+    $("drop").addEventListener(t, function (e) { e.preventDefault(); $("drop").classList.remove("over"); });
+  });
+  $("drop").addEventListener("drop", function (e) { upload(e.dataTransfer.files[0]); });
+
+  $("src").addEventListener("change", loadSource);
+  $("square").addEventListener("change", function () { squareCanvas = null; draw(); });
+  $("size").addEventListener("change", draw);
+  $("grade").addEventListener("change", fromForm);
+  $("room").addEventListener("change", fromForm);
+  $("crack").addEventListener("change", fromForm);
+  $("copy").addEventListener("change", function () { if ($("copy").value) loadStone($("copy").value); });
+  $("btnBake").addEventListener("click", bake);
+  $("btnRevert").addEventListener("click", function () {
+    if (PBAKED) { P = JSON.parse(JSON.stringify(PBAKED)); toForm(); draw(); }
+  });
+  $("btnApply").addEventListener("click", applyStone);
+  $("btnForget").addEventListener("click", forget);
+  $("btnReload").addEventListener("click", function () { refresh(); });
+  $("btnSweep").addEventListener("click", function () {
+    api("/api/sweep", {}).then(function (r) {
+      logLine(r.removed.length
+        ? "swept " + r.removed.length + " map set(s), " + (r.bytes / 1e6).toFixed(0) + " MB"
+        : "nothing to sweep.");
+      refresh();
+    }).catch(function (e) { logLine("! " + e.message); });
+  });
+  $("btnRefresh").addEventListener("click", function () {
+    logClear();
+    api("/api/refresh", {}).then(function (j) { watch(j.job, function () { refresh(); }); })
+      .catch(function (e) { logLine("! " + e.message); });
+  });
+  $("frame").addEventListener("load", function () {
+    doc = $("frame").contentDocument;
+    panel = doc.getElementById("projects");
+    if (!panel) { $("frameNote").textContent = "— /portfolio is a build now and this server serves the repository, so there is no Panel here to stand a plinth under. Judge the stone in the strip above, and look at it under the Frame with `pnpm build` and `pnpm preview`."; return; }
+    /* The plinth is at the foot of a page several screens long. Instantly, not
+       smoothly: a glide on every reload is time spent not looking at the stone. */
+    panel.scrollIntoView({ block: "end", behavior: "instant" });
+    if (shown) show(shown);
+  });
+
+  window.addEventListener("resize", function () { draw(); });
+
+  buildSliders();
+  refresh().then(function () {
+    $("size").value = S.cap_px;
+    adopt(preset("noir"), "noir");
+    if (S.site.stone) show(S.site.stone);
+  });
+})();
+</script>
+</body>
+</html>

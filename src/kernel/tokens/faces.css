@@ -1,0 +1,78 @@
+/* The page's own type size, apart from the rule that spends it — src/kernel/faces.css
+   is that rule, and src/kernel/NOTES.md says where both numbers came from and what
+   holds them honest.
+
+   THESE TWO ARE THE ONE PLACE THE WHOLE PAGE AGREES ABOUT A SIZE. Everything in
+   either Section's ladder is in rem, so the root's font-size is the single number
+   every measure, gap and glyph on the page is a multiple of — which is what makes
+   these the Tokens to reach for when a composition is the right shape and the
+   wrong size, and why there is no per-element width to drag instead. The Front
+   Screen's column, for one, is `width: 100%` inside `max-width: 27rem`: it has no
+   width of its own to be given, it has a measure, and the measure is a multiple
+   of this. */
+
+:root {
+  /* THE ZOOM: the author's own multiplier on the page, and the Token that scales
+     the composition up. 1 is the size the two numbers below arrived at, and
+     everything in rem — both Sections' measures, every gap down them, every
+     glyph — moves together with it, so the drawing keeps its proportions and only
+     changes size.
+
+     It is the one thing here that may make type BIGGER than the reader's default,
+     which is the point of it: everything else here is a give-way and never a lift,
+     so without this there is no number on the page that scales it up.
+
+     WHAT IT COSTS, AND THE COST IS THE SCREEN'S RATHER THAN THIS NUMBER'S. Inside
+     the band the Front Screen is composed to exactly one screen, so a larger rem
+     spends more of the fold on everything above the photographs and the strip —
+     the budget's remainder — pays the difference. How much there is to spend is
+     the screen's own height: measured at 1.5, a 2560x1311 window still leaves a
+     254px strip, and 1440x900 leaves 18px. So this is a Token to drag while
+     LOOKING at the page, and `carousel` is the Check that refuses a value the
+     band's short corner cannot afford.
+
+     WHICH MAKES IT A REDISTRIBUTION AND NOT A MAGNIFICATION, and that is the thing
+     to know before dragging it: everything with a STATED size grows by the
+     percentage, and the strip — the remainder — shrinks to fund it. At 2560x1311,
+     1.3 takes the column from 432px to 562px and a photograph from 288px to 250px,
+     because at 1 the strip already stood on its own 24rem ceiling. Making the
+     PHOTOGRAPHS bigger is a change to the Section's type ladder and not to this
+     number.
+
+     WHAT PAID FOR THE VALUE BELOW WAS THE PAGE'S MARGIN, and what makes it cost
+     a short screen NOTHING is the give-way below. The two multiply, so this
+     number alone is the CEILING and the two together are the give-way: at 1.192
+     the ceiling is 1.192rem where it was 1rem, and `--type-scale` is 0.016
+     divided by this, so the slope a short screen gives way along is the one it
+     always had. Move them together — pick this, divide 0.016 by it — or a lift
+     here is a lift on the screens with nothing to give, and `carousel` refuses
+     it: 1.428 against an unchanged 0.016 takes a 1920x1080 photograph from 312px
+     to 96px.
+
+     The Editor drags it from the page as well as from the panel: pick anything,
+     turn on `scale everything`, and a corner drag moves this — scripts/editor/NOTES.md. */
+  --type-zoom: 1.192;
+
+  /* THE CEILING, in rem rather than px on purpose: on the root's own font-size a
+     rem is the initial value, which is the READER's default. A tall screen
+     therefore gets the size they asked for, times the zoom above. */
+  --type-ceiling: 1rem;
+
+  /* THE GIVE-WAY, as a share of the viewport's height: inside the Front Screen's
+     one-screen band the type gives way on a short screen so the photograph strip
+     is still a photograph of something. Measured at the band's corners and not
+     derived — NOTES.md is the measurement, and `carousel` is what holds it.
+
+     READ IT WITH THE ZOOM, WHICH MULTIPLIES IT. What a short screen actually
+     gives way along is the two of them: 1.192 x 0.01342 is 0.016, which is the
+     slope this was measured at, so every window under about 1192px of height is
+     the size it always was — to the pixel — and the zoom is spent entirely on the
+     ceiling above that knee.
+
+     SO THE TWO MOVE TOGETHER, and the arithmetic is one line: this is 0.016
+     divided by the zoom. Dragging the zoom alone drags the give-way with it,
+     which is why a zoom the band's short corner cannot pay for is a zoom
+     `carousel` refuses. It measures at 1440x700, and there is 90px of slot above
+     the floor there. */
+  --type-scale: 0.01342;
+}

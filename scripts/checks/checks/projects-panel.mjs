@@ -1,0 +1,1734 @@
+import { DESK, open, settle, withoutOrigin } from '../lib/page.mjs';
+/* How many rows of the page the recording in `portfolio/video/` was cut with
+   clear at the top. Imported rather than restated because that is the whole
+   point of the assertion it feeds: the two numbers have to be the same one, and
+   a Check holding its own copy of the thing it is checking checks nothing. It
+   is a dev-only module of Node builtins, like this file. */
+import { BAR as CLIP_CLEARANCE } from '../../../design/censor/capture-frame.mjs';
+
+/**
+ * The Frame's measured geometry, as assertions.
+ *
+ * The browser window at the foot of the Projects Panel is the largest single
+ * piece of bespoke drawing in the repository, and until this file every number
+ * in it was protected by a paragraph saying where it came from. Each of those
+ * paragraphs describes a failure a person looking at the running page would not
+ * notice: a glyph a pixel off the centre the design render measured, a window
+ * whose corner and whose titlebar's corner are cut to two different lengths, a
+ * recording box that stops being inset on exactly three sides, an occlusion that
+ * is lucky rather than exact, a titlebar that is neither of its three materials.
+ *
+ * None of them is aesthetic. Every measured share is the author's to change
+ * through a Token, and every assertion here reads that Token back — so moving
+ * the sidebar's centre moves the glyph AND what this expects of it, and nothing
+ * fails. What cannot change without failing is the RELATIONSHIP: that the glyph
+ * lands where its own Token says, that two lengths which have to be equal are,
+ * and that the drawing is still built out of the pair of numbers the render
+ * gives up rather than out of a coordinate somebody wrote down once.
+ *
+ * TWO WINDOWS, AND THE SECOND ONE IS THE POINT OF THE SECOND HALF. The chrome
+ * sheds its small glyphs below a Frame of 520px, and the gate is a CONTAINER
+ * query rather than a viewport one — the question is how wide the Frame is, not
+ * how wide the window is, and the composition is fitted to the smaller of the
+ * page's width and what its height will carry. So a short, wide window draws a
+ * small Frame, and that is the one window where the two questions give different
+ * answers. Measured at DESK alone, the whole of that mechanism could be a media
+ * query and this Check would not notice.
+ *
+ * AND ONE AGREEMENT THAT IS NOT ABOUT THE PAGE AT ALL. The titlebar sits over
+ * the recording rather than above it, so the strip covers the first rows of the
+ * page that was filmed — and the clip is filmed with exactly that many rows of
+ * clear ground at the top so the vault's own toolbar is not cut in half by it.
+ * Neither half of that can be seen on screen: the clip is a video, so what the
+ * strip covers is a picture. `drawn()` asserts the strip fits inside the
+ * clearance the module declares, and `opensClear()` asserts the file on disk
+ * carries it. Both halves are needed — one on its own passes a Lens trimmed to
+ * fit a recording nobody re-cut, and the other passes a recording with room for
+ * a strip that has since grown.
+ */
+
+/** Wide enough that a viewport gate at 520 would not fire, short enough that the
+ *  fit solves the Frame to well under 520. Measured: 468px of Frame at 1440 of
+ *  window. Its width is DESK's, and DESK is the suite's own rather than a copy,
+ *  so this Check cannot drift away from the window the others measure at. */
+const SHORT = { width: DESK.width, height: 450 };
+
+/** A MAXIMISED BROWSER, which is the window DESK is not.
+ *
+ *  The composition is fitted to the smaller of what the page has across and what
+ *  its height will carry, so which of the two branches binds is a property of the
+ *  window — and at DESK it is the width. Every window whose HEIGHT binds was
+ *  therefore unmeasured, and that is not an exotic corner: a viewport 900, 1080 or
+ *  1440 tall is a SCREEN, and a maximised browser gives up about 100px of it to
+ *  its own chrome. 1920x980 is the ordinary case, and there the height branch
+ *  binds by 194px.
+ *
+ *  It cost a shipped bug. The Plinth is solved to stand in the page's bottom-right
+ *  corner, the width branch is what puts it there, and on this window it cannot —
+ *  the drawing is capped short, and the stage's reach is what carries the stone
+ *  out to the edge instead. Measured only at DESK, that whole mechanism could be
+ *  missing and the suite would pass: the marble stopped 119px short on the
+ *  author's own screen while twelve Checks said the corner was exact.
+ *
+ *  Inside the landing band, deliberately — the reach only exists there. */
+const MAXIMISED = { width: 1920, height: 980 };
+
+/** A share of the Frame's width, and it is TIGHT ON PURPOSE. 0.0003 is 0.28px at
+ *  DESK, which is fifteen times the largest disagreement the chrome actually
+ *  shows (2e-5 of the Frame) and three times the worst case of Chromium's own
+ *  1/64px layout units accumulating down a row of five margins.
+ *
+ *  It has to be that tight to catch the thing it exists for. The live page's own
+ *  sidebar gap was written as the coordinate `1.79cqw`, derived from a measured
+ *  edge that disagrees with the pitch the same table states by half a per cent —
+ *  so the glyph landed 0.0005 of the Frame past its measured centre, 0.46px here.
+ *  At three quarters of a pixel of tolerance that mutation passed, which is a
+ *  Check permitting exactly the flattening it exists to prevent. */
+const CENTRE_TOLERANCE = 0.0003;
+
+/** Two lengths that are meant to be the same length, in px. */
+const LENGTH_TOLERANCE = 0.1;
+
+/** The Plinth's three depths, as shares of the Frame, and it is looser than the
+ *  chrome's for one stated reason: a depth is a share of a Frame width DERIVED
+ *  from the composition, which over-states the laid-out Frame by whatever the
+ *  Rail's floor costs — 2.4px at DESK, so every depth reads 0.26% high. On the
+ *  largest of the three that is 0.00023, and this is eight times it. The Section's
+ *  NOTES.md is explicit that the over-statement is inherited rather than a drift.
+ *
+ *  It is still tight enough for the mistakes that matter: a depth taken as a
+ *  share of the COMPOSITION instead of the Frame is 34% out, and `top` read as
+ *  `behind` — the pair whose confusion once made the whole top face read as a lit
+ *  strip — is 0.0027 out, nine times this. Everything HORIZONTAL is a percentage
+ *  of the stage and exact, so it is held to LENGTH_TOLERANCE instead. */
+const DEPTH_TOLERANCE = 0.002;
+
+/** The drop into the subheading's second line, in px. */
+const DROP_TOLERANCE = 0.5;
+
+/** How far the slab's corner may fall short of the page's, in px. Half a pixel:
+ *  the two halves of the corner are exact arithmetic on the same lengths the
+ *  browser lays the boxes out with, so all that is left is Chromium's 1/64px
+ *  layout units down a handful of terms. It measures 0.03px across and 0.02px
+ *  down at DESK, and the smallest gap a reader could see is a whole one. */
+const CORNER_SLACK = 0.5;
+
+/** And how far it may run PAST the page, which was a different question with a
+ *  different answer and is no longer. It used to allow 20px, because the width
+ *  branch read `100vw` and a classic scrollbar put the far end about 15px over —
+ *  clipped by the Section, so invisible in a screenshot and shipped.
+ *
+ *  That slack was the bug's hiding place twice over: it let the overshoot through,
+ *  and the suite ran with `--hide-scrollbars` so the overshoot never appeared
+ *  anyway. Both are closed — run.mjs keeps the gutter now and the branch reads
+ *  --page-across — so this goes back to being the same question as falling short,
+ *  and gets the same answer. A slab 15px past the edge is a slab whose corner the
+ *  reader cannot see. */
+const CORNER_OVERRUN = CORNER_SLACK;
+
+/** Every control, by the pair of Tokens that places it: where its centre is and
+ *  how wide its ink is. This list IS the render's table — the CSS computes each
+ *  gap from the pair either side of it, and this asserts that the arithmetic
+ *  came out at the centres it was solved for. */
+const CONTROLS = [
+
+  { name: 'the back chevron', part: 'back', centre: 'back-centre', width: 'chevron-w' },
+  { name: 'the forward chevron', part: 'fwd', centre: 'fwd-centre', width: 'chevron-w' },
+  { name: 'the share glyph', part: 'share', centre: 'share-centre', width: 'share-w' },
+];
+
+/** What the small-Frame reduction takes away, and what it must leave. Part names
+ *  rather than selectors: the Section's class prefix is written once, in the page. */
+/* What the small-Frame reduction drops. The sidebar toggle, the new-tab plus and
+   the tab pile are gone from the chrome entirely, so they are not in here either
+   — a name in this list that no longer exists is an assertion that passes by
+   matching nothing, which is the failure mode NOTES.md warns about three times. */
+const SHED = ['back', 'fwd', 'share', 'reload', 'address-text'];
+const KEPT = ['lights', 'address'];
+
+/** The window a reading was taken at, which every failure names. */
+const atWindow = (read) => `${read.viewport.width}x${read.viewport.height}`;
+
+/**
+ * Everything this Check reads off the page, in one round trip.
+ *
+ * The Panel is scrolled to first. Not for the layout, which does not depend on
+ * where the reader is, but for `elementFromPoint`: the Frame is below the fold at
+ * every window this runs at, and a hit test outside the viewport returns null —
+ * which would make the one assertion that reads paint order rather than
+ * arithmetic pass by never being asked.
+ */
+async function readPage(page) {
+  await page.evaluate(async () => {
+    document.querySelector('.projects-panel')?.scrollIntoView();
+    await new Promise((frame) => requestAnimationFrame(frame));
+  });
+
+  return page.evaluate(
+    ({ controls, shed: shedParts, kept }) => {
+      const section = document.querySelector('.projects-panel');
+      const stage = document.querySelector('.projects-panel__stage');
+      const frame = document.querySelector('.projects-panel__frame');
+      const bar = document.querySelector('.projects-panel__bar');
+      const rim = document.querySelector('.projects-panel__rim');
+      const rimStyle = rim === null ? null : getComputedStyle(rim);
+      const content = document.querySelector('.projects-panel__content');
+      const secondLine = document.querySelector('.projects-panel__sub span:last-child');
+      const plinth = document.querySelector('.projects-panel__plinth');
+      const reflection = document.querySelector('.projects-panel__reflection');
+      const absent = [
+        ['the Section', section],
+        ['the stage', stage],
+        ['the Frame', frame],
+        ['the titlebar', bar],
+        ["the window's rim", rim],
+        ['the content box', content],
+        ["the subheading's second line", secondLine],
+        ['the Plinth', plinth],
+        ['the reflection box', reflection],
+      ].filter(([, found]) => !found);
+      if (absent.length > 0) {
+        return { missing: `the Frame is missing a part this Check reads: ${absent.map(([what]) => what).join(', ')}` };
+      }
+
+      const style = getComputedStyle(frame);
+      /** A Token off the Frame. Every one of these is a plain number, so it comes
+       *  back usable rather than as a token sequence with a unit in it. */
+      const token = (name) => Number(style.getPropertyValue(`--projects-panel-frame-${name}`));
+
+      const fr = frame.getBoundingClientRect();
+      /** A box as the render states one: a centre and a width, both as shares of
+       *  the Frame. Named by its part, which is the Section's class prefix and
+       *  the part's own name — the one place either is written. */
+      const placed = (part) => {
+        const element = frame.querySelector(`.projects-panel__${part}`);
+        if (!element) return null;
+        const r = element.getBoundingClientRect();
+        if (getComputedStyle(element).display === 'none') return { hidden: true };
+        return {
+          hidden: false,
+          centre: (r.left + r.width / 2 - fr.left) / fr.width,
+          width: r.width / fr.width,
+          // Against the Frame's WIDTH as well, because that is what every
+          // measured share in the chrome is a share of.
+          height: r.height / fr.width,
+          right: (r.right - fr.left) / fr.width,
+        };
+      };
+
+      /** A computed `border-radius` corner, resolved to px. It is a percentage on
+       *  the Frame — the only form that reads the box it is cutting — and a
+       *  length on the titlebar, and the whole assertion is that the two are the
+       *  same measure. */
+      const corner = (element, box) =>
+        getComputedStyle(element)
+          .borderTopLeftRadius.trim()
+          .split(/\s+/)
+          .map((part, axis) =>
+            part.endsWith('%')
+              ? (parseFloat(part) / 100) * (axis === 0 ? box.width : box.height)
+              : parseFloat(part),
+          );
+
+      const lights = [...frame.querySelectorAll('.projects-panel__lights i')].map((light) => {
+        const r = light.getBoundingClientRect();
+        return { centre: (r.left + r.width / 2 - fr.left) / fr.width, width: r.width / fr.width };
+      });
+
+      const cr = content.getBoundingClientRect();
+      const sub = secondLine.getBoundingClientRect();
+      // Inside the overlap of the Frame and the line it bites into — which is
+      // where the window has to be the thing that is painted.
+      const overlaps = fr.left < sub.right && fr.top < sub.bottom && fr.right > sub.left;
+      const over = overlaps
+        ? document.elementFromPoint(
+            (fr.left + Math.min(fr.right, sub.right)) / 2,
+            (fr.top + Math.min(fr.bottom, sub.bottom)) / 2,
+          )
+        : null;
+
+      const stageStyle = getComputedStyle(stage);
+
+      // ---- the three landing lengths the corner is solved from -------------
+      // A custom property reads back off getComputedStyle as the token sequence
+      // it was declared as, so each is spent on a throwaway element's padding
+      // instead, which computes to px. Outside the landing band they are all
+      // zero, which is why the corner is only asked about inside it.
+      const probe = document.createElement('div');
+      probe.style.cssText = 'position:absolute;visibility:hidden';
+      const spend = (length) => {
+        probe.style.paddingTop = length;
+        section.append(probe);
+        const read = Number.parseFloat(getComputedStyle(probe).paddingTop) || 0;
+        probe.remove();
+        return read;
+      };
+      // The LEFT margin and not the top one — the width branch is what this is
+      // read for, and the two parted company when the landing stopped restating
+      // the Front Screen's rhyme.
+      const inset = spend('var(--landing-side)');
+      const landingW = spend('var(--landing-w)');
+      const stone = spend('calc(var(--landing-plinth-share) * var(--landing-w))');
+      const pageAcross = spend('var(--page-across)');
+      // The engineering points, for the one thing asked about them: that the
+      // window has not come to stand on top of them.
+      const points = document.querySelector('.projects-panel__points');
+
+      // ---- the Plinth, the reflection and the recording --------------------
+      /** A Plinth Token off the Frame. Custom properties inherit, so the four
+       *  unitless shares read back here as plainly as the chrome's do. The three
+       *  DEPTHS are deliberately not read: they are lengths, so they would come
+       *  back as `calc(…)`, and asserting a length against itself would assert
+       *  nothing. Each is checked against the share it is made of instead. */
+      const slab = (name) => Number(style.getPropertyValue(`--projects-panel-plinth-${name}`));
+      const copy = reflection.querySelector('.projects-panel__frame');
+      const pl = plinth.getBoundingClientRect();
+      const rf = reflection.getBoundingClientRect();
+      const re = copy?.getBoundingClientRect() ?? null;
+      const plinthStyle = getComputedStyle(plinth);
+      const contactStyle = getComputedStyle(plinth, '::after');
+      // Just inside the Frame's foot, in the strip where the slab runs BEHIND the
+      // window. The marble there is drawn and then covered by the thing standing
+      // on it, which is the whole of why it is visible only at the two ends.
+      const behind =
+        fr.bottom > 1 && fr.bottom < window.innerHeight
+          ? document.elementFromPoint((fr.left + fr.right) / 2, fr.bottom - 1)
+          : null;
+
+      return {
+        viewport: { width: window.innerWidth, height: window.innerHeight },
+        // The landing band, asked of the window rather than of any element: the
+        // corner the slab stands in is the landing's, and outside the band there
+        // is no landing to stand in.
+        landing: window.innerWidth >= 1100 && window.innerHeight >= 700,
+        frame: { width: fr.width, height: fr.height, ratio: fr.width / fr.height },
+        ratioToken: token('ratio'),
+        bar: bar.getBoundingClientRect().height,
+        /* The titlebar's height in the RECORDING's own pixels — the coordinates
+           the clip was cut in, and the only ones the clearance can be compared
+           in. `object-fit: cover` resolves to the larger of the two scales;
+           taking the max rather than assuming the width branch means this
+           survives a Frame whose ratio stops being wider than the recording's.
+           `null` when there is no recording to measure against. */
+        barRows: (() => {
+          const lead = document.querySelector('.projects-panel__clip');
+          if (lead === null) return null;
+          const box = lead.getBoundingClientRect();
+          const scale = Math.max(
+            box.width / Number(lead.getAttribute('width')),
+            box.height / Number(lead.getAttribute('height')),
+          );
+          if (!(scale > 0)) return null;
+          return bar.getBoundingClientRect().height / scale;
+        })(),
+        cornerToken: token('corner'),
+        insetToken: token('inset'),
+        barToken: token('bar'),
+        dropToken: token('drop-share'),
+        lightToken: { width: token('light-w'), pitch: token('light-pitch'), centre: token('light-centre') },
+        frameCorner: corner(frame, fr),
+        barCorner: corner(bar, { width: fr.width, height: fr.height }),
+        lights,
+        controls: Object.fromEntries(
+          controls.map((control) => [
+            control.part,
+            {
+              measured: placed(control.part),
+              centre: token(control.centre),
+              width: token(control.width),
+            },
+          ]),
+        ),
+        address: placed('address'),
+        reload: placed('reload'),
+        addressToken: {
+          width: token('address-w'),
+          height: token('address-h'),
+          centre: token('address-centre'),
+        },
+        reloadToken: { width: token('reload-w') },
+        reloadClear: token('reload-clear'),
+        content: {
+          top: cr.top - fr.top,
+          left: cr.left - fr.left,
+          right: fr.right - cr.right,
+          bottom: fr.bottom - cr.bottom,
+        },
+        occlusion: {
+          overlaps,
+          drop: fr.top - sub.top,
+          line: sub.height,
+          painted: over ? frame.contains(over) : null,
+          over: over ? over.className || over.tagName : null,
+        },
+        // No z-index, no opacity, no filter and no transform on the stage: any of
+        // them makes it a stacking context, which traps the Frame's own z-index
+        // inside it and stops the window painting over the type it occludes.
+        // Keyed by each property's own CSS name, so the assertion reads as the
+        // list of things a stacking context can be made of.
+        stacking: {
+          'z-index': stageStyle.zIndex,
+          opacity: stageStyle.opacity,
+          filter: stageStyle.filter,
+          transform: stageStyle.transform,
+          isolation: stageStyle.isolation,
+        },
+        // Every one of these is a distance between the Frame's own edge and the
+        // slab's, as a share of the Frame's width — which is the only form any
+        // of the Plinth's numbers is stated in.
+        plinth: {
+          behind: (fr.bottom - pl.top) / fr.width,
+          depth: (pl.bottom - fr.bottom) / fr.width,
+          left: (fr.left - pl.left) / fr.width,
+          right: (pl.right - fr.right) / fr.width,
+          // What the stage measures, which is what the fit constant assumes: the
+          // slab costs the flow its depth and not the strip behind the window.
+          stageFoot: stage.getBoundingClientRect().bottom - fr.bottom,
+          // THE CORNER, against the Section's own box and in px rather than as a
+          // share of anything: the whole assertion is that two corners are the
+          // same point, and a share would be measuring it against the thing it is
+          // supposed to have escaped. Positive is past the edge, which the
+          // Section's `overflow-x: clip` makes safe and invisible; negative is
+          // the black sliver this exists to catch.
+          cornerX: pl.right - section.getBoundingClientRect().right,
+          cornerY: pl.bottom - section.getBoundingClientRect().bottom,
+          // WHICH BRANCH OF THE SOLVE BOUND. It gates nothing — the corner is
+          // asked about on both — and it is read so the note can SAY which one,
+          // because the two get there by different routes: on the width branch the
+          // solve puts the stone on the edge and the stage's reach is 0, and on the
+          // height branch the drawing is capped short and the reach is what carries
+          // it out. A run that reported the same branch at every window would mean
+          // one of those routes had stopped being exercised.
+          //
+          // Against --page-across and not `innerWidth`, which is the whole point
+          // of that length: `innerWidth` counts a classic scrollbar and the boxes
+          // do not, so the two disagree by 15px on exactly the platforms where
+          // this used to be wrong.
+          widthBound: (pageAcross - inset) / (1 + stone / landingW) <= landingW + 1,
+          // ---- and the gutter the list sits behind -------------------------
+          // THE FRAME IS ALLOWED TO OCCLUDE THE SUBHEADING AND NOT THE LIST, and
+          // until now nothing asked. Both files say it in as many words — it is
+          // why the window is never pulled left to make room for the stone — and
+          // it is exactly the invariant the stage's reach could break, because a
+          // reach that came out NEGATIVE would walk the window into the points
+          // instead of away from them. Measured against the composition's own
+          // gutter, which is where the Frame's left edge starts out.
+          gutter: frame.getBoundingClientRect().left - points.getBoundingClientRect().right,
+          gutterToken: spend('var(--projects-panel-gutter)'),
+          plate: plinthStyle.backgroundImage,
+          sized: plinthStyle.backgroundSize,
+          covered: behind ? frame.contains(behind) : null,
+          coveredBy: behind ? behind.className || behind.tagName : null,
+        },
+        slabToken: {
+          behind: slab('behind'),
+          top: slab('top'),
+          front: slab('front'),
+          overhang: slab('overhang'),
+        },
+        reflection: {
+          // The contact line: the reflection starts at the Frame's foot, not at
+          // the slab's back edge, because the marble back there has a window
+          // standing on it rather than a reflection lying in it.
+          contact: rf.top - fr.bottom,
+          left: rf.left - fr.left,
+          right: rf.right - fr.right,
+          depth: rf.height / fr.width,
+          clips: getComputedStyle(reflection).overflow,
+          children: reflection.children.length,
+        },
+        copy: re && {
+          // A mirror image is the SAME SIZE as the thing it reflects. Both of
+          // these are zero or the share was read as a scale and the whole window
+          // was squashed into the thirteen pixels that are the bottom 3.28% of it
+          // seen life-size.
+          width: re.width - fr.width,
+          height: re.height - fr.height,
+          // AFTER the fold, so it is the copy's TOP edge that has to land on the
+          // contact line: `scaleY(-1)` about the bottom origin turns the window's
+          // foot into the topmost row of the image and hangs its head downwards.
+          stands: re.top - fr.bottom,
+          folded: getComputedStyle(copy).transform,
+          parts: copy.querySelectorAll('*').length,
+        },
+        frameParts: frame.querySelectorAll('*').length,
+        contact: {
+          drawn: contactStyle.content,
+          height: parseFloat(contactStyle.height),
+          top: parseFloat(contactStyle.top),
+        },
+        clips: [...document.querySelectorAll('video.projects-panel__clip')].map((clip) => ({
+          inReflection: reflection.contains(clip),
+          loop: clip.loop,
+          muted: clip.muted,
+          autoplay: clip.autoplay,
+          inline: clip.playsInline,
+          poster: clip.getAttribute('poster') ?? '',
+          markupSrc: clip.getAttribute('src'),
+          sources: [...clip.querySelectorAll('source')].map((source) => source.getAttribute('src') ?? ''),
+          fit: getComputedStyle(clip).objectFit,
+          from: getComputedStyle(clip).objectPosition,
+        })),
+        ladder: {
+          tier: bar.dataset.lens ?? '',
+          fill: getComputedStyle(bar).backgroundColor,
+          backdrop:
+            getComputedStyle(bar).backdropFilter ||
+            getComputedStyle(bar).getPropertyValue('-webkit-backdrop-filter') ||
+            'none',
+          // The two rings, read off the pseudo-elements rather than off the
+          // custom properties they are written from: a property set to a value
+          // no rule reads is a material that is declared and not drawn.
+          fresnel: getComputedStyle(bar, '::before').backgroundColor,
+          glare: getComputedStyle(bar, '::after').backgroundImage,
+          // The window's rim is an ELEMENT now, and what it has to clear is the
+          // recording and the strip. Both z-indexes, so the assertion is about
+          // the order rather than about one number.
+          rim: rimStyle === null ? null : rimStyle.boxShadow,
+          rimZ: rimStyle === null ? null : rimStyle.zIndex,
+          barZ: getComputedStyle(bar).zIndex,
+        },
+        chrome: {
+          hidden: stage.getAttribute('aria-hidden') === 'true',
+          interactive: [...stage.querySelectorAll('a, button, input, select, textarea, [tabindex], [role]')].map(
+            (element) => element.tagName.toLowerCase(),
+          ),
+        },
+        shed: Object.fromEntries(
+          [...shedParts, ...kept].map((part) => [part, placed(part)?.hidden ?? null]),
+        ),
+      };
+    },
+    { controls: CONTROLS, shed: SHED, kept: KEPT },
+  );
+}
+
+/** Everything that is true at any window the Frame is drawn wide at. */
+function drawn(read) {
+  /** @type {string[]} */
+  const failures = [];
+  const where = atWindow(read);
+  const px = (share) => share * read.frame.width;
+
+  // ---- the window's own proportion ---------------------------------------
+  if (Math.abs(read.frame.ratio - read.ratioToken) > 0.005) {
+    failures.push(
+      `at ${where} the Frame is drawn at ${read.frame.ratio.toFixed(4)} and its Token asks for ` +
+        `${read.ratioToken} — the window is not the shape the composition is fitted around`,
+    );
+  }
+
+  // ---- one radius, one value ---------------------------------------------
+  // The Frame's corner is a percentage of its own box and the titlebar's is a
+  // container unit, and the whole reason the first is written that way is that
+  // the two have to come out the same length. They stop agreeing silently — a
+  // cqw on the Frame resolves against the VIEWPORT, which at 2560 is a curve half
+  // again too big on the window's outer corners against the titlebar's.
+  const corners = [...read.frameCorner, ...read.barCorner];
+  const wanted = px(read.cornerToken);
+  for (const [name, value] of [
+    ["the Frame's horizontal", read.frameCorner[0]],
+    ["the Frame's vertical", read.frameCorner[1] ?? read.frameCorner[0]],
+    ["the titlebar's", read.barCorner[0]],
+  ]) {
+    if (Math.abs(value - wanted) > LENGTH_TOLERANCE) {
+      failures.push(
+        `at ${where} ${name} corner is ${value.toFixed(3)}px and the measured share asks for ` +
+          `${wanted.toFixed(3)}px — the window and its titlebar are cut to two different radii`,
+      );
+    }
+  }
+  if (Math.max(...corners) - Math.min(...corners) > LENGTH_TOLERANCE) {
+    failures.push(
+      `at ${where} the window's corners range over ${(Math.max(...corners) - Math.min(...corners)).toFixed(3)}px ` +
+        '— one radius has resolved against a different box from the others',
+    );
+  }
+
+  // ---- the titlebar's height ---------------------------------------------
+  if (Math.abs(read.bar - px(read.barToken)) > LENGTH_TOLERANCE) {
+    failures.push(
+      `at ${where} the titlebar is ${read.bar.toFixed(2)}px against the ${px(read.barToken).toFixed(2)}px its ` +
+        'share of the Frame asks for',
+    );
+  }
+
+  // ---- and that the recording was cut with room for it --------------------
+  // THE ONE ASSERTION HERE THAT IS ABOUT A FILE ON DISK RATHER THAN THE PAGE,
+  // and it is the shape NOTES.md says to reach for: the thing that can break is
+  // an agreement between two artefacts, and nothing on screen looks wrong when
+  // it does.
+  //
+  // The recording is laid in flush to the window and the titlebar is over the
+  // top of it, so the strip eats the first N rows of the page that was filmed.
+  // The clip is filmed with exactly `BAR` rows of the page's own ground above
+  // the vault's toolbar — design/censor/capture-frame.mjs — and a titlebar that
+  // grows past that clearance puts the toolbar back under the glass. Which is
+  // NOT a thing a Check could see: the clip on disk is a video, so what the
+  // strip covers is a picture, and the only place the disagreement exists is
+  // between the Lens's Token and the number the capture was made with.
+  //
+  // It is a CEILING and not an equality, deliberately. Making the strip shorter
+  // is free — it leaves a little more of the margin showing, which is white
+  // either way — and only a strip that needs more room than the clip was given
+  // is a fault. So this is quiet about a Lens the author has trimmed and loud
+  // about one that would need the clip re-cut.
+  if (read.barRows === null) {
+    failures.push(`at ${where} there is no recording in the Frame to measure the titlebar against`);
+  } else if (read.barRows > CLIP_CLEARANCE + LENGTH_TOLERANCE) {
+    failures.push(
+      `at ${where} the titlebar covers the recording's first ${read.barRows.toFixed(2)} rows and the clip ` +
+        `was cut with ${CLIP_CLEARANCE} of clear ground at the top — the vault's toolbar is back under ` +
+        'the glass. Either trim the Lens, or re-cut the clip against a larger BAR in ' +
+        'design/censor/capture-frame.mjs (design/censor/README.md is the procedure)',
+    );
+  }
+
+  // ---- every control on its measured centre ------------------------------
+  // The gaps in the stylesheet are computed from the pair of controls either side
+  // of them. This is the other end of that: the arithmetic has to come out at the
+  // centres it was solved for, or the chrome has quietly become a row of gaps
+  // that happen to look right.
+  for (const { name, part } of CONTROLS) {
+    const control = read.controls[part];
+    if (!control?.measured) {
+      failures.push(`at ${where} ${name} is not in the chrome`);
+      continue;
+    }
+    if (control.measured.hidden) {
+      failures.push(`at ${where} ${name} is not drawn — the Frame is wide enough for every glyph here`);
+      continue;
+    }
+    if (Math.abs(control.measured.centre - control.centre) > CENTRE_TOLERANCE) {
+      failures.push(
+        `at ${where} ${name}'s centre is at ${control.measured.centre.toFixed(5)} of the Frame and its Token ` +
+          `says ${control.centre} — ${(px(control.measured.centre - control.centre)).toFixed(2)}px off the ` +
+          'render, so a gap is computed from the wrong pair',
+      );
+    }
+    if (Math.abs(control.measured.width - control.width) > CENTRE_TOLERANCE) {
+      failures.push(
+        `at ${where} ${name} is ${control.measured.width.toFixed(5)} of the Frame wide and its Token says ` +
+          `${control.width} — the glyph is not drawn at its measured ink width`,
+      );
+    }
+  }
+
+  // ---- the three lights are one width and one pitch ----------------------
+  if (read.lights.length !== 3) {
+    failures.push(`at ${where} the traffic lights are ${read.lights.length} discs rather than three`);
+  } else {
+    for (const [index, light] of read.lights.entries()) {
+      const centre = read.lightToken.centre + index * read.lightToken.pitch;
+      if (Math.abs(light.centre - centre) > CENTRE_TOLERANCE) {
+        failures.push(
+          `at ${where} light ${index + 1} is centred at ${light.centre.toFixed(5)} of the Frame and its pitch ` +
+            `puts it at ${centre.toFixed(5)} — the discs are spaced by something other than the measured pitch`,
+        );
+      }
+      if (Math.abs(light.width - read.lightToken.width) > CENTRE_TOLERANCE) {
+        failures.push(
+          `at ${where} light ${index + 1} is ${light.width.toFixed(5)} of the Frame across against the measured ` +
+            `${read.lightToken.width}`,
+        );
+      }
+    }
+  }
+
+  // ---- the address field, and the glyph that travels inside it -----------
+  // The field is DRAWN on the Frame's middle rather than at its own measured
+  // centre, because being centred on the window is what it is and the two differ
+  // by a fifth of a per cent. The reload is the other half of that decision: it
+  // is placed against the field's right edge with the clearance the render
+  // measures between the two, so it keeps its place INSIDE the field however the
+  // field is drawn. Placed at its own absolute centre instead it drifts off the
+  // end of the field by exactly the offset the field gave up.
+  if (!read.address || read.address.hidden || !read.reload || read.reload.hidden) {
+    failures.push(`at ${where} the address field or its reload glyph is not drawn`);
+  } else {
+    if (Math.abs(read.address.centre - 0.5) > CENTRE_TOLERANCE) {
+      failures.push(
+        `at ${where} the address field is centred at ${read.address.centre.toFixed(5)} of the Frame — it is ` +
+          'drawn on the middle of the window, which is what makes it the same field at every size',
+      );
+    }
+    for (const [axis, measured, wanted] of [
+      ['wide', read.address.width, read.addressToken.width],
+      ['tall', read.address.height, read.addressToken.height],
+    ]) {
+      if (Math.abs(measured - wanted) > CENTRE_TOLERANCE) {
+        failures.push(
+          `at ${where} the address field is ${measured.toFixed(5)} of the Frame ${axis} against the measured ` +
+            `${wanted}`,
+        );
+      }
+    }
+    if (Math.abs(read.reload.width - read.reloadToken.width) > CENTRE_TOLERANCE) {
+      failures.push(
+        `at ${where} the reload glyph is ${read.reload.width.toFixed(5)} of the Frame wide against the measured ` +
+          `${read.reloadToken.width}`,
+      );
+    }
+    // A DECLARED CLEARANCE, NOT THE DIFFERENCE BETWEEN TWO MEASURED CENTRES.
+    // It used to be solved out of the field's right edge and the glyph's own
+    // centre, which came to 0.0033 of the Frame — 3.4px at a window 1033 wide,
+    // a glyph against a wall. Held against the Token instead, so the assertion
+    // is the same shape as the decision: one number, and the glyph still
+    // travelling with the field it belongs to rather than with the row.
+    const inside = read.address.right - read.reload.right;
+    if (Math.abs(inside - read.reloadClear) > CENTRE_TOLERANCE) {
+      failures.push(
+        `at ${where} the reload glyph sits ${inside.toFixed(5)} of the Frame inside the field's right edge ` +
+          `against the ${read.reloadClear} its clearance asks for — it is measured off that edge precisely so ` +
+          'that it travels with the field, so a drift here means it has been placed against the row instead',
+      );
+    }
+  }
+
+  // ---- the recording's box is inset on three sides and flush at the top ---
+  // The render is explicit about it, and it is why the box's two top corners are
+  // rounded against a straight titlebar above them. A fourth inset at the top, or
+  // one of the three going missing, is a window whose picture is off centre by a
+  // band nobody measures.
+  const band = px(read.insetToken);
+  for (const [side, value] of [
+    ['left', read.content.left],
+    ['right', read.content.right],
+    ['bottom', read.content.bottom],
+  ]) {
+    if (Math.abs(value - band) > LENGTH_TOLERANCE) {
+      failures.push(
+        `at ${where} the content box's ${side} inset is ${value.toFixed(2)}px against the ${band.toFixed(2)}px ` +
+          'the measured band asks for',
+      );
+    }
+  }
+  // THE TOP IS THE BAND NOW AND NOT THE TITLEBAR'S FOOT. The recording runs
+  // UNDER the strip, because a displacement map over the flat fill this box used
+  // to start below returns the same flat fill — the Lens had nothing to bend.
+  // Asserted against the band like the other three rather than against zero, so
+  // the day the band stops being zero this moves with it.
+  if (Math.abs(read.content.top - band) > LENGTH_TOLERANCE) {
+    failures.push(
+      `at ${where} the content box starts ${read.content.top.toFixed(2)}px down against the ${band.toFixed(2)}px ` +
+        'the band asks for — the recording is meant to run UNDER the titlebar, so there is a photograph behind ' +
+        'the Lens rather than the window\'s own fill',
+    );
+  }
+
+  // ---- the stage is not a stacking context -------------------------------
+  const traps = [
+    ['z-index', 'auto'],
+    ['opacity', '1'],
+    ['filter', 'none'],
+    ['transform', 'none'],
+    ['isolation', 'auto'],
+  ].filter(([property, inert]) => read.stacking[property] !== inert);
+  if (traps.length > 0) {
+    const declared = traps.map(([property]) => `${property}: ${read.stacking[property]}`).join(', ');
+    failures.push(
+      `at ${where} the stage declares ${declared} — any one of them makes it a stacking context, which traps ` +
+        "the Frame's z-index inside it and stops the window painting over the type it occludes",
+    );
+  }
+
+  return failures;
+}
+
+/**
+ * The Plinth: the marble the Frame stands on, measured off the Frame's own edges.
+ *
+ * Every number the slab is drawn from is a distance between one of the window's
+ * edges and one of the block's, and the whole of what this asserts is that they
+ * still are — the depths against the shares they are made of, the two overhangs
+ * against each other, and the slab's flow height against the depth the
+ * composition's fit constant has counted since before any of this was on the
+ * page. A Plinth stated against the composition instead of against the Frame
+ * draws a picture that looks right at one window and is 34% out at the next, and
+ * nothing on the page says so.
+ *
+ * `behind` and `top` are the pair worth naming: reading the first as zero is what
+ * once made the whole top face 31 render pixels instead of 67, and the block read
+ * as a lit strip rather than as a slab with a window standing on it.
+ */
+function stands(read) {
+  /** @type {string[]} */
+  const failures = [];
+  const where = atWindow(read);
+  const px = (share) => share * read.frame.width;
+
+  for (const [what, measured, wanted, why] of [
+    [
+      'runs behind the window',
+      read.plinth.behind,
+      read.slabToken.behind,
+      'the Frame stands ON the top face rather than at the back of it, and this strip is the marble ' +
+        'between the two — hidden under the window in the middle and visible at both ends',
+    ],
+    [
+      'costs the composition',
+      read.plinth.depth,
+      read.slabToken.top + read.slabToken.front,
+      'the top face and the front face together, which is the number --projects-panel-fit counts and ' +
+        'the whole reason the drawing solves onto one screen',
+    ],
+  ]) {
+    if (Math.abs(measured - wanted) > DEPTH_TOLERANCE) {
+      failures.push(
+        `at ${where} the Plinth ${what} ${measured.toFixed(5)} of the Frame's width and its Tokens ask for ` +
+          `${wanted.toFixed(5)} — ${px(measured - wanted).toFixed(2)}px. ${why}.`,
+      );
+    }
+  }
+
+  // The slab is symmetric about the window, which is the shortest way to say
+  // that the Frame sits in the middle of the stone it stands on. Both ends
+  // against the Token AND against each other: a rule that restated one and left
+  // the other is the failure this exists for, and it once left the window
+  // standing off the end of its own plinth.
+  for (const [end, measured] of [
+    ['left', read.plinth.left],
+    ['right', read.plinth.right],
+  ]) {
+    if (Math.abs(px(measured) - px(read.slabToken.overhang)) > LENGTH_TOLERANCE) {
+      failures.push(
+        `at ${where} the slab overhangs the Frame by ${px(measured).toFixed(2)}px on the ${end} and the ` +
+          `measured overhang asks for ${px(read.slabToken.overhang).toFixed(2)}px`,
+      );
+    }
+  }
+  if (Math.abs(px(read.plinth.left) - px(read.plinth.right)) > LENGTH_TOLERANCE) {
+    failures.push(
+      `at ${where} the slab overhangs ${px(read.plinth.left).toFixed(2)}px on the left and ` +
+        `${px(read.plinth.right).toFixed(2)}px on the right — a window standing off the end of its own plinth`,
+    );
+  }
+
+  // In flow, so the stage is as tall as the Frame PLUS the slab's depth. Placed
+  // out of flow at `top: 100%` it draws the same picture and the stage stays
+  // exactly as tall as the Frame, so the composition comes out short by the
+  // Plinth at every window size while the fit constant says otherwise.
+  if (Math.abs(read.plinth.stageFoot - px(read.plinth.depth)) > LENGTH_TOLERANCE) {
+    failures.push(
+      `at ${where} the stage ends ${read.plinth.stageFoot.toFixed(2)}px below the Frame's foot and the slab is ` +
+        `${px(read.plinth.depth).toFixed(2)}px deep — the Plinth is out of flow, so the composition is short ` +
+        'by exactly its depth and the fit constant is counting something that is not there',
+    );
+  }
+
+  // ---- and the corner it stands in ---------------------------------------
+  // THE SLAB'S BOTTOM-RIGHT CORNER IS THE PAGE'S. Inside the landing band the
+  // drawing runs to the page's bottom edge and the page's width is spent on the
+  // composition AND the stone's overhang, so the marble ends exactly where the
+  // window does — down and across. Both halves are arithmetic in a file that
+  // cannot see this one: --landing-plinth-share and the height branch in
+  // src/kernel/landing.css put the right edge there, and --projects-panel-fall
+  // puts the foot there.
+  //
+  // WHY IT IS WORTH ASSERTING. Every way it breaks is quiet. A drift in the
+  // restated share leaves a few pixels of ground showing past the stone or a few
+  // pixels of stone clipped off, and a fall that stops agreeing with the box it
+  // is subtracted from leaves a black band under the marble — which is exactly
+  // what the composition looked like before, and read as deliberate.
+  //
+  // OUTSIDE THE BAND IT ASSERTS NOTHING, and the gate is a viewport one because
+  // the thing being asked about is the landing, which is a viewport's. Below it
+  // there is no landing, the Section is a scrolling stack, and "the corner of the
+  // page" is not a place.
+  //
+  // BOTH AXES, ON BOTH BRANCHES, and the second half of that sentence is the one
+  // worth keeping. This Check used to ask about `across` only where the width
+  // branch bound, on the belief that a height-capped drawing was an ultrawide's
+  // problem. It is not: a maximised browser gives up about 100px of its screen to
+  // its own chrome, so 1920x980 is the ordinary window and the height branch binds
+  // there by 194px. The reach in the Section's landing block is what carries the
+  // stage out to the edge on that branch, and asking about it only on the other
+  // one is how a Check comes to certify the case that works.
+  if (read.landing) {
+    for (const [axis, measured, off] of [
+      ['across', read.plinth.cornerX, "short of the page's right edge"],
+      ['down', read.plinth.cornerY, "above the page's foot"],
+    ]) {
+      if (measured < -CORNER_SLACK) {
+        failures.push(
+          `at ${where} the slab stops ${Math.abs(measured).toFixed(2)}px ${off} — inside the landing band it ` +
+            `sits square in the corner, and ${axis} it does not`,
+        );
+      }
+      if (measured > CORNER_OVERRUN) {
+        failures.push(
+          `at ${where} the slab runs ${measured.toFixed(2)}px past the page ${axis} — the corner is meant to ` +
+            'land ON the edge, and a slab past it is one whose corner the reader cannot see',
+        );
+      }
+    }
+
+    // AND THE WINDOW HAS NOT WALKED INTO THE LIST. The Frame's left edge starts
+    // one gutter clear of the engineering points, and the stage's reach is the
+    // only thing that moves it: out to the page's edge where the drawing was
+    // capped short, which opens the gutter, and never the other way. A reach that
+    // came out negative would close it instead — which is what a width branch and
+    // a reach disagreeing about how wide the page is would do, silently, while the
+    // corner above still landed. Both files call eating the list the one thing the
+    // Frame may not do; this is the sentence that holds them to it.
+    if (read.plinth.gutter < read.plinth.gutterToken - LENGTH_TOLERANCE) {
+      failures.push(
+        `at ${where} the Frame stands ${read.plinth.gutter.toFixed(2)}px from the engineering points and the ` +
+          `composition's own gutter is ${read.plinth.gutterToken.toFixed(2)}px — the window has moved TOWARDS ` +
+          'the list. It is allowed to occlude the subheading, which is set to be occluded, and never this',
+      );
+    }
+  }
+
+  // The plate, and the one declaration in the block that would be a bug if it
+  // were the usual thing: it is rendered at this box's aspect ratio, so
+  // stretching it to the box is an identity and `cover` would crop off either
+  // the far edge or the block's base.
+  if (!read.plinth.plate.startsWith('url(')) {
+    failures.push(
+      `at ${where} the Plinth's background-image is ${read.plinth.plate} — the marble is a rendered plate, ` +
+        'and without it the slab is a rectangle of nothing under the window',
+    );
+  }
+  if (read.plinth.sized !== '100% 100%') {
+    failures.push(
+      `at ${where} the plate is drawn at background-size: ${read.plinth.sized} — it is rendered at this box's ` +
+        'own aspect ratio, so anything but 100% 100% crops off the far edge or the block turning under at its base',
+    );
+  }
+
+  // Under the Frame. The marble behind the contact line is drawn and then
+  // covered by the window standing on it.
+  if (read.plinth.covered === false) {
+    failures.push(
+      `at ${where} what is painted just inside the Frame's foot is "${read.plinth.coveredBy}" and not the ` +
+        'window — the slab is painting OVER the thing standing on it',
+    );
+  }
+
+  return failures;
+}
+
+/**
+ * The reflection, and the contact shadow over it.
+ *
+ * THE ONE THING THIS EXISTS FOR is that the reflection is the Frame — the same
+ * width, the same height, folded through the contact line — rather than a picture
+ * of it. Both halves of that fail silently. A copy written out in the markup
+ * instead of cloned looks identical on the day it is written and drifts from the
+ * window the first time a glyph moves, which is a thing nobody sees for months;
+ * and a mirror image scaled to the depth of the marble rather than CUT to it
+ * draws thirty rows of chrome averaged into every row of stone, which reads as a
+ * grey band that changes when the clip changes rather than as a reflection.
+ *
+ * That the copy is not in the markup is asserted from the other end, in the pass
+ * with scripting turned off.
+ */
+function reflects(read) {
+  /** @type {string[]} */
+  const failures = [];
+  const where = atWindow(read);
+  const face = read.slabToken.top * read.frame.width;
+
+  // ---- the box: the top face and nothing else ----------------------------
+  if (Math.abs(read.reflection.contact) > LENGTH_TOLERANCE) {
+    failures.push(
+      `at ${where} the reflection starts ${read.reflection.contact.toFixed(2)}px from the Frame's foot — it lies in ` +
+        'the marble IN FRONT of the window, so its top edge is the contact line and not the slab\'s back edge',
+    );
+  }
+  for (const [end, measured] of [
+    ['left', read.reflection.left],
+    ['right', read.reflection.right],
+  ]) {
+    if (Math.abs(measured) > LENGTH_TOLERANCE) {
+      failures.push(
+        `at ${where} the reflection's ${end} edge is ${measured.toFixed(2)}px off the Frame's — the overhanging ` +
+          'marble at each end has no window above it to reflect, so the box is the window\'s width and not the slab\'s',
+      );
+    }
+  }
+  if (Math.abs(read.reflection.depth * read.frame.width - face) > LENGTH_TOLERANCE) {
+    failures.push(
+      `at ${where} the reflection is ${(read.reflection.depth * read.frame.width).toFixed(2)}px deep and the top face ` +
+        `is ${face.toFixed(2)}px — a reflection deeper than the face reaches the front, which is a vertical ` +
+        'surface and reflects nothing',
+    );
+  }
+  if (read.reflection.clips === 'visible') {
+    failures.push(
+      `at ${where} the reflection box does not clip — what cuts the copy to the marble available is this box's ` +
+        'own overflow, which is the front arris of the slab and is exactly the thing that cuts it in life',
+    );
+  }
+
+  // ---- the copy: the Frame, at the one magnification a mirror has ---------
+  if (!read.copy) {
+    failures.push(
+      `at ${where} there is no Frame in the marble — reflection.ts clones the window into it, and a Plinth with ` +
+        'nothing lying in it is what a browser that never ran the script is meant to get, not this one',
+    );
+    return failures;
+  }
+  if (read.reflection.children !== 1) {
+    failures.push(
+      `at ${where} the reflection box holds ${read.reflection.children} children — the clone is made once, and a ` +
+        'second call that reflected the reflection would draw the same picture and cost a second recording',
+    );
+  }
+  for (const [axis, measured] of [
+    ['wide', read.copy.width],
+    ['tall', read.copy.height],
+  ]) {
+    if (Math.abs(measured) > LENGTH_TOLERANCE) {
+      failures.push(
+        `at ${where} the copy in the marble is ${measured.toFixed(2)}px ${axis === 'wide' ? 'wider' : 'taller'} ` +
+          'than the window — a planar mirror puts the image as far behind the surface as the object is in front ' +
+          'of it, so the two subtend the same angle and project to the same size. The strip is short because the ' +
+          'SLAB is short, and squashing the window into it averages thirty rows of chrome into every row of stone.',
+      );
+    }
+  }
+  if (Math.abs(read.copy.stands) > LENGTH_TOLERANCE) {
+    failures.push(
+      `at ${where} the copy's foot is ${read.copy.stands.toFixed(2)}px from the window's — the fold is ` +
+        'about the contact line, so the two feet meet there',
+    );
+  }
+  // `matrix(1, 0, 0, -1, 0, 0)` is scaleY(-1) resolved. Anything else is either
+  // no fold at all — a second window standing in the stone — or a scale.
+  if (!/^matrix\(1,\s*0,\s*0,\s*-1,\s*0,\s*0\)$/.test(read.copy.folded)) {
+    failures.push(
+      `at ${where} the copy's transform is "${read.copy.folded}" — a reflection is a fold about the ` +
+        'contact line and nothing else: no scale, because the image is life-size, and no translation, because ' +
+        'the fold is what puts it where it goes',
+    );
+  }
+  // Derived and not hand-kept. Two copies of a hundred lines of measured drawing
+  // is one copy that gets edited and one that does not, and the one that does
+  // not is the reflection.
+  if (read.copy.parts !== read.frameParts) {
+    failures.push(
+      `at ${where} the window holds ${read.frameParts} elements and the copy in the marble holds ` +
+        `${read.copy.parts} — the reflection is meant to BE the Frame, cloned, so the two cannot disagree ` +
+        'about what a window is made of',
+    );
+  }
+
+  // ---- the contact shadow ------------------------------------------------
+  // The cue the eye uses to decide whether two objects are touching at all. It
+  // sits on the top face and stops there: the front face is a vertical plane a
+  // Frame width away in the depth direction and the window occludes none of it.
+  if (read.contact.drawn === 'none') {
+    failures.push(
+      `at ${where} the Plinth draws no contact shadow — the Frame ends, the marble begins, and nothing happens ` +
+        'at the join, which is what a sticker on a photograph looks like',
+    );
+  }
+  if (Math.abs(read.contact.height - face) > LENGTH_TOLERANCE) {
+    failures.push(
+      `at ${where} the contact shadow is ${read.contact.height.toFixed(2)}px deep against the ${face.toFixed(2)}px ` +
+        'of top face — it belongs on the face the window stands on and nowhere else',
+    );
+  }
+
+  return failures;
+}
+
+/**
+ * The recording, and the copy of it lying in the stone.
+ *
+ * Two elements on one URL, both of them parsed with a poster and NO SOURCE — and
+ * that last one is the whole of the reduced-motion refusal, which is asserted at
+ * the other end in its own pass. A `src` written into the markup would fetch the
+ * clip before any script had a chance to decline, and nothing on the page would
+ * say so.
+ *
+ * `object-position` is the one assertion here that is about a number, and it is a
+ * safety property rather than a taste one: the clip is 1440x900 and the box it
+ * fills is not that shape, so something is cropped. Cropping from the top edge
+ * takes it all off the BOTTOM, and removing what the recording shows is the only
+ * direction the censored list is safe in — the list was signed against the
+ * frames the clip passes over, and re-centring the crop shows rows nobody
+ * reviewed.
+ */
+/** Why each of the recording's four attributes is on it. Beside the list rather
+ *  than inside the loop: `muted` and `playsinline` are there for reasons that
+ *  have nothing to do with the other two, and a failure that does not say which
+ *  is a failure that reads as boilerplate. */
+const WHY_SET = {
+  loop: 'the clip is a silent loop standing in a picture of a browser, and it ends after one pass without this',
+  muted: 'and muted is not decoration: it is what lets autoplay run at all, and the Portfolio never makes a sound',
+  autoplay: 'so the window stands there showing a poster of something that was meant to be moving',
+  playsinline: 'so a phone takes the recording fullscreen the moment it plays',
+};
+
+function records(read) {
+  /** @type {string[]} */
+  const failures = [];
+  const where = atWindow(read);
+  const clips = read.clips;
+
+  if (clips.length !== 2) {
+    failures.push(
+      `at ${where} the page holds ${clips.length} recording(s) — one in the window and one in the marble, and ` +
+        'the second is the reflection\'s: a still reflection under a moving clip reads as broken immediately',
+    );
+    return failures;
+  }
+  if (clips.filter((clip) => clip.inReflection).length !== 1) {
+    failures.push(
+      `at ${where} ${clips.filter((clip) => clip.inReflection).length} of the two recordings are in the marble ` +
+        '— one belongs to the window and one to its reflection',
+    );
+  }
+
+  for (const clip of clips) {
+    const which = clip.inReflection ? "the marble's" : "the window's";
+    for (const [attribute, set] of [
+      ['loop', clip.loop],
+      ['muted', clip.muted],
+      ['autoplay', clip.autoplay],
+      ['playsinline', clip.inline],
+    ]) {
+      if (!set) failures.push(`at ${where} ${which} recording is not ${attribute} — ${WHY_SET[attribute]}`);
+    }
+    if (clip.markupSrc !== null) {
+      failures.push(
+        `at ${where} ${which} recording carries src="${clip.markupSrc}" in the markup — the element ships with a ` +
+          'poster and NO source so that a reader who asked for reduced motion never fetches the bytes, and an ' +
+          'attribute here fetches them before any script can decline',
+      );
+    }
+    if (clip.poster === '') {
+      failures.push(
+        `at ${where} ${which} recording has no poster — the poster is what a browser that plays neither file ` +
+          'shows, and it is the whole of what a reduced-motion reader is given',
+      );
+    }
+    if (clip.fit !== 'cover') {
+      failures.push(
+        `at ${where} ${which} recording is drawn with object-fit: ${clip.fit} — the clip and the content box are ` +
+          'not the same shape and cannot be reconciled by choosing better numbers, so something is cropped',
+      );
+    }
+    if (!/^\S+\s+0(px)?$/.test(clip.from)) {
+      failures.push(
+        `at ${where} ${which} recording is cropped from object-position: ${clip.from} — it has to be pinned to ` +
+          'the TOP, so the whole of the cut comes off the bottom. Removing what the clip shows is the only ' +
+          'direction the censored list is safe in; re-centring it shows rows nobody reviewed.',
+      );
+    }
+  }
+
+  // One URL, or the marble is showing a different film from the window.
+  const [first, second] = clips;
+  if (first.poster !== second.poster) {
+    failures.push(
+      `at ${where} the two recordings name different posters, "${first.poster}" and "${second.poster}" — the ` +
+        'reflection is a copy of the window and not a second recording',
+    );
+  }
+  if (first.sources.join('|') !== second.sources.join('|')) {
+    failures.push(
+      `at ${where} the two recordings were served different sources, [${first.sources}] and [${second.sources}] ` +
+        '— both are handed their sources from one list, which is what makes the marble show what the window shows',
+    );
+  }
+  if (first.sources.length === 0) {
+    failures.push(
+      `at ${where} neither recording was given a source — the elements are parsed without one and clip.ts is ` +
+        'what hands them over, so an empty pair is the module never having run',
+    );
+  }
+
+  return failures;
+}
+
+/** The occlusion: the Frame's top edge a measured fraction into the subheading's
+ *  second line, and the window actually painting there. */
+function occludes(read) {
+  /** @type {string[]} */
+  const failures = [];
+  const where = atWindow(read);
+  const wanted = read.dropToken * read.occlusion.line;
+
+  if (!read.occlusion.overlaps) {
+    failures.push(
+      `at ${where} the Frame does not reach the subheading's second line at all — the occlusion the whole ` +
+        'composition is built on is what the drop and the nine-column placement are for',
+    );
+    return failures;
+  }
+  if (Math.abs(read.occlusion.drop - wanted) > DROP_TOLERANCE) {
+    failures.push(
+      `at ${where} the Frame's top edge is ${read.occlusion.drop.toFixed(2)}px below the second line's top and ` +
+        `the drop asks for ${wanted.toFixed(2)}px — ${read.dropToken} of a ${read.occlusion.line.toFixed(2)}px ` +
+        'line. The drop is measured from that edge and nothing else, so this is the row seam having moved.',
+    );
+  }
+  if (read.occlusion.painted === false) {
+    failures.push(
+      `at ${where} what is painted where the Frame crosses the second line is "${read.occlusion.over}" and not ` +
+        'the window — the Frame is being painted under the type it is meant to bite into',
+    );
+  }
+  return failures;
+}
+
+/**
+ * The Lens's two rungs, the window's rim, and the chrome being furniture rather
+ * than controls.
+ *
+ * WHAT THIS MAY AND MAY NOT ASSERT. Nothing here is about whether the material
+ * looks good — NOTES.md's rule, and it has no exceptions. What it is about is
+ * which rung the page RESOLVED, which is a fact the engine reports and the same
+ * thing `data-glass` meant before there was a Lens: `refracting` when the
+ * `url()` survived in the backdrop filter, `frosted` when it did not. The
+ * fallback is the half that would otherwise rot unwatched, because it is the
+ * path every engine that is not Chromium takes and nobody looks at it.
+ */
+function honest(read) {
+  /** @type {string[]} */
+  const failures = [];
+  const { tier, fill, backdrop, fresnel, glare, rim, rimZ, barZ } = read.ladder;
+
+  if (!['refracting', 'frosted'].includes(tier)) {
+    failures.push(
+      `the titlebar reports data-lens="${tier}" — it is one of refracting or frosted, written from the computed ` +
+        'value the engine kept rather than from what was asked for. An empty one means lens.ts never ran and ' +
+        'never said so.',
+    );
+  }
+  // The attribute and the declaration have to agree, in BOTH directions. A
+  // `refracting` strip with no url() in its backdrop filter is a page that
+  // believed a declaration the engine dropped; a `frosted` one WITH a url() is
+  // the readback wired backwards, which would report the fallback on every
+  // engine including the one that works.
+  const refracted = backdrop.includes('url(');
+  if (refracted !== (tier === 'refracting')) {
+    failures.push(
+      `the titlebar reports "${tier}" and its backdrop-filter is ${backdrop} — the attribute is written FROM the ` +
+        'computed value, so the two disagreeing means the readback is not reading what it claims to',
+    );
+  }
+  // Whichever rung it is, the strip is made of something — and on the frosted
+  // one that is the tint, the blur and the two rings, none of which the
+  // refraction was ever carrying.
+  if (/^rgba\(.*,\s*0\)$/.test(fill)) {
+    failures.push(
+      `the titlebar's fill is ${fill} — the tint is what holds the chrome's ink legible over a moving ` +
+        'photograph, and a transparent one means the Token never resolved',
+    );
+  }
+  if (!backdrop.includes('blur(')) {
+    failures.push(
+      `the titlebar's backdrop-filter is ${backdrop} — the blur is the frosted rung and the rung below the ` +
+        'refraction, so a chain without one means the whole declaration was dropped rather than just the url()',
+    );
+  }
+  // THE RINGS ARE THE FALLBACK'S EDGE, and they are read off the pseudo-elements
+  // rather than off the properties lens.ts writes: a custom property set to a
+  // value no rule consumes is a material that is declared and not drawn, which
+  // is exactly the shape of silent pass NOTES.md warns about.
+  if (/^rgba\(.*,\s*0\)$/.test(fresnel)) {
+    failures.push(
+      `the Fresnel ring is ${fresnel} — on the frosted rung the two rings are the only thing drawing the edge ` +
+        'of the strip, so an unpainted one is a pane with no boundary',
+    );
+  }
+  if (!glare.includes('conic-gradient')) {
+    failures.push(
+      `the glare ring is ${glare} — it is laid out off the pane's own outline because brightness varies with the ` +
+        'surface normal, and a missing gradient means that walk never ran',
+    );
+  }
+  // ---- the window's rim, and that it is IN FRONT ---------------------------
+  // It was an inset box-shadow on the Frame, which paints under every child, so
+  // with the band at zero the recording covered it and the window had no edge.
+  // Both halves are asserted: that it exists, and that it clears the strip.
+  if (rim === null) {
+    failures.push(
+      'the window has no rim element — with the band at zero the recording runs to the window\'s edge, and the ' +
+        'rim is the only thing left saying where that edge is',
+    );
+  } else if (rim === 'none') {
+    failures.push(
+      'the window\'s rim draws no ring — it is an element rather than a shadow on the Frame precisely so that ' +
+        'it can paint over the recording, and one that paints nothing is worse than the shadow it replaced',
+    );
+  } else if (!(Number(rimZ) > Number(barZ))) {
+    failures.push(
+      `the window's rim is at z-index ${rimZ} against the titlebar's ${barZ} — the ring has to run ACROSS the ` +
+        'strip, and at this tint nothing shows through it, so a rim behind it outlines the window on three sides',
+    );
+  }
+
+  // ---- furniture, not controls -------------------------------------------
+  // A window's chrome announced to a screen reader is three traffic lights and a
+  // back button that go nowhere. The stage is out of the accessibility tree and
+  // nothing in it is focusable, and both halves are silent when they break.
+  if (!read.chrome.hidden) {
+    failures.push(
+      'the stage is not aria-hidden — a screen reader is then offered a decorative browser window, its three ' +
+        'lights and a back button that goes nowhere',
+    );
+  }
+  if (read.chrome.interactive.length > 0) {
+    failures.push(
+      `the stage holds ${read.chrome.interactive.join(', ')} — nothing in the Frame is a control, and an ` +
+        'aria-hidden subtree with something focusable in it is a focus trap for anyone using a keyboard',
+    );
+  }
+
+  return failures;
+}
+
+/**
+ * The small-Frame reduction, at both ends of its gate.
+ *
+ * The gate asks about the FRAME and not the window, and SHORT is the window where
+ * the two questions give different answers: 1440 across, and a Frame the fit
+ * solves to 468. A media query at the same number would leave every glyph on
+ * screen there, which is what this catches and what nothing measured at DESK
+ * could.
+ */
+function reduced(read, { expectShed }) {
+  /** @type {string[]} */
+  const failures = [];
+  const where = atWindow(read);
+
+  for (const part of SHED) {
+    const hidden = read.shed[part];
+    const element = `.projects-panel__${part}`;
+    if (hidden === null) {
+      failures.push(`at ${where} ${element} is not in the chrome at all`);
+    } else if (hidden !== expectShed) {
+      failures.push(
+        expectShed
+          ? `at ${where} the Frame is ${read.frame.width.toFixed(0)}px wide and ${element} is still drawn — ` +
+            'below 520px of FRAME the small glyphs are dropped rather than approximated, and the gate is a ' +
+            'container query because a wide window can draw a small Frame'
+          : `at ${where} the Frame is ${read.frame.width.toFixed(0)}px wide and ${element} is hidden — the ` +
+            'reduction has fired on a Frame that is big enough for every glyph',
+      );
+    }
+  }
+  for (const part of KEPT) {
+    if (read.shed[part] !== false) {
+      failures.push(
+        `at ${where} .projects-panel__${part} is not drawn — the lights and the address field stay at every ` +
+          'size, and between them they are what still makes the strip a browser window',
+      );
+    }
+  }
+
+  return failures;
+}
+
+/**
+ * What the page draws with no script at all.
+ *
+ * The reflection is a clone the page makes at runtime, and the trade that buys is
+ * stated in three files: a browser that never runs the script gets the marble and
+ * no reflection, which is deliberate rather than broken. This is the assertion
+ * that it IS that, and it does two jobs at once. It says the Plinth is whole
+ * without script — a slab at its full depth with the plate on it, not a hole
+ * where a composition should be — and it says the reflection is genuinely
+ * derived, because a second window written out in the markup would still be
+ * standing in the stone here.
+ *
+ * IT ALSO ASKS FOR THE COPY, and that one is the opposite trade. The paragraph in
+ * the Panel's first row arrives with the page turn, drawn against --turn — and
+ * with no script nothing ever drives --turn, so an arrival that were merely left
+ * at its start would be a paragraph deleted rather than a paragraph waiting. The
+ * component answers `@media (scripting: none)` for exactly this reader, and it has
+ * to be the QUERY: a flag set by a deferred module lands a frame or two after the
+ * first paint, so every reader would watch the paragraph appear and be taken away.
+ * This is the assertion that the query is still there, and it is silent both ways
+ * — the reader who loses the paragraph is the one who cannot report it.
+ *
+ * Nothing is settled, and nothing can be: no loader runs, so no Section mounts.
+ * Everything read is prerendered, which is exactly what is being asked about.
+ */
+async function withoutScript(browser, origin) {
+  const { context, page } = await open(browser, origin, { javaScriptEnabled: false });
+  try {
+    const read = await page.evaluate(() => {
+      const plinth = document.querySelector('.projects-panel__plinth');
+      const reflection = document.querySelector('.projects-panel__reflection');
+      const copy = document.querySelector('.projects-panel__copy');
+      if (!plinth || !reflection || !copy) return { missing: true };
+      // How much of the copy's ink is painted, rasterised rather than compared as
+      // a string: it is a colour-mix of a colour-mix either way.
+      const canvas = document.createElement('canvas');
+      canvas.width = canvas.height = 1;
+      const ink = canvas.getContext('2d');
+      const painted = (colour) => {
+        if (!ink) return -1;
+        ink.clearRect(0, 0, 1, 1);
+        ink.fillStyle = colour;
+        ink.fillRect(0, 0, 1, 1);
+        return (ink.getImageData(0, 0, 1, 1).data[3] ?? 0) / 255;
+      };
+      const style = getComputedStyle(plinth);
+      return {
+        missing: false,
+        depth: plinth.getBoundingClientRect().height,
+        plate: style.backgroundImage,
+        reflections: reflection.children.length,
+        frames: document.querySelectorAll('.projects-panel__frame').length,
+        clips: document.querySelectorAll('video.projects-panel__clip').length,
+        sources: document.querySelectorAll('video.projects-panel__clip source').length,
+        copyInk: painted(getComputedStyle(copy).color),
+      };
+    });
+
+    /** @type {string[]} */
+    const failures = [];
+    if (read.missing) {
+      return ['with no script the Plinth or the copy is not in the document at all — the marble and the ' +
+        'paragraph are both markup and a stylesheet, and only the reflection in the stone is script\'s'];
+    }
+    if (read.depth <= 0 || !read.plate.startsWith('url(')) {
+      failures.push(
+        `with no script the Plinth is ${read.depth.toFixed(1)}px deep and its plate is ${read.plate} — polished ` +
+          'stone with nothing in it is a plinth, and this is the reader who is meant to get one',
+      );
+    }
+    if (read.frames !== 1 || read.reflections !== 0) {
+      failures.push(
+        `with no script the page holds ${read.frames} Frame(s) and ${read.reflections} of them are in the marble ` +
+          '— the reflection is a CLONE, and a second copy of a hundred lines of measured drawing written out in ' +
+          'the markup is one copy that gets edited and one that does not',
+      );
+    }
+    if (read.copyInk < 0.99) {
+      failures.push(
+        `with no script the Panel's copy is painted at ${read.copyInk.toFixed(2)} — the paragraph arrives with ` +
+          'the page turn, nothing here drives the Turn it is drawn against, and this is the one reader who is ' +
+          'better off with it simply there. The component answers `@media (scripting: none)` for them.',
+      );
+    }
+    if (read.clips !== 1 || read.sources !== 0) {
+      failures.push(
+        `with no script the page holds ${read.clips} recording(s) carrying ${read.sources} source(s) — the ` +
+          'element is parsed with a poster and nothing to fetch, and a browser that runs nothing keeps the poster',
+      );
+    }
+    return failures;
+  } finally {
+    await context.close();
+  }
+}
+
+/**
+ * What a reader who asked for reduced motion is not charged for.
+ *
+ * NOT A RULE AND NOT `preload="none"`. The promise is that the recording's bytes
+ * are never requested — not a range request, not a metadata probe — and no
+ * stylesheet can decline a fetch. The elements ship with no source and clip.ts
+ * asks the query before naming a file, so what this asserts is the one thing a
+ * person could never notice: that nothing went over the wire. A `src` that crept
+ * back into the markup, or a refusal that stopped being asked, both look
+ * identical on screen.
+ */
+async function withoutMotion(browser, origin) {
+  const { context, page, record } = await open(browser, origin, { reducedMotion: 'reduce' });
+  try {
+    // Not settle(): under this setting nothing scrubs, and the Section still
+    // mounts on approach. The scroll is what puts the Frame near the viewport,
+    // and networkidle is what gives a fetch time to have happened.
+    await page.evaluate(() => document.querySelector('.projects-panel')?.scrollIntoView());
+    await page.waitForLoadState('networkidle').catch(() => {});
+
+    /** @type {string[]} */
+    const failures = [];
+    const fetched = record.responses
+      .map(({ url }) => withoutOrigin(url, origin))
+      .filter((url) => /\.(webm|mp4)(\?|$)/.test(url));
+    if (fetched.length > 0) {
+      failures.push(
+        `a reader asking for reduced motion fetched ${[...new Set(fetched)].join(', ')} — the setting is asked ` +
+          'to save bandwidth as well as movement, and the only way to honour that is to never name the file',
+      );
+    }
+
+    const served = await page.evaluate(
+      () => document.querySelectorAll('video.projects-panel__clip source').length,
+    );
+    if (served > 0) {
+      failures.push(
+        `a reader asking for reduced motion was given ${served} source(s) — the refusal is written once, in ` +
+          'clip.ts, and it covers the reflection without knowing it exists',
+      );
+    }
+    return failures;
+  } finally {
+    await context.close();
+  }
+}
+
+/**
+ * The Lens's FROSTED rung, driven rather than predicted.
+ *
+ * This is the path every engine that is not Chromium takes today, and the one
+ * nobody looks at — so it is the half of the material that would rot silently.
+ * The old ladder had the same problem and answered it the same way: NOTES.md
+ * records all three of its rungs being "driven and read back at 1440x900, with
+ * the upper rungs suppressed in the harness rather than predicted".
+ *
+ * HOW THE RUNG IS FORCED, AND WHY IT IS THE REAL PATH AND NOT A MOCK. There is
+ * no flag that turns `url()` off inside a backdrop filter, so instead a later
+ * rule declares the strip's backdrop filter WITHOUT the two slots the refraction
+ * is spliced into. The computed value then holds no `url(`, which is exactly the
+ * state an engine that dropped the declaration leaves behind — and it is
+ * `lens.ts`'s own readback, unmodified, that notices and writes `frosted`. The
+ * resize is what makes it look again, and that a resize redraws at all is worth
+ * asserting on its own: a material that read its engine once at mount and never
+ * again would never recover from anything.
+ *
+ * What it then asserts is that the strip is still a strip. The tint, the blur,
+ * the saturation and the two rings are all still there, because the refraction
+ * was never carrying any of them — which is the whole claim the fallback makes.
+ */
+async function frosted(browser, origin) {
+  const { context, page } = await open(browser, origin, { viewport: DESK });
+  try {
+    const settled = await settle(page);
+    if (settled.length > 0) return settled;
+
+    await page.addStyleTag({
+      content:
+        '.projects-panel__bar { -webkit-backdrop-filter: blur(7px) saturate(118%) !important; ' +
+        'backdrop-filter: blur(7px) saturate(118%) !important; }',
+    });
+    // Two pixels: enough to move the ResizeObserver, not enough to change which
+    // branch of the composition's fit is taken.
+    await page.setViewportSize({ width: DESK.width - 2, height: DESK.height });
+    await page.waitForTimeout(250);
+
+    const read = await page.evaluate(() => {
+      const bar = document.querySelector('.projects-panel__bar');
+      if (bar === null) return null;
+      const style = getComputedStyle(bar);
+      return {
+        tier: bar.dataset.lens ?? '',
+        fill: style.backgroundColor,
+        backdrop: style.backdropFilter || style.getPropertyValue('-webkit-backdrop-filter') || 'none',
+        fresnel: getComputedStyle(bar, '::before').backgroundColor,
+        glare: getComputedStyle(bar, '::after').backgroundImage,
+      };
+    });
+
+    /** @type {string[]} */
+    const failures = [];
+    if (read === null) {
+      return ['with url() refused there is no titlebar in the document at all'];
+    }
+    if (read.tier !== 'frosted') {
+      failures.push(
+        `with url() refused the titlebar still reports "${read.tier}" — the readback is what writes that ` +
+          'attribute, so a strip that goes on claiming to refract through a declaration the engine did not ' +
+          'keep is one that never looked',
+      );
+    }
+    if (read.backdrop.includes('url(')) {
+      failures.push(
+        `with url() refused the titlebar's backdrop-filter is ${read.backdrop} — the slot is meant to be ` +
+          'emptied again, and a url() left in a chain the engine rejected costs the blur and the saturation too',
+      );
+    }
+    if (!read.backdrop.includes('blur(')) {
+      failures.push(
+        `with url() refused the titlebar's backdrop-filter is ${read.backdrop} — the blur IS the frosted rung, ` +
+          'so losing it means the fallback fell through to nothing rather than to a pane',
+      );
+    }
+    if (/^rgba\(.*,\s*0\)$/.test(read.fill)) {
+      failures.push(
+        `with url() refused the titlebar's fill is ${read.fill} — the tint is what holds the chrome's ink ` +
+          'legible, and it is the one part of this material that never depended on refracting anything',
+      );
+    }
+    if (/^rgba\(.*,\s*0\)$/.test(read.fresnel) || !read.glare.includes('conic-gradient')) {
+      failures.push(
+        `with url() refused the rings are ${read.fresnel} and ${read.glare} — on this rung they are the only ` +
+          'thing drawing the edge of the strip',
+      );
+    }
+    return failures;
+  } finally {
+    await context.close();
+  }
+}
+
+/**
+ * The other end of the clearance: does the CLIP ON DISK actually carry the band
+ * the titlebar is allowed to cover?
+ *
+ * `drawn()` asserts that the strip fits inside `CLIP_CLEARANCE`. That is half an
+ * agreement, and on its own it is the wrong half — the number lives in a module,
+ * so a Lens trimmed to fit it passes while a recording that was never re-cut
+ * sits in `portfolio/video/` with the vault's toolbar back under the glass. This
+ * is the half that reads the file.
+ *
+ * The POSTER is what it reads, and not a frame of the video: the poster is
+ * frame 0 by construction — design/censor/README.md extracts it from the first
+ * frame — and frame 0 is the only moment the band is meant to be clear. It is
+ * also the still a reduced-motion reader is given, so it is the frame that has
+ * to be right whether or not anything ever plays. Decoded in the page because
+ * that is where the WebP decoder is; there is none in Node and adding one for
+ * this would be a dependency for one assertion.
+ *
+ * WHAT IT ASSERTS IS FLATNESS AND NOT A COLOUR. "The clip opens with `BAR` rows
+ * of the page's own unbroken ground at the top" is the promise; that the ground
+ * is white is the vault's business and the seeded theme's, and pinning the value
+ * here would be a Check with an opinion about somebody else's palette. Light it
+ * does insist on, in a band as wide as `ground`'s are, because a dark band would
+ * mean the capture lost its theme — and that is a failure with its own history
+ * in this folder.
+ */
+async function opensClear(browser, origin) {
+  const { context, page } = await open(browser, origin, { viewport: DESK });
+  try {
+    const read = await page.evaluate(async (rows) => {
+      const clip = document.querySelector('.projects-panel__clip');
+      const url = clip?.getAttribute('poster');
+      if (!url) return { missing: 'the recording carries no poster to read the clip from' };
+
+      const response = await fetch(url);
+      if (!response.ok) return { missing: `the poster at ${url} answered ${response.status}` };
+      const bitmap = await createImageBitmap(await response.blob());
+      const canvas = new OffscreenCanvas(bitmap.width, bitmap.height);
+      const context2d = canvas.getContext('2d', { willReadFrequently: true });
+      context2d.drawImage(bitmap, 0, 0);
+
+      /* The band, in the poster's own pixels — which are the page's, because the
+         poster is the capture at its own size. One row short of `rows`: the
+         clearance is a ceiling on what the strip covers, and the row at exactly
+         that offset is the first one it is allowed not to. */
+      const band = context2d.getImageData(0, 0, bitmap.width, Math.min(rows - 1, bitmap.height));
+      let min = [255, 255, 255];
+      let max = [0, 0, 0];
+      let sum = 0;
+      const pixels = band.data.length / 4;
+      for (let at = 0; at < band.data.length; at += 4) {
+        for (let channel = 0; channel < 3; channel++) {
+          const value = band.data[at + channel];
+          if (value < min[channel]) min[channel] = value;
+          if (value > max[channel]) max[channel] = value;
+        }
+        sum += (band.data[at] + band.data[at + 1] + band.data[at + 2]) / 3;
+      }
+      return {
+        url,
+        width: bitmap.width,
+        height: bitmap.height,
+        spread: Math.max(...max.map((high, channel) => high - min[channel])),
+        mean: sum / pixels,
+      };
+    }, CLIP_CLEARANCE);
+
+    /** @type {string[]} */
+    const failures = [];
+    if ('missing' in read) return [read.missing];
+
+    /* Wide enough that a re-encode at a different quality cannot trip it, tight
+       enough that a row of tiles or the top of a pill cannot hide in it: the
+       band as filmed is one flat value, and anything with a photograph or a
+       control in it spreads by a hundred and more. */
+    if (read.spread > 24) {
+      failures.push(
+        `the clip's first ${CLIP_CLEARANCE - 1} rows spread ${read.spread} levels — the recording was not cut ` +
+          `with ${CLIP_CLEARANCE} rows of clear ground at the top, so the Frame's titlebar is over the vault's ` +
+          'own chrome. Re-cut it: design/censor/README.md, and design/censor/capture-frame.mjs for the number',
+      );
+    }
+    if (read.mean < 178) {
+      failures.push(
+        `the clip's first ${CLIP_CLEARANCE - 1} rows average ${read.mean.toFixed(1)} of 255 — the band behind ` +
+          'the titlebar is meant to be the page\'s light ground, so this clip was captured against a dark ' +
+          'grid. The origin seeds the theme; design/tools/check-capture-origin.mjs is what refuses one that ' +
+          'stopped',
+      );
+    }
+    return failures;
+  } finally {
+    await context.close();
+  }
+}
+
+export const check = {
+  name: 'projects-panel',
+  title: "the Frame and the Plinth: geometry, occlusion, reflection, ladder and reduction",
+
+  /** @param {{ browser: import('playwright').Browser, origin: string }} ctx */
+  async run({ browser, origin }) {
+    /** @type {string[]} */
+    const failures = [];
+    /** @type {string[]} */
+    const notes = [];
+
+    for (const [viewport, expectShed] of [
+      [DESK, false],
+      [MAXIMISED, false],
+      [SHORT, true],
+    ]) {
+      const { context, page } = await open(browser, origin, { viewport });
+      try {
+        failures.push(...(await settle(page)));
+        const read = await readPage(page);
+        if ('missing' in read) {
+          failures.push(read.missing);
+          continue;
+        }
+
+        failures.push(...reduced(read, { expectShed }));
+        failures.push(...occludes(read));
+        if (!expectShed) {
+          failures.push(...drawn(read));
+          failures.push(...honest(read));
+          failures.push(...stands(read));
+          failures.push(...reflects(read));
+          failures.push(...records(read));
+          notes.push(
+            `the slab: ${(read.plinth.depth * read.frame.width).toFixed(1)}px deep over a Frame ` +
+              `${read.frame.width.toFixed(0)}px wide, overhanging ${(read.plinth.left * read.frame.width).toFixed(1)}px ` +
+              `each end, with ${(read.reflection.depth * read.frame.width).toFixed(1)}px of the window lying in it`,
+          );
+          // Reported at whatever it is, on both branches: a shortfall that is
+          // expected on an ultrawide and a shortfall that is a bug read the same
+          // in the numbers, and the only way to tell which is to see them.
+          if (read.landing) {
+            notes.push(
+              `its corner: ${read.plinth.cornerX.toFixed(2)}px across and ${read.plinth.cornerY.toFixed(2)}px ` +
+                `down from the page's, on the ${read.plinth.widthBound ? 'width' : 'height'} branch`,
+            );
+          }
+        }
+        notes.push(
+          `at ${viewport.width}x${viewport.height}: a Frame ${read.frame.width.toFixed(0)}px wide, titlebar ` +
+            `"${read.ladder.tier}", dropped ${read.occlusion.drop.toFixed(1)}px into the second line, ` +
+            `covering ${read.barRows === null ? '?' : read.barRows.toFixed(2)} of the clip's ` +
+            `${CLIP_CLEARANCE} clear rows`,
+        );
+      } finally {
+        await context.close();
+      }
+    }
+
+    failures.push(...(await withoutScript(browser, origin)));
+    notes.push('with no script: the marble is drawn, nothing is lying in it, and the copy is simply there');
+    failures.push(...(await withoutMotion(browser, origin)));
+    notes.push('with reduced motion: the poster, and not one byte of the recording');
+    failures.push(...(await frosted(browser, origin)));
+    notes.push('with url() refused: the Lens falls back to frosted, and the strip is still a strip');
+    failures.push(...(await opensClear(browser, origin)));
+    notes.push(
+      `the clip on disk: its first ${CLIP_CLEARANCE - 1} rows are the page's own flat, light ground`,
+    );
+
+    return { failures, notes };
+  },
+};

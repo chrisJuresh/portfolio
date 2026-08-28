@@ -1,12 +1,19 @@
-# local tooling / editor. `.claude/` is ignored except the four files every worktree
-# needs: the three that carry the worktree-per-change rule, and the launch config the
-# preview starts the static server from. A worktree only gets a file if git puts it
-# there, so anything ignored here is missing from the tree every change is made in.
+# local tooling / editor. `.claude/` is ignored except what every worktree needs: the
+# three files that carry the worktree-per-change rule, the launch config the preview
+# starts the static server from, and the four directories Claude Code reads project
+# skills, subagents, commands and scripts from. A worktree only gets a file if git puts
+# it there, so anything ignored here is missing from the tree every change is made in —
+# which is why the config directories have to be listed even while they are empty. See
+# docs/agents/claude-code-and-opus-5.md.
 .claude/*
 !.claude/settings.json
 !.claude/worktree-per-change.json
 !.claude/hooks/
 !.claude/launch.json
+!.claude/skills/
+!.claude/agents/
+!.claude/commands/
+!.claude/scripts/
 .openai/
 .agents/
 .codex/
@@ -15,17 +22,34 @@
 Thumbs.db
 *.log
 
-# node / vercel local artifacts (not used, kept out just in case)
+# the build's inputs and outputs. dist/ is what the deployment serves and is
+# assembled from scratch on every build — Astro's output plus the static tree
+# copied in beside it — so a committed copy could only ever be stale. .astro/ is
+# the types Astro generates for `astro check` and is regenerated the same way.
 node_modules/
 .vercel/
 dist/
+.astro/
 
-# where design/tools/check-capture-contract.py stages the profile repo's capture
-# script and the screenshots it takes. It lives beside design/tools/node_modules
-# because ESM resolves `playwright` from the running script's own directory, so
-# the fetched script has to sit under the install rather than anywhere tidier.
-# Nothing in here is committed — the capture is fetched fresh every run, on
-# purpose, so a vendored copy cannot drift against a repo we do not own.
+# The author's own denylist of unpublishable terms — the clients, colleagues and
+# hostnames a Section's words may not contain. It is NOT committed, and that is
+# the point: a list of the names in a public repository is the leak the Check
+# exists to prevent. scripts/checks/lib/denylist.mjs holds the shapes, which are
+# the half that is safe to publish.
+scripts/checks/lib/denylist.local.txt
+
+# where check-capture-contract.py used to stage the profile repo's capture script
+# and the screenshots it took. #148 deleted that script — the capture is asked
+# for rather than replayed here, and docs/agents/external-capture.md says why —
+# but the rule stays for a while: a tree that ran it before pulling this has a
+# directory of run output in it, and an ignore that outlives its writer costs
+# nothing while an accidentally committed vendored copy of another repo's script
+# costs a rewrite.
+#
+# DELETE THIS RULE once no checkout has the directory. `ls -d
+# design/tools/.capture-contract` across the main checkout and every worktree is
+# the whole test; the main checkout had 20K of it on 2026-08-23. Nothing writes
+# it any more, so the day it is gone everywhere it is gone for good.
 design/tools/.capture-contract/
 
 # the confirmed photographs baked down to a handful of blocks each, by
@@ -36,6 +60,13 @@ design/tools/.capture-contract/
 # command; capture-origin.mjs refuses to serve against a stale bake.
 design/censor/mosaic/
 
+# stills the Frame's material is judged over, captured through the censored
+# origin above by design/frame-glass/shoot.mjs. Obscured pixels rather than raw
+# ones, and STILL not committed: what ships is the clip in portfolio/video/, and
+# a still of a real library kept in the tree to make a colour choice checkable is
+# exactly what the origin exists to avoid. Rebuild with one command.
+design/frame-glass/local/
+
 # where `record` writes when it is handed design/record as its workspace. The
 # Project and its Action are committed — they are the settings the clip was made
 # with — and the Runs are not: ten of them per Action, each carrying the same
@@ -44,7 +75,10 @@ design/censor/mosaic/
 design/record/runs/
 design/record/published/
 
-# python bytecode — design/og/build-og.py is the only Python here
+# python bytecode. Most of design/ is Python generators — eighteen of them — and
+# every directory holding one grows a __pycache__ as soon as anything imports it,
+# which `python -m compileall design/` alone is enough to do in eight of them. So
+# no list here: unanchored, matching at every depth, deliberately.
 __pycache__/
 *.pyc
 
@@ -60,39 +94,83 @@ photos/
 *.rw2
 
 # ...and the same for a cut-out plate source, which is a 20MB RGBA PNG and gets
-# dropped in the same place. Root only, by path rather than by extension: the
-# repo's other PNGs are design/og/og-source.png and the committed shots, and a
-# blanket *.png would take those with it.
-/*.png
+# dropped in the same place — three of them, one per corner picture, under opaque
+# content-hash filenames. They are handed to design/plate/build-plate.py by path,
+# and design/plate/sources/README.md records which hash feeds which picture,
+# because nothing in the filename does.
+design/plate/sources/*
 
-# the Texturelabs plates the textures are baked from — two for the effect stack
-# at 9MB and 12MB, and three marble slabs for the Projects Panel's plinth at
-# about 15MB each. All of them are handed to their build script by path from the
-# repo root, so they land here the way an RW2 does. What ships is
-# portfolio/img/tex/, which IS committed. There is a licence reason as well as a
-# size one: texturelabs.org asks that the source files not be redistributed as
-# textures, and a baked, cut-down, blended derivative is a different thing from
-# the original asset. Attribution is in portfolio/img/tex/README.md, and the two
-# scripts are design/effects/build-textures.py and design/plinth/build-marble.py.
-/Texturelabs_*.jpg
+# the Texturelabs plates the textures are baked from, two of them at 9MB and
+# 12MB. What ships is portfolio/img/tex/, which IS committed. There is a licence
+# reason as well as a size one: texturelabs.org asks that the source files not be
+# redistributed as textures, and a baked, cut-down, blended derivative is a
+# different thing from the original asset. Attribution is in
+# portfolio/img/tex/README.md, and the script is design/effects/build-textures.py.
+design/effects/sources/*
+
+# EVERY ONE OF THESE USED TO BE A ROOT-ANCHORED RULE — `/*.png`,
+# `/Texturelabs_*.jpg`, `/Gemini_Generated_Image_*.jpg` — because each generator
+# took its input "from the repo root". That put 110MB of unrelated pictures in the
+# one directory a reader looks at first, told them nothing about which script
+# wanted which file, and — the reason this changed rather than merely the reason
+# it is tidier — made it impossible to see at a glance whether one of them was
+# TRACKED. A per-file root ignore is a rule about a name; a directory ignore is a
+# rule about a place, and a place can be listed. An ignored input now lives in a
+# `sources/` directory beside the ONE generator that reads it, and these three
+# lines are the safety net for the old habit:
+/*.png
+/*.jpg
+/*.jpeg
 
 # ...and the 2x2 lay-up build-textures.py writes beside the paper tile so its
 # seams can be looked at rather than taken on trust. A diagnostic, rebuilt on
 # every run, and nothing serves it.
 portfolio/img/tex/paper-seam-proof.png
 
+# the Variant sheet, and the renders it is assembled from. design/tools/
+# render-variants.mjs wipes and rewrites this directory on every run, and what it
+# holds is a picture of the source it was run against — so a committed copy could
+# only ever be a picture of a Variant that has since been rewritten, captioned
+# with the declarations it used to have. `pnpm variants` is a minute.
+design/sheets/
+
 # secrets — never commit
 .env
 .env.*
 
-# the AI-generated Nero Portoro plate design/plinth/build-portoro-maps.py takes
-# apart, and the maps it writes. Same rule as the Texturelabs plates above:
-# sources and intermediates stay out, the bake ships. Unlike those there is no
-# upstream to re-fetch this one from - see docs/agents/plinth-marble.md.
-/Gemini_Generated_Image_*.jpg
+# the maps design/plinth/build-portoro-maps.py writes from the AI-generated Nero
+# Portoro plate. Same rule as the Texturelabs plates above: sources and
+# intermediates stay out, the bake ships. The plate ITSELF is covered by the
+# design/plinth/sources/ rule below — it used to have a /Gemini_Generated_Image_*
+# line of its own at the root, and there were two copies of it, one at each
+# place. Unlike the Texturelabs plates there is no upstream to re-fetch this one
+# from - see docs/agents/plinth-marble.md.
 design/plinth/maps/
 
-# per-candidate plinth shots from ender.mjs --stones. 1.4MB each and
+# ...and where design/plinth/plinth-studio.py keeps the photographs dropped on
+# it. Same rule again, and worth saying out loud because this is the one that
+# arrives by drag-and-drop rather than by being put somewhere deliberately: a
+# stone's ENTRY and PLATE are committed and the image it was cut from is not, so
+# a stone can be looked at in a fresh checkout and can only be RE-BAKED in a tree
+# that still has this directory. Keep anything you care about elsewhere too.
+design/plinth/sources/
+
+# the design renders and reference photographs a composition was MEASURED off
+# rather than baked from — the Projects Panel's own render is the one that
+# matters, and design/reference/README.md is where the numbers in the `.panel`
+# block point. Ignored for a reason that is not size: it is a screenshot of the
+# real photo grid and carries uncensored pictures of real people, which is the
+# rule photos/ above is under. The README is committed and the pictures are not,
+# so a fresh checkout gets the reason without the exposure.
+design/reference/*
+!design/reference/README.md
+
+# ...and the same negation for the source directories above, so the note saying
+# which file is which survives a clone that has none of them.
+!design/plate/sources/README.md
+!design/effects/sources/README.md
+
+# per-candidate plinth shots from render.mjs --stones. 1.4MB each and
 # regenerable in a minute; what is committed is the contact sheet built from
 # them, design/shots/plinth-stones.jpg.
 design/shots/*__stone-*.png

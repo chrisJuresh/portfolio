@@ -1,0 +1,355 @@
+{
+  "title": "A procedural plinth stone",
+  "note": "The marble the Projects Panel's plinth is cut from, generated rather than photographed: a black ground under three sets of level-set veins with a fracture network over the top, rendered in Cycles to one 3000 by 269 plate. What it CANNOT make is a branching vein - docs/agents/plinth-marble.md has the measurement - which is what the photographic Bake beside this one is for.",
+  "needs": "Blender on PATH, with Cycles. Fifteen seconds a stone on a GPU and a few minutes without one.",
+  "run": [
+    "blender",
+    "-b",
+    "-P",
+    "design/plinth/build-slab.py",
+    "--",
+    "{stone}"
+  ],
+  "shows": [
+    "portfolio/img/tex/",
+    "design/plinth/slab.json"
+  ],
+  "groups": [
+    {
+      "name": "What is being baked",
+      "note": "This Bake IS one stone. Its parameters are read straight out of this recipe by build-slab.py - see tuned_stone() there - and merged in beside the four built-in candidates, so nothing downstream knows the difference. It renders that one stone and never a built-in: the four procedural plates and the four gemini ones are the recorded marble comparison, and re-rendering them would overwrite the pictures it was judged from, so a name this file already defines is refused rather than shadowed.",
+      "params": [
+        {
+          "key": "stone",
+          "label": "the stone's name",
+          "value": "my-portoro",
+          "note": "Lower case, digits and dashes. `nero`, `portoro`, `marquina`, `arabescato`, any gemini plate and any -noir twin of one are refused by the generator - it says so and renders nothing."
+        },
+        {
+          "key": "title",
+          "label": "what it is",
+          "value": "a stone of my own",
+          "note": "One line, shown beside its plate in the picker."
+        }
+      ]
+    },
+    {
+      "name": "The ground",
+      "note": "A reference slab of Portoro is very nearly black between its seams and its calcite is very nearly white - the stone is almost all contrast. A lifted floor under lowered veins is exactly how stone comes out looking like dusty concrete.",
+      "params": [
+        {
+          "key": "ground",
+          "label": "the black",
+          "value": "#100f10",
+          "note": "Linear, and much darker than it looks written down: the built-in Portoro's ground is 0.0052 of full, which is this. Written as sRGB and decoded to linear on the way in, because the numbers this generator works in run below 1/255 and a hex digit cannot say 0.0052 - see design/bake/tuning.py, which is where the one conversion lives."
+        },
+        {
+          "key": "base_rough",
+          "label": "base roughness",
+          "value": "0.07",
+          "min": 0.01,
+          "max": 0.6,
+          "step": 0.005,
+          "note": "The polish on the ground itself. The plinth is a polished slab, so this is low and every seam below is rougher than it."
+        }
+      ]
+    },
+    {
+      "name": "Veins - the swathe",
+      "note": "The broadest set: in Portoro this is the gold, and it is a swathe rather than a filament.",
+      "params": [
+        {
+          "key": "vein0.scale",
+          "label": "scale",
+          "value": "5.0",
+          "note": "How many times the noise field repeats across the block. Higher is a finer network.",
+          "min": 2,
+          "max": 60,
+          "step": 0.5
+        },
+        {
+          "key": "vein0.detail",
+          "label": "detail",
+          "value": "5.0",
+          "note": "Octaves of the field. More is a busier, more fractal edge to every vein.",
+          "min": 1,
+          "max": 8,
+          "step": 0.5
+        },
+        {
+          "key": "vein0.distortion",
+          "label": "distortion",
+          "value": "1.5",
+          "note": "How far the field is warped before the level is taken - what stops a vein reading as a contour line.",
+          "min": 0,
+          "max": 3,
+          "step": 0.05
+        },
+        {
+          "key": "vein0.width",
+          "label": "width",
+          "value": "0.052",
+          "note": "The level the vein is cut at, so how wide a seam is as a share of the field.",
+          "min": 0.002,
+          "max": 0.18,
+          "step": 0.001
+        },
+        {
+          "key": "vein0.sharpness",
+          "label": "sharpness",
+          "value": "2.3",
+          "note": "How abruptly the seam's edge falls off. High is a hairline; low is a bruise.",
+          "min": 1,
+          "max": 6,
+          "step": 0.1
+        },
+        {
+          "key": "vein0.colour",
+          "label": "colour",
+          "value": "#ceaa59",
+          "note": "The seam's own colour, before the room lights it. Written as sRGB and decoded to linear on the way in, because the numbers this generator works in run below 1/255 and a hex digit cannot say 0.0052 - see design/bake/tuning.py, which is where the one conversion lives."
+        },
+        {
+          "key": "vein0.rough",
+          "label": "roughness",
+          "value": "0.46",
+          "note": "The seam's polish against the ground's. A calcite seam is not as polished as the black around it.",
+          "min": 0.02,
+          "max": 0.9,
+          "step": 0.01
+        },
+        {
+          "key": "vein0.bump",
+          "label": "bump",
+          "value": "0.62",
+          "note": "How far the seam stands off the surface. This is relief and not colour.",
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        }
+      ]
+    },
+    {
+      "name": "Veins - the network",
+      "note": "The middle set, which is what makes the stone read as branching rather than as stripes.",
+      "params": [
+        {
+          "key": "vein1.scale",
+          "label": "scale",
+          "value": "9.5",
+          "note": "How many times the noise field repeats across the block. Higher is a finer network.",
+          "min": 2,
+          "max": 60,
+          "step": 0.5
+        },
+        {
+          "key": "vein1.detail",
+          "label": "detail",
+          "value": "4.0",
+          "note": "Octaves of the field. More is a busier, more fractal edge to every vein.",
+          "min": 1,
+          "max": 8,
+          "step": 0.5
+        },
+        {
+          "key": "vein1.distortion",
+          "label": "distortion",
+          "value": "1.3",
+          "note": "How far the field is warped before the level is taken - what stops a vein reading as a contour line.",
+          "min": 0,
+          "max": 3,
+          "step": 0.05
+        },
+        {
+          "key": "vein1.width",
+          "label": "width",
+          "value": "0.026",
+          "note": "The level the vein is cut at, so how wide a seam is as a share of the field.",
+          "min": 0.002,
+          "max": 0.18,
+          "step": 0.001
+        },
+        {
+          "key": "vein1.sharpness",
+          "label": "sharpness",
+          "value": "2.7",
+          "note": "How abruptly the seam's edge falls off. High is a hairline; low is a bruise.",
+          "min": 1,
+          "max": 6,
+          "step": 0.1
+        },
+        {
+          "key": "vein1.colour",
+          "label": "colour",
+          "value": "#efd795",
+          "note": "The seam's own colour, before the room lights it. Written as sRGB and decoded to linear on the way in, because the numbers this generator works in run below 1/255 and a hex digit cannot say 0.0052 - see design/bake/tuning.py, which is where the one conversion lives."
+        },
+        {
+          "key": "vein1.rough",
+          "label": "roughness",
+          "value": "0.36",
+          "note": "The seam's polish against the ground's. A calcite seam is not as polished as the black around it.",
+          "min": 0.02,
+          "max": 0.9,
+          "step": 0.01
+        },
+        {
+          "key": "vein1.bump",
+          "label": "bump",
+          "value": "0.46",
+          "note": "How far the seam stands off the surface. This is relief and not colour.",
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        }
+      ]
+    },
+    {
+      "name": "Veins - the hairlines",
+      "note": "The finest set - white filaments over everything else.",
+      "params": [
+        {
+          "key": "vein2.scale",
+          "label": "scale",
+          "value": "19.0",
+          "note": "How many times the noise field repeats across the block. Higher is a finer network.",
+          "min": 2,
+          "max": 60,
+          "step": 0.5
+        },
+        {
+          "key": "vein2.detail",
+          "label": "detail",
+          "value": "4.0",
+          "note": "Octaves of the field. More is a busier, more fractal edge to every vein.",
+          "min": 1,
+          "max": 8,
+          "step": 0.5
+        },
+        {
+          "key": "vein2.distortion",
+          "label": "distortion",
+          "value": "1.2",
+          "note": "How far the field is warped before the level is taken - what stops a vein reading as a contour line.",
+          "min": 0,
+          "max": 3,
+          "step": 0.05
+        },
+        {
+          "key": "vein2.width",
+          "label": "width",
+          "value": "0.013",
+          "note": "The level the vein is cut at, so how wide a seam is as a share of the field.",
+          "min": 0.002,
+          "max": 0.18,
+          "step": 0.001
+        },
+        {
+          "key": "vein2.sharpness",
+          "label": "sharpness",
+          "value": "3.0",
+          "note": "How abruptly the seam's edge falls off. High is a hairline; low is a bruise.",
+          "min": 1,
+          "max": 6,
+          "step": 0.1
+        },
+        {
+          "key": "vein2.colour",
+          "label": "colour",
+          "value": "#f6f3ef",
+          "note": "The seam's own colour, before the room lights it. Written as sRGB and decoded to linear on the way in, because the numbers this generator works in run below 1/255 and a hex digit cannot say 0.0052 - see design/bake/tuning.py, which is where the one conversion lives."
+        },
+        {
+          "key": "vein2.rough",
+          "label": "roughness",
+          "value": "0.26",
+          "note": "The seam's polish against the ground's. A calcite seam is not as polished as the black around it.",
+          "min": 0.02,
+          "max": 0.9,
+          "step": 0.01
+        },
+        {
+          "key": "vein2.bump",
+          "label": "bump",
+          "value": "0.30",
+          "note": "How far the seam stands off the surface. This is relief and not colour.",
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        }
+      ]
+    },
+    {
+      "name": "The fracture",
+      "note": "Cracks post-date everything, so they are laid last - which is also the right geology. Crisper than a JPEG can hold at this magnification, which is the one thing the procedural generator does that a photograph cannot.",
+      "params": [
+        {
+          "key": "fracture.colour",
+          "label": "colour",
+          "value": "#f3f2f0",
+          "note": "The crack's own colour. Written as sRGB and decoded to linear on the way in, because the numbers this generator works in run below 1/255 and a hex digit cannot say 0.0052 - see design/bake/tuning.py, which is where the one conversion lives."
+        },
+        {
+          "key": "fracture.rough",
+          "label": "roughness",
+          "value": "0.22",
+          "min": 0.02,
+          "max": 0.9,
+          "step": 0.01,
+          "note": "As a vein's."
+        },
+        {
+          "key": "fracture.bump",
+          "label": "bump",
+          "value": "0.24",
+          "min": 0,
+          "max": 1,
+          "step": 0.01,
+          "note": "As a vein's."
+        },
+        {
+          "key": "fracture.strength",
+          "label": "strength",
+          "value": "1.00",
+          "min": 0,
+          "max": 1,
+          "step": 0.01,
+          "note": "How much of the network is laid down at all. 0 is no cracks."
+        }
+      ]
+    },
+    {
+      "name": "The render",
+      "note": "Cycles. Fifteen seconds a stone on a GPU at the sample count below, and roughly linear in it.",
+      "params": [
+        {
+          "key": "samples",
+          "label": "samples",
+          "value": "1024",
+          "min": 64,
+          "max": 4096,
+          "step": 64,
+          "note": "Path-traced samples per pixel. Halving this halves the render, and shows as noise in the polish before it shows anywhere else."
+        },
+        {
+          "key": "seed",
+          "label": "seed",
+          "value": "20260816",
+          "note": "Any constant will do; changing it moves where every vein falls without changing what kind of stone it is."
+        },
+        {
+          "key": "room",
+          "label": "the room",
+          "value": "flat",
+          "options": [
+            "noir",
+            "screen",
+            "flat",
+            "gallery"
+          ],
+          "note": "Which surround it is lit in. `flat` is the fitted one every stone in the file uses; the others are the lighting question rather than the marble one. A light reads as a highlight or as a veil depending on its ANGULAR size against the plus or minus fourteen degrees the front face sweeps - docs/agents/plinth-marble.md carries that, and it is the rule that cost three wrong diagnoses."
+        }
+      ]
+    }
+  ]
+}

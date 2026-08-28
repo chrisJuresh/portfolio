@@ -1,0 +1,1867 @@
+---
+// The Projects Panel: the Rail, the masthead and its two authored lines, the
+// copy, the engineering points, the Frame, and the Plinth it stands on.
+// NOTES.md carries the reasoning — what each share was measured from, and the
+// two relationships the Cut Title is cut to.
+import { content } from './content';
+// The recording's poster and its own pixels. Imported rather than written out
+// here so the module that fetches the clip and the element that shows it name
+// one URL between them — the same arrangement the theme toggle's key has in the
+// Front Screen.
+import { POSTER, RECORDING } from './clip';
+import './tokens.css';
+// variants.css is deliberately NOT imported. NOTES.md, and check-source.mjs if
+// this is ever undone.
+
+/** The fragment the Rail's own entry names, and the Section's deep link. */
+const here = 'projects';
+const selected = (project: { href?: string }) => project.href === `#${here}`;
+---
+
+{/* data-section is the loader's handle. No data-turn: the crossing into dark
+    happens across the scroll of the Section ABOVE this one, which is where the
+    reader is when it happens — see NOTES.md. */}
+<section
+  class="projects-panel"
+  id={here}
+  data-section="projects-panel"
+  aria-labelledby="projects-panel-masthead"
+>
+  <nav class="projects-panel__rail" aria-label={content.rail.label}>
+    {/* role="list" on a list that already is one: `list-style: none` costs a
+        list its semantics in VoiceOver, and the Rail is meant to be announced
+        as a list of projects. */}
+    <ul class="projects-panel__rail-items" role="list">
+      {content.rail.projects.map((project) => (
+        <li class:list={['projects-panel__rail-item', { 'is-selected': selected(project) }]}>
+          {project.href ? (
+            <a href={project.href} aria-current={selected(project) ? 'true' : undefined}>
+              {project.name}
+            </a>
+          ) : (
+            <Fragment>
+              {project.name}
+              <span class="projects-panel__quiet">{content.rail.unbuilt}</span>
+            </Fragment>
+          )}
+        </li>
+      ))}
+    </ul>
+  </nav>
+  <div class="projects-panel__inner">
+    <header class="projects-panel__head">
+      <h2 class="projects-panel__masthead" id="projects-panel-masthead">{content.masthead}</h2>
+      <p class="projects-panel__sub">
+        {content.subheading.map((line) => (
+          <span>{line}</span>
+        ))}
+      </p>
+    </header>
+    <div class="projects-panel__copy">
+      {content.copy.map((paragraph) => (
+        <p>{paragraph}</p>
+      ))}
+    </div>
+    <ol class="projects-panel__points">
+      {content.points.map((point) => (
+        <li>
+          <h3>{point.title}</h3>
+          <p>{point.figure}</p>
+        </li>
+      ))}
+    </ol>
+    {/* The stage: the Frame, and the Plinth it stands on — one grid item holding
+        two, because the two do not have the same left edge and because the slab
+        has to hang off the Frame's FOOT, which is a length the grid knows and no
+        sibling of the Frame could ask for. Decorative, so the whole box is out of
+        the accessibility tree, and the attribute is on the stage rather than on
+        each half so the reflection inherits it: a screen reader offered the
+        window twice would be worse than being offered it once. NOTES.md. */}
+    <div class="projects-panel__stage" aria-hidden="true">
+      <div class="projects-panel__frame">
+        {/* The titlebar, and the LENS it is made of. Its material is not
+            markup: it is this element's own background, its backdrop filter and
+            two masked rings, all driven by custom properties lens.ts writes.
+            `data-lens` says which rung engaged — `refracting` when the engine
+            kept the url() in the backdrop filter, `frosted` when it did not.
+            NOTES.md. */}
+        <div class="projects-panel__bar">
+          {/* NOT ONE OF THESE IS A CONTROL — every one is a span or an i, with
+              no tabindex and no handler, and the Check asserts it stays that way.
+              Each viewBox is the glyph's own ink, which is what lets the
+              stylesheet set a width and leave the height alone.
+
+              SEVEN GLYPHS, WHERE THE RENDER HAD TEN. The sidebar toggle went
+              because the grid the recording shows has no sidebar — its own docs
+              say so — and at this size it read as a battery rather than a pane.
+              The new-tab plus and the tab pile went because there is nothing a
+              page bound to loopback could do with either. Share stayed: it is
+              the one of the three with a future. NOTES.md. */}
+          <div class="projects-panel__chrome">
+            {/* Close, minimise, zoom — a FOCUSED window. The render's three are
+                identical grey, which is what macOS draws when the window is not
+                the front one, and a window nobody is looking at is not what this
+                composition is of. */}
+            <span class="projects-panel__lights"><i></i><i></i><i></i></span>
+            {/* Back, and forward greyed out beside it: a browser saying there is
+                nowhere forward to go. One glyph, drawn twice — the forward
+                chevron is the back one turned round, so the pair cannot drift
+                apart. */}
+            <span class="projects-panel__icon projects-panel__back">
+              <svg
+                viewBox="0 0 9 16"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.6"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path d="M7.6 1.2 1.4 8l6.2 6.8"></path>
+              </svg>
+            </span>
+            <span class="projects-panel__icon projects-panel__fwd">
+              <svg
+                viewBox="0 0 9 16"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.6"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path d="M7.6 1.2 1.4 8l6.2 6.8"></path>
+              </svg>
+            </span>
+            {/* The address is the truth and not a decoration, which is why it
+                is Content. NOTES.md. */}
+            <span class="projects-panel__address">
+              <span class="projects-panel__address-text">{content.frame.address}</span>
+              {/* An arc of about 300 degrees with a chevron head standing on its
+                  own end, rather than the bare hook the render drew — at 9px of
+                  ink a hook reads as a comma. */}
+              <span class="projects-panel__icon projects-panel__reload">
+                <svg
+                  viewBox="0 0 16 16"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.5"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <path d="M14 8A6 6 0 1 1 12.24 3.76"></path>
+                  <path d="M14.3 2v3.4h-3.4"></path>
+                </svg>
+              </span>
+            </span>
+            {/* A tray with a real corner radius and an arrow leaving it. */}
+            <span class="projects-panel__icon projects-panel__share">
+              <svg
+                viewBox="0 0 20 21"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.5"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path
+                  d="M6.2 7.8H3.6a1.6 1.6 0 0 0-1.6 1.6v8.4a1.6 1.6 0 0 0 1.6 1.6h12.8a1.6 1.6 0 0 0 1.6-1.6V9.4a1.6 1.6 0 0 0-1.6-1.6h-2.6"
+                ></path>
+                <path d="M10 1.2v10.8"></path>
+                <path d="M6.6 4.6 10 1.2l3.4 3.4"></path>
+              </svg>
+            </span>
+          </div>
+        </div>
+        {/* THE WINDOW'S RIM, AND IT IS AN ELEMENT RATHER THAN A SHADOW ON THE
+            FRAME. An inset box-shadow paints on the element's own background and
+            therefore under every child, so with the band at zero the recording
+            covered it completely and the window had no edge at all. It also has
+            to sit above the TITLEBAR: the old reason the strip drew no rim of its
+            own was that the Frame's ring showed through its 0.135 fill, and
+            nothing shows through 0.75. Last in source order and z-index 2.
+            NOTES.md. */}
+        <div class="projects-panel__rim"></div>
+        {/* The window's content, FLUSH TO THE WINDOW ON ALL FOUR SIDES now
+            that the band is zero — so the recording runs under the titlebar and
+            there is a photograph behind the Lens rather than a flat fill. The
+            crop happens here rather than on the Frame, because this box is the
+            shape the recording has to fill. NOTES.md. */}
+        <div class="projects-panel__content">
+          {/* NO `src` AND NO `<source>`, WHICH IS THE POINT. The sources are
+              given by clip.ts and only when the reader has not asked for reduced
+              motion, so under that setting the poster is the whole of it and the
+              files are never requested. `preload="none"` would not have done it
+              and neither would a CSS rule; clip.ts says why at length.
+              `muted` is not decoration either: it is what lets `autoplay` run at
+              all, and the Portfolio never makes a sound. */}
+          <video
+            class="projects-panel__clip"
+            poster={POSTER}
+            width={RECORDING.width}
+            height={RECORDING.height}
+            autoplay
+            loop
+            muted
+            playsinline
+            preload="none"></video>
+        </div>
+      </div>
+      {/* The marble the Frame stands on, and the live reflection of the Frame
+          lying in it.
+
+          EMPTY, AND BOTH HALVES OF IT ARE. The slab is one rendered plate — the
+          Plinth block below names it and design/plinth/build-slab.py is what
+          renders it — and the reflection is a copy of the Frame that reflection.ts
+          clones into the box, chrome, titlebar, recording and all. There is no
+          second copy of the window written out here, deliberately: two
+          hand-kept copies of a hundred lines of measured drawing is a drift
+          waiting to happen, and reflection.ts says why script is the right place.
+
+          A BROWSER THAT NEVER RUNS THAT SCRIPT GETS THE MARBLE AND NO
+          REFLECTION, which is deliberate rather than broken — the stance every
+          other script in this Section takes. Polished stone with nothing in it
+          is a plinth; it is only the window's own reflection that is missing,
+          and there is nothing on the page to say it was ever promised. */}
+      <div class="projects-panel__plinth">
+        <div class="projects-panel__reflection"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<style>
+  /* Scoped by the build: none of these selectors can match an element in another
+     Section. Every length is a share of one width — NOTES.md is the derivation. */
+
+  .projects-panel {
+    /* ---- the one length everything else is a share of --------------------- */
+    --projects-panel-fit-w: calc(
+      (var(--fold) - 2 * var(--projects-panel-inset)) / var(--projects-panel-fit)
+    );
+    --projects-panel-w: min(
+      calc(var(--projects-panel-across) * (100vw - 2 * var(--projects-panel-inset))),
+      var(--projects-panel-fit-w)
+    );
+
+    /* ---- the type scale, resolved ----------------------------------------- */
+    --projects-panel-masthead-size: calc(
+      var(--projects-panel-masthead-share) * var(--projects-panel-w)
+    );
+    --projects-panel-sub-size: calc(var(--projects-panel-sub-share) * var(--projects-panel-w));
+    --projects-panel-copy-size: calc(var(--projects-panel-copy-share) * var(--projects-panel-w));
+    --projects-panel-point-size: max(
+      var(--projects-panel-point-floor),
+      calc(var(--projects-panel-point-share) * var(--projects-panel-w))
+    );
+    --projects-panel-figure-size: max(
+      var(--projects-panel-figure-floor),
+      calc(var(--projects-panel-figure-share) * var(--projects-panel-w))
+    );
+    --projects-panel-rail-size: max(
+      var(--projects-panel-rail-floor),
+      calc(var(--projects-panel-rail-share) * var(--projects-panel-w))
+    );
+
+    /* ---- the gutters, resolved -------------------------------------------- */
+    --projects-panel-gap: calc(var(--projects-panel-gap-share) * var(--projects-panel-w));
+    --projects-panel-gutter: calc(var(--projects-panel-gutter-share) * var(--projects-panel-w));
+    --projects-panel-copy-inset: calc(
+      var(--projects-panel-copy-inset-share) * var(--projects-panel-w)
+    );
+    --projects-panel-points-gap: calc(
+      var(--projects-panel-points-gap-share) * var(--projects-panel-w)
+    );
+    --projects-panel-points-air: calc(
+      var(--projects-panel-points-air-share) * var(--projects-panel-w)
+    );
+    --projects-panel-rail-w: calc(
+      var(--projects-panel-leading) * var(--projects-panel-rail-size)
+    );
+
+    /* ---- the two lengths the composition's height is built out of --------- */
+    --projects-panel-mast-line: calc(
+      var(--projects-panel-masthead-leading) * var(--projects-panel-masthead-size)
+    );
+    --projects-panel-sub-line: calc(
+      var(--projects-panel-sub-leading) * var(--projects-panel-sub-size)
+    );
+
+    /* ---- the Frame -------------------------------------------------------
+       One column of the twelve, once the eleven gutters are taken out. The Frame
+       is nine of them and the stage ten, both by placement, so the only length
+       written here is the overhang between the two. NOTES.md. */
+    --projects-panel-column: calc((1 - 11 * var(--projects-panel-gutter-share)) / 12);
+    --projects-panel-frame-drop: calc(
+      var(--projects-panel-frame-drop-share) * var(--projects-panel-sub-line)
+    );
+
+    /* ---- and the two shares the Plinth is stated against ------------------
+       The Frame's nine columns and the eight gutters inside them, and the
+       stage's ten and nine. Both by PLACEMENT — nothing lays out from either,
+       the Frame's width is `auto` and the stage's is the grid's — so these exist
+       for the two things that have to know a width they cannot measure.
+       Neither is a Token: both are the grid, restated. */
+    --projects-panel-frame-share: calc(
+      9 * var(--projects-panel-column) + 8 * var(--projects-panel-gutter-share)
+    );
+    --projects-panel-stage-share: calc(
+      10 * var(--projects-panel-column) + 9 * var(--projects-panel-gutter-share)
+    );
+    /* The Frame's width as a plain length, which is what the Plinth's three
+       depths are shares OF. It OVER-STATES the laid-out Frame by whatever the
+       Rail's floor costs the composition — 3px at 1440x900 — because
+       --projects-panel-w is what the fit asked for and the grid caps it at what
+       is actually free. That is why the window's corner is a percentage of its
+       own box instead of reading this, and why the Plinth's horizontal geometry
+       below is a percentage of the stage: the only things that read this are the
+       three DEPTHS, where 3px of width is 0.05px of face. NOTES.md. */
+    --projects-panel-frame-w: calc(var(--projects-panel-frame-share) * var(--projects-panel-w));
+
+    /* ---- the Plinth's three depths, resolved ------------------------------
+       So no rule below multiplies by the Frame's width on its own. `depth` is
+       what the slab costs the composition and `back` is what it does not: the
+       two together are the box the plate is drawn in, and `depth` alone is the
+       flow height — which is the same 0.0869 of a Frame width the fit constant
+       has counted since before any of this was on the page. */
+    --projects-panel-plinth-face: calc(
+      var(--projects-panel-plinth-top) * var(--projects-panel-frame-w)
+    );
+    --projects-panel-plinth-back: calc(
+      var(--projects-panel-plinth-behind) * var(--projects-panel-frame-w)
+    );
+    --projects-panel-plinth-depth: calc(
+      (var(--projects-panel-plinth-top) + var(--projects-panel-plinth-front)) *
+        var(--projects-panel-frame-w)
+    );
+    /* And the Frame's own two edges as a share of the SLAB, which is what the
+       two boxes lying on the top face are placed by. Symmetric, so it is one
+       number rather than two — the shortest way to say that the window sits in
+       the middle of the stone it stands on — and derived here rather than
+       written out at each of the four sites that read it. */
+    --projects-panel-plinth-inset: calc(
+      var(--projects-panel-plinth-overhang) /
+        (1 + 2 * var(--projects-panel-plinth-overhang)) * 100%
+    );
+
+    /* ---- and the two the Cut Title is cut to ------------------------------ */
+    /* Face metrics rather than choices, which is why they are not Tokens. */
+    --projects-panel-masthead-cap: calc(0.7 * var(--projects-panel-masthead-size));
+    --projects-panel-mast-top: calc(0.08 * var(--projects-panel-masthead-size));
+
+    /* ---- the palette, as the far end of a crossing rather than a constant -- */
+    --projects-panel-bg: color-mix(
+      in oklab,
+      var(--projects-panel-bg-far) calc(var(--turn) * 100%),
+      var(--ground)
+    );
+    --projects-panel-ink: color-mix(
+      in oklab,
+      var(--projects-panel-ink-far) calc(var(--turn) * 100%),
+      var(--ink)
+    );
+    --projects-panel-ink-soft: color-mix(
+      in oklab,
+      var(--projects-panel-ink-soft-far) calc(var(--turn) * 100%),
+      var(--ink-soft)
+    );
+    --projects-panel-muted: color-mix(
+      in oklab,
+      var(--projects-panel-muted-far) calc(var(--turn) * 100%),
+      var(--ink-soft)
+    );
+    --projects-panel-rule: color-mix(
+      in oklab,
+      var(--projects-panel-rule-far) calc(var(--turn) * 100%),
+      var(--projects-panel-rule-near)
+    );
+    /* The Frame's body and rim cross too, from the page's own paper. The
+       chrome's ink does not — NOTES.md says whose decision that is. */
+    --projects-panel-frame-fill: color-mix(
+      in oklab,
+      var(--projects-panel-frame-fill-far) calc(var(--turn) * 100%),
+      var(--ground)
+    );
+    --projects-panel-frame-edge: color-mix(
+      in oklab,
+      var(--projects-panel-frame-edge-far) calc(var(--turn) * 100%),
+      var(--projects-panel-rule-near)
+    );
+
+    box-sizing: border-box;
+    position: relative;
+    display: grid;
+    grid-template-columns: var(--projects-panel-rail-w) minmax(0, var(--projects-panel-w));
+    justify-content: center;
+    align-items: center;
+    column-gap: var(--projects-panel-gap);
+    min-height: var(--fold);
+    padding: var(--projects-panel-inset);
+    /* Clip, not hidden, and only across: `hidden` would make the Section a
+       scroll container and break the Rail. */
+    overflow-x: clip;
+    background: var(--projects-panel-bg);
+    color: var(--projects-panel-ink);
+    font-family: var(--face-panel);
+    font-weight: 400;
+    line-height: var(--projects-panel-leading);
+    /* The landing, and the whole of the Cut Title relationship in use: the deep
+       link comes to rest on the masthead's cap top rather than on the Section's
+       own edge. */
+    scroll-margin-top: calc(var(--projects-panel-inset) - var(--projects-panel-mast-top));
+  }
+
+  /* ---- the Rail --------------------------------------------------------- */
+  .projects-panel__rail {
+    /* The one thing in the Section that answers to the SCREEN and not to the
+       composition. */
+    display: flex;
+    align-self: stretch;
+  }
+
+  .projects-panel__rail-items {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .projects-panel__rail-item {
+    /* Turned per ITEM and not on the list: rotating the list would rotate the
+       order with it. */
+    writing-mode: vertical-rl;
+    transform: rotate(180deg);
+    white-space: nowrap;
+    font-size: var(--projects-panel-rail-size);
+    letter-spacing: var(--projects-panel-rail-tracking);
+    color: var(--projects-panel-muted);
+  }
+
+  .projects-panel__rail-item.is-selected {
+    color: var(--projects-panel-ink);
+  }
+
+  .projects-panel__rail-item a {
+    color: inherit;
+    /* Three words in a margin: an underline across a rotated one reads as a
+       strikethrough. */
+    text-decoration: none;
+  }
+
+  .projects-panel__rail-item:not(.is-selected) a:hover {
+    color: var(--projects-panel-ink);
+  }
+
+  .projects-panel__rail-item a:focus-visible {
+    outline: 1px solid currentColor;
+    outline-offset: 3px;
+  }
+
+  .projects-panel__quiet {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    border: 0;
+    clip-path: inset(50%);
+    overflow: hidden;
+    white-space: nowrap;
+  }
+
+  /* ---- the composition: twelve columns, two rows ------------------------- */
+  .projects-panel__inner {
+    display: grid;
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    grid-template-rows: calc(var(--projects-panel-mast-line) + var(--projects-panel-sub-line)) 1fr;
+    column-gap: var(--projects-panel-gutter);
+    /* No row gap. The seam between the two rows IS the subheading's second
+       line's top edge — see NOTES.md. */
+    row-gap: 0;
+    align-self: center;
+  }
+
+  .projects-panel__head {
+    grid-area: 1 / 1 / 2 / 7;
+    align-self: end;
+    /* Exactly one subheading line, so the head's box ends after the FIRST line
+       and the second hangs into row two. */
+    margin-bottom: calc(-1 * var(--projects-panel-sub-line));
+  }
+
+  /* ---- how the five capitalised things are set --------------------------- */
+  /* Listed rather than hoisted onto the Section: `case` on the body copy would
+     raise the hyphen in "content-addressed" off its own baseline. */
+  .projects-panel__masthead,
+  .projects-panel__sub,
+  .projects-panel__rail-item,
+  .projects-panel__points h3,
+  .projects-panel__points p {
+    text-transform: uppercase;
+    font-feature-settings: 'case' 1;
+  }
+
+  .projects-panel__masthead {
+    margin: 0;
+    font-size: var(--projects-panel-masthead-size);
+    font-weight: var(--projects-panel-masthead-weight);
+    line-height: var(--projects-panel-masthead-leading);
+    letter-spacing: var(--projects-panel-masthead-tracking);
+    color: var(--projects-panel-ink);
+  }
+
+  .projects-panel__sub {
+    margin: 0;
+    font-size: var(--projects-panel-sub-size);
+    font-weight: 400;
+    line-height: var(--projects-panel-sub-leading);
+    color: var(--projects-panel-muted);
+  }
+
+  /* `block` on the spans rather than a <br>, so the break is a property of the
+     composition and not a character a screen reader has to read around. */
+  .projects-panel__sub span {
+    display: block;
+  }
+
+  .projects-panel__copy {
+    grid-area: 1 / 7 / 2 / 13;
+    align-self: start;
+    border-left: 1px solid var(--projects-panel-rule);
+    padding-left: var(--projects-panel-copy-inset);
+    font-size: var(--projects-panel-copy-size);
+    line-height: var(--projects-panel-copy-leading);
+    color: var(--projects-panel-ink-soft);
+  }
+
+  .projects-panel__copy p {
+    margin: 0;
+  }
+
+  .projects-panel__copy p + p {
+    margin-top: 1em;
+  }
+
+  /* An <ol> because the order IS the ranking; the numbers are off because the
+     figures are the numbers this column is about.
+
+     IT TAKES THE WHOLE OF THE COLUMN AND SPREADS ITSELF DOWN IT, which is one
+     decision doing two jobs. Today it is four titles and four figures with a
+     great deal of air between them, which is what the drawing asks for; when each
+     point grows a paragraph the air is what gets spent, down to
+     --projects-panel-points-gap and no further. Stated as `stretch` plus
+     `space-between` rather than as a gap somebody has to keep re-choosing, so the
+     same rule draws both. `grid-auto-rows: min-content` says the other half of
+     that out loud: a row is its own content and the slack goes BETWEEN the rows,
+     never into them. NOTES.md.
+
+     `stretch` costs row two nothing: what an item contributes to a row's size is
+     its max-content height either way, so this changes what the box does with the
+     height it is given and not how much it is given. */
+  .projects-panel__points {
+    grid-area: 2 / 1 / 3 / 4;
+    align-self: stretch;
+    /* One hanging subheading line, plus air, and ITS FOOT IS THE WINDOW'S FOOT.
+       Row two runs to the composition's foot, which is where the Plinth stands —
+       and the slab overhangs the Frame to the LEFT by more than this column's own
+       clearance from it, so a list spread down the whole of that lands its last
+       figure in the marble. One Plinth depth short puts the last line on the line
+       the window's own foot stands on.
+
+       THE DEPTH AND NOT THE SLAB'S WHOLE BOX, which was tried: the box begins
+       `--projects-panel-plinth-back` higher, behind the window, and clearing that
+       too is 30px this list cannot afford at the narrow end of the band — where it
+       is what sizes row two, so every pixel of margin is a pixel the composition
+       grows by. It buys nothing either. The plate is a rendered block in
+       perspective, so the stone at its left end is drawn well below the top of the
+       box that holds it, and the line above the window's foot is over the
+       picture's own empty corner.
+
+       A longhand would be shorter and would also reset the list-style and the
+       padding below it. */
+    margin: calc(var(--projects-panel-sub-line) + var(--projects-panel-points-air)) 0
+      var(--projects-panel-plinth-depth);
+    list-style: none;
+    padding: 0;
+    display: grid;
+    grid-auto-rows: min-content;
+    align-content: space-between;
+    row-gap: var(--projects-panel-points-gap);
+  }
+
+  .projects-panel__points h3 {
+    margin: 0;
+    font-size: var(--projects-panel-point-size);
+    font-weight: var(--projects-panel-point-weight);
+    line-height: var(--projects-panel-point-leading);
+    letter-spacing: var(--projects-panel-point-tracking);
+    color: var(--projects-panel-ink);
+    /* The title is set to fit its column on one line at the window it was drawn
+       at, and the column is a share of a composition that is narrower on a tall
+       screen — so a long title wraps there rather than being made to fit by a
+       size nobody chose. `balance` is what makes the two lines halves of a title
+       instead of a line and a straggler. */
+    text-wrap: balance;
+  }
+
+  .projects-panel__points p {
+    margin: var(--projects-panel-figure-air) 0 0;
+    font-size: var(--projects-panel-figure-size);
+    line-height: var(--projects-panel-figure-leading);
+    letter-spacing: var(--projects-panel-figure-tracking);
+    color: var(--projects-panel-muted);
+  }
+
+
+  /* ---- the stage: the Frame, and the Plinth #140 stands it on ------------
+     Ten columns of twelve against the Frame's nine. The Frame's left edge lands
+     UNDER the subheading's second line, which is the horizontal half of the
+     occlusion; the drop below is the vertical one. NOTES.md. */
+  .projects-panel__stage {
+    grid-area: 2 / 3 / 3 / 13;
+    align-self: start;
+    margin-top: var(--projects-panel-frame-drop);
+    /* No z-index, and none of the other four: a stacking context here stops the
+       Frame painting over the type it occludes. The Check asserts all five. */
+    position: relative;
+  }
+
+  /* One column and one gutter in — the column the Plinth overhangs by. Width is
+     left to `auto`, which is exactly the rest of the box. Scoped to the stage's
+     own child so the reflection's clone is not indented by it.
+
+     A PERCENTAGE OF THE STAGE and not that share times the composition's width,
+     which is what it was and is 0.36px to the right of this at 1440x900. The two
+     differ because --projects-panel-w is what the FIT asked for and the grid
+     caps the column at what is actually free, so a length derived from it
+     over-states the laid-out box by whatever the Rail's floor cost — see
+     --projects-panel-frame-w. It did not matter while the Frame was the only
+     thing in the stage. It matters now: the Plinth is stated as a percentage of
+     the same box, so the two would disagree about where the window's edge is by
+     that 0.36px, and the reflection — which is placed off the SLAB — would lie
+     half a pixel off the window it reflects at every width. Both read the same
+     box now and the arithmetic is exact. */
+  .projects-panel__stage > .projects-panel__frame {
+    margin-left: calc(
+      (var(--projects-panel-column) + var(--projects-panel-gutter-share)) /
+        var(--projects-panel-stage-share) * 100%
+    );
+  }
+
+  .projects-panel__frame {
+    z-index: 1;
+    position: relative;
+    aspect-ratio: var(--projects-panel-frame-ratio);
+    background: var(--projects-panel-frame-fill);
+    /* A PERCENTAGE and never a cqw: an element is not its own container, so a
+       cqw here resolves against the viewport. The second half is the same length
+       against the height, or the corner is an ellipse. NOTES.md. */
+    border-radius: calc(var(--projects-panel-frame-corner) * 100%) /
+      calc(var(--projects-panel-frame-corner) * var(--projects-panel-frame-ratio) * 100%);
+    /* THE WINDOW'S CORNER IS DECLARED HERE, ON THE WINDOW, and every box cut to
+       it says `inherit` — the titlebar, the rim, the content box. It was on the
+       titlebar alone, so the strip drew a squircle while the rim and the crop
+       drew `border-radius`'s own arc at the same radius: two corners on the same
+       pixel, the round one reading as a slightly tighter corner laid over the
+       other. lens.ts writes --lens-shape as the LOGARITHM of the exponent Token
+       and writes it HERE for the same reason; the default of 1 is the circular
+       corner, so an engine without corner-shape and a page whose script never
+       ran agree. NOTES.md. */
+    corner-shape: superellipse(var(--lens-shape, 1));
+    /* A ring and not a `border`: a border would put the window's edge inside
+       the titlebar. NOTES.md. */
+    box-shadow: inset 0 0 0 1px var(--projects-panel-frame-edge);
+    /* Every length in the chrome is a share of this box's width. `inline-size`
+       and not `size`: the height comes from aspect-ratio. NOTES.md. */
+    container-type: inline-size;
+
+    /* In cqw, so resolved wherever they are USED — which is why each is used on
+       a descendant of this box and never on this box itself. */
+    --projects-panel-frame-bar-h: calc(var(--projects-panel-frame-bar) * 100cqw);
+    --projects-panel-frame-radius: calc(var(--projects-panel-frame-corner) * 100cqw);
+    --projects-panel-frame-band: calc(var(--projects-panel-frame-inset) * 100cqw);
+  }
+
+  /* ---- the titlebar, and the LENS it is made of -------------------------
+     TWO RUNGS AND NOT THREE, AND THE CASCADE IS STILL WHAT PICKS. This rule is
+     the frosted rung and is everything an engine gets that cannot refract: the
+     tint, the blur, the saturation and the two rings. The refraction is spliced
+     into the same backdrop filter through one of two empty slots, and lens.ts
+     only fills a slot once it has read the computed value back and seen that the
+     engine kept it — so `data-lens` reports what happened rather than what was
+     hoped for. There is no canvas, no WebGL context to lose, and no bake keyed on
+     the Turn: a custom property interpolates through the crossing for free.
+     NOTES.md. */
+  .projects-panel__bar {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: var(--projects-panel-frame-bar-h);
+    /* Above the recording: the Lens is a lens, and a lens is in front of what it
+       bends. The recording is a sibling, so source order alone would not do it. */
+    z-index: 1;
+    /* The window's own top corners, and the only two the Frame has. The RADIUS is
+       restated because the two bottom corners are square and the window's are
+       not; the SHAPE is inherited, because a corner the window and its titlebar
+       state separately is a corner they can disagree about — and did. */
+    border-radius: var(--projects-panel-frame-radius) var(--projects-panel-frame-radius) 0 0;
+    corner-shape: inherit;
+    /* A stacking context of its own, so the two rings sit over the strip's own
+       backdrop rather than over whatever the Frame has behind it. */
+    isolation: isolate;
+    background: color-mix(
+      in srgb,
+      var(--projects-panel-lens-tint) calc(var(--projects-panel-lens-tint-alpha) * 100%),
+      transparent
+    );
+    /* --lens-pre and --lens-post are the two slots upstream's `blurEdge` chooses
+       between, and exactly one of them ever holds the refraction: after the blur
+       the rim lenses an already-smeared backdrop, before it the rim lenses the
+       sharp one and the blur softens the result. CSS cannot reorder a list from a
+       variable, which is why there are two. */
+    -webkit-backdrop-filter: var(--lens-pre, ) blur(calc(var(--projects-panel-lens-blur) * 100cqw))
+      saturate(calc(var(--projects-panel-lens-saturate) * 1%)) var(--lens-post, );
+    backdrop-filter: var(--lens-pre, ) blur(calc(var(--projects-panel-lens-blur) * 100cqw))
+      saturate(calc(var(--projects-panel-lens-saturate) * 1%)) var(--lens-post, );
+    /* No rim of its own — the window's own ring runs across it, and now paints
+       IN FRONT of it. See .projects-panel__rim. */
+  }
+
+  /* THE TWO RINGS. Two identical masks, one clipped to the content box and
+     subtracted from the other: what survives is the padding, which is the ring.
+     A real border cannot hold a gradient and an outline cannot follow a radius.
+     The blur runs BEFORE the mask, so it softens inwards and is clipped
+     outwards — which is the direction a Fresnel falloff goes.
+
+     `::before` is the Fresnel, a flat wash. `::after` is the glare, a conic
+     gradient whose stops lens.ts lays out off this pane's OWN outline, because
+     brightness varies with the surface normal and not with the direction from the
+     centre — and on a strip 36px tall in a window 1033 wide those are nowhere
+     near the same thing. NOTES.md. */
+  .projects-panel__bar::before,
+  .projects-panel__bar::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    border-radius: inherit;
+    corner-shape: inherit;
+    mask:
+      linear-gradient(#000 0 0) content-box,
+      linear-gradient(#000 0 0);
+    mask-composite: exclude;
+    pointer-events: none;
+  }
+
+  .projects-panel__bar::before {
+    padding: var(--lens-fresnel-w, 0.4px);
+    background: var(--lens-fresnel, rgb(255 255 255 / 0.11));
+    filter: blur(var(--lens-fresnel-blur, 0.32px));
+  }
+
+  .projects-panel__bar::after {
+    padding: var(--lens-glare-w, 1.1px);
+    background: var(--lens-glare, none);
+    filter: blur(var(--lens-glare-blur, 1.1px));
+  }
+
+  /* ---- the window's rim --------------------------------------------------
+     AN ELEMENT, NOT AN INSET SHADOW ON THE FRAME, and that is the fix rather
+     than the tidy-up. An inset box-shadow paints on the element's own background
+     and therefore under every child, so with the band at zero the recording
+     covered the ring completely and the window had no outer edge at all. It also
+     has to be in FRONT of the titlebar: the old argument for the strip drawing no
+     rim of its own was that the Frame's ring showed through its 0.135 fill, and
+     nothing shows through 0.75.
+
+     z-index 2 — above the recording, whose z-index is auto, and above the strip's
+     1. Inert, like everything else in the window. NOTES.md. */
+  .projects-panel__rim {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    border-radius: inherit;
+    corner-shape: inherit;
+    box-shadow: inset 0 0 0 1px var(--projects-panel-frame-edge);
+    pointer-events: none;
+  }
+
+  /* ---- the controls ------------------------------------------------------
+     A FLEX ROW, NOT TEN ABSOLUTE PERCENTAGES, and EVERY GAP BELOW IS COMPUTED
+     FROM THE PAIR EITHER SIDE OF IT: two measured centres, less the two
+     half-widths between them. Flattening one back into the length it comes to is
+     what this whole block exists not to be — the Check fails on it. The field is
+     the exception, and is centred on the Frame. NOTES.md. */
+  .projects-panel__chrome {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    /* In to the first light's centre, less half the disc that stands on it. */
+    padding-left: calc(
+      (var(--projects-panel-frame-light-centre) - var(--projects-panel-frame-light-w) / 2) * 100cqw
+    );
+    /* And in from the right: what is left past the LAST glyph's outer edge,
+       which after the cull is share rather than the tab pile. A gap is two
+       controls' business, so dropping one re-derives its neighbour's number. */
+    padding-right: calc(
+      (1 - var(--projects-panel-frame-share-centre) - var(--projects-panel-frame-share-w) / 2) *
+        100cqw
+    );
+    pointer-events: none;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+
+  .projects-panel__lights {
+    display: flex;
+    /* The pitch between two centres, less the disc that stands on each. */
+    gap: calc(
+      (var(--projects-panel-frame-light-pitch) - var(--projects-panel-frame-light-w)) * 100cqw
+    );
+  }
+
+  .projects-panel__lights i {
+    width: calc(var(--projects-panel-frame-light-w) * 100cqw);
+    height: calc(var(--projects-panel-frame-light-w) * 100cqw);
+    border-radius: 50%;
+  }
+
+  /* Close, minimise, zoom. Addressed by position because that is what they are —
+     the render gives one pitch and three centres follow from it, and nothing
+     about a disc distinguishes it from its neighbours except where it sits. */
+  .projects-panel__lights i:nth-child(1) {
+    background: var(--projects-panel-frame-light-close);
+  }
+
+  .projects-panel__lights i:nth-child(2) {
+    background: var(--projects-panel-frame-light-minimise);
+  }
+
+  .projects-panel__lights i:nth-child(3) {
+    background: var(--projects-panel-frame-light-zoom);
+  }
+
+  /* The viewBox is scaled so the stroke lands on the box's edges, which is why
+     the share in the rule is the share in the render's table. */
+  .projects-panel__icon {
+    display: block;
+    flex: 0 0 auto;
+    color: var(--projects-panel-frame-ink);
+  }
+
+  .projects-panel__icon svg {
+    display: block;
+    width: 100%;
+    height: auto;
+  }
+
+  /* THE ONE GAP IN THE ROW WHOSE LEFT-HAND NEIGHBOUR IS NOT THE ELEMENT BEFORE
+     IT — it was measured off the sidebar toggle's right edge, and the toggle is
+     gone, so it is measured off the third light's instead: two pitches past the
+     first light's centre, plus the half disc standing on it. */
+  .projects-panel__back {
+    width: calc(var(--projects-panel-frame-chevron-w) * 100cqw);
+    margin-left: calc(
+      (
+          var(--projects-panel-frame-back-centre) - var(--projects-panel-frame-chevron-w) / 2 -
+            var(--projects-panel-frame-light-centre) - 2 * var(--projects-panel-frame-light-pitch) -
+            var(--projects-panel-frame-light-w) / 2
+        ) * 100cqw
+    );
+  }
+
+  /* One width for both chevrons, so this gap is centre to centre less it. */
+  .projects-panel__fwd {
+    width: calc(var(--projects-panel-frame-chevron-w) * 100cqw);
+    margin-left: calc(
+      (
+          var(--projects-panel-frame-fwd-centre) - var(--projects-panel-frame-back-centre) -
+            var(--projects-panel-frame-chevron-w)
+        ) * 100cqw
+    );
+    color: var(--projects-panel-frame-ink-off);
+  }
+
+  /* ONE GLYPH DRAWN TWICE. The forward chevron is the back one mirrored rather
+     than a second path, so the pair cannot drift apart — and a scaleX on the svg
+     rather than on the span, because the span is what carries the measured
+     width. */
+  .projects-panel__fwd svg {
+    transform: scaleX(-1);
+  }
+
+  /* Absolutely placed, because it is centred on the FRAME and the row's two
+     clusters are not the same width. Drawn on the middle rather than at its
+     measured centre a fifth of a per cent past it — NOTES.md, which is also where
+     the measured centre goes on being used. */
+  .projects-panel__address {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    width: calc(var(--projects-panel-frame-address-w) * 100cqw);
+    height: calc(var(--projects-panel-frame-address-h) * 100cqw);
+    border-radius: calc(var(--projects-panel-frame-address-corner) * 100cqw);
+    background: var(--projects-panel-frame-address-bg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .projects-panel__address-text {
+    font-size: calc(var(--projects-panel-frame-address-size) * 100cqw);
+    line-height: 1;
+    letter-spacing: var(--projects-panel-frame-address-tracking);
+    color: var(--projects-panel-frame-address-ink);
+    /* Tabular, so the address's four groups cannot shift under each other. */
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+
+  /* Against the field's right edge, because it belongs to the field and travels
+     with it — and by a DECLARED clearance rather than by the difference between
+     two measured centres, which came to 3.4px and read as a glyph shoved against
+     a wall. NOTES.md. */
+  .projects-panel__reload {
+    position: absolute;
+    right: calc(var(--projects-panel-frame-reload-clear) * 100cqw);
+    width: calc(var(--projects-panel-frame-reload-w) * 100cqw);
+  }
+
+  /* `auto` pushes the cluster to the padding edge, which is exactly where the
+     three measured centres put it — the padding is measured off the last. */
+  .projects-panel__share {
+    width: calc(var(--projects-panel-frame-share-w) * 100cqw);
+    margin-left: auto;
+  }
+
+  /* ---- what is left of the chrome on a small Frame ----------------------
+     Below 520px of Frame the small glyphs are dropped rather than drawn as grey
+     noise in the shape of a titlebar. A CONTAINER QUERY AND NOT A MEDIA QUERY:
+     the question is how wide the FRAME is, and a short wide window draws a small
+     Frame, so a viewport gate would be asking about the wrong box. The Check
+     measures at 1440x450 for exactly that. NOTES.md. */
+  @container (max-width: 520px) {
+    .projects-panel__back,
+    .projects-panel__fwd,
+    .projects-panel__share,
+    .projects-panel__reload,
+    .projects-panel__address-text {
+      display: none;
+    }
+  }
+
+  /* ---- the window's content ----------------------------------------------
+     FLUSH TO THE WINDOW ON ALL FOUR SIDES, which is two changes at once. The band
+     is zero, so the box is no longer inset from the sides and foot; and it starts
+     at the TOP rather than under the titlebar, so the recording runs beneath the
+     Lens and there is a photograph behind it to bend. A displacement map over the
+     flat fill this used to sit on returns the same flat fill.
+
+     `border-radius: inherit` and not the old subtraction: the box is now
+     coincident with the window, so its corner is the window's, and the window's
+     is the two-value form that keeps the curve from being an ellipse on a box of
+     this aspect. Restating it here in one value would draw a circle. NOTES.md. */
+  .projects-panel__content {
+    position: absolute;
+    inset: var(--projects-panel-frame-band);
+    border-radius: inherit;
+    /* AND THE SHAPE WITH IT. `border-radius` alone left the crop cutting the
+       recording on a circular arc under a titlebar drawn as a squircle, which is
+       the same disagreement the rim had. NOTES.md. */
+    corner-shape: inherit;
+    /* The crop below has to happen somewhere, and the corners with it. */
+    overflow: hidden;
+  }
+
+  /* ---- the recording -------------------------------------------------------
+     THE CLIP AND THE CONTENT BOX ARE NOT THE SAME SHAPE, and this is where that
+     is settled rather than hidden. The recording is 1440x900 — `record`'s
+     viewport, and the geometry the censored list was assembled at, so it is not
+     free to move: change it and the clip passes over photographs nobody
+     reviewed. They cannot be reconciled by choosing better numbers either: the
+     render's Frame is 1430 wide by 735 including its titlebar, and 1430 of a 1.6
+     recording is 894 tall before a titlebar is added at all. Something is
+     cropped, and it is the recording rather than the window the whole design is
+     drawn around.
+
+     `cover` FROM THE TOP EDGE, so all of the cut comes off the bottom. That
+     keeps the vault's own toolbar near the top of the box — the row that says
+     this is an application and not a wall of pictures, and where a real
+     window's content starts. It is also the only direction that is SAFE:
+     cropping the bottom of the viewport can only ever remove what the clip
+     shows, and what the clip shows is what the censored list was signed against.
+
+     NEAR THE TOP AND NOT HARD AGAINST IT, WHICH IS THE CLIP'S DOING RATHER THAN
+     THIS FILE'S. The titlebar is over the recording, not above it, so the strip
+     covers the first 50 rows of the page that was filmed — and it was cutting
+     the vault's toolbar through the middle. So the page is FILMED with the
+     strip's height of its own white ground above that toolbar: at rest the glass
+     has the page's ground behind it and the row is clear of it, and the moment
+     the clip scrolls, photographs travel up into that band and pass under the
+     Lens, which is what the Lens is for. Nothing here arranges that and nothing
+     here can — it is in the file. design/censor/capture-frame.mjs is the whole
+     of it, and the `projects-panel` Check is what stops the strip growing past
+     the clearance the clip on disk was cut with.
+
+     NO `background` OF ITS OWN. The Frame's fill is behind it, and it is what
+     shows between the poster arriving and the first decoded frame — and all that
+     shows in a browser that plays neither. */
+  .projects-panel__clip {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: 50% 0;
+  }
+
+  /* ---- the Plinth ----------------------------------------------------------
+     THE MARBLE THE FRAME STANDS ON. One rendered plate, drawn in a box whose
+     aspect ratio design/plinth/build-slab.py frames its camera on — which is why
+     `background-size` is `100% 100%` and not `cover`: stretching the plate to
+     this box is an identity, and `cover` would crop off either the far edge or
+     the block's base. It is the one declaration in here that would be a bug if
+     it were the usual thing.
+
+     IN FLOW, DIRECTLY UNDER THE FRAME, and not absolutely placed at `top: 100%`
+     — which draws the same picture and is wrong. The slab is part of the
+     composition's height: the fit constant that scales the whole drawing onto
+     one screen counts it, and an out-of-flow slab would leave the stage exactly
+     as tall as the Frame while the constant said otherwise, so the composition
+     would come out short by the Plinth's depth at every window size. In flow,
+     the stage measures what the arithmetic assumes.
+
+     IT ALSO STARTS ABOVE THE FRAME'S FOOT. The Frame stands ON the top face
+     rather than at the back of it, so the box runs `back` higher than the
+     contact line and is pulled up by exactly that. The negative margin is what
+     keeps the arithmetic honest: the box is `depth + back` tall and costs the
+     flow only `depth`. Nothing above this rule moves.
+
+     AND ITS RIGHT END IS THE PAGE'S RIGHT EDGE. The Frame is flush with the
+     composition's right edge, so a slab that overhangs it symmetrically needs
+     room on that side that the composition does not have. Nothing here is what
+     found it: THE PAGE'S WIDTH IS SPENT ON THE DRAWING AND THE STONE TOGETHER,
+     one line in src/kernel/landing.css, which makes the composition a little
+     under a per cent narrower and lands the marble's right end exactly on the
+     window's edge. Read that comment before changing anything on this side of it.
+
+     THE WINDOW IS STILL NOT MOVED LEFT TO MAKE ROOM. That was tried, and it puts
+     the Frame over the engineering points, 42px of live text behind it at
+     1600x1000; a nudge on the stage alone would do the same thing more quietly,
+     eating into the gutter between the list and the window at every width and
+     crossing it above about 1550. The Frame is allowed to occlude the subheading,
+     which is set to be occluded; it is not allowed to eat the list. Narrowing the
+     whole drawing is the move that costs the gutter nothing, because the gutter
+     narrows with it.
+
+     THE STAGE DOES MOVE RIGHT, THOUGH, and the two are not the same thing. Where
+     the composition's HEIGHT caps its width the drawing is narrower than the page
+     and this solve cannot reach the edge, so the stage carries the window and the
+     stone out together — the reach, in the landing block, which is 0 whenever the
+     width branch is the one that bound and can never be negative. Right is the
+     safe direction: it moves away from the list rather than into it.
+
+     `overflow-x: clip` on the Section stays, and still matters: outside the
+     landing band nothing solves for the stone, so there the slab still runs off
+     the edge as it always did — which is what the render does with its own slab.
+     Inside the band the length is --page-across and NOT `100vw`, which is what
+     stopped the far end landing 15px past the edge on every window with a classic
+     scrollbar. ground.css owns that distinction. */
+  .projects-panel__plinth {
+    position: relative;
+    /* Under the Frame, which carries `z-index: 1`. The marble behind the contact
+       line is drawn and then covered by the window standing on it, which is what
+       leaves it visible only at the two ends, where there is no window. */
+    z-index: 0;
+    /* Both a percentage of the STAGE, and both derived rather than written: the
+       Frame's own left edge, less one overhang, and the Frame plus two. The
+       Frame's margin above reads the same box, so the slab is symmetric about
+       the window by construction. */
+    margin-left: calc(
+      (
+          var(--projects-panel-column) + var(--projects-panel-gutter-share) -
+            var(--projects-panel-plinth-overhang) * var(--projects-panel-frame-share)
+        ) / var(--projects-panel-stage-share) * 100%
+    );
+    width: calc(
+      (1 + 2 * var(--projects-panel-plinth-overhang)) * var(--projects-panel-frame-share) /
+        var(--projects-panel-stage-share) * 100%
+    );
+    margin-top: calc(-1 * var(--projects-panel-plinth-back));
+    height: calc(var(--projects-panel-plinth-depth) + var(--projects-panel-plinth-back));
+    background-image: var(--projects-panel-plinth-src);
+    background-size: 100% 100%;
+    background-repeat: no-repeat;
+  }
+
+  /* ---- the reflection ------------------------------------------------------
+     THE FRAME AGAIN, UPSIDE DOWN AND LYING IN THE STONE. Not a picture of it:
+     the copy inside this box is a live clone of the real Frame — the same
+     chrome, the same titlebar, and a second recording playing in step with the
+     first — so what the stone shows moves with what the window shows. A still
+     reflection under a moving clip reads as broken immediately. reflection.ts makes
+     the copy and says why it is made in script rather than written out twice.
+
+     THIS BOX IS THE TOP FACE AND NOTHING ELSE. It starts at the contact line, it
+     is exactly `face` deep, and it clips — so no part of the reflection can
+     reach the front face, which is a vertical surface and reflects nothing. Its
+     left and right edges are the FRAME's: the overhanging marble at each end has
+     no window above it to reflect.
+
+     A MIRROR IMAGE IS THE SAME SIZE AS THE THING IT REFLECTS, and getting that
+     wrong is what made this read as a smear rather than as a reflection. A
+     planar mirror puts the image as far behind the surface as the object is in
+     front of it, so object and image subtend the same angle at the eye and
+     project to the same height. The visible strip is short because the SLAB is
+     short, not because the image is. The share was read as a SCALE and applied
+     as one, and the whole window was squashed into the thirteen pixels that are
+     actually the bottom 3.28% of it seen life-size — thirty rows of chrome, tabs
+     and clip averaged into every row of stone, a grey band that changes when the
+     clip changes. The transform is therefore a plain fold and the clipping is
+     this box's own `overflow`.
+
+     NO `filter: blur()`. Roughness 0.07 at 82 degrees of incidence spreads a
+     reflection by something on the order of a pixel over a strip thirteen deep,
+     which is not worth a full-size gaussian over a moving picture on every frame
+     — the per-frame cost this Section is built without. What the eye reads as
+     softness here is the contact shadow above and the stone's own veining
+     showing through, and both are free.
+
+     PLAIN ALPHA AND NOT `screen`, which is the physically-minded choice and the
+     wrong one. A reflection adds light, so `screen` is what a reflection does —
+     but the plate underneath already carries the light: its top face ramps from
+     31 to 80 because that is what the render measures there, and that ramp IS
+     the room reflected in the stone. Screening a second reflection over it puts
+     the light in twice. Alpha also gets the dark half right for free: a black
+     tab bar reflected in polished stone makes the stone DARKER than the marble
+     beside it, which `screen` cannot do. */
+  /* THE TOP FACE, STATED ONCE, because both boxes that lie on it ARE it — the
+     reflection and the shadow are the same rectangle, and keeping two copies of
+     it equal by hand is how one of them ends up on a face the other is not on.
+     Its top edge is THE CONTACT LINE and not the slab's, which runs `back`
+     further behind the Frame: the marble back there has a window standing on it
+     rather than anything lying in it. Its ends are the Frame's, because the
+     overhanging marble has no window above it to reflect or to be shadowed by. */
+  .projects-panel__reflection,
+  .projects-panel__plinth::after {
+    position: absolute;
+    top: var(--projects-panel-plinth-back);
+    left: var(--projects-panel-plinth-inset);
+    right: var(--projects-panel-plinth-inset);
+    height: var(--projects-panel-plinth-face);
+  }
+
+  .projects-panel__reflection {
+    overflow: hidden;
+    /* A stacking context, so the copy's own `z-index: 1` — it is a Frame and
+       carries the class's — stays inside this box instead of competing with the
+       real Frame's. */
+    isolation: isolate;
+    opacity: var(--projects-panel-reflection-strength);
+    -webkit-mask-image: linear-gradient(
+      to bottom,
+      #000,
+      rgb(0 0 0 / var(--projects-panel-reflection-far))
+    );
+    mask-image: linear-gradient(
+      to bottom,
+      #000,
+      rgb(0 0 0 / var(--projects-panel-reflection-far))
+    );
+    pointer-events: none;
+  }
+
+  /* The copy. `bottom: 100%` stands it directly ON the contact line — its own
+     bottom edge against this box's top — and the transform folds it back down
+     through that same line: a fold about the bottom origin sends a point h above
+     the origin to h below it, which is the whole of what a mirror is, at the one
+     magnification a mirror has.
+
+     NOTHING CLIPS IT HERE. The flipped copy is the Frame's full height and hangs
+     the whole way down through the slab and out of the composition; what cuts it
+     to the marble available is `overflow: hidden` on the box above, which is the
+     front arris of the slab and is exactly the thing that cuts it in life.
+
+     `left` AND `right` AND NO WIDTH, so the copy is the reflection box's width, which is
+     the Frame's. A width stated here would be the same number written twice. */
+  .projects-panel__reflection > .projects-panel__frame {
+    position: absolute;
+    bottom: 100%;
+    left: 0;
+    right: 0;
+    transform: scaleY(-1);
+    transform-origin: bottom;
+  }
+
+  /* ---- the contact shadow --------------------------------------------------
+     WHERE THE WINDOW MEETS THE STONE, and its absence was the loudest thing in
+     the composition. Everything else on this Plinth is a question of how the
+     marble is lit or how the reflection is shaped; this is the cue the eye uses
+     to decide whether two objects are TOUCHING at all, and there was none — the
+     Frame ended, the marble began, and nothing happened at the join, which is
+     what a sticker on a photograph looks like.
+
+     IT SITS ON THE TOP FACE AND STOPS THERE. Not a soft shadow spilling down the
+     front, which is the reflex and is wrong: the front face is a vertical plane
+     over a Frame width away from the foot in the depth direction, and the light
+     that fills it is in FRONT of the block, so the window occludes none of it.
+     The height is therefore the top face exactly, and the two ends are the same
+     pair the reflection uses.
+
+     ABOVE THE REFLECTION, which is a decision rather than an accident of order.
+     An occlusion strictly darkens the diffuse term and leaves the specular
+     alone, so a purist would paint it under. But what is occluded here is also
+     most of the room the stone had to reflect in the first place, and a
+     reflection that stays at full strength right up to the foot of the thing
+     casting it looks lit from underneath. */
+  .projects-panel__plinth::after {
+    content: '';
+    /* Over the reflection, which carries no z-index of its own. Still under the
+       Frame, which is a sibling of the whole Plinth at z-index 1, so the half of
+       this that falls under the window is covered by it — as it should be. */
+    z-index: 1;
+    pointer-events: none;
+    background: linear-gradient(
+      to bottom,
+      var(--projects-panel-contact-near) 0%,
+      var(--projects-panel-contact-mid) var(--projects-panel-contact-mid-at),
+      var(--projects-panel-contact-far) var(--projects-panel-contact-far-at),
+      rgb(0 0 0 / 0) 100%
+    );
+    -webkit-mask-image: linear-gradient(
+      to right,
+      transparent 0,
+      #000 var(--projects-panel-contact-ends),
+      #000 calc(100% - var(--projects-panel-contact-ends)),
+      transparent 100%
+    );
+    mask-image: linear-gradient(
+      to right,
+      transparent 0,
+      #000 var(--projects-panel-contact-ends),
+      #000 calc(100% - var(--projects-panel-contact-ends)),
+      transparent 100%
+    );
+  }
+
+  /* ---- one column, outside the band the composition is fitted to ---------
+     The drawing stops being self-similar below about 925px — the floored parts
+     outgrow the space the shares left them — so it becomes a stack that is as
+     tall as it needs to be. NOTES.md has the sweep. */
+  @media not all and (min-width: 1100px) {
+    .projects-panel {
+      /* No height term and no fit to solve for: the stack takes the width it is
+         given. The side margin is the page's horizontal one, not --inset, which
+         is a vertical measure and reads as an error used across. */
+      --projects-panel-w: calc(100vw - 2 * var(--projects-panel-side));
+      /* The Frame is the whole column here rather than nine twelfths of it, so
+         the Plinth's three depths — the only things that read this — are shares
+         of the stack's own width.
+
+         `100vw` INCLUDES A CLASSIC SCROLLBAR AND THIS BOX DOES NOT, which is the
+         one length in this block that is not exact. The stacked page always
+         scrolls, so on a platform that reserves a gutter the width above runs
+         about 15px over the box it describes. Nothing lays out FROM it — the
+         column is `1fr` and the Plinth's width below is a real percentage — so
+         the drawing is the right shape either way. What drifts is the three
+         depths, by 15 in 1055 at the top of this block's range. The fix is not a
+         smaller number: it is the stage becoming an inline-size container so the
+         slab can be stated in `cqw`, and it cannot be — layout containment makes
+         the stage a stacking context, which is the one thing the Frame's
+         occlusion of the subheading cannot survive. */
+      --projects-panel-frame-w: var(--projects-panel-w);
+      --projects-panel-masthead-size: var(--projects-panel-masthead-stacked);
+      --projects-panel-sub-size: var(--projects-panel-sub-stacked);
+      --projects-panel-copy-size: var(--projects-panel-copy-stacked);
+      --projects-panel-point-size: var(--projects-panel-point-stacked);
+      --projects-panel-figure-size: var(--projects-panel-figure-stacked);
+      --projects-panel-rail-size: var(--projects-panel-rail-stacked);
+
+      padding: var(--projects-panel-inset) var(--projects-panel-side);
+      grid-template-columns: minmax(0, 1fr);
+      row-gap: var(--projects-panel-stack-gap);
+    }
+
+    /* Three names across the top instead of three down an edge, and they wrap:
+       360 and 320 are real screens and RECORD ENGINE does not fit beside the
+       other two on either. */
+    .projects-panel__rail-items {
+      flex-direction: row;
+      flex-wrap: wrap;
+      justify-content: flex-start;
+      align-items: baseline;
+      column-gap: var(--projects-panel-stack-rail-gap);
+      row-gap: var(--projects-panel-stack-rail-rows);
+    }
+
+    .projects-panel__rail-item {
+      writing-mode: horizontal-tb;
+      transform: none;
+    }
+
+    .projects-panel__inner {
+      grid-template-columns: minmax(0, 1fr);
+      grid-template-rows: none;
+      align-self: stretch;
+      row-gap: var(--projects-panel-stack-gap);
+    }
+
+    .projects-panel__head,
+    .projects-panel__copy,
+    .projects-panel__points,
+    .projects-panel__stage {
+      grid-column: 1;
+      align-self: auto;
+    }
+
+    /* The hanging second line goes back into its own box, and the occlusion the
+       Frame is going to make of it goes with it. */
+    .projects-panel__head {
+      grid-row: 1;
+      margin-bottom: 0;
+    }
+
+    /* The rule moves from the paragraph's left edge to its top, which is where a
+       divider goes when the thing it divides is above rather than beside. */
+    .projects-panel__copy {
+      grid-row: 2;
+      border-left: 0;
+      border-top: 1px solid var(--projects-panel-rule);
+      padding: var(--projects-panel-stack-gap) 0 0;
+      max-width: var(--projects-panel-stack-measure);
+    }
+
+    /* The Frame under the copy and the points last, stated as rows so the
+       markup keeps the order it was written for. The occlusion is dropped rather
+       than approximated: at this width the window would cover the line rather
+       than bite a quarter off the letters. */
+    .projects-panel__stage {
+      grid-row: 3;
+      margin-top: 0;
+    }
+
+    /* The Frame is the whole column, so both of the numbers that placed it
+       inside the stage go — and the Plinth's two, which were shares of a stage
+       ten columns wide, become shares of a stage that is the Frame.
+
+       BOTH ARE ONE NUMBER EACH AND BOTH ARE THE RENDER'S. Restating only the
+       Frame's margin and leaving the slab's alone is the failure worth naming:
+       it overhangs by 9.47% on the left while ending 1.6% SHORT of the Frame's
+       right foot, which is a window standing off the end of its own plinth — and
+       the reflection inherits the error exactly, since it is placed off the
+       slab. */
+    .projects-panel__stage > .projects-panel__frame {
+      margin-left: 0;
+    }
+
+    .projects-panel__plinth {
+      margin-left: calc(-1 * var(--projects-panel-plinth-overhang) * 100%);
+      width: calc((1 + 2 * var(--projects-panel-plinth-overhang)) * 100%);
+    }
+
+    /* A multiple of the point's TITLE — the larger of the two sizes inside a
+       point, now that they are two — and it has to beat the 0.35em of the figure
+       inside each one or the list reads as eight lines rather than four pairs.
+       `align-content` goes back to its default with it: one column has no height
+       to spread the list down, so the gap here is the gap rather than a floor. */
+    .projects-panel__points {
+      grid-row: 4;
+      margin-top: 0;
+      /* The list is the last row here rather than a column beside the window, so
+         there is no stone under it to keep off. */
+      margin-bottom: 0;
+      align-content: normal;
+      row-gap: calc(var(--projects-panel-stack-points-gap) * var(--projects-panel-point-size));
+    }
+  }
+
+  /* ---- the landing ------------------------------------------------------
+     THE WORD DOES NOT COME DOWN TO THIS SECTION; THIS SECTION COMES UP TO THE
+     WORD. Inside the landing band the Front Screen's Cut Title stands in this
+     masthead's slot, the masthead itself goes invisible underneath it, and the
+     page turn between the two screens is what carries the reader here.
+     src/kernel/landing.css is the whole of the device and the measure both
+     Sections read; this block is the half of it that is the composition's.
+
+     LAST IN THE SHEET, not up in the base block it argues with. A media query
+     buys no specificity, and every rule here overrides one of the same weight —
+     moved earlier they all silently lose and the Section comes out looking as
+     though the landing had never been written. Same gate as the Front Screen's
+     own block, deliberately: the three are one idea and have to stay in step. */
+  @media (min-width: 1100px) and (min-height: 700px) {
+    .projects-panel {
+      /* The composition's width, RE-SOLVED for the landing and taken from the
+         Kernel rather than restated: the Rail leaves the grid below, so the width
+         branch is the whole of what the page has across, and the height branch
+         has to answer for the Section beginning above the fold. The masthead, the
+         cap the word is cut to and the drop the landing is measured by all follow
+         from it through the shares in tokens.css, so nothing else in the Section
+         has to know the landing exists. */
+      --projects-panel-w: var(--landing-w);
+
+      /* ---- THE LIFT: how far above the screen's top edge this Section begins --
+         The Section starts above the fold so the word can be cut off the screen
+         above, and this is that overhang: the landing's own top margin less the
+         drop the masthead's cap top sits at. Two things need it and used to say
+         it twice — the port the turn rests on, and the Rail, which runs the
+         SCREEN's height rather than the Section's box and therefore has to
+         subtract it back off. */
+      --projects-panel-lift: calc(var(--landing-top) - var(--projects-panel-mast-top));
+
+      /* ---- THE REACH: what the drawing could not spend, and the three things
+         that spend it ---------------------------------------------------------
+         WHERE THE HEIGHT BRANCH BINDS, THE COMPOSITION IS NARROWER THAN THE PAGE.
+         The width branch solves `inset + (1 + stone) x W = --page-across`, so
+         this expression is that equation's residue: exactly 0 wherever the width
+         branch is the one that bound, and it only opens up by however much the
+         height cap cost the drawing. It cannot go negative either — W is the
+         SMALLER of the two branches.
+
+         THE STAGE MOVES BY IT AND THE TWO TYPE BLOCKS BESIDE IT GROW BY IT, which
+         is what keeps their edges on the window's when the window walks right.
+         The copy's right edge is the Frame's right edge; the points' is one
+         gutter short of the Frame's LEFT edge. Both hold at every window in the
+         band, because at reach 0 the Frame is flush with the composition and both
+         are back on the grid they were placed by. NOTES.md. */
+      --projects-panel-reach: calc(
+        var(--page-across) - var(--landing-side) -
+          (1 + var(--landing-plinth-share)) * var(--projects-panel-w)
+      );
+
+      /* The port the turn comes to rest on, which is the word's landing and not
+         this Section's own edge: the cap top lands on the same line the Front
+         Screen's name starts on, one screen up. The base rule says the same thing
+         one term shorter, for a Section whose top edge IS the fold. */
+      scroll-margin-top: var(--projects-panel-lift);
+
+      /* Exactly what the Section takes and no more, so the document is two
+         screens: the Front Screen's height plus this is the fold plus the
+         landing. That is what makes the crossing finish exactly as the scroll
+         does. The padding it used to spend at the top is spent by the landing. */
+      min-height: calc(var(--fold) - var(--landing-top) + var(--landing-mast-top));
+      padding-top: 0;
+      /* AND NONE AT THE FOOT OR ON THE RIGHT EITHER: THE PAGE'S MARGIN IS ON THE
+         LEFT AND NOWHERE ELSE HERE. The top's is spent by the landing, and the
+         other two are the Plinth's — the stone stands on the page's bottom edge
+         and ends on its right one, and a margin is exactly the thing that cannot
+         be between them.
+
+         The foot also keeps the Section exactly `min-height` tall: the fall below
+         spends every pixel of the box on the composition, so a bottom padding
+         would be content plus padding OVER the minimum and the document would
+         come out one page margin taller than two screens — the crossing finishing
+         before the scroll does.
+
+         AND THE RIGHT ONE IS WHAT LETS THE COMPOSITION BE AS WIDE AS IT SOLVED
+         FOR. The width branch spends the page across on the drawing and the stone
+         together, so the column it asks for is wider than `100vw - 2 x inset`
+         whenever the margin is large against the window — every window over about
+         1156px tall, where the margin hits its 6.5rem cap. A right padding caps
+         the column there without saying so, and then --projects-panel-w
+         OVER-STATES the box that was actually laid out: the composition comes out
+         narrow, the fall subtracts a Frame height that is not the Frame's, and the
+         marble stops short of BOTH edges at once. 41px across and 15px down at
+         1100x1440, which is the window that found it. Nothing is centred here and
+         nothing lays out from the right edge, so there is nothing for the padding
+         to do but that. */
+      padding-bottom: 0;
+      padding-right: 0;
+      /* AND THE ONE THAT IS LEFT IS THE LANDING'S AND NOT THIS SECTION'S. The
+         base rule pays --projects-panel-inset on all four sides; three of them
+         are struck out above and the fourth is the page's left margin, which in
+         the band is a length the Front Screen has to agree about — the word
+         stands on it. So it comes from the Kernel here. */
+      padding-left: var(--landing-side);
+
+      /* ---- THE FALL: what the drawing comes down by ------------------------
+         THE PLINTH SITS SQUARE IN THE PAGE'S BOTTOM-RIGHT CORNER. The right half
+         of that is the Kernel's — src/kernel/landing.css spends the page across
+         on the composition AND the stone's overhang, so the marble's right end IS
+         the page's right edge. This is the bottom half: the distance from where
+         the composition's foot falls to where the page's foot is, and everything
+         in row two comes down by it.
+
+         WHY THERE IS ANYTHING TO COME DOWN BY. The drawing is self-similar, so it
+         has one height for its width, and the width is the smaller of what the
+         page has across and what its height will carry. Where the WIDTH binds the
+         drawing is shorter than the screen, and the difference used to be black
+         sitting under the marble. It is spent inside the composition instead.
+
+         MEASURED, NOT RESTATED. Every term is a length the Section already has:
+         the Section's own box, less the two rows the composition is built out of.
+         The fit constant's own ratio is deliberately NOT one of them — writing
+         0.5586 here would be a fourth copy of a number three files already
+         disagree about by a third of a per cent, and the fall is exactly the size
+         of that disagreement plus a page margin. So the sum below is the same
+         arithmetic the browser lays the box out with, and the two agree to the
+         pixel by construction rather than by luck.
+
+         POSITIVE AT EVERY WINDOW IN THE BAND, on both branches: where the height
+         binds it is the page margin the fit left over, and where the width binds
+         it is that plus whatever the page's width could not spend. */
+      --projects-panel-fall: calc(
+        var(--fold) - var(--landing-top) + var(--landing-mast-top) -
+          var(--projects-panel-mast-line) - var(--projects-panel-sub-line) -
+          var(--projects-panel-frame-drop) - var(--projects-panel-plinth-depth) -
+          var(--projects-panel-frame-w) / var(--projects-panel-frame-ratio)
+      );
+
+      /* ONE COLUMN. The Rail is out of flow below, so the composition's own left
+         edge is the Section's content edge — the page's margin, which is exactly
+         where the word stands. `start` and not `center`: the drawing hangs off the
+         word, and on a window where the width binds rather than the height the
+         leftover has to go under the composition rather than half of it above,
+         which would push the subheading off the word's line. */
+      grid-template-columns: minmax(0, var(--projects-panel-w));
+      justify-content: start;
+      align-items: start;
+
+      /* NO GROUND OF ITS OWN, because the document has one and it is the
+         Kernel's. Two things need this rather than tolerate it. The Section's box
+         begins above the fold, so an opaque ground here would paint over the last
+         strip of the three corner pictures, which stand behind the page and end
+         at the fold. And one ground painted once cannot disagree with itself
+         part-way through a crossing, which two elements holding two mixes of two
+         different far ends demonstrably can: --projects-panel-bg-far was pure
+         black while the Kernel's --dark was not, so mid-Turn the two came out a
+         shade apart and the seam ran straight across the word. The Kernel's
+         arrival is pure black now and the two far ends agree — but they agree at
+         ONE end, and the near ends are still two different papers, so painting
+         here would put the seam back everywhere except the bottom port.
+
+         The Token stays what it was and is still what the Frame's glass is
+         rendered against — what comes off is only this Section painting it. */
+      background: none;
+    }
+
+    /* THE COMPOSITION STANDS AT THE SECTION'S OWN TOP EDGE, and that is what puts
+       the masthead's line box under the word: the landing measures the drop from
+       the Section's edge, so a composition centred in whatever height is left
+       over sits ten pixels lower than the arithmetic says and the word no longer
+       stands in its slot. The leftover goes under the drawing instead, which is
+       the same answer the one-column grid above gives for the width. */
+    .projects-panel__inner {
+      align-self: start;
+    }
+
+    /* ---- row two comes down by the fall, and the line that hangs into it ---
+       THREE BOXES AND ONE LENGTH. The stage is the one that has to move — the
+       Plinth's foot is the composition's foot, so the fall is what puts it on the
+       page's bottom edge — and the other two move because of what moving it
+       costs.
+
+       THE SUBHEADING'S SECOND LINE COMES WITH THE WINDOW. The Frame's top edge is
+       a measured fraction into that line and the bite is the composition's, so a
+       stage that fell on its own would leave the window a hundred pixels clear of
+       the line it is supposed to occlude. The line falls the same distance and the
+       drop between them is untouched — which is also why the `occlusion` Check
+       still passes rather than having been retired.
+
+       THE MASTHEAD DOES NOT MOVE, and the negative margin is what buys that. The
+       head is `align-self: end` against a row of stated height, so its MARGIN box
+       is what the row places: growing the content by the fall and the margin by
+       the same amount leaves the margin box where it was, and the masthead — the
+       slot the Cut Title stands in, which nothing may move — with it.
+
+       AND THE POINTS COME DOWN BECAUSE THE LINE DID. Their top margin clears the
+       hanging line by construction; leave it and the second line lands on top of
+       the list, which is the collision this term exists to not have. */
+    .projects-panel__head {
+      margin-bottom: calc(-1 * (var(--projects-panel-sub-line) + var(--projects-panel-fall)));
+    }
+
+    .projects-panel__sub span:last-child {
+      margin-top: var(--projects-panel-fall);
+    }
+
+    .projects-panel__points {
+      margin-top: calc(
+        var(--projects-panel-sub-line) + var(--projects-panel-fall) +
+          var(--projects-panel-points-air)
+      );
+    }
+
+    .projects-panel__stage {
+      margin-top: calc(var(--projects-panel-frame-drop) + var(--projects-panel-fall));
+
+      /* ---- AND ACROSS, THE REACH -------------------------------------------
+         WHAT THE DRAWING CANNOT DO BY BEING WIDER, THE WINDOW AND ITS STONE DO BY
+         MOVING. The width branch solves the composition so the slab's far end is
+         the page's right edge, and on a window where the HEIGHT binds instead it
+         cannot: the drawing is capped by what its height will carry, so it is
+         narrower than the page and the stone ends with it. That is not an
+         ultrawide — a maximised browser on a 1080p screen is about 980px of
+         viewport once its chrome is out, and the stone came up 119px short there.
+         So the stage carries the Frame and the slab out to the edge together.
+
+         ZERO WHEN THE WIDTH BRANCH BINDS, and that is the whole reason this is
+         safe rather than a second thing to keep in step — the length itself is
+         --projects-panel-reach, at the top of this block, where its derivation
+         and the two type blocks that follow it are written down.
+
+         WHICH IS WHY IT MOVES RIGHT AND NOT LEFT. A leftward nudge is the thing
+         NOTES.md forbids: it walks the Frame into the gutter the engineering
+         points sit behind, 42px of live text at 1600x1000 when it was tried by
+         moving the window, and quietly at every width when tried on the stage.
+         This one moves AWAY from the list — the gutter at 1920x980 goes from 20px
+         to 139px — and the Frame's right edge still stops one overhang short of
+         the page, because that overhang is what lands on it.
+
+         WHAT IT USED TO COST, and no longer does: the Frame stops being flush
+         with the composition's right edge, so on a height-capped window it ended
+         past the right edge of the copy paragraph above it — 119px at 1920x980.
+         The copy comes with it now. The slab stays symmetric about the window,
+         which is what buys the rest: the two ends are one number, the reflection
+         and the contact shadow are one percentage of the slab, and the render's
+         camera is still centred on the stone it drew.
+
+         A RELATIVE OFFSET AND NOT A TRANSFORM. `transform` would make the stage a
+         stacking context, which traps the Frame's z-index inside it and stops the
+         window painting over the type it occludes — the `projects-panel` Check
+         asserts all five of the properties that would do it. `left` on a box that
+         is already `position: relative` moves the paint and leaves the layout
+         alone, so the slab's percentages, the stage's measured height and the
+         fall above it are all untouched. */
+      left: var(--projects-panel-reach);
+    }
+
+    /* ---- and the two type blocks that keep their edges on the window's ------
+       THE COPY TAKES THE COLUMN THE MASTHEAD STOPPED USING. Down here the
+       masthead draws nothing — the Cut Title stands in its slot — so the sixth
+       column is free, and the paragraph starts one gutter to the right of where
+       the word ends rather than a whole column further over. That is only true
+       in the band, which is why the base rule still places it at the seventh:
+       out there the masthead is on the page and the copy would be printed over
+       the last two letters of it.
+
+       AND ITS RIGHT EDGE IS THE WINDOW'S. A negative margin rather than a width,
+       so the box still stretches to the grid area it was placed in and the reach
+       is added to whatever that came out as — no second copy of the column
+       arithmetic to keep in step. */
+    .projects-panel__copy {
+      grid-column: 6 / 13;
+      /* AND THE RULE STANDS ONE GUTTER INTO THAT COLUMN RATHER THAN ON ITS LINE.
+         The sixth column is shared: the head is placed across 1–6 and this is
+         placed across 6–12, so a rule set on column six's own line is a mark
+         drawn inside the box the subheading is set in, with none of the
+         composition's own clearance between the two. The gutter is that
+         clearance and is what every other pair of neighbours in this grid gets —
+         the list and the Frame included, which is the one NOTES.md forbids
+         spending. A margin and not a column, because a whole column is 3.5 times
+         too much: it would carry the rule past the subheading's box entirely and
+         hand the paragraph a measure the Frame's right edge could not pay for.
+
+         MARGIN-LEFT AND NOT PADDING, so the rule moves with it. The padding this
+         box already carries is the white BETWEEN the rule and the words, which is
+         a different length doing a different job. */
+      margin-left: var(--projects-panel-gutter);
+      margin-right: calc(-1 * var(--projects-panel-reach));
+    }
+
+    /* THE POINTS RUN TO ONE GUTTER SHORT OF THE WINDOW'S LEFT EDGE. Same margin
+       and the same reason: the Frame's left edge is a column and a gutter into
+       the stage, and the stage has just moved right by the reach, so a list left
+       on the grid would leave a widening band of nothing between itself and the
+       window it is set beside. Growing by the same length holds the gutter
+       between them at exactly one, at every window in the band — which is the
+       clearance NOTES.md forbids spending, from the other side. The list's FOOT is
+       already the window's foot: the base rule keeps it one Plinth depth off the
+       composition's, which is the same length in both regimes. */
+    .projects-panel__points {
+      margin-right: calc(-1 * var(--projects-panel-reach));
+    }
+
+    /* WHY THE MASTHEAD STAYS IN THE MARKUP AND ONLY GOES INVISIBLE. Its box is
+       load-bearing three times over: it is row one's stated height, it is what
+       the subheading's second line hangs off — which is what makes the Frame's
+       bite exact — and it is the slot the word now occupies. Take the box out and
+       row one collapses onto the subheading, the paragraph beside it becomes what
+       sizes the row, and the subheading sinks away from the word it is supposed
+       to be the next line of. `visibility: hidden` keeps every one of those and
+       draws nothing. It also keeps the accessible name, which this Section's
+       `aria-labelledby` points at — a directly-referenced hidden element still
+       supplies one — where `display: none` would not.
+       Unconditional, and not gated on a script having run: there is no state to
+       be in, so a browser that runs nothing gets this. */
+    .projects-panel__masthead {
+      visibility: hidden;
+    }
+
+    /* THE PARAGRAPH ARRIVES WITH THE PAGE, AND NOTHING ABOUT IT MOVES TO DO IT.
+
+       WHAT IT FIXES. This Section begins above the fold, so its first row stands
+       on the screen ABOVE — which is the whole point, because that strip is where
+       the word is cut. Everything else in that row is accounted for: the masthead
+       is invisible by the rule above and the subheading hangs below it. This
+       paragraph was what was left, and it showed as two lines of small type in the
+       white to the right of the word, answering a question the reader had not been
+       asked yet.
+
+       DRAWN AGAINST THE TURN, which is what makes it a function and not an
+       animation. --turn is the Kernel's number for this exact crossing and already
+       what every colour on the page is mixed out of, so the arrival inherits the
+       page turn's quintic ease for nothing, is exact at both resting places and at
+       a deep link, and reaches a reader who asked for less motion as a state
+       rather than as a movement, because their turn is a jump. It is also still
+       seekable through the seam ADR 0003 asks for: `timelines.get('turn').seek(…)`
+       moves it, which is what the `turn` Check reads and what the Editor scrubs.
+       THIS DOES NOT GIVE THE PANEL A TIMELINE — how the rest of the composition
+       arrives is a later ticket, and timeline.ts says so.
+
+       IT IS THE INK THAT ARRIVES, AND NOT THE BOX. `mask-image` was the first
+       version of this and the wipe was the nicer picture — one front travelling
+       down the block in reading order, carrying the hairline with it — and it was
+       dropped on a measurement: a mask keeps the paragraph on its own compositing
+       layer FOREVER, and composited text is text rasterised without subpixel
+       antialiasing, up to 136 levels on a channel against the same type painted
+       directly. This page is meant to be UNCHANGED once it has arrived. `opacity`
+       is the one honest alternative — it costs the resting page nothing as long as
+       it lands back on exactly 1, which is a condition that is easy to lose and
+       silent when it goes, and the `turn` Check permits it and asserts the
+       condition. A transform is neither: it is the one thing this device may not
+       do, because this Section is the far end of a page turn whose whole claim is
+       that the type stands still and the document moves. Mixing the ink towards
+       `transparent` instead composites nothing at any moment — at the landing the
+       two mixes below are the palette's own two colours, and not one pixel of the
+       resting page is this rule's.
+
+       THE HAIRLINE LEADS THE WORDS by the share its Token names, because that is
+       what a printed page does: the margin is ruled and then it is written in.
+       The rule is the border the base sheet already put there, so the lead is one
+       more mix rather than anything new on the page. */
+    .projects-panel__copy {
+      --projects-panel-copy-arrive: clamp(
+        0,
+        calc(
+          (var(--turn) - var(--projects-panel-copy-arrive-from)) /
+            (var(--projects-panel-copy-arrive-to) - var(--projects-panel-copy-arrive-from))
+        ),
+        1
+      );
+      --projects-panel-copy-ruled: clamp(
+        0,
+        calc(var(--projects-panel-copy-arrive) / var(--projects-panel-copy-rule-lead)),
+        1
+      );
+
+      color: color-mix(
+        in oklab,
+        var(--projects-panel-ink-soft),
+        transparent calc((1 - var(--projects-panel-copy-arrive)) * 100%)
+      );
+      /* The colour alone, so the sheet's own `border-left: 1px solid` — its width
+         and its style, which are the composition's — is not restated here. */
+      border-left-color: color-mix(
+        in oklab,
+        var(--projects-panel-rule),
+        transparent calc((1 - var(--projects-panel-copy-ruled)) * 100%)
+      );
+    }
+
+    /* A BROWSER THAT RUNS NOTHING GETS THE PARAGRAPH, because nothing would ever
+       drive --turn for it and the arrival would be a paragraph deleted rather than
+       a paragraph waiting. It is the one state on the page that is better off with
+       the leak, and it is the same reader the Plinth's full depth is drawn for —
+       `projects-panel` asserts both in its scripting-off pass. THE QUERY AND NOT A
+       SCRIPT-SET FLAG: a flag is set by a deferred module, a frame or two after
+       first paint, so every reader would watch the paragraph appear and then be
+       taken away. This is decided before the first paint instead. */
+    @media (scripting: none) {
+      .projects-panel__copy {
+        --projects-panel-copy-arrive: 1;
+        --projects-panel-copy-ruled: 1;
+      }
+    }
+
+    /* THE RAIL MOVES OUT INTO THE PAGE'S MARGIN, which is what "the composition
+       starts where the word starts" costs. In the grid it holds the first column
+       and everything after it — the masthead included — is pushed right by its
+       width and a gutter, so the word and this Section's own title could not be
+       set to the same line. Out of flow and standing in the margin instead: it is
+       one line of vertical type, the margin is exactly the white the page already
+       leaves there, and an index in the margin is a thing a printed page does.
+       The insets are against the Section's padding box, which is its whole box —
+       absolute insets ignore padding — so `left: 0` is the window's edge and the
+       width IS the margin, with the items' own centring putting the type down the
+       middle of it.
+
+       AND IT RUNS THE SCREEN'S HEIGHT AND NOT THE SECTION'S, which is the half of
+       that sentence the box used to get wrong. An index in a margin runs the
+       height of the PAGE, and down here the page is the screen: the Section
+       begins --projects-panel-lift above the screen's top edge, so subtracting
+       the lift back off is what puts the first name at the top of the window
+       instead of a page margin down from it, and dropping the bottom inset is
+       what puts the last one at the foot. What is left at each end is
+       --projects-panel-side, the page's own small margin — the three names are
+       spread `space-between`, so those two lengths are exactly where the first
+       and the last of them stand. */
+    .projects-panel__rail {
+      position: absolute;
+      left: 0;
+      top: calc(var(--projects-panel-side) - var(--projects-panel-lift));
+      bottom: var(--projects-panel-side);
+      /* THE WIDTH IS THE MARGIN, and the margin is the landing's — the same
+         length the Section is padded by above and the word is set on. It was
+         --projects-panel-inset while the two were the same clamp, and what that
+         cost once the clamp was cut to 2.7vh was three rotated names wider than
+         the column they are centred in: one line of --projects-panel-rail-size at
+         its 1.5 leading is about 2.1% of the composition, and the margin was
+         1.7%. The names ran off the left of the page and nothing said so. */
+      width: var(--landing-side);
+
+      /* AND IT ARRIVES WITH THE PAGE, for the reason the paragraph above it does
+         and which the lift has just made true of the Rail as well: the top of this
+         box is on the screen ABOVE, and the only thing that strip is for is the
+         cut word. A name standing there is half a name — the box runs off the top
+         of the Front Screen mid-letter — so it reads as a fragment beside the one
+         word the composition cut on purpose.
+
+         --turn AND NO WINDOW OF ITS OWN, which is the difference between this and
+         the copy's arrival. The paragraph waits until a third of the way across
+         because it answers a question the reader has not been asked yet; three
+         words in a margin answer nothing, so they can simply come up with the
+         page. Linear on the Kernel's own number, so it inherits the page turn's
+         ease, is exact at both resting places and at a deep link, and is a state
+         rather than a movement for a reader who asked for less motion.
+
+         `opacity` AND NOT A MIX, which is the other way round from the copy: what
+         a mix buys there is the paragraph's subpixel antialiasing, and every name
+         in here is drawn through a rotation, which has already cost it. What
+         opacity buys instead is one declaration for the whole box — the two inks,
+         the hover and the focus ring — and it costs the resting page nothing,
+         because --turn is exactly 1 where the turn comes to rest. */
+      opacity: var(--turn);
+    }
+
+    /* A BROWSER THAT RUNS NOTHING GETS THE RAIL, the same reader and the same
+       answer as the paragraph's: nothing would ever drive --turn for them, so an
+       arrival is an index deleted rather than an index waiting. */
+    @media (scripting: none) {
+      .projects-panel__rail {
+        opacity: 1;
+      }
+    }
+  }
+</style>
+
+<script>
+  import { mountClip } from './clip';
+  import { mountLens } from './lens';
+  import { mountReflection } from './reflection';
+
+  /* THE ORDER IS THE DESIGN AND NOT THE ALPHABET. The reflection is made first,
+     so the two that follow each treat the copy as one more Frame on the page
+     instead of as a special case: `mountClip` hands sources to every recording
+     it finds, and `mountLens` gives every titlebar its material. Reverse it and
+     both would have to go looking for a reflection they know nothing about.
+     reflection.ts says the same thing from the other end — and it is where the
+     one asymmetry is written down: the copy in the marble gets the frosted rung,
+     because a titlebar 1.2px tall has no room for a bevel. */
+  mountReflection();
+  mountClip();
+  mountLens();
+</script>

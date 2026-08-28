@@ -1,7 +1,37 @@
 # design/ — typography lab
 
 Dev-only. Nothing here is served by the site; `.vercelignore` keeps the whole
-folder out of deployments. The site itself stays dependency-free and build-free.
+folder out of deployments.
+
+> **#141 deleted the page half of this lab drives, and most of it has not been
+> repointed.** `/portfolio` was a hand-written tree served straight off the repo
+> root, and that is what every instrument here opens: `render.mjs` walks
+> `/portfolio/`, and `glass-tuner`, `effects-tuner`, `layout-tuner`,
+> `morph-tuner`, `plate-tuner` and `plinth-tuner` iframe it or drive scripts it
+> carried. It is an Astro build now, so `run.bat` no longer serves it and those
+> pages open on a 404 or an inert frame.
+>
+> What still works untouched: everything that BAKES rather than looks —
+> `build-plate.py`, `build-textures.py`, `build-portoro-maps.py`, `build-slab.py`,
+> `add-stone.py`, `build-og.py`, the censor pipeline — because their outputs are
+> under `portfolio/img/` and `portfolio/video/`, which the build does not produce
+> and the deployment still serves verbatim. `plinth-studio.py`,
+> `build-cut-title.py` and the morph lab's `build-site.py` were repointed at the
+> Section files they now write. `render-variants.mjs` (`pnpm variants`) is the
+> successor to `render.mjs` and drives the built page correctly.
+>
+> Repointing the tuners is not a rename: each one has to reach a built page
+> instead of a served file, and several read Content out of a JavaScript object
+> that is now typed TypeScript. That wants its own ticket and its own decisions.
+
+**Two things called variants live here, and they are not the same thing.**
+`variants.css` and `tools/render.mjs` are the typographic comparison this folder
+was built for: eight variants of one type stack, across the hand-written
+`/portfolio`, which was a plain static tree with no Sections in it. They are kept
+as the record of how that comparison was judged; the page they drove is gone. `tools/render-variants.mjs` is the general mechanism it became — a
+**Variant** is any complete alternative direction for a Section, declared in that
+Section's own `variants.css`, and `pnpm variants` renders them all into
+`sheets/index.html`. See [`../docs/agents/variants.md`](../docs/agents/variants.md).
 
 **Outcome: `sitka` won**, with two exceptions the lab shows too — the year column,
 kept in Georgia because its old-style figures reach 78% of the cap height beside
@@ -27,7 +57,9 @@ now stands relative to a base that has moved.
 
 ```
 design/
-  variants.css       every variant, defined ONCE — the source of truth
+  variants.css       every TYPE variant, defined ONCE — the source of truth.
+                     Not the same thing as a Section's Variants: see the note
+                     under this tree
   type-lab.html      interactive: flip variants on the real pages in a browser
   type-tuner.html    interactive: free-form size/spacing/font sliders + CSS export
   layout-tuner.html  interactive: drag and resize every box in the Projects Panel
@@ -35,9 +67,17 @@ design/
                      export says where each box ended up in pixels, in shares of
                      --panel-w, and on the composition's own grid lines
   shots/             committed renders + index.html contact sheet
+  sheets/            the Variant sheet — the Portfolio's Sections rendered under every
+                     Variant they declare, captioned with what each one changes.
+                     Written by tools/render-variants.mjs, wiped on every run and
+                     not committed
+  tools/
+    render-variants.mjs  `pnpm variants`. The general form of render.mjs below:
+                     any Section, any number of Variants, layout and palette and
+                     motion rather than only type. docs/agents/variants.md
   plate/
     build-plate.py   develops a source into portfolio/img/<stem>-*.webp — the grade
-    plate-tuner.html interactive: the same pipeline on sliders + Python/CSS export
+                     lives in design/bake/plate/, not in this file
     plate-source.webp  the ungraded frame the tuner grades; written by the script
     plate-source.json  the constants it was last built with — the tuner's "was"
     car-source.webp    the same pair for the second picture, the one in the
@@ -46,8 +86,21 @@ design/
     eye-source.json    all three; a Grade per picture per theme.
   effects/
     build-textures.py    bakes the two Texturelabs plates into portfolio/img/tex/
-    effects-tuner.html   interactive: every effect on chips, every number on a
-                         slider, over the real page — CSS export, per theme
+                         from design/bake/effects/
+  bake/
+    tuning.py            what the Editor has tuned, as the generator beside it
+                         wants it. Five folders below it, one per Bake, each
+                         holding a recipe.json (the declaration: the command and
+                         every parameter, with its default, its range and what it
+                         does) and a params.json (what has MOVED off those
+                         defaults — written by the Editor, absent until something
+                         is). The GENERATORS read it too, which is the point:
+                         there is no block of Python to paste back and nothing to
+                         drift. `pnpm editor`, the Bakes surface
+    plate/  effects/  plinth/  plinth-studio/  morph/
+  legacy/                the five HTML tuners the Editor replaced (#146), kept
+                         working. design/legacy/README.md says which is which and
+                         what moved where
   plinth/
     build-slab.py        RENDERS the Projects Panel's marble plinth into the
                          same directory — Blender, headless, one WebP per stone
@@ -61,31 +114,56 @@ design/
                          whole CANDIDATES table. WRITTEN BY IT, never by hand:
                          it is how the tuner below avoids holding a second copy
                          of constants that would drift out from under it.
-    plinth-tuner.html    interactive: which stone, over the real page. The four
-                         baked plates switch live and exactly — that half is a
-                         `data-marble` attribute and nothing else. The other half
-                         is a WebGL previz of the same material recipe, with
-                         every value on a slider, for asking what a change would
-                         do without paying a minute of Cycles for the answer;
-                         it exports a CANDIDATES entry to paste back.
   tools/
     render.mjs       Playwright: serves the repo, walks the matrix, writes shots/
     package.json     dev dependency (playwright) — not the site's
-    check-capture-contract.py
-                     replays the GitHub profile README's hourly screenshot of
-                     /portfolio against a local tree, so a change can be shown
-                     not to have broken it. See docs/agents/capture-contract.md
+    (check-capture-contract.py is gone too. It replayed the GitHub profile
+     README's screenshot of /portfolio against a local tree so a change here
+     could be cleared against it before landing. #148 took that capture off its
+     schedule and made it something the author asks for, which leaves nothing
+     here to clear: docs/agents/external-capture.md is why, and `pnpm check` is
+     the gate.)
+    (the four per-ticket harnesses that used to sit here - check-panel-clip,
+     check-panel-nav, check-crossing and check-panel-exit - are gone with the
+     page they drove. Each proved one closed ticket's criteria against the
+     hand-written /portfolio by serving the repo root and navigating to it, and
+     #141 deleted that page. Their successor is the blocking suite: `pnpm
+     check`, in scripts/checks/, which is the seam docs/agents/contract.md
+     names. git history has them.)
 ```
+
+> **Five of these are in `design/legacy/` now.** The plate, plinth,
+> plinth-studio, morph and effects tuners were absorbed into `pnpm editor` by
+> #146 — one editing surface instead of six — and are kept, working, because
+> that is a judgement worth being able to reverse. Everything they said about
+> WHAT they tune is still true and is left standing below; what is no longer true
+> is the block of Python each of them prints, because a generator now reads its
+> numbers out of `design/bake/` rather than out of its own source.
+> `design/legacy/README.md` is the map.
 
 The **lab** compares finished candidates; the **tuner** is for arriving at one.
 The **plate tuner** does the same job for the three photographs in the page's
-corners, and the **plinth tuner** for the stone the Projects Panel stands on —
-where it is worth knowing which half of the page you are reading. The baked
-plates are the real render and comparing them is exact; the previz beside them is
-an approximation of Cycles and says nothing reliable about where an individual
-vein lands. It is for the character of a stone — how much gold, how wide, how
-sharp — and its numbers want one confirming bake. The page says so twice, in the
-header comment and in the export itself.
+corners, and the **plinth tuner** for the whole of the Projects Panel — the
+stone it stands on, the wording of its subheading, what sits behind its glass,
+what that glass is made of, how the whole composition comes apart when it is
+left, and where in the turn the page crosses into dark. Every one of the five is the real page driven in
+an iframe, so what is being looked at is what would ship — the exit twice over,
+because `crossing` puts a second real page on top of the first rather than
+drawing a picture of one. THE STONE is where it
+is worth knowing which half of the page you are reading: the baked plates are the
+real render and comparing them is exact, while the previz beside them is an
+approximation of Cycles and says nothing reliable about where an individual vein
+lands. It is for the character of a stone — how much gold, how wide, how sharp —
+and its numbers want one confirming bake. The page says so twice, in the header
+comment and in the export itself.
+
+The **glass tuner** is the other half of the titlebar's story and is not replaced
+by any of that. It draws the four passes itself, so it can step through them one
+at a time and stand the bar over a checkerboard or a photograph — things the real
+page has no way to do. The plinth tuner cannot: it moves the shipping page's
+uniforms and asks the shipping page to render. They share the vocabulary and the
+export format on purpose, so a `glass-state v2` blob taken over the real
+composition pastes into the glass tuner's own import box and back again.
 
 ## Why it exists
 
@@ -390,7 +468,7 @@ wheel reads as a mast of capsules, in the bottom-right. Serve the repo root
 (`run.bat`) and open:
 
 ```
-http://localhost:8000/design/plate/plate-tuner.html
+http://localhost:8000/design/legacy/plate-tuner.html
 ```
 
 Each is two things shipped through two different pipes, and this window is where
@@ -498,7 +576,7 @@ the halation, the gate weave, the CRT tube and the ASCII pass. Serve the repo
 root (`run.bat`) and open:
 
 ```
-http://localhost:8000/design/effects/effects-tuner.html
+http://localhost:8000/design/legacy/effects-tuner.html
 ```
 
 The same trick as the type tuner — the real `/portfolio` in an iframe, driven
@@ -549,7 +627,7 @@ re-running the bake, which is the same division as the plate tuner's:
 python design/effects/build-textures.py all
 ```
 
-It needs the two XL JPEGs at the repo root; they are gitignored, and
+It needs the two XL JPEGs in `design/effects/sources/`; they are gitignored, and
 `portfolio/img/tex/README.md` says where they come from and how they are
 attributed. Paste the `TEX_VERSION` it prints over the `?v=` on `--fx-film-src`
 and `--fx-paper-src` in the same commit as the re-baked files.
@@ -615,6 +693,57 @@ that comes out on line 3.02 is telling you it wants to be on the line.
 It also carries a `state:` comment at the foot of the export, so pasting an
 earlier one back into the box and pressing `import` restores the whole
 arrangement — the same device the type tuner's `tuner-state` is.
+
+## Plinth studio
+
+The odd one out in a different direction from the layout tuner: every other tool
+here is a page served by a static server, and this one **is** the server, because
+what it does cannot be done from a page. Making a plinth means resampling a
+photograph into four PBR maps and then path-tracing them in Blender, and a
+browser can do neither.
+
+```bash
+python design/legacy/plinth-studio.py
+```
+
+It prints a URL and opens it. Do not serve it with `run.bat` — the page is inert
+without its own server behind it, and it needs no other one: it serves the
+repository as well, so `/portfolio` in its iframe and the plates in its strip
+come off the same origin.
+
+**What it is for** is that the four steps between a photograph and a stone on the
+site were four commands in a fixed order — `build-portoro-maps.py`,
+`build-slab.py` in Blender, `add-stone.py` over the top of both, and then
+`portfolio/styles.css` edited by hand with a digest in it that goes stale
+silently. Now: drop an image, move the sliders, bake, apply.
+
+Three things it knows that those commands do not:
+
+- **Maps are per-image, not per-stone.** They are cached under a digest of the
+  image bytes and the two flags that change what they contain, so a second bake
+  at a different `scale` is fifteen seconds of Cycles rather than another fifty
+  megabytes of PNG. Content-addressed and not name-addressed on purpose — a
+  directory keyed by a name is a directory the next `photo.jpg` overwrites.
+- **The `?v=` is a digest of every plate**, so it moves when any stone is baked,
+  including one only being tried. Apply restamps every plinth `url()` in the
+  stylesheet, and the page shows a warning whenever they have drifted apart —
+  which is exactly the drift that survived two bakes unnoticed before it shipped.
+- **It refuses to shadow a built-in.** A stone it writes is
+  `design/plinth/stones/<key>.json`, the same door `add-stone.py` uses, and a
+  name the tables in `build-slab.py` already define is rejected rather than
+  merged.
+
+**The one thing it draws rather than renders** is the window: the block's
+footprint laid over your photograph, from the same arithmetic
+`build_photo_material()` projects with, so `scale` and `offset` — the two
+strongest controls — are answered before a bake is paid for. Everything else that
+claims to show a stone is a real Cycles render. There is no GLSL previz of a
+photographic material and there is not going to be one; the plinth tuner has one
+for the *procedural* stones and says out loud that it cannot draw these.
+
+What is committed and what is not follows `add-stone.py` exactly: the entry and
+the plate ship, the maps and your photograph do not. `design/plinth/sources/` is
+gitignored, so keep anything you care about somewhere else as well.
 
 ## Regenerating the shots
 

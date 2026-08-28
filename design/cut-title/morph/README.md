@@ -1,12 +1,17 @@
 # Morphing the cut title
 
-The scroll-driven morph on `/portfolio`, where the cut title — the word PROJECTS,
-a baked SVG path of Friz Quadrata — turns into a sans-serif as the page scrolls.
-This directory is where the outlines and the correspondence between them are
-worked out; `portfolio/cut-morph.js` is the runtime that moves them.
+The scroll-driven morph, where the cut title — the word PROJECTS, a baked SVG
+path of Friz Quadrata — turns into a sans-serif as the page scrolls. This
+directory is where the outlines and the correspondence between them are worked
+out.
 
-**This is on the site, and the face it turns into is Host Grotesk.**
-`design/cut-title/morph-tuner.html` previews all twenty-four faces against the
+**IT IS NOT ON THE SITE.** It was, on the hand-written `/portfolio`, as
+`portfolio/cut-morph.js`; #141 deleted that tree and the Front Screen carries the
+cut title as one baked picture with no morph on it. What survives here is the
+whole lab — the outlines, the correspondence, the tuner and the shortlist — and
+`build-site.py --site <file>` writes the chosen face into a runtime whenever
+there is one to write into. **The face it turned into is Host Grotesk.**
+`design/legacy/morph-tuner.html` previews all twenty-four faces against the
 real page so a choice can be made by eye, and `build-site.py --face <slug>` makes
 one of them permanent. Host Grotesk is OFL, the same footing as Vollkorn and
 Spectral in `/fonts`; the twelve Fontshare faces in the shortlist are free for
@@ -28,12 +33,13 @@ Three pieces, and the split between them is about weight on the wire:
 
 | | |
 |---|---|
-| `portfolio/cut-morph.js` | the runtime, plus **one** face's outlines — ~40 KB |
+| a runtime file | the mover, plus **one** face's outlines — ~40 KB. Nothing has one today |
 | `faces.json` | **all** of them — ~700 KB, fetched by the tuner and nothing else |
 | `morph-tuner.html` | iframes the real page and drives it through `window.__cutMorph` |
 
-`build-site.py --face <slug> --repo <worktree>` writes both of the first two from
-the same run, so they cannot disagree about geometry.
+`build-site.py --face <slug> --repo <worktree> --site <file>` writes both of the
+first two from the same run, so they cannot disagree about geometry. Without
+`--site` it writes `faces.json` alone, which is all there is to write today.
 
 The runtime takes effects.js's stance: **nothing on the page depends on it.** It
 is loaded last, and all it does is swap the single inline Friz path for the same
@@ -166,7 +172,7 @@ than punching holes through every overlap.
 | `lib.py` | sets PROJECTS in a face and measures it, in units of its own cap |
 | `morph.py` | correspondence and the tween — the algorithm above |
 | `curated.py` | the shortlist, its blurbs, and the weight-fit. Both builds read it |
-| `build-site.py` | → `portfolio/cut-morph.js` (one face) and `faces.json` (all) |
+| `build-site.py` | → `faces.json` (all), and `--site <file>` (one face) |
 | `build-specimen.py` | → `specimen.html` |
 | `faces.json` | all 24, for the tuner. Generated; not hand-edited |
 | `rank.py` | the whole-pool sweep → `ranking.csv` |
@@ -199,9 +205,10 @@ on purpose and supplied locally for this work, and not the ~130 candidates. The
 word is geometry on the wire, exactly as it already was — the morph adds outlines
 and no `@font-face`, and nothing in `/fonts` changed.
 
-**No change to the cut title's geometry.** `portfolio/styles.css` is untouched
-and so is the block in `portfolio/app.js` that puts the word inline; the morph is
-additive, and removing `cut-morph.js` restores the previous behaviour exactly.
+**No change to the cut title's geometry.** The morph was additive on the page it
+shipped on: the picture and the block that placed it were untouched, and removing
+the runtime restored the previous behaviour exactly. It is the same offer to
+whichever page takes it next.
 
 ## Before any of this ships
 

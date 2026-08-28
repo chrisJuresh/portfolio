@@ -1,0 +1,1187 @@
+---
+// The Front Screen. NOTES.md is the reasoning: the one-screen budget, the Cut
+// Title's two regimes, what is deliberately not here yet, and which numbers are
+// Tokens and which are measurements of the drawing.
+import { content } from './content';
+import { TOGGLE } from './theme-toggle';
+import drawing from './assets/cut-title.svg?raw';
+import './tokens.css';
+
+// The Cut Title's word, taken apart so the <svg> is an element this component
+// compiles and Astro can therefore scope: `set:html` content carries no scope
+// attribute, so a scoped selector reaches nothing inside it. The picture's own
+// viewBox is where its proportion comes from — stated as width and height
+// attributes rather than restated as a CSS ratio, so there is one number and
+// nothing to disagree with it.
+const box = /viewBox="([\d.\s-]+)"/.exec(drawing)?.[1]?.trim();
+const inside = /<svg[^>]*>([\s\S]*)<\/svg>/.exec(drawing)?.[1];
+const sides = box?.split(/\s+/) ?? [];
+const [wide, tall] = [sides[2], sides[3]];
+if (!box || !inside || !wide || !tall) {
+  throw new Error(
+    'front-screen: assets/cut-title.svg has no four-number viewBox, or no drawing inside it',
+  );
+}
+
+/* Each listing carries the key its Content is under, so an entry can say which
+   entry it is — `work.0`, `education.0` — and the stylesheet can hold the widths
+   measured off those particular words. Same address the Editor writes a Content
+   edit to, which is the point: one name for one entry, wherever it is named. */
+const listings = [
+  { key: 'work', listing: content.work },
+  { key: 'education', listing: content.education },
+];
+
+/**
+ * Where the photographs' bytes are, and the ONE LINE in this Section that knows.
+ *
+ * `/portfolio/img/` is not built by anything — it is laid into dist/ beside the
+ * document by scripts/assemble-dist.mjs, which is what lets 15 MB of photographs
+ * be served without passing through a bundler. `src/kernel/corners.ts` says the
+ * same thing about the corner pictures.
+ *
+ * No `?v=` digest, and that is the live page's own posture for these files
+ * rather than an omission: a photograph here is never re-baked, it is replaced by
+ * a differently named one. The corner ladder carries a digest because the
+ * generator rewrites the same filenames.
+ */
+const PHOTO_BASE = '/portfolio/img/';
+
+/**
+ * How many photographs are fetched before the reader has asked for any.
+ *
+ * The strip is a horizontal scroller, so everything past the second one is off
+ * to the right and `loading="lazy"` is honoured on that axis too. Two, because
+ * the first is on screen at first paint and the second is the one the dissolve
+ * reaches over.
+ */
+const EAGER = 2;
+---
+
+{/* data-section is the loader's handle, and `id` is the Section's deep link —
+    `/portfolio/front-screen` is this same document opened here. No data-turn:
+    the Section is one screen, so `top top` and `bottom bottom` would be the same
+    scroll position and the page would open already crossed. The crossing spans
+    the Section AFTER this one, which starts at this one's foot. NOTES.md. */}
+<section
+  class="front-screen"
+  id="front-screen"
+  data-section="front-screen"
+  aria-labelledby="front-screen-name"
+>
+  <div class="front-screen__col">
+    <header class="front-screen__masthead">
+      <h1 class="front-screen__name" id="front-screen-name">{content.name}</h1>
+      {/* The masthead's second line, and it used to be a two-column grid: the
+          location, and a small "Projects" link set against the right edge. The
+          link is gone and the grid with it — the Cut Title says that word at the
+          foot of the same screen, at the size the whole page turns on, and one
+          word said twice is the smaller one saying nothing. */}
+      <p class="front-screen__location">{content.location}</p>
+    </header>
+
+    <div class="front-screen__intro">
+      <p class="front-screen__lead">{content.bio[0]}</p>
+      {content.bio.slice(1).map((paragraph) => <p class="front-screen__prose">{paragraph}</p>)}
+    </div>
+
+    {/* The photographs, and the box the one-screen budget spends its remainder
+        on. The strip bleeds to the page's own edges so a photograph can travel
+        off both of them; the track's padding brings the first and the last one
+        back onto the text column's own edges, and the two agree by construction
+        rather than by two expressions that have to be kept in step. NOTES.md.
+
+        `role="region"` with a name is what makes the strip a landmark a reader
+        can reach and then operate with the arrow keys, and it is on the TRACK
+        rather than on the box around it because the track is the thing that
+        takes focus and scrolls.
+
+        `__photos` and not `__track`, which reads better and is TAKEN: the theme
+        switch's pill is `.front-screen__track`, and reusing the name put the
+        switch's own width and height on this box — 1440px of strip with an 11px
+        scroller inside it, and the pill styled as a scroller in return. */}
+    <div class="front-screen__strip">
+      <div
+        class="front-screen__photos"
+        tabindex="0"
+        role="region"
+        aria-roledescription="carousel"
+        aria-label={content.photos.label}
+      >
+        {
+          content.photos.items.map((photo, index) => (
+            <figure class="front-screen__slide" data-front-screen-slide>
+              <img
+                src={`${PHOTO_BASE}${photo.file}`}
+                alt={photo.alt}
+                loading={index < EAGER ? undefined : 'lazy'}
+                decoding="async"
+                draggable="false"
+              />
+            </figure>
+          ))
+        }
+      </div>
+    </div>
+
+    {/* The strip's own scrollbar, and it stands in the text column rather than
+        in the bleed: it says where the reader is in the photographs, which is
+        a fact about the column's worth of them and not about the full-bleed box.
+        aria-hidden because it duplicates what the track already reports. */}
+    <div class="front-screen__bar" aria-hidden="true">
+      <div class="front-screen__bar-thumb"></div>
+    </div>
+
+    {
+      listings.map(({ key, listing }) => (
+        <section class="front-screen__listing">
+          <h2 class="front-screen__heading">{listing.heading}</h2>
+          {/* One line each, and it used to be two: an italic role or subject
+              stood under the organisation. An entry is still the content's own
+              unit — an organisation and the years beside it — so the box stays,
+              and what its margin separates is now one line from the next. */}
+          {listing.entries.map((entry, index) => (
+            <div class="front-screen__entry" data-front-screen-entry={`${key}.${index}`}>
+              <p class="front-screen__line">
+                {/* Every form of the organisation is in the markup and the
+                    stylesheet shows the longest one the column can hold — the
+                    same posture the theme toggle's two words take, and for the
+                    same reason: the right one is on the page at first paint
+                    rather than a script-load later. */}
+                <span class="front-screen__org">
+                  <span>{entry.org}</span>
+                  {(entry.orgNarrow ?? []).map((form) => <span>{form}</span>)}
+                </span>
+                {entry.grade && <em class="front-screen__grade">{entry.grade}</em>}
+                <em class="front-screen__years">{entry.years}</em>
+              </p>
+            </div>
+          ))}
+        </section>
+      ))
+    }
+
+    <section class="front-screen__listing">
+      <h2 class="front-screen__heading">{content.contact.heading}</h2>
+      <div class="front-screen__corner">
+        <ul class="front-screen__contact">
+          {
+            content.contact.entries.map((entry, index) => (
+              <li class={index === 0 ? 'front-screen__contact-first' : undefined}>
+                <a href={entry.href}>{entry.text}</a>
+              </li>
+            ))
+          }
+        </ul>
+        {/* One name, and the state in aria-checked rather than in the name — a
+            switch's label does not change when it is thrown. The two words are
+            both in the markup and the stylesheet shows one, so the visible word
+            is right before any script runs. */}
+        <button
+          class="front-screen__toggle"
+          type="button"
+          role="switch"
+          aria-checked="false"
+          aria-label={content.toggle.name}
+          {...{ [TOGGLE]: '' }}
+        >
+          <span class="front-screen__word-paper" aria-hidden="true">{content.toggle.onPaper}</span>
+          <span class="front-screen__word-dark" aria-hidden="true">{content.toggle.onDark}</span>
+          <span class="front-screen__track" aria-hidden="true"><span class="front-screen__thumb"></span></span>
+        </button>
+      </div>
+    </section>
+  </div>
+
+  {/* The Cut Title. The word is a picture of Friz Quadrata rather than type, so
+      the text beside it is what a screen reader announces and a crawler indexes —
+      the only text in here, and the reason the picture is allowed to be one. */}
+  <div class="front-screen__cut">
+    <a href={content.projects.href}>
+      <svg
+        class="front-screen__cut-word"
+        width={wide}
+        height={tall}
+        viewBox={box}
+        fill="currentColor"
+        aria-hidden="true"
+        set:html={inside}
+      />
+      <span class="front-screen__cut-text">{content.cut}</span>
+    </a>
+  </div>
+</section>
+
+<script>
+  import { mountThemeToggle } from './theme-toggle';
+
+  mountThemeToggle();
+</script>
+
+<style>
+  /* Scoped by the build: every selector below is narrowed with this component's
+     own attribute, so none of them can match an element in another Section. */
+
+  .front-screen,
+  .front-screen * {
+    box-sizing: border-box;
+  }
+
+  /* ---- the drawing's own measurements, and the faces' ----------------------
+     Not Tokens. The first two are properties of assets/cut-title.svg, printed by
+     design/cut-title/build-cut-title.py and re-pasted with the file; the second
+     two are measured off the faces. NOTES.md says what each is and what dragging
+     one would break. */
+  .front-screen {
+    --front-screen-cut-cap-share: 0.154521;
+    --front-screen-cut-overshoot: 0.003926;
+    --front-screen-cut-ink: 97.7592cqw;
+    --front-screen-cut-lead: 1.0086cqw;
+
+    --front-screen-half-leading: calc(0.294 * var(--front-screen-name-size));
+    --front-screen-contact-tail: 0.4075rem;
+
+    /* Where the track's photographs start and end: the text column's own edges,
+       as a percentage of the full-bleed box so the bleed and the inset cannot
+       disagree. Floored at the page's margin, which is where the column's text
+       starts once the window is narrower than the measure. */
+    --front-screen-edge: max(
+      var(--front-screen-side),
+      calc(50% - var(--front-screen-measure) / 2)
+    );
+
+    /* THE DISSOLVE'S RAMP, AS TWO INTERPOLATION HINTS, and 0.1036 is a
+       derivation rather than a taste: a hint at a quarter of the ramp's width is
+       the linear case, and 0.25 + 0.1036 — that is, 0.5^0.5 / 2 — is the
+       power-of-two ease that matches a smoothstep. `--front-screen-fade-ease`
+       slides between the two, and past linear the other way. */
+    --front-screen-fade-bend: 0.1036;
+
+    /* THE TWO VALUES THE TIMELINE WRITES, declared here so the strip is dressed
+       before any script has run and so there is one place that says what each
+       one means.
+
+       `--front-screen-slide-w` is a MEASURED length and cannot be derived here:
+       inside the one-screen band a photograph's height is the budget's remainder,
+       which layout works out and CSS cannot read back. So the Timeline measures
+       the first slide and writes it, and this is the stand-in until it does —
+       what the photograph would be at the slot's ceiling.
+
+       `--front-screen-fade-open` is where the strip is between its two rests, and
+       0 is right before a script runs for the reason the live sheet gives: the
+       strip cannot have moved yet. */
+    --front-screen-slide-w: calc(
+      var(--front-screen-strip-max) * var(--front-screen-slide-ratio)
+    );
+    --front-screen-fade-open: 0;
+
+    /* Where the type stands in the Effect Stack. The layers carry EVEN
+       z-indexes so excluded content has an odd one to stand on between any two
+       of them; 5 is above `paper` (2) and `halftone` (4), which is the pair the
+       Shell lights by default, and below everything else. Read
+       effect-stack.css before changing it. */
+    --front-screen-type-z: 5;
+
+    --front-screen-cut-gap: calc(
+      var(--front-screen-rhyme) + var(--front-screen-half-leading) -
+        var(--front-screen-contact-tail)
+    );
+    --front-screen-cut-slab: calc(
+      var(--front-screen-cut-cap-share) * var(--front-screen-cut-ink)
+    );
+  }
+
+  /* ---- the page ---------------------------------------------------------- */
+  .front-screen {
+    display: flex;
+    flex-direction: column;
+    min-height: var(--fold);
+    padding: var(--front-screen-rhyme) var(--front-screen-side) 0;
+    font-family: var(--face-body);
+    font-size: var(--front-screen-body-size);
+    line-height: var(--front-screen-body-leading);
+    animation: front-screen-in var(--front-screen-reveal) cubic-bezier(0.22, 1, 0.36, 1) backwards;
+  }
+
+  /* `backwards` and not `both`: a forward fill holds `transform: none` for ever,
+     which computes to the identity matrix rather than to the keyword and makes
+     this a permanent stacking context — which would seal the Cut Title's tail
+     inside the Section instead of letting it stand over the one below. */
+  @keyframes front-screen-in {
+    from {
+      opacity: 0;
+      transform: translateY(var(--front-screen-reveal-rise));
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  /* A reader who asked for less motion gets the composition arriving without
+     travelling: the fade stays, because it is what covers the faces resolving,
+     and the rise goes. The Token is what the keyframe reads, so this is one
+     declaration rather than a second pair of keyframes. */
+  @media (prefers-reduced-motion: reduce) {
+    .front-screen {
+      --front-screen-reveal-rise: 0px;
+    }
+
+    /* The dissolve still happens, it just stops travelling: it is a state of the
+       strip rather than a movement of it, and the ramp is the only part of it
+       that moves. The Timeline's own answer to this reader is in timeline.ts —
+       every leg arrives at once instead of being eased.
+
+       THE THREE DURATIONS AND NOT `transition: none`, and that is not belt and
+       braces. Three rules further down set `transition-duration` on its own — the
+       cramped strip and the two ways the reader asks to see the photographs — and
+       every one of them is later in the sheet than this block, so a shorthand
+       here is overwritten by whichever of them applies and the ramp comes back at
+       0.4s for a reader who is merely hovering. Zeroing the Tokens those rules
+       READ cannot be undone by source order. The shorthand stays as the answer
+       for the resting state. */
+    .front-screen__strip {
+      --front-screen-fade-ramp: 0s;
+      --front-screen-fade-reveal: 0s;
+      --front-screen-fade-cramped: 0s;
+      transition: none;
+    }
+
+    /* And a native scroll of the track — which is what the browser does for
+       Home, End and the page keys — arrives rather than glides. */
+    .front-screen__photos {
+      scroll-behavior: auto;
+    }
+  }
+
+  /* margin-bottom auto, so on a screen the composition does not fill the slack
+     ends up ABOVE the Cut Title and the cut stays on the page's own bottom edge. */
+  .front-screen__col {
+    width: 100%;
+    max-width: var(--front-screen-measure);
+    margin: 0 auto auto;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* Every gap down the column is stated as a margin-top on the block below it,
+     and nothing declares a margin-bottom. In a flex column margins do not
+     collapse, so a pair of them would add where they used to merge. */
+  .front-screen__col > * {
+    flex: none;
+    margin-top: var(--front-screen-space-m);
+  }
+
+  .front-screen__masthead {
+    margin-top: 0;
+  }
+
+  /* Keeping the paper and the halftone off the type. Paint order and not a hole:
+     the type is lifted above those two layers, so the glyphs come out untouched
+     while the paper around them still takes the texture. The four blocks and not
+     the column, because the column also holds the photographs' slot and the two
+     are separately excluded. */
+  .front-screen__masthead,
+  .front-screen__intro,
+  .front-screen__listing {
+    position: relative;
+    z-index: var(--front-screen-type-z);
+  }
+
+  /* ---- the masthead ------------------------------------------------------ */
+  .front-screen__name {
+    margin: 0;
+    font-family: var(--face-label);
+    font-size: var(--front-screen-name-size);
+    font-weight: 400;
+    letter-spacing: var(--front-screen-name-tracking);
+    text-transform: lowercase;
+  }
+
+  .front-screen__location {
+    margin: var(--front-screen-space-2xs) 0 0;
+    font-family: var(--face-label);
+    font-size: var(--front-screen-label-size);
+    letter-spacing: var(--front-screen-label-tracking);
+    color: var(--front-screen-muted);
+  }
+
+  /* ---- the bio ----------------------------------------------------------- */
+  .front-screen__lead {
+    margin: 0;
+    font-family: var(--face-lead);
+    font-size: var(--front-screen-lead-size);
+    font-style: italic;
+    line-height: var(--front-screen-lead-leading);
+  }
+
+  .front-screen__prose {
+    margin: var(--front-screen-space-s) 0 0;
+    color: var(--ink-soft);
+    text-indent: var(--front-screen-indent);
+  }
+
+  /* ---- the photographs ---------------------------------------------------
+     NOTES.md carries the reasoning: the bleed and the inset that agree by
+     construction, the mask that dissolves the strip rather than covering it, and
+     why the photograph's width is measured by the Timeline instead of derived.
+
+     Outside the band this is a stated height — the live page's own clamp, with
+     its floor and its ceiling. Inside the band it is the budget's remainder. */
+  .front-screen__strip {
+    height: clamp(
+      var(--front-screen-strip-min),
+      var(--front-screen-strip-fill),
+      var(--front-screen-strip-max)
+    );
+  }
+
+  /* THE BLEED AND THE INSET ARE THE SAME PERCENTAGE OF THE SAME BOX, which is
+     the whole of why the first and last photographs land exactly on the text
+     column's edges. `50% - 50vw` off the column's own width takes the strip out
+     to 100vw; `--front-screen-edge` is 50% of that same 100vw box less half the
+     measure. So whatever the vertical scrollbar does to `vw` it does to both, and
+     it cancels. Two separate expressions in `vw` — which is how the live sheet
+     writes it — each carry half a scrollbar of error, and the photographs stand
+     off the column by it. */
+  .front-screen__strip {
+    position: relative;
+    z-index: var(--front-screen-type-z);
+    margin-inline: calc(50% - 50vw);
+  }
+
+  /* OUT OF FLOW, AND THAT IS WHAT MAKES THE PHOTOGRAPHS HAVE A HEIGHT. Inside
+     the one-screen band the strip is a flex item whose height comes from the flex
+     layout, so its `height` computes to `auto` — and a percentage height against
+     an `auto` containing block behaves as `auto` itself. `height: 100%` on the
+     track therefore resolved to nothing, the slides took their height from their
+     own content, and the photographs came out ten pixels tall at every window
+     size: a strip that measured 194px with a 10px picture in it, which reads as a
+     broken image rather than as a broken length. An absolutely positioned box
+     with `inset: 0` has a definite height by construction, so the percentages
+     below it resolve, at both ends of the band and outside it. */
+  .front-screen__photos {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    gap: var(--front-screen-slide-gap);
+    padding-inline: var(--front-screen-edge);
+    overflow-x: auto;
+    overflow-y: hidden;
+    cursor: grab;
+    /* The native bar is hidden because the strip draws its own, in the text
+       column where it belongs rather than across the full bleed. */
+    scrollbar-width: none;
+  }
+
+  .front-screen__photos::-webkit-scrollbar {
+    display: none;
+  }
+
+  .front-screen__photos.is-dragging {
+    cursor: grabbing;
+  }
+
+  /* `aspect-ratio` and not a width: the photograph's height is the slot's, so its
+     width follows from it, and the box has its shape before the picture lands. */
+  .front-screen__slide {
+    flex: 0 0 auto;
+    margin: 0;
+    height: 100%;
+    aspect-ratio: var(--front-screen-slide-ratio);
+    background: var(--front-screen-soft);
+  }
+
+  .front-screen__slide img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    user-select: none;
+    -webkit-user-drag: none;
+  }
+
+  /* ---- the strip's own scrollbar ---------------------------------------- */
+  .front-screen__bar {
+    position: relative;
+    z-index: var(--front-screen-type-z);
+    height: var(--front-screen-bar-h);
+    /* Tight to the photographs on purpose: it is the strip's own scrollbar and
+       not a block of the column, so it reads as part of what it reports on. The
+       gap that matters here is the one BELOW it, to the first listing, and that
+       is the column's own. */
+    margin-top: var(--front-screen-space-3xs);
+    background: var(--front-screen-soft);
+    border-radius: var(--front-screen-bar-h);
+    cursor: pointer;
+    touch-action: none;
+  }
+
+  /* The width and the offset are the Timeline's: both are functions of where the
+     strip is, and the Timeline is the only thing that knows where that is. */
+  .front-screen__bar-thumb {
+    position: absolute;
+    inset-block: 0;
+    left: 0;
+    width: 0;
+    background: var(--front-screen-muted);
+    border-radius: var(--front-screen-bar-h);
+  }
+
+  /* ---- the edge dissolve --------------------------------------------------
+     The strip fades out at both ends by being MASKED rather than by having paper
+     painted over it, and that is not a preference. The Kernel's corner plate
+     stands in the bottom-left gutter, which is exactly where the left-hand
+     dissolve reaches: paper painted over the strip is paper painted over the
+     plate, and no z-order fixes it — the cover has to be above the photographs
+     and the plate has to be below them, so whatever sits between gets covered. A
+     mask takes the strip's own pixels away instead, so the photographs dissolve
+     into whatever is actually behind them, plate included.
+
+     The two numbers are registered as <number>s so they can be transitioned. An
+     unregistered custom property is a token stream to the cascade and
+     interpolates in no useful way — the ramp below simply would not run, and
+     nothing would say so.
+
+     THESE TWO REGISTRATIONS ARE DOCUMENT-GLOBAL and are the one global thing this
+     Section writes. Astro scopes selectors and `@property` has none, so scoping
+     does not reach it and `check-source.mjs` does not catch it. NOTES.md records
+     why it is here rather than in the Kernel and what makes it safe. */
+  @property --front-screen-fade-l {
+    syntax: '<number>';
+    inherits: false;
+    initial-value: 0;
+  }
+
+  @property --front-screen-fade-r {
+    syntax: '<number>';
+    inherits: false;
+    initial-value: 0;
+  }
+
+  /* Two mask layers, one per end, intersected. Each is a full-width gradient
+     whose ramp sits in the last `-fade-w` before `-fade-reach`, so the flat
+     regions of the two overlap harmlessly in the middle and only the ends do any
+     work. The alpha runs `1 - max` at the outer edge up to 1 at the reach, which
+     is a veil's alpha subtracted from opaque — a max below 1 leaves the
+     photographs showing through at the very edge. `to left` for the second layer
+     measures from the right-hand edge, so one stop list serves both ends: the
+     hints are symmetric, so reading the ramp backwards does not change its
+     shape. */
+  .front-screen__strip {
+    /* The live numbers: the two ends mixed by where the strip has got to. Only
+       these are read below, so neither gradient needs to know that there are two
+       ends to travel between. */
+    --front-screen-fade-x-now: calc(
+      var(--front-screen-fade-x) +
+        (var(--front-screen-fade-x-open) - var(--front-screen-fade-x)) *
+        var(--front-screen-fade-open)
+    );
+    --front-screen-fade-span-now: calc(
+      var(--front-screen-fade-span) +
+        (var(--front-screen-fade-span-open) - var(--front-screen-fade-span)) *
+        var(--front-screen-fade-open)
+    );
+    --front-screen-fade-max-now: calc(
+      var(--front-screen-fade-max) +
+        (var(--front-screen-fade-max-open) - var(--front-screen-fade-max)) *
+        var(--front-screen-fade-open)
+    );
+    --front-screen-fade-ease-now: calc(
+      var(--front-screen-fade-ease) +
+        (var(--front-screen-fade-ease-open) - var(--front-screen-fade-ease)) *
+        var(--front-screen-fade-open)
+    );
+
+    --front-screen-fade-w: calc(
+      var(--front-screen-slide-w) * var(--front-screen-fade-span-now)
+    );
+    --front-screen-fade-hint-a: calc(
+      var(--front-screen-fade-w) *
+        (0.25 + var(--front-screen-fade-bend) * var(--front-screen-fade-ease-now))
+    );
+    --front-screen-fade-hint-b: calc(
+      var(--front-screen-fade-w) *
+        (0.75 - var(--front-screen-fade-bend) * var(--front-screen-fade-ease-now))
+    );
+    /* How far in from each edge the dissolve finishes. Back from the edge to
+       where the text column ends, shifted by `-fade-x-now`. The outer `max()` is
+       a floor: pushed further out than the gutter is wide, there would be no room
+       left for the ramp and it would meet the viewport as a hard line instead. */
+    --front-screen-fade-reach: max(
+      var(--front-screen-fade-w),
+      calc(
+        max(var(--front-screen-edge), var(--front-screen-fade-w)) -
+          var(--front-screen-slide-w) * var(--front-screen-fade-x-now)
+      )
+    );
+
+    --front-screen-fade-l: 0;
+    --front-screen-fade-r: 0;
+    transition:
+      --front-screen-fade-l var(--front-screen-fade-ramp) cubic-bezier(0.22, 1, 0.36, 1),
+      --front-screen-fade-r var(--front-screen-fade-ramp) cubic-bezier(0.22, 1, 0.36, 1);
+    mask-image:
+      linear-gradient(
+        to right,
+        rgb(0 0 0 / calc(1 - var(--front-screen-fade-max-now) * var(--front-screen-fade-l)))
+          calc(var(--front-screen-fade-reach) - var(--front-screen-fade-w)),
+        calc(
+          var(--front-screen-fade-reach) - var(--front-screen-fade-w) +
+            var(--front-screen-fade-hint-a)
+        ),
+        rgb(0 0 0 / calc(1 - 0.5 * var(--front-screen-fade-max-now) * var(--front-screen-fade-l)))
+          calc(var(--front-screen-fade-reach) - var(--front-screen-fade-w) * 0.5),
+        calc(
+          var(--front-screen-fade-reach) - var(--front-screen-fade-w) +
+            var(--front-screen-fade-hint-b)
+        ),
+        #000 var(--front-screen-fade-reach)
+      ),
+      linear-gradient(
+        to left,
+        rgb(0 0 0 / calc(1 - var(--front-screen-fade-max-now) * var(--front-screen-fade-r)))
+          calc(var(--front-screen-fade-reach) - var(--front-screen-fade-w)),
+        calc(
+          var(--front-screen-fade-reach) - var(--front-screen-fade-w) +
+            var(--front-screen-fade-hint-a)
+        ),
+        rgb(0 0 0 / calc(1 - 0.5 * var(--front-screen-fade-max-now) * var(--front-screen-fade-r)))
+          calc(var(--front-screen-fade-reach) - var(--front-screen-fade-w) * 0.5),
+        calc(
+          var(--front-screen-fade-reach) - var(--front-screen-fade-w) +
+            var(--front-screen-fade-hint-b)
+        ),
+        #000 var(--front-screen-fade-reach)
+      );
+    mask-composite: intersect;
+    mask-repeat: no-repeat;
+  }
+
+  /* Each end is off while the strip is standing against it and there is nothing
+     behind it to dissolve, and on the moment it pulls away. Every selector from
+     here down weighs the same as every other, so SOURCE ORDER decides which
+     wins — which is the order they are written in. */
+  .front-screen__strip:not(.is-at-start) {
+    --front-screen-fade-l: 1;
+  }
+
+  .front-screen__strip:not(.is-at-end) {
+    --front-screen-fade-r: 1;
+  }
+
+  /* Until a centred photograph plus two-thirds of each neighbour fits, both ends
+     stay off: on a strip that short the two dissolves would eat the photograph
+     between them. */
+  .front-screen__strip:not(.has-fade-room) {
+    --front-screen-fade-l: 0;
+    --front-screen-fade-r: 0;
+    transition-duration: var(--front-screen-fade-cramped);
+  }
+
+  /* Withdrawn while the reader is looking at the photographs — released the
+     moment the pointer leaves, and quicker on the way off than on. */
+  .front-screen__strip:hover,
+  .front-screen__strip:has(.front-screen__photos:focus-visible) {
+    --front-screen-fade-l: 0;
+    --front-screen-fade-r: 0;
+    transition-duration: var(--front-screen-fade-reveal);
+  }
+
+  /* ---- work, education, contact ------------------------------------------
+     A HANGING HEADING, WHICH IS ONE STEP WRITTEN IN TWO PLACES. The listing is
+     padded in on its left and the heading is pulled back out by the same length,
+     so the heading stands on the column's own left edge and everything under it
+     — the organisations, the years' line, the details, the contact links and the
+     switch — starts one indent in. Written this way round rather than as a
+     padding on each entry because it is the listing's LEFT padding: the content
+     box still ends on the column's right edge, so the years and the switch stay
+     flush with it, and with the last photograph's edge one block up. */
+  .front-screen__listing {
+    padding-left: var(--front-screen-listing-indent);
+  }
+
+  .front-screen__heading {
+    margin: 0 0 var(--front-screen-space-2xs)
+      calc(-1 * var(--front-screen-listing-indent));
+    font-family: var(--face-body);
+    font-size: var(--front-screen-heading-size);
+    font-weight: var(--front-screen-heading-weight);
+    /* Its own, and not the body's — the ladder's Token says why. */
+    line-height: var(--front-screen-heading-leading);
+    letter-spacing: var(--front-screen-heading-tracking);
+  }
+
+  .front-screen__entry {
+    margin-bottom: var(--front-screen-space-xs);
+  }
+
+  .front-screen__entry:last-child {
+    margin-bottom: 0;
+  }
+
+  /* Positioned so the grade below has an edge to be pinned to, and so it is the
+     LINE rather than the entry's containment that owns it. */
+  .front-screen__line {
+    position: relative;
+    display: flex;
+    align-items: baseline;
+    gap: var(--front-screen-gutter);
+    margin: 0;
+  }
+
+  /* The year column, and it exists for one property: old-style figures, so a date
+     does not read as loud as the organisation beside it. */
+  .front-screen__years {
+    margin-left: auto;
+    font-family: var(--face-year);
+    font-variant-numeric: oldstyle-nums;
+    font-style: normal;
+    color: var(--ink);
+    white-space: nowrap;
+  }
+
+  /* What the entry was awarded, standing directly under the years — and STANDING
+     OUT OF FLOW, which is the whole of why it costs the composition nothing.
+
+     THE SECTION IS ONE SCREEN, so a real second line here is a line taken off the
+     photograph strip, which is the budget's remainder. Out of flow it is a line
+     drawn in white the column already had: the gap under the last listing is
+     `--front-screen-space-m`, the line box it needs is the body's size times its
+     leading, and the first is the larger of the two. Nothing below it moves, at
+     any window in the band or out of it.
+
+     THE YEAR FACE, AND THAT IS THE WHOLE REASON IT IS A FIELD OF ITS OWN. A
+     figure on this page is set in `--face-year`, so a class and a mark — which
+     are figures and almost nothing else — belong to the years' own column and
+     not to the body face beside them. Written into the organisation's string
+     instead, the seam between the two faces would fall inside a word. Muted,
+     because the qualification is the entry's subject and this is a footnote to
+     it.
+
+     `right: 0` and not an alignment: the years are pinned to the column's right
+     edge by their own `margin-left: auto`, and this is pinned to the same edge,
+     so the two agree by construction rather than by a number. */
+  .front-screen__grade {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    font-family: var(--face-year);
+    font-variant-numeric: oldstyle-nums;
+    font-style: normal;
+    color: var(--front-screen-muted);
+    white-space: nowrap;
+  }
+
+  /* ---- the organisation, said as short as the column needs ----------------
+     One entry is ONE LINE. When the column is too narrow for the organisation's
+     full form the words give way, in the order the author put them in
+     `orgNarrow`, rather than the line wrapping under the years.
+
+     A CONTAINER AND NOT THE VIEWPORT, because what decides this is the width of
+     the entry and nothing else: `min(100%, --front-screen-measure)` less the
+     listing's indent, which a media query would have to restate and then keep in
+     step. `em` in the query resolves against the container's own font-size —
+     the body size — so every threshold below is in the same units the words are
+     drawn in, and the whole ladder moves with `--type-zoom` instead of drifting
+     off it.
+
+     THE THRESHOLDS ARE MEASUREMENTS AND NOT CHOICES, which is why they are here
+     and not in tokens.css: each is the width at which the form above it stops
+     fitting beside the years, measured on the page. Re-measure them if the words
+     change; nudging one only makes a line wrap somewhere else. */
+  .front-screen__entry {
+    container: front-screen-entry / inline-size;
+  }
+
+  /* The longest form is the one on the page, and the rest are not. */
+  .front-screen__org > :not(:first-child) {
+    display: none;
+  }
+
+  /* EVERY LADDER IS ONE ENTRY'S, and that is the thing this is easy to get wrong
+     by not doing. Where a form stops fitting is a fact about ITS OWN words beside
+     ITS OWN years, and the three entries here disagree by three ems: the degree
+     runs out of room at 22.0em, Third Bridge Group Limited at 19.5em and Royal
+     College of Radiologists at 18.6em. On one shared ladder the two shorter names
+     would give way at the widest of those, three and a half ems before they had
+     to — a phone's whole width of column, given up while the words still fitted.
+     So each ladder is gated on the entry it was measured from, named as the
+     Content key its words are at.
+
+     A KEY AND NOT THE WORDS. Reordering a listing therefore moves a ladder onto
+     the wrong entry, silently, which is the one way to break this that a glance
+     does not catch. It is the same address the Editor writes to, so the entry a
+     ladder belongs to is findable by grep from either end.
+
+     Within a ladder the steps are widest first, so the narrowest one that matches
+     is read last and wins, and each step hides everything above it. The hides
+     carry one more compound than the shows they meet, which settles the rest.
+     `:not(:last-child)` is the floor under all of it: whatever the thresholds
+     say, the shortest form the author wrote cannot be hidden, so no entry is ever
+     left showing no name at all. */
+
+  /* work.0 — Third Bridge Group Limited · Third Bridge Group · Third Bridge */
+  @container front-screen-entry (max-width: 19.6em) {
+    [data-front-screen-entry='work.0'] .front-screen__org > :first-child:not(:last-child) {
+      display: none;
+    }
+    [data-front-screen-entry='work.0'] .front-screen__org > :nth-child(2) {
+      display: inline;
+    }
+  }
+
+  @container front-screen-entry (max-width: 16em) {
+    [data-front-screen-entry='work.0'] .front-screen__org > :nth-child(-n + 2):not(:last-child) {
+      display: none;
+    }
+    [data-front-screen-entry='work.0'] .front-screen__org > :nth-child(3) {
+      display: inline;
+    }
+  }
+
+  /* work.1 — Royal College of Radiologists · RCR. One step and a long one: the
+     initials are the only shorter form the name has, so there is nothing to put
+     between them. */
+  @container front-screen-entry (max-width: 18.7em) {
+    [data-front-screen-entry='work.1'] .front-screen__org > :first-child:not(:last-child) {
+      display: none;
+    }
+    [data-front-screen-entry='work.1'] .front-screen__org > :nth-child(2) {
+      display: inline;
+    }
+  }
+
+  /* education.0 — the degree, giving up the honours, then the subject's full
+     name, then the degree itself. */
+  @container front-screen-entry (max-width: 22.2em) {
+    [data-front-screen-entry='education.0'] .front-screen__org > :first-child:not(:last-child) {
+      display: none;
+    }
+    [data-front-screen-entry='education.0'] .front-screen__org > :nth-child(2) {
+      display: inline;
+    }
+  }
+
+  @container front-screen-entry (max-width: 19.1em) {
+    [data-front-screen-entry='education.0'] .front-screen__org > :nth-child(-n + 2):not(:last-child) {
+      display: none;
+    }
+    [data-front-screen-entry='education.0'] .front-screen__org > :nth-child(3) {
+      display: inline;
+    }
+  }
+
+  @container front-screen-entry (max-width: 15.3em) {
+    [data-front-screen-entry='education.0'] .front-screen__org > :nth-child(-n + 3):not(:last-child) {
+      display: none;
+    }
+    [data-front-screen-entry='education.0'] .front-screen__org > :nth-child(4) {
+      display: inline;
+    }
+  }
+
+  .front-screen__contact {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .front-screen__contact li {
+    margin-top: var(--front-screen-space-3xs);
+  }
+
+  .front-screen__contact-first {
+    margin-bottom: var(--front-screen-space-xs);
+  }
+
+  .front-screen__contact a {
+    color: var(--ink);
+    text-decoration: none;
+    border-bottom: var(--front-screen-hairline) solid var(--front-screen-rule);
+    overflow-wrap: anywhere;
+    transition: border-color var(--front-screen-hover-fade) ease;
+  }
+
+  .front-screen__contact a:hover,
+  .front-screen__contact a:focus-visible {
+    border-color: var(--ink);
+  }
+
+  /* ---- the theme toggle, in the corner of the contact block --------------
+     Baseline alignment and not box alignment: the switch's word sits on the same
+     line as the last contact link, whatever either one's line height is. */
+  .front-screen__corner {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: end;
+    align-items: last baseline;
+    column-gap: var(--front-screen-gutter);
+  }
+
+  .front-screen__toggle {
+    justify-self: end;
+    display: inline-flex;
+    align-items: baseline;
+    gap: var(--front-screen-toggle-gap);
+    min-height: 1.5rem;
+    margin: 0;
+    padding: 0.2rem 0;
+    border: 0;
+    background: transparent;
+    color: var(--ink);
+    font-family: var(--face-label);
+    font-size: var(--front-screen-body-size);
+    font-weight: 400;
+    line-height: var(--front-screen-body-leading);
+    cursor: pointer;
+  }
+
+  /* Both words are in the markup and one of them is on screen. Which is decided
+     in tokens.css, because that is the Section's only stylesheet the compiler
+     does not narrow and so the only one that can be gated on the theme. */
+  .front-screen__word-paper {
+    display: var(--front-screen-word-paper);
+  }
+
+  .front-screen__word-dark {
+    display: var(--front-screen-word-dark);
+  }
+
+  /* A box with no text baselines aligns on its bottom edge, which drops the
+     pill's midline half its own height below the word's. The lift is measured
+     off the face rather than nudged in px, and lands halfway between the
+     x-height midline and the cap-height midline — no single lift is right for
+     both `dark`, which has no descender, and `light`, which has one. The first
+     declaration is the fallback where `cap` is not understood. */
+  .front-screen__track {
+    position: relative;
+    flex: none;
+    width: var(--front-screen-track-w);
+    height: var(--front-screen-track-h);
+    border: var(--front-screen-hairline) solid currentcolor;
+    border-radius: 1rem;
+    transform: translateY(calc(var(--front-screen-track-h) / 2 - 0.5ex));
+    transform: translateY(calc(var(--front-screen-track-h) / 2 - 0.25ex - 0.25cap));
+  }
+
+  .front-screen__thumb {
+    position: absolute;
+    top: 50%;
+    left: var(--front-screen-thumb-inset);
+    width: var(--front-screen-thumb);
+    height: var(--front-screen-thumb);
+    border-radius: 50%;
+    background: currentcolor;
+    transform: translate(var(--front-screen-thumb-at), -50%);
+    transition: transform var(--front-screen-thumb-travel) cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  /* ---- the Cut Title ----------------------------------------------------
+     Three boxes, each doing one job: the container the word's size is a
+     proportion OF, the cut, and the drawing. NOTES.md carries the rest. */
+  /* It takes the type's z and never gets `position` written on it here: it is
+     `absolute` in the one-screen band, and a `relative` from a later rule would
+     move it out of the corner rather than lift it out of the stack. */
+  .front-screen__cut {
+    container-type: inline-size;
+    position: relative;
+    z-index: var(--front-screen-type-z);
+    width: 100%;
+    max-width: var(--front-screen-measure);
+    margin: var(--front-screen-cut-gap) auto 0;
+  }
+
+  .front-screen__cut > a {
+    display: block;
+    /* clip and not hidden: hidden would make this a scroll container, which a
+       stray focus can scroll the cut word into view inside. */
+    overflow: clip;
+    height: calc(var(--front-screen-cut-show) * var(--front-screen-cut-slab));
+    color: var(--ink);
+    transition: box-shadow var(--front-screen-hover-fade) ease;
+  }
+
+  /* A display word gives nothing to underline — its baseline is below the cut —
+     so the site's hairline goes on the cut itself, as an inset shadow rather than
+     a border so it costs the clip box no height. */
+  .front-screen__cut > a:hover,
+  .front-screen__cut > a:focus-visible {
+    box-shadow: inset 0 -1px 0 currentcolor;
+  }
+
+  /* `top` and not a negative margin: in the one-screen band the link runs
+     `overflow: visible` and is no longer a block formatting context, so a margin
+     here would collapse into the link's own and the correction would vanish. */
+  .front-screen__cut-word {
+    display: block;
+    width: var(--front-screen-cut-ink);
+    height: auto;
+    margin-left: var(--front-screen-cut-lead);
+    position: relative;
+    top: calc(-1 * var(--front-screen-cut-overshoot) * var(--front-screen-cut-ink));
+  }
+
+  .front-screen__cut-text {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  /* The strip's track is in here rather than carrying a ring of its own: it is
+     a control the reader tabs to, and every control on this Section is ringed the
+     same way. Losing it makes the photographs unoperable by anyone who cannot
+     see where the focus went — which is why #137 asks for it by name. */
+  .front-screen__toggle:focus-visible,
+  .front-screen__contact a:focus-visible,
+  .front-screen__photos:focus-visible,
+  .front-screen__cut > a:focus-visible {
+    outline: 1px solid currentcolor;
+    outline-offset: 3px;
+  }
+
+  /* ---- composing to one screen ------------------------------------------
+     The band, its two limits and what absorbs the difference are all in
+     NOTES.md. The two numbers are a viewport's and cannot be Tokens: a Token is
+     a value the Editor writes, not a breakpoint. */
+  @media (min-width: 1100px) and (min-height: 700px) {
+    .front-screen {
+      /* Out here the word is fitted to its own INK rather than to the advance box
+         a line of type would have carried, because it is no longer the last line
+         of the column but a word standing on the page's margin, and the margin is
+         exact. */
+      --front-screen-cut-ink: 100cqw;
+      --front-screen-cut-lead: 0px;
+
+      /* THE WORD IS DRAWN AT THE MASTHEAD IT IS ABOUT TO BE. The drawing is
+         fitted to whatever width puts its cap on --landing-cap, which is the
+         Section below's masthead cap published by the Kernel — so the same word
+         at the same size is cut by the fold on this screen and printed as the
+         Projects Panel's masthead on the next, and the morph between them is a
+         change of letterform and nothing else.
+
+         WHAT IT COSTS IS THE TWO EQUAL MARGINS, retired here rather than quietly
+         broken. The white to the LEFT of the word — page edge to the P — and the
+         white to its right used to be the same measure, and the word was sized to
+         make them so. That was the right rule while the word answered to nothing
+         but the corner it stood in. It answers to the composition below it now,
+         and the two cannot both hold: the gutter is a function of the window's
+         WIDTH and the masthead is a function of whichever of width and height
+         binds the drawing. The word is still set flush to the left margin; the
+         white on its right is whatever is left.
+
+         --landing-cap is declared under this same band and no other, so there is
+         no regime where this reads a property nothing published. */
+      --front-screen-cut-fit: calc(var(--landing-cap) / var(--front-screen-cut-cap-share));
+      --front-screen-cut-clip: calc(
+        var(--front-screen-cut-show) * var(--front-screen-cut-cap-share) *
+          var(--front-screen-cut-fit)
+      );
+
+      /* THE SECTION GIVES UP THE HEIGHT THE LANDING NEEDS, so the Section below
+         can begin above the fold and stand its masthead's slot under this word.
+         The word's cap top is at --fold less the cut, forever; the Panel's
+         masthead sits --landing-mast-top below the Panel's own top edge; so the
+         Panel has to begin exactly that much above the word's cap, and this is
+         where that height comes from.
+
+         NOT A NEGATIVE MARGIN ON THE PANEL, which is the other way to write it
+         and is worse: the Panel's box would then overlap this one's and this
+         Section's own paper would be painted over. Giving the height up is the
+         honest form, and it moves nothing in the column — the strip absorbs it.
+
+         The padding pays the same debt at the other end: the column still stops
+         --front-screen-cut-gap above the word's cap top, which is now
+         --landing-mast-top nearer this Section's own foot than it was. */
+      height: calc(var(--fold) - var(--front-screen-cut-clip) - var(--landing-mast-top));
+      min-height: 0;
+      position: relative;
+      padding-bottom: calc(var(--front-screen-cut-gap) - var(--landing-mast-top));
+    }
+
+    /* Past the strip's ceiling there is height left over that nothing wants, and
+       centring is what spends it at BOTH ends at once: half above the name, half
+       below the last contact line, so the page's one vertical rhyme survives on a
+       tall screen. Inert below the ceiling, where the strip has taken every pixel
+       of the free space and there is none left to distribute. */
+    .front-screen__col {
+      flex: 1 1 auto;
+      justify-content: center;
+      margin-bottom: 0;
+    }
+
+    /* `min-height: 0` and NOT `--front-screen-strip-min`, which is the floor the
+       stated height outside this band carries. Inside the band the slot is the
+       one-screen budget's remainder, and a floor on the remainder is a budget
+       that can overflow. What pays for the floor in here instead is the Kernel
+       scaling the page's type — `src/kernel/faces.css` — so the remainder comes
+       out larger than the floor rather than being held above it. NOTES.md. */
+    .front-screen__col > .front-screen__strip {
+      flex: 1 1 auto;
+      height: auto;
+      min-height: 0;
+      max-height: var(--front-screen-strip-max);
+    }
+
+    /* PINNED TO THE FOLD, and to the fold rather than to this Section's own
+       height: the Section gives the landing its last few pixels above, so `100%`
+       would take the word down with them. `top` and not `bottom`, so the offset
+       holds the cap top on that line whatever the box's height turns out to be.
+
+       Positioned rather than laid out because the word is a flex item of neither
+       Section: as this one's it would be pushed up by the height given away, and
+       as the Panel's it could not stand above its own top edge, which is exactly
+       where it has to stand. Pinned to the fold it is in neither, which is also
+       the truth of it — it lands in the same place the flow put it, because the
+       strip is sized so the column plus the gap reaches exactly that line.
+
+       NOTHING TRANSFORMS IT. The box has a document position that does not move
+       with the scroll and is not asked to: the window moves past it, and that is
+       the whole of the travel. */
+    .front-screen__cut {
+      position: absolute;
+      top: var(--fold);
+      /* --landing-side AND NOT --front-screen-rhyme, which is what it was while
+         the two were the same clamp. The word is set on the page's LEFT margin in
+         the band, and down here that margin belongs to the landing: the Panel's
+         composition begins on it and the Rail is set across it, and the word has
+         to start where the composition does or it is not standing in the
+         masthead's slot. The rhyme is this Section's own vertical measure and is
+         a function of a one-screen budget the Panel has no share of —
+         src/kernel/tokens/landing.css is the whole of why they parted. */
+      left: var(--landing-side);
+      width: var(--front-screen-cut-fit);
+      max-width: none;
+      margin: 0;
+    }
+
+    /* THE CLIP COMES OFF: the bottom of the window does the cutting here, and the
+       J's hook and the baseline are meant to be seen on the screen below, where
+       the Panel's own masthead has gone `visibility: hidden` and the tail IS that
+       masthead.
+
+       But the BOX stays the cap slab rather than being left to `auto`. Two things
+       depend on it: the hover underline, which lands on the box's bottom edge and
+       so on the baseline, where a descender's worth of extra box would put it
+       under the J; and the lift below, which is a fraction of this same slab.
+
+       The lift is the cut, and it is the same expression the flow regime cuts
+       with — the box is pinned to the fold and the word is raised
+       --front-screen-cut-show of its own cap back above it, so the cap top lands
+       on the line the landing wants. A negative margin rather than an offset on
+       `top`, so the box's own top edge stays the thing being positioned; it
+       cannot collapse through the container, which establishes an independent
+       formatting context, and nothing there clips it. */
+    .front-screen__cut > a {
+      overflow: visible;
+      height: var(--front-screen-cut-slab);
+      margin-top: calc(-1 * var(--front-screen-cut-show) * var(--front-screen-cut-slab));
+    }
+  }
+</style>

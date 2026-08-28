@@ -1,0 +1,83 @@
+---
+// The stub Section. NOTES.md is what this folder is for and what each file in it
+// has to be; nothing behavioural is decided in this file.
+import { content } from './content';
+import './tokens.css';
+// variants.css is deliberately NOT imported: an unselected Variant has to cost
+// the shipped page nothing, so the sheet is not part of the build at all and the
+// render tool injects it. NOTES.md, and check-source.mjs if this is ever undone.
+---
+
+{/* data-section is the loader's handle: it names the Section whose timeline.ts
+    gets fetched as this element approaches the viewport. data-turn says the
+    crossing into dark happens across this Section's scroll. */}
+<section class="stub" data-section="stub" data-turn aria-labelledby="stub-heading">
+  <div class="stub__measure">
+    <h2 class="stub__heading" id="stub-heading" data-stub-rise>{content.heading}</h2>
+    <p class="stub__lead" data-stub-rise>{content.lead}</p>
+    <ul class="stub__points">
+      {content.points.map((point) => <li data-stub-rise>{point}</li>)}
+    </ul>
+  </div>
+</section>
+
+<style>
+  /* Scoped by the build. Astro rewrites every selector below with this
+     component's own attribute, so none of them can match an element in another
+     Section even by accident — which is the mechanism ADR 0002 buys a build step
+     for, and the reason there is no `is:global` anywhere in a Section. */
+  .stub {
+    min-height: var(--stub-height);
+    box-sizing: border-box;
+    padding: var(--stub-inset);
+    display: flex;
+    align-items: flex-start;
+  }
+
+  .stub__measure {
+    max-width: var(--stub-measure);
+    display: flex;
+    flex-direction: column;
+    gap: var(--stub-gap);
+  }
+
+  .stub__heading {
+    margin: 0;
+    font-family: var(--face-label);
+    font-size: var(--stub-heading-size);
+    font-weight: var(--stub-heading-weight);
+    line-height: 0.95;
+    letter-spacing: -0.01em;
+  }
+
+  .stub__lead {
+    margin: 0;
+    font-family: var(--face-lead);
+    font-size: var(--stub-lead-size);
+    line-height: var(--stub-lead-leading);
+    font-style: italic;
+  }
+
+  .stub__points {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: calc(var(--stub-gap) / 2);
+    font-size: var(--stub-point-size);
+    color: var(--ink-soft);
+  }
+
+  .stub__points li {
+    padding-block-start: calc(var(--stub-gap) / 2);
+    border-block-start: var(--stub-rule) solid currentcolor;
+    border-color: color-mix(in oklab, var(--ink-soft), transparent 78%);
+  }
+
+  /* data-stub-rise marks what the Section's Timeline moves, and nothing here
+     hides it. The motion runs FROM the settled state rather than towards it, so a
+     dead network, a parse error or a reader with scripting off all leave the
+     Section reading exactly as it does now. No rule in a Section may be the only
+     thing standing between the reader and the words. */
+</style>

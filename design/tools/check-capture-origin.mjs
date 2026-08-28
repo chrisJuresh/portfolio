@@ -8,11 +8,20 @@
    Exit 0 means the clip may be captured. Exit 1 means it may not, and says why.
 
    It drives design/censor/capture-origin.mjs the way the clip does — the same
-   viewport, the same scroll range — and asks the page three questions that a
+   viewport, the same scroll range — and asks the page five questions that a
    capture cannot ask itself:
 
      stacked        did the grid mount stacked? The roll was assembled over the
                     stacked view and does not cover the unstacked one.
+     light          did it mount light? The vault's default is dark and has no
+                    `prefers-color-scheme` fallback, so an origin that stopped
+                    seeding the theme would produce a dark clip that looks
+                    entirely correct — which is the clip this one replaced.
+     cleared        does the vault's toolbar sit below the Frame's titlebar? The
+                    Panel's glass strip covers the first 50px of the page, so an
+                    origin that stopped serving the margin — or served it and
+                    lost the cascade, which is the likelier of the two — gives
+                    back the clip whose toolbar was cut through the middle.
      obscured       was every confirmed photograph the walk requested served as
                     the mosaic mosaic.py baked, byte for byte?
      substituted    are those bytes actually different from the vault's own? A
@@ -21,14 +30,15 @@
    It lives here rather than in design/censor/ for collect-roll.mjs's reason:
    this is where the repo's one Playwright install is.
 
-   IT DELIBERATELY DOES NOT SEED ANYTHING ITSELF.
-   ----------------------------------------------
-   collect-roll.mjs seeds stacking with addInitScript, because it drives the
-   vault directly and Playwright has a hook that early. This must not: the
-   question here is whether the ORIGIN seeds it, since record has no such hook
-   and that is the whole reason the origin exists. A check that seeded the
-   setting would pass against an origin that had stopped doing so, which is the
-   failure it is here to catch.
+   IT DELIBERATELY DOES NOT SEED OR STYLE ANYTHING ITSELF.
+   -------------------------------------------------------
+   collect-roll.mjs seeds stacking and lays on the titlebar's margin with
+   addInitScript, because it drives the vault directly and Playwright has a hook
+   that early. This must not do either: the question here is whether the ORIGIN
+   does all three, since record has no such hook and that is the whole reason
+   the origin exists. A check that seeded a setting, or adopted the margin
+   itself, would pass against an origin that had stopped serving it — which is
+   the failure it is here to catch.
 
    WHAT IT CANNOT TELL YOU
    -----------------------
@@ -43,6 +53,12 @@ import { readFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { chromium } from "playwright";
+
+/* The travel and the titlebar's clearance. Imported for the reason
+   collect-roll.mjs imports them and the settings below are not: these are
+   THIS repository's arithmetic rather than a copy of record's, and a check
+   holding its own copy of the number it is checking checks nothing. */
+import { BAR, TOOLBAR_TOP, TRAVEL, clearance } from "../censor/capture-frame.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const CENSOR = resolve(HERE, "..", "censor");
@@ -59,7 +75,7 @@ const CENSOR = resolve(HERE, "..", "censor");
    to move the other, is worth sixty lines. If a third one ever appears, that is
    the moment to extract. */
 const VIEWPORT = { width: 1440, height: 900 };
-const DISTANCE = 1200;
+const DISTANCE = TRAVEL;
 const STEP = 100;
 
 const DEFAULT_ORIGIN = "http://127.0.0.1:8792";
@@ -142,6 +158,8 @@ page.on("response", async (response) => {
 });
 
 let decks = 0;
+let theme = "";
+let toolbar = null;
 try {
   await page.goto(`${origin}/`, { waitUntil: "domcontentloaded" });
   await page.waitForSelector(".tile", { timeout: 30_000 });
@@ -161,6 +179,16 @@ try {
   await page.waitForTimeout(600);
 
   decks = await page.evaluate(`document.querySelectorAll(".tile .card:not([hidden])").length`);
+  /* theme.js's own reading of it: the attribute is the theme, and anything that
+     is not "light" is the dark default however it got there. Read off the
+     document rather than out of localStorage for the reason `decks` is — the
+     question is what the camera would photograph, not what was stored. */
+  theme = await page.evaluate(`document.documentElement.dataset.theme || "dark"`);
+  /* Read after the walk has returned to the top, which is where the clip opens
+     and the only scroll position at which the margin is what the camera sees.
+     The row is `position: fixed`, so this is the same number wherever it is
+     asked — but asking it where it matters is what the answer is about. */
+  toolbar = await page.evaluate(TOOLBAR_TOP);
 } finally {
   await browser.close();
 }
@@ -172,6 +200,22 @@ if (decks === 0) {
       'localStorage["photos.stack"], or the vault has moved the key. The signed roll was ' +
       "assembled over the stacked view and does not cover this one.",
   );
+}
+
+/* ---- light -------------------------------------------------------------- */
+if (theme !== "light") {
+  problems.push(
+    `the grid mounted ${theme.toUpperCase()} — the origin did not seed ` +
+      'localStorage["photos.theme"], or the vault has moved the key or renamed the theme. ' +
+      "Check photos ui/src/lib/theme.js against the SEED in design/censor/capture-origin.mjs. " +
+      "A dark capture looks entirely correct and is the clip this one replaced.",
+  );
+}
+
+/* ---- cleared ------------------------------------------------------------ */
+const covered = clearance(toolbar);
+if (covered !== null) {
+  problems.push(covered);
 }
 
 /* ---- obscured ----------------------------------------------------------- */
@@ -223,6 +267,14 @@ if (sample !== undefined) {
 /* ---- the report --------------------------------------------------------- */
 console.log(`origin           ${origin}`);
 console.log(`stacking         ${decks > 0 ? `on — ${decks} tile(s) drew a card` : "OFF"}`);
+console.log(`theme            ${theme === "light" ? "light" : `${theme.toUpperCase()} — the clip is meant to be light`}`);
+console.log(
+  `titlebar's room  ${
+    toolbar === null
+      ? "no .topbar to measure"
+      : `toolbar ${toolbar}px down against a ${BAR}px strip — ${toolbar >= BAR ? "clear" : "COVERED"}`
+  }`,
+);
 console.log(
   `thumbnails       ${served.size} served over the clip's scroll range, ` +
     `${beyond.size} of them outside the roll's band (the sheet's overscan — never painted)`,

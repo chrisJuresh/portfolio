@@ -25,11 +25,18 @@ second kind; the first is kept because it is the only path that can produce a
 matte from a frame that has none, and because the reasoning in sky_matte() is
 worth more than the twenty lines it occupies.
 
-It also writes the two files design/plate/plate-tuner.html needs to preview a
-grade without this script — <name>-source.webp and <name>-source.json. See
-NEUTRAL SOURCE at the foot of this docstring. Every constant below is a slider
-in that tuner; the way to change one is to move it there, read the block it
-prints, and paste it back over the block here.
+WHERE THE NUMBERS LIVE. Every grade and every matte threshold is declared in
+design/bake/plate/recipe.json and read here through design/bake/tuning.py, so
+this script and the Editor (`pnpm editor`, its Bakes surface) are run with the
+same values and there is nothing to keep in step by hand. It used to be six
+literal blocks in this file and a tuner that printed a seventh to paste over one
+of them, and the paste is what went wrong: one that was not made is a shipped
+picture nothing here describes.
+
+It also still writes the two files design/legacy/plate-tuner.html needs to
+preview a grade without this script — <name>-source.webp and <name>-source.json.
+See NEUTRAL SOURCE at the foot of this docstring. That tuner is kept working and
+is no longer where a number is changed.
 
 WHY A SCRIPT AND NOT A CSS FILTER
 ---------------------------------
@@ -362,7 +369,7 @@ NEUTRAL SOURCE
 that eight bits are spent perceptually, scaled down to NEUTRAL_WIDTH, sky and all.
 Ungraded and unmatted on purpose — it is the input every stage above starts from,
 so a tool holding it can run the whole pipeline itself and show you the answer
-while you drag. That is design/plate/plate-tuner.html, and it is why the sky is
+while you drag. That is design/legacy/plate-tuner.html, and it is why the sky is
 still in the file: the matte is one of the things being tuned.
 
 Its companion <name>-source.json carries the constants this script was last run
@@ -396,13 +403,23 @@ import rawpy
 from PIL import Image, ImageFilter
 from scipy import ndimage
 
+# design/bake/ is a sibling of this folder and is not a package, so it is put on
+# the path rather than imported through a name that does not exist. See its
+# tuning.py: the Grades and the matte thresholds below are DECLARED there, in
+# design/bake/plate/recipe.json, and read here - one value in one place, reachable
+# from the Editor and from this script alike.
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "bake"))
+import tuning  # noqa: E402
+
+TUNING = tuning.bake("plate")
+
 # ---- the grade ------------------------------------------------------------
 class Grade(NamedTuple):
     """One picture's worth of the pipeline in THE GRADE above, in one theme,
     stage by stage.
 
     The fields are SHOUTED because they are the constants — these are the names
-    design/plate/plate-tuner.html prints in the block you paste back, and they
+    design/legacy/plate-tuner.html prints in the block you paste back, and they
     read as the same eight things they have always been rather than as the
     attributes of a record that happens to hold them.
     """
@@ -417,7 +434,7 @@ class Grade(NamedTuple):
 
 
 # Two Grades per picture, named <STEM>_<THEME> — which is the name
-# design/plate/plate-tuner.html prints over each block it asks you to paste, so the
+# design/legacy/plate-tuner.html prints over each block it asks you to paste, so the
 # block and the call it replaces are found by the same word. Each is spelled out in
 # full, and none is written as another's name, on purpose: the whole point of
 # splitting them is that a number moved on one frame reaches nothing else, and
@@ -443,120 +460,60 @@ class Grade(NamedTuple):
 # lands on the page is a property of the PAPER — 0xff composites to 255 on #fff for
 # the eye exactly as it does for the plate — so it is one value; the end that has
 # to carry the picture is a property of the FRAME, so it is three.
-LIGHT_HIGHLIGHT = (0xff, 0xff, 0xff)   # the paper itself: composites to 255 on #fff
-PLATE_LIGHT = Grade(
-    EXPOSURE_PCT=99.0,
-    EXPOSURE_TARGET=0.34,
-    SAT_KEEP=1.00,
-    CONTRAST=0.36,
-    HIGHLIGHT_PUSH=1.34,
-    SHADOW=(0xb8, 0xb8, 0xb8),      # composites to code 246.5 on white at 0.12
-    HIGHLIGHT=LIGHT_HIGHLIGHT,
-    GRAIN_SIGMA=0.0075,
-)
-
-# A picture's dark opened as its OWN light for as long as the question on black was
-# "is this too loud", which is the question the light grade is already an answer to.
-# It is the wrong question. On black the picture is not too loud, it is not there:
-# see THE ARITHMETIC OF THE DARK PAPER in the docstring for the measurement, but
-# the short of it is that SHADOW=0x00 composites onto a #000 page at exactly the
-# page's own value, so the dark end of every one of these pictures is not dim, it
-# is deleted.
+# WHERE THE NUMBERS ARE NOW. Every field of every one of the six lives in
+# design/bake/plate/recipe.json, with its range and the paragraph saying what it
+# does, and is read through TUNING above. They used to be six literal blocks here
+# and a tuner that printed a seventh for you to paste over one of them; the paste
+# is what went wrong, because a paste that was not made is a shipped picture that
+# nothing in this file describes. Nothing is lost by the move: the recipe is
+# committed, the Editor writes only what has been CHANGED, and this script reads
+# exactly what the Editor would run it with.
 #
-# So all three darks are spelled out below, and all three move the same two
-# endpoints in the same direction: SHADOW up off the paper, HIGHLIGHT up with it so
-# that lifting the floor flattens nothing. They are still one paper stock — the
-# pipeline above is shared stage for stage, and this is the endpoints only.
-DARK_SHADOW = (0x2c, 0x2c, 0x2c)     # composites to code 7.5 on black at 0.17
-# SHADOW is shared and HIGHLIGHT is not, and the split is the one the section above
-# argues for rather than a compromise between them. The floor is a property of the
-# PAPER: 0x00 lands on #000 for the plate exactly as it does for the eye, and the
-# value that clears the page is arithmetic. The ceiling is a property of the FRAME,
-# because what a picture's HIGHLIGHT does depends on how much of that picture is
-# near the top of its own range — and that is where sharing one pair went wrong.
+# THE ARITHMETIC OF THE DARK PAPER decided three of the values the recipe opens
+# on, and it is worth knowing before any of them is dragged. On black, SHADOW=0x00
+# composites onto a #000 page at exactly the page's own value, so the dark end of
+# a picture is not dim, it is deleted - all three darks therefore lift SHADOW off
+# the paper and lift HIGHLIGHT with it so that raising the floor flattens nothing.
+# The three dark ceilings are then SOLVED rather than judged: each is the
+# HIGHLIGHT that brings that picture's mean to the plate's dL* 2.91, the plate
+# being the one of the three that was already right. 0x8a for the plate, 0x61 for
+# the car, 0x90 for the eye.
 #
-# It went wrong measurably. Composited onto the page and measured over each
-# picture's own subject, one shared 0x8a put them at a mean of
-#
-#     plate dL* 2.91    car dL* 3.80    eye dL* 2.86
-#
-# so the car was putting about a third more light on the page than the other two.
-# Not because its endpoints differed — they did not — but because the gondola and
-# the gantry sit high in the frame's range where the dome and the lattice do not.
-# The percentile exposure in step 2 pins the TOP of each frame to the same place;
-# it says nothing about where the mass underneath it sits, and the mass is what a
-# picture's loudness is.
-#
-# So the three ceilings below are solved rather than judged: each is the HIGHLIGHT
-# that brings that picture's mean to the plate's 2.91, the plate being the one of
-# the three that was already right. See THE ARITHMETIC OF THE DARK PAPER.
-PLATE_DARK_HIGHLIGHT = (0x8a, 0x8a, 0x8a)   # the reference — dL* 2.91
-CAR_DARK_HIGHLIGHT = (0x61, 0x61, 0x61)     # was 0x8a, at dL* 3.80
-EYE_DARK_HIGHLIGHT = (0x90, 0x90, 0x90)     # was 0x8a, at dL* 2.86
-PLATE_DARK = Grade(
-    EXPOSURE_PCT=99.0,
-    EXPOSURE_TARGET=0.34,
-    SAT_KEEP=1.00,
-    CONTRAST=0.36,
-    HIGHLIGHT_PUSH=1.34,
-    SHADOW=DARK_SHADOW,
-    HIGHLIGHT=PLATE_DARK_HIGHLIGHT,
-    GRAIN_SIGMA=0.0075,
-)
+# On the light paper the split runs the other way, which is that same rule with
+# the papers swapped rather than a second rule: the end that LANDS ON THE PAGE is
+# a property of the paper - 0xff composites to 255 on #fff for the eye exactly as
+# it does for the plate - so all three lights share it, while the end that has to
+# carry the picture is a property of the frame and is three different values.
 
-CAR_LIGHT = Grade(
-    EXPOSURE_PCT=99.0,
-    EXPOSURE_TARGET=0.34,
-    SAT_KEEP=1.00,
-    CONTRAST=0.36,
-    HIGHLIGHT_PUSH=1.34,
-    SHADOW=(0xb8, 0xb8, 0xb8),      # composites to code 245.4 on white at 0.135
-    HIGHLIGHT=LIGHT_HIGHLIGHT,
-    GRAIN_SIGMA=0.0075,
-)
 
-CAR_DARK = Grade(
-    EXPOSURE_PCT=99.0,
-    EXPOSURE_TARGET=0.34,
-    SAT_KEEP=1.00,
-    CONTRAST=0.36,
-    HIGHLIGHT_PUSH=1.34,
-    SHADOW=DARK_SHADOW,
-    HIGHLIGHT=CAR_DARK_HIGHLIGHT,
-    GRAIN_SIGMA=0.0075,
-)
+def graded(name: str) -> Grade:
+    """One of the six Grades, out of design/bake/plate/recipe.json.
 
-EYE_LIGHT = Grade(
-    EXPOSURE_PCT=99.0,
-    EXPOSURE_TARGET=0.34,
-    SAT_KEEP=1.00,
-    CONTRAST=0.36,
-    HIGHLIGHT_PUSH=1.34,
-    SHADOW=(0xc7, 0xc7, 0xc7),      # composites to code 247.7 on white at 0.131
-    HIGHLIGHT=LIGHT_HIGHLIGHT,
-    GRAIN_SIGMA=0.0075,
-)
+    Six and not one: a picture on black wants its own endpoints rather than more
+    of light's, and the car wants its own rather than the plate's. They opened on
+    identical numbers, because that is what shipped while there was one grade for
+    everything, so splitting them changed no pixel. What it changed is that
+    moving one of them now moves one of them.
+    """
+    at = lambda field: "%s.%s" % (name, field)
+    return Grade(
+        EXPOSURE_PCT=TUNING.num(at("EXPOSURE_PCT")),
+        EXPOSURE_TARGET=TUNING.num(at("EXPOSURE_TARGET")),
+        SAT_KEEP=TUNING.num(at("SAT_KEEP")),
+        CONTRAST=TUNING.num(at("CONTRAST")),
+        HIGHLIGHT_PUSH=TUNING.num(at("HIGHLIGHT_PUSH")),
+        SHADOW=TUNING.colour8(at("SHADOW")),
+        HIGHLIGHT=TUNING.colour8(at("HIGHLIGHT")),
+        GRAIN_SIGMA=TUNING.num(at("GRAIN_SIGMA")),
+    )
 
-# The eye was the first of the six to be spelled out, and for a reason that was not
-# a dark-theme judgement at all: light moved and dark stayed, so this block held the
-# numbers both themes had shared. It now holds the same pair as the other two.
-EYE_DARK = Grade(
-    EXPOSURE_PCT=99.0,
-    EXPOSURE_TARGET=0.34,
-    SAT_KEEP=1.00,
-    CONTRAST=0.36,
-    HIGHLIGHT_PUSH=1.34,
-    SHADOW=DARK_SHADOW,
-    HIGHLIGHT=EYE_DARK_HIGHLIGHT,
-    GRAIN_SIGMA=0.0075,
-)
 
 # Light first in each: it is the page's default, and out_path() spells it
 # unsuffixed. Hung off the Picture below rather than held in a second dict keyed
 # by stem, so there is no pair of tables to drift apart.
-PLATE_GRADES = {"light": PLATE_LIGHT, "dark": PLATE_DARK}
-CAR_GRADES = {"light": CAR_LIGHT, "dark": CAR_DARK}
-EYE_GRADES = {"light": EYE_LIGHT, "dark": EYE_DARK}
+PLATE_GRADES = {"light": graded("PLATE_LIGHT"), "dark": graded("PLATE_DARK")}
+CAR_GRADES = {"light": graded("CAR_LIGHT"), "dark": graded("CAR_DARK")}
+EYE_GRADES = {"light": graded("EYE_LIGHT"), "dark": graded("EYE_DARK")}
 
 GRAIN_SEED = 20250615      # the frame's own date; any constant would do
 # One seed for every grade, and not a field of Grade: the grain is the frame's
@@ -605,9 +562,11 @@ GRAIN_SEED = 20250615      # the frame's own date; any constant would do
 # covered anywhere from 0.085 down, and the matte grows by 0.2% of the frame over
 # the whole span from there to 0.065, none of it on the building. 0.075 is the
 # middle of that plateau.
-SKY_LUMA_MIN = 0.130      # linear luma a pixel needs to seed the sky
-SKY_LUMA_LOW = 0.075      # ...and to stay in it, once something brighter vouches
-SKY_EDGE_BLUR = 1.2       # px at output scale, to keep the roofline from aliasing
+# The same move as the Grades: declared in design/bake/plate/recipe.json with the
+# ranges above written down beside them, read here.
+SKY_LUMA_MIN = TUNING.num("SKY_LUMA_MIN")    # linear luma a pixel needs to seed the sky
+SKY_LUMA_LOW = TUNING.num("SKY_LUMA_LOW")    # ...and to stay in it, once something vouches
+SKY_EDGE_BLUR = TUNING.num("SKY_EDGE_BLUR")  # px at output scale, against an aliased roofline
 
 # ---- the ladder -----------------------------------------------------------
 # One file per rung per picture, and the page picks the smallest that covers it.
@@ -913,7 +872,7 @@ def grade_json(g: Grade) -> dict:
 
 
 def write_neutral(pic: Picture, lin: np.ndarray, alpha_f: np.ndarray, computed: bool) -> None:
-    """Step 1 on its own, plus the constants, for design/plate/plate-tuner.html.
+    """Step 1 on its own, plus the constants, for design/legacy/plate-tuner.html.
 
     Encoded rather than left linear, and scaled by nothing. Eight bits of linear
     light would put a quarter of its codes above anything in this frame and leave
@@ -1024,7 +983,7 @@ def main() -> int:
         # with nothing. See A GRADE PER PICTURE, A LADDER PER THEME.
         if theme != "light" and g == pic.grades["light"]:
             print(f"{theme}: same grade as light — no ladder "
-                  f"(portfolio/index.html falls back to the light file)")
+                  f"(src/kernel/corners.ts falls back to the light file)")
             continue
 
         graded = grade(lin, keep, g)
@@ -1075,13 +1034,15 @@ def main() -> int:
     write_neutral(pic, lin, alpha_f, computed)
     print(f"{pic.neutral_path.relative_to(REPO)}  "
           f"{pic.neutral_path.stat().st_size / 1024:.0f} KB"
-          f"  + {pic.meta_path.name}   (design/plate/plate-tuner.html reads these)")
+          f"  + {pic.meta_path.name}   (design/legacy/plate-tuner.html reads these)")
 
     # Last line of the run, because it is the one thing left to do by hand. A
     # re-bake that is not followed by this paste is invisible on the deployment
-    # for a day whatever else it got right — see rungUrl in portfolio/index.html.
-    print(f'\nvar IMG_VERSION = "{ladder_stamp()}";'
-          f"   <- portfolio/index.html, if it differs from what is there")
+    # for a day whatever else it got right — the ladder's URLs are assembled in
+    # script, so the build cannot fingerprint them the way it does a url() in a
+    # stylesheet. See rung() in src/kernel/corners.ts.
+    print(f"\nconst LADDER_VERSION = '{ladder_stamp()}';"
+          f"   <- src/kernel/corners.ts, if it differs from what is there")
     return 0
 
 

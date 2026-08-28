@@ -1,0 +1,305 @@
+/* THE EFFECT STACK — nine layers over the finished page, each inert until named
+   in data-fx. The names are CONTEXT.md's: paper, halftone, film, grain, grille,
+   scan, roll, tube, vignette.
+
+   Every number the layers are drawn from is in tokens/effects.css, imported
+   first so this file's rules stand after them, and so the Editor has one file
+   per part of the Kernel that is nothing but Tokens. src/kernel/NOTES.md carries the
+   reasoning; the one thing that must not be read past is the warning on .fx
+   below. */
+
+@import '../tokens/effects.css';
+
+/* The film is one frame under `cover`: a narrow window sees LESS of the same
+   picture, not a smaller one, so four scratches end up sharing a phone screen.
+   A strength correction, not a scale one. The paper is a fixed tile and needs
+   none. 700px rather than the composition's own gate — this is a question about
+   how much of a photograph is on screen. */
+@media (max-width: 700px) {
+  :root {
+    --fx-film-strength: 0.07;
+  }
+  :root[data-theme='dark'] {
+    --fx-film-strength: 0.09;
+  }
+}
+
+/* NO z-index, NO isolation, NO mask ON THIS ELEMENT. This is the load-bearing
+   line in the file rather than an omission: an element with any of the three
+   becomes an isolated group, and an isolated group hands every blending child a
+   transparent backdrop instead of the page. `overlay` and `soft-light` are
+   no-ops over white, so correctly blended these layers leave #fff paper at
+   exactly #fff — with a z-index in, a bare patch measured 182 of 255 under the
+   film alone. The layers stop blending and start painting, which looks exactly
+   like the strengths being too high. If this stack ever reads as a flat grey
+   wash, measure a bare patch of paper before touching a strength.
+   .fx is the last positioned element in the body, so it paints over the Sections
+   on DOM order alone and needs nothing. */
+/* `bottom: 0` and not `height: var(--fx-band)`: the stack covers the WHOLE
+   DOCUMENT, every Section of it, and the body is positioned so that this reaches
+   the foot of the document rather than the foot of the first screen (ground.css
+   is where that one line lives, and why). A band one screen tall ended at the
+   fold, so the treatment stopped in the middle of the page turn — a seam the
+   reader scrolls past, with the second Section untreated below it. What ends the
+   stack now is the veil below, not a length. */
+.fx {
+  position: absolute;
+  top: var(--fx-y);
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+/* THE VEIL: how much of the stack is left, as the reader turns the page.
+   1 while the page is on paper, 0 by the time it has arrived in dark, and the
+   crossing between is the Turn's — so the treatment belongs to the paper and
+   goes out with it rather than being a fixed wash over a document that has
+   changed colour underneath it. --fx-veil-from and --fx-veil-to are the two
+   Turn values it runs between; equal values would divide by zero, which is why
+   they are stated as a span and not as a midpoint and a width.
+
+   It is derived HERE and not in tokens/effects.css because it is not a number
+   the author sets — it is a function of --turn, and a Tokens file the Editor
+   offers as a slider has no business holding one. The two ends of it are
+   Tokens, and they are what there is to drag. */
+:root {
+  --fx-veil: clamp(
+    0,
+    (var(--fx-veil-to) - var(--turn)) / (var(--fx-veil-to) - var(--fx-veil-from)),
+    1
+  );
+}
+
+.fx > * {
+  display: none;
+  position: absolute;
+  inset: 0;
+  /* The veil, and the dissolve at the foot when --fx-fade is not 0. Both are one
+     mask because both are the same question — how much of this layer survives —
+     and one mask is one composite.
+
+     ON EACH LAYER AND NEVER ON .fx — see above. A mask on the blending element
+     itself is applied before the blend and is harmless; only a mask between the
+     blenders and the backdrop isolates. This is also why the veil is a mask and
+     not an `opacity` on the container: `opacity` below 1 makes .fx an isolated
+     group, which is the exact failure the warning above is about, and
+     check-source.mjs fails the build on it.
+
+     The stop is a PERCENTAGE of the layer and no longer --fx-fade x --fx-band:
+     the layer is the document's height now and --fx-band is a screen, so the two
+     stopped being the same length when `bottom: 0` went in above. */
+  mask-image: linear-gradient(
+    to bottom,
+    rgb(0 0 0 / var(--fx-veil)) calc(100% * (1 - var(--fx-fade))),
+    transparent 100%
+  );
+}
+
+/* Each layer needs a z of its own, in the order it already paints in, and they
+   are EVEN so content excluded from the stack has an odd one to stand on
+   between any two of them. A z-index on a LAYER is safe; the warning above is
+   about the container. */
+.fx-paper {
+  z-index: 2;
+}
+.fx-halftone {
+  z-index: 4;
+}
+.fx-film {
+  z-index: 6;
+}
+.fx-grain {
+  z-index: 8;
+}
+.fx-grille {
+  z-index: 10;
+}
+.fx-scan {
+  z-index: 12;
+}
+.fx-roll {
+  z-index: 14;
+}
+.fx-tube {
+  z-index: 16;
+}
+.fx-vignette {
+  z-index: 18;
+}
+
+:root[data-fx~='paper'] .fx-paper {
+  display: block;
+  background-image: var(--fx-paper-src);
+  background-size: var(--fx-paper-size) var(--fx-paper-size);
+  background-repeat: repeat;
+  filter: invert(var(--fx-paper-invert)) brightness(var(--fx-paper-lift))
+    contrast(var(--fx-paper-contrast));
+  mix-blend-mode: var(--fx-paper-blend);
+  opacity: var(--fx-paper-strength);
+}
+
+/* Rotated about the centre and oversized to 150% so the corners of the band stay
+   covered at any angle — sqrt(2) is 1.415, and 1.5 leaves a margin. */
+:root[data-fx~='halftone'] .fx-halftone {
+  display: block;
+  background-image: radial-gradient(
+    circle at 50% 50%,
+    #000 0 calc(var(--fx-halftone-dot) * var(--fx-halftone-pitch)),
+    #fff calc(var(--fx-halftone-dot) * var(--fx-halftone-pitch) + 0.5px)
+  );
+  background-size: var(--fx-halftone-pitch) var(--fx-halftone-pitch);
+  width: 150%;
+  height: 150%;
+  inset: -25%;
+  rotate: var(--fx-halftone-angle);
+  mix-blend-mode: var(--fx-halftone-blend);
+  opacity: var(--fx-halftone-opacity);
+}
+
+/* max(100%, band x aspect) is what `cover` picks: whichever constraint binds.
+   The +1px is for the rounding underneath, not for the arithmetic — a subpixel
+   short after rounding is a hairline of the wrapped edge down one side. */
+:root[data-fx~='film'] .fx-film {
+  display: block;
+  background-image: var(--fx-film-src);
+  background-size: calc(1px + var(--fx-film-scale) * max(100%, var(--fx-band) * var(--fx-film-aspect)))
+    auto;
+  background-position: center;
+  background-repeat: repeat;
+  filter: invert(var(--fx-film-invert)) brightness(var(--fx-film-lift))
+    contrast(var(--fx-film-contrast));
+  mix-blend-mode: var(--fx-film-blend);
+  opacity: var(--fx-film-strength);
+}
+
+/* Moving grain over the still film. The tile is procedural — grain.ts draws
+   one square of white noise at boot and hands it here as a data URI — so there
+   is no asset to request for something a browser can make in half a
+   millisecond. It moves by jumping its own background-position on a steps()
+   timeline rather than by redrawing: eight positions, so a cycle of 8/fps
+   seconds spends exactly 1/fps on each and --fx-grain-fps is the real frame
+   rate. */
+:root[data-fx~='grain'] .fx-grain {
+  display: block;
+  background-image: var(--fx-grain-src, none);
+  background-size: var(--fx-grain-size) var(--fx-grain-size);
+  background-repeat: repeat;
+  mix-blend-mode: overlay;
+  opacity: var(--fx-grain-opacity);
+  animation: fx-grain-shift calc(8s / var(--fx-grain-fps)) steps(1, end) infinite;
+}
+
+@keyframes fx-grain-shift {
+  0% {
+    background-position: 0 0;
+  }
+  12.5% {
+    background-position: -13px 27px;
+  }
+  25% {
+    background-position: 31px -19px;
+  }
+  37.5% {
+    background-position: -41px -37px;
+  }
+  50% {
+    background-position: 23px 43px;
+  }
+  62.5% {
+    background-position: -29px 11px;
+  }
+  75% {
+    background-position: 47px -31px;
+  }
+  87.5% {
+    background-position: -17px -43px;
+  }
+}
+
+:root[data-fx~='scan'] .fx-scan {
+  display: block;
+  background-image: repeating-linear-gradient(
+    to bottom,
+    rgb(0 0 0 / var(--fx-scan-alpha)) 0 1px,
+    transparent 1px var(--fx-scan-pitch)
+  );
+  mix-blend-mode: multiply;
+  animation: fx-flicker 0.14s steps(2, end) infinite;
+}
+
+/* Three phosphor stripes to a triad — the pitch is the triad, so each stripe is
+   a third of it. */
+:root[data-fx~='grille'] .fx-grille {
+  display: block;
+  background-image: repeating-linear-gradient(
+    to right,
+    rgb(255 0 0 / var(--fx-grille-alpha)) 0 calc(var(--fx-grille-pitch) / 3),
+    rgb(0 255 0 / var(--fx-grille-alpha)) calc(var(--fx-grille-pitch) / 3)
+      calc(var(--fx-grille-pitch) / 3 * 2),
+    rgb(0 0 255 / var(--fx-grille-alpha)) calc(var(--fx-grille-pitch) / 3 * 2)
+      var(--fx-grille-pitch)
+  );
+  mix-blend-mode: screen;
+}
+
+:root[data-fx~='tube'] .fx-tube {
+  display: block;
+  border-radius: var(--fx-tube-curve);
+  box-shadow: inset 0 0 calc(var(--fx-tube-curve) * 4) calc(var(--fx-tube-curve) / 2)
+    rgb(0 0 0 / var(--fx-tube-alpha));
+  mix-blend-mode: multiply;
+}
+
+:root[data-fx~='roll'] .fx-roll {
+  display: block;
+  height: var(--fx-roll-height);
+  inset: auto 0 0 0;
+  background-image: linear-gradient(
+    to bottom,
+    transparent,
+    rgb(255 255 255 / var(--fx-roll-alpha)) 50%,
+    transparent
+  );
+  mix-blend-mode: screen;
+  animation: fx-roll var(--fx-roll-period) linear infinite;
+}
+
+@keyframes fx-flicker {
+  0% {
+    opacity: 1;
+  }
+  50% {
+    opacity: calc(1 - var(--fx-flicker));
+  }
+}
+
+@keyframes fx-roll {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(calc(-100svh - var(--fx-roll-height)));
+  }
+}
+
+:root[data-fx~='vignette'] .fx-vignette {
+  display: block;
+  background-image: radial-gradient(
+    ellipse at 50% 45%,
+    #fff var(--fx-vignette-start),
+    hsl(0 0% calc(100% - var(--fx-vignette-strength) * 100%)) 130%
+  );
+  mix-blend-mode: multiply;
+}
+
+/* A treatment is not motion, so a reader who asked for less of it still gets the
+   stack. What goes is the four things that actually travel. */
+@media (prefers-reduced-motion: reduce) {
+  .fx-grain,
+  .fx-roll,
+  .fx-scan {
+    animation: none;
+  }
+}

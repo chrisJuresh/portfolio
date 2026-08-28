@@ -1,0 +1,107 @@
+/* The Effect Stack's numbers, apart from the layers that draw them, so the
+   Editor can reach every one — src/kernel/NOTES.md says what each does, and
+   design/legacy/effects-tuner.html is where these were tuned before it could.
+
+   Most are stated twice, once per theme: a texture over white and the same
+   texture over black are not the same picture. The one narrow-window correction
+   is a @media in effect-stack.css and stays there — the Editor writes a value
+   and not a breakpoint. */
+
+:root {
+  /* --fx-y is where the stack begins; it ends at the foot of the DOCUMENT and
+     there is no token for that, because the stack covers every Section and a
+     length that said otherwise would be a length to get wrong.
+
+     --fx-band is therefore NOT the stack's own height. It is one screen — what
+     the textures are scaled and travelled against, which is a question about how
+     much of a photograph is on screen and not about how tall the page is. The
+     film's cover arithmetic and the roll's sweep are its only readers.
+
+     --fx-fade is the share of the layer that dissolves at its foot, and it is a
+     share of the layer rather than of --fx-band for the same reason. */
+  --fx-y: 0px;
+  --fx-band: calc(var(--fold) - var(--fx-y));
+  --fx-fade: 0;
+
+  /* The veil's two ends, as values of the Turn: the stack is whole at
+     --fx-veil-from and gone at --fx-veil-to. 0 and 1 spend the whole page turn
+     fading, so the treatment is at full strength on the Front Screen and clean
+     off the Projects Panel, with no seam anywhere between. Raising `from`
+     holds the stack for the first part of the crossing; lowering `to` finishes
+     it early. effect-stack.css derives --fx-veil from these, and says why it is
+     derived there and not here. */
+  --fx-veil-from: 0;
+  --fx-veil-to: 1;
+
+  /* film — Texturelabs 185XL, one frame over the whole band, never tiled.
+     No ?v= digest, unlike the hand-written page's copy of these URLs: the build
+     fingerprints anything it can see in a url(), so what ships is
+     /_astro/film-1600.<hash>.webp and a re-bake is a different filename by
+     construction. That sheet had no build and carried the digest by hand. */
+  --fx-film-src: image-set(
+    url('/portfolio/img/tex/film-1600.webp') 1x,
+    url('/portfolio/img/tex/film-2600.webp') 2x
+  );
+  --fx-film-strength: 0.14;
+  --fx-film-blend: multiply;
+  --fx-film-scale: 0.25;
+  --fx-film-aspect: 1.3445;
+  --fx-film-invert: 1;
+  --fx-film-lift: 1.5;
+  --fx-film-contrast: 2;
+
+  /* paper — a 512px square that wraps in both axes, drawn at --fx-paper-size */
+  --fx-paper-src: image-set(
+    url('/portfolio/img/tex/paper-512.webp') 1x,
+    url('/portfolio/img/tex/paper-1024.webp') 2x
+  );
+  --fx-paper-size: 384px;
+  --fx-paper-strength: 0.18;
+  --fx-paper-blend: multiply;
+  --fx-paper-invert: 0;
+  --fx-paper-lift: 1.5;
+  --fx-paper-contrast: 1.25;
+
+  --fx-grain-opacity: 0.09;
+  --fx-grain-size: 600px;
+  --fx-grain-fps: 2;
+
+  --fx-halftone-pitch: 3.7px;
+  --fx-halftone-dot: 0.27;
+  --fx-halftone-angle: 11deg;
+  --fx-halftone-opacity: 1;
+  --fx-halftone-blend: soft-light;
+
+  --fx-vignette-start: 55%;
+  --fx-vignette-strength: 0.3;
+
+  --fx-scan-pitch: 3px;
+  --fx-scan-alpha: 0.28;
+  --fx-flicker: 0.04;
+  --fx-grille-pitch: 3px;
+  --fx-grille-alpha: 0.16;
+  --fx-tube-curve: 1.4rem;
+  --fx-tube-alpha: 0.5;
+  --fx-roll-height: 14%;
+  --fx-roll-alpha: 0.05;
+  --fx-roll-period: 7s;
+}
+
+/* A texture over black is a different picture from the same texture over white,
+   so the two that ship on are stated again rather than scaled. */
+:root[data-theme='dark'] {
+  --fx-film-invert: 0;
+  --fx-film-lift: 0.75;
+  --fx-film-contrast: 4;
+  --fx-film-blend: screen;
+  --fx-film-strength: 0.18;
+
+  --fx-paper-lift: 0.8;
+  --fx-paper-contrast: 8;
+  --fx-paper-blend: normal;
+  --fx-paper-strength: 0.06;
+
+  --fx-halftone-pitch: 3.9px;
+  --fx-halftone-dot: 0.2;
+  --fx-halftone-blend: multiply;
+}

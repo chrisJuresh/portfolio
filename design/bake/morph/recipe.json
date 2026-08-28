@@ -1,0 +1,57 @@
+{
+  "title": "The cut title's face",
+  "note": "Which of the twenty-four faces the cut title morphs INTO. The Front Screen ships the word as one baked Friz outline and cut-morph.ts swaps it for the same outlines split into eight, tweened against the Turn; this Bake writes both the shortlist the sheet reads and the one face the page carries, into src/sections/front-screen/assets/cut-morph.json.",
+  "needs": "the font files, which are not in this repository - run it beside friz/, gf/ and fsf/ as design/cut-title/morph/README.md describes. Without them there is nothing to build from and the run stops before it writes anything.",
+  "run": [
+    "python",
+    "design/cut-title/morph/build-site.py",
+    "--repo",
+    ".",
+    "--site",
+    "src/sections/front-screen/assets/cut-morph.json"
+  ],
+  "shows": [
+    "design/cut-title/morph/faces.json"
+  ],
+  "groups": [
+    {
+      "name": "Which of the twenty-four",
+      "note": "Ranked in design/cut-title/morph/ranking.csv, with a blurb each in faces.json. The four kinds the tuner grouped them by - grotesk, display, soft, geometric - are fields on those entries rather than an axis here.",
+      "params": [
+        {
+          "key": "face",
+          "label": "face",
+          "value": "hostgrotesk",
+          "arg": "--face",
+          "options": [
+            "satoshi",
+            "switzer",
+            "generalsans",
+            "cabinetgrotesk",
+            "clashdisplay",
+            "supreme",
+            "ranade",
+            "nippo",
+            "chillax",
+            "technor",
+            "bespokesans",
+            "pally",
+            "geist",
+            "instrumentsans",
+            "hostgrotesk",
+            "funneldisplay",
+            "bricolagegrotesque",
+            "spacegrotesk",
+            "syne",
+            "gabarito",
+            "anybody",
+            "unbounded",
+            "sora",
+            "outfit"
+          ],
+          "note": "The face the word morphs INTO. At t = 0 every one of the twenty-four is identical, because they are all Friz there. Host Grotesk is OFL; the twelve Fontshare faces are free for commercial use and are not, so choosing one of those reopens a licensing question."
+        }
+      ]
+    }
+  ]
+}

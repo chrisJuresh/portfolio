@@ -1,0 +1,130 @@
+---
+// The Shell: the head, the Kernel, and the Sections' mount points. It holds no
+// composition of its own — every length, colour and word on the page belongs to
+// a Section or to the Kernel, and anything that looks like design being decided
+// here is a bug.
+import EffectStack from '../kernel/effect-stack/EffectStack.astro';
+import Kernel from '../kernel/Kernel.astro';
+import { THEME_KEY } from '../kernel/theme';
+// The Overrides the Editor has written, imported LAST so they stand after
+// everything they argue with. This is the one stylesheet in src/ that belongs to
+// no Section and to no Kernel: an Override is a value put OUTSIDE a composition
+// so the page looks right now, pending an agent folding it in (ADR 0004,
+// CONTEXT.md). The Editor is its only author — scripts/editor/lib/overrides.mjs
+// is the boundary, and check-source.mjs fails the build on bytes it did not write.
+import '../overrides.css';
+
+interface Props {
+  title: string;
+  description: string;
+  /** The Effect Stack's layers, by name. Written here so the page opens already
+   *  treated instead of flashing untreated a script-load later. */
+  fx?: string;
+}
+
+const { title, description, fx = 'halftone paper' } = Astro.props;
+---
+
+<!doctype html>
+<html lang="en" data-fx={fx}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <meta name="author" content="Christian Juresh" />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:type" content="profile" />
+    <meta property="og:site_name" content="Christian Juresh" />
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2032%2032'%3E%3Ctext%20x='16'%20y='23'%20font-family='Sitka%20Text,Charter,Iowan%20Old%20Style,Georgia,serif'%20font-size='19'%20text-anchor='middle'%20fill='%231a1917'%3Ecj%3C/text%3E%3C/svg%3E"
+    />
+    {/* The theme, before first paint. Inline and blocking on purpose: every
+        other script on the page is a deferred module, and a deferred module
+        means the reader sees the light page flash before the dark one arrives.
+        This is the whole reason the Shell has any inline script at all. */}
+    <script is:inline define:vars={{ THEME_KEY }}>
+      (() => {
+        let theme = 'light';
+        let stored = null;
+        try {
+          stored = localStorage.getItem(THEME_KEY);
+        } catch {}
+        if (stored === 'dark' || stored === 'light') theme = stored;
+        else if (window.matchMedia?.('(prefers-color-scheme: dark)').matches) theme = 'dark';
+        document.documentElement.setAttribute('data-theme', theme);
+      })();
+    </script>
+    <slot name="head" />
+  </head>
+  <body>
+    <Kernel />
+    <slot />
+    {/* The deep link. `/portfolio/<section>` is a rewrite onto this same
+        document (ADR 0001), so the browser is handed a path and never a
+        fragment — no native jump happens, and the reader would land at the top
+        of a document they asked for the middle of.
+
+        THE LAST SEGMENT IS THE SECTION'S id, and a path of one segment is the
+        document itself, which is what keeps `/portfolio` from looking for an
+        element called `portfolio`. A segment naming nothing on the page leaves
+        the reader at the top rather than throwing: the rewrite is the
+        deployment's, so this cannot assume the two lists agree — the Check is
+        what says they do.
+
+        INLINE, AND AFTER THE SECTIONS: the element has to be parsed for the
+        jump to land on it, and every other script here is a deferred module,
+        which runs late enough for the reader to see the top of the document
+        first. Same argument as the theme in the head, at the other end of the
+        body. */}
+    <script is:inline>
+      (() => {
+        const segments = location.pathname.split('/').filter(Boolean);
+        if (segments.length < 2) return;
+        const target = document.getElementById(segments[segments.length - 1]);
+        if (!target) return;
+
+        /* THE JUMP IS FOLLOWED RATHER THAN MADE ONCE, and that is the whole
+           subtlety here. A Section mounts on approach (ADR 0001) and the one
+           ABOVE this one changes height when it does — then again as its
+           pictures arrive — so a jump made at parse time is 75px wrong a moment
+           later and nothing says so. A browser has the same problem with a
+           fragment and answers it the same way: keep landing until the document
+           stops moving, and stop the instant the reader scrolls for themselves.
+
+           `placed` is where we last put them and `at` is where the target was in
+           the document when we did. A layout shift moves `at` and leaves
+           `placed` alone; a reader moves `placed` and leaves `at` alone, which
+           is what tells the two apart. */
+        let placed = -1;
+        let at = -1;
+        const land = () => {
+          if (placed >= 0 && Math.round(scrollY) !== placed) return false;
+          const top = Math.round(target.getBoundingClientRect().top + scrollY);
+          if (top !== at) {
+            target.scrollIntoView({ block: 'start', behavior: 'instant' });
+            placed = Math.round(scrollY);
+            at = top;
+          }
+          return true;
+        };
+
+        land();
+        /* Long enough to outlast the Sections mounting and their first pictures
+           arriving, and short enough that a page left open is not reading a rect
+           for the rest of the afternoon. One measurement a frame, and the reader
+           ends it early by scrolling. */
+        const until = performance.now() + 4000;
+        const follow = () => {
+          if (land() && performance.now() < until) requestAnimationFrame(follow);
+        };
+        requestAnimationFrame(follow);
+      })();
+    </script>
+    {/* Last in the body, and the position is load-bearing — see the note in
+        Kernel.astro. */}
+    <EffectStack />
+  </body>
+</html>

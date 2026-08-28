@@ -4,7 +4,9 @@
     "C:/Program Files/Blender Foundation/Blender 5.2/blender.exe" -b \
         -P design/plinth/build-slab.py -- [<stone> | proc | photo | added | all]...
 
-Several may be named at once, and are rendered in the order given.
+Several may be named at once, and are rendered in the order given. `none`
+renders nothing and rewrites design/plinth/slab.json alone, which is what a
+deleted stone needs — see the group table in main().
 
 There are two families of stone here and they are generated in completely
 different ways. `proc` is nero/portoro/marquina/grey, grown out of noise nodes.
@@ -34,7 +36,7 @@ them to be in, and the silhouette comes out of the alpha channel instead of bein
 assumed.
 
 THE CAMERA IS SOLVED FROM THE RENDER, NOT CHOSEN. IMG_20260815_153956.jpg is not
-in this repository — see the .panel block in portfolio/styles.css for why — so
+in this repository — it sits in design/reference/, whose README says why — so
 these are constants of the composition, but they are measurements and the camera
 that reproduces them is arithmetic:
 
@@ -107,10 +109,11 @@ everything, gives two different sha256s. The OptiX denoiser is the suspect
 (`use_denoising` on a GPU device), and it is not worth turning off to buy a
 property nothing here needs.
 
-What it costs is that digest() moves on EVERY bake, so the ?v= in
-portfolio/styles.css has to be re-pasted after any render whether or not the
-stone changed, and a changed digest is not evidence that anything changed. If you
-want to know whether a stone actually moved, compare the plates.
+What it costs is that digest() moves on EVERY bake, so a changed digest is not
+evidence that anything changed. If you want to know whether a stone actually
+moved, compare the plates. Nothing has to be re-pasted after a render any more:
+the plate is named by a url() the build can see, so it is fingerprinted by
+content — plinth-studio.py writes the filename and no digest.
 """
 
 from __future__ import annotations
@@ -174,6 +177,16 @@ R = FAR_HALF / NEAR_HALF                         # 0.890160
 CAM_D = DEPTH * R / (1.0 - R)                    # 2.43125
 CAM_H = TOP_FACE / (1.0 - R)                     # 0.332048
 HEIGHT = FRONT_FACE
+
+# WHERE THE ARRIS IS IN THE BLOCK'S OWN TEXTURE SPACE, which is not the origin
+# and is the thing every photo-backed stone is windowed against. build_scene()
+# applies the cube's SCALE and leaves its LOCATION on the object, so `Object`
+# texture coordinates run ±DEPTH/2 and ±HEIGHT/2 about the block's centre while
+# WORLD coordinates run 0..DEPTH and -HEIGHT..0 about the arris. The two are a
+# half-block apart on each axis, and build_photo_material() subtracts exactly
+# that. See the note there for what it looked like when it did not.
+ARRIS_Y = -DEPTH / 2.0                           # local y of the front-top edge
+ARRIS_Z = HEIGHT / 2.0                           # ...and its local z
 
 LENS = 50.0
 _x_half = NEAR_HALF / CAM_D
@@ -744,11 +757,12 @@ missing %s
 
 The photo-backed stones need the maps that design/plinth/build-portoro-maps.py
 writes, and neither those nor the photograph they come from are committed - see
-the .gitignore note about /Texturelabs_*.jpg, which these follow. Run:
+the .gitignore note about design/effects/sources/, which these follow. Run:
 
     python design/plinth/build-portoro-maps.py
 
-...from a tree that has the source photograph at its root. NOTE THAT A WORKTREE
+...from a tree that has the source photograph in design/plinth/sources/. NOTE
+THAT A WORKTREE
 DOES NOT: git only puts tracked files in one, so an ignored source sitting in
 the main checkout is simply absent here. Copy it across first."""
 
@@ -1008,7 +1022,75 @@ def load_added_stones():
 # them has been demonstrated.
 PROC_ROOMS = {k + "-noir": k for k in CANDIDATES}
 
-# Last, so that load_added_stones() can see every built-in name it must not take.
+# What `proc` means, snapshotted before anything is merged in below: THE FOUR
+# BUILT-INS AND NOTHING ELSE. The bake-off those four and the four gemini plates
+# recorded is the reason this file exists, and `proc` is how it is reproduced -
+# a group that quietly grew to include whatever the Editor last tuned would make
+# that command mean something different every time it was run.
+BUILT_IN_PROC = list(CANDIDATES)
+
+
+# ---------------------------------------------------------------------------
+# ...AND THE ONE THE EDITOR TUNES
+# ---------------------------------------------------------------------------
+# design/bake/plinth/ is one procedural stone: a name, a ground, three vein sets
+# and a fracture, declared in its recipe.json with every range and paragraph the
+# tuner this replaces used to carry, and tuned through design/bake/plinth/params.json.
+# It arrives here as an ordinary CANDIDATES entry, so nothing downstream knows the
+# difference - build_material() reads it the way it reads `portoro`.
+#
+# ONE STONE AND NEVER A BUILT-IN, which is the acceptance criterion this door was
+# built to keep. Re-rendering `nero`, `portoro`, `marquina`, `arabescato` or any
+# gemini plate would overwrite the pictures the marble comparison was judged from,
+# so a name this file already defines is REFUSED rather than shadowed - the same
+# rule, and the same wording, as load_added_stones() below.
+#
+# It is also why nothing gives it a `-noir` twin: PROC_ROOMS is built above this,
+# out of the built-ins alone. The room is a parameter of the stone instead.
+def tuned_stone():
+    sys.path.insert(0, os.path.join(ROOT, "design", "bake"))
+    try:
+        import tuning
+        held = tuning.bake("plinth")
+    except (ImportError, FileNotFoundError) as why:
+        # A tree without design/bake/ still renders every built-in. This door is
+        # the Editor's, and a missing one is a Bake nobody can run rather than a
+        # generator nobody can run - which is the difference between losing a
+        # feature and losing the eight plates the comparison was judged from.
+        print("! no design/bake/plinth (%s) - built-ins only" % why)
+        return {}
+    key = held.text("stone").strip()
+    if key in CANDIDATES or key in PHOTO_CANDIDATES or key in PROC_ROOMS:
+        print("! design/bake/plinth names %s, which this file already defines - "
+              "ignored, and nothing of that name is re-rendered" % key)
+        return {}
+    veins = []
+    for at in range(3):
+        vein = "vein%d." % at
+        veins.append((
+            held.num(vein + "scale"), held.num(vein + "detail"),
+            held.num(vein + "distortion"), held.num(vein + "width"),
+            held.num(vein + "sharpness"), held.linear(vein + "colour"),
+            held.num(vein + "rough"), held.num(vein + "bump"),
+        ))
+    return {key: {
+        "title": held.text("title"),
+        GROUND: held.linear("ground"),
+        "veins": veins,
+        "fracture": (held.linear("fracture.colour"), held.num("fracture.rough"),
+                     held.num("fracture.bump"), held.num("fracture.strength")),
+        "base_rough": held.num("base_rough"),
+        "samples": held.integer("samples"),
+        "seed": held.integer("seed"),
+        "room": held.text("room"),
+    }}
+
+
+TUNED = tuned_stone()
+CANDIDATES.update(TUNED)
+
+# Last, so that load_added_stones() can see every built-in name it must not take,
+# and the Editor's one as well.
 ADDED = load_added_stones()
 PHOTO_CANDIDATES.update(ADDED)
 
@@ -1270,8 +1352,11 @@ def build_material(key):
     pm.clamp = True
     pm.inputs["From Min"].default_value = 0.0
     pm.inputs["From Max"].default_value = 1.0
-    pm.inputs["To Min"].default_value = max(0.004, BASE_ROUGH - pswing)
-    pm.inputs["To Max"].default_value = BASE_ROUGH + pswing
+    # Per stone, falling back to the module's own: the Editor's stone carries its
+    # own polish and the four built-ins share this one.
+    base = spec.get("base_rough", BASE_ROUGH)
+    pm.inputs["To Min"].default_value = max(0.004, base - pswing)
+    pm.inputs["To Max"].default_value = base + pswing
     link(tree, pn, "Fac", pm, "Value")
     rough = (pm, "Result")
 
@@ -1444,8 +1529,9 @@ def photo_map(tree, co, name, colorspace, x, y, spec):
     leaving alone. A flat projection needs a UV unwrap and would put a seam
     along the arris, which is the single most looked-at line in the picture. Box
     projection reads the top face from (x, y) and the front face from (x, z),
-    and because BOTH of those pairs agree at the arris — the top face's y is 0
-    there and the front face's z is 0 there — the vein pattern RUNS OVER THE
+    and the mapping in build_photo_material() lands BOTH of those on V = off at
+    the arris — the top face's y is ARRIS_Y there and the front face's z is
+    ARRIS_Z, and each has its own subtracted — so the vein pattern RUNS OVER THE
     EDGE and continues down the face. Which is what a block cut from one slab
     does, and is a thing the procedural material gets for free and every
     photograph pipeline before this one got wrong.
@@ -1492,10 +1578,24 @@ def build_photo_material(key):
     coord = tree.nodes.new("ShaderNodeTexCoord")
     coord.location = (-1800, 0)
 
-    # Scale and window. The offset goes on Y AND Z by the same amount, which is
-    # what keeps the two faces agreeing at the arris — see photo_map(). Putting
-    # a different number in each is the one edit here that silently breaks the
-    # thing this material is built around.
+    # Scale and window. The offset lands the ARRIS at V = off on both faces,
+    # which is what keeps them agreeing there — see photo_map().
+    #
+    # THE TWO V OFFSETS ARE DIFFERENT NUMBERS, AND HAVE TO BE. Object texture
+    # coordinates are the block's LOCAL space, and build_scene() applies the
+    # cube's scale but NOT its location, so local space is centred on the block:
+    # y runs ±DEPTH/2 and z runs ±HEIGHT/2, and the arris — the front-top edge —
+    # sits at (y = -DEPTH/2, z = +HEIGHT/2) rather than at (0, 0). Subtracting
+    # each of those puts the arris at V = off on both faces, which is the whole
+    # point of the box projection.
+    #
+    # Written as `off` on both axes it looked symmetric and was not: the front
+    # face came out half a block-height up the photograph from where the studio's
+    # window guide draws it, the top face 0.23 tiles down from it, and the two
+    # met at the arris 0.29 tiles apart — a cut, not a continuous run over the
+    # edge. Measured by correlating the shipped gemini-noir plate's front face
+    # against basecolor-deep.png: peak at V = 0.452 against the 0.4539 the
+    # centred geometry predicts, and nothing at the intended 0.400.
     #
     # THE SCALE IS NOT UNIFORM, AND MUST NOT BE. A box projection lays the image's
     # [0,1] over one tile of MODEL space per axis and knows nothing about the
@@ -1518,14 +1618,23 @@ def build_photo_material(key):
     m = tree.nodes.new("ShaderNodeMapping")
     m.location = (-1600, 0)
     m.inputs["Scale"].default_value = (s, v, v)
-    m.inputs["Location"].default_value = (0.5, off, off)
+    m.inputs["Location"].default_value = (0.5,
+                                          off - v * ARRIS_Y,
+                                          off - v * ARRIS_Z)
     # The vertical wrap is never blended (build-portoro-maps.py cross-fades U and
-    # only U), which is sound only while under one tile of V is ever visible. The
-    # block shows DEPTH + HEIGHT of it, so a very wide source is the one that
-    # would bring the seam onto the stone.
-    if (DEPTH + HEIGHT) * v > 1.0:
-        print("  ! %s: %.2f tiles of V visible, unblended seam will show"
-              % (key, (DEPTH + HEIGHT) * v))
+    # only U), which is sound only while under one tile of V is ever visible.
+    #
+    # WHICH FACE SPANS THE MOST V IS NOT THE ONE THIS USED TO ASK ABOUT. It
+    # tested (DEPTH + HEIGHT) * v, on the reading that the two faces stack in V.
+    # They do not: measured against an unlit ortho render of each face, BOX gives
+    # the front face (x, z) — V over HEIGHT * v — and the top face (-y, x), read
+    # 90° round, so ITS V runs across the block's whole width at the U scale.
+    # That is 2 * NEAR_HALF * s, about 1.0 tiles at the shipping scale and over
+    # two at gemini-fine's, and it is always the larger of the two.
+    v_tiles = max(HEIGHT * v, PLINTH_W * s)
+    if v_tiles > 1.0:
+        print("  ! %s: %.2f tiles of V visible (top face), unblended seam will show"
+              % (key, v_tiles))
     link(tree, coord, "Object", m, "Vector")
     co = (m, "Vector")
 
@@ -1560,7 +1669,7 @@ def build_photo_material(key):
         link(tree, rmap, "Color", rm, 0)
         link(tree, rm, "Value", bsdf, "Roughness")
     else:
-        bsdf.inputs["Roughness"].default_value = BASE_ROUGH
+        bsdf.inputs["Roughness"].default_value = spec.get("base_rough", BASE_ROUGH)
 
     # ---- relief ------------------------------------------------------------
     bstr, bdist = spec["bump"]
@@ -1775,8 +1884,15 @@ def build_scene():
     # of (0.59, 0.15, 0.035) has a local space that is uniform +-1 on a block
     # that is seventeen times wider than it is tall. Every texture in the
     # material would be stretched by that ratio — which is exactly what a grain
-    # smeared sideways into wood looks like. Applied, local space IS world space
-    # and a vein is the same width whichever face it crosses.
+    # smeared sideways into wood looks like. Applied, one local unit IS one world
+    # unit and a vein is the same width whichever face it crosses.
+    #
+    # THE LOCATION IS NOT APPLIED, so local space stays CENTRED on the block
+    # while world space is anchored at the arris — the two are a half-block apart
+    # on Y and on Z. Deliberate, and the box projection is happier for it, but it
+    # means a window measured in world terms is not a window in this space until
+    # ARRIS_Y / ARRIS_Z are taken off it. build_photo_material() does that; the
+    # note there says what it looked like when it did not.
     bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
     # THE CHAMFER, and it goes on AFTER the scale is applied — a bevel modifier
     # measures its width in the object's own space, so on a cube still carrying
@@ -1825,6 +1941,10 @@ def build(key, sc, slab):
     if sc.world is None or not sc.world.name.startswith("room-" + room):
         sc.world = build_world(room)
         set_lights(room)
+    # Set per stone rather than once in build_scene(), so a stone that asks for
+    # fewer samples costs less and every other stone in the run is unaffected.
+    sc.cycles.samples = spec.get("samples", SAMPLES)
+    sc.cycles.seed = spec.get("seed", SEED)
     slab.data.materials.clear()
     slab.data.materials.append(
         build_photo_material(mat_key) if photo else build_material(mat_key))
@@ -1851,7 +1971,7 @@ SIDECAR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "slab.json")
 def material_version():
     """A digest of everything that decides the SHAPE of the material.
 
-    design/plinth/plinth-tuner.html carries a hand-written GLSL twin of
+    design/legacy/plinth-tuner.html carries a hand-written GLSL twin of
     build_material(), and its numbers come out of the sidecar so the two cannot
     disagree about those. What they can disagree about is the shape — a field the
     material grows and the shader never hears of — and that drift is invisible,
@@ -1868,14 +1988,14 @@ def material_version():
 
 
 def write_sidecar():
-    """Everything design/plinth/plinth-tuner.html needs, written by this script.
+    """Everything design/legacy/plinth-tuner.html needs, written by this script.
 
     The tuner previews a stone before Blender is asked to spend a minute on it,
     which means it has to know the camera, the block, the two lights and the
     CANDIDATES table. NONE OF THAT IS COPIED INTO IT. A tuner holding its own
     literals is a tuner that drifts: it goes on showing the stone this file used
     to render, and the drift is invisible because both halves look right on their
-    own. design/plate/plate-tuner.html reads plate-source.json for the same
+    own. design/legacy/plate-tuner.html reads plate-source.json for the same
     reason and that file says so at more length.
 
     So this is the one direction the constants travel. Change anything above and
@@ -2000,13 +2120,25 @@ def main():
     # bake-off you re-render one family at a time and the other four plates are
     # forty seconds you do not need to spend.
     groups = {"all": list(CANDIDATES) + list(PHOTO_CANDIDATES) + list(PROC_ROOMS),
-              "proc": list(CANDIDATES),
+              # The four built-ins, and never whatever the Editor last tuned:
+              # see BUILT_IN_PROC, and the comparison it is protecting.
+              "proc": BUILT_IN_PROC,
+              # ...which is reached by name, or by this.
+              "tuned": list(TUNED),
               "photo": list(PHOTO_CANDIDATES),
               "relit": list(PROC_ROOMS),
               # ...and the ones added from a photograph of your own, which is the
               # group you want after re-running add-stone.py on a tree that had
               # to rebuild their maps.
-              "added": list(ADDED)}
+              "added": list(ADDED),
+              # NOTHING, which is not a no-op: main() writes slab.json whatever
+              # it rendered, so this is "rewrite the sidecar" on its own. What
+              # needs it is a stone being DELETED — the tables are read at import
+              # and the picker in design/legacy/plinth-studio.html reads the
+              # sidecar, so until this runs it goes on listing an entry whose
+              # file is gone. Three seconds of starting Blender against a minute
+              # of re-rendering something to make it notice.
+              "none": []}
     keys = []
     for a in which:
         if a in groups:

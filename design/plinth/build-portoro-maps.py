@@ -60,9 +60,11 @@ textures. That split is deliberate: a grade is a thing you want to iterate on
 twenty times, and iterating on it should not cost a Cycles render each time.
 
 THE SOURCE IS NOT IN THE REPOSITORY, the same way the Texturelabs plates are not
-— see the /Texturelabs_*.jpg and /*.png lines in .gitignore, and the same
-reasoning in design/effects/build-textures.py. What ships is the bake. Drop the
-image at the repo root and run this.
+— see the design/effects/sources/ and design/plate/sources/ lines in .gitignore,
+and the same reasoning in design/effects/build-textures.py. What ships is the
+bake. Drop the image in **design/plinth/sources/** and run this; that directory
+is where plinth-studio.py already keeps the photographs dropped on it, so a
+grade's source and a stone's source sit in one place.
 """
 
 from __future__ import annotations
@@ -75,7 +77,8 @@ from PIL import Image
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 OUT_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "maps")
-DEFAULT_SRC = os.path.join(ROOT, "Gemini_Generated_Image_13pkuz13pkuz13pk.jpg")
+SRC_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "sources")
+DEFAULT_SRC = os.path.join(SRC_DIR, "Gemini_Generated_Image_13pkuz13pkuz13pk.jpg")
 
 
 # ---------------------------------------------------------------------------
@@ -299,8 +302,8 @@ def build_maps(src, out_dir=OUT_DIR, size=0, square=False):
     if not os.path.isfile(src):
         raise SystemExit(
             "missing %s\n\nThe source photograph is not in the repository - see\n"
-            "the note at the top of this file. Drop it at the repo root, or pass\n"
-            "--src." % src)
+            "the note at the top of this file. Drop it in design/plinth/sources/,\n"
+            "or pass --src." % src)
 
     im = Image.open(src).convert("RGB")
     if square and im.width != im.height:

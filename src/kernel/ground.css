@@ -1,0 +1,157 @@
+/* The page's ground, and the Turn across it.
+   Two independent things share this file because they share their endpoints:
+   the THEME picks which paper the page is printed on, and the TURN carries that
+   paper into dark as the reader scrolls. Neither belongs to a Section. */
+
+/* --turn is registered so it is a number rather than a token, which is what
+   lets GSAP interpolate it and what makes the calc() below legal. Without this
+   the custom property is an untyped string and the page just does not turn. */
+@property --turn {
+  syntax: '<number>';
+  inherits: true;
+  initial-value: 0;
+}
+
+/* THE PAGE ACROSS, WITHOUT THE SCROLLBAR — the horizontal counterpart of
+   --fold, and the one length `vw` cannot give.
+
+   `100vw` is the viewport INCLUDING a classic scrollbar's gutter, and the boxes
+   the page is laid out in are the client width, which excludes it. For anything
+   centred or bled that costs half a gutter at each end and nothing notices. For
+   anything that has to LAND on the page's right edge it is the whole ballgame:
+   the Projects Panel's Plinth is solved to end exactly there, and read off
+   `100vw` it ended 15px past it on every window with a scrollbar — clipped, so
+   what the reader saw was the block's end cut off flat instead of its corner
+   meeting the page's.
+
+   IT IS REGISTERED, AND THAT IS THE POINT. A custom property is a token
+   sequence, so an unregistered `100cqw` would be substituted and resolved
+   wherever it is USED — against the nearest container of that element, which
+   inside the Frame is the Frame (948px at DESK, not 1425). `syntax: '<length>'`
+   makes it compute where it is DECLARED and inherit as a length, so the unit
+   cannot travel. Both Sections hold inline-size containers; without the
+   registration this would be a trap rather than a measure.
+
+   AND IT IS DECLARED ON THE BODY, NOT THE ROOT, because an element is not its
+   own container: `100cqw` at `:root` has no ancestor container to resolve
+   against and falls back to the viewport — 1440 again, silently. One level down
+   it resolves against the root and reads 1425.
+
+   The fallback is what the page had before, so a browser without container
+   queries gets the old overshoot rather than a collapsed drawing: with
+   `syntax: '<length>'` an unsupported `100cqw` would compute to the initial
+   value, and a zero page across is not a smaller drawing, it is no drawing. */
+@property --page-across {
+  syntax: '<length>';
+  inherits: true;
+  initial-value: 0px;
+}
+
+:root {
+  /* the theme's two endpoints */
+  --paper: #fff;
+  --paper-ink: #1a1917;
+  --paper-ink-soft: #46433d;
+
+  /* Where the Turn arrives, in both themes. PURE BLACK, and that is a decision
+     rather than a rounding: the Projects Panel paints no ground of its own on
+     the page-turn layout, so this token IS that Section's background, and it is
+     also the far end --projects-panel-bg-far already held. The two agreeing is
+     what keeps one crossing one colour — ProjectsPanel.astro says what it cost
+     when they did not. */
+  --dark: #000000;
+  --dark-ink: #eaeaea;
+  --dark-ink-soft: #b8b8b8;
+
+  /* 0 is paper, 1 is dark. The Turn's Timeline owns this and nothing else does. */
+  --turn: 0;
+
+  --ground: color-mix(in oklab, var(--paper), var(--dark) calc(var(--turn) * 100%));
+  --ink: color-mix(in oklab, var(--paper-ink), var(--dark-ink) calc(var(--turn) * 100%));
+  --ink-soft: color-mix(in oklab, var(--paper-ink-soft), var(--dark-ink-soft) calc(var(--turn) * 100%));
+
+  /* The datum every Kernel picture is measured against: the bottom of the page
+     before any scrolling. svh and not vh — the difference is a phone. */
+  --fold: 100svh;
+}
+
+:root[data-theme='dark'] {
+  --paper: #131211;
+  --paper-ink: #eaeaea;
+  --paper-ink-soft: #b8b8b8;
+}
+
+/* THE DOCUMENT NEVER SCROLLS SIDEWAYS, and this is the Kernel's rule rather
+   than a Section's because it is a fact about the document.
+
+   A Section may bleed to the page's own edges — the Front Screen's photograph
+   strip does, so a photograph can travel off both of them — and the only length
+   that reaches those edges from inside a centred column is `vw`, which counts a
+   vertical scrollbar the layout does not get. So a full-bleed box overshoots by
+   half a scrollbar at each end, and without this the page grows a horizontal
+   scrollbar it has nothing to show in. **A box that has to land ON an edge
+   rather than past it reads --page-across instead**, which is that same
+   difference measured rather than tolerated.
+
+   `clip` and not `hidden`: `hidden` would make the document a scroll container
+   on the axis it is applied to, and a stray focus inside a clipped box can then
+   scroll it. `clip` cannot be scrolled at all, by a script or by anything else,
+   which is the whole of what is wanted. */
+html {
+  background: var(--ground);
+  color: var(--ink);
+  color-scheme: light dark;
+  overflow-x: clip;
+}
+
+/* `position: relative` is here for ONE reason, and it is not this file's: it
+   makes the body the containing block the Effect Stack is measured against, so
+   `.fx` can say `bottom: 0` and mean the foot of the DOCUMENT. Absolute against
+   the initial containing block, which is what it had before, means the foot of
+   the first SCREEN — and the treatment stopped dead at the fold with a seam the
+   reader scrolled past. See effect-stack.css.
+
+   It costs nothing else. The body's origin IS the document origin (`margin: 0`,
+   directly above) and its width is the initial containing block's, so every
+   other absolute box that was measured against that block — `.kernel-corners`,
+   which says so in as many words — lands in exactly the same place. And
+   `z-index` stays `auto`, so the body does not become a stacking context and the
+   stack's layers still compare z with the Sections' own. That last part is
+   load-bearing: see the warning on `.fx`. */
+body {
+  margin: 0;
+  position: relative;
+  font-family: var(--face-body);
+  background: transparent;
+
+  /* The page across, on the body because the root cannot resolve the container
+     query it is the container for. This is the fallback — what the page did
+     before, gutter and all — and the @supports below is the measure. Declared in
+     THIS rule rather than one of its own because check-source.mjs reads the first
+     `body` block in this file to pin `position: relative`, and a second one above
+     it is a rule that shadows nothing and fails the build. */
+  --page-across: 100vw;
+}
+
+/* @supports RATHER THAN BARE, so a browser with no container queries gets the
+   fallback above instead of no drawing at all: with `syntax: '<length>'` an
+   unsupported `100cqw` computes to the registered initial value, and a page
+   across of 0 is not a smaller composition, it is nothing. The gate names the
+   property the query length comes from, so the two cannot come apart. */
+@supports (container-type: inline-size) {
+  html {
+    container-type: inline-size;
+  }
+
+  body {
+    --page-across: 100cqw;
+  }
+}
+
+/* A reader who has asked for less motion gets the Turn as a state rather than a
+   crossing: the Kernel still sets --turn, the Timeline just does not scrub. */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    scroll-behavior: auto;
+  }
+}

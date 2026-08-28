@@ -1,0 +1,213 @@
+/* The Front Screen's Tokens: the numbers and colours the author would plausibly
+   adjust, as plain custom properties on the Section's own root. NOTES.md is why
+   these are Tokens and the drawing's own measurements are not, what the two
+   colours are mixed out of, and why one rule here is gated on the theme. */
+.front-screen {
+  --front-screen-measure: 27rem;
+  --front-screen-side: 1.35rem;
+  /* The page's top margin, and — through --front-screen-cut-gap — its bottom one.
+     2.7% of the screen at each end and not the 9% it was: at 9% a short window
+     spent a fifth of itself on margin, and the composition cleared the
+     photographs' floor by six pixels. This is where the type's own size came
+     from, and it is why `--type-zoom` could be lifted at all.
+
+     IT IS A FLOOR AND NOT THE MARGIN ITSELF. The composition stands on
+     `--front-screen-strip-max` at every window in the band, so the white above the
+     name is this plus half the surplus — 33px at the band's short corner, 112px at
+     2560x1311 — and moving this number only shows on a screen with no surplus
+     left.
+
+     AND IT IS THIS SECTION'S ALONE NOW, which is the thing that changed. It used
+     to be written three times — here, as --projects-panel-inset and as the
+     Kernel's --landing-inset — and the Cut Title's own left margin and size were
+     solved from the third copy, so a rhyme dragged for the photographs' sake
+     moved the word, the Panel's whole composition and the Rail's column with it.
+     That is exactly what happened when this went from 9vh to 2.7vh to pay for
+     --type-zoom: the trade is right for a Section composed to one screen, and the
+     Panel is not composed to one. The landing has its own --landing-side and
+     --landing-inset now — src/kernel/tokens/landing.css — and this number's whole
+     remaining job is the white at the two ends of THIS column.
+
+     --projects-panel-inset is still the same clamp, and still restated: it is the
+     Panel's padding OUTSIDE the band, where that Section is a scroll like any
+     other and its margin is the page's own vertical one. In the band the Panel
+     reads the landing's instead. */
+  --front-screen-rhyme: clamp(1.25rem, 2.7vh, 2rem);
+
+  --front-screen-space-3xs: 0.236rem;
+  --front-screen-space-2xs: 0.382rem;
+  --front-screen-space-xs: 0.618rem;
+  --front-screen-space-s: 1rem;
+  --front-screen-space-m: 1.618rem;
+
+  /* The photographs' slot: how short a photograph may be, what it would rather
+     be, and how tall it may get. Outside the one-screen band the component clamps
+     the three into a stated height; inside it, the slot is the budget's remainder
+     with `-strip-max` as the ceiling and no floor — the component says why. The
+     clamp is a relationship and is therefore the composition's rather than
+     Editor's; these three are the values.
+
+     `-strip-max` IS THE PAGE'S TOP MARGIN AS MUCH AS IT IS THE PHOTOGRAPHS'
+     CEILING, now that the composition is short enough to stand on it at every
+     window in the band: past it the surplus is split at both ends, so a rem taken
+     off here is half a rem of white added above the name and half below the last
+     contact line. It is the Token to move to trade one against the other, and
+     `--front-screen-rhyme` is only the floor under the result. */
+  --front-screen-strip-min: 15rem;
+  --front-screen-strip-fill: 40vh;
+  --front-screen-strip-max: 23rem;
+
+  /* ---- the photographs ---------------------------------------------------
+     The strip's HEIGHT is not here: it is the one-screen budget's remainder,
+     which layout works out (NOTES.md). What is here is the shape of a
+     photograph, the air between two of them, and the strip's own scrollbar. */
+  /* A number and not `3 / 4`, so the same Token can multiply a length: it is the
+     photograph's width per unit of its height, and 0.75 is a 3:4 portrait. */
+  --front-screen-slide-ratio: 0.75;
+  --front-screen-slide-gap: 0.5rem;
+
+  --front-screen-bar-h: 2px;
+  --front-screen-bar-thumb-min: 1.5rem;
+
+  /* ---- the edge dissolve, in four numbers at each of its two ends ---------
+     The strip dissolves at both ends, and everything about the shape of that
+     dissolve is these eight numbers. They are the author's and were arrived at
+     with a slider on each; NOTES.md says what each one does and why there are
+     two sets rather than one.
+
+     AT REST — a photograph standing at the text edge with the dissolve reaching
+     in over its neighbour. This is the state the page loads in, and, mirrored,
+     the state the strip comes to rest in at the far end.
+       -x     where the dissolve begins, in photo-widths measured from the text
+              edge. 0 begins it exactly where the column of text ends; negative
+              pulls it left, in over the photographs.
+       -span  how far it travels before the paper is solid, in photo-widths.
+       -max   how far it gets. Below 1 the photographs never quite disappear.
+       -ease  the shape of the ramp. 0 is a straight line, 1 is flat at both
+              ends and steepest in the middle, negative inverts that. */
+  --front-screen-fade-x: -0.5;
+  --front-screen-fade-span: 0.51;
+  --front-screen-fade-max: 1;
+  --front-screen-fade-ease: 0;
+
+  /* ...and the same four ONE PHOTOGRAPH ALONG, which is where the Timeline has
+     travelled to by the time the dissolve is fully open. */
+  --front-screen-fade-x-open: 0;
+  --front-screen-fade-span-open: 0.5;
+  --front-screen-fade-max-open: 1;
+  --front-screen-fade-ease-open: 0;
+
+  /* How long each end takes to come on and off. Three, because the strip asks
+     for the dissolve back at three different urgencies: it arrives at its own
+     pace, it is withdrawn quickly when the reader asks to see the photographs,
+     and it is taken off in between when the strip is too short to wear it. */
+  --front-screen-fade-ramp: 1s;
+  --front-screen-fade-reveal: 0.4s;
+  --front-screen-fade-cramped: 0.6s;
+
+  /* ---- how the strip moves ------------------------------------------------
+     Read by timeline.ts and by nothing in CSS, which is the one case where a
+     Token is not a CSS value — it is the feel of the roulette wheel, and the
+     author judges it by spinning it. NOTES.md derives the closed form these
+     four describe.
+       -friction   what is left of the speed after one sixtieth of a second
+       -coast-min  the speed a spin is treated as finished at, in px per frame
+       -coast-max  the fastest a flick may leave the strip travelling
+       -fling      how far a released drag carries past the drag itself */
+  --front-screen-friction: 0.95;
+  --front-screen-coast-min: 0.35;
+  --front-screen-coast-max: 360;
+  --front-screen-fling: 3.2;
+
+  /* A lone wheel notch steps one photograph; notches that land while the strip
+     is still coasting compound, so a fast spin runs away.
+       -detent     px of wheel delta in one notch
+       -spin-gain  how hard stacked notches compound
+       -spin-max   and the ceiling on that
+       -step-gap   ms between notches below which they read as a spin */
+  --front-screen-detent: 100;
+  --front-screen-spin-gain: 0.8;
+  --front-screen-spin-max: 6;
+  --front-screen-step-gap: 120ms;
+
+  /* Coming to rest: how long the ease onto a photograph's resting place takes,
+     and how long after the last movement it is taken. */
+  --front-screen-settle: 0.32s;
+  --front-screen-settle-wait: 140ms;
+
+  --front-screen-name-size: 0.78rem;
+  --front-screen-name-tracking: 0.06em;
+  --front-screen-label-size: 0.7rem;
+  --front-screen-label-tracking: 0.04em;
+  --front-screen-lead-size: 0.95rem;
+  --front-screen-lead-leading: 1.5;
+  --front-screen-body-size: 0.9rem;
+  --front-screen-body-leading: 1.55;
+  /* The listing headings, and the one place in the ladder where a size carries a
+     leading of its own. Everything else in the column reads at the body's 1.55,
+     which is the leading a paragraph of Vollkorn wants; a heading is one line and
+     wants less, and above the body's own size it wants noticeably less. The two
+     move together — drag the size up and the leading down, or the heading's own
+     line box eats the photographs. */
+  --front-screen-heading-size: 1.313rem;
+  --front-screen-heading-leading: 1.2;
+  --front-screen-heading-weight: 700;
+  --front-screen-heading-tracking: 0.01em;
+  --front-screen-indent: 1.1rem;
+  /* How far a listing's body stands in from its heading. The heading hangs back
+     out to the column's left edge, so this is the whole of the step between the
+     two — and the years still land on the column's right edge, because it is the
+     listing's LEFT padding and nothing touches the other end. */
+  --front-screen-listing-indent: 0.618rem;
+  --front-screen-gutter: 1rem;
+  --front-screen-hairline: 1px;
+
+  --front-screen-muted: color-mix(in oklab, var(--ink), var(--ground) 45%);
+  --front-screen-rule: color-mix(in oklab, var(--ink), var(--ground) 68%);
+  /* Softer than the rule: what a box looks like before its picture arrives, and
+     the strip's own scrollbar track. Both are surfaces rather than lines. */
+  --front-screen-soft: color-mix(in oklab, var(--ink), var(--ground) 92%);
+
+  --front-screen-toggle-gap: 0.45rem;
+  --front-screen-track-w: 1.55rem;
+  --front-screen-track-h: 0.78rem;
+  --front-screen-thumb: 0.38rem;
+  --front-screen-thumb-inset: 0.14rem;
+  --front-screen-thumb-travel: 0.25s;
+  --front-screen-thumb-at: 0px;
+  --front-screen-hover-fade: 0.15s;
+
+  --front-screen-word-paper: inline;
+  --front-screen-word-dark: none;
+
+  --front-screen-cut-show: 0.62;
+
+  /* How much of its own transition each letter of the morph waits out before
+     starting, as a fraction of the crossing. At 0 the eight change together and
+     the word switches; at 0.05 each has 0.65 of the crossing to travel in, which
+     is slow enough to read as the word turning. Read by cut-morph.ts and by
+     nothing in CSS — the same case the strip's four numbers are, and NOTES.md
+     says why that is still a Token. */
+  --front-screen-cut-stagger: 0.05;
+
+  --front-screen-reveal: 0.9s;
+  --front-screen-reveal-rise: 8px;
+}
+
+/* The switch, on the dark paper: where the thumb stands, and which of its two
+   words is on screen. Gated on the theme rather than on the switch's own
+   aria-checked, so both are right at first paint instead of a script-load later —
+   the Shell writes data-theme before anything is drawn, and nothing here waits
+   for the toggle to be wired.
+   This rule is in this file for one mechanical reason and not because the Editor
+   wants it: a Section's scoped rules are narrowed with the component's own
+   attribute, which <html> does not carry, so `:root[…]` reaches nothing from
+   there. NOTES.md. */
+:root[data-theme='dark'] .front-screen {
+  --front-screen-thumb-at: calc(
+    var(--front-screen-track-w) - 2 * var(--front-screen-hairline) - var(--front-screen-thumb) -
+      2 * var(--front-screen-thumb-inset)
+  );
+  --front-screen-word-paper: none;
+  --front-screen-word-dark: inline;
+}
