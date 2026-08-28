@@ -388,6 +388,41 @@ const EAGER = 2;
     z-index: var(--front-screen-type-z);
   }
 
+  /* WHAT THAT LIFT COSTS ON A PHONE, AND THE ONE LINE THAT PAYS IT. Being above
+     the stack means being painted AFTER it, so on Chrome for Android these
+     blocks are rastered as part of the same tiles as a `mix-blend-mode` layer
+     the height of the whole DOCUMENT — the halftone is that layer, oversized to
+     150% and rotated, which on a phone is a texture several times taller than
+     the compositor will hand out in one piece. Scroll to the foot of the page
+     and back and the tiles come back without the type in them: the boxes are
+     still laid out, the photographs are still there, and the words are gone.
+     Reported from a phone, and the reader's own description is the diagnosis —
+     the gap the type used to fill was still the right size.
+
+     `will-change: transform` puts each block on a layer of its own, so its
+     raster no longer depends on that blend group's. It is the same thing that
+     already saves the photographs by accident: `.front-screen__photos` is a
+     scroll container, so it has a layer anyway, and it is the one block of the
+     four that never went missing.
+
+     GATED ON TOUCH, and that is not a guess at where the bug is — it is where
+     the fix is free. Promoting a block of text takes it off subpixel
+     antialiasing, which a phone never had and a desktop does, so the gate buys
+     the phone its layers without softening a single glyph on the screens this
+     composition was drawn on.
+
+     If the type still goes missing after this, the next lever is the layer
+     itself rather than what stands on it: the stack spans the document because
+     of one seam at the fold (effect-stack.css says which), and a stack the
+     height of the VIEWPORT has no oversized texture to lose. */
+  @media (hover: none) and (pointer: coarse) {
+    .front-screen__masthead,
+    .front-screen__intro,
+    .front-screen__listing {
+      will-change: transform;
+    }
+  }
+
   /* ---- the masthead ------------------------------------------------------ */
   .front-screen__name {
     margin: 0;
