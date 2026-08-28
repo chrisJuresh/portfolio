@@ -16,20 +16,30 @@ Edit the right-hand column to match whatever vocabulary you actually use.
 
 ## These labels have to exist before they can be applied
 
-Only `wontfix` is currently on the repo — it is one of GitHub's defaults. The other four have never been created, so `gh issue edit <n> --add-label needs-triage` fails with `not found`, and so does every `--label` filter that names one. A label is created on first use by nothing; `gh` will not make one for you.
+Three of the five are on the repo; two are not:
 
-Create the missing four, and the `wayfinder:*` labels `docs/agents/issue-tracker.md` uses, in one go:
+| label | on the repo? |
+| --- | --- |
+| `needs-triage` | **no** |
+| `needs-info` | **no** |
+| `ready-for-agent` | yes, `#0e8a16` |
+| `ready-for-human` | yes, `#1d76db` |
+| `wontfix` | yes — one of GitHub's defaults |
+
+A label that is not there is not created on first use: `gh issue edit <n> --add-label needs-triage` fails with `not found`, and so does every `--label` filter that names one. `gh` will not make one for you.
+
+`gh label list --repo chrisJuresh/portfolio` is the authority, not this table — somebody may have created one since.
+
+Create the two that are missing:
 
 ```bash
-gh label create needs-triage    --color d93f0b --description "Maintainer needs to evaluate this issue"  --force
-gh label create needs-info      --color fbca04 --description "Waiting on reporter for more information" --force
-gh label create ready-for-agent --color 0e8a16 --description "Fully specified, ready for an AFK agent"  --force
-gh label create ready-for-human --color 1d76db --description "Requires human implementation"            --force
+gh label create needs-triage --color d93f0b --description "Maintainer needs to evaluate this issue"  --force
+gh label create needs-info   --color fbca04 --description "Waiting on reporter for more information" --force
 ```
 
-`--force` makes each idempotent, so re-running updates rather than erroring on one already there.
+`--force` makes each idempotent, so re-running updates rather than erroring on one already there. That is what makes it safe to run these against a repo whose state has moved on from the table above.
 
-`docs/agents/issue-tracker.md` also names `wayfinder:map` and `wayfinder:<type>` for `/wayfinder`. None of those exist either; create them the same way if that skill is ever used:
+`docs/agents/issue-tracker.md` also names `wayfinder:map` and `wayfinder:<type>` for `/wayfinder`. **None of those exist**; create them the same way if that skill is ever used:
 
 ```bash
 gh label create wayfinder:map       --color 5319e7 --description "Wayfinder map issue"       --force

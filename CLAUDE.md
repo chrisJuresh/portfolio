@@ -407,7 +407,7 @@ Everything agent-facing that is not in this file lives in `docs/agents/`:
 | `contract.md` | the Agent Contract — seams, tests, skills, effort, traps |
 | `claude-code-and-opus-5.md` | what the official docs say about running this repo well, with sources. Read before changing `.claude/` |
 | `issue-tracker.md` | issues are GitHub issues in `chrisJuresh/portfolio`, driven by `gh`; includes the closing comment |
-| `triage-labels.md` | the five canonical roles, and the one command that creates the four that do not exist on the repo yet |
+| `triage-labels.md` | the five canonical roles, which of the labels are actually on the repo, and the command that creates the two that are not |
 | `variants.md` | Variants and the sheet |
 | `external-capture.md` | the profile README's picture of `/portfolio` — how to ask for one, and why nothing here answers to it |
 | `plinth-marble.md` | the Projects Panel's plinth — two generators, two rooms, and a bake-off. Read before touching `design/plinth/`. It carries the rule that cost three wrong diagnoses: **a light reads as a highlight or as a veil depending on its ANGULAR size against the ±14° arc the front face sweeps**, so anything wider than about a third of a model unit is a wall however dim it is made |
