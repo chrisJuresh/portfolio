@@ -6,6 +6,18 @@ import { defineContent, z } from '../../kernel/content';
  */
 const entry = z.object({
   org: z.string().min(1),
+  /**
+   * What the entry was awarded, in the empty middle of its own line — optional,
+   * because most entries have nothing to put there and an absent field is what
+   * says so.
+   *
+   * IT IS ALL FIGURES, WHICH IS WHY IT IS ITS OWN FIELD rather than a clause of
+   * the organisation. A figure on this page is set in `--face-year` and never in
+   * the body face, and a class and a mark are almost entirely figures — written
+   * into `org` they would need the digits picked out of the string one run at a
+   * time, and the seam between the two faces would fall inside a word.
+   */
+  grade: z.string().min(1).optional(),
   years: z.string().min(1),
 });
 
@@ -97,7 +109,8 @@ export const content = defineContent(schema, {
     heading: 'Education',
     entries: [
       {
-        org: 'Queen Mary University of London',
+        org: 'BSc (Hons) Computer Science, QMUL',
+        grade: '1st · 82%',
         years: '2021–2024',
       },
     ],

@@ -137,6 +137,7 @@ const EAGER = 2;
             <div class="front-screen__entry">
               <p class="front-screen__line">
                 <span>{entry.org}</span>
+                {entry.grade && <em class="front-screen__grade">{entry.grade}</em>}
                 <em class="front-screen__years">{entry.years}</em>
               </p>
             </div>
@@ -720,6 +721,37 @@ const EAGER = 2;
     font-style: normal;
     color: var(--ink);
     white-space: nowrap;
+  }
+
+  /* What the entry was awarded, standing beside the date in the line's own empty
+     middle rather than on a second line under it — a listing entry is one line
+     here, and there is room: the longest organisation on the page leaves better
+     than a third of the measure unused.
+
+     THE YEAR FACE, AND THAT IS THE WHOLE REASON IT IS A FIELD OF ITS OWN. A
+     figure on this page is set in `--face-year`, so a class and a mark — which
+     are figures and almost nothing else — belong to the same column as the date
+     and not to the body face beside them. Written into the organisation's own
+     string instead, the seam between the two faces would fall inside a word.
+     Muted, so the qualification stays the thing the eye lands on.
+
+     AND IT TAKES THE `auto` OFF THE YEARS, which is the one thing here that is
+     not obvious. `--front-screen-years`'s own `margin-left: auto` is what pins
+     the right-hand group to the column's edge; a SECOND auto beside it would
+     split the free space between the two and leave this floating in the middle
+     of the gap, anchored to nothing. So the auto moves to whichever comes first
+     and the pair travels to the edge together, a gutter apart. */
+  .front-screen__grade {
+    margin-left: auto;
+    font-family: var(--face-year);
+    font-variant-numeric: oldstyle-nums;
+    font-style: normal;
+    color: var(--front-screen-muted);
+    white-space: nowrap;
+  }
+
+  .front-screen__grade + .front-screen__years {
+    margin-left: 0;
   }
 
   .front-screen__contact {
