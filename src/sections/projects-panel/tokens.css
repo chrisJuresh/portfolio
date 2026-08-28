@@ -16,7 +16,7 @@
   --projects-panel-rule-near: color-mix(in oklab, var(--ink-soft), transparent 88%);
 
   /* ---- the page's two margins, kept rather than invented ------------------ */
-  --projects-panel-inset: clamp(3rem, 9vh, 6.5rem);
+  --projects-panel-inset: clamp(1.25rem, 2.7vh, 2rem);
   --projects-panel-side: 1.35rem;
 
   /* ---- the two constants the composition's width is solved from ----------- */

@@ -127,29 +127,29 @@ foot meets the Cut Title's cap top because the Section's bottom padding *is*
 construction at every size. Adding a paragraph to the bio cannot silently break
 the budget; it can only make the slot smaller.
 
-**THE BUDGET IS SPENT, AND THAT IS THE FIRST THING TO KNOW BEFORE ENLARGING
-ANYTHING.** The slot being the remainder does not mean there is slack in it:
-measured against `--front-screen-strip-min`, which is what `carousel` asserts at
-the band's short corner, the composition clears the floor by **5–13px** at every
-window shorter than about 900px, and by 71px and up only once the screen is tall
-enough that the slot has hit `--front-screen-strip-max` anyway. So a rem added to
-the ladder is a rem taken off the photographs, and three of them fail the build.
+**HOW MUCH SLACK THERE IS, AND WHERE IT CAME FROM.** The slot being the remainder
+does not mean there is slack in it. Measured against `--front-screen-strip-min`,
+which is what `carousel` asserts, the composition used to clear the floor by
+**5–13px** at every window shorter than about 900px — a single line of type — and
+by 70px and up only once the screen is tall enough that the slot has hit
+`--front-screen-strip-max` anyway. At that margin a rem added to the ladder was a
+rem taken off the photographs, and the headings at `1.313rem` failed the build on
+their own.
 
-What that costs in practice, measured: the listing headings at `1.313rem` — the
-size the Editor was dragged to — fail `carousel` at 1440x700 even with the
-leading tightened to pay for them, and clear it by 0 to 1px at 1366x768 and
-1600x900. `--type-zoom: 1.428`, which is the same wish written in the Kernel
-instead, fails it by 214–278px at every window in the band bar the tallest: it
-takes a 1920x1080 photograph from 312px to 96px and a 1600x900 one to 31px. The
-zoom is a REDISTRIBUTION and `tokens/faces.css` says so; this is the size of it.
+**The page's own margin is what bought the room, and it is the only place the
+budget was.** Not the column — the gaps down it are a φ ladder and the largest is
+1.618rem. `--front-screen-rhyme` was 9% of the screen at each end, so a short
+window spent a fifth of itself on white; at 2.7% the slot clears the floor by
+**36–184px**, the listing headings are at the size they were dragged to, and the
+photographs are LARGER at every window than they were before any of it. A fifth of
+a screen is what a fifth of a screen buys.
 
-**WHERE THE BUDGET ACTUALLY IS, if a change needs one.** It is not in the column
-— the gaps down it are a φ ladder and the largest of them is 1.618rem — it is in
-`--front-screen-rhyme`, which is 9% of the screen at each end and so spends 18%
-of a short one on margin. Moving it is a page-wide change and not this Section's:
-the same clamp is written three times, as `--projects-panel-inset` and as
-`--landing-inset`, and the landing solves the Cut Title's own size from it. All
-three move together or none do.
+**Which makes it a page-wide change and not this Section's**, and that is the
+thing to know before moving it again: the same clamp is written three times, as
+`--projects-panel-inset` and as `--landing-inset`, and the landing solves the Cut
+Title's own size from it — so the Panel's whole composition grows when this
+shrinks. All three move together or none do, and `--type-zoom` moves with them:
+`src/kernel/NOTES.md` carries why the zoom and the give-way are one pair.
 
 **Past the slot's ceiling the leftover is split at both ends**, by
 `justify-content: center` on the column. Below the ceiling the slot has taken

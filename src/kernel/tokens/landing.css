@@ -17,7 +17,7 @@
      --front-screen-rhyme and --projects-panel-inset, which are the same clamp,
      and the second is --front-screen-half-leading. The landing's height budget
      is a function of both and cannot be written without them. */
-  --landing-inset: clamp(3rem, 9vh, 6.5rem);
+  --landing-inset: clamp(1.25rem, 2.7vh, 2rem);
   --landing-name-lead: calc(0.294 * 0.78rem);
 
   /* The Panel composition's height as a share of its width, RE-SOLVED for the

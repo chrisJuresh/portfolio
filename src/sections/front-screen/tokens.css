@@ -5,7 +5,18 @@
 .front-screen {
   --front-screen-measure: 31rem;
   --front-screen-side: 1.35rem;
-  --front-screen-rhyme: clamp(3rem, 9vh, 6.5rem);
+  /* The page's top margin, and — through --front-screen-cut-gap — its bottom one.
+     2.7% of the screen at each end and not the 9% it was: at 9% a short window
+     spent a fifth of itself on margin, and the composition cleared the
+     photographs' floor by six pixels. This is where the type's own size came
+     from, and it is why `--type-zoom` could be lifted at all.
+
+     WRITTEN THREE TIMES AND THE THREE ARE ONE NUMBER: this, the Panel's
+     --projects-panel-inset, and the Kernel's --landing-inset, which the Cut
+     Title's own size is solved from. A Section may not read another (CONTEXT.md),
+     so the copies are the price; moving one alone silently drifts the word off
+     the masthead it is drawn to stand in. */
+  --front-screen-rhyme: clamp(1.25rem, 2.7vh, 2rem);
 
   --front-screen-space-4xs: 0.146rem;
   --front-screen-space-3xs: 0.236rem;
@@ -116,7 +127,7 @@
      wants less, and above the body's own size it wants noticeably less. The two
      move together — drag the size up and the leading down, or the heading's own
      line box eats the photographs. */
-  --front-screen-heading-size: 1.1rem;
+  --front-screen-heading-size: 1.313rem;
   --front-screen-heading-leading: 1.2;
   --front-screen-heading-weight: 700;
   --front-screen-heading-tracking: 0.01em;

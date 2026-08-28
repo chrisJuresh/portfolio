@@ -214,6 +214,25 @@ the percentage the report line names. `scripts/editor/NOTES.md` is that gesture 
 why a box could never have answered it: an element's width is a width, and
 "everything at one percentage" is the root font-size or it is nothing.
 
+**THE ZOOM AND THE GIVE-WAY ARE ONE PAIR, and lifting the first without lowering
+the second is what makes a zoom unaffordable.** The zoom multiplies whichever of
+the two the screen chose, so raising it raises the give-way's own slope by the
+same factor — and the give-way is the term that binds on exactly the screens with
+no budget to give. `1.428` at the `0.016` the give-way was measured at fails
+`carousel` by 214–278px at every window in the band bar the tallest; it takes a
+1920x1080 photograph from 312px to 96px and a 1600x900 one to 31px, which is the
+whole failure, not a corner case.
+
+Paired, it is affordable, and `0.0122` is that pairing re-solved: `1.428 x 0.0122`
+is `0.01742` against the old `1 x 0.016`, so a short screen is 9% larger than it
+was rather than 43%, the knee where the ceiling takes over is at 1311px of height,
+and the 43% is spent only above it. **What paid for even the 9% is the page's
+margin** — `--front-screen-rhyme` and its two restatements went from 9% of the
+screen at each end to 2.7%, which is a fifth of a short screen handed back — and
+the two are one change. Re-solve them together: raise the zoom, lower the scale,
+and read `carousel`'s slot-against-floor line at 1440x700, where there is now 36px
+of room rather than the 6px the composition used to ship with.
+
 **A zoom is a REDISTRIBUTION inside the band, which is the sentence to have ready
 when somebody asks why the photographs got smaller.** The strip is the remainder,
 so it cannot grow with the rest — it funds the rest. Measured at 2560x1311, ×1.3

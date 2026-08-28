@@ -39,9 +39,16 @@
      PHOTOGRAPHS bigger is a change to the Section's type ladder and not to this
      number.
 
+     WHAT PAID FOR THE VALUE BELOW WAS THE PAGE'S MARGIN. 1.428 is a fifth of the
+     screen's height more type than the page used to carry, and at the margin the
+     page used to carry it took a 1920x1080 photograph from 312px to 96px. What
+     made it affordable is `--front-screen-rhyme` and the two Tokens that restate
+     it coming down from 9% of the screen at each end to 2.7% — the three of them
+     and this one are one change and land together.
+
      The Editor drags it from the page as well as from the panel: pick anything,
      turn on `scale everything`, and a corner drag moves this — scripts/editor/NOTES.md. */
-  --type-zoom: 1;
+  --type-zoom: 1.428;
 
   /* THE CEILING, in rem rather than px on purpose: on the root's own font-size a
      rem is the initial value, which is the READER's default. A tall screen
@@ -51,6 +58,17 @@
   /* THE GIVE-WAY, as a share of the viewport's height: inside the Front Screen's
      one-screen band the type gives way on a short screen so the photograph strip
      is still a photograph of something. Measured at the band's corners and not
-     derived — NOTES.md is the measurement, and `carousel` is what holds it. */
-  --type-scale: 0.016;
+     derived — NOTES.md is the measurement, and `carousel` is what holds it.
+
+     READ IT WITH THE ZOOM, WHICH MULTIPLIES IT. What a short screen actually gets
+     is the two of them: 1.428 x 0.0122 is 0.01742, against the 1 x 0.016 the page
+     used to give way at — so a short screen is 9% larger than it was and not 43%,
+     and the ceiling above is what the extra 43% is spent on once a screen is tall
+     enough to hold it. The knee between the two is at 1311px of height.
+
+     SO THE TWO MOVE TOGETHER. Dragging the zoom alone drags the give-way with it,
+     which is the whole of why 1.428 at 0.016 fails `carousel` at every window in
+     the band bar the tallest. Raise one, lower the other; `carousel` measures at
+     1440x700, and there is 36px of slot above the floor there to spend. */
+  --type-scale: 0.0122;
 }

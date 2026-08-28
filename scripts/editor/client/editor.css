@@ -10,6 +10,19 @@
  * It is its own palette rather than the Kernel's. The Editor is a tool sitting
  * over the page in either theme, and borrowing the page's ink would make it
  * disappear into whichever one is on.
+ *
+ * AND ITS OWN LENGTHS, IN PX, FOR THE SAME REASON — every one of these used to be
+ * a rem, which reads as neutral and is not: the root's font-size on this page is
+ * `--type-zoom` times a ceiling, so the panel grew with the composition it was
+ * being used to judge. At the zoom the Front Screen is composed at, a 30rem panel
+ * on a 1440px window is 617px wide and covers the column's own south-east corner
+ * — which is the corner `scale everything` is dragged by, so the one gesture that
+ * moves the zoom became unreachable at the zoom it had reached. The `editor` Check
+ * is what caught it, and it is a Check about the page rather than about this file
+ * only because the two were the same unit. They are not the same unit.
+ *
+ * The panel states its own type at 12px above, so these are that type's own scale
+ * and not the reader's — 16 to the unit is what they were authored at.
  */
 
 [data-editor] {
@@ -23,8 +36,8 @@
   right: 12px;
   bottom: 12px;
   z-index: 2147483000;
-  width: min(30rem, calc(100vw - 24px));
-  max-height: min(70vh, 40rem);
+  width: min(480px, calc(100vw - 24px));
+  max-height: min(70vh, 640px);
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -79,7 +92,7 @@
 
 [data-editor] label {
   display: grid;
-  grid-template-columns: 11rem minmax(0, 1fr);
+  grid-template-columns: 176px minmax(0, 1fr);
   align-items: center;
   gap: 6px;
   margin: 3px 0;
@@ -166,7 +179,7 @@
 }
 
 [data-editor-token] > span {
-  flex: 0 0 8.5rem;
+  flex: 0 0 136px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -182,23 +195,23 @@
 
 [data-editor-token] input[type='range'],
 [data-editor-token] input[type='text'] {
-  flex: 1 1 3rem;
+  flex: 1 1 48px;
 }
 
 [data-editor-token] input[type='number'] {
-  flex: 0 0 5.5rem;
+  flex: 0 0 88px;
   text-align: right;
 }
 
 [data-editor-token] input[type='color'] {
-  flex: 0 0 2.75rem;
+  flex: 0 0 44px;
   padding: 0;
-  block-size: 1.6rem;
+  block-size: 25.6px;
 }
 
 [data-editor-token] > small {
   flex: 0 1 auto;
-  min-width: 1.4rem;
+  min-width: 22.4px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -246,7 +259,7 @@
 
 [data-editor-timeline] {
   display: grid;
-  grid-template-columns: 8.5rem minmax(3rem, 1fr) 3.5rem;
+  grid-template-columns: 136px minmax(48px, 1fr) 56px;
   align-items: center;
   gap: 6px;
   margin: 3px 0;
@@ -333,7 +346,7 @@
 
 [data-editor-log] {
   margin: 4px 0 0;
-  max-height: 12rem;
+  max-height: 192px;
   overflow: auto;
   white-space: pre-wrap;
   word-break: break-word;
@@ -347,7 +360,7 @@
 }
 
 [data-editor-token] select {
-  flex: 1 1 3rem;
+  flex: 1 1 48px;
 }
 
 /* ---- measuring ---------------------------------------------------------- */
@@ -372,7 +385,7 @@
 }
 
 [data-editor-arm] small {
-  flex: 1 1 12rem;
+  flex: 1 1 192px;
   opacity: 0.55;
 }
 
@@ -440,7 +453,7 @@
 }
 
 [data-editor-history] small {
-  flex: 1 1 12rem;
+  flex: 1 1 192px;
   opacity: 0.5;
 }
 
@@ -526,7 +539,7 @@
    backed by a Token writes it on release, so the number and the constant it moves
    are one thing under one pointer. */
 [data-editor-axis] > [data-editor-scrub] {
-  flex: 0 0 5rem;
+  flex: 0 0 80px;
   opacity: 0.7;
   cursor: ew-resize;
   user-select: none;
@@ -544,7 +557,7 @@
 }
 
 [data-editor-axis] input {
-  flex: 0 0 6rem;
+  flex: 0 0 96px;
   text-align: right;
 }
 
@@ -607,7 +620,7 @@
 }
 
 [data-editor-override] > span {
-  flex: 0 0 9rem;
+  flex: 0 0 144px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -634,7 +647,7 @@
 }
 
 /* ONE COLUMN, unlike every other label in this panel. The panel's own label rule
-   puts a 11rem name beside its control, which is right for a row of numbers and
+   puts a 176px name beside its control, which is right for a row of numbers and
    wrong for a document 88 columns wide: the name would take a third of the width
    the document needs. So the title stacks above it and the box gets the lot. */
 [data-editor-recording] label {
@@ -646,7 +659,7 @@
 [data-editor-recording] textarea {
   display: block;
   width: 100%;
-  /* BOTH, and it is the one thing that makes this readable in a 30rem panel: the
+  /* BOTH, and it is the one thing that makes this readable in a 480px panel: the
      document is 88 columns and the panel is not, so it scrolls sideways — and
      dragging the corner past the panel's edge is how the author reads the whole of
      it without this growing a window of its own. Copying it does not need any of
@@ -737,10 +750,19 @@
    file is not allowed to spend it on something else. Fixed, so it follows the
    page rather than the document, and pointer-events: none so it is a drawing and
    not a surface — the drag happens on the element under it, which is what makes
-   the numbers real. */
+   the numbers real.
+
+   ABOVE THE PANEL, AND THAT IS THE ONE THING IN THIS FILE THAT IS. The panel is
+   480px wide in the bottom-right corner, so on a 1440px window it stands over the
+   right-hand edge of a centred column — and the marquee under it was a selection
+   the author could see and could not drag, because the corner they reached for
+   was the panel's pixel and not the page's. What is being put over a 480px panel
+   is a 1px outline and four 12px grips, and only where something under it is
+   picked, which is exactly when they are the thing being reached for. The `editor`
+   Check found it as an unreachable `se` on the Front Screen's own column. */
 [data-editor-marquee] {
   position: fixed;
-  z-index: 2147482000;
+  z-index: 2147483500;
   pointer-events: none;
   outline: 1px solid #7fb3ff;
   outline-offset: 0;
