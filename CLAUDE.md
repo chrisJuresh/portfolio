@@ -12,7 +12,7 @@ expensive to rediscover. Read it before writing a spec and before the first edit
 Then, as the work needs them: [`CONTEXT.md`](CONTEXT.md) for the vocabulary —
 **Shell**, **Kernel**, **Section**, **Turn**, **Timeline**, **Token**,
 **Content**, **Variant**, **Bake**, **Check** — which is binding on identifiers,
-ticket titles and prose; and [`docs/adr/`](docs/adr/) for the six decisions that
+ticket titles and prose; and [`docs/adr/`](docs/adr/) for the seven decisions that
 are binding on the build. Where a name in the existing code disagrees with the
 glossary, the glossary wins.
 

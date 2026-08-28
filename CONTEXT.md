@@ -72,6 +72,28 @@ The rendered marble slab a Frame stands on, with the Frame's live reflection
 lying in it.
 _Avoid_: pedestal, base, stand
 
+**Exploded View**:
+A Showcase's device: one captured Slab with the Cards belonging to it raised off
+its surface, every part under one camera, so an interface is shown taken apart
+rather than photographed whole.
+_Avoid_: the 3D bit, the scene, isometric, the diagram
+
+**Slab**:
+The captured plane an Exploded View is built on — one still of a project's own
+screen, carrying none of the interface that is raised off it.
+_Avoid_: screenshot, screen, phone, device, plate
+
+**Card**:
+One interface surface raised off a Slab, drawn by the page rather than captured,
+and named by exactly one of the Section's numbered points.
+_Avoid_: panel, frame, tile, layer, popup
+
+**Lift**:
+The Exploded View's motion, from flat to raised. Raised is the state it rests in
+and flat is where the motion begins, so a reader who is shown neither still gets
+the Exploded View.
+_Avoid_: reveal, raise, rise, explode, the animation
+
 **Rail**:
 The list down a Section's edge naming what can be shown there, marking which is
 selected and which is not yet built.
