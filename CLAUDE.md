@@ -258,7 +258,15 @@ by a Token writes that Token on release, which is most of them — **including o
 behind a bound**: a box written as `width: 100%` inside
 `max-width: var(--a-token)` is governed by the Token and not by the `100%`, and a
 drag lifts the cap so the box actually moves rather than writing a style the cap
-swallows. A row backed by
+swallows. **And including one behind no size at all**: a box that is its parent's
+REMAINDER — the Front Screen's column is `flex: 1 1 auto` inside a Section pinned
+to the fold — has no height to drag, so a corner on it closes the parent's padding
+on the edge under the pointer and writes the Token that padding is declared as.
+That is why "I cannot make the column any taller" was true for as long as it was:
+the drag wrote a height, the flex algorithm discarded it, and the surface reported
+nothing. One Token is often BOTH of a parent's paddings — closing the Front
+Screen's top closes its bottom, through `--front-screen-cut-gap` — so the box grows
+at both ends and the report says so. A row backed by
 nothing stays a measurement and hands back an **Annotation** to paste to an agent,
 or writes an **Override** into `src/overrides.css` so the page looks right while
 the composition is corrected later. That asymmetry is ADR 0004 and not an
@@ -295,7 +303,7 @@ earlier change standing.
 It writes Content, Tokens, a Bake's parameters and that one
 stylesheet, and nothing else (ADR 0004), and
 [`scripts/editor/NOTES.md`](scripts/editor/NOTES.md) is the authority: read it
-before touching `scripts/editor/`. Six things there are easy to get wrong and
+before touching `scripts/editor/`. Seven things there are easy to get wrong and
 expensive to rediscover — **the Content and Tokens boundaries replace one span's
 bytes rather than re-serialising the file**, which is what keeps a Content file's
 comments and a Tokens file's paragraphs, while a Bake's parameters and the
@@ -311,9 +319,13 @@ reason**; **a Timeline is held before it is scrubbed**, or the moment survives
 one frame; **a re-bake rebuilds the tree and recaptures both baselines**, which
 is the only thing that makes the page show the new asset; **the plinth Bake
 renders one stone and never a built-in**, because `-- all` would overwrite the
-plates the marble comparison was judged from; and **an Override's selector must
+plates the marble comparison was judged from; **an Override's selector must
 never carry Astro’s `astro-…` scoping class**, which is a build’s fingerprint,
-so one built from it addresses something else after the next build.
+so one built from it addresses something else after the next build; and **a
+shorthand carrying a `var()` has longhands CSSOM will not give you** — asking a
+rule for the `padding-top` set by `padding: var(--a-token) …` answers the EMPTY
+STRING, so the property the fill gesture is entirely about is the one property a
+stylesheet walk cannot see, and it has to be split out of the shorthand instead.
 
 **Tokens are not only a Section's.** The Effect Stack's hundred numbers, the three
 corner pictures’ placement, the landing's four terms and the page's own type size

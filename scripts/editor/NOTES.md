@@ -371,6 +371,80 @@ found nothing, correctly, because there was nothing left to offer. The row carri
 `data-editor-governed` from the moment the element is picked, which is when the
 author is deciding.
 
+### A box with no size of its own drags the padding around it
+
+**Some boxes have no size to move.** `.front-screen__col` is `flex: 1 1 auto`
+inside a Section pinned to the fold, so its height is whatever the flex algorithm
+has left over: an inline `height` becomes its flex-basis and is grown straight back
+to the fill. For as long as the surface had nothing to say about that, a corner
+drag on it wrote a size, watched the layout discard it, re-measured the box
+truthfully as unchanged, and reported nothing at all. **"I still cannot make it
+taller" is what that looks like from the outside**, and it was reported more than
+once before it was diagnosed.
+
+The number that actually moves that edge is on the PARENT — the padding holding the
+box off the parent's edge — so that is what the corner drags. `lib/fills.mjs` is
+the arithmetic and `Measure.fills()` is who asks.
+
+**Whether a box is a fill is asked of the PAGE, not of the stylesheet.**
+`swallowed()` writes a size, sees whether the box moved, and puts it back. The
+obvious implementation reads `flex-grow` and reasons about the algorithm, and it
+would be wrong about `align-self: stretch`, about a grid item, about a box
+stretched by `top` and `bottom` together, and about whatever the next composition
+does. "A size was written and the box did not move" is not a proxy for the failure
+— it IS the failure, whatever caused it. One forced layout, as the corner is taken
+hold of and never per frame.
+
+**Only where `governing()` found nothing.** A box the composition sizes with a
+Token — including one it sizes with a `max-width` the drag LIFTS — is not a fill
+however the flex algorithm treats it, and the existing path owns it. The Front
+Screen's column is one of each: its width is `--front-screen-measure` and its
+height is the Section's remainder, so a corner on it drags a size one way and a
+padding the other.
+
+**It writes, where the rest of a corner drag does not**, and it is the same
+asymmetry above arrived at from a third direction — `landZoom()` is the second. A
+padding declared as exactly one Token is not a coordinate in a composition: it is a
+named number the author owns, and the only thing to do with a dragged one is write
+it. The other half of the same gesture stays a measurement, and the report line
+says which was which.
+
+**`scale()` may touch a `clamp()` where the Tokens panel's own control may not**,
+and the difference is the operation rather than the permission. That control draws
+a `clamp()` as a text field because a SLIDER moves one END of it, and moving one
+end of a clamp destroys the relationship. One ratio across all three ends does not:
+clamp is positively homogeneous, so `clamp(ka, kb, kc)` is exactly `k · clamp(a, b,
+c)` — the same relationship at a different magnitude, **with its breakpoints in
+exactly the same places**. `--front-screen-rhyme: clamp(3rem, 9vh, 6.5rem)` pins to
+its floor below a 533px window and its ceiling above 1156px; scaled by 0.75 it pins
+at those same two windows. `fills.test.mjs` asserts that, and it is the whole
+argument for the gesture being allowed at all.
+
+**It refuses three ways, and says which.** A padding that is not exactly one Token
+is a relationship — the Front Screen's own `padding-bottom` is
+`calc(var(--front-screen-cut-gap) - var(--landing-mast-top))`, and which of those
+moved is a judgement rather than a length. A Token no Section declares belongs to
+the Kernel. A padding already at zero has no ratio that opens it again. **The
+refusal is said at the RELEASE and not at the grab**: this panel has one report
+line, so anything said as the corner was taken hold of is overwritten by the drag's
+own reporting on the very next frame, and the author never sees it. That was a real
+bug in the first version of this.
+
+Two more things are easy to get wrong here and both were:
+
+- **One Token is often BOTH of a parent's paddings.** `--front-screen-rhyme` is the
+  Front Screen's top padding and, through `--front-screen-cut-gap`, its bottom one
+  — so closing the top by twenty closes the bottom too and the column grows by
+  forty. The boxes are re-measured rather than told a size, so the rows stay
+  truthful; and the anchor clause fires, which is correct and is deliberately NOT
+  reported as a fault the way it is on an ordinary resize.
+- **The measurement half has to survive the write.** `writeTokens()` repicks
+  because this surface's inline styles would DOUBLE what the Token just did — but a
+  width doubles nothing a padding did, so `landFills()` puts it back afterwards.
+  Without that, a corner dragged diagonally wrote the padding and then snapped the
+  width back to the file on release, which reads as the tool undoing half of what
+  the hand just did.
+
 ### A selection, not an element
 
 `this.selection` is a list, primary first. Shift-click adds; shift-clicking
@@ -1145,6 +1219,18 @@ Token. `authored()` reads a rule AND descends into it, never one or the other. T
 smoke Check injects a rule of its own to guard this, because nothing about the page
 itself would have shown it.
 
+**A shorthand carrying a `var()` has longhands CSSOM will not give you.**
+`rule.style.getPropertyValue('padding-top')` answers the EMPTY STRING when the
+`padding` that set it contains a variable — those longhands are
+pending-substitution, and that is what they serialise as. The Front Screen declares
+`padding: var(--front-screen-rhyme) var(--front-screen-side) 0`, so the one property
+the fill gesture is about is exactly the one CSSOM blanks, and `authored()`
+reported "nothing declares it" about a declaration in plain sight. It cost a wrong
+diagnosis. `authoredSide()` reads the longhand where there is one and splits the
+shorthand where there is not, and `lib/fills.mjs`'s `sides()` is the split — which
+has to count parenthesis depth, because a `calc()` inside a shorthand carries
+spaces of its own and a plain `split(/\s+/)` reads it as three sides.
+
 **A rule inside a `@media` that does not apply must not be read.** The Projects
 Panel writes `margin-left: 0px` on its Frame inside a `@media` for narrow windows,
 and a walk that takes the last match regardless of condition reports that 0 as
@@ -1243,10 +1329,11 @@ elsewhere.
 | `lib/typefit.test.mjs` | the `scale text` ratio: that the smaller of the two wins, that it is taken from the picked box so a drag does not compound, and that nothing resized is no answer rather than a ratio of one — and `carried()`, that holders set at one size are the box's text size and holders set at several are no answer |
 | `lib/changes.test.mjs` | the Recording's own text — that only what moved takes a row, that an already-written Token is marked and a differently-written one is not, and that the caveats are said once however many elements there are |
 | `lib/boxes.test.mjs` | the border box a size is measured as against the content box it is written as, and that an axis nothing asked for stays unasked for |
+| `lib/fills.test.mjs` | a box with no size of its own: reading one side out of the shorthand that declared it, scaling a `clamp()` term by term and proving its breakpoints do not move, refusing anything with a `var()` or a `calc()` in it, and where a padding dragged past zero stops |
 | `lib/runs.test.mjs` | whether a run is in flight, how it ended, and what it says when it did not end well |
 | `lib/sections.test.mjs` | that a request cannot name a file, against every resolver and all three families |
 | `lib/publish.test.mjs` | which arguments git is handed, and what counts as one of the Editor's paths |
-| `scripts/checks/checks/editor.mjs` | one smoke Check: click, type, drag, scrub, measure, resize by every corner, scale the type with the box — including the type a box does not own — keep a change standing, record the session, override, discard, and find each in the file |
+| `scripts/checks/checks/editor.mjs` | one smoke Check: click, type, drag, scrub, measure, resize by every corner, drag the padding around a box that has no size of its own — and watch the corner whose padding is a relationship refuse out loud — scale the type with the box, including the type a box does not own, keep a change standing, record the session, override, discard, and find each in the file |
 
 `pnpm test` runs everything but the last; `pnpm check` runs them and then the
 Check. `lib/runs.test.mjs` drives a fake child process rather than a real

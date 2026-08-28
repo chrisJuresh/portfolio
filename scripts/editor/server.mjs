@@ -136,6 +136,7 @@ const CLIENT = {
   '/lib/corners.mjs': { file: 'lib/corners.mjs', type: 'text/javascript; charset=utf-8' },
   '/lib/history.mjs': { file: 'lib/history.mjs', type: 'text/javascript; charset=utf-8' },
   '/lib/boxes.mjs': { file: 'lib/boxes.mjs', type: 'text/javascript; charset=utf-8' },
+  '/lib/fills.mjs': { file: 'lib/fills.mjs', type: 'text/javascript; charset=utf-8' },
   '/lib/typefit.mjs': { file: 'lib/typefit.mjs', type: 'text/javascript; charset=utf-8' },
   '/lib/overrides.mjs': { file: 'lib/overrides.mjs', type: 'text/javascript; charset=utf-8' },
 };

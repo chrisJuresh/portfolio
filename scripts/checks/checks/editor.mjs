@@ -2259,6 +2259,163 @@ export const check = {
         }
       });
 
+      // ---- a box with no size of its own ----------------------------------
+      //
+      // The Front Screen's column is `flex: 1 1 auto` inside a Section pinned to
+      // the fold, so it has no height to drag: an inline one becomes its flex-basis
+      // and is grown straight back to the fill. For as long as the surface had
+      // nothing to say about that, a corner drag wrote a size, watched the layout
+      // discard it, re-measured the box truthfully as unchanged, and reported
+      // nothing — "I still cannot make it taller" is what that looks like.
+      //
+      // NAMED ELEMENTS, WHICH THIS CHECK OTHERWISE AVOIDS. Everything above picks
+      // a Section's mount point precisely so it cannot go stale, and this cannot:
+      // the gesture is only reachable on a box the composition gives no size, and
+      // one has to be found to reach it. `.front-screen__col` is that box, and a
+      // rename breaking this Check is the correct outcome — the note it fails with
+      // says so.
+      //
+      // A TOKEN'S PAGE AND ITS FILE ARE TWO ASSERTIONS here as well, split the same
+      // way the Timeline half above splits them: the drag must move the page and
+      // write nothing, and only the release may reach the file.
+      const fillFile = join(to.sections, 'front-screen', 'tokens.css');
+      const rhymeIn = (text) => /--front-screen-rhyme:\s*([^;]+);/.exec(text)?.[1]?.trim() ?? null;
+      const rhyme = () => rhymeIn(readFileSync(fillFile, 'utf8'));
+      const column = () =>
+        page.evaluate(() => {
+          const col = document.querySelector('.front-screen__col');
+          const section = document.querySelector('.front-screen');
+          if (!col || !section) return null;
+          const box = col.getBoundingClientRect();
+          const around = section.getBoundingClientRect();
+          return {
+            height: Math.round(box.height),
+            top: Math.round(box.top - around.top),
+            bottom: Math.round(around.bottom - box.bottom),
+          };
+        });
+
+      const fillWas = rhyme();
+      const columnWas = await column();
+      if (columnWas === null || fillWas === null) {
+        failures.push(
+          'no .front-screen__col, or no --front-screen-rhyme declaring its padding — the fill gesture is' +
+            ' only reachable on a box the composition gives no size, and this Check needs one to reach it',
+        );
+      } else {
+        await page.locator('[data-editor-choose="measure"]').click();
+        // Two pixels inside its left edge, which is the column's own box rather
+        // than any of the blocks stacked down it.
+        await page.evaluate(() => {
+          const col = document.querySelector('.front-screen__col');
+          const box = col.getBoundingClientRect();
+          const x = Math.round(box.left + 2);
+          const y = Math.round(box.top + box.height / 2);
+          for (const kind of ['pointerdown', 'pointerup']) {
+            col.dispatchEvent(new PointerEvent(kind, { bubbles: true, cancelable: true, clientX: x, clientY: y }));
+          }
+        });
+
+        // The top left corner, forty pixels up, held rather than let go.
+        const grabbed = await page.evaluate(() => {
+          const handle = document.querySelector('[data-editor-handle="nw"]');
+          if (!handle) return false;
+          const box = handle.getBoundingClientRect();
+          const x = Math.round(box.left + box.width / 2);
+          const y = Math.round(box.top + box.height / 2);
+          const at = (kind, cy) =>
+            handle.dispatchEvent(new PointerEvent(kind, { bubbles: true, cancelable: true, clientX: x, clientY: cy }));
+          at('pointerdown', y);
+          at('pointermove', y - 20);
+          at('pointermove', y - 40);
+          return true;
+        });
+        if (!grabbed) failures.push('the Measure surface drew no top left corner to drag');
+
+        const holding = await column();
+        if (holding.top >= columnWas.top || holding.height <= columnWas.height) {
+          failures.push(
+            `dragging the column's top corner up moved nothing: its top margin is ${holding.top}px against` +
+              ` ${columnWas.top}px and it is ${holding.height}px tall against ${columnWas.height}px. A box` +
+              ' with no size of its own has to drag the padding around it, or the gesture writes a style the' +
+              ' layout discards',
+          );
+        }
+        // The BOTTOM margin too, and it is the assertion that says the Token was
+        // what moved rather than an inline style on the box: one number is both of
+        // the Section's paddings, through --front-screen-cut-gap.
+        if (holding.bottom >= columnWas.bottom) {
+          failures.push(
+            `closing the column's top margin left its bottom one at ${holding.bottom}px — the padding is` +
+              ' declared as one Token that both ends read, so moving it has to move both',
+          );
+        }
+        if (rhyme() !== fillWas) {
+          failures.push(
+            `dragging wrote ${fillFile.split(sep).pop()} before it was let go of — a drag previews through` +
+              ' the Tokens surface’s own sheet, and only a release reaches a file',
+          );
+        }
+
+        await page.evaluate(() => {
+          const handle = document.querySelector('[data-editor-handle="nw"]');
+          const box = handle.getBoundingClientRect();
+          handle.dispatchEvent(
+            new PointerEvent('pointerup', {
+              bubbles: true,
+              cancelable: true,
+              clientX: Math.round(box.left + box.width / 2),
+              clientY: Math.round(box.top + box.height / 2),
+            }),
+          );
+        });
+        await holds(page, () => rhyme() !== fillWas);
+        const wrote = rhyme();
+        if (wrote === fillWas) {
+          failures.push('letting go of a fill wrote nothing — the padding moved on the page and not in its file');
+        } else if (/var\(/.test(wrote) || !/clamp\(/.test(wrote)) {
+          // Scaled term by term rather than restated: clamp is positively
+          // homogeneous, so one ratio across all three terms is the same
+          // relationship at a different magnitude with its breakpoints in the same
+          // places. A restatement would have replaced it with a single length.
+          failures.push(
+            `--front-screen-rhyme was written as "${wrote}" — a clamp has to come back a clamp, scaled term` +
+              ' by term, or the gesture has flattened a relationship into a length',
+          );
+        } else {
+          notes.push(`a box with no height of its own dragged its padding: ${fillWas} → ${wrote}`);
+        }
+
+        // AND THE CORNER WHOSE PADDING IT MAY NOT WRITE REFUSES, out loud. The
+        // Section's bottom padding is a calc of two Tokens, so there is no single
+        // number to move — and a gesture that silently did nothing there is the
+        // failure this whole block is about, one corner along.
+        const beforeRefusal = rhyme();
+        await page.evaluate(() => {
+          const handle = document.querySelector('[data-editor-handle="sw"]');
+          if (!handle) return;
+          const box = handle.getBoundingClientRect();
+          const x = Math.round(box.left + box.width / 2);
+          const y = Math.round(box.top + box.height / 2);
+          const at = (kind, cy) =>
+            handle.dispatchEvent(new PointerEvent(kind, { bubbles: true, cancelable: true, clientX: x, clientY: cy }));
+          at('pointerdown', y);
+          at('pointermove', y + 40);
+          at('pointerup', y + 40);
+        });
+        await page.waitForTimeout(200);
+        const refusal = (await page.textContent('[data-editor-said]')) ?? '';
+        if (!/cannot be written/.test(refusal)) {
+          failures.push(
+            `dragging a corner whose padding is built out of two Tokens said "${refusal.trim().slice(0, 120)}"` +
+              ' — it has to say it cannot write that one, or the gesture fails silently again',
+          );
+        }
+        if (rhyme() !== beforeRefusal) {
+          failures.push('a refused fill wrote a Token anyway — the refusal is the whole of what it may do');
+        }
+      }
+
       await page.locator('[data-editor-choose="content"]').click();
 
       // Publishing is off for this Check, and it has to say so rather than run.

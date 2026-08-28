@@ -14,6 +14,15 @@ rem the breadcrumb or the up arrow climbs out of it to the box you meant. Once t
 rem box is picked, dragging from anywhere inside it moves the whole box, children
 rem and all - a click inside it is what picks something smaller again.
 rem
+rem Some boxes have no size of their own: the Front Screen's column is whatever
+rem height the Section has left over, so there is nothing on it to drag. A corner
+rem on one of those closes the MARGIN around it instead - the padding on the edge
+rem you have hold of - and writes the Token that padding is declared as when you
+rem let go. Dragging the column's top corner upwards is how it is made taller, and
+rem it closes the bottom margin by the same amount, because one number is both.
+rem Where that padding is a relationship rather than a single number the drag says
+rem so out loud rather than doing nothing, which is what it used to do.
+rem
 rem To rearrange a whole screenful and hand the lot over, use the two toggles at
 rem the top of the Measure surface and then the RECORDING surface beside it:
 rem

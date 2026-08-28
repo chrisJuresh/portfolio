@@ -109,6 +109,7 @@ import {
   resize,
   word as cornerWord,
 } from './lib/corners.mjs';
+import { EDGES, closing, scale as scaleBy, sides } from './lib/fills.mjs';
 import { History } from './lib/history.mjs';
 import { DISPLAY, asSelector, rule as ruleFor } from './lib/overrides.mjs';
 import { carried, fitted } from './lib/typefit.mjs';
@@ -463,7 +464,7 @@ function inForce(rule) {
  * surface previewed a moment ago would look like the composition's own
  * declaration.
  */
-function authored(element, property) {
+function declared(element, read) {
   let found = null;
   const walk = (rules) => {
     for (const rule of rules) {
@@ -473,14 +474,14 @@ function authored(element, property) {
       // version of this treated a truthy `cssRules` as "not a declaration" and
       // therefore found nothing at all, anywhere, silently.
       if (rule.selectorText && rule.style) {
-        const value = rule.style.getPropertyValue(property);
         let matches = false;
         try {
           matches = element.matches(rule.selectorText);
         } catch {
           matches = false;
         }
-        if (value !== '' && matches) found = { value: value.trim(), selector: stripScope(rule.selectorText) };
+        const value = matches ? read(rule.style) : null;
+        if (value) found = { value: String(value).trim(), selector: stripScope(rule.selectorText) };
       }
       if (rule.cssRules && inForce(rule)) walk(rule.cssRules);
     }
@@ -496,6 +497,36 @@ function authored(element, property) {
     walk(rules);
   }
   return found;
+}
+
+function authored(element, property) {
+  return declared(element, (style) => style.getPropertyValue(property));
+}
+
+/**
+ * The same walk, for ONE SIDE of a box shorthand.
+ *
+ * WHY IT CANNOT JUST ASK FOR THE LONGHAND, which is the trap that made this a
+ * function rather than a call. `getPropertyValue('padding-top')` on a rule answers
+ * the EMPTY STRING whenever the `padding` shorthand that set it carries a `var()`
+ * — the longhands of such a shorthand are pending-substitution, and CSSOM
+ * serialises them as nothing at all. The Front Screen declares
+ * `padding: var(--front-screen-rhyme) var(--front-screen-side) 0`, so the one
+ * property the fill gesture is about is exactly the one CSSOM will not hand over,
+ * and `authored()` reported "nothing declares it" about a declaration in plain
+ * sight.
+ *
+ * The longhand still comes FIRST where there is one, because CSSOM resolves the
+ * two against each other correctly whenever it can: a `padding-top` after a
+ * `padding` wins, and a `padding` after a `padding-top` overwrites it. Only the
+ * case CSSOM blanks falls through to reading the shorthand.
+ */
+function authoredSide(element, group, side) {
+  return declared(element, (style) => {
+    const longhand = style.getPropertyValue(`${group}-${side}`);
+    if (longhand !== '') return longhand;
+    return sides(style.getPropertyValue(group))?.[side] ?? null;
+  });
 }
 
 export class Measure {
@@ -823,6 +854,122 @@ export class Measure {
     return (
       Number.isFinite(size) && Number.isFinite(candidate.computed) && Math.abs(candidate.computed - size) < 0.5
     );
+  }
+
+  // -------------------------------------------------------------------------
+  // A box that has no size of its own
+  // -------------------------------------------------------------------------
+
+  /**
+   * Whether writing a size on this axis moves the box at all.
+   *
+   * ASKED OF THE PAGE RATHER THAN OF THE STYLESHEET, and that is the decision here.
+   * The obvious implementation reads `flex-grow` and the parent's `display` and
+   * reasons about the flex algorithm — and it would be wrong about `align-self:
+   * stretch`, about a grid item, about a box stretched by `top` and `bottom`
+   * together, and about whatever the next composition does. "A size was written and
+   * the box did not move" is not a proxy for the failure this gesture exists for:
+   * it IS the failure, exactly, whatever caused it.
+   *
+   * One forced layout, at the moment a corner is taken hold of and never per frame.
+   * The probe is put back before it returns — including a size that was already
+   * standing, with its priority, because a drag on a kept change starts from an
+   * inline style this surface itself wrote.
+   */
+  swallowed(element, axis) {
+    const from = element.getBoundingClientRect()[axis];
+    if (!(from > 0)) return false;
+    const was = element.style.getPropertyValue(axis);
+    const priority = element.style.getPropertyPriority(axis);
+    element.style.setProperty(axis, `${round(from + 16)}px`, 'important');
+    const to = element.getBoundingClientRect()[axis];
+    element.style.removeProperty(axis);
+    if (was !== '') element.style.setProperty(axis, was, priority);
+    return Math.abs(to - from) < 0.5;
+  }
+
+  /**
+   * The parent's padding a corner drag would have to close to move this edge, as
+   * everything needed to preview it and write it — or a refusal saying why not.
+   *
+   * WHY THE PARENT'S PADDING IS THE ANSWER. A box that is its parent's remainder
+   * has no size of its own: the flex algorithm hands it whatever is left, so the
+   * only numbers that decide how tall it is are the parent's own height and the
+   * padding holding it off the parent's edges. The height is the composition's
+   * (the Front Screen's is `calc(var(--fold) - …)`, a budget rather than a
+   * measure); the padding is the margin the author is looking at. So the edge under
+   * the pointer is the padding on that side of the parent, and dragging the box's
+   * corner closes it.
+   *
+   * IT REFUSES RATHER THAN GUESSING, three ways, and each refusal is a sentence the
+   * author gets: a padding declared as something other than exactly one Token is a
+   * relationship this may not rewrite; a Token no Section declares belongs to the
+   * Kernel, which ADR 0004's surface cannot reach; and a padding already at zero
+   * has no ratio that opens it again.
+   */
+  fill(element, axis, corner) {
+    const edge = EDGES[corner]?.[axis];
+    const parent = element.parentElement;
+    if (!edge || !parent) return null;
+
+    const declaration = authoredSide(parent, 'padding', edge);
+    const from = Number.parseFloat(getComputedStyle(parent).getPropertyValue(`padding-${edge}`));
+    const named = { axis, edge, parent, from };
+    if (!declaration) {
+      return { ...named, why: `nothing declares a padding-${edge} on the box around it` };
+    }
+    const one = ONE_TOKEN.exec(declaration.value);
+    if (!one) {
+      const inside = [...new Set([...declaration.value.matchAll(EVERY_TOKEN)].map((seen) => seen[1]))];
+      return {
+        ...named,
+        why:
+          `its padding-${edge} is ${declaration.value}` +
+          (inside.length > 0
+            ? `, a relationship built out of ${list(inside)} — which of those moved is the decision rather` +
+              ' than a length to write'
+            : ', a literal in the composition and not a Token at all'),
+      };
+    }
+    const declaring = this.declaring(one[1]);
+    if (declaring.length !== 1) {
+      return {
+        ...named,
+        why:
+          declaring.length === 0
+            ? `${one[1]} is not in any Section’s tokens.css, so it belongs to the Kernel and ADR 0004’s` +
+              ' surface cannot reach it'
+            : `${one[1]} is declared on ${declaring.length} rules, so which one the page is using here is a` +
+              ' judgement rather than a lookup',
+      };
+    }
+    if (!(from > 0)) {
+      return { ...named, why: `its padding-${edge} is already nothing, and no ratio opens it again` };
+    }
+    return { ...named, token: one[1], section: declaring[0].section, held: declaring[0].token };
+  }
+
+  /**
+   * Every axis of this corner that is a fill, resolved.
+   *
+   * ONLY WHERE `governing()` FOUND NOTHING, which is what keeps this out of the way
+   * of the two gestures that already work. A box the composition sizes with a Token
+   * — including one it sizes with a `max-width` the drag LIFTS — is not a fill
+   * however the flex algorithm treats it, and the existing path owns it. The Front
+   * Screen's column is one of each: its width is `--front-screen-measure` and its
+   * height is the Section's remainder, so a corner on it drags a size one way and a
+   * padding the other.
+   */
+  fills(corner) {
+    if (!this.picked) return [];
+    const found = [];
+    for (const axis of ['width', 'height']) {
+      if (this.picked.governs[axis]) continue;
+      if (!this.swallowed(this.picked.element, axis)) continue;
+      const one = this.fill(this.picked.element, axis, corner);
+      if (one) found.push(one);
+    }
+    return found;
   }
 
   // -------------------------------------------------------------------------
@@ -2050,6 +2197,163 @@ export class Measure {
   }
 
   /**
+   * Show the parent's padding closed to where the pointer has taken it, without
+   * writing anything.
+   *
+   * THROUGH THE TOKENS SURFACE'S PREVIEW SHEET, for the reason `showZoom()` gives:
+   * the number is a custom property the composition reads, there is no element to
+   * put it on, and that sheet is the one the Tokens panel's own control previews
+   * through — so the control and this gesture cannot disagree about what the page
+   * is showing.
+   *
+   * THE RATIO IS THE PADDING'S AND THE SCALE IS THE TOKEN'S, which is the step
+   * worth reading twice. The pointer says where the padding should land; the
+   * padding's declaration is exactly one Token, so what the padding did to itself
+   * is what the Token has to do to itself; and `lib/fills.mjs`'s `scale()` is the
+   * one operation that does that to a value the Tokens panel would only let the
+   * author type — a `clamp()` scaled term by term is the same relationship at a
+   * different magnitude, with its breakpoints in the same places. That note is on
+   * `scale()` itself and it is the whole argument for this gesture being allowed.
+   *
+   * ONE TOKEN MAY MOVE MORE THAN THE EDGE UNDER THE POINTER, and nothing here
+   * pretends otherwise. `--front-screen-rhyme` is the Front Screen's top padding
+   * AND, through `--front-screen-cut-gap`, its bottom one — so closing the top by
+   * twenty pixels closes the bottom too and the column grows by forty. The boxes
+   * are re-measured rather than told a size, exactly as a zoom re-measures, so the
+   * rows and the Annotation report what the page actually did.
+   */
+  showFills(by) {
+    const fills = this.dragging?.fills;
+    if (!fills || !this.surface) return;
+    let moved = false;
+    for (const one of fills) {
+      const close = closing(one.from, one.axis === 'height' ? by.dy : by.dx, one.edge);
+      // Null is the padding having bottomed out at zero — `closing()` derives the
+      // ratio from where it LANDED, so past the bottom there is no ratio and the
+      // preview stays where it was rather than the page running away under a
+      // pointer that is still travelling.
+      if (close === null) continue;
+      // BACK WHERE IT STARTED IS NOT A WRITE OF THE SAME NUMBER. A corner nudged
+      // out and brought home again is the author deciding against it, so the file's
+      // own value goes back on the sheet and `wants` is cleared — otherwise letting
+      // go POSTs the value the file already holds, which is a history step, a line
+      // in the Recording and a round trip for a gesture that changed nothing.
+      const home = Math.abs(close.to - one.from) < 0.5;
+      const wants = home ? one.held.value : scaleBy(one.held.value, close.by);
+      // `showing` and not `wants`, because those are two different questions: what
+      // the page is being shown, and what the release should write. They are the
+      // same number until the drag comes home, and then one of them is nothing.
+      if (wants === null || wants === one.showing) continue;
+      one.showing = wants;
+      one.wants = home ? null : wants;
+      one.to = close.to;
+      this.surface.preview(one.section, one.held, wants);
+      moved = true;
+    }
+    if (!moved) return;
+    for (const held of this.selection) {
+      held.after = this.box(held.element);
+      held.type.after = this.typeNow(held);
+    }
+    this.paintPicked();
+    const closing_ = fills.filter((one) => one.wants);
+    this.say(
+      closing_.length === 0
+        ? `${list(fills.map((one) => `the ${one.edge} margin`))} is back where the file has it — there is` +
+            ' nothing left for letting go to write'
+        : `${list(closing_.map((one) => `${one.edge} margin ${px(one.from)} → ${px(one.to)}`))}` +
+            ` — this box has no ${list(closing_.map((one) => one.axis))} of its own, so the corner is closing` +
+            ' the padding around it. Let go to write it.',
+    );
+  }
+
+  /**
+   * The clause naming a padding this gesture may not write, or ''.
+   *
+   * SAID AT THE RELEASE AND NOT AT THE GRAB, which is where the first version of
+   * this put it and was wrong: the report line is one line, so a refusal said as
+   * the corner was taken hold of was overwritten by the drag's own reporting on the
+   * very next frame and the author never saw it. The end of the gesture is the only
+   * moment nothing overwrites.
+   */
+  refusal(refused) {
+    if (!refused || refused.length === 0) return '';
+    return (
+      ` — and it has no ${list(refused.map((one) => one.axis))} of its own either, but the` +
+      ` ${list(refused.map((one) => `${one.edge} padding`))} that would move it cannot be written:` +
+      ` ${list(refused.map((one) => one.why))}. The Recording still measures it.`
+    );
+  }
+
+  /**
+   * Let go of a fill: write the padding's Token.
+   *
+   * WHY THIS WRITES WHERE THE REST OF A CORNER DRAG DOES NOT — the same asymmetry
+   * `landZoom()` is about, arrived at from a third direction. An ordinary resize
+   * leaves an inline style and stays a measurement, because what it moved is a
+   * coordinate in a composition and ADR 0004 keeps those out of the Editor's hands.
+   * A padding declared as exactly one Token is not a coordinate: it is a named
+   * number the author owns, and the only thing to do with a dragged one is write it.
+   *
+   * THE OTHER HALF OF THE GESTURE IS STILL A MEASUREMENT. A corner on the Front
+   * Screen's column drags a width the composition governs with `--front-screen-measure`
+   * and a height it governs with nothing at all, and only the second half is
+   * written here — the first is an inline style like every other preview, dropped
+   * by the repick `writeTokens()` does. The report line says which was which,
+   * because a gesture that wrote half of what it moved and said nothing would be
+   * the worst version of this.
+   */
+  async landFills(fills, corner, was, refused) {
+    this.logged();
+    const found = fills.map((one) => ({
+      section: one.section,
+      key: one.held.key,
+      token: one.token,
+      was: one.held.value,
+      wants: one.wants,
+      axis: one.axis,
+    }));
+    // WHERE THE BOXES ENDED UP, READ BEFORE ANYTHING IS WRITTEN, for the reason
+    // `commit()` gives: `writeTokens()` repicks, and after a repick every `wanted`
+    // is back to nothing — so a redo reading them off the selection afterwards
+    // would replay a gesture that asked for zero.
+    const after = this.selection.map((held) => ({ element: held.element, to: { ...held.wanted } }));
+    const edges = list(fills.map((one) => `the ${one.edge} margin of ${this.naming()}`));
+    const wrote = await this.writeTokens(found, fills[0].axis);
+    // THE MEASUREMENT HALF OF THE GESTURE SURVIVES THE WRITE, and putting it back
+    // is not undoing the repick — it is the reason the repick exists, read the
+    // right way round. `writeTokens()` drops this surface's inline styles because
+    // they would DOUBLE what the Token just did; the size on the other axis doubles
+    // nothing, because a padding is not a width. Without this a corner dragged
+    // diagonally wrote the padding and then snapped the width back to the file on
+    // release, which reads as the tool undoing half of what the hand just did.
+    if (wrote.length > 0) {
+      for (const held of this.selection) {
+        const asked = after.find((one) => one.element === held.element)?.to;
+        if (asked) Object.assign(held.wanted, asked);
+      }
+      this.apply();
+    }
+    this.finish(edges, { after, tokens: wrote });
+    // The anchor clause, because a fill loses one more often than an ordinary
+    // resize does: one Token is frequently BOTH of a parent's paddings — closing
+    // the Front Screen's top closes its bottom, through `--front-screen-cut-gap` —
+    // so the corner opposite the pointer moves and the author has to be told.
+    //
+    // NOT REPORTED AS A FAULT, which is the one place this differs from the same
+    // clause on an ordinary resize. There a drifting anchor is the layout refusing
+    // the gesture and the author needs warning; here it is the Token doing exactly
+    // what it says on the other three rules that read it, and the box got bigger
+    // because of it rather than in spite of it.
+    const anchor = this.anchored(corner, was);
+    this.say(
+      `${edges}: ${list(fills.map((one) => `${px(one.from)} → ${px(one.to)}`))} —` +
+        ` ${list(fills.map((one) => one.token))} written, so the box took the room` +
+        `${anchor === '' ? '.' : anchor} undo writes it back.${this.refusal(refused)}`,
+    );
+  }
+
+  /**
    * A box drawn over every picked element, and the four corners on the primary.
    *
    * The corners are the primary's alone, and that is a decision rather than a
@@ -2792,10 +3096,24 @@ export class Measure {
             };
             return;
           }
+          // WHICH AXES HAVE NO SIZE OF THEIR OWN, asked once as the corner is taken
+          // hold of. `fills()` probes the page — it writes a size and sees whether
+          // the box moved — so it is a forced layout, and asking it per frame is the
+          // one thing on this surface that would feel slow. The refusals are carried
+          // to the RELEASE rather than said here: this panel has one report line, so
+          // anything said at the grab is overwritten by the drag's own reporting on
+          // the very next frame. `refusal()` is where they are said.
+          const corner = handle.dataset.editorHandle;
+          const asked = this.fills(corner);
           this.begin();
           this.dragging = {
             how: 'resize',
-            corner: handle.dataset.editorHandle,
+            corner,
+            // The axes this drag closes a padding for instead of sizing, and the
+            // ones it found no padding it may write for. Both empty for every
+            // ordinary box, which is what keeps this out of the way.
+            fills: asked.filter((one) => one.token),
+            refused: asked.filter((one) => one.why),
             x: event.clientX,
             y: event.clientY,
             // Where the box stands NOW, which is what "the anchor did not move"
@@ -2907,6 +3225,19 @@ export class Measure {
                 { dx, dy },
                 from,
               );
+        // A FILL AXIS IS NOT SIZED — it closes a padding — so the size this corner
+        // would have asked for on it is taken back out before anything is written.
+        // Writing it anyway is what this gesture used to do, and the flex algorithm
+        // discarded it every frame: `null` is "nothing asked for", which is the
+        // truth of what this half of the drag does to the box. The translate that
+        // holds the anchor comes out with it, for the same reason — the box is not
+        // changing size by this surface's doing, so moving it to compensate for a
+        // change it did not make would drag it off the composition for nothing.
+        for (const one of this.dragging.fills ?? []) {
+          wanted[one.axis] = null;
+          const along = one.axis === 'height' ? 'dy' : 'dx';
+          wanted[along] = from[along];
+        }
         // The ratio each member's own box was asked to take, where this gesture was
         // a scale — see the note on `by` in `record()` for why it is per member and
         // measured from the pick. Cleared on anything else, including a move, so the
@@ -2920,6 +3251,10 @@ export class Measure {
         // move is not one, so a drag across the page never touches the type.
         if (this.dragging.how === 'resize') this.fitType();
         this.apply();
+        // AFTER the sizes, so the last thing to measure the page is the thing that
+        // moved it last: closing a padding reflows the box, and a read taken before
+        // that would report the frame before the one on screen.
+        if (this.dragging.fills?.length > 0) this.showFills({ dx, dy });
       },
       true,
     );
@@ -2944,7 +3279,7 @@ export class Measure {
             return;
           }
           if (!this.dragging) return;
-          const { how, axis, corner, was } = this.dragging;
+          const { how, axis, corner, was, fills, refused } = this.dragging;
           // A ZOOM IS LET GO OF BEFORE `this.dragging` IS CLEARED, because both
           // halves of it — the value the page is showing and the Token to write it
           // to — are on the drag and nowhere else. A cancel puts the page back
@@ -2969,6 +3304,23 @@ export class Measure {
           // measurement until the author says otherwise — `land()` is the whole
           // note on why the two differ.
           if (how === 'scrub' && event.type === 'pointerup') return void this.land(axis);
+          // A FILL THAT MOVED A PADDING IS THE THIRD KIND, and it lands like a
+          // scrub rather than like the drag it arrived on: what it moved is a
+          // Token, and `landFills()` is the note on why that is written where the
+          // rest of the same gesture is not. A cancel puts the page back instead —
+          // the gesture was taken away rather than finished, and writing a Token
+          // nobody let go of would be this surface deciding it had been.
+          const closed = (fills ?? []).filter((one) => one.wants);
+          if (closed.length > 0) {
+            if (event.type !== 'pointerup') {
+              // The value the FILE holds, which is where the page goes back to: the
+              // preview sheet is the only thing showing anything else.
+              for (const one of closed) this.surface?.preview(one.section, one.held, one.held.value);
+              this.repick();
+              return void this.say('the drag was cancelled — the padding is back where the file has it');
+            }
+            return void this.landFills(closed, corner, was, refused);
+          }
           // A completed gesture, so the Recording gets it — including a cancelled
           // one, because a pointercancel leaves the page wherever the last frame put
           // it and a document that did not mention it would be describing a
@@ -2991,7 +3343,13 @@ export class Measure {
           // is going to quote, and reading it off the four rows is arithmetic the
           // surface can do for them. The rows still say what the box actually took.
           const scale = this.picked.by === null ? '' : ` — scaled ×${round(this.picked.by)}`;
-          this.say(`${this.picked.named.phrase}: ${headline}${scale}${anchor}`, anchor !== '');
+          // And the padding this gesture could not write, where the corner was on a
+          // box with no size of its own — said HERE because the report line is one
+          // line and the release is the only moment nothing overwrites it.
+          this.say(
+            `${this.picked.named.phrase}: ${headline}${scale}${anchor}${this.refusal(refused)}`,
+            anchor !== '',
+          );
         },
         true,
       );
