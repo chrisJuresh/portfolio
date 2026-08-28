@@ -3,7 +3,7 @@
    these are Tokens and the drawing's own measurements are not, what the two
    colours are mixed out of, and why one rule here is gated on the theme. */
 .front-screen {
-  --front-screen-measure: 27rem;
+  --front-screen-measure: 31rem;
   --front-screen-side: 1.35rem;
   --front-screen-rhyme: clamp(3rem, 9vh, 6.5rem);
 
@@ -110,11 +110,23 @@
   --front-screen-lead-leading: 1.5;
   --front-screen-body-size: 0.9rem;
   --front-screen-body-leading: 1.55;
-  --front-screen-heading-size: 0.85rem;
+  /* The listing headings, and the one place in the ladder where a size carries a
+     leading of its own. Everything else in the column reads at the body's 1.55,
+     which is the leading a paragraph of Vollkorn wants; a heading is one line and
+     wants less, and above the body's own size it wants noticeably less. The two
+     move together — drag the size up and the leading down, or the heading's own
+     line box eats the photographs. */
+  --front-screen-heading-size: 1.1rem;
+  --front-screen-heading-leading: 1.2;
   --front-screen-heading-weight: 700;
   --front-screen-heading-tracking: 0.01em;
   --front-screen-detail-size: 0.86rem;
   --front-screen-indent: 1.1rem;
+  /* How far a listing's body stands in from its heading. The heading hangs back
+     out to the column's left edge, so this is the whole of the step between the
+     two — and the years still land on the column's right edge, because it is the
+     listing's LEFT padding and nothing touches the other end. */
+  --front-screen-listing-indent: 0.618rem;
   --front-screen-gutter: 1rem;
   --front-screen-hairline: 1px;
 

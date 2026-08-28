@@ -81,7 +81,7 @@
    one the column is centred in, so the two land on the same edge. */
 .kernel-corners .eye {
   /* --front-screen-measure and --front-screen-side, spelled out. */
-  --eye-measure: 27rem;
+  --eye-measure: 31rem;
   --eye-side: 1.35rem;
   --eye-column: max(var(--eye-side), calc((var(--page-across) - var(--eye-measure)) / 2));
 

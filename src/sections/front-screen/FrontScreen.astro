@@ -516,7 +516,11 @@ const EAGER = 2;
     position: relative;
     z-index: var(--front-screen-type-z);
     height: var(--front-screen-bar-h);
-    margin-top: var(--front-screen-space-xs);
+    /* Tight to the photographs on purpose: it is the strip's own scrollbar and
+       not a block of the column, so it reads as part of what it reports on. The
+       gap that matters here is the one BELOW it, to the first listing, and that
+       is the column's own. */
+    margin-top: var(--front-screen-space-3xs);
     background: var(--front-screen-soft);
     border-radius: var(--front-screen-bar-h);
     cursor: pointer;
@@ -694,12 +698,27 @@ const EAGER = 2;
     transition-duration: var(--front-screen-fade-reveal);
   }
 
-  /* ---- work, education, contact ------------------------------------------ */
+  /* ---- work, education, contact ------------------------------------------
+     A HANGING HEADING, WHICH IS ONE STEP WRITTEN IN TWO PLACES. The listing is
+     padded in on its left and the heading is pulled back out by the same length,
+     so the heading stands on the column's own left edge and everything under it
+     — the organisations, the years' line, the details, the contact links and the
+     switch — starts one indent in. Written this way round rather than as a
+     padding on each entry because it is the listing's LEFT padding: the content
+     box still ends on the column's right edge, so the years and the switch stay
+     flush with it, and with the last photograph's edge one block up. */
+  .front-screen__listing {
+    padding-left: var(--front-screen-listing-indent);
+  }
+
   .front-screen__heading {
-    margin: 0 0 var(--front-screen-space-3xs);
+    margin: 0 0 var(--front-screen-space-2xs)
+      calc(-1 * var(--front-screen-listing-indent));
     font-family: var(--face-body);
     font-size: var(--front-screen-heading-size);
     font-weight: var(--front-screen-heading-weight);
+    /* Its own, and not the body's — the ladder's Token says why. */
+    line-height: var(--front-screen-heading-leading);
     letter-spacing: var(--front-screen-heading-tracking);
   }
 
