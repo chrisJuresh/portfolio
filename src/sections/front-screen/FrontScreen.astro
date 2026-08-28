@@ -23,7 +23,14 @@ if (!box || !inside || !wide || !tall) {
   );
 }
 
-const listings = [content.work, content.education];
+/* Each listing carries the key its Content is under, so an entry can say which
+   entry it is — `work.0`, `education.0` — and the stylesheet can hold the widths
+   measured off those particular words. Same address the Editor writes a Content
+   edit to, which is the point: one name for one entry, wherever it is named. */
+const listings = [
+  { key: 'work', listing: content.work },
+  { key: 'education', listing: content.education },
+];
 
 /**
  * Where the photographs' bytes are, and the ONE LINE in this Section that knows.
@@ -126,15 +133,15 @@ const EAGER = 2;
     </div>
 
     {
-      listings.map((listing) => (
+      listings.map(({ key, listing }) => (
         <section class="front-screen__listing">
           <h2 class="front-screen__heading">{listing.heading}</h2>
           {/* One line each, and it used to be two: an italic role or subject
               stood under the organisation. An entry is still the content's own
               unit — an organisation and the years beside it — so the box stays,
               and what its margin separates is now one line from the next. */}
-          {listing.entries.map((entry) => (
-            <div class="front-screen__entry">
+          {listing.entries.map((entry, index) => (
+            <div class="front-screen__entry" data-front-screen-entry={`${key}.${index}`}>
               <p class="front-screen__line">
                 {/* Every form of the organisation is in the markup and the
                     stylesheet shows the longest one the column can hold — the
@@ -792,35 +799,84 @@ const EAGER = 2;
     display: none;
   }
 
-  /* Each step hides everything above it and shows its own. `:not(:last-child)`
-     on every hide is the guard that makes this safe for an entry with NO narrow
-     forms: the only form there is is also the last, so nothing can hide it and
-     a Work entry keeps its organisation at every width. The hides outrank the
-     shows they meet — one more compound than a bare `:nth-child()` — so the
-     narrowest matching step is the one that survives all three matching at once. */
-  @container front-screen-entry (max-width: 22.2em) {
-    .front-screen__org > :first-child:not(:last-child) {
+  /* EVERY LADDER IS ONE ENTRY'S, and that is the thing this is easy to get wrong
+     by not doing. Where a form stops fitting is a fact about ITS OWN words beside
+     ITS OWN years, and the three entries here disagree by three ems: the degree
+     runs out of room at 22.0em, Third Bridge Group Limited at 19.5em and Royal
+     College of Radiologists at 18.6em. On one shared ladder the two shorter names
+     would give way at the widest of those, three and a half ems before they had
+     to — a phone's whole width of column, given up while the words still fitted.
+     So each ladder is gated on the entry it was measured from, named as the
+     Content key its words are at.
+
+     A KEY AND NOT THE WORDS. Reordering a listing therefore moves a ladder onto
+     the wrong entry, silently, which is the one way to break this that a glance
+     does not catch. It is the same address the Editor writes to, so the entry a
+     ladder belongs to is findable by grep from either end.
+
+     Within a ladder the steps are widest first, so the narrowest one that matches
+     is read last and wins, and each step hides everything above it. The hides
+     carry one more compound than the shows they meet, which settles the rest.
+     `:not(:last-child)` is the floor under all of it: whatever the thresholds
+     say, the shortest form the author wrote cannot be hidden, so no entry is ever
+     left showing no name at all. */
+
+  /* work.0 — Third Bridge Group Limited · Third Bridge Group · Third Bridge */
+  @container front-screen-entry (max-width: 19.6em) {
+    [data-front-screen-entry='work.0'] .front-screen__org > :first-child:not(:last-child) {
       display: none;
     }
-    .front-screen__org > :nth-child(2) {
+    [data-front-screen-entry='work.0'] .front-screen__org > :nth-child(2) {
+      display: inline;
+    }
+  }
+
+  @container front-screen-entry (max-width: 16em) {
+    [data-front-screen-entry='work.0'] .front-screen__org > :nth-child(-n + 2):not(:last-child) {
+      display: none;
+    }
+    [data-front-screen-entry='work.0'] .front-screen__org > :nth-child(3) {
+      display: inline;
+    }
+  }
+
+  /* work.1 — Royal College of Radiologists · RCR. One step and a long one: the
+     initials are the only shorter form the name has, so there is nothing to put
+     between them. */
+  @container front-screen-entry (max-width: 18.7em) {
+    [data-front-screen-entry='work.1'] .front-screen__org > :first-child:not(:last-child) {
+      display: none;
+    }
+    [data-front-screen-entry='work.1'] .front-screen__org > :nth-child(2) {
+      display: inline;
+    }
+  }
+
+  /* education.0 — the degree, giving up the honours, then the subject's full
+     name, then the degree itself. */
+  @container front-screen-entry (max-width: 22.2em) {
+    [data-front-screen-entry='education.0'] .front-screen__org > :first-child:not(:last-child) {
+      display: none;
+    }
+    [data-front-screen-entry='education.0'] .front-screen__org > :nth-child(2) {
       display: inline;
     }
   }
 
   @container front-screen-entry (max-width: 19.1em) {
-    .front-screen__org > :nth-child(-n + 2):not(:last-child) {
+    [data-front-screen-entry='education.0'] .front-screen__org > :nth-child(-n + 2):not(:last-child) {
       display: none;
     }
-    .front-screen__org > :nth-child(3) {
+    [data-front-screen-entry='education.0'] .front-screen__org > :nth-child(3) {
       display: inline;
     }
   }
 
   @container front-screen-entry (max-width: 15.3em) {
-    .front-screen__org > :nth-child(-n + 3):not(:last-child) {
+    [data-front-screen-entry='education.0'] .front-screen__org > :nth-child(-n + 3):not(:last-child) {
       display: none;
     }
-    .front-screen__org > :nth-child(4) {
+    [data-front-screen-entry='education.0'] .front-screen__org > :nth-child(4) {
       display: inline;
     }
   }

@@ -109,10 +109,12 @@ export const content = defineContent(schema, {
     entries: [
       {
         org: 'Third Bridge Group Limited',
+        orgNarrow: ['Third Bridge Group', 'Third Bridge'],
         years: '2024–Present',
       },
       {
         org: 'Royal College of Radiologists',
+        orgNarrow: ['RCR'],
         years: '2022–2024',
       },
     ],

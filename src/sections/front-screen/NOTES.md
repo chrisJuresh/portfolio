@@ -214,20 +214,47 @@ because what decides it is the entry's width, which is
 `min(100%, --front-screen-measure)` less the listing's indent; a media query
 would restate that and then have to be kept in step with it.
 
-Two things about those rules are easy to get wrong:
+Three entries carry narrow forms, and each has to give way at its own width:
+
+| entry | the words, longest first | gives way at |
+| --- | --- | --- |
+| `work.0` | Third Bridge Group Limited · Third Bridge Group · Third Bridge | 19.6em, 16em |
+| `work.1` | Royal College of Radiologists · RCR | 18.7em |
+| `education.0` | BSc (Hons) Computer Science, QMUL · BSc Computer Science, QMUL · BSc Comp Sci, QMUL · Comp Sci, QMUL | 22.2em, 19.1em, 15.3em |
+
+Three things about those rules are easy to get wrong:
 
 - **The thresholds are measurements, not choices**, which is why they are in the
   component and not in `tokens.css`. Each is the width at which the form above it
   stops fitting beside the years, measured on the page in the container's own
   `em` — the body size — so the whole ladder moves with `--type-zoom` instead of
   drifting off it. **Re-measure them if the words change.** Nudging one only
-  makes a line wrap somewhere else.
-- **`:not(:last-child)` on every hide is load-bearing.** Three `max-width`
-  queries all match at the narrowest width, and each hides everything above its
-  own form; without that guard an entry with no narrow forms would have its only
-  form hidden and show no organisation at all. The hides carry one more compound
-  than the shows they meet, so the narrowest matching step is the one that
-  survives.
+  makes a line wrap somewhere else. What a form needs is its own width set
+  `white-space: nowrap`, plus `--front-screen-gutter`, plus the years beside it,
+  all over the entry's `font-size`; the threshold is that plus about 0.15em of
+  margin, so a form gives way a shade before it stops fitting rather than a shade
+  after.
+- **A ladder belongs to one entry, and is gated on that entry's Content key.**
+  Where a form stops fitting is a fact about its own words beside its own years,
+  and these three disagree by three ems — the degree runs out of room at 22.0em,
+  Third Bridge Group Limited at 19.5em, Royal College of Radiologists at 18.6em.
+  On one shared ladder the two shorter names would give way at the widest of
+  those — three and a half ems early, which is a phone's whole width of column
+  given up while the words still fitted. The cost of
+  gating on the key rather than on the words is that **reordering a listing moves
+  a ladder onto the wrong entry, silently** — the one way to break this a glance
+  does not catch. It is the address the Editor writes a Content edit to, so
+  either end of the pair is findable by grep from the other.
+- **`:not(:last-child)` on every hide is load-bearing.** Within a ladder every
+  `max-width` query matches at the narrowest width, and each hides everything
+  above its own form; without that guard a threshold measured a shade too wide
+  would leave an entry showing no organisation at all. The hides carry one more
+  compound than the shows they meet, so the narrowest matching step survives.
+
+Below about 280px, or on a phone with the page zoomed past about 1.4, the
+shortest form the author wrote is itself wider than the column and the line
+wraps. That is the floor rather than a bug: there is nothing shorter to show, and
+the answer is another form in `orgNarrow` and its threshold, not a smaller size.
 
 **In the Editor only the form currently on screen is clickable**, because the
 others are `display: none` and there is nothing to click. That is the right

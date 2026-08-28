@@ -33,6 +33,17 @@ const GROWING = DESK;
  *  leftover is what keeps the two margins equal. */
 const CAPPED = { width: 1440, height: 1440 };
 
+/** Two phone widths, and two because the three ladders are in different places at
+ *  each: one entry has given way at the first and all three have by the second.
+ *  Neither number is asserted against — a scrollbar moves what the column comes
+ *  to at a given window, which is the whole reason the thresholds are the
+ *  container's and not the viewport's. They are two windows to look at an entry
+ *  in, and the assertion is about the entry. */
+const NARROW = [
+  { width: 414, height: 800 },
+  { width: 375, height: 800 },
+];
+
 /** Rects are subpixel and each white is a sum of six boxes. */
 const RHYME_TOLERANCE = 1.5;
 
@@ -64,6 +75,30 @@ async function revealed(page) {
     const done = Promise.all(section.getAnimations().map((one) => one.finished.catch(() => {})));
     await Promise.race([done, new Promise((give) => setTimeout(give, 2000))]);
   });
+}
+
+/**
+ * Every listing entry, and which of its organisation's forms is on the page.
+ *
+ * The line count is `getClientRects().length` on the shown form, which is one
+ * rect per line box — a count rather than a height divided by a leading, so it
+ * needs no line-height and is right whatever face the page ends up in.
+ */
+async function readEntries(page) {
+  return page.evaluate(() =>
+    [...document.querySelectorAll('.front-screen__entry')].map((entry) => {
+      const forms = [...(entry.querySelector('.front-screen__org')?.children ?? [])];
+      const shown = forms.filter((form) => getComputedStyle(form).display !== 'none');
+      return {
+        key: entry.getAttribute('data-front-screen-entry') ?? '(unnamed)',
+        shown: shown.map((form) => form.textContent ?? ''),
+        lines: shown.length === 1 ? shown[0].getClientRects().length : null,
+        // The shortest form the author wrote. There is nothing below it, so its
+        // wrapping is the floor of the mechanism rather than a broken threshold.
+        atFloor: shown.length === 1 && shown[0] === forms[forms.length - 1],
+      };
+    }),
+  );
 }
 
 /** Everything this Check reads off the page, in one round trip. */
@@ -237,7 +272,7 @@ function composed(read) {
 
 export const check = {
   name: 'front-screen',
-  title: "the Front Screen's invariants: the rhyme, the cut, the switch and the paper",
+  title: "the Front Screen's invariants: the rhyme, the cut, the listings, the switch and the paper",
 
   /** @param {{ browser: import('playwright').Browser, origin: string }} ctx */
   async run({ browser, origin }) {
@@ -260,6 +295,45 @@ export const check = {
         const { failures: broken, note } = composed(read);
         failures.push(...broken);
         notes.push(note);
+      } finally {
+        await context.close();
+      }
+    }
+
+    // ---- a listing entry is one line, and it gives way to stay one ---------
+    // Each organisation's ladder is gated on its own Content key, so reordering
+    // a listing puts a ladder on the wrong entry and the wrong form gives way at
+    // the wrong width — invisible from the window the author works at, and the
+    // only way to break this that a glance does not catch. Nothing here is a
+    // number anybody chose: the assertion is that ONE form is on the page and
+    // that it takes ONE line, or that it is the shortest one written and there
+    // was nothing shorter to show.
+    for (const viewport of NARROW) {
+      const { context, page } = await open(browser, origin, { viewport });
+      try {
+        failures.push(...(await settle(page)));
+        await revealed(page);
+        const entries = await readEntries(page);
+        if (entries.length === 0) {
+          failures.push(`no listing entry is on the page at ${viewport.width}px`);
+          continue;
+        }
+        for (const entry of entries) {
+          if (entry.shown.length !== 1) {
+            failures.push(
+              `at ${viewport.width}px the entry ${entry.key} shows ${entry.shown.length} forms of its ` +
+                `organisation (${entry.shown.join(', ') || 'none'}) — exactly one of them is on screen`,
+            );
+          } else if (entry.lines !== 1 && !entry.atFloor) {
+            failures.push(
+              `at ${viewport.width}px the entry ${entry.key} wraps "${entry.shown[0]}" over ${entry.lines} ` +
+                'lines with a shorter form of the name still unused — the ladder gave way at the wrong width',
+            );
+          }
+        }
+        notes.push(
+          `at ${viewport.width}px the listings read: ${entries.map((one) => one.shown.join('+')).join(' | ')}`,
+        );
       } finally {
         await context.close();
       }
