@@ -1858,7 +1858,12 @@ const selected = (project: { href?: string }) => project.href === `#${here}`;
      clipped at the foot of the Front Screen's column and this masthead about a
      hundred and fifty pixels below it, at another size, in another face. Every
      candidate in src/kernel/cross.ts makes it one word the same way the band
-     does — this masthead goes invisible and the Cut Title stands in its slot.
+     does — this masthead goes invisible and the Cut Title flies into its slot.
+
+     `visibility: hidden` and never `display: none`: the slot has to stay open
+     and stay exactly the size it is, because it is what the word is aimed at —
+     and because this Section's `aria-labelledby` names this element, and a
+     display:none element supplies no accessible name.
 
      THE ATTRIBUTE IS THE GATE AND THERE IS NO MEDIA QUERY. cross.ts writes
      data-cross onto a Section's root only when a candidate is chosen AND the
@@ -1868,26 +1873,6 @@ const selected = (project: { href?: string }) => project.href === `#${here}`;
      its own paragraph about. */
   .projects-panel[data-cross] .projects-panel__masthead {
     visibility: hidden;
-  }
-
-  /* `seam` is the one candidate the word does not come down here for — it stands
-     on the boundary above the Rail — so the slot goes with the masthead and the
-     head closes up under it. `display: none` and not `visibility: hidden`, which
-     is the difference between the two candidates and the whole of it.
-
-     WHAT IT COSTS, so the spike is not read as finished: this Section's
-     `aria-labelledby` names this element, and a display:none element supplies no
-     accessible name. Whichever candidate wins, if it is this one, owes the
-     Section a name from somewhere else. */
-  .projects-panel[data-cross='seam'] .projects-panel__masthead {
-    display: none;
-  }
-
-  /* And the air the word's own tail needs on this side of the boundary, so the
-     Rail is not printed through the descenders. cross.ts measures it off the
-     drawing rather than off the cap: the J hangs below the cap slab. */
-  .projects-panel[data-cross='seam'] {
-    padding-top: calc(var(--projects-panel-inset) + var(--landing-stack-under, 0px));
   }
 </style>
 
