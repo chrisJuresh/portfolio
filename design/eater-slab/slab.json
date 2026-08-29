@@ -5,26 +5,31 @@
     "checkout": null,
     "needs": [
       {
+        "id": "checkout",
         "path": "package.json",
         "is": "the Eater checkout itself",
         "fix": "clone it, or point EATER_CHECKOUT (or eater.checkout above) at where it already is"
       },
       {
+        "id": "vite",
         "path": "node_modules/vite/bin/vite.js",
         "is": "the Eater checkout's installed dependencies",
         "fix": "run `pnpm install` in that checkout"
       },
       {
+        "id": "dataset",
         "path": "static/data/restaurants.json",
         "is": "the Eater restaurant dataset",
         "fix": "run `pnpm export:data` in that checkout"
       },
       {
+        "id": "basemap-gb",
         "path": "static/basemap/gb.pmtiles",
         "is": "the Eater bundled basemap, coarse whole-country tiles",
         "fix": "run `pnpm build:basemap` in that checkout"
       },
       {
+        "id": "basemap-detail",
         "path": "static/basemap/detail.pmtiles",
         "is": "the Eater bundled basemap, detailed restaurant-area tiles",
         "fix": "run `pnpm build:basemap` in that checkout"
@@ -36,6 +41,7 @@
   "restaurant": "Bar Italia",
   "centre": null,
   "zoom": 15,
+  "zoomRange": { "min": 4, "max": 18 },
 
   "viewport": {
     "width": 393,
@@ -55,7 +61,8 @@
     ],
     "settleMs": 1500,
     "stableProbes": 24,
-    "stableGapMs": 300
+    "stableGapMs": 300,
+    "cameraTolerance": { "zoom": 0.01, "degrees": 0.0001 }
   },
 
   "output": "portfolio/img/eater/slab.png"

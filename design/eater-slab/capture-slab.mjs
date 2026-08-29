@@ -14,12 +14,10 @@
    again, which is what makes this a script rather than a committed picture.
    README.md beside it says what each field is for.
 
-   WHY A SCRIPT AND NOT A BAKE
-   ---------------------------
-   A Bake's cost over a script is the Editor plumbing, and the author has said
-   they do not need to re-capture without an agent (#173). Promoting it later is
-   moving this folder under design/bake/ and adding a recipe.json — nothing here
-   forecloses it, which is why the parameters are already declared as data.
+   Why this is a script and not a Bake, what a Slab is for, and what each field
+   of slab.json means are all in README.md beside it, and are not repeated here.
+   What follows is only what a reader of this FILE needs: the three things the
+   code does that look arbitrary until the reason is given.
 
    WHY THE APP IS DRIVEN OFFLINE
    -----------------------------
@@ -49,10 +47,14 @@
    The camera is checked the same way and for the same reason. It is handed over
    as Eater's own deep link, `#zoom/lat/lon`, which the app parses with a strict
    regex and drops on the floor when it does not match — and what it falls back
-   to is the whole of London at zoom 11, which is a perfectly ordinary-looking
-   picture of the wrong thing. Eater writes the camera it settled on back into
-   the URL, so reading the hash afterwards is the app's own account of where it
-   is pointing.
+   to is the whole of London, which is a perfectly ordinary-looking picture of
+   the wrong thing. Eater writes the camera it settled on back into the URL, so
+   reading the hash afterwards is the app's own account of where it is pointing.
+
+   The same argument runs through aim(): a centre can come from a flag, from
+   slab.json or from a restaurant's coordinates, and the report names which,
+   because a Slab of the wrong place is indistinguishable from one of the right
+   place.
 
    The restaurant markers stay. They are Eater's data drawn into the map rather
    than interface laid over it, and a transit map with no restaurants on it is
@@ -86,6 +88,21 @@ const USAGE = `
 
 /** Everything that can go wrong here is the author's to fix, so say it and go. */
 class Refusal extends Error {}
+
+/**
+ * One of `eater.needs`, by name.
+ *
+ * The two paths this script opens for itself — the dataset and vite's entry
+ * point — are already declared there as preconditions, and writing them a second
+ * time in here is how one of the two copies moves and the other keeps checking a
+ * path nothing uses. So the declaration is the only copy, and an `id` that no
+ * longer exists is a refusal rather than an `undefined` joined onto a path.
+ */
+function needPath(id) {
+  const need = SLAB.eater.needs.find((one) => one.id === id);
+  if (!need) throw new Refusal(`slab.json's eater.needs has nothing called ${JSON.stringify(id)}.`);
+  return need.path;
+}
 
 function die(message, detail = []) {
   console.error(`\nslab: ${message}`);
@@ -130,12 +147,13 @@ export function parseCentre(text) {
   return { lat, lon };
 }
 
-export function parseZoom(text) {
+export function parseZoom(text, range = SLAB.zoomRange) {
   const zoom = Number(text);
-  // Eater's own floor offline is 4 and its ceiling is 18; outside that the app
-  // silently clamps and the Slab is not the one that was asked for.
-  if (!Number.isFinite(zoom) || zoom < 4 || zoom > 18) {
-    throw new Refusal(`--zoom wants a number between 4 and 18, not ${JSON.stringify(text)}`);
+  // The range is Eater's own — its offline floor and its ceiling. Outside it the
+  // app silently clamps and the Slab is not the one that was asked for, so it is
+  // declared in slab.json beside the zoom it bounds rather than written here.
+  if (!Number.isFinite(zoom) || zoom < range.min || zoom > range.max) {
+    throw new Refusal(`--zoom wants a number between ${range.min} and ${range.max}, not ${JSON.stringify(text)}`);
   }
   return zoom;
 }
@@ -233,12 +251,12 @@ export function parseViewHash(hash) {
  * between the requested camera and Eater's fallback, which fits the whole of
  * London into the window and at this viewport lands around zoom 8.
  */
-export function cameraMatches(asked, got) {
+export function cameraMatches(asked, got, tolerance = SLAB.capture.cameraTolerance) {
   if (!got) return false;
   return (
-    Math.abs(got.zoom - asked.zoom) <= 0.01 &&
-    Math.abs(got.lat - asked.lat) <= 0.0001 &&
-    Math.abs(got.lon - asked.lon) <= 0.0001
+    Math.abs(got.zoom - asked.zoom) <= tolerance.zoom &&
+    Math.abs(got.lat - asked.lat) <= tolerance.degrees &&
+    Math.abs(got.lon - asked.lon) <= tolerance.degrees
   );
 }
 
@@ -257,13 +275,19 @@ const ANSI = /\u001b\[[0-9;]*m/g;
  * already the named precondition for "the dependencies are not installed".
  */
 async function startEater(checkout, timeoutMs) {
-  const child = spawn(
-    process.execPath,
-    [join(checkout, 'node_modules', 'vite', 'bin', 'vite.js'), 'dev', '--host', '127.0.0.1'],
-    { cwd: checkout, stdio: ['ignore', 'pipe', 'pipe'] },
-  );
+  const child = spawn(process.execPath, [join(checkout, needPath('vite')), 'dev', '--host', '127.0.0.1'], {
+    cwd: checkout,
+    stdio: ['ignore', 'pipe', 'pipe'],
+  });
 
+  // The tail of what vite has said, bounded: the run is minutes long and this is
+  // only ever read to explain a failure, so the last few thousand characters are
+  // the useful ones and the rest is a slow leak.
   let said = '';
+  const remember = (chunk) => {
+    said = (said + String(chunk).replace(ANSI, '')).slice(-4000);
+  };
+
   try {
     const origin = await new Promise((ok, no) => {
       const timer = setTimeout(
@@ -281,7 +305,7 @@ async function startEater(checkout, timeoutMs) {
         else ok(result);
       };
       const look = (chunk) => {
-        said += String(chunk).replace(ANSI, '');
+        remember(chunk);
         const found = /(http:\/\/127\.0\.0\.1:\d+)\//.exec(said);
         if (found) settle(found[1]);
       };
@@ -297,8 +321,18 @@ async function startEater(checkout, timeoutMs) {
         ),
       );
     });
+
+    // From here on a death is not a start failure, it is a death MID-CAPTURE —
+    // and without this the run does not notice: Playwright keeps driving a page
+    // whose server has gone, and the refusal that lands minutes later is a
+    // navigation timeout with nothing in it about vite. Recorded rather than
+    // thrown, because there is nothing to throw at until the capture fails.
+    const eater = { child, origin, died: null, said: () => said };
     child.removeAllListeners('exit');
-    return { child, origin };
+    child.on('exit', (code) => {
+      eater.died = `Eater's dev server exited with ${code} mid-capture. It said:\n      ${said.trim().split('\n').join('\n      ')}`;
+    });
+    return eater;
   } catch (error) {
     child.kill();
     throw error;
@@ -306,24 +340,58 @@ async function startEater(checkout, timeoutMs) {
 }
 
 /**
- * Where the Slab is pointed, and what to call that in the report.
+ * Stop vite, and the build workers under it.
  *
- * An explicit centre wins over a derived one, which is what `--centre` is for —
- * but naming a restaurant AND a centre is a refusal rather than a precedence,
- * because one of the two is then being ignored and the report would say so in
- * one line nobody reads.
+ * `child.kill()` reaches the node process and nothing below it. Vite runs an
+ * esbuild service as a child of its own, and on Windows a terminated parent does
+ * not take its children with it — so a plain kill leaves one behind per run,
+ * silently, on the machine this is always run on. `taskkill /T` is the tree.
+ */
+function stopEater(eater) {
+  if (!eater) return;
+  if (process.platform === 'win32') {
+    spawnSync('taskkill', ['/pid', String(eater.child.pid), '/T', '/F'], { stdio: 'ignore' });
+    return;
+  }
+  eater.child.kill();
+}
+
+/**
+ * Where the Slab is pointed, and — the half that matters — WHERE THAT CAME FROM.
+ *
+ * Three sources, and the report names the one it used, because the whole point
+ * of this script is that a Slab of the wrong place looks exactly like a Slab of
+ * the right one. The precedence is the ordinary one, flag over file over
+ * derivation:
+ *
+ *   --centre            a centre for this run
+ *   --restaurant        a restaurant for this run, whatever slab.json pins
+ *   slab.json centre    a centre pinned in the file
+ *   slab.json restaurant  the default, derived from its coordinates
+ *
+ * `--centre` and `--restaurant` TOGETHER is a refusal rather than a precedence:
+ * both say where to point, so one of them would be silently ignored. A pinned
+ * `centre` and `--restaurant` is not that case — the flag is the later word and
+ * wins, and the report says the restaurant is where the centre came from.
  */
 function aim(flags, checkout) {
   if (flags.centre && flags.restaurant !== undefined) {
     throw new Refusal('--centre and --restaurant both say where to point; pass one of them.');
   }
-  const explicit = flags.centre ?? (SLAB.centre ? { lat: SLAB.centre.lat, lon: SLAB.centre.lon } : null);
-  if (explicit) return { centre: explicit, centredOn: 'a centre given on the command line' };
+  if (flags.centre) {
+    return { centre: flags.centre, centredOn: 'a centre given on the command line' };
+  }
+  if (SLAB.centre && flags.restaurant === undefined) {
+    return {
+      centre: { lat: SLAB.centre.lat, lon: SLAB.centre.lon },
+      centredOn: 'a centre pinned in slab.json',
+    };
+  }
 
   const name = flags.restaurant ?? SLAB.restaurant;
   let dataset;
   try {
-    dataset = JSON.parse(readFileSync(join(checkout, 'static', 'data', 'restaurants.json'), 'utf8'));
+    dataset = JSON.parse(readFileSync(join(checkout, needPath('dataset')), 'utf8'));
   } catch (error) {
     throw new Refusal(`the Eater dataset would not read — ${error.message}`);
   }
@@ -386,14 +454,23 @@ async function capture({ origin, asked, output }) {
 
     // ---- did MapLibre actually draw a map? ---------------------------------
     const drew = await page.evaluate((container) => {
-      const section = document.querySelector(container);
-      if (!section) return { container: false };
+      const found = document.querySelectorAll(container);
+      const section = found[0];
+      if (!section) return { containers: 0 };
       const canvas = section.querySelector('canvas.maplibregl-canvas');
-      return { container: true, canvas: canvas ? { width: canvas.width, height: canvas.height } : null };
+      return { containers: found.length, canvas: canvas ? { width: canvas.width, height: canvas.height } : null };
     }, SLAB.capture.container);
 
-    if (!drew.container) {
+    if (drew.containers === 0) {
       throw new Refusal(`Eater has no ${SLAB.capture.container} on the page — capture.container in slab.json is out of date.`);
+    }
+    // The checks below read the FIRST match and the screenshot is taken through
+    // a strict locator, so two of them would be checked and photographed apart.
+    // Saying so beats Playwright's strict-mode error at the last step.
+    if (drew.containers > 1) {
+      throw new Refusal(
+        `${drew.containers} elements match ${SLAB.capture.container} — capture.container in slab.json no longer names one thing.`,
+      );
     }
     if (!drew.canvas || drew.canvas.width === 0 || drew.canvas.height === 0) {
       throw new Refusal("MapLibre never put a canvas on the page, so there is no map to capture.");
@@ -460,6 +537,7 @@ async function capture({ origin, asked, output }) {
     }
 
     const box = await slab.boundingBox();
+    if (!box) throw new Refusal(`${SLAB.capture.container} has no box on the page, so there is nothing to cut a Slab out of.`);
     mkdirSync(dirname(output), { recursive: true });
     writeFileSync(output, previous);
     return {
@@ -537,14 +615,19 @@ async function main() {
     console.log(`slab: ${output}`);
     console.log(`slab: ${written.width}x${written.height} px, ${(written.bytes / 1024).toFixed(0)} KB\n`);
   } catch (error) {
-    refusal = error instanceof Refusal ? error.message : String(error?.stack ?? error);
+    // A server that died mid-capture is the CAUSE of whatever the browser then
+    // complained about, so it is the thing to report rather than the timeout it
+    // produced downstream.
+    refusal = eater?.died ?? (error instanceof Refusal ? error.message : String(error?.stack ?? error));
   } finally {
-    eater?.child.kill();
+    stopEater(eater);
   }
   if (refusal) die(refusal);
 }
 
 // The guard is so the decisions above can be imported without driving anything.
+// The catch is not decoration: main() re-raises anything that is not a Refusal,
+// and without it those land as a bare stack trace with no `slab:` on them.
 if (process.argv[1] && resolve(process.argv[1]) === resolve(fileURLToPath(import.meta.url))) {
-  await main();
+  await main().catch((error) => die(String(error?.stack ?? error)));
 }
