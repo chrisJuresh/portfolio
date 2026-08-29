@@ -33,6 +33,7 @@ import { check as carousel } from './checks/carousel.mjs';
 import { check as consoleQuiet } from './checks/console.mjs';
 import { check as crossing } from './checks/crossing.mjs';
 import { check as deepLinks } from './checks/deep-links.mjs';
+import { check as eaterMap } from './checks/eater-map.mjs';
 import { check as editor } from './checks/editor.mjs';
 import { check as faces } from './checks/faces.mjs';
 import { check as frontScreen } from './checks/front-screen.mjs';
@@ -51,6 +52,7 @@ const CHECKS = [
   carousel,
   frontScreen,
   projectsPanel,
+  eaterMap,
   ground,
   turn,
   crossing,

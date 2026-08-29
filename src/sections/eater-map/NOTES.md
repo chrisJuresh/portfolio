@@ -1,25 +1,31 @@
 # The Eater Map Section
 
 The Portfolio's third Section and its third resting place: the Showcase for the
-Eater restaurant map. Today it is a text composition with a box standing where
-the Slab will go — the tracer bullet #175 asked for, so that the turn, the deep
-link and the Rail's link are real before the drawing exists. #171 is the whole
-Showcase and the tickets under it are what fills this box in.
+Eater restaurant map. Today it is a text composition with the **flat Exploded
+View** beside it — the captured Slab, and the Eater app's own three surfaces
+lying on it so that what a reader sees is a screenshot of the phone made out of a
+picture and real text (#176). #171 is the whole Showcase and the tickets under it
+are what raises it off the page.
 
 ## What is here and what is not
 
 Here: the Rail, a plain masthead, the two authored subheading lines, the copy,
-the four numbered points, and the placeholder. Not here, each with the ticket
-that brings it:
+the four numbered points, and the flat Exploded View. Not here, each with the
+ticket that brings it:
 
 | not here yet | ticket |
 | --- | --- |
-| the Slab under it — captured by #173, placed by #176 | #176 |
-| the three Cards laid flat and coplanar with it — **vendored already**, below | #176 |
-| the Exploded View and the **Lift**, which is this Section's Timeline | #177 |
+| the **Lift** — the tilt, the depths, and this Section's Timeline | #177 |
 | a leader line from each point to the part it names | #178 |
 | the collapse below the band, once there is a drawing to collapse | #179 |
 | the Variants the drawing turns on — the projection, the subheading's face | #180 |
+
+**The flat state is not a step on the way to #177 — it is the frame #177 begins
+from and the frame three readers keep.** The Lift animates from flat *towards*
+raised, and the raised state is the one the markup will rest in, so a reduced-
+motion reader, a reader whose scripts never arrived and a narrow window all get a
+finished composition rather than a half-built one. That is why this ticket had to
+be right on its own before any motion existed.
 
 `timeline.ts` is therefore a module with no default export, and that is a state
 the Kernel's loader has a name for rather than a gap: *a Section with no motion
@@ -51,7 +57,64 @@ An empty Timeline is not a placeholder for a Timeline.
 So the choice is a Timeline that moves something or no default export at all, and
 until the Lift there is nothing honest to move.
 
-## The Cards are here already, and nothing reads them yet
+## The plane, and the one piece of arithmetic it turns on
+
+The stage is one box — `.eater-map__slab` — and everything in it is a share of
+it. Its **height** is what row two of the composition has left, times
+`--eater-map-slab-fill`; its **width** follows from the capture's own
+proportion. So the phone is as big as the screen allows at every window in the
+band and nothing has to be told a size: 220x476 at 1100x700, 283x612 at
+1440x900, 478x1037 at 2560x1440.
+
+The box is `container-type: inline-size`, which is the Frame's arrangement in the
+Projects Panel, and it carries the Frame's trap with it: **an element is not its
+own container**, so a `cqw` written on the Slab's own rule silently resolves
+against the viewport. Every one in the component is on a descendant.
+
+**The one piece of arithmetic:** the scale everything on the plane is drawn at is
+
+```
+the Slab's drawn width  /  the phone Eater was captured at
+```
+
+and getting it from anywhere else is the failure this whole Section is built
+against. The Cards carry the app's own **frozen pixel sizes** — 366x48, 260x176,
+390x366 at a 390px window (#174) — so a Card at any other scale is a Card
+floating over a map of the wrong size, which is three stickers on a photograph
+rather than one screenshot. It is a `transform` and never a width, because a
+width would reflow another repository's interface.
+
+**CSS cannot divide one length by another**, and that is the specification rather
+than an engine's gap: `calc()` requires the right-hand side of a `/` to resolve
+to a number. `tan(atan2(a, b))` **is** `a / b`, and it is the only way to get a
+unitless ratio of two lengths in a stylesheet. The component uses it, and
+`@supports` leaves a constant behind for an engine that has neither function.
+
+**That constant is the reason the `eater-map` Check reads two windows.** At
+1440x900 the fallback is 0.72 and the derived answer is 0.7185 — a third of a per
+cent apart, so a Check run only at DESK passes with the derivation deleted.
+Measured: at 1100x700 the derived answer is 0.5588 and the constant is still
+0.72. Both mutations below have been made on purpose and both were caught.
+
+| mutation | what failed |
+| --- | --- |
+| the derived scale replaced by the constant | all three Cards, at 1100x700 **only** |
+| `tabindex="-1"` dropped from `cards.ts` | 13 focusable elements, at both windows |
+| `role="presentation"` dropped from `cards.ts` | 1 heading, at both windows |
+
+**The three Cards' corners are Tokens** — `--eater-map-card-<name>-x` and `-y`,
+as shares of the Slab's width and height — so dragging one in the Editor moves it
+across the picture rather than across the page, and the arrangement holds at every
+size the Slab is drawn at. Their defaults are the app's own layout: the search bar
+inset at the top, the lines popup right-aligned under it, the detail panel as a
+sheet across the foot. `--eater-map-card-scale` multiplies the derived scale for
+an author who wants the interface a little larger than life; 1 is the screenshot.
+
+The plane is **clipped**, because a Card hanging off the edge of the picture is a
+Card that is not lying on it. #177 will have to lift that clip along with the
+Cards.
+
+## The Cards are the app's own markup, and their controls are neutered
 
 `assets/cards/` is the Eater app's own search bar, rail-lines popup and restaurant
 detail panel, taken off the app rather than redrawn (#174). They are here and not
@@ -59,14 +122,34 @@ in `design/` for one mechanical reason: `scripts/check-source.mjs` lets a Sectio
 import from **its own folder and from the Kernel and nowhere else**, so this is
 the only address the vendored bytes have.
 
-**The component does not import them.** #174's component rendered the three in a
-column, which was the right thing while the Section was on no page — it proved the
-bytes were readable from a Section. This ticket puts the Section on the page, and
-three raw app surfaces stacked in the middle of a Showcase is not a composition.
-Where they go is flat and coplanar with the Slab, under one camera, and that is
-#176. The placeholder stands where all of it will be.
+**The Cards are a picture of an app, and the app is not here.** Left alone they
+put thirteen tab stops in the middle of the Portfolio — a text field to type in,
+buttons that share and close nothing, and links that leave for eater.com — and a
+restaurant's name marked up as the page's top-level heading. Every one of those is
+invisible to a reader looking at the page and a surprise to one navigating it by
+keyboard or by heading. `cards.ts` refuses each route on its own: `tabindex="-1"`
+for the keyboard, `pointer-events: none` for the pointer, and
+`role="presentation"` on every heading rank — which takes the semantics off and
+leaves the TEXT exposed, so the Card's words are still read and are simply not an
+entry in the outline. The four numbered points beside it are the outline.
 
-It is generated. Do not edit it — `design/eater-cards/README.md` is the authority,
+**`inert` is the obvious answer and is wrong twice over.** It takes the Cards out
+of the accessibility tree, which is the one thing #171 asks for them to be in, and
+it makes their text unselectable, which is an acceptance criterion of #176. What
+is here leaves the text selectable, in the document, and read to a screen reader
+as the Card's own words.
+
+**Both refusals are written into the markup and neither is a stylesheet rule**,
+which looks like a mistake until the reason is given: Astro scopes a component's
+`<style>` by stamping an attribute on every element **its own template** renders,
+and these arrive through `set:html`, so they carry no such attribute and no scoped
+selector can reach them. `:global()` is the escape hatch and `check-source.mjs`
+fails the build on it. An inline style is the one thing that lands on an element
+without a selector. The attributes go in **first**, immediately after the tag
+name, because the HTML parser keeps the first of two attributes with the same
+name.
+
+The vendored bytes themselves are generated. Do not edit it — `design/eater-cards/README.md` is the authority,
 and every file there carries a header saying so.
 
 | file | what it is |
@@ -75,7 +158,8 @@ and every file there carries a header saying so.
 | `cards.css` | every rule the three surfaces use, re-homed under one host |
 | `search.html`, `lines.html`, `details.html` | one Card each, as markup |
 
-Three things about them that are easy to get wrong, and #176 needs all three:
+Three things about them that are easy to get wrong, and the plane above turns
+on all three:
 
 **The host is `.eater-cards`, and it is the containment.** Every selector in
 `cards.css` begins with it, including the ones that were `:root`, `html`, `body`
@@ -104,15 +188,46 @@ not have. Changing which restaurant they show is a regeneration, not an edit:
 node design/eater-cards/vendor.mjs --restaurant "St. JOHN Bread and Wine" --write
 ```
 
-**One thing that becomes true the day #176 renders them**, flagged by #174 and
-still pending rather than resolved: `unpublishable` reads the built page and every
-Section that mounted, so from that ticket onwards it scans **another repository's
-words** — a restaurant's name, its address, a guide's write-up of it. Nothing in
+**And it is true now, rather than pending**: `unpublishable` reads the built page
+and every Section that mounted, so from #176 onwards it scans **another
+repository's words** — a restaurant's name, its address, a guide's write-up of it. Nothing in
 the shape list matches any of those, and `denylist.local.txt` is the author's own
 and not in the repository, so the failure mode is a local term colliding with a
 restaurant. The answer if it ever does is a different restaurant in
 `design/eater-cards/config.json` and a regeneration — never an exception in the
 Check, which is the author's record and not this Section's to argue with.
+
+## The Slab's own file
+
+One WebP under `/portfolio/img/eater/`, written by
+`design/eater-slab/capture-slab.mjs` (#173) and named by `slab.ts`.
+
+**It is a WebP and the capture takes a PNG**, which #173's README left to this
+ticket: a browser screenshot is a PNG and a PNG of a labelled map is a megabyte,
+and this is a file a reader is sent rather than one an agent opens. The re-encode
+happens in the same Chromium that took the shot, through a canvas, so nothing new
+has to be installed for a script that already drives a browser and two runs on two
+machines came out of one encoder. 1054 KB became 251 KB.
+
+**It carries a stamp** — `?v=` in `slab.ts` — for the same reason the recording
+does in the Projects Panel: the deployment caches `/portfolio/img/` for a day, so
+a re-captured Slab that kept its URL is a Slab nobody is served. The capture
+prints the value to paste, as its last line.
+
+**`loading="lazy"` is what the markup asks for, and Chromium fetches it before
+`load` anyway.** Measured, so that nobody reads more into the attribute than is
+there: at 1440x900 the Section's top is 900px below the fold and at 1100x700 it is
+700px, and Chromium's lazy-image distance threshold is about 1250px — so at every
+window in the band the Slab is inside it. That is arguably the right answer, since
+the reader is one wheel notch away, and it is the browser's call rather than the
+page's either way.
+
+**Serving the `src` from script would defer it and is refused.** #171's rule is
+that the Section's content is never contingent on a script arriving, and a chunk
+that does not turn up would then leave the Showcase as a bare map — the Panel's
+recording can be script-served because its poster is what a scriptless reader
+gets, and there is no poster behind the Slab. The `assets` Check covers the half
+that is this page's business: that what is fetched arrives.
 
 ## The masthead is a plain word, and that was measured
 

@@ -40,11 +40,18 @@ const schema = z.object({
   }),
   copy: z.array(z.string().min(1)).min(1),
   /**
-   * What stands where the Exploded View will. One word, held here rather than in
-   * the markup for the same reason every other word is, and the whole of what
-   * #176 replaces.
+   * The Exploded View's own words, which are one sentence: what the Slab is a
+   * picture of.
+   *
+   * It is `alt` on a photograph of a map, so it says what a reader looking at it
+   * would see and stops — a screen reader gets the four numbered points for what
+   * the map is FOR, and repeating them here would be reading the Section twice.
+   *
+   * The Cards' words are NOT here and are not Content. They are the Eater app's
+   * own, exported rather than redrawn, and the Editor must not offer a way to
+   * rewrite another repository's interface from this page. NOTES.md.
    */
-  stage: z.object({ placeholder: z.string().min(1) }),
+  stage: z.object({ slabAlt: z.string().min(1) }),
   /** Each one names a part of the Exploded View that #178 will draw a leader
    *  line to. An <ol> because the numbers are read. */
   points: z
@@ -71,7 +78,11 @@ export const content = defineContent(schema, {
       { name: 'Record Engine' },
     ],
   },
-  stage: { placeholder: 'Exploded View' },
+  stage: {
+    slabAlt:
+      'The Eater map over Soho and Covent Garden, restaurants marked across it and the ' +
+      'rail network drawn over the streets in the lines’ own colours.',
+  },
   copy: [
     "Eater's London guides are superb and scattered across hundreds of articles, " +
       'each with its own small map. This scrapes all of them, merges duplicates into ' +

@@ -65,5 +65,7 @@
     "cameraTolerance": { "zoom": 0.01, "degrees": 0.0001 }
   },
 
-  "output": "portfolio/img/eater/slab.png"
+  "encode": { "quality": 0.9 },
+
+  "output": "portfolio/img/eater/slab.webp"
 }

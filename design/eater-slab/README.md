@@ -9,7 +9,7 @@ Eater Map Section's three **Cards** are raised off it.
 node design/eater-slab/capture-slab.mjs
 ```
 
-That writes `portfolio/img/eater/slab.png` for the default restaurant. Everything
+That writes `portfolio/img/eater/slab.webp` for the default restaurant. Everything
 else is a flag:
 
 ```bash
@@ -20,8 +20,8 @@ node design/eater-slab/capture-slab.mjs --restaurant "St. John Marylebone"
 node design/eater-slab/capture-slab.mjs --centre 51.51340,-0.13125 --zoom 16
 ```
 
-`--out` writes somewhere else, `--checkout` points at a different Eater tree, and
-`--help` prints the lot.
+`--out` writes somewhere else — it has to end `.webp`, see **The format** —
+`--checkout` points at a different Eater tree, and `--help` prints the lot.
 
 ## The one file
 
@@ -45,6 +45,7 @@ again.
 | `capture.strip` | the CSS that hides everything else |
 | `capture.settleMs`, `stableProbes`, `stableGapMs` | how long the map gets to arrive, and how the run decides it has stopped moving |
 | `capture.cameraTolerance` | how far the camera Eater settled on may be from the one it was asked for. The precision the deep link is written at, and nothing finer |
+| `encode.quality` | the WebP quality the still is re-encoded at, 0..1. **The format** below |
 | `output` | where the still is written, relative to the repository root |
 
 ## Where the centre came from
@@ -144,7 +145,7 @@ parameters are already declared as data rather than written into the script.
 
 ## Two runs are not the same bytes
 
-The same command twice writes a PNG a few kilobytes different. MapLibre places
+The same command twice writes a file a few kilobytes different. MapLibre places
 labels by collision, and which of two competing labels wins depends on the order
 the tiles finished decoding — so the map is the same map and the file is not the
 same file.
@@ -155,6 +156,29 @@ it, and `git restore` it when the answer is "the labels moved".**
 
 ## The format
 
-PNG, because that is what a browser screenshot is. Turning it into something a
-reader should be sent — a WebP, or a `<picture>` ladder like the corner pictures'
-— belongs to the ticket that puts the Slab on the page (#176), not to the capture.
+**WebP, re-encoded from the PNG the browser handed over.** A browser screenshot is
+a PNG and a PNG of a labelled map is about a megabyte; the Slab is on the page now
+(#176), so this is a file a reader is sent rather than one an agent opens. 1054 KB
+became 251 KB at `encode.quality` 0.9, for a picture nobody can tell apart at the
+size it is drawn.
+
+**The encode is a canvas in the same Chromium that took the shot**, rather than
+Pillow or sharp. Nothing new has to be installed for a script that already drives
+a browser, and the file on disk came out of one encoder rather than two — a
+re-capture on a machine with a different libwebp would otherwise be a diff that
+says nothing. A browser that cannot encode WebP answers `convertToBlob` with a PNG
+and no error, so the blob is asked what it actually is before anything is written.
+
+The stability loop above it still compares **PNG** bytes. It is asking whether the
+map has stopped moving, and two encodes of one frame have to be equal for that
+question to mean anything.
+
+**The last line of a run is a stamp, and it has to be acted on.**
+`/portfolio/img/` is cached by the deployment, so a re-captured Slab that kept its
+URL is a Slab nobody is served. Paste it into `VERSION` in
+`src/sections/eater-map/slab.ts` — the same arrangement the Projects Panel's
+recording has, and for the same reason.
+
+A `<picture>` ladder like the corner pictures' is still not here, and is not
+needed while the capture writes one size: the Slab is drawn between 220 and 478
+CSS pixels wide across the band, and 786 covers that at two device pixels each.

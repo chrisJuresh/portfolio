@@ -67,16 +67,49 @@
   --eater-map-figure-leading: 1.45;
   --eater-map-figure-air: 0.35em;
 
-  /* ---- what stands where the Exploded View will --------------------------
-     A box of the Slab's own proportion with a hairline round it and one word in
-     the middle. Every one of these goes with #176; they are Tokens rather than
-     literals so the placeholder can be dragged to the size the drawing wants
-     before the drawing exists. */
-  --eater-map-slab-ratio: 16 / 10;
-  --eater-map-slab-rule: 1px;
-  --eater-map-slab-label-size: 0.72rem;
-  --eater-map-slab-label-tracking: 0.3em;
-  --eater-map-slab-veil: 92%;
+  /* ---- the Slab, and where it stands in the stage -------------------------
+     The picture's SHAPE is not here: it is the capture's own, and the component
+     takes it from slab.ts, which is where the numbers a re-capture changes all
+     live together. These two are what a composition may decide about it.
+
+     `fill` is the share of the stage's height the Slab takes — the stage is row
+     two's remainder, so this is how big the phone is at every window in the
+     band at once, and 1 is "as tall as there is room for". `shift` slides it
+     across, as a share of ITS OWN width, from centred: a percentage translate
+     resolves against the element, so 0.5 is half a phone to the right whatever
+     the window is doing. */
+  --eater-map-slab-fill: 1;
+  --eater-map-slab-shift: 0;
+
+  /* Outside the band the column has no height to be a share of, so the Slab is
+     given a width instead and this is the ceiling on it. A phone drawn as wide
+     as a 1000px column is not a phone. */
+  --eater-map-slab-cap: 20rem;
+
+  /* ---- the three Cards, lying flat on it ----------------------------------
+     Each Card's own corner, as a share of the Slab's width and height — so
+     dragging one moves it across the picture rather than across the page, and
+     the arrangement holds at every size the Slab is drawn at. The app's own
+     layout is where these start: the search bar inset at the top, the lines
+     popup under it, the detail panel as a sheet across the foot.
+
+     THE CARDS ARE NOT SCALED HERE AND CANNOT USEFULLY BE. The scale that makes
+     the whole thing read as one screenshot is the Slab's drawn width over the
+     phone it was captured at, and the composition derives it — NOTES.md has the
+     arithmetic and why a number typed in here instead would be a Card that
+     drifts off the map at every window but one. `--eater-map-card-scale` is a
+     multiplier ON that, for an author who wants the interface a little larger
+     than life; 1 is the screenshot. */
+  --eater-map-card-scale: 1;
+
+  --eater-map-card-search-x: 0.034;
+  --eater-map-card-search-y: 0.07;
+
+  --eater-map-card-lines-x: 0.304;
+  --eater-map-card-lines-y: 0.141;
+
+  --eater-map-card-details-x: 0.004;
+  --eater-map-card-details-y: 0.57;
 
   /* ---- the rules the composition draws ------------------------------------ */
   --eater-map-rule-veil: 78%;

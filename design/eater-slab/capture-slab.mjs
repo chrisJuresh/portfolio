@@ -7,7 +7,7 @@
      node design/eater-slab/capture-slab.mjs
      node design/eater-slab/capture-slab.mjs --restaurant "St. John"
      node design/eater-slab/capture-slab.mjs --centre 51.51340,-0.13125 --zoom 16
-     node design/eater-slab/capture-slab.mjs --out portfolio/img/eater/slab-alt.png
+     node design/eater-slab/capture-slab.mjs --out portfolio/img/eater/slab-alt.webp
 
    EVERY NUMBER IS IN slab.json AND NOT IN HERE. That is the point of the pair:
    changing the project's example is changing one field and running the command
@@ -59,9 +59,29 @@
    The restaurant markers stay. They are Eater's data drawn into the map rather
    than interface laid over it, and a transit map with no restaurants on it is
    not the Eater map.
+
+   WHY THE FILE ON DISK IS NOT THE FILE THE BROWSER HANDED OVER
+   ------------------------------------------------------------
+   A browser screenshot is a PNG, and a PNG of a labelled map is about a
+   megabyte. The Slab is on the page now (#176), so this is a file a reader is
+   sent rather than one an agent looks at, and it is re-encoded to WebP before
+   it is written — a tenth of the bytes for a picture nobody can tell apart at
+   the size it is drawn.
+
+   The encode happens IN THE SAME CHROMIUM that took the shot, through a canvas,
+   rather than in Pillow or sharp. Two reasons and the second is the one that
+   settled it: nothing new has to be installed for a script that already drives
+   a browser, and the still that lands on disk came out of one encoder rather
+   than two — a re-capture run on a machine with a different libwebp would
+   otherwise be a diff that says nothing.
+
+   The stability loop above it still compares PNG bytes. It is asking whether
+   the MAP has stopped moving, and two encodes of one frame have to be equal for
+   that question to mean anything.
    ========================================================================== */
 
 import { spawn, spawnSync } from 'node:child_process';
+import { createHash } from 'node:crypto';
 import { mkdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 import { dirname, isAbsolute, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -405,6 +425,61 @@ function aim(flags, checkout) {
   };
 }
 
+/**
+ * Re-encode a screenshot as WebP, through the page that took it.
+ *
+ * Exported for the same reason the decisions above are: it is the one step of
+ * this script that can be run without an Eater checkout — over a Slab that is
+ * already on disk — and the day this moves under `scripts/` it is the one step
+ * with a seam under it. The header says why the encoder is a canvas.
+ *
+ * @param {import('playwright').Page} page
+ * @param {Buffer} png     the bytes the screenshot handed over
+ * @param {number} quality 0..1, slab.json's `encode.quality`
+ * @returns {Promise<Buffer>}
+ */
+export async function toWebp(page, png, quality) {
+  // Base64 in both directions, because playwright serialises an argument as JSON:
+  // a megabyte handed over as an array of numbers is a megabyte written out as a
+  // million decimal literals, and the same on the way back.
+  const encoded = await page.evaluate(
+    async ({ base64, quality }) => {
+      const binary = atob(base64);
+      const source = new Uint8Array(binary.length);
+      for (let i = 0; i < binary.length; i += 1) source[i] = binary.charCodeAt(i);
+
+      const bitmap = await createImageBitmap(new Blob([source], { type: 'image/png' }));
+      // `OffscreenCanvas` and not a `<canvas>` in the document: the picture is
+      // twice the width of the page it is being encoded in, so a real canvas
+      // would be laid out, scrolled and composited for nothing.
+      const canvas = new OffscreenCanvas(bitmap.width, bitmap.height);
+      const paint = canvas.getContext('2d');
+      if (!paint) throw new Error('no 2d context to encode through');
+      paint.drawImage(bitmap, 0, 0);
+
+      const blob = await canvas.convertToBlob({ type: 'image/webp', quality });
+      // A browser that cannot encode WebP answers with a PNG and NO ERROR, which
+      // would put a megabyte of PNG on disk under a .webp name. Ask the blob what
+      // it actually is rather than trusting the request.
+      if (blob.type !== 'image/webp') throw new Error(`the canvas encoded ${blob.type} rather than image/webp`);
+
+      const out = new Uint8Array(await blob.arrayBuffer());
+      let text = '';
+      for (const byte of out) text += String.fromCharCode(byte);
+      return btoa(text);
+    },
+    { base64: png.toString('base64'), quality },
+  );
+  return Buffer.from(encoded, 'base64');
+}
+
+/** The stamp src/sections/eater-map/slab.ts carries, so a re-capture is visible
+ *  through a deployment that caches /portfolio/img/. Eight hex digits, the same
+ *  length and the same job as the recording's in the Projects Panel. */
+export function stamp(bytes) {
+  return createHash('sha256').update(bytes).digest('hex').slice(0, 8);
+}
+
 async function capture({ origin, asked, output }) {
   let browser;
   try {
@@ -538,10 +613,13 @@ async function capture({ origin, asked, output }) {
 
     const box = await slab.boundingBox();
     if (!box) throw new Refusal(`${SLAB.capture.container} has no box on the page, so there is nothing to cut a Slab out of.`);
+    const written = await toWebp(page, previous, SLAB.encode.quality);
     mkdirSync(dirname(output), { recursive: true });
-    writeFileSync(output, previous);
+    writeFileSync(output, written);
     return {
-      bytes: previous.length,
+      bytes: written.length,
+      shot: previous.length,
+      stamp: stamp(written),
       width: Math.round(box.width * SLAB.viewport.deviceScaleFactor),
       height: Math.round(box.height * SLAB.viewport.deviceScaleFactor),
     };
@@ -596,6 +674,18 @@ async function main() {
   }
 
   const wanted = flags.output ?? SLAB.output;
+  // A Slab is WebP now whatever it is called, so `--out slab.png` would write a
+  // WebP under a name that says PNG — and a file lying about its own format is
+  // one that opens fine everywhere and 404s the day something believes the
+  // extension. Refused rather than silently corrected: the author asked for a
+  // name, and picking a different one for them is the quiet kind of wrong this
+  // script is written against.
+  if (!/\.webp$/i.test(wanted)) {
+    return die(
+      `--out ${wanted} does not end in .webp, and the Slab is written as WebP.\n` +
+        '      README.md, "The format", says why.',
+    );
+  }
   const output = isAbsolute(wanted) ? wanted : join(REPO, wanted);
 
   console.log(`slab: ${centredOn}`);
@@ -613,7 +703,15 @@ async function main() {
     console.log(`slab: Eater on ${eater.origin}\n`);
     const written = await capture({ origin: eater.origin, asked, output });
     console.log(`slab: ${output}`);
-    console.log(`slab: ${written.width}x${written.height} px, ${(written.bytes / 1024).toFixed(0)} KB\n`);
+    console.log(
+      `slab: ${written.width}x${written.height} px, ${(written.bytes / 1024).toFixed(0)} KB webp ` +
+        `(from ${(written.shot / 1024).toFixed(0)} KB png)`,
+    );
+    // The last line is the one that has to be acted on, so it says what to do
+    // with it rather than printing a digest and leaving the reader to work it
+    // out. /portfolio/img/ is cached by the deployment, so a Slab whose stamp did
+    // not move is a Slab nobody is served.
+    console.log(`slab: stamp ${written.stamp} — put it in VERSION in src/sections/eater-map/slab.ts\n`);
   } catch (error) {
     // A server that died mid-capture is the CAUSE of whatever the browser then
     // complained about, so it is the thing to report rather than the timeout it

@@ -1,20 +1,22 @@
 ---
 // The Eater Map Section: the Rail, a plain masthead and its two authored lines,
-// the copy, the four numbered points, and the box standing where the Slab will
-// go. NOTES.md carries the reasoning — why the masthead is a plain word rather
-// than a Cut Title, which of the Kernel's lengths this Section reads and why
-// that is not joining the landing measure, and what #176 replaces.
+// the copy, the four numbered points, and the flat Exploded View — the captured
+// Slab with the app's own three surfaces lying on it. NOTES.md carries the
+// reasoning: why the masthead is a plain word rather than a Cut Title, which of
+// the Kernel's lengths this Section reads and why that is not joining the
+// landing measure, and the one piece of arithmetic the stage turns on.
 //
-// THE VENDORED CARDS ARE NOT IMPORTED HERE, AND THAT IS A DECISION #174 LEFT TO
-// THIS TICKET. `assets/cards/` is the Eater app's own three surfaces, taken off
-// it and committed (#174), and that component rendered them in a column to prove
-// the bytes were readable from a Section — while the Section was on no page. This
-// ticket puts the Section ON the page, and three raw app surfaces stacked in the
-// middle of a Showcase is not a composition; where they go is flat and coplanar
-// with the Slab, which is #176. So they stay in `assets/`, unread, and the
-// placeholder below stands where the Slab and the Cards on it will be. NOTES.md
-// carries everything about them that #176 needs.
+// This is the FLAT STATE and it is the whole of what is here. It is also what a
+// reduced-motion reader, a reader whose scripts never arrived and a narrow
+// window each keep, so it has to be right on its own — the Lift that raises the
+// Cards off the Slab is #177, and nothing below is contingent on it.
+import { CARDS } from './cards';
 import { content } from './content';
+import { SLAB } from './slab';
+// The Eater app's own stylesheet, vendored with the Cards (#174). A plain CSS
+// file, so Astro does not scope it — every selector in it begins with the
+// `.eater-cards` host, and that host is the containment. NOTES.md.
+import './assets/cards/cards.css';
 import './tokens.css';
 // variants.css is deliberately NOT imported: an unselected Variant has to cost
 // the shipped page nothing, so the sheet is not part of the build at all and the
@@ -86,14 +88,43 @@ import './tokens.css';
         </li>
       ))}
     </ol>
-    {/* WHAT STANDS WHERE THE EXPLODED VIEW WILL, and the whole of what #176
-        replaces. Decorative, so the box is out of the accessibility tree: a
-        placeholder announced to a screen reader is a promise the page cannot
-        keep. Its one word is Content rather than markup, like every other word
-        in this Section. */}
-    <div class="eater-map__stage" aria-hidden="true">
-      <div class="eater-map__slab">
-        <span>{content.stage.placeholder}</span>
+    {/* THE FLAT EXPLODED VIEW: one still of the map, and the app's own three
+        surfaces lying on it at the scale the map is drawn at, so that what is on
+        screen is indistinguishable from a screenshot of the phone — and is made
+        of a picture and real text rather than of pixels.
+
+        The two numbers below are the ONLY thing the markup says about geometry,
+        they are not chosen, and they are not repeated anywhere: they are the
+        capture's own, out of slab.ts, and every other length on this plane is
+        derived from them or is a Token. A re-capture at another phone size moves
+        them and the composition follows. NOTES.md. */}
+    <div class="eater-map__stage">
+      <div
+        class="eater-map__slab"
+        style={`--eater-map-app-w: ${SLAB.viewport.width}px; --eater-map-slab-ratio: ${SLAB.pixels.width} / ${SLAB.pixels.height}`}
+      >
+        {/* `lazy`, so the Slab's quarter of a megabyte arrives as the reader
+            comes down the page rather than at load — the same promise the
+            Section's own chunk makes, kept declaratively so it holds with no
+            script at all. `alt` is Content: the picture carries a claim about
+            the project and a reader who cannot see it is owed the claim. */}
+        <img
+          class="eater-map__still"
+          src={SLAB.src}
+          width={SLAB.pixels.width}
+          height={SLAB.pixels.height}
+          alt={content.stage.slabAlt}
+          loading="lazy"
+          decoding="async"
+        />
+        {/* `.eater-cards` is the vendored stylesheet's host and therefore its
+            containment: every rule in that file begins with this class, so it
+            reaches nothing above this element and nothing above it reaches in. */}
+        <div class="eater-map__cards eater-cards">
+          {CARDS.map((card) => (
+            <div class="eater-map__card" data-eater-map-card={card.name} set:html={card.html} />
+          ))}
+        </div>
       </div>
     </div>
   </div>
@@ -224,8 +255,7 @@ import './tokens.css';
   .eater-map__masthead,
   .eater-map__sub,
   .eater-map__rail-item,
-  .eater-map__points h3,
-  .eater-map__slab {
+  .eater-map__points h3 {
     text-transform: uppercase;
     font-feature-settings: 'case' 1;
   }
@@ -311,26 +341,100 @@ import './tokens.css';
     color: color-mix(in oklab, var(--ink), transparent var(--eater-map-muted-veil));
   }
 
-  /* ---- what stands where the Exploded View will -------------------------- */
+  /* ---- the flat Exploded View --------------------------------------------
+     A picture of the map, and the app's own three surfaces lying on it. What
+     makes it read as one screenshot rather than as three stickers on a
+     photograph is that the whole plane is drawn in ONE coordinate system — the
+     phone's — and everything on it is a share of that. NOTES.md. */
   .eater-map__stage {
     grid-area: 2 / 4 / 3 / 13;
     align-self: stretch;
     display: flex;
+    align-items: center;
+    justify-content: center;
   }
 
-  /* No aspect-ratio here, and that is the regime rather than an omission: in a
-     composition fitted to one screen the box's height is what row two has left,
-     and a ratio would take it back. The stacked sheet below, where the column is
-     as tall as it needs to be, is where the Slab's proportion is asked for. */
+  /* THE PLANE. Its height is what row two has left, times the one Token that
+     says how much of that to take, and its width follows from the capture's own
+     proportion — so the phone is as big as the screen allows at every window in
+     the band and the composition never has to be told a size.
+
+     `container-type: inline-size` is what lets everything on the plane be a
+     share of the plane. It is the Frame's arrangement in the Projects Panel and
+     it carries the Frame's trap with it: AN ELEMENT IS NOT ITS OWN CONTAINER, so
+     a `cqw` written on this rule would silently resolve against the viewport.
+     Every one of them below is on a descendant.
+
+     Clipped, because a Card hanging off the edge of the picture is a Card that
+     is not lying on it. */
   .eater-map__slab {
-    flex: 1;
-    display: grid;
-    place-items: center;
-    border: var(--eater-map-slab-rule) dashed
-      color-mix(in oklab, var(--ink), transparent var(--eater-map-slab-veil));
-    font-size: var(--eater-map-slab-label-size);
-    letter-spacing: var(--eater-map-slab-label-tracking);
-    color: color-mix(in oklab, var(--ink), transparent var(--eater-map-slab-veil));
+    position: relative;
+    height: calc(var(--eater-map-slab-fill) * 100%);
+    aspect-ratio: var(--eater-map-slab-ratio);
+    /* A percentage translate resolves against the element's own box, so this is
+       a share of the phone rather than of whatever the stage happens to be. */
+    translate: calc(var(--eater-map-slab-shift) * 100%);
+    container-type: inline-size;
+    overflow: hidden;
+  }
+
+  .eater-map__still {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  /* THE ONE PIECE OF ARITHMETIC THE STAGE TURNS ON: the scale everything on the
+     plane is drawn at is the Slab's drawn width over the phone Eater was driven
+     at. Get it from anywhere else — a number chosen by eye, a share of the
+     viewport — and the Cards are the right size at one window and floating over
+     a map of the wrong scale at every other.
+
+     `tan(atan2(a, b))` is `a / b`. CSS has no other way to divide one length by
+     another: `calc()` requires the right-hand side of a `/` to be a number, and
+     that is the spec rather than an engine's gap. NOTES.md. */
+  .eater-map__cards {
+    position: absolute;
+    inset: 0;
+    --eater-map-app-scale: tan(atan2(100cqw, var(--eater-map-app-w)));
+  }
+
+  /* An engine without the trigonometric functions gets a plausible screenshot
+     rather than an interface drawn at the app's own pixel size over a map a
+     third that scale, which is what an invalid scale would leave. The number is
+     the ratio at the window the Checks run at. */
+  @supports not (scale: tan(atan2(1px, 1px))) {
+    .eater-map__cards {
+      --eater-map-app-scale: 0.72;
+    }
+  }
+
+  /* Each Card at its own corner of the picture, in the picture's own units. The
+     Cards carry their own frozen pixel sizes — they are the app's markup at the
+     window it was exported at (NOTES.md) — so the scale is a transform and never
+     a width: a width would reflow another repository's interface. */
+  .eater-map__card {
+    position: absolute;
+    left: calc(var(--eater-map-card-x) * 100%);
+    top: calc(var(--eater-map-card-y) * 100%);
+    transform-origin: 0 0;
+    transform: scale(calc(var(--eater-map-app-scale) * var(--eater-map-card-scale)));
+  }
+
+  .eater-map__card[data-eater-map-card='search'] {
+    --eater-map-card-x: var(--eater-map-card-search-x);
+    --eater-map-card-y: var(--eater-map-card-search-y);
+  }
+
+  .eater-map__card[data-eater-map-card='lines'] {
+    --eater-map-card-x: var(--eater-map-card-lines-x);
+    --eater-map-card-y: var(--eater-map-card-lines-y);
+  }
+
+  .eater-map__card[data-eater-map-card='details'] {
+    --eater-map-card-x: var(--eater-map-card-details-x);
+    --eater-map-card-y: var(--eater-map-card-details-y);
   }
 
   /* ---- one column, outside the band the composition is fitted to ---------
@@ -407,11 +511,16 @@ import './tokens.css';
       margin-top: var(--eater-map-act);
     }
 
-    /* The Slab's own proportion, asked for here because out of the band the
-       column is as tall as it needs to be and nothing else would give the box a
-       height at all. */
+    /* THE PLANE IS GIVEN A WIDTH OUT HERE, because the column is as tall as it
+       needs to be and a share of its height is a share of nothing. The cap is
+       what stops a phone being drawn as wide as a 1000px column; the proportion
+       carries the height, as it does in the band. #179 is the collapse this
+       Section eventually wants — a Slab flat and full-bleed with the four
+       features under it — and this is the honest interim rather than a first
+       attempt at it. */
     .eater-map__slab {
-      aspect-ratio: var(--eater-map-slab-ratio);
+      height: auto;
+      width: min(100%, var(--eater-map-slab-cap));
     }
   }
 
