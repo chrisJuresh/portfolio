@@ -155,3 +155,53 @@ body {
     scroll-behavior: auto;
   }
 }
+
+/* ---- SPIKE: the Turn as an EDGE ----------------------------------------
+   src/kernel/cross.ts is the reasoning and the arithmetic; this is the paint.
+
+   IN THE BAND THE TURN IS ALREADY AN EDGE and nothing here is needed: the Front
+   Screen ends under the word, the Panel below it is black, and the fold IS the
+   line — which is why PROJECTS is cut across the middle at rest. Out of the band
+   there is no fold, so the same crossing is the mix above: every colour on the
+   page moves together and the reader gets a grey page with a grey word in it for
+   the length of the scroll. This draws the line instead.
+
+   FIXED, AND NOT IN THE DOCUMENT. The line is stated relative to the WORD, and a
+   candidate that pins the word holds it with a transform — so a plate in the
+   flow would stay where the flow put it while the word it belongs to did not.
+   Fixed to the viewport, one published number places it under either.
+
+   z-index 19 IS THE WHOLE OF ITS PLACE IN THE PAGE and is chosen against
+   effect-stack.css: the layers carry EVEN z-indexes from 2 to 18, so 19 is above
+   every one of them and the treatment stops exactly at the line rather than
+   running on over the dark. The two Sections lift themselves over it by name —
+   the Panel to 20, so the black is behind its own text, and the Cut Title to 25,
+   so the word is in front of the line that crosses it. */
+.kernel-edge {
+  display: none;
+  position: fixed;
+  left: 0;
+  right: 0;
+  top: var(--landing-edge-top, 200vh);
+  bottom: 0;
+  z-index: 19;
+  pointer-events: none;
+  background: var(--dark);
+}
+
+:root[data-edge] .kernel-edge {
+  display: block;
+}
+
+/* The soft boundary, for the candidate that asks for one. Zero tall by default,
+   which is a cut — the gradient is above the plate rather than inside it, so a
+   wash of nothing costs the hard edge no fidelity. */
+.kernel-edge::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 100%;
+  height: var(--landing-edge-wash, 0px);
+  background: linear-gradient(to top, var(--dark), transparent);
+}

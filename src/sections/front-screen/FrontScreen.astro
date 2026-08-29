@@ -163,7 +163,11 @@ const EAGER = 2;
 
     <section class="front-screen__listing">
       <h2 class="front-screen__heading">{content.contact.heading}</h2>
-      <div class="front-screen__corner">
+      {/* data-landing-over: the last thing on the page that has to stay on paper.
+          The edge family's dark climbs through the word below and is clamped to
+          the foot of this box, so the contact lines cannot be taken by it while
+          there is still paper on the screen. src/kernel/cross.ts. */}
+      <div class="front-screen__corner" data-landing-over>
         <ul class="front-screen__contact">
           {
             content.contact.entries.map((entry, index) => (
@@ -200,6 +204,27 @@ const EAGER = 2;
     <a href={content.projects.href}>
       <svg
         class="front-screen__cut-word"
+        width={wide}
+        height={tall}
+        viewBox={box}
+        fill="currentColor"
+        aria-hidden="true"
+        set:html={inside}
+      />
+      {/* SPIKE: the same word again, in the ink the DARK takes. Inert until an
+          edge candidate is chosen, and then masked to the part of the drawing
+          below the line — so the word reads dark on the paper above it and light
+          on the black below it, one letterform crossing the boundary.
+
+          TWO COPIES AND NOT A BLEND, which is the thing this replaced. A
+          `mix-blend-mode: difference` on the drawing composites against the
+          backdrop WITHIN its stacking context, and the cut is one
+          (`container-type` contains layout) — so it needs an opaque plate inside
+          the container to invert against, and that plate paints out the Effect
+          Stack in a strip the width of the page. A second copy costs a drawing
+          the browser already has and takes nothing off the paper. */}
+      <svg
+        class="front-screen__cut-lit"
         width={wide}
         height={tall}
         viewBox={box}
@@ -1335,5 +1360,89 @@ const EAGER = 2;
   .front-screen[data-cross='curtain'] .front-screen__cut-word {
     color: #fff;
     mix-blend-mode: difference;
+  }
+
+  /* ---- the edge family ---------------------------------------------------
+     The word is not touched: not held, not resized, not moved. What changes is
+     where the dark starts — and it starts half way up this word, which is what
+     the fold does to it in the band. src/kernel/ground.css paints the line;
+     everything here is the word's side of it.
+
+     THE AIR ABOVE THE WORD IS NOT TASTE. The line climbs to a stated margin
+     above the cap, so there has to be that much paper up there for it to finish
+     in — otherwise it takes the contact block with it while the reader can still
+     see white, which is the one thing the ask rules out. `max()` and not a
+     replacement: a window whose own rhyme is already the more generous of the
+     two keeps it.
+
+     AND THE WORD GOES OVER THE LINE. 25 is above the Panel's 20 and the Effect
+     Stack's 18, which is what lets the black pass BEHIND the letters instead of
+     across them. ground.css carries the three numbers together. */
+  .front-screen[data-edge] .front-screen__cut {
+    margin-top: max(var(--front-screen-cut-gap), var(--landing-edge-gap, 0px));
+    z-index: 25;
+  }
+
+  /* `relative` so the lit copy is positioned against the LINK and is therefore
+     clipped by the link's own `overflow: clip` — the cut. Positioned against the
+     container instead, it would escape that clip and the drawing's overshoot
+     would hang below the cut line, lit, with nothing under it. */
+  .front-screen[data-edge] .front-screen__cut > a {
+    position: relative;
+  }
+
+  .front-screen__cut-lit {
+    display: none;
+  }
+
+  /* A HELD WORD NEEDS THE PAGE TO GO BEHIND IT. `edge-hold` is the one candidate
+     here that stops the word on a line, and a word that stops while the page
+     does not is a word the three names climb straight through — legible in the
+     counters of the letters, which reads as clutter rather than as depth.
+
+     So it gets a plate of its own, and it is the SAME LINE a third time rather
+     than a second decision: transparent above, the page's far end below,
+     switching at --landing-edge-cut. Which means it costs the Effect Stack
+     nothing — every pixel it paints is a pixel the Kernel's plate had already
+     taken. `z-index: -1` is behind the letters and still in front of the Panel,
+     because the container's `container-type` makes it a stacking context and the
+     whole context is at 25.
+
+     -50vw across, so it reaches both page edges from a centred measure; the
+     quarter-rem below is the drawing's overshoot, which the cut clips but the
+     names would otherwise appear in. */
+  .front-screen[data-cross='edge-hold'] .front-screen__cut::before {
+    content: '';
+    position: absolute;
+    inset: 0 -50vw -0.25rem;
+    z-index: -1;
+    background: linear-gradient(
+      to bottom,
+      transparent var(--landing-edge-cut, 100%),
+      var(--dark) var(--landing-edge-cut, 100%)
+    );
+  }
+
+  /* The same drawing, in the ink the dark end of the page uses, masked to the
+     part of it below the line. Every length is the one the drawing beside it
+     already stands on, so the two copies are exactly registered: a mask that is
+     one pixel out reads as a badly cut letter rather than as a mask.
+
+     `--dark-ink` and not `#fff`: it is what --ink resolves to at the far end of
+     the Turn, so the lit half of the word is exactly the colour the word has on
+     the landing rather than a whiter one that only looks right next to it. */
+  .front-screen[data-edge] .front-screen__cut-lit {
+    display: block;
+    position: absolute;
+    left: var(--front-screen-cut-lead);
+    top: calc(-1 * var(--front-screen-cut-overshoot) * var(--front-screen-cut-ink));
+    width: var(--front-screen-cut-ink);
+    height: auto;
+    color: var(--dark-ink);
+    mask-image: linear-gradient(
+      to bottom,
+      transparent var(--landing-edge-word, 200vh),
+      #000 calc(var(--landing-edge-word, 200vh) + var(--landing-edge-wash, 0px))
+    );
   }
 </style>

@@ -2001,6 +2001,75 @@ const selected = (project: { href?: string }) => project.href === `#${here}`;
   .projects-panel[data-cross='rail'] .projects-panel__rail-item:nth-child(3) {
     --projects-panel-name-in: clamp(0, calc((var(--landing-names-cross, 1) - 0.36) * 3), 1);
   }
+
+  /* ---- the edge family ---------------------------------------------------
+     THIS SECTION IS ENTIRELY BELOW THE LINE, ALWAYS. The dark starts half way up
+     the word in the Section above and only ever climbs, so there is no frame in
+     which any part of this one is on paper — which means it does not CROSS at
+     all. It is the far end, from the first frame, and saying so is what removes
+     the banding rather than papering over it: the second ground and the Kernel's
+     disagreed mid-crossing because they were two mixes of the same two colours
+     on one number, and two mixes that are both pinned to 1 cannot disagree.
+
+     Restating --ground, --ink and --ink-soft as well as --turn, because those
+     three are computed at :root against the ROOT's turn and inherit as colours —
+     a local --turn moves this Section's own mixes and would leave anything
+     reading the page's three at the paper end. */
+  .projects-panel[data-edge] {
+    --turn: 1;
+    --ground: var(--dark);
+    --ink: var(--dark-ink);
+    --ink-soft: var(--dark-ink-soft);
+    /* The ground comes BACK, which the rule above took away for every other
+       candidate — and it is the same argument, not a reversal of it. What that
+       one removes is a second mix disagreeing with the Kernel's part way across;
+       this one is not a mix, it is one end of one, so there is nothing left for
+       it to disagree with. And it has to paint: the plate stops at the line and
+       the page behind it is still paper. */
+    background: var(--projects-panel-bg);
+    /* Over the plate — which is 19, and over the Effect Stack, which tops out at
+       18. The treatment belongs to the paper and stops where the paper does. */
+    z-index: 20;
+    padding-top: calc(var(--projects-panel-inset) + var(--landing-head-room, 0px));
+  }
+
+  /* The three fade one at a time below, so the box they are in must not fade as
+     a box: the `data-join` rule two blocks up would multiply the two. */
+  .projects-panel[data-edge] .projects-panel__rail {
+    opacity: 1;
+  }
+
+  /* The duplicate goes. The word one screen up is this Section's masthead now,
+     and out of the flow rather than merely invisible: an empty slot the height of
+     a masthead between the word and the index it belongs to reads as a mistake,
+     and there is no held word coming down to fill it. */
+  .projects-panel[data-edge] .projects-panel__masthead {
+    position: absolute;
+    inline-size: 1px;
+    block-size: 1px;
+  }
+
+  /* THE INDEX ASSEMBLES, and out here it is the only thing that moves. The names
+     stay where the Panel puts them — directly under the word, once the masthead
+     between them has gone — and arrive one at a time as they come up the screen.
+     Three slices of one number, a fifth apart, the rise a share of each name's
+     own size. */
+  .projects-panel[data-edge] .projects-panel__rail-item {
+    opacity: var(--projects-panel-name-in, 1);
+    transform: translateY(calc((1 - var(--projects-panel-name-in, 1)) * 0.7em));
+  }
+
+  .projects-panel[data-edge] .projects-panel__rail-item:nth-child(1) {
+    --projects-panel-name-in: clamp(0, calc(var(--landing-names-cross, 1) * 3), 1);
+  }
+
+  .projects-panel[data-edge] .projects-panel__rail-item:nth-child(2) {
+    --projects-panel-name-in: clamp(0, calc((var(--landing-names-cross, 1) - 0.18) * 3), 1);
+  }
+
+  .projects-panel[data-edge] .projects-panel__rail-item:nth-child(3) {
+    --projects-panel-name-in: clamp(0, calc((var(--landing-names-cross, 1) - 0.36) * 3), 1);
+  }
 </style>
 
 <script>
