@@ -55,6 +55,16 @@ markup: `--eater-card-search-width` and the five like it. That is what the ticke
 that places them (#176) composes with, and it is why nothing about placement is a
 magic number in a fragment.
 
+One thing that only becomes true when #175 mounts this Section: the `unpublishable`
+Check reads the built page and every Section that mounted, so from that ticket
+onwards it is scanning **another repository's words** — a restaurant's name, its
+address, its phone number and a guide's write-up of it. Nothing in the shape list
+matches any of those today, and `denylist.local.txt` is the author's own and not
+in the repository, so the failure mode is a local term colliding with a
+restaurant. If it ever does, the answer is a different restaurant in
+`design/eater-cards/config.json` and a regeneration — never an exception in the
+Check, which is the author's record and not this Section's to argue with.
+
 ## Where the boundary between Content and the Cards is
 
 The Cards' words are the app's — a restaurant's name, its address, the lines that

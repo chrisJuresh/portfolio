@@ -43,9 +43,16 @@ digest does in the Projects Panel.
 
 Two ways to be told:
 
-- **`--check`** compares the stamp against that checkout's `HEAD` and exits
-  non-zero when they differ. No browser, so it is cheap enough to run whenever the
-  question comes up. It answers "the app has moved", not "the Cards have".
+- **`--check`** asks whether the app has moved anywhere a Card could be made of.
+  No browser, so it is cheap enough to run out of habit — which is why it does
+  **not** simply compare the two commits: that would fail on a change to that
+  repository's README, and the mode most likely to be run habitually is the worst
+  one to have crying wolf. It compares the stamp against `HEAD` and, when they
+  differ, asks git what changed under the paths `config.json` names as surfaces.
+  Nothing there and the Cards cannot have moved, so it passes and says the stamp
+  is merely behind. Something there and it names the files and exits non-zero.
+  A stamp naming a commit that checkout has not got — unfetched, or rewritten —
+  is reported as **cannot tell** rather than guessed at either way.
 - **A plain run** regenerates, compares the bytes, and **reports the difference
   rather than taking it** — the commit that moved, the subject either side of it,
   and which files changed by how much. Nothing is written without `--write`. A
@@ -97,6 +104,19 @@ what was vendored.
 A spawned `pnpm` on Windows is a shell wrapper around the process that actually
 holds the port, so killing the child leaves the server running and the next run
 fails on `--strictPort` with nothing to point at.
+
+**The wait for that server watches the child, and asks for a path only this app
+serves.** `--strictPort` makes vite *exit* when something else already holds the
+port, and a wait that only polls would then spend a silent minute on a failure
+that was known in the first second — or, worse, find that the stranger answers
+200 and export whatever it happens to be serving.
+
+**A pseudo-element in a selector is why the first export was wrong.**
+`Element.matches('.a::before')` throws rather than returning false, and a thrown
+selector looks exactly like one that matched nothing — so two real rules were
+dropped from 646 lines with nothing anywhere saying so. Fixed upstream in
+`collect.js`; worth knowing because the whole collector is built on `matches()`
+and anything else it refuses will fail the same silent way.
 
 **The export is taken with the app's own dev server, not `pnpm preview`.** The
 built app registers a service worker, and a worker answering from a stale cache is

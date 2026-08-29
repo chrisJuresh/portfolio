@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { MANIFEST, files, report, stamp, withoutStamp } from './compare.mjs';
+import { MANIFEST, files, report, stamp, staleness, withoutStamp } from './compare.mjs';
 
 const CONFIG = { eater: { repo: 'chrisJuresh/eater-map-site' } };
 const AT = { commit: 'a'.repeat(40), subject: 'the first one' };
@@ -104,6 +104,23 @@ test('a file that went away, and one that arrived, both count as the surfaces mo
   assert.ok(moved.includes('lines.html'));
   assert.equal(surfacesMoved, true);
   assert.match(lines.join('\n'), /- lines\.html/);
+});
+
+test('--check does not call a commit stale for touching nothing a Card is made of', () => {
+  // The cheap mode is the one most likely to be run out of habit, so it is the
+  // worst one to have failing on a change to that repository's README. A SHA
+  // comparison alone would.
+  assert.equal(staleness({ vendored: 'a', head: 'a', changed: [] }), 'current');
+  assert.equal(staleness({ vendored: 'a', head: 'b', changed: [] }), 'stamp-behind');
+  assert.equal(staleness({ vendored: 'a', head: 'b', changed: ['src/lib/ui/TopBar.svelte'] }), 'surfaces-moved');
+});
+
+test('--check says it cannot tell, rather than guessing, when the stamp names a commit git has not got', () => {
+  // Unfetched, or rewritten. Reporting "current" there would be the one wrong
+  // answer this whole mechanism exists to prevent.
+  assert.equal(staleness({ vendored: 'a', head: 'b', changed: null }), 'unknown');
+  // …but a stamp that matches HEAD is current whatever else is unknown.
+  assert.equal(staleness({ vendored: 'a', head: 'a', changed: null }), 'current');
 });
 
 test('a hand-mangled manifest is not read as unchanged', () => {

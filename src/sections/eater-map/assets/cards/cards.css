@@ -1,6 +1,6 @@
 /* GENERATED — do not edit.
-   chrisJuresh/eater-map-site @ 80c219523e82396103e90be322e60123753671a9
-   Merge pull request #27 from chrisJuresh/export-route
+   chrisJuresh/eater-map-site @ 980d553038a0fa558d82f11bfc754604a699a79d
+   Merge pull request #28 from chrisJuresh/export-pseudo
    node design/eater-cards/vendor.mjs --write */
 
 .eater-cards {
@@ -419,6 +419,11 @@
   overflow-y: auto;
   scrollbar-width: none;
 }
+.eater-cards .details-panel.svelte-1ccclju .descriptions:where(.svelte-1ccclju)::-webkit-scrollbar {
+  display: none;
+  width: 0px;
+  height: 0px;
+}
 .eater-cards .details-panel.svelte-1ccclju .description:where(.svelte-1ccclju) {
   font-size: 14px;
   line-height: 1.42;
@@ -467,6 +472,9 @@
   background: transparent;
   overscroll-behavior-x: contain;
   scrollbar-width: none;
+}
+.eater-cards .actions.svelte-1ccclju::-webkit-scrollbar {
+  display: none;
 }
 .eater-cards .actions.svelte-1ccclju a:where(.svelte-1ccclju),
 .eater-cards .actions.svelte-1ccclju .share-action:where(.svelte-1ccclju),
@@ -534,6 +542,9 @@
   color: var(--label);
   font-size: 17px;
   line-height: 1.2;
+}
+.eater-cards .search.svelte-1hm81ai input:where(.svelte-1hm81ai)::placeholder {
+  color: var(--label-secondary);
 }
 .eater-cards .search-count.svelte-1hm81ai {
   flex: 0 0 auto;

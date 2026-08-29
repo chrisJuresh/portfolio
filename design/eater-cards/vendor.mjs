@@ -38,10 +38,10 @@
 
 import { spawn, spawnSync } from 'node:child_process';
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
-import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { MANIFEST, files, report } from './compare.mjs';
+import { MANIFEST, files, report, staleness } from './compare.mjs';
 
 const HERE = fileURLToPath(new URL('.', import.meta.url)).replace(/[\\/]+$/, '');
 const ROOT = resolve(HERE, '..', '..');
@@ -149,41 +149,101 @@ async function vendored() {
   }
 }
 
+/** What changed between the vendored commit and HEAD, under the paths a Card can
+ *  be made of. Null when that commit is not in this checkout — unfetched, or
+ *  rewritten — because then there is nothing to compare against. */
+function changedSince(eater, commit) {
+  const known = spawnSync('git', ['cat-file', '-e', `${commit}^{commit}`], { cwd: eater });
+  if (known.status !== 0) return null;
+  const changed = git(eater, 'diff', '--name-only', `${commit}..HEAD`, '--', ...config.eater.surfaces);
+  return changed ? changed.split('\n') : [];
+}
+
 async function checkOnly(eater) {
   const held = await vendored();
-  const head = git(eater, 'rev-parse', 'HEAD');
-  const subject = git(eater, 'log', '-1', '--format=%s');
   if (!held) {
     console.error(`eater-cards: nothing is vendored at ${config.out}.`);
     process.exit(1);
   }
-  if (held.eater.commit === head) {
-    console.log(`eater-cards: current — ${config.eater.repo} @ ${head.slice(0, 8)} (${held.eater.subject})`);
-    return;
+  const head = git(eater, 'rev-parse', 'HEAD');
+  const subject = git(eater, 'log', '-1', '--format=%s');
+  const changed = changedSince(eater, held.eater.commit);
+  const moved =
+    `  vendored from  ${held.eater.commit.slice(0, 8)}  ${held.eater.subject}\n` +
+    `  ${config.eater.repo} is now  ${head.slice(0, 8)}  ${subject}\n`;
+
+  switch (staleness({ vendored: held.eater.commit, head, changed })) {
+    case 'current':
+      console.log(`eater-cards: current — ${config.eater.repo} @ ${head.slice(0, 8)} (${held.eater.subject})`);
+      return;
+
+    case 'stamp-behind':
+      // The app has moved and nothing a Card is made of has, so the Cards cannot
+      // be showing an interface that no longer exists — which is the only
+      // question this mode is asked. Exit 0: a check that failed here would fail
+      // on every commit to that repository's README, and one that fails for
+      // nothing is one that gets run with `|| true` in front of it.
+      console.log(
+        `eater-cards: current — nothing under ${config.eater.surfaces.join(', ')} has changed.\n` +
+          moved +
+          '  Only the stamp is behind, which a regeneration would refresh.',
+      );
+      return;
+
+    case 'unknown':
+      console.error(
+        `eater-cards: cannot tell.\n` +
+          moved +
+          `\n  ${held.eater.commit.slice(0, 8)} is not in that checkout, so there is nothing to\n` +
+          '  compare against. Fetch it, or regenerate:\n' +
+          '    node design/eater-cards/vendor.mjs',
+      );
+      process.exit(1);
+
+    default:
+      console.error(
+        `eater-cards: STALE — ${changed.length} file(s) the Cards are made of have changed.\n` +
+          moved +
+          `\n${changed
+            .slice(0, 12)
+            .map((one) => `    ${one}`)
+            .join('\n')}\n` +
+          (changed.length > 12 ? `    …and ${changed.length - 12} more\n` : '') +
+          '\n  Regenerate to see whether any of it reached a surface:\n' +
+          '    node design/eater-cards/vendor.mjs',
+      );
+      process.exit(1);
   }
-  console.error(
-    `eater-cards: STALE.\n` +
-      `  vendored from  ${held.eater.commit.slice(0, 8)}  ${held.eater.subject}\n` +
-      `  ${config.eater.repo} is now  ${head.slice(0, 8)}  ${subject}\n\n` +
-      '  The app may have moved under the Cards. Regenerate to see whether it did:\n' +
-      '    node design/eater-cards/vendor.mjs',
-  );
-  process.exit(1);
 }
 
 /* ---- the app, running ---------------------------------------------------- */
 
-async function answering(url, until) {
+/**
+ * Wait for the app to answer on `port`, and give up the moment it cannot.
+ *
+ * `alive()` is what stops two bad outcomes, and the second is the one that
+ * matters. `--strictPort` makes vite EXIT when something else already holds the
+ * port; without watching for that, this would poll a stranger's server for a
+ * full minute and then either time out — a silent minute for a failure that was
+ * known in the first second — or, if that stranger answers 200, drive it and
+ * export whatever it happens to serve.
+ *
+ * The path asked for is one only this app has, for the same reason.
+ */
+async function answering(port, alive, until) {
+  const url = `http://127.0.0.1:${port}/manifest.webmanifest`;
   while (Date.now() < until) {
+    if (!alive()) return 'gone';
     try {
       const response = await fetch(url, { signal: AbortSignal.timeout(1500) });
-      if (response.ok) return true;
+      if (response.ok && (await response.text()).includes('Eater')) return 'up';
+      if (response.ok) return 'stranger';
     } catch {
       // not up yet
     }
     await new Promise((settle) => setTimeout(settle, 300));
   }
-  return false;
+  return 'timeout';
 }
 
 /**
@@ -200,8 +260,19 @@ async function serve(eater, port) {
     stdio: ['ignore', 'pipe', 'pipe'],
   });
   let log = '';
+  let running = true;
   child.stdout.on('data', (chunk) => (log += chunk));
   child.stderr.on('data', (chunk) => (log += chunk));
+  child.on('exit', (code) => {
+    running = false;
+    log += `\n(vite exited with ${code})`;
+  });
+  // Without this, a spawn that cannot start — no node, a path that moved —
+  // throws an unhandled 'error' out of an event loop nothing is watching.
+  child.on('error', (error) => {
+    running = false;
+    log += `\n(vite could not start: ${error.message})`;
+  });
 
   const stop = () => {
     try {
@@ -210,18 +281,24 @@ async function serve(eater, port) {
       // already gone
     }
   };
-  const up = await answering(`http://127.0.0.1:${port}/`, Date.now() + 60_000);
-  if (!up) {
+
+  const said = {
+    gone: `the app's dev server stopped before it answered on 127.0.0.1:${port}.`,
+    stranger: `something that is not ${config.eater.repo} is already serving 127.0.0.1:${port}.`,
+    timeout: `the app's dev server did not come up on 127.0.0.1:${port} within a minute.`,
+  };
+  const verdict = await answering(port, () => running, Date.now() + 60_000);
+  if (verdict !== 'up') {
     stop();
-    fail(`the app's dev server did not come up on 127.0.0.1:${port} within a minute.`, ...log.trim().split('\n'));
+    fail(said[verdict], ...log.trim().split('\n'));
   }
   return stop;
 }
 
 /* ---- the files ----------------------------------------------------------- */
 
-/** What is on disk now, so the report can say what moved. */
-async function held() {
+/** The generated files as they stand, so the report can say what moved. */
+async function onDisk() {
   const out = new Map();
   if (!existsSync(OUT)) return out;
   for (const name of readdirSync(OUT)) out.set(name, await readFile(join(OUT, name), 'utf8'));
@@ -313,7 +390,7 @@ if (noise.length) {
 if (!payload?.cards?.length) fail('the export route produced no Cards.');
 
 const after = files(payload, eater, config);
-const before = await held();
+const before = await onDisk();
 const { moved, surfacesMoved, lines } = report(before, after, config.eater.repo);
 
 if (!moved.length) {
@@ -335,6 +412,10 @@ if (!WRITE) {
 
 await mkdir(OUT, { recursive: true });
 for (const [name, text] of after) await writeFile(join(OUT, name), text);
+// A Card the app no longer has leaves a file behind, and a file left in this
+// folder is still importable from the Section — so the report would say
+// `- lines.html` while the Section went on rendering it.
+for (const name of before.keys()) if (!after.has(name)) await rm(join(OUT, name));
 console.log(`eater-cards: written to ${config.out}\n\n${lines.join('\n')}`);
 for (const card of payload.cards) {
   console.log(`\n  ${card.name.padEnd(8)} ${card.width}×${card.height}`);

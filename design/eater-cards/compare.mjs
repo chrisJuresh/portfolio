@@ -11,6 +11,30 @@
  * is a pure function with a test beside it.
  */
 
+/**
+ * What `--check` can say without opening a browser.
+ *
+ * Comparing the two commits is not enough on its own, and the reason is the same
+ * one `withoutStamp` exists for: every commit to that repository moves the stamp
+ * whether it reached a surface or not, so a SHA comparison calls a change to
+ * their README "stale". `--check` is the mode most likely to be run out of habit,
+ * which makes it the worst one to have crying wolf.
+ *
+ * So it also asks git what changed between the two commits, under the paths a
+ * Card can possibly be made of. Nothing there means the Cards cannot have moved,
+ * however far the app's history has.
+ *
+ * @param {{ vendored: string, head: string, changed: string[] | null }} state
+ *   `changed` is null when the vendored commit is not in that checkout at all —
+ *   unfetched, or rewritten — and then there is nothing to compare and the
+ *   honest answer is that we do not know.
+ */
+export function staleness({ vendored, head, changed }) {
+  if (vendored === head) return 'current';
+  if (changed === null) return 'unknown';
+  return changed.length ? 'surfaces-moved' : 'stamp-behind';
+}
+
 /** The header every generated file carries, so a file opened on its own says
  *  where it came from and that editing it is pointless. */
 export function stamp(kind, repo, eater) {
@@ -82,7 +106,10 @@ export function withoutStamp(name, text) {
     // JSON carries no comment, so the stamp is a field rather than a header.
     try {
       const held = JSON.parse(text);
-      if (held?.eater) delete held.eater.commit, delete held.eater.subject;
+      if (held?.eater) {
+        delete held.eater.commit;
+        delete held.eater.subject;
+      }
       return JSON.stringify(held);
     } catch {
       return text;

@@ -2,8 +2,8 @@
   "generator": "design/eater-cards/vendor.mjs",
   "eater": {
     "repo": "chrisJuresh/eater-map-site",
-    "commit": "80c219523e82396103e90be322e60123753671a9",
-    "subject": "Merge pull request #27 from chrisJuresh/export-route"
+    "commit": "980d553038a0fa558d82f11bfc754604a699a79d",
+    "subject": "Merge pull request #28 from chrisJuresh/export-pseudo"
   },
   "restaurant": {
     "id": "ZXQyOm1hcDo1NzgyMTI:025",
