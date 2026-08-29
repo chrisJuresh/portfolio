@@ -448,21 +448,31 @@ export function crossing(): number | null {
 }
 
 /**
- * The three names' OWN arrival, which is not the word's.
+ * How far the three names have CLOSED ON THEIR PLACE under the word.
  *
- * Every other number here is measured off the word or off the masthead, and the
- * names are neither: wherever they end up standing, what a reader notices is them
- * coming up the screen. So this is the one progress read straight off the box it
- * belongs to — 0 with its top on the bottom edge of the window, 1 a quarter of a
- * screen later. A candidate that wants them to arrive one at a time slices this;
- * a candidate that wants them plain ignores it.
+ * Not --cross, and not their own entry into the window, and both of those were
+ * tried. --cross is the word's: it is zero until the word reaches its resting
+ * line, so an index drawn against it sits on the screen at nothing for a third of
+ * a screen of scrolling, which is a hole where the index should be. Their entry
+ * into the window is worse in the other direction — they cross the bottom edge
+ * long before the word settles, so the arrival was over before the clip of it
+ * started and `rail` and `land` recorded byte for byte identical.
+ *
+ * So it is the DISTANCE LEFT: 1 when the names are standing where they finish,
+ * under the held word and one gap below it, and 0 half a screen short of that.
+ * Which is the same clock in both families — a candidate that stands them under
+ * the word is measuring the last of their travel, and one that leaves them in the
+ * Panel's flow is measuring them coming up the page — and in both it is the thing
+ * a reader actually notices.
  */
 function arriving(): number {
+  const wanted = shape();
   const found = parts();
-  if (!found?.names) return 1;
+  if (!wanted || !flight || !found?.names) return 1;
   const height = window.innerHeight;
-  const top = found.names.getBoundingClientRect().top;
-  return Math.min(1, Math.max(0, (height - top) / Math.max(1, 0.25 * height)));
+  const rest = wanted.line * height + flight.cap * flight.toScale + 0.42 * flight.cap;
+  const left = found.names.getBoundingClientRect().top - rest;
+  return Math.min(1, Math.max(0, 1 - left / Math.max(1, 0.5 * height)));
 }
 
 function frame(): void {
