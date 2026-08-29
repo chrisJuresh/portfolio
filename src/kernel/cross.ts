@@ -2,8 +2,17 @@ import gsap from 'gsap';
 import { handles } from './handles';
 
 /**
- * THE LANDING, OUT OF THE BAND — a spike, and nine candidate answers to one
+ * THE LANDING, OUT OF THE BAND — a spike, and sixteen candidate answers to one
  * question: what should PROJECTS do when the page is square or on a phone?
+ *
+ * READ THE EDGE FAMILY FIRST. The ten candidates this file opened with all ask
+ * what the WORD should do, and the author's answer to that was `under`: nothing.
+ * Leave it where the column puts it, at the size the column gives it, and take
+ * the Panel's duplicate masthead away. What actually wanted fixing was
+ * underneath — where the DARK starts — and the six `edge-` candidates are that,
+ * with the word untouched. The `Edge` interface below is the whole of it; the
+ * eight fields above it are the earlier question and are what `land`, `stay`
+ * and the rest are still built from.
  *
  * Inside the landing band there is one PROJECTS on the page. It is drawn at the
  * Projects Panel masthead's own cap, the Panel's masthead goes invisible
