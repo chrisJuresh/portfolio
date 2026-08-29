@@ -576,19 +576,121 @@ exact complement at fractional widths too.
 
 Three things about the stack:
 
-- **The side margin is the page's horizontal one**, not `--projects-panel-inset`.
-  The inset is 9vh — a vertical measure, and one that reads as an error the
-  moment it is used across: on a 390×844 phone it is 76px a side. Top and bottom
-  keep it, where it is measuring what it was written for.
+- **The side margin is a horizontal one**, not `--projects-panel-inset`. The
+  inset is 9vh — a vertical measure, and one that reads as an error the moment it
+  is used across: on a 390×844 phone it is 76px a side. Top and bottom keep it,
+  where it is measuring what it was written for. It is **not**
+  `--projects-panel-side` either, which is the band's and is flat: 1.35rem is a
+  phone's margin, and on a 1024 tablet it left the column 2.5% clear of the glass
+  and the composition ran edge to edge like a document. `--projects-panel-stack-side`
+  is the stack's own, floored at the same 1.35rem so nothing about a phone moves,
+  and the band's stays where it is because the landing Rail's two insets are
+  declared off it.
 - **The Rail wraps.** RECORD ENGINE at 0.22em of tracking is a long word, and 360
   and 320 are real screens; without `wrap` the third project is simply not named,
-  which is not a Rail. The size and the gap are solved together against the three
-  names: at the floors they measure 299 and the row comes to 328, one line from
-  374px of window up.
-- **The points' internal gap becomes a multiple of their own size**, and the
-  number it has to beat is the 0.35em already inside each point: anything at or
-  under that spaces four points exactly as far apart as the two lines of one, and
-  the list reads as eight lines rather than four pairs.
+  which is not a Rail. It is one line from **353px** of window up now that the
+  names are φ⁻¹ of the copy rather than a clamp of their own — the row measures
+  299.6 at the size's floor and the column reaches that there. It was two lines
+  at 390 and 430 before, on a size that clamped to 0.9rem and a gap that clamped
+  to 2rem independently of it.
+- **Both of the Rail's gaps are multiples of the Rail's own size**, which is the
+  same idiom the points' gap uses and for the same reason. The column gap was a
+  rem clamp with its own 4vw slope, so as the names got smaller the gaps between
+  them got larger — a row that stopped being one drawing.
+
+### The ladder, and the flat gap it replaced
+
+Two things were wrong out here and they were the same thing twice: **nothing was
+stated against anything else**, so neither the type nor the space had a shape.
+
+**Six sizes, six clamps.** Each of the six had its own floor, its own vw slope
+and its own ceiling, so the ratios *between* them swung as the window moved — the
+subheading was 1.55× the copy at 390 and 2.51× at 1024. One page, flat and
+undifferentiated on a phone and top-heavy on a tablet. And four of the six hit
+their ceiling at about 795px of window and stopped there while the Frame beside
+them went on growing to 1047: type frozen against a picture that was not.
+
+There is one size now — `--projects-panel-stack-size`, which *is* the copy — and
+five ratios of it, at half-steps of the golden ratio (√φ = 1.272): the rail at
+φ⁻¹, the figure at √φ⁻¹, the copy at 1, the point's title at √φ and the
+subheading at φ². **The ladder is therefore the same shape at 360 as at 1099**,
+which is the out-of-band answer to what `--projects-panel-fit` is inside it.
+
+Two of the six needed more than a ratio, and both are documented at the Token:
+
+- **The subheading takes the smaller of its ratio and a share of the column.**
+  It is two *authored* lines, so a size the column cannot take does not wrap
+  gracefully — it makes three lines out of two. Below about 375px the ratio asks
+  for more width than there is, and `--projects-panel-stack-display-fill` is the
+  other bound. That constant is a glyph measurement and goes stale if the two
+  lines or the face change.
+- **The point's title is 1.272 and was 1.6 × its figure**, which is 2.04 of these
+  steps and put four uppercase labels at 1.45× the body — a third head competing
+  with the project's name. At 1.272 all four are one line from 414px up, where at
+  1.6 three of them were still wrapping at 768.
+
+**One gap, five seams.** `--projects-panel-stack-gap` was the air between the
+Rail and the title, and between the title and the copy, and between the copy and
+the window, and between the window and the points. Space is the only thing that
+says which of two things belong together, and a page that spends the same amount
+everywhere has spent it saying nothing.
+
+The ladder is `tight`/`close`/`step`/`move`/`act` at φ⁻², φ⁻¹, 1, φ and φ² off
+one step. The two `act`s are the whole point of it: the stack has exactly two
+places where the reader changes what they are doing — leaving the writing for the
+picture, and leaving the picture for the evidence — and everything else on the
+page is a smaller move than either. The inner grid's `row-gap` is **0** so those
+four seams can be four different sizes; each block asks for its own by margin.
+
+### The points are a table where the row will carry one
+
+Each point is a title and the figure that makes it checkable — two halves of one
+statement — and from about 970px of window the column is wide enough to set them
+side by side. **No breakpoint decides that.** The `li` is a wrapping flex row and
+both children carry a `flex-basis` in their *own* em, so the layout asks the only
+question that matters — has this column room for the longest title *and* a figure
+at the sizes the ladder has chosen — and asks it again at every width, in the type
+that is actually there. A media query would be a guess at the answer and would go
+stale the moment the ladder or the words moved.
+
+Three things about it that were got wrong once each while it was being fitted:
+
+- **The title does not grow and the figure does.** `flex: 0 1` against `flex: 1 1`.
+  All four titles are one size, so a title that takes exactly its basis takes the
+  same width in every row and the figures all start on one line down the page.
+  Letting both grow splits the slack evenly instead, which moves the second column
+  nowhere and spends the width on a title that had already fitted while the figure
+  beside it wrapped a third time.
+- **The changeover is set by the FIGURE's basis**, not the title's. At 20em the
+  table came on at 900 with three of the four figures on two lines against
+  one-line titles, which is a table only in the sense that it has two columns. At
+  26em it comes on at 970 and only the longest figure wraps.
+- **The longest figure is wider than any column this layout can give it**, at
+  every window under the band: it sets about 32em, the title beside it needs 18,
+  and 50em of one-line table does not fit 1099px of screen at these sizes. So
+  there is no basis that makes all four one line, and `text-wrap: balance` on the
+  figure is what the second line is actually tuned for — the difference between
+  two even lines and one orphaned word.
+
+### The word hangs over this Section's top edge, and the Rail was printing through it
+
+Out of the band the Front Screen's cut PROJECTS is given its whole cap slab and
+hands the difference back as a negative bottom margin, so `1 − --front-screen-cut-show`
+of the letters hang **past that Section's foot and over this one's top edge** —
+measured, 5.73% of the word's own width, which is 29.5px once the word stops
+growing at about 600px of window.
+
+What this Section had at its top was `--projects-panel-inset`, a 2.7vh margin
+that knows nothing about the word. From 600px up the Rail's own box started
+*above* the letters' feet: the index printed through the bottom of PROJECTS at
+every window from a tablet to the band's own edge, by 2 to 6px, and at 390 it
+cleared by 4.4. `--projects-panel-stack-crown` is the overhang plus a deliberate
+amount of air.
+
+**This Section cannot read that number.** The Front Screen declares its cut
+Tokens on its own root rather than on `:root`, so the overhang is re-measured
+here rather than referenced — and re-derived if `--front-screen-cut-show` moves,
+or if the word's width stops being capped where it is.
 
 ## What is still nobody's
 

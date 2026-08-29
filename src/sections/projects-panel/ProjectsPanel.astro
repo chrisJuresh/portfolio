@@ -1303,9 +1303,11 @@ const selected = (project: { href?: string }) => project.href === `#${here}`;
   @media not all and (min-width: 1100px) {
     .projects-panel {
       /* No height term and no fit to solve for: the stack takes the width it is
-         given. The side margin is the page's horizontal one, not --inset, which
-         is a vertical measure and reads as an error used across. */
-      --projects-panel-w: calc(100vw - 2 * var(--projects-panel-side));
+         given. The side margin is a HORIZONTAL one, not --inset, which is a
+         vertical measure and reads as an error used across — and it is the
+         stack's own rather than the band's, because the band's is flat and a
+         phone's margin used on a tablet is not a margin. tokens.css. */
+      --projects-panel-w: calc(100vw - 2 * var(--projects-panel-stack-side));
       /* The Frame is the whole column here rather than nine twelfths of it, so
          the Plinth's three depths — the only things that read this — are shares
          of the stack's own width.
@@ -1328,22 +1330,43 @@ const selected = (project: { href?: string }) => project.href === `#${here}`;
       --projects-panel-point-size: var(--projects-panel-point-stacked);
       --projects-panel-figure-size: var(--projects-panel-figure-stacked);
       --projects-panel-rail-size: var(--projects-panel-rail-stacked);
+      /* The air between a point's title and its figure is the ladder's tightest
+         step out here, and it is the FIGURE'S OWN top margin in the base sheet.
+         0.35em is the band's measure of the same thing and has nothing to do
+         with this column's rhythm; it also has to go for the row below, where
+         the two sit side by side and a top margin would push the figure off the
+         title's baseline. */
+      --projects-panel-figure-air: 0;
 
-      padding: var(--projects-panel-inset) var(--projects-panel-side);
+      /* THE TOP IS A CLEARANCE AND THE BOTTOM IS THE PAGE'S MARGIN, which is why
+         this is a longhand rather than the two-value shorthand it was. What
+         hangs over the top edge is the Front Screen's cut PROJECTS — see
+         --projects-panel-stack-crown in tokens.css, which carries the measured
+         overhang and what the Rail was printing through before it. */
+      padding: var(--projects-panel-stack-crown) var(--projects-panel-stack-side)
+        var(--projects-panel-inset);
       grid-template-columns: minmax(0, 1fr);
-      row-gap: var(--projects-panel-stack-gap);
+      /* The Rail and the composition are the Section's two rows, so this is the
+         one seam this box owns: the index, and then the thing it indexes. */
+      row-gap: var(--projects-panel-stack-move);
     }
 
     /* Three names across the top instead of three down an edge, and they wrap:
        360 and 320 are real screens and RECORD ENGINE does not fit beside the
-       other two on either. */
+       other two on either. Both gaps are multiples of the names' own size, so
+       the row shrinks as one drawing — the column gap used to be a rem clamp
+       with its own vw slope, which opened the gaps as the type closed. */
     .projects-panel__rail-items {
       flex-direction: row;
       flex-wrap: wrap;
       justify-content: flex-start;
       align-items: baseline;
-      column-gap: var(--projects-panel-stack-rail-gap);
-      row-gap: var(--projects-panel-stack-rail-rows);
+      column-gap: calc(
+        var(--projects-panel-stack-rail-gap) * var(--projects-panel-rail-size)
+      );
+      row-gap: calc(
+        var(--projects-panel-stack-rail-rows) * var(--projects-panel-rail-size)
+      );
     }
 
     .projects-panel__rail-item {
@@ -1351,11 +1374,16 @@ const selected = (project: { href?: string }) => project.href === `#${here}`;
       transform: none;
     }
 
+    /* NO ROW GAP, AND THE FOUR SEAMS ARE MARGINS INSTEAD. A grid's row gap is
+       one length for every row it has, and the four seams down this column are
+       four different sizes of decision — the head to its rule is not the copy to
+       the window. So the box states none and each block below asks for the step
+       its own seam is worth. */
     .projects-panel__inner {
       grid-template-columns: minmax(0, 1fr);
       grid-template-rows: none;
       align-self: stretch;
-      row-gap: var(--projects-panel-stack-gap);
+      row-gap: 0;
     }
 
     .projects-panel__head,
@@ -1374,22 +1402,43 @@ const selected = (project: { href?: string }) => project.href === `#${here}`;
     }
 
     /* The rule moves from the paragraph's left edge to its top, which is where a
-       divider goes when the thing it divides is above rather than beside. */
+       divider goes when the thing it divides is above rather than beside.
+
+       THE BOX RUNS THE COLUMN AND THE WORDS KEEP THE MEASURE, which is one
+       change and two fixes. The cap used to be on this box, so the hairline —
+       which is this box's top border — stopped where the text did: two thirds of
+       the way across a column the head and the points both ran the whole width
+       of, and 65% of it at 1099. A divider that divides part of the page reads
+       as a mistake rather than as a rule. The measure is the paragraph's now.
+
+       Its two margins are the two seams around it, and they are deliberately
+       different sizes: a `move` above, because the rule and the title are two
+       parts of one head, and a `close` between the rule and the first line,
+       because a rule belongs to what it rules. */
     .projects-panel__copy {
       grid-row: 2;
       border-left: 0;
       border-top: 1px solid var(--projects-panel-rule);
-      padding: var(--projects-panel-stack-gap) 0 0;
+      margin-top: var(--projects-panel-stack-move);
+      padding: var(--projects-panel-stack-close) 0 0;
+      max-width: none;
+    }
+
+    .projects-panel__copy p {
       max-width: var(--projects-panel-stack-measure);
     }
 
     /* The Frame under the copy and the points last, stated as rows so the
        markup keeps the order it was written for. The occlusion is dropped rather
        than approximated: at this width the window would cover the line rather
-       than bite a quarter off the letters. */
+       than bite a quarter off the letters.
+
+       AN `act` ABOVE IT, which is the largest step on the page and one of only
+       two places it is spent: this is where the reader stops reading and starts
+       looking. */
     .projects-panel__stage {
       grid-row: 3;
-      margin-top: 0;
+      margin-top: var(--projects-panel-stack-act);
     }
 
     /* The Frame is the whole column, so both of the numbers that placed it
@@ -1411,19 +1460,72 @@ const selected = (project: { href?: string }) => project.href === `#${here}`;
       width: calc((1 + 2 * var(--projects-panel-plinth-overhang)) * 100%);
     }
 
-    /* A multiple of the point's TITLE — the larger of the two sizes inside a
-       point, now that they are two — and it has to beat the 0.35em of the figure
-       inside each one or the list reads as eight lines rather than four pairs.
-       `align-content` goes back to its default with it: one column has no height
-       to spread the list down, so the gap here is the gap rather than a floor. */
+    /* THE SECOND `act`, and the last one: the reader stops looking and starts
+       reading again, at the only four numbers on the page that are checkable.
+
+       The gap between two points is a `step`, which is the ladder's plain rung —
+       point to point is the one seam on the page between two things of the same
+       kind — and it beats the `tight` inside each point by φ², so four pairs read
+       as four pairs and never as eight lines. `align-content` goes back to its
+       default: one column has no height to spread the list down, so the gap here
+       IS the gap rather than the floor it is in the band. */
     .projects-panel__points {
       grid-row: 4;
-      margin-top: 0;
+      margin-top: var(--projects-panel-stack-act);
       /* The list is the last row here rather than a column beside the window, so
          there is no stone under it to keep off. */
       margin-bottom: 0;
       align-content: normal;
-      row-gap: calc(var(--projects-panel-stack-points-gap) * var(--projects-panel-point-size));
+      row-gap: var(--projects-panel-stack-step);
+    }
+
+    /* A TABLE WHERE THE ROW WILL CARRY ONE AND A STACK WHERE IT WILL NOT, AND
+       NO BREAKPOINT DECIDES WHICH. Each point is a title and the figure that
+       makes it checkable — two halves of one statement — and on anything from a
+       small tablet up the column is wide enough to set them side by side, which
+       is what a specification looks like and what stops four points running a
+       screen and a half down a page that has nothing else left to say.
+
+       `flex-wrap` is the whole mechanism. Both children carry a basis in their
+       OWN em, so the question the layout asks is the only one that matters —
+       does this column have room for the longest title AND a figure at the sizes
+       the ladder has chosen — and it asks it again at every width, in the type
+       that is actually there. A media query would be a guess at the answer, and
+       one that goes stale the moment the ladder or the words move. Measured, the
+       answer turns over at about 970px: a phone and a tablet get the stack, and
+       the windows between there and the band's own edge get the table.
+
+       `baseline` and not `center`: the two are one line of a table, and a
+       caption hung off the middle of a label reads as two things that happen to
+       be adjacent. When the row wraps, the row gap is the ladder's tightest step
+       and the pair closes up under itself. */
+    .projects-panel__points li {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: baseline;
+      column-gap: var(--projects-panel-stack-step);
+      row-gap: var(--projects-panel-stack-tight);
+    }
+
+    /* THE TITLE DOES NOT GROW AND THE FIGURE DOES, which is what makes this a
+       table rather than two columns that happen to be adjacent. The four titles
+       are one size, so a title that takes exactly its basis takes the same width
+       in every row — and the figures therefore all start on one line down the
+       page. Letting both grow splits the slack evenly instead, which moves the
+       second column nowhere and spends the width on a title that had already
+       fitted while the figure beside it wrapped a third time. */
+    .projects-panel__points h3 {
+      flex: 0 1 var(--projects-panel-stack-point-basis);
+    }
+
+    /* `balance` for the same reason the title has it in the base sheet, and it
+       matters more here: the longest of the four figures is wider than any
+       column this layout can give it at any window in this range, so it is
+       always two lines somewhere and the only question is whether the second one
+       is a word on its own. */
+    .projects-panel__points p {
+      flex: 1 1 var(--projects-panel-stack-figure-basis);
+      text-wrap: balance;
     }
   }
 
