@@ -242,19 +242,22 @@ that needs the page placed between the two resting places has to lift the snappi
 first** — `window.portfolio.snapping(false)` — or every `scrollTo` in between is
 pulled straight back onto the port it left, silently.
 
-**Below that band the same crossing is a LINE, and `src/kernel/landing-edge.ts`
-is it.** There is no fold out there for the Turn to happen at, so drawn as the
-mix it ships as, it was a grey page with a grey word on it for the length of a
-scroll. Instead a plate climbs the screen clocked on the word's own travel, the
-word is drawn twice and masked at the line so it reads dark above it and light
-below, and `--turn` is re-anchored to that same climb — one number, with the
-letterforms, the veil and the dark on it together. Two things there are not
-guesses and are expensive to rediscover: **`ground.css` pins `--ground`, `--ink`
-and `--ink-soft` to the paper end** under `[data-turn-edge]`, and unpinning them
-brings the grey straight back; and **hiding the Panel's duplicate masthead takes
-`visibility: hidden` as well as the 1px box**, or the word overflows that box and
-paints anyway. `src/kernel/NOTES.md` has the rest, and the `landing-edge` Check
-holds all of it at two windows that fail the band for two different reasons.
+**Below that band it is a scroll, and it is the SAME crossing rather than a
+second one.** The whole page — both Sections, one number — starts on paper and
+arrives at dark together, and PROJECTS is still cut by the fold on the first
+screen. Three things about that are expensive to rediscover, and each has been
+got wrong once. **The Panel's palette mixes from the theme's `--paper` and never
+from `--ground`**, because `--ground` is itself a crossing on `--turn` and mixing
+into it composes two — which puts a step across the page at the Panel's top edge
+that travels with the scroll, and that is what "banding" has meant both times it
+was reported. **The Turn's span out here is the FIRST SECTION's own height and
+not the document's scroll**, so the page is dark at exactly the moment the Panel
+owns the screen rather than a quarter short of it. And **the cut word is not a
+bug**: giving the reader the whole of PROJECTS out of the band takes the first
+screen's last gesture away and grows the Front Screen past `--fold`.
+`src/kernel/NOTES.md` and `src/sections/projects-panel/NOTES.md` carry the
+arithmetic, including the one thing none of this removes — a continuous crossing
+has a moment in the middle where ground and ink meet at the same luminance.
 
 Every dependency version is pinned exactly and nothing is updated on a schedule
 (ADR 0002). pnpm's settings live in `pnpm-workspace.yaml`, not `.npmrc` — pnpm 11

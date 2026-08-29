@@ -27,12 +27,7 @@ const selected = (project: { href?: string }) => project.href === `#${here}`;
   data-section="projects-panel"
   aria-labelledby="projects-panel-masthead"
 >
-  {/* data-landing-names is the Kernel's handle on the three names, the way
-      data-section is on the Section: out of the landing band the masthead below
-      them goes and the word one screen up stands in for it, so the index times
-      its arrival off this box's own rise up the window.
-      src/kernel/landing-edge.ts. */}
-  <nav class="projects-panel__rail" aria-label={content.rail.label} data-landing-names>
+  <nav class="projects-panel__rail" aria-label={content.rail.label}>
     {/* role="list" on a list that already is one: `list-style: none` costs a
         list its semantics in VoiceOver, and the Rail is meant to be announced
         as a list of projects. */}
@@ -352,26 +347,50 @@ const selected = (project: { href?: string }) => project.href === `#${here}`;
     --projects-panel-masthead-cap: calc(0.7 * var(--projects-panel-masthead-size));
     --projects-panel-mast-top: calc(0.08 * var(--projects-panel-masthead-size));
 
-    /* ---- the palette, as the far end of a crossing rather than a constant -- */
+    /* ---- the palette, as the far end of a crossing rather than a constant --
+
+       EVERY ONE OF THESE MIXES FROM THE THEME'S PAPER END AND NEVER FROM
+       `--ground`, AND THAT IS THE WHOLE OF WHY THE PAGE HAS NO SEAM IN IT.
+       `--ground` is itself `--paper` mixed into `--dark` on this same `--turn`,
+       so mixing INTO it composes two crossings: at t the ground is
+       `paper·(1−t) + dark·t` while this was `paper·(1−t)² + dark·(1−(1−t)²)` —
+       a quarter of the way apart at the middle, in the same direction, on
+       every frame between the two ends. Both are white at 0 and black at 1, so
+       a still of either resting place looked right and only the crossing was
+       wrong: a hard step across the page at this Section's top edge, travelling
+       with the scroll. That is the banding that was reported.
+
+       Written as ONE crossing instead, from the paper the theme prints on to
+       this Section's own far end. `--projects-panel-bg-far` is `--dark`, so the
+       Panel's ground and the document's are now the same colour by
+       construction rather than by luck — the Section starts on paper with the
+       page and arrives at black with it, at one rate. Move one far end and move
+       the other; ProjectsPanel's own landing block says what two disagreeing
+       far ends cost.
+
+       The theme's own endpoints and not `--paper-ink` misspelled: `--paper`,
+       `--paper-ink` and `--paper-ink-soft` are what ground.css publishes for
+       exactly this, and they are the values `--ground`, `--ink` and `--ink-soft`
+       already hold at `--turn: 0`. */
     --projects-panel-bg: color-mix(
       in oklab,
       var(--projects-panel-bg-far) calc(var(--turn) * 100%),
-      var(--ground)
+      var(--paper)
     );
     --projects-panel-ink: color-mix(
       in oklab,
       var(--projects-panel-ink-far) calc(var(--turn) * 100%),
-      var(--ink)
+      var(--paper-ink)
     );
     --projects-panel-ink-soft: color-mix(
       in oklab,
       var(--projects-panel-ink-soft-far) calc(var(--turn) * 100%),
-      var(--ink-soft)
+      var(--paper-ink-soft)
     );
     --projects-panel-muted: color-mix(
       in oklab,
       var(--projects-panel-muted-far) calc(var(--turn) * 100%),
-      var(--ink-soft)
+      var(--paper-ink-soft)
     );
     --projects-panel-rule: color-mix(
       in oklab,
@@ -383,7 +402,7 @@ const selected = (project: { href?: string }) => project.href === `#${here}`;
     --projects-panel-frame-fill: color-mix(
       in oklab,
       var(--projects-panel-frame-fill-far) calc(var(--turn) * 100%),
-      var(--ground)
+      var(--paper)
     );
     --projects-panel-frame-edge: color-mix(
       in oklab,
@@ -1850,97 +1869,6 @@ const selected = (project: { href?: string }) => project.href === `#${here}`;
         opacity: 1;
       }
     }
-  }
-
-  /* ---- the Turn as an edge, out of the landing band --------------------
-     src/kernel/landing-edge.ts is the argument. The gate is an attribute the
-     Kernel writes when the band does not apply, and it is on this Section's own
-     root because a scoped stylesheet cannot match <html> at all — the trap
-     tokens.css carries its own paragraph about.
-
-     THIS SECTION IS ENTIRELY BELOW THE LINE, ALWAYS. The dark starts half way up
-     the word in the Section above and only ever climbs, so there is no frame in
-     which any part of this one is on paper — which means it does not CROSS. It
-     is the far end, from the first frame, and saying so is what removes the
-     banding rather than papering over it.
-
-     WHAT THE BANDING WAS. This Section paints --projects-panel-bg, which is
-     --projects-panel-bg-far mixed into --ground on --turn; the document paints
-     --ground, which is --paper mixed into --dark on the same --turn. Both are
-     white at 0 and both are black at 1, so a still of either resting place looks
-     right. Everywhere in between they are two DIFFERENT mixes and this one is
-     the darker, so a seam ran across the page at this Section's top edge and
-     travelled with the scroll. Two mixes both pinned to 1 cannot disagree.
-
-     Restating --ground, --ink and --ink-soft as well as --turn, because those
-     three are computed at :root against the ROOT's turn and inherit as colours —
-     a local --turn moves this Section's own mixes and would leave anything
-     reading the page's three at the paper end. */
-  .projects-panel[data-turn-edge] {
-    --turn: 1;
-    --ground: var(--dark);
-    --ink: var(--dark-ink);
-    --ink-soft: var(--dark-ink-soft);
-    /* Over the plate, which is 19, and over the Effect Stack, which tops out at
-       18: the treatment belongs to the paper and stops where the paper does. The
-       ground still has to be painted here — the plate stops at the line, and the
-       page behind it is paper all the way down. */
-    z-index: 20;
-    padding-top: calc(var(--projects-panel-inset) + var(--landing-head-room, 0px));
-  }
-
-  /* THE DUPLICATE GOES, and it is the other half of what makes the word above
-     read as this Section's head. Out of the band the page says PROJECTS twice —
-     a Friz word at the foot of the Front Screen's column and this masthead a
-     hundred and fifty pixels below it, at another size, in another face.
-
-     THREE DECLARATIONS AND ALL THREE ARE LOAD-BEARING, which cost a rebuild to
-     find out. `visibility: hidden` is what stops it PAINTING — and it is not
-     `display: none`, because this Section's `aria-labelledby` names this element
-     and a display:none element supplies no accessible name where a hidden one
-     still does. `position: absolute` is what takes it out of the FLOW: an empty
-     slot the height of a masthead, between the word and the index it belongs to,
-     reads as a mistake, and nothing is coming down to fill it. And the 1px box
-     is what stops the absolute box still being a masthead's worth of
-     hit-testable nothing over the subheading.
-
-     Left out the first of those and the word simply overflows its own 1px box
-     and paints anyway — a second PROJECTS, in the sans, lying across
-     the subheading, exactly the duplicate this rule exists to remove. */
-  .projects-panel[data-turn-edge] .projects-panel__masthead {
-    visibility: hidden;
-    position: absolute;
-    inline-size: 1px;
-    block-size: 1px;
-  }
-
-  /* THE INDEX ASSEMBLES, and out here it is the only thing on the page that
-     moves. The names stay exactly where the Panel puts them — directly under the
-     word, once the masthead between them has gone — and arrive one at a time as
-     they come up the screen.
-
-     ON THEIR OWN NUMBER AND NOT THE TURN, which is the word's: by the time the
-     dark has closed over the word the names may be a screen below it or already
-     past, so an index drawn against the crossing is a hole where the index
-     should be. --landing-names-cross is read straight off this box.
-
-     Three slices of it, a fifth apart. The rise is in `em`, so it is a share of
-     each name's own size. */
-  .projects-panel[data-turn-edge] .projects-panel__rail-item {
-    opacity: var(--projects-panel-name-in, 1);
-    transform: translateY(calc((1 - var(--projects-panel-name-in, 1)) * 0.7em));
-  }
-
-  .projects-panel[data-turn-edge] .projects-panel__rail-item:nth-child(1) {
-    --projects-panel-name-in: clamp(0, calc(var(--landing-names-cross, 1) * 3), 1);
-  }
-
-  .projects-panel[data-turn-edge] .projects-panel__rail-item:nth-child(2) {
-    --projects-panel-name-in: clamp(0, calc((var(--landing-names-cross, 1) - 0.18) * 3), 1);
-  }
-
-  .projects-panel[data-turn-edge] .projects-panel__rail-item:nth-child(3) {
-    --projects-panel-name-in: clamp(0, calc((var(--landing-names-cross, 1) - 0.36) * 3), 1);
   }
 </style>
 

@@ -81,7 +81,7 @@ cannot be verified there even by hand.
 | `projects-panel` | a control in the Frame leaves the centre its own Token names, the window and its titlebar are cut to two radii, the recording's box stops being inset on three sides, the occlusion of the subheading's second line moves or stops being painted, the titlebar reports a rung it is not made of, the chrome grows a control, the small-Frame reduction starts asking about the window instead of the Frame, the Plinth's depths stop being shares of the Frame, its slab stops being symmetric about it, its bottom-right corner comes off the page's on either branch of the fit, or the Frame moves towards the engineering points instead of away from them, the reflection stops being a life-size fold of the window, the marble stops being drawn without script, a reader who asked for reduced motion is charged for the recording, a reader who runs no script at all loses the copy that arrives with the page turn, the titlebar grows past the clearance the clip on disk was cut with, or that clip stops opening on that many rows of flat, light ground |
 | `ground`         | paper is not light, or the Turn does not arrive dark, in either theme         |
 | `turn`           | the Kernel's published landing measure — cap, drop or the stone the width branch leaves room for — disagrees with the Panel's own arithmetic, the Panel's masthead is visible or has lost its box, the Cut Title is not standing in that masthead's slot, the word moves or resizes across the crossing, either end of the morph is not the outline the Bake wrote, a wheel notch does not turn the page or bring it back, a notch begun on the photographs turns it, or the paragraph that arrives with the crossing is painted at the top of the document, is still arriving at the landing, moves to get there, or is left on its own compositing layer once it has |
-| `landing-edge`   | outside the landing band the Kernel never switches the edge on, the plate or the lit copy of the word is not drawn, the Panel still says PROJECTS a second time, the four layers stop ordering fx below the plate below the Panel below the word, `--ground` takes more than one value across the scroll — the grey wash — the dark takes the contact block while paper is still on screen, the line travels back down, the line never passes through the word, `--turn` has already moved before the word is on screen or has not arrived by the time it reaches the top, the crossing takes less than half a screen of scroll, or any of it is switched on INSIDE the band |
+| `crossing`       | outside the landing band the Panel's ground parts company with the document's anywhere across the crossing, the page has not finished turning by the time the Panel owns the screen, the crossing is a flip or never finishes, or the Cut Title stops being cut or stops being one drawing |
 | `moments`        | a Timeline cannot be seeked, does not survive a scroll, moves nothing, or will not release |
 | `deep-links`     | a Section on the page carries no id, or its `/portfolio/<id>` does not answer, or answers with something that is not the document, or opens it somewhere other than where that Section asks to be put |
 | `unpublishable`  | a Section's words or its spoken attributes match the denylist                 |
@@ -152,6 +152,45 @@ the gate is a container query, so the window that tells a container query from a
 media one is a short wide one — 1440x450, where the fit solves the Frame to 468
 while the viewport is nowhere near 520. Measured at DESK alone that whole
 mechanism could be a media query and nothing would say so.
+
+`crossing` is `turn`'s counterpart below the band, and it is the clearest case in
+the suite of the definition at the top of this file: **every failure it catches is
+one a still of either resting place looks perfect in.** The page is right on the
+first screen and right on the last, and wrong on every frame between them — a
+Section a quarter darker than the page it is on, a page still turning after it has
+arrived, a crossing that is really a flip, a headline printed twice. Nobody
+scrolling looks for those; they look wrong without being locatable, which is what
+"banding" has meant every time it has been reported here.
+
+Five mutations, all caught, and the two that were not the first time are the ones
+worth keeping:
+
+| mutation                                                        | wanted | got |
+| --------------------------------------------------------------- | ------ | --- |
+| the Panel's ground mixed against `--ground` again                | fail   | fail: 65 apart on a channel at the middle of the crossing |
+| the Turn spanning the document's scroll out of the band          | fail   | fail: `--turn` is 0.806 when the Panel owns the screen |
+| the Cut Title's clip lifted — the whole word                     | fail   | fail, on the `overflow` |
+| the clip kept and given the cap's FULL height                    | fail   | fail: 77.8px of a 77.8px cap, 0.000 taken off |
+| a second copy of the drawing in the Cut Title                    | fail   | fail: 2 drawings, wanted 1 |
+
+**The fourth one passed first.** The box was being compared against the DRAWING,
+which is taller than the cap by the J's tail and the overshoot — so a box handed
+the cap's full height was still shorter than the drawing, and a cut that had
+stopped cutting read as a cut. What it is compared against now is the cap slab
+itself, measured by putting an absolutely-positioned probe of
+`height: var(--front-screen-cut-slab)` inside the Cut Title's own container: the
+Section's container units resolve against the container the Section declared, and
+the Check learns nothing about the drawing's cap share. **When an assertion needs
+a length a Section states in container units, ask the page for it rather than
+recomputing it.**
+
+**And the second one passed first for a sampling bug worth naming**, because it is
+the shape that makes a Check assert nothing. The walk looking for where `--turn`
+first reaches 1 stepped a tenth of a screen at a time and stopped before the foot
+of the scroll — and a crossing spanning the document's whole scroll arrives on the
+last pixel, so the walk reported a page that never turns at all rather than one
+that turns too slowly. The foot is always sampled now. **A walk that does not
+include its own end point fails on its sampling before it fails on the page.**
 
 `deep-links` is the one Check that derives its own subject from the page. Every
 other Check knows what it is asserting about before it opens anything; this one

@@ -12,8 +12,12 @@
   --projects-panel-ink-soft-far: #dcdad5;
   --projects-panel-muted-far: #8b8983;
   --projects-panel-rule-far: rgba(242, 241, 238, 0.16);
-  /* The near end of the hairline, which the Kernel does not publish one of. */
-  --projects-panel-rule-near: color-mix(in oklab, var(--ink-soft), transparent 88%);
+  /* The near end of the hairline, which the Kernel does not publish one of.
+     --paper-ink-soft and not --ink-soft, for the reason ProjectsPanel.astro
+     gives at the mixes that spend this: --ink-soft is itself a crossing on
+     --turn, so a near end written in terms of it composes two of them and the
+     hairline crosses at a different rate from the ground it is drawn on. */
+  --projects-panel-rule-near: color-mix(in oklab, var(--paper-ink-soft), transparent 88%);
 
   /* ---- the page's two margins, kept rather than invented ------------------ */
   --projects-panel-inset: clamp(1.25rem, 2.7vh, 2rem);

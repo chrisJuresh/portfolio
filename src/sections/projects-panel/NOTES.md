@@ -362,16 +362,41 @@ against `none` rather than against a length.
 The five `-far` Tokens are what the Section **is** once the page has turned, and
 they are the same in both themes: the theme toggle chooses what the Panel crosses
 *from*, and nothing about where it ends up. The read halves are `color-mix`es
-against the Kernel's `--ground`, `--ink` and `--ink-soft`, weighted by `--turn`,
-so at the top of the page the Panel is as light as the page above it and it
-arrives black. The near end and the far end cannot share a name — a custom
-property that reads itself is a cycle and drops to unset — which is why there are
-ten declarations rather than five.
+weighted by `--turn`, so at the top of the page the Panel is as light as the page
+above it and it arrives black. The near end and the far end cannot share a name —
+a custom property that reads itself is a cycle and drops to unset — which is why
+there are ten declarations rather than five.
+
+**THE NEAR END IS THE THEME'S PAPER AND NEVER `--ground`, AND THAT IS THE WHOLE
+OF WHY THE PAGE HAS NO SEAM IN IT.** These used to mix against the Kernel's
+`--ground`, `--ink` and `--ink-soft`, which sounds like the same thing and is
+not: those three are themselves crossings on this same `--turn`, so mixing into
+one composes two of them. At `t` the document's ground is
+`paper·(1−t) + dark·t` and this Section's was `paper·(1−t)² + dark·(1−(1−t)²)` —
+a quarter of the way apart at the middle of the crossing, and in the same
+direction on every frame between the two ends. Both are white at 0 and black at
+1, so a still of either resting place looked right and only the crossing was
+wrong: a hard step across the page at this Section's top edge, travelling up with
+the scroll. **That is the banding that was reported.** Against `--paper`,
+`--paper-ink` and `--paper-ink-soft` it is one crossing, `--projects-panel-bg-far`
+is `--dark`, and the two grounds are the same colour by construction rather than
+by luck.
 
 `--projects-panel-rule-near` is the one value here that is not the live sheet's.
 Its near end there is `--rule-soft`, the CV's own hairline, and the Kernel
-publishes no hairline colour; it is stated as a share of `--ink-soft` until the
-Front Screen's port brings one.
+publishes no hairline colour; it is stated as a share of `--paper-ink-soft` — the
+paper end for the same reason as the five above — until the Front Screen's port
+brings one.
+
+**What a continuous crossing costs, so nobody rediscovers it as a bug.** The
+ground goes light to dark and the ink goes dark to light on one number, so
+somewhere in the middle they have the same luminance and the type is briefly
+unreadable. That is not a mistake in the mix; two monotone curves running
+opposite ways must cross. In the band it is a fifth of a second of an ease
+nothing can stop on. Out of the band it is a stretch of scroll, which is why
+`src/kernel/turn.ts` spans the crossing over the FIRST SECTION rather than over
+the document — a page that turns over one screen has one grey moment in it, and
+one that turns over four screens is grey for two of them.
 
 Two divergences from the live page, both deliberate:
 
@@ -381,10 +406,11 @@ Two divergences from the live page, both deliberate:
   at every width.
 - **`data-turn` is not on this Section.** The crossing happens across the scroll
   of the Section *above* this one — that is where the reader is while it happens
-  — and the Panel is where it arrives. Today that is the stub; when #136 lands
-  the Front Screen the mark moves there. Marking this Section instead would also
-  give the Turn a zero-length scroll to run in, because the Panel's own height is
-  one screen.
+  — and the Panel is where it arrives. Out of the band `src/kernel/turn.ts` says
+  so in as many words: the Turn's span is the first Section's own height, so the
+  page has finished turning at exactly the moment this Section's top edge reaches
+  the top of the window. Marking this Section instead would give the Turn a
+  zero-length scroll to run in, because the Panel's own height is one screen.
 
 ## The Rail
 

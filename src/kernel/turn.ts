@@ -1,7 +1,6 @@
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { register } from './handles';
-import { edged } from './landing-edge';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -29,6 +28,43 @@ export function onTurn(watcher: Watcher): void {
   watcher(Number(getComputedStyle(document.documentElement).getPropertyValue('--turn')) || 0);
 }
 
+/** The one-screen band, restated. src/kernel/landing.css owns it. */
+const BAND = '(min-width: 1100px) and (min-height: 700px)';
+
+/**
+ * HOW FAR THE READER SCROLLS TO CROSS, and the whole of what makes the Turn the
+ * same crossing at every window rather than two different ones.
+ *
+ * IN THE BAND THE DOCUMENT IS THE TURN. Two Sections, two resting places and one
+ * wheel notch between them — so the crossing is the document's whole scroll, the
+ * page is paper on the first port and dark on the second, and there is nowhere
+ * in between to come to rest.
+ *
+ * OUT OF THE BAND IT IS THE FOLD GOING PAST, and it has to be stated rather than
+ * inherited. The document out here is as tall as its content, so the document's
+ * whole scroll spreads one crossing over every screen there is: the page is still
+ * a quarter short of black by the time the Projects Panel owns the screen — a
+ * grey Section, at rest, on a page that has finished turning everywhere except in
+ * its own colours. The crossing that means something is the FIRST SECTION going
+ * past, which is exactly the fold the band snaps across, so that is what this
+ * spans: dark by the moment the Panel's top edge reaches the top of the window,
+ * and dark for the rest of the scroll.
+ *
+ * Measured rather than assumed — out here the first Section is as tall as its
+ * content and only floored at the fold, so a phone crosses over more than a
+ * screen and a wide short window over exactly one. Capped at the scroll the
+ * document actually has, so a page too short to finish the crossing arrives at
+ * dark on its last pixel instead of never arriving.
+ */
+function span(): number {
+  const doc = document.documentElement;
+  const scroll = Math.max(1, doc.scrollHeight - window.innerHeight);
+  if (window.matchMedia(BAND).matches) return scroll;
+  const first = document.querySelector<HTMLElement>('[data-section]');
+  const fold = first?.getBoundingClientRect().height ?? window.innerHeight;
+  return Math.max(1, Math.min(scroll, fold));
+}
+
 /**
  * The Turn: the Portfolio crossing from paper into dark as the reader scrolls.
  *
@@ -39,8 +75,9 @@ export function onTurn(watcher: Watcher): void {
  * That is the whole reason ADR 0003 asks for a named seekable Timeline — it is
  * how a Check asserts the crossing and how the Editor scrubs it.
  *
- * A Section says where the crossing happens by marking one element
- * `data-turn`; with nothing marked the Turn spans the document's whole scroll.
+ * A Section says where the crossing STARTS by marking one element `data-turn`;
+ * with nothing marked it starts at the top of the document. How far it runs from
+ * there is `span()` above, and it is not the same length in both regimes.
  */
 export function createTurn(): gsap.core.Timeline {
   const root = document.documentElement;
@@ -57,26 +94,18 @@ export function createTurn(): gsap.core.Timeline {
     },
   });
 
-  // Across the marked element's own scroll: paper when its top reaches the top
-  // of the window, dark when its bottom reaches the bottom. The same two edges
-  // for the document as for a Section, so the page opens on paper either way —
-  // `top bottom` reads better in prose and starts the Turn half-crossed, because
-  // an element at the top of the document is already past that edge at load.
+  // Paper when the marked element's top reaches the top of the window, dark a
+  // span later. `end` is a FUNCTION and `invalidateOnRefresh` is what makes that
+  // worth writing: the span is measured, and a resize that crosses the band —
+  // or one that only changes how tall the first Section's content is — has to
+  // re-measure it. Without the flag the length is whatever it was at boot.
   const trigger = document.querySelector<HTMLElement>('[data-turn]') ?? root;
   ScrollTrigger.create({
     trigger,
     start: 'top top',
-    end: 'bottom bottom',
-    // OUT OF THE BAND THIS IS NOT THE CROSSING. There is no fold out there, so
-    // spanning the document's whole scroll makes the Turn a grey wash rather
-    // than a page turning; landing-edge.ts re-anchors it to the word's own
-    // travel and drives this Timeline itself. Standing aside rather than
-    // fighting it: two writers on one progress is a frame of whichever ran
-    // second.
-    onUpdate: (self) => {
-      if (edged()) return;
-      timeline.progress(self.progress);
-    },
+    end: () => `+=${span()}`,
+    invalidateOnRefresh: true,
+    onUpdate: (self) => timeline.progress(self.progress),
   });
 
   register(TURN, timeline);

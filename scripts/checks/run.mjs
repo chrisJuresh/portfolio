@@ -31,12 +31,12 @@ import { chromium } from 'playwright';
 import { check as assets } from './checks/assets.mjs';
 import { check as carousel } from './checks/carousel.mjs';
 import { check as consoleQuiet } from './checks/console.mjs';
+import { check as crossing } from './checks/crossing.mjs';
 import { check as deepLinks } from './checks/deep-links.mjs';
 import { check as editor } from './checks/editor.mjs';
 import { check as faces } from './checks/faces.mjs';
 import { check as frontScreen } from './checks/front-screen.mjs';
 import { check as ground } from './checks/ground.mjs';
-import { check as landingEdge } from './checks/landing-edge.mjs';
 import { check as moments } from './checks/moments.mjs';
 import { check as projectsPanel } from './checks/projects-panel.mjs';
 import { check as turn } from './checks/turn.mjs';
@@ -53,7 +53,7 @@ const CHECKS = [
   projectsPanel,
   ground,
   turn,
-  landingEdge,
+  crossing,
   moments,
   deepLinks,
   unpublishable,

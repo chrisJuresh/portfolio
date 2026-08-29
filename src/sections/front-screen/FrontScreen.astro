@@ -163,12 +163,7 @@ const EAGER = 2;
 
     <section class="front-screen__listing">
       <h2 class="front-screen__heading">{content.contact.heading}</h2>
-      {/* data-landing-over: the last thing on the page that has to stay on
-          paper. Out of the landing band the dark climbs through the word below
-          and is clamped to the foot of this box, so the contact lines cannot be
-          taken by it while there is still paper on the screen.
-          src/kernel/landing-edge.ts. */}
-      <div class="front-screen__corner" data-landing-over>
+      <div class="front-screen__corner">
         <ul class="front-screen__contact">
           {
             content.contact.entries.map((entry, index) => (
@@ -201,32 +196,10 @@ const EAGER = 2;
   {/* The Cut Title. The word is a picture of Friz Quadrata rather than type, so
       the text beside it is what a screen reader announces and a crawler indexes —
       the only text in here, and the reason the picture is allowed to be one. */}
-  <div class="front-screen__cut" data-landing-word>
+  <div class="front-screen__cut">
     <a href={content.projects.href}>
       <svg
         class="front-screen__cut-word"
-        width={wide}
-        height={tall}
-        viewBox={box}
-        fill="currentColor"
-        aria-hidden="true"
-        set:html={inside}
-      />
-      {/* The same word again, in the ink the DARK takes, masked to the part of
-          the drawing below the line — so out of the band the word reads dark on
-          the paper above it and light on the black below it, one letterform with
-          the boundary through it. Inert in the band, where the fold does this by
-          simply ending the Section.
-
-          TWO COPIES AND NOT A BLEND, which is the thing this replaced. A
-          `mix-blend-mode: difference` on the drawing composites against the
-          backdrop WITHIN its own stacking context, and the cut is one
-          (`container-type` contains layout) — so it needs an opaque plate inside
-          the container to invert against, and that plate paints out the Effect
-          Stack in a strip the width of the page. A second copy is a drawing the
-          browser already has, and takes nothing off the paper. */}
-      <svg
-        class="front-screen__cut-lit"
         width={wide}
         height={tall}
         viewBox={box}
@@ -1245,83 +1218,5 @@ const EAGER = 2;
       height: var(--front-screen-cut-slab);
       margin-top: calc(-1 * var(--front-screen-cut-show) * var(--front-screen-cut-slab));
     }
-  }
-
-  /* ---- the Turn as an edge, out of the landing band --------------------
-     src/kernel/landing-edge.ts is the whole argument; this is the word's side of
-     the line it draws.
-
-     THE GATE IS AN ATTRIBUTE AND NOT A MEDIA QUERY, and it is on this Section's
-     own root. The Kernel writes it when the band does not apply, so a query here
-     would be a second copy of that decision that could then disagree with it —
-     and `:root[data-turn-edge]` cannot be written in a scoped stylesheet at all,
-     which is the trap tokens.css carries its own paragraph about. */
-
-  /* THE WORD IS WHOLE, and this is a plain bug fix rather than part of the
-     device. `--front-screen-cut-show` is the FOLD's bite — 0.62 of the cap, with
-     the rest of the word on the screen below — and out of the band there is no
-     fold at the word: the document runs straight on past it. What the reader got
-     was a headline chopped through the middle by nothing.
-
-     The column grows by the difference, and is meant to: it is the same word
-     finally standing at its own height. On the LINK and not on the container,
-     because `--front-screen-cut-slab` is in container units and a container
-     cannot query itself.
-
-     `relative` so the lit copy below is positioned against the LINK and is
-     therefore clipped by the link's own `overflow: clip`. Positioned against the
-     container instead it would escape that clip, and the drawing's overshoot
-     would hang below the baseline, lit, with nothing under it. */
-  .front-screen[data-turn-edge] .front-screen__cut > a {
-    height: var(--front-screen-cut-slab);
-    position: relative;
-  }
-
-  /* THE AIR ABOVE THE WORD IS NOT TASTE. The line climbs to a stated margin
-     above the cap, so there has to be that much paper up there for it to finish
-     IN — otherwise it takes the contact block with it while the reader can still
-     see white, which is the one thing this may not do. landing-edge.ts derives
-     the number from the word's own cap and publishes it.
-
-     `max()` and not a replacement: a window whose own rhyme is already the more
-     generous of the two keeps it.
-
-     AND THE WORD GOES OVER THE LINE. 25 is above the Panel's 20 and the Effect
-     Stack's 18, which is what lets the black pass BEHIND the letters rather than
-     across them. ground.css carries the three numbers together. */
-  .front-screen[data-turn-edge] .front-screen__cut {
-    margin-top: max(var(--front-screen-cut-gap), var(--landing-edge-gap, 0px));
-    z-index: 25;
-  }
-
-  .front-screen__cut-lit {
-    display: none;
-  }
-
-  /* The same drawing, in the ink the dark end of the page uses, masked to the
-     part of it below the line. Every length here is the one the drawing beside
-     it already stands on, so the two copies are exactly registered — a mask a
-     pixel out reads as a badly cut letter rather than as a mask.
-
-     `--dark-ink` and not `#fff`: it is what `--ink` resolves to at the far end of
-     the Turn, so the lit half of the word is exactly the colour the word has on
-     the landing rather than a whiter one that only looks right beside it.
-
-     The two stops are the same length, which is a hard edge. The line is a cut
-     and not a fade: a boundary softened between white and black is grey, and
-     grey across the page is what this replaced. */
-  .front-screen[data-turn-edge] .front-screen__cut-lit {
-    display: block;
-    position: absolute;
-    left: var(--front-screen-cut-lead);
-    top: calc(-1 * var(--front-screen-cut-overshoot) * var(--front-screen-cut-ink));
-    width: var(--front-screen-cut-ink);
-    height: auto;
-    color: var(--dark-ink);
-    mask-image: linear-gradient(
-      to bottom,
-      transparent var(--landing-edge-word, 200vh),
-      #000 var(--landing-edge-word, 200vh)
-    );
   }
 </style>

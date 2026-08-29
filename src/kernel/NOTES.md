@@ -18,9 +18,8 @@ than a convenience.
 | `corners.css` / `corners.ts`| the plate, the car and the eye — geometry, and which rung    |
 | `effect-stack/`             | the nine layers, and the grain tile                          |
 | `theme.ts`                  | which paper, where it is stored, and who is told when it changes |
-| `turn.ts`                   | the Turn, as one named seekable Timeline, and `onTurn()` for anything drawn against it that CSS cannot draw |
+| `turn.ts`                   | the Turn, as one named seekable Timeline, how far it runs in each regime, and `onTurn()` for anything drawn against it that CSS cannot draw |
 | `landing.css` / `tokens/landing.css` | the landing band, the measure two Sections share across it, and the two resting places |
-| `landing-edge.ts`           | what the landing does OUTSIDE the band — the line the dark arrives as, and the Turn re-anchored to it |
 | `page-turn.ts`              | one wheel notch between those resting places, and a link into a Section going the same way |
 | `wheel.ts`                  | who owns a wheel gesture — the page, or a roll inside it     |
 | `loader.ts`                 | mounting a Section as it approaches the viewport             |
@@ -138,57 +137,45 @@ is a decision, not a convenience.
 the Cut Title computes. That is why the landing's fit constant substitutes the
 masthead's own drop out of the equation rather than referring to the word.
 
-## Outside the band, the landing is a LINE
+## Out of the band the crossing is still one crossing, over the first Section
 
-`landing-edge.ts`, and the argument is in its own head. The short version, because
-it is the thing most likely to be re-broken by someone reasoning from the band:
+There is no fold out here, so the temptation is to give the two Sections
+different treatments and the answer is that they must not have any. **The whole
+page starts on paper and arrives at dark on one number, at one rate, and the
+Projects Panel is on that number with everything else.** A Section that pins
+itself past the page, or a near end written against `--ground` rather than
+against the theme's paper, puts a step across the page at that Section's top edge
+that travels up with the scroll — which is what the banding readers reported was,
+both times. `src/sections/projects-panel/NOTES.md` has the arithmetic; the short
+version is that `--ground` is itself a crossing on `--turn`, so mixing into it
+composes two.
 
-**In the band the Turn is already an edge, and nobody wrote it.** The Front Screen
-ends under the Cut Title and the Panel below it is black, so the boundary between
-the two Sections crosses PROJECTS about half way up. That is why the word ships
-cut across the middle: the fold IS the line.
+**What is different out here is the LENGTH of it, and `turn.ts` states it rather
+than inheriting it.** In the band the document IS the turn — two ports, one
+notch, nothing in between — so the crossing is the document's whole scroll. Out
+here the document is as tall as its content, and spread over that the page is
+still a quarter short of black by the time the Panel owns the screen: a grey
+Section, at rest, on a page that has finished turning everywhere except in its
+own colours. So the span is the FIRST SECTION's own height — the same fold the
+band snaps across, going past — and the page is dark at exactly the moment the
+Panel's top edge reaches the top of the window. Measured rather than assumed: out
+here the first Section is as tall as its content and only floored at `--fold`, so
+a phone crosses over more than a screen.
 
-**Out of the band there is no fold, so the same crossing degenerates into a mix.**
-`--ground` carries the whole document from paper into dark together, over the
-document's entire scroll — every frame between the two ends a grey page with a
-grey word on it, and no moment for anything to happen *at*. The banding readers
-reported was not a bug on top of the design; it was one crossing with nothing in
-it.
+**And the word is cut by that fold at every window, which is the base rule and not
+a regime.** `.front-screen__cut > a` clips to `--front-screen-cut-show` of the cap
+slab and only the band's own block lifts the word into the slot below; out here
+the clip simply stands, so the reader meets PROJECTS half-cut on the first screen
+whether or not the page snaps. Restoring the whole word out of the band reads as
+a fix and is not one — it takes the first screen's last gesture away, and it grows
+the Front Screen past `--fold` so the cut lands nowhere.
 
-**So the line is drawn.** A fixed plate climbs the screen, clocked on the word's
-own travel up it rather than on a scroll distance, so it arrives with the word at
-every viewport. The word is drawn twice and masked at the line — dark ink above,
-light ink below, one letterform with the boundary through it. And the Turn is
-re-anchored to that same climb, so the letterforms, the Effect Stack's veil and
-the dark all arrive together.
-
-**Three traps, and the first two each cost a rebuild.**
-
-*The Turn cannot run while `--ground` is still a mix.* An earlier answer deferred
-`--turn` until the line had left the screen, precisely because moving it during
-the climb painted the paper above the line grey. The fix is not timing: with an
-edge, the dark side is the plate and the Panel and both state their own colours,
-so `ground.css` pins `--ground`, `--ink` and `--ink-soft` to the paper end under
-`[data-turn-edge]` and the Turn is free. Unpin them and the grey comes straight
-back.
-
-*Hiding the duplicate masthead takes three declarations, not one.* `position:
-absolute` with a 1px box takes it out of the flow and the word overflows that box
-and **paints anyway** — a second PROJECTS, in the sans, lying across the
-subheading. `visibility: hidden` is what stops it painting; `display: none` is not
-available, because the Panel's `aria-labelledby` names that element.
-
-*The plate's place in the page is four z-indexes in three files.* The Effect Stack
-tops out at 18, the plate is 19, the Panel lifts to 20 and the Cut Title to 25.
-That ordering is what makes the treatment stop at the line, the black stay behind
-the Panel's own text, and the line pass behind the letters instead of across them.
-It also depends on `.front-screen` not being a stacking context, which it is not
-once its reveal has finished — the same thing `--front-screen-type-z` already
-relies on, and the reason anything measuring this has to wait that reveal out.
-
-The `landing-edge` Check holds all of it, at two windows that fail the band for
-two different reasons, in both themes. Its own head records the five mutations it
-catches and the one it does not.
+**A continuous crossing has one unreadable moment in it, and that is arithmetic
+rather than a bug.** The ground runs light to dark while the ink runs dark to
+light on the same number, so the two must have the same luminance somewhere in
+the middle. Spanning the crossing over one screen is what keeps that to a moment.
+Anything that removes it — a hard flip, an eased `--turn`, a drawn edge — is a
+change to the design and belongs to the author.
 
 ## The page turn, and who owns a notch
 
