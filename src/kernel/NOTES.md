@@ -137,6 +137,104 @@ is a decision, not a convenience.
 the Cut Title computes. That is why the landing's fit constant substitutes the
 masthead's own drop out of the equation rather than referring to the word.
 
+### The third Section does not join it: the Eater Map Section has no Cut Title
+
+Decided by measuring rather than by arguing, #172. **A second Cut Title — cut off
+the Projects Panel's foot into an Eater Map masthead's slot, the way PROJECTS is
+cut off the Front Screen's — costs about 9% of the Panel's composition at every
+window a browser actually has, and the whole of the marble's corner at every
+window in the band.** The Eater Map Section takes a plain masthead reading "Eater
+Map", the landing measure stays two Sections', and the Panel is bound at one end
+only and stays free to be reworked.
+
+**What a second solve would take is `d`, and `d` is a number the Front Screen
+already pays.** The device costs the Section carrying the cut word exactly one
+thing at its foot: the air above the word's cap plus the part of the cap that
+shows — `--front-screen-cut-gap + --front-screen-cut-clip`, which is
+`--front-screen-cut-show` (0.62) of the NEXT Section's cap, plus that air. So the
+bill for a second landing was not invented: it was measured at the foot of the
+first, on the live page, with `window.portfolio.snapping(false)` lifted before the
+page was placed anywhere between the two ports. All lengths in px.
+
+| window | `d` | width branch | height branch | binds | `--landing-w` | with `d` | cost |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| 1100x700   |  54.7 |  984.8 | 1116.5 | width  |  984.8 |  984.8 |   0.0 (0.00%) |
+| 1536x760   |  64.9 | 1388.4 | 1212.2 | height | 1212.1 | 1103.4 | 108.7 (8.97%) |
+| 1920x980   |  83.7 | 1733.7 | 1563.0 | height | 1563.0 | 1422.9 | 140.2 (8.97%) |
+| 2560x1311  | 112.3 | 2311.3 | 2091.7 | height | 2091.7 | 1903.5 | 188.1 (8.99%) |
+
+**The cost is `d / --landing-fit`, which is the coefficient this file already
+carried, confirmed against the live page to a tenth of a pixel.** And it is free
+only where the width branch bound by more than that: 131.6px of slack at the
+band's short corner against the 91.7 `d` asks for there, which is why that row
+costs nothing. At the three windows a browser actually has, the height branch is
+already binding by 170 to 220px, so there is no slack at all and the whole of `d`
+comes out of the drawing. **The 9% is not a coincidence of these four windows
+either** — `d` is 0.62 of a cap that is itself `0.7 x --landing-mast-share` of the
+composition, so `d` is about `0.038 W` plus a rhyme, and `d / --landing-fit` is
+about 6.4% of `W` plus that rhyme's share, everywhere in the band.
+
+**What moves, at 1920x980, the ordinary window:**
+
+| | before | after |
+| --- | --- | --- |
+| Frame | 1167.5 | 1062.8 (−104.7) |
+| Plinth | 1388.6 | 1264.1 (−124.5) |
+| masthead size / its cap | 138.3 / 96.8 | 125.9 / 88.1 |
+| `--projects-panel-reach` | 182.7 | 332.8 (+150.1) |
+| the points | 559.0 | 675.3 (+116.3) |
+| the copy | 1067.2 | 1138.0 (+70.8) |
+| the Rail's column | 63.7 | 63.7 |
+
+The two type blocks GROW because they grow by the reach, and the gutter the points
+stand behind tracks its own Token exactly through the change — 19.23 to 17.50
+against a Token of 19.23 to 17.50 — so the window does not walk into the list and
+that assertion of `projects-panel` holds. The Rail's column is
+`--landing-side`, which is the page's own margin in `vh` and is not a function of
+the composition, so it does not move at all.
+
+**The first landing pays for the second, and that is the part that is easy to
+miss.** The Cut Title on the Front Screen is fitted to `--landing-cap`, and
+`--landing-cap` is a share of `--landing-w` — so shrinking the Panel to make room
+for a second cut word shrinks the FIRST one. PROJECTS loses 7 to 9% of its cap
+wherever the height branch binds: 96.8px to 88.1 at 1920x980, 129.6 to 117.9 at
+2560x1311. A device paid for in the size of the word the device exists to show.
+
+**And one target is lost outright, which is the reason this is a "no" rather than
+a price.** The Plinth's foot leaves the page's by the whole of `d` — 54.7, 64.9,
+83.7, 112.3px — at every window in the band, INCLUDING the one where the
+composition costs nothing. There is no vertical analogue of the reach and there
+cannot be one: the reach carries the stage out into page the drawing was too
+narrow to fill, and the space at the Panel's foot in this scenario is not empty,
+it is exactly where the cut word has to be. `projects-panel`'s corner assertion
+fails by that much, down, and that Check exists because every way the corner
+breaks is quiet.
+
+**What would have to change for this to be worth revisiting.** One thing, really,
+and the other two only change the size of the bill:
+
+1. **The Panel stops being solved to fill the screen's height.** The cost is
+   `d / --landing-fit` only because the composition is self-similar and pinned
+   from `--landing-inset` to the page's own foot; and the corner is lost only
+   because the Plinth stands on that foot. A reworked Panel that does neither pays
+   `d` out of somewhere that is not its width and gives up no corner, and none of
+   the arithmetic above applies to it. This is the one that could actually flip
+   the answer.
+2. **The height branch stops binding at the author's windows.** `d` is free only
+   where the width branch wins by more than `d / --landing-fit`. It does that in
+   the corner of the band and nowhere near the rest of it, and closing a 170px gap
+   would need `--landing-fit` to fall a long way — a much flatter composition than
+   this one.
+3. **The third Section's masthead is much smaller than the Panel's.** `d` is 0.62
+   of the NEXT Section's cap, and this assumed the Eater Map Section would share
+   `--landing-mast-share`. A masthead a third the size asks about a third of the
+   cap back — still 50-odd px against no slack at 1920x980, so it makes the bill
+   smaller and does not make it zero, and it does not touch the corner at all.
+
+**Re-measure before acting on these numbers rather than trusting them.** Every one
+is a share of a width the Panel's own rework is expected to move, and they are the
+composition as it stood when #172 was answered.
+
 ## Out of the band the crossing is still one crossing, over the first Section
 
 There is no fold out here, so the temptation is to give the two Sections
