@@ -364,6 +364,35 @@ const EAGER = 2;
     flex-direction: column;
   }
 
+  /* AND ON A TALL WINDOW THE SLACK IS SPENT AT BOTH ENDS. Out of the band the
+     Section is floored at the fold and the composition is usually shorter than
+     one, so the auto margin above put every pixel of the surplus under the last
+     contact line and left the page hanging off the top of the screen — a phone
+     held in portrait, or any window taller than it is wide, met the whole resume
+     pressed into its first third. The column takes the free space as its own BOX
+     and centres what is in it: half above the name, half below the last contact
+     line, which is the same sentence the band writes one block down and for the
+     same reason — the page's one vertical rhyme has to survive a screen taller
+     than the composition.
+
+     THIS GROWS THE COLUMN RATHER THAN SPLITTING THE AUTO MARGIN IN TWO, and the
+     Cut Title is why. `margin: auto` top and bottom would hand half the surplus
+     to the space ABOVE the column and lift the word half a screen off the fold —
+     and the fold is what takes the bite out of it out here (see the last block in
+     this sheet). Growing the column spends the whole surplus inside the column,
+     so the Cut Title's box stays flush with the Section's bottom edge and the
+     bite is the one it was.
+
+     Inert once the composition is taller than the fold: there is then no free
+     space to distribute and the column is its content's height either way. */
+  @media not all and (min-width: 1100px) and (min-height: 700px) {
+    .front-screen__col {
+      flex: 1 1 auto;
+      justify-content: center;
+      margin-bottom: 0;
+    }
+  }
+
   /* Every gap down the column is stated as a margin-top on the block below it,
      and nothing declares a margin-bottom. In a flex column margins do not
      collapse, so a pair of them would add where they used to merge. */
