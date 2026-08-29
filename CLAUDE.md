@@ -258,9 +258,16 @@ into it composes two — which puts a step across the page at the Panel's top ed
 that travels with the scroll, and that is what "banding" has meant both times it
 was reported. **The Turn's span out here is the FIRST SECTION's own height and
 not the document's scroll**, so the page is dark at exactly the moment the Panel
-owns the screen rather than a quarter short of it. And **the cut word is not a
-bug**: giving the reader the whole of PROJECTS out of the band takes the first
-screen's last gesture away and grows the Front Screen past `--fold`.
+owns the screen rather than a quarter short of it. And **the word is cut by the
+FOLD out here and never by a box**: it is given the cap slab's full height and
+handed the difference back as a negative bottom margin, so it contributes exactly
+what the clipped box did and hangs the rest past the Section's foot. That is what
+makes it part-cut on the first screen and a WHOLE title when the reader reaches
+the Section it heads — both are required, and cutting it with a box satisfies the
+first and breaks the second, which shipped once. Growing the box instead of
+overhanging it breaks the other half: the column is `flex: 1 1 auto` inside a
+Section floored at `--fold`, so a taller box is absorbed and its foot stays on
+the fold with the whole word above it.
 `src/kernel/NOTES.md` and `src/sections/projects-panel/NOTES.md` carry the
 arithmetic, including the one thing none of this removes — a continuous crossing
 has a moment in the middle where ground and ink meet at the same luminance.

@@ -162,13 +162,34 @@ Panel's top edge reaches the top of the window. Measured rather than assumed: ou
 here the first Section is as tall as its content and only floored at `--fold`, so
 a phone crosses over more than a screen.
 
-**And the word is cut by that fold at every window, which is the base rule and not
-a regime.** `.front-screen__cut > a` clips to `--front-screen-cut-show` of the cap
-slab and only the band's own block lifts the word into the slot below; out here
-the clip simply stands, so the reader meets PROJECTS half-cut on the first screen
-whether or not the page snaps. Restoring the whole word out of the band reads as
-a fix and is not one — it takes the first screen's last gesture away, and it grows
-the Front Screen past `--fold` so the cut lands nowhere.
+**And the word is cut by that fold at every window — by the FOLD, and not by a
+box.** The reader meets PROJECTS part-cut on the first screen whether or not the
+page snaps, and that is the first screen's last gesture; a whole word up there
+takes it away. But the word is also this Section's own head, and out here the
+Panel's masthead is hidden, so it is the only title that Section has: it has to
+be a WHOLE word by the time the reader is standing in front of it. Both, at once.
+
+**What buys both is an overhang, and the arithmetic is worth carrying.** Out of
+the band `.front-screen__cut > a` is given the cap slab's full height and handed
+the difference straight back as a negative bottom margin, so its contribution to
+the flow is exactly `--front-screen-cut-show` of the slab — the same as the
+clipped box's, to the pixel. Nothing below it moves: the Front Screen's height,
+the document's scroll, the Panel's top edge and this crossing's whole span are
+the numbers they already were. The letters simply hang past the Section's foot
+instead of being cut off at it, and they paint over the Section below by the
+ordinary order, needing no z-index of their own.
+
+Then the FOLD does the cutting, because the Front Screen is floored at `--fold`
+and that box is flush with its bottom edge: where the floor binds, the box's foot
+lands on the fold and the rest of the cap hangs below it; where the content is
+taller, the word is under the fold altogether and the reader meets none of it.
+
+**Growing the box instead is the mistake, and it has shipped.** The column is
+`flex: 1 1 auto` inside a Section floored at the fold, so a taller box is
+absorbed by the column and its foot stays exactly where it was — which puts the
+WHOLE word above the fold on any window short enough for the floor to bind. The
+`crossing` Check asserts both halves: at most nine tenths of the cap on the first
+screen, and a box the full height of the slab.
 
 **And it is still the only PROJECTS, which is also the base rule and not a
 regime.** `.projects-panel__masthead` is `visibility: hidden` unconditionally, so

@@ -1219,4 +1219,57 @@ const EAGER = 2;
       margin-top: calc(-1 * var(--front-screen-cut-show) * var(--front-screen-cut-slab));
     }
   }
+
+  /* ---- out of the band, the FOLD does the cutting here too ---------------
+     THE WORD IS WHOLE AND THE SCREEN'S BOTTOM EDGE IS WHAT TAKES THE BITE OUT
+     OF IT, which is the same sentence as the band's and had stopped being true
+     out here. The base rule above clips the link to `--front-screen-cut-show`
+     of the cap slab, so out of the band the reader met a headline chopped
+     through the middle by a box — cut on the first screen, and still cut when
+     they got to the Section it is the head of. It is a title down there. It has
+     to be a whole one.
+
+     TWO THINGS HAVE TO BE TRUE AT ONCE, and this is the rule that buys both.
+     The reader may not meet the whole word before scrolling — that is the first
+     screen's last gesture, and it is why the bite exists. And the whole word has
+     to be standing there once the Panel owns the screen, because with the
+     Panel's masthead hidden this drawing is the only title that Section has.
+
+     THE FLOW IS UNTOUCHED, WHICH IS THE WHOLE TRICK. The box is given the full
+     slab and then handed the difference straight back as a negative bottom
+     margin, so what this contributes to its Section's height is exactly what the
+     clipped box contributed — `--front-screen-cut-show` of the slab, to the
+     pixel. Nothing below moves. The Front Screen's own height, the scroll the
+     document has, the Panel's top edge and therefore the Turn's whole span —
+     `src/kernel/turn.ts` measures it off this Section — are all the numbers they
+     already were, and the letters simply hang past the Section's foot instead of
+     being cut off at it.
+
+     AND THAT IS WHY THE FOLD STILL BITES. The Section is floored at `--fold` and
+     this box is flush with its bottom edge, so on a window whose content is
+     shorter than a screen the box's foot lands exactly on the fold and
+     `1 - --front-screen-cut-show` of the cap hangs below it — the same bite, from
+     the screen's edge rather than from a clip. On a window whose content is
+     taller the word is below the fold altogether and the reader meets none of it.
+     Growing the box instead of overhanging it is what breaks this, and it is the
+     failure that shipped once: the column is `flex: 1 1 auto`, so a taller box
+     inside a Section floored at the fold is absorbed by the column and the box's
+     foot stays on the fold — which puts the WHOLE word above it.
+
+     THE OVERHANG PAINTS OVER THE PANEL, and it needs nothing to make it: this
+     box is positioned and carries `--front-screen-type-z`, and the Section below
+     is not positioned at all, so the letters paint above its ground by the
+     ordinary order. Nor does it need the second copy that used to be here — both
+     Sections cross on one `--turn` at one rate now, so the ground under the
+     overhanging third is the same colour as the ground under the rest of the
+     word, and one drawing in `--ink` reads correctly over both. */
+  @media not all and (min-width: 1100px) and (min-height: 700px) {
+    .front-screen__cut > a {
+      overflow: visible;
+      height: var(--front-screen-cut-slab);
+      margin-bottom: calc(
+        (var(--front-screen-cut-show) - 1) * var(--front-screen-cut-slab)
+      );
+    }
+  }
 </style>

@@ -29,13 +29,23 @@ import { open, settle } from '../lib/page.mjs';
  *   * AND IT IS NOT A FLIP. The other end of the same mistake: a span of a few
  *     pixels leaves `--turn` at 0 on the first screen and 1 on the second, every
  *     colour assertion passing, and no crossing on the page at all.
- *   * THE WORD IS CUT, AND DRAWN ONCE. PROJECTS meets the reader half-cut on the
- *     first screen at every window, which is the first screen's last gesture;
- *     restoring the whole word out here reads as a fix and is not one. And the
- *     drawing is ONE drawing: a second copy laid over the first is invisible
- *     while the two agree and is two typefaces on top of each other the moment
- *     they do not — which is exactly what a copy that does not morph is, and
- *     what it looked like was dark theme breaking the headline.
+ *   * THE FOLD TAKES THE BITE, AND THE WORD IS WHOLE. Two assertions, and each
+ *     is satisfiable by breaking the other, which is why both are here. PROJECTS
+ *     meets the reader part-cut on the first screen — that is the screen's last
+ *     gesture, and a whole word up there takes it away — and PROJECTS is a WHOLE
+ *     word by the time the reader reaches the Section it is the head of, because
+ *     with the Panel's masthead hidden it is the only title that Section has.
+ *     Cutting it with a BOX satisfies the first and breaks the second, and that
+ *     shipped: a title chopped through the middle, on screen, in the Section it
+ *     titles. Cutting it with the FOLD and letting the rest hang past the
+ *     Section's foot satisfies both — and the failure mode of THAT is the box
+ *     growing instead of overhanging, because the column is `flex: 1 1 auto`
+ *     inside a Section floored at `--fold`, so a taller box is absorbed and its
+ *     foot stays on the fold with the whole word above it.
+ *   * AND IT IS DRAWN ONCE. A second copy laid over the first is invisible while
+ *     the two agree and is two typefaces on top of each other the moment they do
+ *     not — which is exactly what a copy that does not morph is, and what it
+ *     looked like was dark theme breaking the headline.
  *   * AND SO IS THE PANEL'S MASTHEAD, which is the OTHER way to put the word on
  *     the page twice and the one this Check did not have. The Cut Title is this
  *     Section's head out here as much as it is in the band — the reader scrolls
@@ -96,12 +106,19 @@ const SPAN_AT_LEAST = 0.5;
 const ARRIVED_WITHIN = 0.02;
 
 /**
- * How much of the cap the fold has to take, as a share.
+ * How much of the cap the fold has to take on the first screen, as a share.
  *
  * A BAND AND NOT THE TOKEN'S OWN VALUE, for the reason NOTES.md gives: how deep
  * the bite is is the author's, and `--front-screen-cut-show` is a Token they may
  * drag. What may not happen is the bite going away — so this is drawn well under
  * the shipped 0.38 and only fails a cut that has stopped cutting.
+ *
+ * AND ON MOST WINDOWS OUT HERE IT IS SATISFIED BY THE WORD BEING BELOW THE FOLD
+ * ENTIRELY, which is worth saying so nobody reads a pass as proof the bite was
+ * measured. The Front Screen is as tall as its content and only floored at
+ * `--fold`, so it is only where that floor BINDS — the portrait window, where
+ * the content is shorter than a screen — that the word's foot lands on the fold
+ * and this compares an actual bite. The measured share is printed either way.
  */
 const CUT_AT_LEAST = 0.1;
 
@@ -228,9 +245,16 @@ export const check = {
               kernel.snapping?.(true);
 
               // ---- the word ---------------------------------------------------
+              // Read at the TOP of the document, which the walk above has just
+              // put the page back to. How much of the word is on the first
+              // screen is the whole of what is asserted about the bite, and it
+              // is a viewport measurement: `top` and `bottom` are against the
+              // window's own edges here and deliberately not offset by the
+              // scroll.
               const link = cut.querySelector('a');
               const drawings = cut.querySelectorAll('svg');
               const box = link?.getBoundingClientRect();
+              const onFirstScreen = box ? Math.max(0, Math.min(tall, box.bottom) - Math.max(0, box.top)) : 0;
 
               // THE CAP SLAB, MEASURED BY ASKING THE PAGE FOR IT rather than
               // recomputed here. It is stated in container units against the Cut
@@ -260,8 +284,8 @@ export const check = {
                 spanAtLeast,
                 word: {
                   drawings: drawings.length,
-                  clipped: link ? getComputedStyle(link).overflow !== 'visible' : false,
                   boxHeight: box?.height ?? 0,
+                  onFirstScreen,
                   slab,
                 },
                 // The Panel's own drawing of the same word. Read as computed
@@ -358,28 +382,37 @@ export const check = {
                 'typefaces on top of each other.',
             );
           }
-          if (!read.word.clipped) {
-            failures.push(
-              `${where}: the Cut Title's link does not clip — the word is whole. PROJECTS meets the ` +
-                'reader cut on the first screen at every window, in the band and out of it.',
-            );
-          } else if (read.word.slab <= 0) {
+          if (read.word.slab <= 0) {
             failures.push(
               `${where}: --front-screen-cut-slab measured 0 — the Cut Title's container units did not ` +
                 'resolve, so nothing below this was actually compared',
             );
-          } else if (read.word.boxHeight >= read.word.slab * (1 - CUT_AT_LEAST)) {
-            failures.push(
-              `${where}: the Cut Title shows ${read.word.boxHeight.toFixed(1)}px of a ` +
-                `${read.word.slab.toFixed(1)}px cap — the clip is there and takes ` +
-                `${(1 - read.word.boxHeight / read.word.slab).toFixed(3)} off it, wanted at least ` +
-                `${CUT_AT_LEAST}. --front-screen-cut-show has been lifted, or the box has been given ` +
-                'the slab’s full height, and the reader meets a whole word where the fold should bite it.',
-            );
           } else {
+            // THE BITE IS THE FOLD'S AND THE WORD IS WHOLE, and both halves have
+            // to be asserted or each is satisfiable by breaking the other.
+            if (read.word.onFirstScreen > read.word.slab * (1 - CUT_AT_LEAST)) {
+              failures.push(
+                `${where}: ${read.word.onFirstScreen.toFixed(1)}px of a ${read.word.slab.toFixed(1)}px cap ` +
+                  `is on the first screen — ${(read.word.onFirstScreen / read.word.slab).toFixed(3)} of the ` +
+                  `word, wanted at most ${(1 - CUT_AT_LEAST).toFixed(2)}. The reader is meeting the whole ` +
+                  'of PROJECTS before scrolling, and the first screen has lost its last gesture. The box is ' +
+                  'growing into the fold instead of hanging past it: the column is `flex: 1 1 auto` inside a ' +
+                  'Section floored at --fold, so a taller box is absorbed and its foot stays on the fold.',
+              );
+            }
+            if (Math.abs(read.word.boxHeight - read.word.slab) > 1) {
+              failures.push(
+                `${where}: the Cut Title's box is ${read.word.boxHeight.toFixed(1)}px of a ` +
+                  `${read.word.slab.toFixed(1)}px cap — the word is cut by a BOX rather than by the fold, so ` +
+                  'it is still cut when the reader reaches the Section it is the head of. With the Panel\'s ' +
+                  'masthead hidden this drawing is the only title that Section has, and half a title is not ' +
+                  'one.',
+              );
+            }
             notes.push(
-              `${where}: the word is cut — ${read.word.boxHeight.toFixed(1)}px shown of a ` +
-                `${read.word.slab.toFixed(1)}px cap, in one copy`,
+              `${where}: the word is whole — a ${read.word.boxHeight.toFixed(1)}px box on a ` +
+                `${read.word.slab.toFixed(1)}px cap, with ${read.word.onFirstScreen.toFixed(1)}px of it on ` +
+                'the first screen, in one copy',
             );
           }
 

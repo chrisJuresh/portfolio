@@ -450,19 +450,39 @@ correction would vanish.
   `--front-screen-cut-ink` is `97.7592cqw` and `--front-screen-cut-lead` is the
   P's left sidebearing. The picture's box is its ink, so it has to be inset by
   exactly the white that box used to carry or the word sits wider than every line
-  above it. The link clips: the document ends beneath the word and the rest of the
-  letters have nowhere to stand.
+  above it.
 - *In the band*, the word leaves the column and stands on the page's own margin
   in the bottom-left corner, fitted to its **ink**: `100cqw`, lead zero. Fitting
   the advance box here would put the ink a bearing's width off the margin it is
-  set to. The clip comes off — the bottom of the window does the cutting, and the
-  J's hook and the baseline stand on the screen below.
+  set to.
+
+**What they no longer differ in is what does the cutting: the FOLD does it in
+both.** The base rule clips the link to `--front-screen-cut-show` of the cap
+slab, and neither regime uses it — the band lifts the word into the slot below
+and lets the window's bottom edge take the bite, and out of the band the link is
+given the slab's full height and handed the difference back as a **negative
+bottom margin**. That contributes exactly what the clipped box contributed, so
+nothing below moves and the crossing's span is untouched, and the rest of the cap
+hangs past the Section's foot, over the Section below, painting above its ground
+by the ordinary order. Where the Section's `--fold` floor binds, its foot lands on
+the fold and the bite is the fold's; where the content is taller, the word is
+below the fold and the reader meets none of it before scrolling.
+
+**Both halves are required and each is satisfiable by breaking the other**, which
+is why the `crossing` Check asserts two things rather than one. A box that clips
+gives the reader a part-cut word on the first screen and a part-cut TITLE in the
+Section it heads, where the Panel's masthead is hidden and this drawing is the
+only title there is; that shipped. A box that simply grows gives a whole title
+and a whole word on the first screen too, because the column is `flex: 1 1 auto`
+inside a Section floored at the fold and absorbs the extra, leaving the box's
+foot exactly where it was.
 
 The J is worth restating because it survived the change of medium: in this face
 the J descends below the baseline, and the cut box is the cap slab, so no value
-of `--front-screen-cut-show` reaches the hook. Cut, the word reads `PRO|ECTS`. It
-comes back whole in the band, where the descender has somewhere to hang. That is
-a property of the drawing, not a number to tune.
+of `--front-screen-cut-show` reaches the hook. Cut by the fold, the word reads
+`PRO|ECTS`; it comes back whole a screen later, in both regimes, where the
+descender has somewhere to hang. That is a property of the drawing, not a number
+to tune.
 
 **The word's measure IS the Panel masthead's cap, in the band.** The same word at
 the same size is cut by the fold on the first screen and printed as the Projects
