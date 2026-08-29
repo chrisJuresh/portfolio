@@ -77,7 +77,10 @@ page (`scripts/checks/NOTES.md`).
 
 ## Finding the Eater checkout
 
-`EATER_REPO`, if set. Otherwise the sibling directory — tried both beside this
+`EATER_CHECKOUT`, if set — the same variable `design/eater-slab/` reads, because
+the two scripts want the same checkout and two names for it is a papercut the
+author would pay for every time they set the wrong one. Otherwise the sibling
+directory — tried both beside this
 tree and beside the **main checkout**, because `.claude/worktrees/<name>/../eater`
 is not anything and most of the work here happens in a worktree. When neither
 answers it names both paths and stops; a generator that quietly produces nothing

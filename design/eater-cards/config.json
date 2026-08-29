@@ -6,7 +6,7 @@
   "eater": {
     "repo": "chrisJuresh/eater-map-site",
     "package": "eater-map-site",
-    "env": "EATER_REPO",
+    "env": "EATER_CHECKOUT",
     "sibling": "eater",
     "surfaces": ["src", "static"],
     "port": 5199
