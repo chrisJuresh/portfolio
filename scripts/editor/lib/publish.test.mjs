@@ -123,11 +123,11 @@ test('a message it was not given names the Sections it published, and what of th
 
 test('a message it was not given says Tokens alone when that is what moved', async () => {
   const git = setup({
-    status: { status: 0, stdout: ' M src/sections/stub/tokens.css\n', stderr: '' },
+    status: { status: 0, stdout: ' M src/sections/eater-map/tokens.css\n', stderr: '' },
   });
   const done = await run(git, { message: undefined });
 
-  assert.equal(done.message, 'Edit the stub Tokens');
+  assert.equal(done.message, 'Edit the eater-map Tokens');
 });
 
 // ---------------------------------------------------------------------------

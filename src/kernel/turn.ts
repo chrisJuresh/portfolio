@@ -1,6 +1,7 @@
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { register } from './handles';
+import { ports } from './page-turn';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -35,10 +36,18 @@ const BAND = '(min-width: 1100px) and (min-height: 700px)';
  * HOW FAR THE READER SCROLLS TO CROSS, and the whole of what makes the Turn the
  * same crossing at every window rather than two different ones.
  *
- * IN THE BAND THE DOCUMENT IS THE TURN. Two Sections, two resting places and one
- * wheel notch between them — so the crossing is the document's whole scroll, the
- * page is paper on the first port and dark on the second, and there is nowhere
- * in between to come to rest.
+ * IN THE BAND IT IS ONE WHEEL NOTCH: from the first resting place to the SECOND,
+ * which is where the Projects Panel lands. The page is paper on the first port
+ * and dark on the second, and there is nowhere in between to come to rest.
+ *
+ * IT USED TO SAY "the document's whole scroll", AND THAT WAS THE SAME NUMBER
+ * RIGHT UP UNTIL A THIRD SECTION LANDED. With two Sections the second port IS
+ * the foot of the document — 677px at 1536x760, to the pixel, on both readings.
+ * With three the document's scroll is two notches long, so spanning it would
+ * leave the Panel a shade off black at its own resting place and finish the
+ * crossing in a Section that has nothing to do with it. The crossing is the page
+ * turn, and the page turn is one notch; ports() is where the resting places are
+ * read off the cascade, so this asks that rather than counting Sections.
  *
  * OUT OF THE BAND IT IS THE FOLD GOING PAST, and it has to be stated rather than
  * inherited. The document out here is as tall as its content, so the document's
@@ -59,7 +68,12 @@ const BAND = '(min-width: 1100px) and (min-height: 700px)';
 function span(): number {
   const doc = document.documentElement;
   const scroll = Math.max(1, doc.scrollHeight - window.innerHeight);
-  if (window.matchMedia(BAND).matches) return scroll;
+  if (window.matchMedia(BAND).matches) {
+    // The second resting place, or the whole scroll if there is somehow only
+    // one: a band with nothing to turn to still crosses rather than standing on
+    // paper for the length of the document.
+    return Math.max(1, Math.min(scroll, ports()[1] ?? scroll));
+  }
   const first = document.querySelector<HTMLElement>('[data-section]');
   const fold = first?.getBoundingClientRect().height ?? window.innerHeight;
   return Math.max(1, Math.min(scroll, fold));

@@ -12,7 +12,7 @@ or a colour is a Token or a Content edit and needs none of it.
 
 ## The folder
 
-The Section convention is `src/sections/stub/NOTES.md`. Two files here are beyond
+The Section convention is `src/sections/NOTES.md`. Two files here are beyond
 it:
 
 | file                       | what it is                                                       |

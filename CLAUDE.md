@@ -239,20 +239,25 @@ production does. A Section is deep-linkable by carrying an `id`, and the
 requires a working link for each — so a Section added without its rewrite fails
 the build rather than shipping a URL that 404s.
 
-**Above 1100x700 the document is a PAGE TURN and not a scroll.** Two Sections,
-two resting places and nothing between them: one wheel notch carries the reader
-from one to the other, and the Front Screen's cut PROJECTS stands in the Projects
-Panel masthead's slot and morphs out of Friz Quadrata into the sans as the page
-crosses — the word never moves and never resizes, the document moves past it.
-`src/kernel/landing.css` is the device and the one measure the two Sections share;
-`src/kernel/page-turn.ts` is the notch and `src/kernel/wheel.ts` is who owns it.
+**Above 1100x700 the document is a PAGE TURN and not a scroll.** One resting
+place per Section and nothing between them: one wheel notch carries the reader
+from one to the next, and on the FIRST notch the Front Screen's cut PROJECTS
+stands in the Projects Panel masthead's slot and morphs out of Friz Quadrata into
+the sans as the page crosses — the word never moves and never resizes, the
+document moves past it. **The crossing is that first notch and not the document's
+whole scroll**, which were the same number while there were two Sections and are
+not now; `src/kernel/turn.ts` says so, and `src/kernel/NOTES.md` says what it
+cost to find out.
+`src/kernel/landing.css` is the device and the one measure the two Sections share
+— a THIRD Section joining that list is a decision and #172 decided against it —
+and `src/kernel/page-turn.ts` is the notch, `src/kernel/wheel.ts` who owns it.
 Read `src/kernel/NOTES.md` before touching any of the three. **A Check or a script
-that needs the page placed between the two resting places has to lift the snapping
+that needs the page placed between two resting places has to lift the snapping
 first** — `window.portfolio.snapping(false)` — or every `scrollTo` in between is
 pulled straight back onto the port it left, silently.
 
 **Below that band it is a scroll, and it is the SAME crossing rather than a
-second one.** The whole page — both Sections, one number — starts on paper and
+second one.** The whole page — every Section, one number — starts on paper and
 arrives at dark together, PROJECTS is still cut by the fold on the first screen,
 and **it is still the ONLY PROJECTS**: the Panel's masthead is
 `visibility: hidden` at every window, so the cut word the reader scrolls past is
@@ -287,7 +292,7 @@ ignores `.npmrc` for `saveExact`, and the failure mode is a caret quietly
 reappearing in `package.json`.
 
 **Read [`src/kernel/NOTES.md`](src/kernel/NOTES.md) before touching the Kernel,
-and [`src/sections/stub/NOTES.md`](src/sections/stub/NOTES.md) before adding a
+and [`src/sections/NOTES.md`](src/sections/NOTES.md) before adding a
 Section.** Between them they carry the folder convention, what the build actually
 enforces about it, and the two things that have already cost a wrong diagnosis:
 `hold()` before you seek a Timeline, and one mount point per Section.

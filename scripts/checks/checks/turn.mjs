@@ -197,10 +197,17 @@ export const check = {
             `at ${landing.slot.toFixed(1)}px — the word is not standing where the masthead would`,
         );
       }
-      if (landing.ports.length !== 2) {
+      // AT LEAST TWO, AND THE SECOND IS THE PANEL'S — not "exactly two". This
+      // counted them until #175, and a third Section is exactly the legitimate
+      // change a blocking Check may not fail: the page turn reads its ports off
+      // the cascade and has always generalised to any number of them (ADR 0007),
+      // so the number is the page's business and only the landing is this
+      // Check's. What matters here is that the FIRST notch ends on the Panel's
+      // own landing, which is where the word the Cut Title stands in for is.
+      if (landing.ports.length < 2) {
         failures.push(
-          `the page has ${landing.ports.length} resting place(s) — inside the landing band it is two, the top ` +
-            'of the document and the Panel’s own landing, and nothing between',
+          `the page has ${landing.ports.length} resting place(s) — inside the landing band the top of the ` +
+            'document and the Panel’s own landing are both ports, and there is nothing between them to stop at',
         );
       } else if (Math.abs((landing.ports[1] ?? 0) - landing.panelPort) > 1) {
         failures.push(

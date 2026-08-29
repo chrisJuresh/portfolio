@@ -2,7 +2,7 @@
    render-variants.mjs — render every Variant of every Section into one sheet.
 
      pnpm variants
-     pnpm variants -- --sections stub --variants split,plate
+     pnpm variants -- --sections eater-map --variants points-right,quiet
      pnpm variants -- --progress 0,0.5,1        # a Variant that is only motion
      pnpm variants -- --turn 1                  # past the crossing into dark
      pnpm variants -- --viewports desktop,mobile --themes light

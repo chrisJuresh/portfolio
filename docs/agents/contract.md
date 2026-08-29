@@ -182,7 +182,7 @@ authority is in the right-hand column.
 | **An image pasted into a chat cannot be written to disk.** Adding a photograph needs a path or a folder. Pasting is for *judging* photographs, never for adding them. | #129 |
 | **The in-app preview serves the main checkout**, so in a worktree it verifies `development` while looking like it verified the branch. Never verify a change with it, and never open the Editor through it — that would write Content against one tree while looking at another. | `scripts/checks/NOTES.md` |
 | **`hold()` a Timeline before seeking it**, and release it after. | `src/kernel/NOTES.md` |
-| **One mount point per Section.** | `src/sections/stub/NOTES.md` |
+| **One mount point per Section.** | `src/kernel/NOTES.md` |
 | **A Variant's selector needs `:root`** to outrank the composition it argues with, and **nothing imports `variants.css`** — an unselected Variant must cost the shipped page nothing. Both are silent when wrong. | `docs/agents/variants.md` |
 | **The Editor matches an element against the value the SERVED BUILD was made from**, not the current one. That is what makes an edit survive a reload. | `scripts/editor/NOTES.md` |
 | **The Editor replaces one string literal's bytes** rather than re-serialising the file, which is what keeps a Content file's comments and formatting. Its **Overrides** boundary is the exception and inverts the rule: that file is generated, so it always re-serialises, and what pays for it is refusing any bytes it did not write. | `scripts/editor/NOTES.md` |

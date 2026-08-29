@@ -3,18 +3,106 @@ import { defineContent, z } from '../../kernel/content';
 /**
  * The Eater Map Section's Content, and its schema.
  *
- * One field, because one field is all this Section renders yet. The masthead,
- * the two subheading lines, the copy and the four numbered points arrive with
- * the Section itself (#175); the Cards beside them carry the app's own words and
- * are not Content — they are vendored bytes, and the Editor must not offer to
- * rewrite somebody else's interface. NOTES.md says why that line is where it is.
+ * Every word the Section draws is here, including the two the Rail speaks and
+ * never prints and the one word standing where the Slab will go. NOTES.md says
+ * where the copy came from and what was cut out of it.
  */
 const schema = z.object({
-  heading: z.string().min(1),
+  /** The Section's accessible name, and the masthead it prints. A plain word
+   *  rather than a Cut Title — #172 measured what a second one would cost. */
+  masthead: z.string().min(1),
+  /**
+   * Two authored lines, not one string left to wrap. Where the break falls is
+   * part of the composition rather than a consequence of the column's width —
+   * the Projects Panel's rule, and this Section's for the same reason: the two
+   * lines are set solid under a masthead they have to sit square with.
+   */
+  subheading: z.tuple([z.string().min(1), z.string().min(1)]),
+  rail: z.object({
+    /** The landmark's name. Spoken, never drawn. */
+    label: z.string().min(1),
+    /** Said after a project with no Section of its own. Grey says it to anything
+     *  looking; this says it to anything listening. */
+    unbuilt: z.string().min(1),
+    /**
+     * An entry is a route if it holds a link, and the fragment already names the
+     * Section, so no attribute has to. `#eater-map` is this Section's own, which
+     * is what marks this entry current here — ADR 0007.
+     */
+    projects: z
+      .array(
+        z.object({
+          name: z.string().min(1),
+          href: z.string().min(1).optional(),
+        }),
+      )
+      .min(1),
+  }),
+  copy: z.array(z.string().min(1)).min(1),
+  /**
+   * What stands where the Exploded View will. One word, held here rather than in
+   * the markup for the same reason every other word is, and the whole of what
+   * #176 replaces.
+   */
+  stage: z.object({ placeholder: z.string().min(1) }),
+  /** Each one names a part of the Exploded View that #178 will draw a leader
+   *  line to. An <ol> because the numbers are read. */
+  points: z
+    .array(
+      z.object({
+        title: z.string().min(1),
+        figure: z.string().min(1),
+      }),
+    )
+    .min(1),
 });
 
 export type EaterMapContent = z.output<typeof schema>;
 
 export const content = defineContent(schema, {
-  heading: 'Eater Map',
+  masthead: 'Eater Map',
+  subheading: ['Every Eater guide', 'on one map'],
+  rail: {
+    label: 'Projects',
+    unbuilt: ' — no page yet',
+    projects: [
+      { name: 'Photo Vault', href: '#projects' },
+      { name: 'Eater Map', href: '#eater-map' },
+      { name: 'Record Engine' },
+    ],
+  },
+  stage: { placeholder: 'Exploded View' },
+  copy: [
+    "Eater's London guides are superb and scattered across hundreds of articles, " +
+      'each with its own small map. This scrapes all of them, merges duplicates into ' +
+      "one record per restaurant with a threshold read off the data's own error modes, " +
+      'and serves the result as an offline-first PWA. Put your phone in airplane mode ' +
+      'on the Underground and it all still works.',
+  ],
+  points: [
+    {
+      title: 'Search',
+      figure:
+        'Full-text across 2,336 restaurants, 296 guide titles, addresses and ' +
+        'descriptions, plus place geocoding.',
+    },
+    {
+      title: 'The rail overlay',
+      figure:
+        'The whole network in official line colours; where lines share track the ' +
+        'geometry splits into side-by-side bands rather than one hiding another.',
+    },
+    {
+      title: 'One record per restaurant',
+      figure:
+        '4,043 guide entries merged into 2,336; 665 carry write-ups from more than ' +
+        'one guide.',
+    },
+    {
+      title: 'It works on the Tube',
+      figure:
+        'Around 76 MB of vector tiles precached; the service worker slices HTTP Range ' +
+        'out of the Cache API itself, because the Cache API cannot serve ranges.',
+    },
+  ],
 });

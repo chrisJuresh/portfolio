@@ -68,7 +68,7 @@ export const content = defineContent(schema, {
     unbuilt: ' — no page yet',
     projects: [
       { name: 'Photo Vault', href: '#projects' },
-      { name: 'Eater Map' },
+      { name: 'Eater Map', href: '#eater-map' },
       { name: 'Record Engine' },
     ],
   },

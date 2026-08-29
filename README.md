@@ -88,7 +88,7 @@ than described. It is one document, served statically from Vercel.
 │   │   └── portfolio.astro     # the document
 │   ├── shell/          # the head, the mount points, the deep link's jump
 │   ├── kernel/         # faces, ground, theme, the Turn, corner pictures, effect stack
-│   └── sections/       # one folder per Section — see stub/NOTES.md
+│   └── sections/       # one folder per Section — see its NOTES.md
 ├── scripts/            # the build's own steps, the Checks, the Editor, `pnpm feature`
 ├── portfolio/          # served verbatim, not built
 │   ├── img/            # web-optimised photographs
@@ -230,7 +230,7 @@ every kept change off the page again, and **clear the Recording** empties the
 document without touching the page.
 
 Everything else — layout, palette, motion — is a Section's own folder, and
-`src/sections/stub/NOTES.md` is the convention every one of them follows.
+`src/sections/NOTES.md` is the convention every one of them follows.
 
 Full-resolution photo originals are deliberately untracked (see
 `.gitignore`); the repo carries only the optimised web copies in
@@ -338,7 +338,7 @@ build at all. This is the general form of the typographic comparison in `design/
 described above.
 
 Reading order for the detail: `CONTEXT.md` for the vocabulary, `docs/adr/` for the
-decisions, then `src/kernel/NOTES.md` and `src/sections/stub/NOTES.md`.
+decisions, then `src/kernel/NOTES.md` and `src/sections/NOTES.md`.
 `docs/agents/variants.md` is the Variants and the sheet.
 
 ## Deployment

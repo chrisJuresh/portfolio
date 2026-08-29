@@ -6,6 +6,7 @@
 // deployment (ADR 0001) and opened at the Section the last segment names. The
 // rewrites are declared in vercel.json, the local servers mirror them out of
 // that same file, and the Shell makes the jump.
+import EaterMap from '../sections/eater-map/EaterMap.astro';
 import FrontScreen from '../sections/front-screen/FrontScreen.astro';
 import ProjectsPanel from '../sections/projects-panel/ProjectsPanel.astro';
 import Shell from '../shell/Shell.astro';
@@ -31,17 +32,20 @@ const HERE = 'https://chrisj.uk/portfolio';
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:image" content={CARD} />
   </Fragment>
-  {/* Nothing carries data-turn, and that is now the right answer rather than an
-      omission: with two Sections of one screen each the document's whole scroll
-      IS the page turn, which is exactly what the Kernel spans when nothing is
-      marked. Marking either Section instead would put `top top` and `bottom
-      bottom` on the same scroll position and make the crossing a flip — see the
-      Front Screen's NOTES.md, and the Check that asserts the span.
+  {/* Nothing carries data-turn, and that is the right answer rather than an
+      omission: the crossing starts at the top of the document and runs the
+      length the Kernel states, which is the FIRST Section going past. Marking a
+      Section instead would put `top top` and `bottom bottom` on the same scroll
+      position and make the crossing a flip — see the Front Screen's NOTES.md,
+      and the Check that asserts the span.
 
-      The stub is off the page. It was here to carry data-turn while the thing
-      above the Panel did not exist; the Front Screen is that thing now. Its
-      folder stays, because src/sections/stub/NOTES.md is still the authority on
-      the Section convention and rehoming that is not this ticket's. */}
+      THE ORDER IS THE PAGE TURN, and it is the only place the order is written.
+      Every Section after the first is a resting place (src/kernel/landing.css
+      says so as a relationship, not as a list), so a Section added here is a
+      port the day it lands and the Kernel never learns its name. The crossing
+      finishes at the second one, so the Panel and everything after it are dark —
+      src/kernel/turn.ts. */}
   <FrontScreen />
   <ProjectsPanel />
+  <EaterMap />
 </Shell>

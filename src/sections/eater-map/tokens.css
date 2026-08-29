@@ -1,13 +1,84 @@
-/* The Eater Map Section's Tokens — plain custom properties on the Section's own
-   root, and the only style file the Editor writes.
+/* The Eater Map Section's Tokens. Plain custom properties on the Section's own
+   root, and the only style file the Editor writes here. Every name is prefixed
+   with the Section's, and there is nothing in this file but custom properties —
+   scripts/check-source.mjs fails the build otherwise.
 
-   Empty, and deliberately so rather than pre-emptively populated: the numbers
-   this Section will hold are the Exploded View's — the tilt, the depths, the
-   gaps, the Cards' places on the Slab and the Lift's distance — and every one of
-   them is decided by looking at a composition that does not exist yet (#176,
-   #177). A Token invented before the thing it measures is a name the next
-   session has to argue with.
+   THE WHOLE LADDER IS IN rem, WHICH IS THE POINT. The page's own type size is
+   the Kernel's --type-zoom times a ceiling (src/kernel/tokens/faces.css), so a
+   composition written in rem is one the author can scale bodily without touching
+   a single length in here. This Section has no one-screen budget with a
+   remainder in it — nothing here funds anything else — so a zoom costs it
+   nothing but size. NOTES.md. */
+.eater-map {
+  /* ---- the page's margins out of the band --------------------------------
+     Inside the band the Section takes the landing's own two margins instead, so
+     the third screen's white agrees with the second's; these are what it has
+     everywhere else. NOTES.md says why reading two of the landing's terms is not
+     joining the landing measure. */
+  --eater-map-side: clamp(1.35rem, 1rem + 2.2vw, 3.5rem);
+  --eater-map-inset: clamp(1.6rem, 1rem + 3vh, 3.4rem);
 
-   The Cards' own sizes are NOT Tokens and do not belong here. They are what the
-   app drew, reported by the generator, and they arrive on the host as
-   --eater-card-<name>-width / -height in assets/cards/cards.css. */
+  /* ---- the seams, as one step and three powers of φ -----------------------
+     The Projects Panel's stacked ladder, at this Section's own step: a seam
+     between two things of one kind is the step, a seam inside one thing is
+     φ⁻¹ of it, and the two big breaks either side of the stage are φ and φ².
+     One number moves the whole rhythm. */
+  --eater-map-step: clamp(1.15rem, 0.6rem + 2.6vw, 2.1rem);
+  --eater-map-close: calc(0.618 * var(--eater-map-step));
+  --eater-map-move: calc(1.618 * var(--eater-map-step));
+  --eater-map-act: calc(2.618 * var(--eater-map-step));
+
+  /* ---- the grid ------------------------------------------------------------
+     The gutter between the twelve columns, and the gap between the Rail's own
+     column and the composition beside it. */
+  --eater-map-gutter: clamp(0.75rem, 0.4rem + 1vw, 1.5rem);
+  --eater-map-gap: clamp(1rem, 0.5rem + 1.6vw, 2.5rem);
+
+  /* ---- the Rail ------------------------------------------------------------
+     Its column is the page's own left margin in the band, so both Rails on the
+     page stand in one column; out here it is a row across the top and the width
+     is the whole of it. */
+  --eater-map-rail-size: 0.62rem;
+  --eater-map-rail-tracking: 0.22em;
+  --eater-map-rail-gap: 2.6;
+  --eater-map-rail-rows: 1.2;
+
+  /* ---- the type ladder ---------------------------------------------------- */
+  --eater-map-leading: 1.5;
+
+  --eater-map-masthead-size: clamp(2.5rem, 1.4rem + 4.4vw, 5rem);
+  --eater-map-masthead-weight: 500;
+  --eater-map-masthead-leading: 0.86;
+  --eater-map-masthead-tracking: -0.015em;
+
+  --eater-map-sub-size: clamp(1rem, 0.72rem + 1.1vw, 1.7rem);
+  --eater-map-sub-leading: 1;
+
+  --eater-map-copy-size: clamp(0.9rem, 0.8rem + 0.35vw, 1.05rem);
+  --eater-map-copy-leading: 1.5;
+  --eater-map-copy-inset: clamp(0.9rem, 0.6rem + 1.1vw, 1.6rem);
+
+  --eater-map-point-size: clamp(0.78rem, 0.7rem + 0.28vw, 0.95rem);
+  --eater-map-point-weight: 500;
+  --eater-map-point-leading: 1.25;
+  --eater-map-point-tracking: 0.06em;
+
+  --eater-map-figure-size: clamp(0.72rem, 0.66rem + 0.2vw, 0.86rem);
+  --eater-map-figure-leading: 1.45;
+  --eater-map-figure-air: 0.35em;
+
+  /* ---- what stands where the Exploded View will --------------------------
+     A box of the Slab's own proportion with a hairline round it and one word in
+     the middle. Every one of these goes with #176; they are Tokens rather than
+     literals so the placeholder can be dragged to the size the drawing wants
+     before the drawing exists. */
+  --eater-map-slab-ratio: 16 / 10;
+  --eater-map-slab-rule: 1px;
+  --eater-map-slab-label-size: 0.72rem;
+  --eater-map-slab-label-tracking: 0.3em;
+  --eater-map-slab-veil: 92%;
+
+  /* ---- the rules the composition draws ------------------------------------ */
+  --eater-map-rule-veil: 78%;
+  --eater-map-muted-veil: 32%;
+}

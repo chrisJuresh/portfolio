@@ -91,7 +91,7 @@ const SCOPE_ESCAPES = [
 
 /**
  * Every compound after the gate has to be one the Section owns, and only the
- * first one does: `.stub__points li` can match nothing outside `.stub__points`,
+ * first one does: `.a-section__points li` can match nothing outside `.a-section__points`,
  * which is why the rest of a selector is the Variant's business.
  */
 function ownedBy(section, compound) {
@@ -245,8 +245,8 @@ for (const section of sections) {
 // strategy appends a bare attribute selector, worth (0,1,0) — PER COMPOUND — so a
 // scoped rule's weight grows with the length of its selector, and a Variant, which
 // is one fixed gate in front of the same selector, wins or loses on how many
-// compounds the composition happened to write. `.stub__points li` came out an
-// exact tie, settled by whichever stylesheet the bundler emitted second.
+// compounds the composition happened to write. A two-compound selector came out
+// an exact tie, settled by whichever stylesheet the bundler emitted second.
 // `scopedStyleStrategy: 'where'` wraps the same narrowing in :where(), which
 // selects identically and weighs nothing, so the gate outranks the composition by
 // (0,2,0) in every case.

@@ -19,8 +19,8 @@ than a convenience.
 | `effect-stack/`             | the nine layers, and the grain tile                          |
 | `theme.ts`                  | which paper, where it is stored, and who is told when it changes |
 | `turn.ts`                   | the Turn, as one named seekable Timeline, how far it runs in each regime, and `onTurn()` for anything drawn against it that CSS cannot draw |
-| `landing.css` / `tokens/landing.css` | the landing band, the measure two Sections share across it, and the two resting places |
-| `page-turn.ts`              | one wheel notch between those resting places, and a link into a Section going the same way |
+| `landing.css` / `tokens/landing.css` | the landing band, the measure two Sections share across it, and the resting places — one per Section, stated as a relationship so a new one costs nothing |
+| `page-turn.ts`              | one wheel notch between two resting places, and a link into a Section going the same way |
 | `wheel.ts`                  | who owns a wheel gesture — the page, or a roll inside it     |
 | `loader.ts`                 | mounting a Section as it approaches the viewport             |
 | `motion.ts`                 | `hold()` / `release()` — see below                            |
@@ -249,8 +249,16 @@ version is that `--ground` is itself a crossing on `--turn`, so mixing into it
 composes two.
 
 **What is different out here is the LENGTH of it, and `turn.ts` states it rather
-than inheriting it.** In the band the document IS the turn — two ports, one
-notch, nothing in between — so the crossing is the document's whole scroll. Out
+than inheriting it.** In the band the crossing is ONE NOTCH — from the first
+resting place to the second, which is the Panel's, read off `ports()` rather than
+counted. **That used to say "the document's whole scroll", and it was the same
+number to the pixel until a third Section landed**: with two Sections the second
+port IS the foot of the document, 677px at 1536x760 on either reading. With three
+the document is two notches long, so spanning it would leave the Panel a shade
+off black at its own resting place and finish the crossing in a Section that has
+nothing to do with it. #175 is where that changed, and the shape of the mistake
+is worth keeping: a length stated as *the document* when what was meant was *the
+turn*, correct for exactly as long as the two were the same. Out
 here the document is as tall as its content, and spread over that the page is
 still a quarter short of black by the time the Panel owns the screen: a grey
 Section, at rest, on a page that has finished turning everywhere except in its
@@ -310,9 +318,10 @@ change to the design and belongs to the author.
 
 ## The page turn, and who owns a notch
 
-Inside the band the document is **two ports and nothing between** — a zero-height
-box at the top and every Section after the first — so a mandatory snap means the
-scroller must come to rest on one of them.
+Inside the band the document is **ports and nothing between** — a zero-height box
+at the top and every Section after the first — so a mandatory snap means the
+scroller must come to rest on one of them. There are three now and there were two;
+nothing here counts them, which is the property worth keeping.
 
 `page-turn.ts` is why the turn is a script and not the browser's own snap fling:
 that fling owns the scroller for as long as it flies, and a notch the other way

@@ -1,47 +1,431 @@
 ---
-// The Eater Map Section. NOTES.md is what this folder currently is and what is
-// still owed it; nothing compositional is decided here yet.
+// The Eater Map Section: the Rail, a plain masthead and its two authored lines,
+// the copy, the four numbered points, and the box standing where the Slab will
+// go. NOTES.md carries the reasoning — why the masthead is a plain word rather
+// than a Cut Title, which of the Kernel's lengths this Section reads and why
+// that is not joining the landing measure, and what #176 replaces.
 //
-// The three Cards, as they came out of the app: no Slab under them, no camera
-// over them, and no placement. Where they go is the ticket that puts them on the
-// Slab (#176) and the one that raises them off it (#177) — the whole of what
-// this component does today is prove the vendored bytes are readable from a
-// Section, which is what forced them into this folder in the first place.
-import searchCard from './assets/cards/search.html?raw';
-import linesCard from './assets/cards/lines.html?raw';
-import detailsCard from './assets/cards/details.html?raw';
-import './assets/cards/cards.css';
+// THE VENDORED CARDS ARE NOT IMPORTED HERE, AND THAT IS A DECISION #174 LEFT TO
+// THIS TICKET. `assets/cards/` is the Eater app's own three surfaces, taken off
+// it and committed (#174), and that component rendered them in a column to prove
+// the bytes were readable from a Section — while the Section was on no page. This
+// ticket puts the Section ON the page, and three raw app surfaces stacked in the
+// middle of a Showcase is not a composition; where they go is flat and coplanar
+// with the Slab, which is #176. So they stay in `assets/`, unread, and the
+// placeholder below stands where the Slab and the Cards on it will be. NOTES.md
+// carries everything about them that #176 needs.
 import { content } from './content';
 import './tokens.css';
-// variants.css is deliberately NOT imported — an unselected Variant costs the
-// shipped page nothing. src/sections/stub/NOTES.md, and check-source.mjs.
+// variants.css is deliberately NOT imported: an unselected Variant has to cost
+// the shipped page nothing, so the sheet is not part of the build at all and the
+// render tool injects it. NOTES.md, and check-source.mjs if this is ever undone.
 ---
 
-<section class="eater-map" data-section="eater-map" aria-labelledby="eater-map-heading">
-  <h2 class="eater-map__heading" id="eater-map-heading">{content.heading}</h2>
-  {/* `eater-cards` is the host the export hangs every one of its selectors off,
-      so the vendored stylesheet reaches inside this element and nowhere else.
-      The name is the export's, not this Section's — cards.json records it. */}
-  <div class="eater-cards">
-    <Fragment set:html={searchCard} />
-    <Fragment set:html={linesCard} />
-    <Fragment set:html={detailsCard} />
+{/* data-section is the loader's handle: it names the Section whose timeline.ts
+    is fetched as this element approaches the viewport, and it is what makes this
+    a resting place — src/kernel/landing.css declares every Section after the
+    first a port, as a relationship rather than a list, so nothing in the Kernel
+    had to learn this Section's name.
+
+    No data-turn. The crossing spans the FIRST Section and is finished by the
+    time the Projects Panel comes to rest, so the page is already dark when the
+    reader arrives here and there is no second crossing to run. src/kernel/turn.ts. */}
+<section
+  class="eater-map"
+  id="eater-map"
+  data-section="eater-map"
+  aria-labelledby="eater-map-masthead"
+>
+  <nav class="eater-map__rail" aria-label={content.rail.label}>
+    {/* role="list" on a list that already is one: `list-style: none` costs a
+        list its semantics in VoiceOver, and the Rail is meant to be announced
+        as a list of projects. */}
+    <ul class="eater-map__rail-items" role="list">
+      {content.rail.projects.map((project) => (
+        <li
+          class:list={[
+            'eater-map__rail-item',
+            { 'is-selected': project.href === '#eater-map' },
+          ]}
+        >
+          {project.href ? (
+            <a href={project.href} aria-current={project.href === '#eater-map' ? 'true' : undefined}>
+              {project.name}
+            </a>
+          ) : (
+            <Fragment>
+              {project.name}
+              <span class="eater-map__quiet">{content.rail.unbuilt}</span>
+            </Fragment>
+          )}
+        </li>
+      ))}
+    </ul>
+  </nav>
+  <div class="eater-map__inner">
+    <header class="eater-map__head">
+      <h2 class="eater-map__masthead" id="eater-map-masthead">{content.masthead}</h2>
+      <p class="eater-map__sub">
+        {content.subheading.map((line) => (
+          <span>{line}</span>
+        ))}
+      </p>
+    </header>
+    <div class="eater-map__copy">
+      {content.copy.map((paragraph) => (
+        <p>{paragraph}</p>
+      ))}
+    </div>
+    {/* An <ol> because each point is numbered on the page and each will name one
+        part of the Exploded View — #178 is the leader lines. */}
+    <ol class="eater-map__points">
+      {content.points.map((point) => (
+        <li>
+          <h3>{point.title}</h3>
+          <p>{point.figure}</p>
+        </li>
+      ))}
+    </ol>
+    {/* WHAT STANDS WHERE THE EXPLODED VIEW WILL, and the whole of what #176
+        replaces. Decorative, so the box is out of the accessibility tree: a
+        placeholder announced to a screen reader is a promise the page cannot
+        keep. Its one word is Content rather than markup, like every other word
+        in this Section. */}
+    <div class="eater-map__stage" aria-hidden="true">
+      <div class="eater-map__slab">
+        <span>{content.stage.placeholder}</span>
+      </div>
+    </div>
   </div>
 </section>
 
 <style>
-  /* Scoped by the build. The vendored Cards are raw HTML, so Astro's attribute
-     is not on them and nothing here can reach into one — which is the right way
-     round: their styles are the app's and are not this Section's to argue with.
-     What is here is the box they sit in, and it is a placeholder. */
+  /* Scoped by the build. Astro rewrites every selector below with this
+     component's own attribute, so none of them can match an element in another
+     Section even by accident.
+
+     THE SECTION PAINTS NO GROUND, and that is the rule rather than an omission.
+     The page's ground is `html { background: var(--ground) }` in the Kernel and
+     --ground is itself a crossing on --turn, so a Section that paints its own
+     composes two crossings and puts a step across the page at its own top edge —
+     which is what "banding" has meant both times it was reported. This Section
+     inherits the page's ground and its ink in both themes, at the far end of a
+     Turn that finished before the reader got here. */
   .eater-map {
-    display: flex;
-    flex-direction: column;
+    box-sizing: border-box;
+    display: grid;
+    /* The Rail's column IS the page's left margin, the way it is in the Projects
+       Panel: the names are set across it, so the margin has a floor under it and
+       that floor is one rotated line of --eater-map-rail-size at its leading. */
+    grid-template-columns: var(--eater-map-side) minmax(0, 1fr);
+    column-gap: var(--eater-map-gap);
+    /* STRETCH AND NOT CENTRE, and it is the difference between a composition
+       that fits the screen and one that is taller than it. The Rail is spread
+       `space-between` down its whole column and the stage is row two's
+       remainder, so both need the Section's own height handed to them — centring
+       would size the box to its content instead, and the content would then be
+       whatever the four points and a picture-shaped box happen to add up to. */
+    align-items: stretch;
+    min-height: var(--fold);
+    padding-block: var(--eater-map-inset);
+    padding-inline-end: var(--eater-map-side);
+    /* Clip, not hidden, and only across: `hidden` would make the Section a
+       scroll container and break the Rail. */
+    overflow-x: clip;
+    font-family: var(--face-panel);
+    font-weight: 400;
+    line-height: var(--eater-map-leading);
   }
 
-  .eater-cards {
+  /* ---- the Rail ---------------------------------------------------------- */
+  .eater-map__rail {
+    display: flex;
+    align-self: stretch;
+  }
+
+  .eater-map__rail-items {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    flex: 1;
     display: flex;
     flex-direction: column;
-    align-items: flex-start;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .eater-map__rail-item {
+    /* Turned per ITEM and not on the list: rotating the list would rotate the
+       order with it and put the last project at the top. */
+    writing-mode: vertical-rl;
+    transform: rotate(180deg);
+    white-space: nowrap;
+    font-size: var(--eater-map-rail-size);
+    letter-spacing: var(--eater-map-rail-tracking);
+    color: color-mix(in oklab, var(--ink), transparent var(--eater-map-muted-veil));
+  }
+
+  .eater-map__rail-item.is-selected {
+    color: var(--ink);
+  }
+
+  .eater-map__rail-item a {
+    color: inherit;
+    /* Three words in a margin: an underline across a rotated one reads as a
+       strikethrough. */
+    text-decoration: none;
+  }
+
+  .eater-map__rail-item:not(.is-selected) a:hover {
+    color: var(--ink);
+  }
+
+  .eater-map__rail-item a:focus-visible {
+    outline: 1px solid currentColor;
+    outline-offset: 3px;
+  }
+
+  .eater-map__quiet {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    border: 0;
+    clip-path: inset(50%);
+    overflow: hidden;
+    white-space: nowrap;
+  }
+
+  /* ---- the composition: twelve columns, two rows ------------------------- */
+  .eater-map__inner {
+    display: grid;
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    /* THE HEAD IS ITS OWN SIZE AND THE PICTURE IS EVERYTHING LEFT. `minmax(0,
+       1fr)` and not `1fr`: a bare `1fr` floors at the row's min-content, so the
+       four points and the box would push the Section past the fold rather than
+       being given what the screen has. NOTES.md. */
+    grid-template-rows: auto minmax(0, 1fr);
+    column-gap: var(--eater-map-gutter);
+    /* The one seam this box owns is the break between the writing and the
+       picture, which is the biggest step on the ladder. */
+    row-gap: var(--eater-map-act);
+  }
+
+  .eater-map__head {
+    grid-area: 1 / 1 / 2 / 7;
+    align-self: end;
+  }
+
+  /* ---- how the capitalised things are set --------------------------------
+     Listed rather than hoisted onto the Section: `case` on the copy would raise
+     the hyphen in "offline-first" off its own baseline, and the figures are
+     sentences rather than labels. */
+  .eater-map__masthead,
+  .eater-map__sub,
+  .eater-map__rail-item,
+  .eater-map__points h3,
+  .eater-map__slab {
+    text-transform: uppercase;
+    font-feature-settings: 'case' 1;
+  }
+
+  /* A PLAIN MASTHEAD, AND IT PAINTS. The Projects Panel's is hidden because the
+     Front Screen's Cut Title is already that Section's head; nothing is cut into
+     this one's slot, because #172 measured what a second landing solve would
+     cost and the answer was the Panel's whole marble corner. NOTES.md. */
+  .eater-map__masthead {
+    margin: 0;
+    font-size: var(--eater-map-masthead-size);
+    font-weight: var(--eater-map-masthead-weight);
+    line-height: var(--eater-map-masthead-leading);
+    letter-spacing: var(--eater-map-masthead-tracking);
+    color: var(--ink);
+  }
+
+  .eater-map__sub {
+    margin: var(--eater-map-close) 0 0;
+    font-size: var(--eater-map-sub-size);
+    font-weight: 400;
+    line-height: var(--eater-map-sub-leading);
+    color: color-mix(in oklab, var(--ink), transparent var(--eater-map-muted-veil));
+  }
+
+  /* `block` on the spans rather than a <br>, so the break is a property of the
+     composition and not a character a screen reader has to read around. */
+  .eater-map__sub span {
+    display: block;
+  }
+
+  .eater-map__copy {
+    grid-area: 1 / 7 / 2 / 13;
+    align-self: end;
+    border-left: 1px solid
+      color-mix(in oklab, var(--ink), transparent var(--eater-map-rule-veil));
+    padding-left: var(--eater-map-copy-inset);
+    font-size: var(--eater-map-copy-size);
+    line-height: var(--eater-map-copy-leading);
+    color: var(--ink-soft);
+  }
+
+  .eater-map__copy p {
+    margin: 0;
+  }
+
+  .eater-map__copy p + p {
+    margin-top: 1em;
+  }
+
+  /* The four points take the whole of their column and spread themselves down
+     it, the way the Panel's do: the air is what a point growing a paragraph
+     spends, down to the step and no further. */
+  .eater-map__points {
+    grid-area: 2 / 1 / 3 / 4;
+    align-self: stretch;
+    margin: 0;
+    list-style: none;
+    padding: 0;
+    display: grid;
+    grid-auto-rows: min-content;
+    align-content: space-between;
+    row-gap: var(--eater-map-step);
+  }
+
+  .eater-map__points h3 {
+    margin: 0;
+    font-size: var(--eater-map-point-size);
+    font-weight: var(--eater-map-point-weight);
+    line-height: var(--eater-map-point-leading);
+    letter-spacing: var(--eater-map-point-tracking);
+    color: var(--ink);
+    /* A title set to fit its column on one line at the window it was drawn at
+       wraps on a narrower one rather than being made to fit by a size nobody
+       chose; `balance` makes the two lines halves of a title. */
+    text-wrap: balance;
+  }
+
+  .eater-map__points p {
+    margin: var(--eater-map-figure-air) 0 0;
+    font-size: var(--eater-map-figure-size);
+    line-height: var(--eater-map-figure-leading);
+    color: color-mix(in oklab, var(--ink), transparent var(--eater-map-muted-veil));
+  }
+
+  /* ---- what stands where the Exploded View will -------------------------- */
+  .eater-map__stage {
+    grid-area: 2 / 4 / 3 / 13;
+    align-self: stretch;
+    display: flex;
+  }
+
+  /* No aspect-ratio here, and that is the regime rather than an omission: in a
+     composition fitted to one screen the box's height is what row two has left,
+     and a ratio would take it back. The stacked sheet below, where the column is
+     as tall as it needs to be, is where the Slab's proportion is asked for. */
+  .eater-map__slab {
+    flex: 1;
+    display: grid;
+    place-items: center;
+    border: var(--eater-map-slab-rule) dashed
+      color-mix(in oklab, var(--ink), transparent var(--eater-map-slab-veil));
+    font-size: var(--eater-map-slab-label-size);
+    letter-spacing: var(--eater-map-slab-label-tracking);
+    color: color-mix(in oklab, var(--ink), transparent var(--eater-map-slab-veil));
+  }
+
+  /* ---- one column, outside the band the composition is fitted to ---------
+     The same move the Projects Panel makes at the same width: the two-column
+     drawing stops earning its columns, so it becomes a stack as tall as it needs
+     to be, with the Rail a row across the top instead of an index down an edge. */
+  @media not all and (min-width: 1100px) {
+    .eater-map {
+      grid-template-columns: minmax(0, 1fr);
+      row-gap: var(--eater-map-move);
+      min-height: 0;
+      padding-inline: var(--eater-map-side);
+    }
+
+    /* Three names across the top and they wrap: 360 and 320 are real screens and
+       the longest of the three does not fit beside the other two on either. Both
+       gaps are multiples of the names' own size, so the row shrinks as one
+       drawing. */
+    .eater-map__rail-items {
+      flex-direction: row;
+      flex-wrap: wrap;
+      justify-content: flex-start;
+      align-items: baseline;
+      column-gap: calc(var(--eater-map-rail-gap) * var(--eater-map-rail-size));
+      row-gap: calc(var(--eater-map-rail-rows) * var(--eater-map-rail-size));
+    }
+
+    .eater-map__rail-item {
+      writing-mode: horizontal-tb;
+      transform: none;
+    }
+
+    /* NO ROW GAP, AND THE SEAMS ARE MARGINS INSTEAD. A grid's row gap is one
+       length for every row it has, and the seams down this column are different
+       sizes of decision — the head to the copy is not the copy to the picture. */
+    .eater-map__inner {
+      grid-template-columns: minmax(0, 1fr);
+      grid-template-rows: none;
+      row-gap: 0;
+    }
+
+    /* `grid-row: auto` AND NOT ONLY `grid-column: 1`, which is the trap this
+       reset has: the four areas above are `grid-area` shorthands, so each pins a
+       ROW as well as a column. Taking the columns back and leaving the rows
+       stacks the head on the copy and the points inside the picture — two pairs
+       of overlapping text, which is what it did. Auto-placed, they come out in
+       source order, which is the order this column reads in. */
+    .eater-map__head,
+    .eater-map__copy,
+    .eater-map__points,
+    .eater-map__stage {
+      grid-column: 1;
+      grid-row: auto;
+      align-self: auto;
+    }
+
+    /* The rule moves from the paragraph's left edge to its top, which is where a
+       divider goes when the thing it divides is above rather than beside. */
+    .eater-map__copy {
+      border-left: 0;
+      border-top: 1px solid
+        color-mix(in oklab, var(--ink), transparent var(--eater-map-rule-veil));
+      padding-left: 0;
+      padding-top: var(--eater-map-close);
+      margin-top: var(--eater-map-move);
+    }
+
+    .eater-map__points {
+      margin-top: var(--eater-map-act);
+      row-gap: var(--eater-map-move);
+    }
+
+    .eater-map__stage {
+      margin-top: var(--eater-map-act);
+    }
+
+    /* The Slab's own proportion, asked for here because out of the band the
+       column is as tall as it needs to be and nothing else would give the box a
+       height at all. */
+    .eater-map__slab {
+      aspect-ratio: var(--eater-map-slab-ratio);
+    }
+  }
+
+  /* ---- the landing band --------------------------------------------------
+     Two of the Kernel's lengths and no more: the page's top margin and its left
+     one, so this screen's white agrees with the Panel's and both Rails stand in
+     one column. NOT the landing MEASURE — --landing-w, --landing-cap and the
+     masthead's drop are the Cut Title's, and #172 settled that this Section does
+     not carry one. src/kernel/NOTES.md has the numbers that settled it. */
+  @media (min-width: 1100px) and (min-height: 700px) {
+    .eater-map {
+      grid-template-columns: var(--landing-side) minmax(0, 1fr);
+      padding-block: var(--landing-inset);
+      padding-inline-end: var(--landing-side);
+    }
   }
 </style>
