@@ -170,6 +170,18 @@ whether or not the page snaps. Restoring the whole word out of the band reads as
 a fix and is not one — it takes the first screen's last gesture away, and it grows
 the Front Screen past `--fold` so the cut lands nowhere.
 
+**And it is still the only PROJECTS, which is also the base rule and not a
+regime.** `.projects-panel__masthead` is `visibility: hidden` unconditionally, so
+the cut word the reader scrolls past is the Panel's title out here exactly as it
+is in the band — the difference is only that in the band it is standing in that
+masthead's own slot, and out here it is simply the last thing on the screen above
+the index. The hiding used to be gated on the band, because out here a drawn
+line was hiding the masthead by another route; when that device was deleted the
+gate stayed and the page said the word twice, in two faces, a few lines apart.
+That is the shape of this mistake to watch for: a rule left gated on the regime
+of the thing that used to do its job elsewhere. The `crossing` Check asserts it
+now.
+
 **A continuous crossing has one unreadable moment in it, and that is arithmetic
 rather than a bug.** The ground runs light to dark while the ink runs dark to
 light on the same number, so the two must have the same luminance somewhere in

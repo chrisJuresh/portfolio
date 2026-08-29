@@ -7,9 +7,10 @@ import data from './assets/cut-morph.json';
  * the Turn.
  *
  * ONE PROJECTS, EVER, and that rule is kept in the stylesheet rather than here:
- * inside the landing band the Panel's own masthead goes `visibility: hidden` and
- * this word stands in its slot, so the reader never sees two of the word — not at
- * rest on either screen, and not at any frame of the turn between them.
+ * the Panel's own masthead goes `visibility: hidden` at every window, and inside
+ * the landing band this word stands in its slot — so the reader never sees two of
+ * the word, not at rest on either screen, not at any frame of the turn between
+ * them, and not on the scroll that replaces the turn outside the band.
  *
  * THE WORD NEITHER MOVES NOR RESIZES, and neither half of that is in this file.
  * It is drawn at the Panel masthead's own cap from the start (src/kernel/

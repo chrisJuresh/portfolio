@@ -36,6 +36,22 @@ import { open, settle } from '../lib/page.mjs';
  *     while the two agree and is two typefaces on top of each other the moment
  *     they do not — which is exactly what a copy that does not morph is, and
  *     what it looked like was dark theme breaking the headline.
+ *   * AND SO IS THE PANEL'S MASTHEAD, which is the OTHER way to put the word on
+ *     the page twice and the one this Check did not have. The Cut Title is this
+ *     Section's head out here as much as it is in the band — the reader scrolls
+ *     past a cut PROJECTS and arrives at the index it belongs to — so the
+ *     masthead holding the same word a few lines below it is a second title, in
+ *     a second face, at a second size. It went `visibility: hidden` in the band
+ *     and by another route entirely out here; when that route was deleted the
+ *     band's gate stayed, and the duplicate came back at every window below
+ *     1100x700 and every window shorter than 700 without one assertion moving.
+ *     `turn` asserts this inside the band, in the same words, and the two halves
+ *     of one rule are now covered by one Check each.
+ *
+ *     It has to keep its `display`, and that is not a detail of the mechanism:
+ *     the Section's `aria-labelledby` names this element, and a display:none
+ *     element supplies no accessible name where a hidden one still does. So
+ *     "hidden but not gone" is the assertion, both times.
  *
  * TWO WINDOWS THAT FAIL THE BAND FOR TWO DIFFERENT REASONS, because the band is
  * an `and` of two limits and a regression can be on either side of it. PORTRAIT
@@ -119,8 +135,16 @@ export const check = {
               // Cut Title publishes no attribute of its own, and inventing one
               // here would be a contract the Section does not know it has.
               const cut = document.querySelector('.front-screen__cut');
+              const masthead = panel?.querySelector('.projects-panel__masthead');
               if (!panel) return { missing: 'no [data-section="projects-panel"] on the page' };
               if (!cut) return { missing: 'no .front-screen__cut on the page — the Cut Title did not render' };
+              if (!masthead) {
+                return {
+                  missing:
+                    'no .projects-panel__masthead in the Panel — the element this Section is named by is ' +
+                    'gone from the markup, so it cannot be the one that is hidden',
+                };
+              }
 
               const canvas = document.createElement('canvas');
               canvas.width = canvas.height = 1;
@@ -240,6 +264,15 @@ export const check = {
                   boxHeight: box?.height ?? 0,
                   slab,
                 },
+                // The Panel's own drawing of the same word. Read as computed
+                // style rather than as a rect, because the failure is that it
+                // PAINTS: out here its box is taken out of flow as well, so a
+                // masthead doing exactly the right thing measures 1px and a
+                // regression that measures the same could still be on screen.
+                masthead: {
+                  visibility: getComputedStyle(masthead).visibility,
+                  display: getComputedStyle(masthead).display,
+                },
               };
             },
             [AT, SPAN_AT_LEAST],
@@ -348,6 +381,24 @@ export const check = {
               `${where}: the word is cut — ${read.word.boxHeight.toFixed(1)}px shown of a ` +
                 `${read.word.slab.toFixed(1)}px cap, in one copy`,
             );
+          }
+
+          // ---- and the Panel does not draw it a second time -------------------
+          if (read.masthead.visibility !== 'hidden') {
+            failures.push(
+              `${where}: the Panel's masthead is \`visibility: ${read.masthead.visibility}\` — the page says ` +
+                'PROJECTS twice, in two faces a few lines apart, and the Cut Title the reader just scrolled ' +
+                'past stops reading as this Section’s head. It is hidden inside the band by the same rule; a ' +
+                'gate on that band is how this came back once already.',
+            );
+          } else if (read.masthead.display === 'none') {
+            failures.push(
+              `${where}: the Panel's masthead is \`display: none\` — the word is gone and so is the Section's ` +
+                'accessible name, which `aria-labelledby` takes from this element. A directly-referenced ' +
+                'hidden element still supplies one; a display:none element supplies nothing.',
+            );
+          } else {
+            notes.push(`${where}: the Panel's masthead is hidden and still named — one PROJECTS on the page`);
           }
         } finally {
           await context.close();

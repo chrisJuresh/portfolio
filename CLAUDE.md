@@ -244,9 +244,15 @@ pulled straight back onto the port it left, silently.
 
 **Below that band it is a scroll, and it is the SAME crossing rather than a
 second one.** The whole page — both Sections, one number — starts on paper and
-arrives at dark together, and PROJECTS is still cut by the fold on the first
-screen. Three things about that are expensive to rediscover, and each has been
-got wrong once. **The Panel's palette mixes from the theme's `--paper` and never
+arrives at dark together, PROJECTS is still cut by the fold on the first screen,
+and **it is still the ONLY PROJECTS**: the Panel's masthead is
+`visibility: hidden` at every window, so the cut word the reader scrolls past is
+the Panel's title out here as much as it is in the band. That hiding used to be
+gated on the band, because a device that has since been deleted was hiding the
+masthead by another route outside it; the gate outlived the device once and the
+page said the word twice. It is unconditional now and the `crossing` Check
+asserts it. Four things about this regime are expensive to rediscover, and each
+has been got wrong once. **The Panel's palette mixes from the theme's `--paper` and never
 from `--ground`**, because `--ground` is itself a crossing on `--turn` and mixing
 into it composes two — which puts a step across the page at the Panel's top edge
 that travels with the scroll, and that is what "banding" has meant both times it

@@ -519,11 +519,18 @@ is itself the mix.
 
 ## The landing, and the morph across it
 
-On the page PROJECTS is drawn twice and appears once. In the landing band the Cut
-Title stands in the Panel masthead's slot and `.projects-panel__masthead` goes
-`visibility: hidden` underneath it — **the word does not fly down, the Section
-comes up to meet it.** Outside the band both are shown, which is worth knowing
-before reading that as a bug.
+On the page PROJECTS is drawn twice and appears once, **at every window**.
+`.projects-panel__masthead` goes `visibility: hidden` unconditionally, so this
+Cut Title is the only drawing of the word a reader ever sees. In the landing band
+it stands in that masthead's own slot — **the word does not fly down, the Section
+comes up to meet it** — and outside the band it is the last thing on the first
+screen, with the Panel's index directly under it.
+
+**"Outside the band both are shown" is what this paragraph used to say, and it
+was describing a regression rather than a rule.** The masthead was hidden out
+there too, by a device that has since been deleted; the deletion left the band's
+gate behind and the page printed the word twice, in two faces, a few lines apart.
+The `crossing` Check asserts it is hidden out there now.
 
 `src/kernel/landing.css` is the device and the measure; what this Section owes it
 is three things, all in the band's block:

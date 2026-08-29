@@ -201,11 +201,35 @@ if that window ever matters.
 
 ## The masthead, the Cut Title, and why this is a relationship
 
-The word **PROJECTS** is drawn twice and appears once: in the one-screen band the
-Cut Title — the word cut as a picture at the Front Screen's
-foot — stands in this masthead's slot, and the masthead goes `visibility: hidden`
-underneath it. The word does not fly down to the Section; **the Section comes up
-to the word.**
+The word **PROJECTS** is drawn twice and appears once, **at every window**: the
+Cut Title — the word cut as a picture at the Front Screen's foot — is this
+Section's head, and this masthead goes `visibility: hidden` underneath it. In the
+one-screen band the Cut Title literally stands in this masthead's slot; the word
+does not fly down to the Section, **the Section comes up to the word.** Out of the
+band there is no slot to stand in, and the relationship is the reader's rather
+than the layout's: they scroll past a cut PROJECTS and arrive at the index it is
+the title of, with nothing between the two.
+
+**The hiding is unconditional and the box is not**, which is the one distinction
+worth carrying out of this section. `visibility: hidden` is in the base block, so
+there is no regime it does not cover. What is per-regime is whether the BOX stays:
+in the band it is load-bearing three times over — row one's stated height, the
+line the subheading hangs off, the slot the word occupies — and out of the band it
+is holding a slot for nothing and is taken out of flow. Neither is ever
+`display: none`: this Section's `aria-labelledby` names this element, and a
+directly-referenced hidden element still supplies an accessible name where a
+display:none one supplies nothing.
+
+**That gate has been wrong once, and it is the failure to know about.** The hiding
+used to live inside the band's own media query, because out of the band a
+different device — a drawn line climbing the page, with the word printed twice and
+masked at it — was hiding the masthead by another route. `fcba8d6` deleted that
+device, correctly and for three reasons of its own, and the band gate stayed
+behind: the masthead came back at every window below 1100x700 and every window
+shorter than 700, and the page said PROJECTS twice in two faces a few lines apart.
+The `crossing` Check asserts the masthead is hidden out here now, in the same
+words `turn` asserts it in the band, so the two halves of one rule have a Check
+each.
 
 Two measured quantities are what make that true at every window size rather than
 at the one it was tuned on, and both are declared in the component:
@@ -247,12 +271,17 @@ beside them was the one thing left, and it showed as two lines of small type in
 the white beside the word, answering a question the reader had not been asked yet.
 
 **Which column it starts in is the band's decision and not the base rule's.**
-Outside the band the paragraph is columns seven to twelve, because the masthead is
-on the page and a paragraph starting at the sixth would be printed over the last
-two letters of it. Inside the band the masthead draws nothing — the Cut Title
-stands in its slot — so the sixth column is free, and the copy takes it rather
-than standing a whole column further over. What that turns on is the masthead
-being invisible rather than anything about the width.
+Inside the band the copy is columns six to twelve: the head's row is the
+subheading and nothing else, so the sixth column is free and the paragraph starts
+one gutter to the right of where the word ends rather than a whole column further
+over. The base rule leaves it at the seventh.
+
+**The reason the base rule gives has expired, and the rule has not.** It used to
+be that outside the band the masthead was on the page and a paragraph starting at
+the sixth would be printed over its last two letters. The masthead is hidden at
+every window now, so nothing is there to collide with and the seventh column is a
+composition's choice rather than a collision's — a choice, therefore, that is the
+author's to keep or spend, not an agent's to quietly reclaim.
 
 **And its rule stands one gutter INTO that column rather than on its line.** The
 sixth is shared — the head is placed across one to six and the paragraph across
@@ -521,7 +550,10 @@ figures. On the paragraph it would quietly raise every hyphen in
 ## One column, outside the band
 
 Below 1100px the composition becomes a single column as tall as it needs to be:
-the Rail turned across the top, then the masthead, the copy, and the points.
+the Rail turned across the top, then the head, the copy, and the points. The head
+is the subheading alone out here — the masthead is hidden at every window and its
+box is out of flow at every window outside the band, so the names close up under
+the Cut Title one screen above and that word is the title they are an index of.
 
 The gate is a **width** and only a width, which was measured rather than assumed.
 Taking the whole one-screen band negated is the tidier sentence and it is wrong:

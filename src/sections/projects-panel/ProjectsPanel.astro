@@ -527,7 +527,31 @@ const selected = (project: { href?: string }) => project.href === `#${here}`;
     font-feature-settings: 'case' 1;
   }
 
+  /* ONE PROJECTS, EVER, AND THIS IS WHERE THAT IS KEPT. The word this element
+     holds is the SECOND drawing of it: the Front Screen's Cut Title is already
+     this Section's head — cut by the fold on the screen above and read as the
+     masthead on the way down — so painting this one puts the word on the page
+     twice, in two faces, a few lines apart. It never paints, at any window.
+
+     UNCONDITIONAL, and that is the change fcba8d6 has to be read with. It used
+     to be gated on the landing band and the regime outside it hid the word by
+     another route entirely; when that route was taken out the gate stayed, and
+     the second PROJECTS came back everywhere below 1100x700 and everywhere
+     shorter than 700. There is one rule now and no regime it does not cover.
+
+     `visibility: hidden` AND NOT `display: none`, which is not a taste. This
+     Section's `aria-labelledby` names this element, and a directly-referenced
+     hidden element still supplies an accessible name where a display:none one
+     supplies nothing at all — so the Section would lose its name and the word
+     would leave the document with it. Not gated on a script having run either:
+     there is no state to be in, so a browser that runs nothing gets this.
+
+     WHAT THE BOX IS STILL FOR is a different question, answered per regime at
+     the foot of this sheet: in the band it is load-bearing three times over and
+     stays exactly where it is, and out of the band it is a masthead's worth of
+     nothing between the word and the index, and goes. */
   .projects-panel__masthead {
+    visibility: hidden;
     margin: 0;
     font-size: var(--projects-panel-masthead-size);
     font-weight: var(--projects-panel-masthead-weight);
@@ -1699,21 +1723,16 @@ const selected = (project: { href?: string }) => project.href === `#${here}`;
       margin-right: calc(-1 * var(--projects-panel-reach));
     }
 
-    /* WHY THE MASTHEAD STAYS IN THE MARKUP AND ONLY GOES INVISIBLE. Its box is
-       load-bearing three times over: it is row one's stated height, it is what
-       the subheading's second line hangs off — which is what makes the Frame's
-       bite exact — and it is the slot the word now occupies. Take the box out and
-       row one collapses onto the subheading, the paragraph beside it becomes what
-       sizes the row, and the subheading sinks away from the word it is supposed
-       to be the next line of. `visibility: hidden` keeps every one of those and
-       draws nothing. It also keeps the accessible name, which this Section's
-       `aria-labelledby` points at — a directly-referenced hidden element still
-       supplies one — where `display: none` would not.
-       Unconditional, and not gated on a script having run: there is no state to
-       be in, so a browser that runs nothing gets this. */
-    .projects-panel__masthead {
-      visibility: hidden;
-    }
+    /* WHY THE MASTHEAD'S BOX STAYS HERE, AND THERE IS NO RULE FOR IT. The word
+       itself is hidden in the base block above, at every window; what is
+       particular to the band is that the BOX is load-bearing three times over.
+       It is row one's stated height, it is what the subheading's second line
+       hangs off — which is what makes the Frame's bite exact — and it is the
+       slot the Cut Title is standing in. Take it out of flow here and row one
+       collapses onto the subheading, the paragraph beside it becomes what sizes
+       the row, and the subheading sinks away from the word it is supposed to be
+       the next line of. So nothing here touches it, and the block at the foot of
+       this sheet that DOES take it out is gated to everywhere this is not. */
 
     /* THE PARAGRAPH ARRIVES WITH THE PAGE, AND NOTHING ABOUT IT MOVES TO DO IT.
 
@@ -1868,6 +1887,44 @@ const selected = (project: { href?: string }) => project.href === `#${here}`;
       .projects-panel__rail {
         opacity: 1;
       }
+    }
+  }
+
+  /* ---- out of the band, the masthead's BOX goes with the word -------------
+     THE WORD ONE SCREEN UP IS THIS SECTION'S HEAD OUT HERE TOO. The Cut Title is
+     the last thing on the screen above, cut by the fold the way it is at every
+     window; the three names are the first thing in here; and out here the box
+     between them is holding a slot for nothing. In the band that same box is
+     load-bearing three times over and stays exactly where it is — the block
+     above says why — so this is gated to everywhere that block is not.
+
+     THE GATE IS THE BAND NEGATED, AND IT IS A MEDIA QUERY. It used to be an
+     attribute a script wrote, for a reason that has since gone: that script also
+     drew a line across the page, and where the line went and where the box went
+     had to be one decision. The script is deleted. What is left is a fact about
+     the viewport, both Sections already restate the band this way, and this is
+     the same two numbers with `not` in front of them.
+
+     `position: absolute` is what takes it out of the FLOW, and the 1px box is
+     what stops the absolute one still being a masthead's worth of hit-testable
+     nothing lying over the subheading. Neither is `display: none`, for the
+     reason the base block gives: the accessible name this Section points at.
+
+     WHERE IT ACTUALLY MOVES ANYTHING IS THE STACKED REGIME, and it is worth
+     writing down so the next reader does not go looking for a change that is
+     not there. Stacked, `--projects-panel-inner`'s rows are `none` and each is
+     its own content, so the head shrinks to the subheading the moment the box
+     leaves it and the names close up under the word. Wide-and-short, row one's
+     height is STATED — `mast-line + sub-line` — and the head is pinned to its
+     foot, so the subheading does not move by a pixel and what is left above it
+     is the air the composition always had between the word and the line under
+     it. Both are right, for the same reason: neither regime is being asked to
+     re-solve itself around a word that was never drawn. */
+  @media not all and (min-width: 1100px) and (min-height: 700px) {
+    .projects-panel__masthead {
+      position: absolute;
+      inline-size: 1px;
+      block-size: 1px;
     }
   }
 </style>
