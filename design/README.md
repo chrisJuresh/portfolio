@@ -87,6 +87,15 @@ design/
   effects/
     build-textures.py    bakes the two Texturelabs plates into portfolio/img/tex/
                          from design/bake/effects/
+  eater-slab/
+    capture-slab.mjs     CAPTURES the Eater Map Showcase's Slab: one still of the
+                         Eater map over central London, rail overlay on it and no
+                         interface at all, driven headless out of a sibling Eater
+                         checkout. A script and deliberately not a Bake
+    slab.json            every parameter and every default it reads — the
+                         restaurant, the camera, the viewport, what counts as
+                         interface, and where the still is written. The script
+                         holds none of them. README.md beside it says why
   bake/
     tuning.py            what the Editor has tuned, as the generator beside it
                          wants it. Five folders below it, one per Bake, each

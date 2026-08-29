@@ -1,0 +1,62 @@
+{
+  "note": "The Slab's parameters and their defaults. One file, so that changing the project's example is changing a field here rather than reading a script — capture-slab.mjs reads this and holds no number of its own. design/eater-slab/README.md says what each one is for.",
+
+  "eater": {
+    "checkout": null,
+    "needs": [
+      {
+        "path": "package.json",
+        "is": "the Eater checkout itself",
+        "fix": "clone it, or point EATER_CHECKOUT (or eater.checkout above) at where it already is"
+      },
+      {
+        "path": "node_modules/vite/bin/vite.js",
+        "is": "the Eater checkout's installed dependencies",
+        "fix": "run `pnpm install` in that checkout"
+      },
+      {
+        "path": "static/data/restaurants.json",
+        "is": "the Eater restaurant dataset",
+        "fix": "run `pnpm export:data` in that checkout"
+      },
+      {
+        "path": "static/basemap/gb.pmtiles",
+        "is": "the Eater bundled basemap, coarse whole-country tiles",
+        "fix": "run `pnpm build:basemap` in that checkout"
+      },
+      {
+        "path": "static/basemap/detail.pmtiles",
+        "is": "the Eater bundled basemap, detailed restaurant-area tiles",
+        "fix": "run `pnpm build:basemap` in that checkout"
+      }
+    ],
+    "readyTimeoutMs": 180000
+  },
+
+  "restaurant": "Bar Italia",
+  "centre": null,
+  "zoom": 15,
+
+  "viewport": {
+    "width": 393,
+    "height": 852,
+    "deviceScaleFactor": 2
+  },
+
+  "capture": {
+    "container": ".map",
+    "keep": [".map-canvas", ".marker-layer"],
+    "strip": [
+      ".app-shell > :not(.map) { display: none !important; }",
+      ".app-shell ~ * { display: none !important; }",
+      ".map > :not(.map-canvas):not(.marker-layer) { display: none !important; }",
+      ".maplibregl-control-container, .maplibregl-ctrl-container { display: none !important; }",
+      ".map { background-image: none !important; }"
+    ],
+    "settleMs": 1500,
+    "stableProbes": 24,
+    "stableGapMs": 300
+  },
+
+  "output": "portfolio/img/eater/slab.png"
+}
