@@ -1,6 +1,7 @@
 import { mountCorners } from './corners';
 import { mountGrain } from './effect-stack/grain';
 import { handles } from './handles';
+import { mountLandingEdge } from './landing-edge';
 import { mountSections, observeSection } from './loader';
 import { hold, release } from './motion';
 import { mountPageTurn, ports, snapping } from './page-turn';
@@ -24,6 +25,9 @@ followSystemTheme();
 mountWheel();
 mountPageTurn();
 mountSections();
+// After the Turn, whose Timeline it drives, and after the Sections, whose
+// measures it reads.
+mountLandingEdge();
 
 const kernel = handles();
 kernel.observeSection = observeSection;

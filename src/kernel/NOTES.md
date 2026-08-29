@@ -20,6 +20,7 @@ than a convenience.
 | `theme.ts`                  | which paper, where it is stored, and who is told when it changes |
 | `turn.ts`                   | the Turn, as one named seekable Timeline, and `onTurn()` for anything drawn against it that CSS cannot draw |
 | `landing.css` / `tokens/landing.css` | the landing band, the measure two Sections share across it, and the two resting places |
+| `landing-edge.ts`           | what the landing does OUTSIDE the band — the line the dark arrives as, and the Turn re-anchored to it |
 | `page-turn.ts`              | one wheel notch between those resting places, and a link into a Section going the same way |
 | `wheel.ts`                  | who owns a wheel gesture — the page, or a roll inside it     |
 | `loader.ts`                 | mounting a Section as it approaches the viewport             |
@@ -136,6 +137,58 @@ is a decision, not a convenience.
 **One cycle to not write.** `--landing-w` must never come to depend on anything
 the Cut Title computes. That is why the landing's fit constant substitutes the
 masthead's own drop out of the equation rather than referring to the word.
+
+## Outside the band, the landing is a LINE
+
+`landing-edge.ts`, and the argument is in its own head. The short version, because
+it is the thing most likely to be re-broken by someone reasoning from the band:
+
+**In the band the Turn is already an edge, and nobody wrote it.** The Front Screen
+ends under the Cut Title and the Panel below it is black, so the boundary between
+the two Sections crosses PROJECTS about half way up. That is why the word ships
+cut across the middle: the fold IS the line.
+
+**Out of the band there is no fold, so the same crossing degenerates into a mix.**
+`--ground` carries the whole document from paper into dark together, over the
+document's entire scroll — every frame between the two ends a grey page with a
+grey word on it, and no moment for anything to happen *at*. The banding readers
+reported was not a bug on top of the design; it was one crossing with nothing in
+it.
+
+**So the line is drawn.** A fixed plate climbs the screen, clocked on the word's
+own travel up it rather than on a scroll distance, so it arrives with the word at
+every viewport. The word is drawn twice and masked at the line — dark ink above,
+light ink below, one letterform with the boundary through it. And the Turn is
+re-anchored to that same climb, so the letterforms, the Effect Stack's veil and
+the dark all arrive together.
+
+**Three traps, and the first two each cost a rebuild.**
+
+*The Turn cannot run while `--ground` is still a mix.* An earlier answer deferred
+`--turn` until the line had left the screen, precisely because moving it during
+the climb painted the paper above the line grey. The fix is not timing: with an
+edge, the dark side is the plate and the Panel and both state their own colours,
+so `ground.css` pins `--ground`, `--ink` and `--ink-soft` to the paper end under
+`[data-turn-edge]` and the Turn is free. Unpin them and the grey comes straight
+back.
+
+*Hiding the duplicate masthead takes three declarations, not one.* `position:
+absolute` with a 1px box takes it out of the flow and the word overflows that box
+and **paints anyway** — a second PROJECTS, in the sans, lying across the
+subheading. `visibility: hidden` is what stops it painting; `display: none` is not
+available, because the Panel's `aria-labelledby` names that element.
+
+*The plate's place in the page is four z-indexes in three files.* The Effect Stack
+tops out at 18, the plate is 19, the Panel lifts to 20 and the Cut Title to 25.
+That ordering is what makes the treatment stop at the line, the black stay behind
+the Panel's own text, and the line pass behind the letters instead of across them.
+It also depends on `.front-screen` not being a stacking context, which it is not
+once its reveal has finished — the same thing `--front-screen-type-z` already
+relies on, and the reason anything measuring this has to wait that reveal out.
+
+The `landing-edge` Check holds all of it, at two windows that fail the band for
+two different reasons, in both themes. Its own head records the five mutations it
+catches and the one it does not.
 
 ## The page turn, and who owns a notch
 

@@ -242,6 +242,20 @@ that needs the page placed between the two resting places has to lift the snappi
 first** — `window.portfolio.snapping(false)` — or every `scrollTo` in between is
 pulled straight back onto the port it left, silently.
 
+**Below that band the same crossing is a LINE, and `src/kernel/landing-edge.ts`
+is it.** There is no fold out there for the Turn to happen at, so drawn as the
+mix it ships as, it was a grey page with a grey word on it for the length of a
+scroll. Instead a plate climbs the screen clocked on the word's own travel, the
+word is drawn twice and masked at the line so it reads dark above it and light
+below, and `--turn` is re-anchored to that same climb — one number, with the
+letterforms, the veil and the dark on it together. Two things there are not
+guesses and are expensive to rediscover: **`ground.css` pins `--ground`, `--ink`
+and `--ink-soft` to the paper end** under `[data-turn-edge]`, and unpinning them
+brings the grey straight back; and **hiding the Panel's duplicate masthead takes
+`visibility: hidden` as well as the 1px box**, or the word overflows that box and
+paints anyway. `src/kernel/NOTES.md` has the rest, and the `landing-edge` Check
+holds all of it at two windows that fail the band for two different reasons.
+
 Every dependency version is pinned exactly and nothing is updated on a schedule
 (ADR 0002). pnpm's settings live in `pnpm-workspace.yaml`, not `.npmrc` — pnpm 11
 ignores `.npmrc` for `saveExact`, and the failure mode is a caret quietly

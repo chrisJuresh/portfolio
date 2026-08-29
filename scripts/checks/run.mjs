@@ -36,6 +36,7 @@ import { check as editor } from './checks/editor.mjs';
 import { check as faces } from './checks/faces.mjs';
 import { check as frontScreen } from './checks/front-screen.mjs';
 import { check as ground } from './checks/ground.mjs';
+import { check as landingEdge } from './checks/landing-edge.mjs';
 import { check as moments } from './checks/moments.mjs';
 import { check as projectsPanel } from './checks/projects-panel.mjs';
 import { check as turn } from './checks/turn.mjs';
@@ -52,6 +53,7 @@ const CHECKS = [
   projectsPanel,
   ground,
   turn,
+  landingEdge,
   moments,
   deepLinks,
   unpublishable,

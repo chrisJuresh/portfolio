@@ -1,6 +1,7 @@
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { register } from './handles';
+import { edged } from './landing-edge';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -66,7 +67,16 @@ export function createTurn(): gsap.core.Timeline {
     trigger,
     start: 'top top',
     end: 'bottom bottom',
-    onUpdate: (self) => timeline.progress(self.progress),
+    // OUT OF THE BAND THIS IS NOT THE CROSSING. There is no fold out there, so
+    // spanning the document's whole scroll makes the Turn a grey wash rather
+    // than a page turning; landing-edge.ts re-anchors it to the word's own
+    // travel and drives this Timeline itself. Standing aside rather than
+    // fighting it: two writers on one progress is a frame of whichever ran
+    // second.
+    onUpdate: (self) => {
+      if (edged()) return;
+      timeline.progress(self.progress);
+    },
   });
 
   register(TURN, timeline);
