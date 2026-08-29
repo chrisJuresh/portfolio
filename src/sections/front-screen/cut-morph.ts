@@ -1,4 +1,4 @@
-import { mode, onCross } from '../../kernel/cross';
+import { joined, onCross } from '../../kernel/cross';
 import { onTurn } from '../../kernel/turn';
 import data from './assets/cut-morph.json';
 
@@ -204,12 +204,18 @@ export default function mountCutMorph(root: HTMLElement): void {
      against its OWN crossing of the window instead, which in the band is the same
      measurement — one screen, from the cap top on the bottom edge to the cap top
      at the landing. Both are watched, and whichever is not driving the page reads
-     its own number: `mode()` is null in the band and null with no candidate
-     chosen, and then this is exactly the shipped file. */
+     its own number.
+
+     `joined()` AND NOT `mode()`, which is a distinction one candidate makes and
+     the rest do not: `fixed` is chosen the same way the others are, but all it
+     carries is the two plain bug fixes — the word is still the Front Screen's
+     last line and the Panel still prints its own masthead — so its letters have
+     to turn against the Turn exactly as the shipped page's do. `joined()` is
+     false in the band, false with no candidate, and false for that one. */
   onCross((cross) => {
-    if (mode() !== null) draw(cross);
+    if (joined()) draw(cross);
   });
   onTurn((turn) => {
-    if (mode() === null) draw(turn);
+    if (!joined()) draw(turn);
   });
 }

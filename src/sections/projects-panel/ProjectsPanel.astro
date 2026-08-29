@@ -27,7 +27,11 @@ const selected = (project: { href?: string }) => project.href === `#${here}`;
   data-section="projects-panel"
   aria-labelledby="projects-panel-masthead"
 >
-  <nav class="projects-panel__rail" aria-label={content.rail.label}>
+  {/* data-landing-names is the Kernel's handle on the three names, the way
+      data-landing-mast is on the masthead: some of the out-of-band candidates
+      stand them under the word rather than above it, and all of them time their
+      arrival off this box's own rise up the window. src/kernel/cross.ts. */}
+  <nav class="projects-panel__rail" aria-label={content.rail.label} data-landing-names>
     {/* role="list" on a list that already is one: `list-style: none` costs a
         list its semantics in VoiceOver, and the Rail is meant to be announced
         as a list of projects. */}
@@ -84,7 +88,12 @@ const selected = (project: { href?: string }) => project.href === `#${here}`;
         the accessibility tree, and the attribute is on the stage rather than on
         each half so the reflection inherits it: a screen reader offered the
         window twice would be worse than being offered it once. NOTES.md. */}
-    <div class="projects-panel__stage" aria-hidden="true">
+    {/* data-landing-under: a candidate that holds the word on the screen for as
+        long as there is Panel has to leave some other way, and this is the box
+        it leaves for. The picture arriving is when a header has outstayed its
+        welcome — a judgement about the composition, so it is made against an
+        element rather than against a scroll position. src/kernel/cross.ts. */}
+    <div class="projects-panel__stage" aria-hidden="true" data-landing-under>
       <div class="projects-panel__frame">
         {/* The titlebar, and the LENS it is made of. Its material is not
             markup: it is this element's own background, its backdrop filter and
@@ -1855,24 +1864,142 @@ const selected = (project: { href?: string }) => project.href === `#${here}`;
   }
   /* ---- the spine of the out-of-band candidates -------------------------
      SPIKE. Outside the landing band the page shows PROJECTS twice: a Friz word
-     clipped at the foot of the Front Screen's column and this masthead about a
-     hundred and fifty pixels below it, at another size, in another face. Every
-     candidate in src/kernel/cross.ts makes it one word the same way the band
-     does — this masthead goes invisible and the Cut Title flies into its slot.
+     at the foot of the Front Screen's column and this masthead about a hundred
+     and fifty pixels below it, at another size, in another face. Every candidate
+     in src/kernel/cross.ts makes it one word the way the band does — this
+     masthead goes out of sight and the Cut Title is held in front of it.
 
-     `visibility: hidden` and never `display: none`: the slot has to stay open
-     and stay exactly the size it is, because it is what the word is aimed at —
-     and because this Section's `aria-labelledby` names this element, and a
-     display:none element supplies no accessible name.
+     THE ATTRIBUTES ARE THE GATE AND THERE IS NO MEDIA QUERY. cross.ts writes
+     them onto a Section's root only when a candidate is chosen AND the band does
+     not apply, so a query here would be a second copy of that decision. They are
+     on the Section's own element rather than on :root because a scoped
+     stylesheet cannot match <html> at all — the trap tokens.css carries its own
+     paragraph about.
 
-     THE ATTRIBUTE IS THE GATE AND THERE IS NO MEDIA QUERY. cross.ts writes
-     data-cross onto a Section's root only when a candidate is chosen AND the
-     band does not apply, so a query here would be a second copy of that
-     decision. It is on the Section's own element rather than on :root because a
-     scoped stylesheet cannot match <html> at all — the trap tokens.css carries
-     its own paragraph about. */
-  .projects-panel[data-cross] .projects-panel__masthead {
+     TWO ATTRIBUTES AND NOT ONE. `data-cross` is on every candidate including the
+     one that changes nothing else; `data-join` is only on the ones where the word
+     stands in for this masthead. The plain bug below is fixed for both. */
+
+  /* ONE GROUND, AND IT IS THE KERNEL'S — the plain bug, and the one that reads
+     on a phone as a white band, then a grey band, then black.
+
+     WHAT WAS HAPPENING. This Section paints --projects-panel-bg, which is
+     --projects-panel-bg-far mixed into --ground on --turn; the document paints
+     --ground, which is --paper mixed into --dark on the same --turn. Both are
+     white at 0 and both are black at 1, so a still of either resting place looks
+     right. Everywhere in between they are two different mixes and the Section's
+     is the darker, so a seam ran straight across the page at this Section's top
+     edge and moved with the scroll. And because this ground is opaque it also
+     painted out the Effect Stack's paper and the three corner pictures, which
+     stop dead at the same line — the second edge, a few pixels from the first.
+
+     The band already does not paint here and says why at length. What that
+     comment did not know is that the reasoning is not the band's: one ground
+     painted once cannot disagree with itself part way through a crossing, at any
+     window size. The Token stays what it was and is still what the Frame's glass
+     is rendered against — what comes off is only this Section painting it. */
+  .projects-panel[data-cross] {
+    background: none;
+  }
+
+  /* THE SLOT. `visibility: hidden` and never `display: none`: this Section's
+     `aria-labelledby` names this element, and a display:none element supplies no
+     accessible name where a hidden one still does.
+
+     AND IT IS GROWN TO THE WORD'S OWN CAP, which is the whole of what "the word
+     never changes size" costs. The two words are not the same size out here —
+     33px of cap against 51px on a phone — so one of them has to give, and it
+     cannot be the one the reader is watching. cross.ts solves a font-size from
+     the word's measured cap and publishes it; `settle` is the one candidate that
+     declines, and its fallback is this Section's own Token. */
+  .projects-panel[data-join] .projects-panel__masthead {
     visibility: hidden;
+    font-size: var(--landing-word-size, var(--projects-panel-masthead-size));
+  }
+
+  /* A CANDIDATE THAT NEVER LANDS NEEDS NO SLOT. `stay` and the rest hold the word
+     on the SCREEN, so it never comes to rest anywhere in this document and an
+     open slot would be a hole in the composition. Out of flow rather than
+     removed, for the accessible name again. The room that replaces it is one
+     three-quarter cap, so the Panel's first line does not begin underneath the
+     held word at the moment the hold starts. */
+  .projects-panel[data-cross='stay'] .projects-panel__masthead,
+  .projects-panel[data-cross='header'] .projects-panel__masthead,
+  .projects-panel[data-cross='curtain'] .projects-panel__masthead,
+  .projects-panel[data-cross='wide'] .projects-panel__masthead,
+  .projects-panel[data-cross='under'] .projects-panel__masthead {
+    position: absolute;
+    inline-size: 1px;
+    block-size: 1px;
+  }
+
+  .projects-panel[data-cross='stay'],
+  .projects-panel[data-cross='header'],
+  .projects-panel[data-cross='curtain'],
+  .projects-panel[data-cross='wide'] {
+    padding-top: calc(var(--projects-panel-inset) + var(--landing-head-room, 0px));
+  }
+
+  /* THE THREE NAMES, STOOD UNDER THE WORD. They ship ABOVE the masthead out here
+     — three names, then the word they are an index of — which was survivable
+     while the word was this Section's own and is not once the word is the one
+     from the screen above: the held word would fly straight through them on its
+     way in. So for the candidates that land, they go under the line the word
+     lands on.
+
+     BOTH NUMBERS ARE MEASURED, and they have to be: the names WRAP, so how tall
+     they are and where the masthead's cap top ends up are things layout works out
+     and CSS cannot read back. `--landing-names-top` is against this Section's own
+     box, which is what they are positioned inside; `--landing-names-room` is
+     given back to the subheading as a margin, so everything below them stands
+     exactly where it stood. */
+  .projects-panel[data-cross='land'] .projects-panel__rail,
+  .projects-panel[data-cross='rail'] .projects-panel__rail,
+  .projects-panel[data-cross='settle'] .projects-panel__rail,
+  .projects-panel[data-cross='swap'] .projects-panel__rail {
+    position: absolute;
+    left: var(--projects-panel-side);
+    right: var(--projects-panel-side);
+    top: var(--landing-names-top, 0px);
+  }
+
+  .projects-panel[data-cross='land'] .projects-panel__sub,
+  .projects-panel[data-cross='rail'] .projects-panel__sub,
+  .projects-panel[data-cross='settle'] .projects-panel__sub,
+  .projects-panel[data-cross='swap'] .projects-panel__sub {
+    margin-top: var(--landing-names-room, 0px);
+  }
+
+  /* AND THEY ARRIVE ON THEIR OWN NUMBER. Not --cross, which is the word's: what
+     a reader notices about an index is it coming up the screen, and by the time
+     the word has settled the names may be a screen below or already gone past.
+     --landing-names-cross is read straight off this box. */
+  .projects-panel[data-join] .projects-panel__rail {
+    opacity: var(--landing-names-cross, 1);
+  }
+
+  /* ONE AT A TIME, for the candidate that is about them. Three slices of the same
+     arrival, each a fifth of it apart, so the index assembles itself rather than
+     appearing. The rise is in `em`, so it is a share of the name's own size. */
+  .projects-panel[data-cross='rail'] .projects-panel__rail {
+    opacity: 1;
+  }
+
+  .projects-panel[data-cross='rail'] .projects-panel__rail-item {
+    opacity: var(--projects-panel-name-in, 1);
+    transform: translateY(calc((1 - var(--projects-panel-name-in, 1)) * 0.7em));
+  }
+
+  .projects-panel[data-cross='rail'] .projects-panel__rail-item:nth-child(1) {
+    --projects-panel-name-in: clamp(0, calc(var(--landing-names-cross, 1) * 3), 1);
+  }
+
+  .projects-panel[data-cross='rail'] .projects-panel__rail-item:nth-child(2) {
+    --projects-panel-name-in: clamp(0, calc((var(--landing-names-cross, 1) - 0.18) * 3), 1);
+  }
+
+  .projects-panel[data-cross='rail'] .projects-panel__rail-item:nth-child(3) {
+    --projects-panel-name-in: clamp(0, calc((var(--landing-names-cross, 1) - 0.36) * 3), 1);
   }
 </style>
 

@@ -1185,73 +1185,155 @@ const EAGER = 2;
     }
   }
   /* ---- the spine of the out-of-band candidates -------------------------
-     SPIKE — src/kernel/cross.ts is the whole argument, and the four candidates.
+     SPIKE — src/kernel/cross.ts is the whole argument, and the nine candidates.
 
      Outside the landing band this word is the last line of the column, clipped
-     to 0.62 of its own cap because the document ends beneath it, centred in the
-     column's measure — and the Panel prints a SECOND PROJECTS, in the sans, at
-     another size, on the page's left margin about a hundred and fifty pixels
-     lower.
+     to 0.62 of its own cap, centred in the column's measure — and the Panel
+     prints a SECOND PROJECTS, in the sans, at another size, on the page's left
+     margin about a hundred and fifty pixels lower.
 
-     THE WORD FLIES. Not one pose swapped for another: the SAME word, starting
-     exactly where the column already puts it, carried across to the masthead's
-     slot as the crossing opens. At --cross: 0 every declaration in here is the
-     identity — no translation, no scale, the cut open to the same 0.62, the
-     column the same height — so the page at rest is the page that ships, and
-     the departure is invisible because there is nothing to depart FROM.
+     TWO OF THOSE ARE PLAIN BUGS AND ARE FIXED FOR EVERY CANDIDATE, which is why
+     the first is gated on `data-cross` and not on `data-join`. The cut is one of
+     them: 0.62 of a cap is the FOLD taking the bottom off the word, and out here
+     there is no fold at the word — the document runs straight on past it — so
+     what the reader gets is a headline chopped through the middle by nothing.
+     The other is the Panel's second ground, and it is fixed over there.
 
-     NOTHING LEAVES THE FLOW, which is the difference from the first spike and
-     the reason this one is smooth. The travel is a `transform`, so it costs no
-     layout and the document cannot reflow under the reader mid-flight; the
-     reveal is a height whose growth is handed straight back as a negative
-     margin, so the cut opens downward over the Panel while the column's own
-     height never changes. The word paints over the Panel because it is a
-     positioned descendant with a z-index and the Panel's ground is a block
-     background.
+     THE WORD IS HELD, and that is the whole of the device. Not a pose swapped
+     for another, and not a flight across the page: the same word, starting
+     exactly where the column already puts it, riding up with the page until its
+     cap top reaches a resting line and then STAYING ON THAT LINE while the page
+     goes past underneath. Which is what the band does — and the reason it costs
+     the band nothing is that in there the two poses are the same box.
 
-     THE THREE NUMBERS ARE MEASURED AND ARRIVE ON THE BODY. In the band both
-     Sections are solved from --landing-w, so the two poses are arithmetic. Out
-     here the Panel is a stack whose masthead stands under a Rail of names that
-     WRAP, so the distance between the poses is something layout works out and
-     CSS cannot read back — the same reason the Timeline measures a photograph
-     rather than deriving one. cross.ts measures them once per resize and
-     publishes --landing-fly-dx, --landing-fly-dy and --landing-fly-scale; all
-     three carry the identity as their fallback, so the first paint before any
-     script has run is the word where the flow put it.
+     NOTHING LEAVES THE FLOW. The hold is a `transform`, so it costs no layout
+     and the document cannot reflow under the reader mid-scroll. At --cross: 0
+     and --landing-hold-dy: 0 every declaration below is the identity, so the
+     page at rest is the page that ships and there is nothing to depart from.
 
-     THE ATTRIBUTE IS THE GATE AND THERE IS NO MEDIA QUERY, and it is on this
-     Section's own root: a scoped stylesheet cannot match <html>, which is the
-     trap tokens.css carries a paragraph about. cross.ts writes it only when a
-     candidate is chosen and the band does not apply. */
-  .front-screen[data-cross] .front-screen__cut {
-    /* 0 0 and not the default centre: the box's top-left corner is the word's
-       cap top on the column's left edge, which is the one point in it that has
-       a counterpart in the masthead — so it is the point the two deltas carry,
-       and the point the scale must not move. */
+     THE NUMBERS ARE MEASURED AND ARRIVE ON THE BODY, all with the identity as
+     their fallback, so the first paint before any script has run is the word
+     where the flow put it. cross.ts measures them once per resize; out here the
+     Panel is a stack whose masthead stands under a Rail of names that WRAP, so
+     the distance between the two words is something layout works out and CSS
+     cannot read back.
+
+     THE ATTRIBUTES ARE THE GATE AND THERE IS NO MEDIA QUERY, and they are on
+     this Section's own root: a scoped stylesheet cannot match <html>, which is
+     the trap tokens.css carries a paragraph about. cross.ts writes them only
+     when a candidate is chosen and the band does not apply. */
+
+  /* THE WORD IS WHOLE. `--front-screen-cut-show` is the fold's bite and there is
+     no fold here. The column grows by the difference, which is a layout change
+     and is meant to be one — it is the same word finally standing at its own
+     height. On the LINK and not on the container, because
+     `--front-screen-cut-slab` is in container units and a container cannot query
+     itself. */
+  .front-screen[data-cross] .front-screen__cut > a {
+    height: var(--front-screen-cut-slab);
+  }
+
+  /* THE HOLD. `transform-origin: 0 0` and not the default centre: the box's
+     top-left corner is the word's cap top on the column's left edge, which is
+     the one point in it that has a counterpart in the masthead — so it is the
+     point the deltas carry, and the point a scale must not move. */
+  .front-screen[data-join] .front-screen__cut {
     transform-origin: 0 0;
-    transform: translate(
-        calc(var(--cross, 0) * var(--landing-fly-dx, 0px)),
-        calc(var(--cross, 0) * var(--landing-fly-dy, 0px))
-      )
-      scale(calc(1 + var(--cross, 0) * (var(--landing-fly-scale, 1) - 1)));
+    transform: translate(var(--landing-hold-dx, 0px), var(--landing-hold-dy, 0px))
+      scale(var(--landing-hold-scale, 1));
     will-change: transform;
   }
 
-  /* THE CUT OPENS. `--front-screen-cut-show` of the cap is what the column shows
-     when the document ends under the word; by the end of the crossing the whole
-     cap is showing, the way the fold uncovers it in the band. The negative
-     margin is the growth given back: the box grows downward over the Panel and
-     the column's height is what it always was, so the scroll the reader is in
-     the middle of does not move under them. Both declarations are on the LINK
-     and not on the container, because `--front-screen-cut-slab` is in container
-     units and a container cannot query itself. */
-  .front-screen[data-cross] .front-screen__cut > a {
-    --front-screen-cut-open: calc(
-      var(--front-screen-cut-show) + var(--cross, 0) * (1 - var(--front-screen-cut-show))
+  /* THE PLATE, and only for the candidates that hold the word for longer than
+     the handoff takes. A header that stays while the Panel goes under it needs
+     the Panel to actually go UNDER it rather than through it, so those put the
+     page's own ground behind the word and carry it to the top of the screen: a
+     whole viewport of it, so a line of type has disappeared behind the header
+     before it can reach the letters.
+
+     `z-index: -1` is safe here and would not be on most elements: the container
+     holds `container-type: inline-size`, which contains layout and therefore
+     makes it a stacking context, so a negative z is behind the WORD and not
+     behind the page.
+
+     It arrives over the first third of the handoff, so the ground is solid for
+     almost all of the hold and there is still nothing painted at rest. And its
+     inset is in `rem` deliberately: every length the cut is built from is in
+     container units, and this box is a pseudo-element of the container itself. */
+  .front-screen[data-cross='stay'] .front-screen__cut::before,
+  .front-screen[data-cross='header'] .front-screen__cut::before,
+  .front-screen[data-cross='wide'] .front-screen__cut::before {
+    content: '';
+    position: absolute;
+    inset: -100vh -50vw -0.55rem;
+    z-index: -1;
+    background: var(--ground);
+    opacity: min(1, calc(var(--cross, 0) * 3));
+  }
+
+  /* A header sits on a rule, which is the one thing that says it is a header
+     rather than a word that happens to be up there. */
+  .front-screen[data-cross='header'] .front-screen__cut::after {
+    content: '';
+    position: absolute;
+    left: -50vw;
+    right: -50vw;
+    bottom: -0.55rem;
+    height: 1px;
+    background: currentcolor;
+    opacity: calc(var(--cross, 0) * 0.35);
+  }
+
+  /* THE CURTAIN. The Turn arrives as an EDGE rather than as a mix, and it comes
+     up through the word itself: below the edge the page's far end, above it the
+     page's ground, and the edge is --cross. The letters are drawn as a
+     difference against whatever is behind them, so the part of each letter the
+     dark has passed reads white and the part it has not reads dark — one word,
+     inverting through the middle as the page turns.
+
+     TWO BOXES AND NOT ONE, which is the trap this candidate cost. A gradient
+     stop in `%` is a share of the BOX, so a single plate running a viewport
+     above the word puts the edge most of a screen up before the word has begun
+     to cross. The plate is therefore the word's own height and the gradient
+     spans exactly that; everything above it is a second, plain box.
+
+     AND THE FIRST OF THEM IS OPAQUE FROM THE FIRST FRAME, which is the OTHER
+     trap and cost a candidate that opened white. `mix-blend-mode` composites
+     against the backdrop WITHIN the stacking context, and the container makes
+     one — so with nothing painted behind it the word differences against
+     transparent, which is white on white. The plate at --cross: 0 is the page's
+     own ground, so the word differences against paper and reads exactly as dark
+     as it ships. What it costs is the Effect Stack's paper texture in one strip
+     the width of the page, and that is this candidate's price rather than a
+     defect to be found later.
+
+     `#fff` and not `currentcolor`: difference against white is exactly the
+     inverse of the backdrop, which is the only fill that stays legible at BOTH
+     ends of a crossing. currentcolor is already mixed against the Turn, so it
+     would meet the ground half way across and vanish there. */
+  .front-screen[data-cross='curtain'] .front-screen__cut::before {
+    content: '';
+    position: absolute;
+    inset: -0.55rem -50vw;
+    z-index: -1;
+    background: linear-gradient(
+      to top,
+      var(--dark) calc(var(--cross, 0) * 100%),
+      var(--ground) 0
     );
-    height: calc(var(--front-screen-cut-open) * var(--front-screen-cut-slab));
-    margin-bottom: calc(
-      (var(--front-screen-cut-show) - var(--front-screen-cut-open)) * var(--front-screen-cut-slab)
-    );
+  }
+
+  .front-screen[data-cross='curtain'] .front-screen__cut::after {
+    content: '';
+    position: absolute;
+    inset: -100vh -50vw 100%;
+    z-index: -1;
+    background: var(--ground);
+    opacity: min(1, calc(var(--cross, 0) * 3));
+  }
+
+  .front-screen[data-cross='curtain'] .front-screen__cut-word {
+    color: #fff;
+    mix-blend-mode: difference;
   }
 </style>
