@@ -13,12 +13,17 @@ import { listsWorktree } from './teardown.mjs';
  * @param {string} cwd the tree to ask about
  */
 export function git(sh, cwd) {
+  /** @param {...string} args */
   const run = (...args) => sh.run('git', args, { cwd });
+  /** @param {...string} args */
   const out = (...args) => sh.out('git', args, { cwd }).trim();
   /** Untrimmed, for the one answer whose leading whitespace is data:
    *  `status --porcelain` writes ` M path`, and trimming the block eats the
-   *  first line's status column. */
+   *  first line's status column.
+   *
+   *  @param {...string} args */
   const raw = (...args) => sh.out('git', args, { cwd });
+  /** @param {...string} args */
   const ok = (...args) => sh.ok('git', args, { cwd });
 
   return {
@@ -44,7 +49,9 @@ export function git(sh, cwd) {
     },
 
     /** Fetch, so everything after this is about the remote's tip and not a ref
-     *  that was current whenever anybody last looked. */
+     *  that was current whenever anybody last looked.
+     *
+     *  @param {string} branch */
     fetch(branch) {
       return ok('fetch', 'origin', branch);
     },
@@ -78,6 +85,11 @@ export function git(sh, cwd) {
       return uncommitted(raw('status', '--porcelain'));
     },
 
+    /**
+     * @param {string} path
+     * @param {string} branch
+     * @param {string} base
+     */
     addWorktree(path, branch, base) {
       return ok('worktree', 'add', path, '-b', branch, base);
     },
@@ -89,19 +101,25 @@ export function git(sh, cwd) {
      * the main checkout — which is standing on `development`, so a HEAD-relative
      * answer would be about the wrong branch and would always be 0. That is the
      * shape of mistake that makes a safety check pass vacuously.
+     *
+     * @param {string} base
+     * @param {string} ref
      */
     aheadOf(base, ref) {
       const counted = out('rev-list', '--count', `${base}..${ref}`);
       return Number(counted) || 0;
     },
 
-    /** How many commits this branch is ahead of, and behind, the given ref. */
+    /** How many commits this branch is ahead of, and behind, the given ref.
+     *
+     *  @param {string} base */
     againstBase(base) {
       const counted = out('rev-list', '--left-right', '--count', `${base}...HEAD`);
       const [behind, ahead] = counted.split(/\s+/).map(Number);
       return { behind: behind || 0, ahead: ahead || 0 };
     },
 
+    /** @param {string} onto */
     rebase(onto) {
       return run('rebase', onto);
     },
@@ -124,7 +142,9 @@ export function git(sh, cwd) {
     /** `expected`, because this failing is the ordinary case rather than a gate
      *  that should not have been there: pnpm's store links go past what Git for
      *  Windows can delete, `pnpm feature clean` finishes what it could not, and
-     *  an entry in the friction log for it would be written on every land. */
+     *  an entry in the friction log for it would be written on every land.
+     *
+     *  @param {string} path */
     removeWorktree(path) {
       return sh.run('git', ['worktree', 'remove', path], { cwd, expected: true });
     },
@@ -133,25 +153,31 @@ export function git(sh, cwd) {
       return run('worktree', 'prune');
     },
 
+    /** @param {string} branch */
     deleteBranch(branch) {
       return run('branch', '-D', branch);
     },
 
+    /** @param {string} branch */
     deleteRemoteBranch(branch) {
       return run('push', 'origin', '--delete', branch);
     },
 
     /** Does this local ref exist? Asked rather than inferred, because it is how
-     *  the teardown verifies itself. */
+     *  the teardown verifies itself.
+     *
+     *  @param {string} branch */
     hasLocalBranch(branch) {
       return run('rev-parse', '--verify', '--quiet', `refs/heads/${branch}`).status === 0;
     },
 
+    /** @param {string} branch */
     hasRemoteBranch(branch) {
       const result = run('ls-remote', '--heads', 'origin', branch);
       return result.status === 0 && heads(result.stdout).has(branch);
     },
 
+    /** @param {string} path */
     hasWorktree(path) {
       return listsWorktree(
         this.worktrees().map((tree) => tree.path),
@@ -159,6 +185,7 @@ export function git(sh, cwd) {
       );
     },
 
+    /** @param {string} ref */
     revision(ref) {
       const result = run('rev-parse', ref);
       return result.status === 0 ? result.stdout.trim() : null;
@@ -173,6 +200,7 @@ export function git(sh, cwd) {
       return result.status === 0 ? result.stdout.trim() : null;
     },
 
+    /** @param {string} path */
     setHooksPath(path) {
       return run('config', 'core.hooksPath', path);
     },

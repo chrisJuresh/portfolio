@@ -30,7 +30,7 @@ test('the ports a browser refuses to fetch from are never offered', async () => 
   // net::ERR_UNSAFE_PORT, which reads like a broken tree. scripts/checks/lib/
   // serve.mjs hits the same list from the other direction.
   const refused = [...BROWSERS_REFUSE][0];
-  assert.ok(refused > 1024, 'the list is of ports an allocation can land on');
+  assert.ok(refused !== undefined && refused > 1024, 'the list is of ports an allocation can land on');
   assert.notEqual(await choosePort({ ...anything, from: refused }), refused);
 });
 
@@ -42,8 +42,10 @@ test('free reports true for a port nothing holds and false for one held', async 
   // The one impure thing in here, tested because "is this port free" answering
   // wrongly is the failure that hands two features one port.
   const server = createServer(() => {});
-  await new Promise((ok) => server.listen(0, '127.0.0.1', ok));
-  const held = server.address().port;
+  await new Promise((ok) => server.listen(0, '127.0.0.1', () => ok(undefined)));
+  const bound = server.address();
+  assert.ok(bound !== null && typeof bound !== 'string', 'the server bound a TCP port');
+  const held = bound.port;
   try {
     assert.equal(await free(held), false, `${held} is held by this test`);
   } finally {

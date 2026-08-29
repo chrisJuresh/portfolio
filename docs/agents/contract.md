@@ -88,8 +88,11 @@ answer, three of which make a Check silently assert nothing while reading as
 though it asserts something. **Read it before adding or changing a Check.**
 
 A green `pnpm check` does not mean a Section is right. It means nothing invisible
-broke. `astro check` answers for types; `pnpm test` answers for the pure
-functions; the look is answered by the author, looking.
+broke. `astro check` answers for the Portfolio's types and `tsc -p
+tsconfig.scripts.json` for the `feature` script's — **and for nothing else under
+`scripts/`**, which is a decision stated in that file rather than an oversight
+(#183); `pnpm test` answers for the pure functions; the look is answered by the
+author, looking.
 
 ## Which skills to run, and which to skip
 

@@ -34,7 +34,9 @@ import { announced, locked } from './astro.mjs';
 import { fromCommandLines, holders, listeners, standingIn } from './listeners.mjs';
 import { free } from './ports.mjs';
 
-/** Where the server's output goes. `*.log` is gitignored repository-wide. */
+/** Where the server's output goes. `*.log` is gitignored repository-wide.
+ *
+ *  @param {string} worktree */
 export function logPath(worktree) {
   return `${worktree}/dev-server.log`;
 }
@@ -42,10 +44,13 @@ export function logPath(worktree) {
 /** Astro's own two files: the lock naming the process that bound the socket, and
  *  the log the backgrounded server writes its requests and errors to. Ours only
  *  ever holds the one announcement, because the process we spawn hands the
- *  serving to a child and exits. */
+ *  serving to a child and exits.
+ *
+ *  @param {string} worktree */
 function astroLockPath(worktree) {
   return `${worktree}/.astro/dev.json`;
 }
+/** @param {string} worktree */
 function astroLogPath(worktree) {
   return `${worktree}/.astro/dev.log`;
 }
@@ -120,6 +125,11 @@ export async function start({ worktree, port: asked }) {
  * server, loudly, with the two logs named. That is a wrong answer somebody can
  * act on; the probe's is one nobody can see.
  *
+ * @param {object} options
+ * @param {string} options.log our own log, where astro's stdout was redirected
+ * @param {number} options.since the byte offset the spawn started writing at
+ * @param {number} [options.attempts]
+ * @param {number} [options.wait] milliseconds between attempts
  * @returns {Promise<{ port: number, listener: number } | null>}
  */
 async function waitForServer({ log, since, attempts = 60, wait = 500 }) {
@@ -139,6 +149,12 @@ async function waitForServer({ log, since, attempts = 60, wait = 500 }) {
  * shapes the pid astro names IS the one that bound. `-1` is "held by something
  * that could not be named" — `lsof` missing, say — and the report prints that as
  * "pid unknown" rather than as a pid.
+ *
+ * @param {number} port
+ * @param {number | null} announcedPid
+ * @param {number} [attempts]
+ * @param {number} [wait]
+ * @returns {Promise<number>}
  */
 async function whoHas(port, announcedPid, attempts = 10, wait = 200) {
   for (let attempt = 0; attempt < attempts; attempt += 1) {
@@ -155,6 +171,8 @@ async function whoHas(port, announcedPid, attempts = 10, wait = 200) {
  * Sliced as bytes and not as characters: astro's banner is not ASCII, so a
  * character slice drifts away from the offset `statSync` reported.
  *
+ * @param {string} file
+ * @param {number} [since]
  * @returns {string}
  */
 function readOrEmpty(file, since = 0) {
@@ -251,7 +269,9 @@ function commandLines() {
   return (asked.stdout ?? '').replace(/^[ ]*(\d+)[ ]+/gm, '$1' + String.fromCharCode(9));
 }
 
-/** Is this process still there? Signal 0 asks without sending anything. */
+/** Is this process still there? Signal 0 asks without sending anything.
+ *
+ *  @param {number} pid */
 function alive(pid) {
   try {
     process.kill(pid, 0);
@@ -300,8 +320,15 @@ export async function stop({ pid, listener, port }) {
   };
 }
 
+/** @param {(number | null | undefined)[]} pids
+ *  @returns {number[]} */
 function dedupe(pids) {
-  return [...new Set(pids.filter((pid) => Number.isInteger(pid) && pid > 0))];
+  /** @type {number[]} */
+  const real = [];
+  for (const pid of pids) {
+    if (typeof pid === 'number' && Number.isInteger(pid) && pid > 0) real.push(pid);
+  }
+  return [...new Set(real)];
 }
 
 /**
@@ -318,7 +345,8 @@ export function stopCommand(pid) {
   return process.platform === 'win32' ? `taskkill /PID ${pid} /T /F` : `kill -9 ${pid}`;
 }
 
-/** @returns {string} what happened, for the report */
+/** @param {number} pid
+ *  @returns {string} what happened, for the report */
 function kill(pid) {
   if (process.platform === 'win32') {
     // /T for the tree and /F because a dev server does not stop politely: vite
@@ -337,7 +365,7 @@ function kill(pid) {
       process.kill(pid, 'SIGTERM');
       return `SIGTERM to ${pid}`;
     } catch (error) {
-      return `SIGTERM to ${pid} → ${String(error?.message ?? error)}`;
+      return `SIGTERM to ${pid} → ${String(/** @type {{ message?: unknown }} */ (error)?.message ?? error)}`;
     }
   }
 }

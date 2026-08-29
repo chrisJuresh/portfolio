@@ -9,12 +9,14 @@ function scratch() {
   return join(mkdtempSync(join(tmpdir(), 'feature-state-')), 'feature-state.json');
 }
 
+/** @type {import('./state.mjs').Feature} */
 const feature = {
   branch: 'port-the-panel',
   directory: 'port-the-panel',
   path: 'C:/repo/.claude/worktrees/port-the-panel',
   port: 4321,
   pid: 12345,
+  listener: 12346,
   startedAt: '2026-08-22T14:00:00.000Z',
 };
 

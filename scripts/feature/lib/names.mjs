@@ -19,7 +19,9 @@ const LIMIT = 48;
 export const RESERVED = ['development', 'main', 'master', 'head'];
 
 /** Trim the separators a cut or a substitution can leave at either end.
- *  `refs/heads/-a` is not a legal ref, and `a-` reads like a mistake. */
+ *  `refs/heads/-a` is not a legal ref, and `a-` reads like a mistake.
+ *
+ *  @param {string} text */
 function trim(text) {
   return text.replace(/^-+/, '').replace(/-+$/, '');
 }

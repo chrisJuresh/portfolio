@@ -15,8 +15,22 @@ import { spawn, spawnSync } from 'node:child_process';
 import { entry, flush } from './friction.mjs';
 import { classify } from './refusal.mjs';
 
+/**
+ * What every run here answers with. `refused` is set only when a gate said no,
+ * which is why it is optional rather than nullable: the two callers that read it
+ * are asking "was this friction", not "what was the friction".
+ *
+ * @typedef {{ gate: string, fix: string }} Refusal
+ * @typedef {{ status: number, stdout: string, stderr: string, shown: string, refused?: Refusal }} Run
+ */
+
 /** Thrown when a command fails. `refused` says whether it was a gate. */
 export class CommandFailed extends Error {
+  /**
+   * @param {string} shown
+   * @param {Run} result
+   * @param {Refusal | null} [refused]
+   */
   constructor(shown, result, refused) {
     const said = firstLine(result.stderr) || firstLine(result.stdout) || `exit ${result.status}`;
     super(`${shown}\n  ${said}`);
@@ -27,6 +41,7 @@ export class CommandFailed extends Error {
   }
 }
 
+/** @param {unknown} text */
 function firstLine(text) {
   return String(text ?? '')
     .split(/\r?\n/)
@@ -44,7 +59,9 @@ export function session({ command, now = () => new Date() }) {
   const denials = [];
 
   /** Record a refusal that was not a command failing — one this script decided
-   *  about itself, or one a caller recognised that `classify` would not. */
+   *  about itself, or one a caller recognised that `classify` would not.
+   *
+   *  @param {{ what: string, gate: string, refusal: string, fix: string }} denial */
   function note({ what, gate, refusal, fix }) {
     denials.push(entry({ at: now(), command, what, gate, refusal, fix }));
   }
@@ -62,6 +79,7 @@ export function session({ command, now = () => new Date() }) {
    * @param {boolean} [options.expected] this command failing is an ordinary step
    *   of the flow with a handled outcome, so do not record it as friction. See
    *   `finish` below for why that distinction is worth having.
+   * @returns {Run}
    */
   function run(file, args, { cwd, shell = false, inherit = false, input, expected = false } = {}) {
     const shown = [file, ...args].join(' ');
@@ -85,6 +103,7 @@ export function session({ command, now = () => new Date() }) {
     const stderr =
       result.stderr ??
       String(result.error?.message ?? (result.signal ? `killed by ${result.signal}` : ''));
+    /** @type {Run} */
     const out = { status, stdout: result.stdout ?? '', stderr, shown };
 
     if (status !== 0 && !expected) {
@@ -108,6 +127,7 @@ export function session({ command, now = () => new Date() }) {
    * @param {string} file
    * @param {string[]} args
    * @param {{ cwd?: string, shell?: boolean }} [options]
+   * @returns {Promise<Run>}
    */
   function stream(file, args, { cwd, shell = false } = {}) {
     const shown = [file, ...args].join(' ');
@@ -123,7 +143,9 @@ export function session({ command, now = () => new Date() }) {
         stderr += chunk;
         process.stderr.write(chunk);
       });
+      /** @param {number} status */
       const done = (status) => {
+        /** @type {Run} */
         const out = { status, stdout, stderr, shown };
         if (status !== 0) {
           const refused = classify(stderr, stdout);
@@ -142,14 +164,22 @@ export function session({ command, now = () => new Date() }) {
     });
   }
 
-  /** Run something that has to work. */
+  /** Run something that has to work.
+   *
+   *  @param {string} file
+   *  @param {string[]} args
+   *  @param {Parameters<typeof run>[2]} [options] */
   function ok(file, args, options) {
     const result = run(file, args, options);
     if (result.status !== 0) throw new CommandFailed(result.shown, result, result.refused);
     return result;
   }
 
-  /** Run something that has to work, and read its stdout. */
+  /** Run something that has to work, and read its stdout.
+   *
+   *  @param {string} file
+   *  @param {string[]} args
+   *  @param {Parameters<typeof run>[2]} [options] */
   function out(file, args, options) {
     return ok(file, args, options).stdout;
   }

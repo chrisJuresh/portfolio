@@ -54,15 +54,25 @@ const repoRoot = fileURLToPath(new URL('.', import.meta.url)).replace(/[\\/]+$/,
  */
 function servesWhatAstroDoesNotBuild() {
   // Filled in by the routes:resolved hook below, and read on every request.
+  /** @type {RegExp[]} */
   let astroRoutes = [];
 
   const middleware = {
     name: 'portfolio:unbuilt-paths',
     enforce: 'pre',
+    /** Structurally, rather than as `ViteDevServer`: vite is astro's dependency
+     *  and not one of ours, so naming its type here would be a `tsc` failure the
+     *  moment astro moved it.
+     *
+     *  @param {{ middlewares: { use: (handler: (
+     *      req: import('node:http').IncomingMessage,
+     *      res: import('node:http').ServerResponse,
+     *      next: () => void,
+     *    ) => void) => void } }} server */
     configureServer(server) {
       server.middlewares.use((req, res, next) => {
         const url = req.url ?? '/';
-        const pathname = url.split('?')[0];
+        const pathname = url.split('?')[0] ?? '/';
         const query = url.slice(pathname.length);
 
         // A FILE FIRST, A REWRITE LAST, which is the order Vercel resolves in
@@ -88,6 +98,8 @@ function servesWhatAstroDoesNotBuild() {
         return next();
       });
 
+      /** @param {import('node:http').ServerResponse} res
+       *  @param {string} file */
       function serve(res, file) {
         res.setHeader('content-type', contentType(file));
         // A read that fails after the stat would otherwise take the dev
@@ -102,10 +114,12 @@ function servesWhatAstroDoesNotBuild() {
   return {
     name: 'portfolio:unbuilt-paths',
     hooks: {
-      'astro:config:setup': ({ updateConfig }) => {
+      'astro:config:setup': (/** @type {{ updateConfig: (config: object) => void }} */ { updateConfig }) => {
         updateConfig({ vite: { plugins: [middleware] } });
       },
-      'astro:routes:resolved': ({ routes }) => {
+      'astro:routes:resolved': (
+        /** @type {{ routes: { origin: string, patternRegex: RegExp }[] }} */ { routes },
+      ) => {
         // Only routes somebody wrote under src/pages. Astro's own — /404,
         // /_image, /_server-islands/[name] — come through as
         // `origin: 'internal'`, and none of them is a page a static path could

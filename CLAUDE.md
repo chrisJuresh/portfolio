@@ -217,6 +217,15 @@ pnpm build
 `pnpm dev` runs Astro's dev server with those four paths and the deep-link
 rewrites answered beside it, so one origin behaves as the deployment does.
 `pnpm build` runs the source checks, typechecks, builds, and assembles `dist/`.
+It typechecks **twice**, because `.mjs` and `.astro` are two projects: `astro
+check` reads `tsconfig.json`, which is `src/` and nothing else, and `tsc -p
+tsconfig.scripts.json` reads the JavaScript with `checkJs` on. That second
+project is deliberately narrow — `scripts/feature/`, `static-tree.mjs` and
+`astro.config.mjs`, named one by one — and `tsconfig.scripts.json`'s own comment
+says which bodies are out and why. `include` without `checkJs` reads as coverage
+and is none (#183), so a file is either in that project or in no project at all,
+and `scripts/checks/` and `scripts/editor/` are honestly the second.
+
 `pnpm preview` serves that `dist/`, **of the tree it is run from**, which is why
 it exists rather than the in-app preview: that serves the main checkout and would
 report on `development` while looking like it reported on your branch.

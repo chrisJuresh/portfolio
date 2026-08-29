@@ -1,8 +1,22 @@
 {
   "extends": "astro/tsconfigs/strict",
-  "include": [".astro/types.d.ts", "src/**/*", "scripts/**/*", "astro.config.mjs"],
+  // The Portfolio, and only the Portfolio. `scripts/**/*` used to be here and
+  // is not any more: `checkJs` is off, so a `.mjs` file in `include` is resolved
+  // and never checked, and the entry read as coverage the build did not have
+  // (#183). `astro.config.mjs` moved out for the same reason.
+  //
+  // THE ROLLOUT IS NARROW, AND THAT IS THE DECISION. `tsconfig.scripts.json` is
+  // the second project and it checks `scripts/feature/`, `scripts/static-tree.mjs`
+  // and `astro.config.mjs` with `checkJs` on. **`scripts/checks/` and
+  // `scripts/editor/` are typechecked by nothing** — 1296 errors between them on
+  // 2026-08-29 — and are in NO project rather than in one that reads as covering
+  // them. That file's own comment carries the residue and the way in.
+  "include": [".astro/types.d.ts", "src/**/*"],
   "exclude": ["dist", "design", "node_modules"],
   "compilerOptions": {
+    // Node's built-ins belong to the tooling, not to the page. Keeping them out
+    // of here is what stops a browser file quietly resolving `process`.
+    "types": [],
     "strictNullChecks": true,
     "noUncheckedIndexedAccess": true,
     // A Section's Content is typed so that renaming a field is a build error

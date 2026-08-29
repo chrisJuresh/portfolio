@@ -26,6 +26,7 @@ test('included is empty for an empty file, and for no file at all', () => {
 });
 
 test('carry copies each named file from the main checkout into the worktree', () => {
+  /** @type {string[][]} */
   const done = [];
   const found = carry({
     root: 'C:/repo',

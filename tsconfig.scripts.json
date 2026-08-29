@@ -1,0 +1,37 @@
+{
+  "extends": "./tsconfig.json",
+  // The JavaScript the build runs, checked as JavaScript. This is deliberately
+  // NARROWER than `scripts/`, and the narrowness is the decision (#183):
+  //
+  //   `scripts/feature/`  is here. It is the best-annotated of the three bodies
+  //                       under `scripts/`, and its failures are the most
+  //                       expensive — `land` runs its teardown AFTER the work is
+  //                       already on `development`, so a throw there exits 1 on
+  //                       a change that has landed. #170 shipped exactly that.
+  //   `astro.config.mjs`  is here because it was the other file `include` was
+  //                       claiming to cover and did not.
+  //   `scripts/checks/`, `scripts/editor/` are NOT here, and are in no project
+  //                       at all rather than in one that reads as covering them.
+  //                       `include: ["scripts/**/*"]` here is 1351 errors on
+  //                       2026-08-29 — 860 of them `scripts/editor/`, 436
+  //                       `scripts/checks/` — and that residue is the whole
+  //                       reason this is narrow. Widening it is this `include`
+  //                       line and their own residue; there is nothing else to
+  //                       undo.
+  //   `scripts/static-tree.mjs` is here because `scripts/feature/` imports it,
+  //                       so a program built from that `include` checks it
+  //                       whether it is named or not. Named anyway, WITH its
+  //                       test: leaving it to the import would check the module
+  //                       and not the test beside it, and "which files does this
+  //                       cover" should be answerable by reading this line.
+  "include": [
+    "scripts/feature/**/*",
+    "scripts/static-tree.mjs",
+    "scripts/static-tree.test.mjs",
+    "astro.config.mjs"
+  ],
+  "compilerOptions": {
+    "checkJs": true,
+    "types": ["node"]
+  }
+}

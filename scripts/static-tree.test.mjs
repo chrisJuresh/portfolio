@@ -93,7 +93,9 @@ test('everything else is served from its own path', () => {
  * ORDER — a file that exists wins, and a rewrite is what answers when none does
  * — and that is a statement about the resolver, not about any tree on disk.
  */
+/** @param {...string} paths */
 const only = (...paths) => ({
+  /** @param {string} path */
   statSync(path) {
     if (paths.includes(path)) return { isFile: () => true, isDirectory: () => false };
     throw new Error(`ENOENT ${path}`);

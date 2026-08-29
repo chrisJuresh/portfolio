@@ -33,7 +33,7 @@ import { rmSync } from 'node:fs';
  * recursive delete. Nothing was lost, and only because node's `rmSync` happened
  * to fail on the top-level `rmdir` before it recursed.
  *
- * @param {string} said git's stderr
+ * @param {string} [said] git's stderr, when it said anything
  * @returns {boolean}
  */
 export function refusedForDirt(said) {
@@ -46,7 +46,9 @@ export function refusedForDirt(said) {
  *  against Windows and case-insensitive macOS.
  *
  *  Exported because four modules were comparing worktree paths and three of them
- *  had written their own version of this line. */
+ *  had written their own version of this line.
+ *
+ *  @param {string} path */
 export function samePath(path) {
   return String(path).replace(/\\/g, '/').replace(/\/+$/, '').toLowerCase();
 }
@@ -152,8 +154,8 @@ export function deletable({ path, root, listed, orphan = false }) {
  * would give up on a clearable lock for nothing.
  *
  * @param {object} options
- * @param {{ confirmed: boolean, from: string }[]} [options.standing] what
- *   `standingIn` said, given rather than asked for
+ * @param {{ pid: number | null, confirmed: boolean, from: string }[]}
+ *   [options.standing] what `standingIn` said, given rather than asked for
  * @param {number} [options.full] the wait for a lock that clears on its own
  * @param {number} [options.cut] what is left when one that cannot is known about
  * @returns {{ attempts: number, why: string }} `why` is printed verbatim, so a
@@ -192,6 +194,8 @@ export function attemptsFor({ standing = [], full = 12, cut = 3 } = {}) {
  * @param {string} options.path
  * @param {string} options.root
  * @param {string[]} options.listed
+ * @param {boolean} [options.orphan] the tree is not in `listed` and is being
+ *   removed anyway — `feature clean` after a land that took the row out
  * @param {number} [options.attempts]
  * @param {number} [options.wait] milliseconds between attempts
  * @param {(path: string, options: object) => void} [options.rm] for the tests
@@ -224,7 +228,7 @@ export async function removeTree({
       rm(path, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 });
       return { removed: true, why: '' };
     } catch (error) {
-      last = String(error?.message ?? error);
+      last = String(/** @type {{ message?: unknown }} */ (error)?.message ?? error);
       if (attempt < attempts) await new Promise((ok) => setTimeout(ok, wait));
     }
   }

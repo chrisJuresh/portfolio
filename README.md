@@ -308,7 +308,7 @@ rather than asserted. Neither folder affects a visitor; see
 
 ```bash
 pnpm install --frozen-lockfile
-pnpm build       # checks, typechecks, builds, assembles dist/
+pnpm build       # checks, typechecks (both projects), builds, assembles dist/
 pnpm preview     # serves that dist/ — of the tree it is run from
 pnpm dev         # Astro's dev server, standing in for the deployment
 pnpm check       # builds, serves, drives headless Chromium, runs every Check

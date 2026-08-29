@@ -17,6 +17,11 @@
 import { existsSync } from 'node:fs';
 import { git as gitOf } from './git.mjs';
 import { standingIn } from './listeners.mjs';
+
+/** What a step that did not have to run answers with, so the checks below read
+ *  one shape whether the command ran or not. Status 0, so neither stream is ever
+ *  reached — they are here to BE the same shape and not to be read. */
+const DID_NOT_RUN = { status: 0, stdout: '', stderr: '' };
 import { serving, standing, stopCommand, stop as stopServer } from './server.mjs';
 import { load, lock, remove, save, statePath } from './state.mjs';
 import { attemptsFor, inside, refusedForDirt, removeTree } from './teardown.mjs';
@@ -100,7 +105,7 @@ export async function takeDown({ sh, common, root, worktree, branch, orphan = fa
   // list taken afterwards would not contain the path the guard is about to be
   // asked about.
   const listed = git.worktrees().map((tree) => tree.path);
-  const removed = existsSync(worktree) ? git.removeWorktree(worktree) : { status: 0, stdout: '' };
+  const removed = existsSync(worktree) ? git.removeWorktree(worktree) : DID_NOT_RUN;
 
   // Whatever git said, what matters is whether the directory is gone. Git fails
   // on this every time a feature was installed — pnpm's store links go past 250
@@ -120,9 +125,9 @@ export async function takeDown({ sh, common, root, worktree, branch, orphan = fa
       : null;
   git.pruneWorktrees();
 
-  const deleted = git.hasLocalBranch(branch) ? git.deleteBranch(branch) : { status: 0, stdout: '' };
+  const deleted = git.hasLocalBranch(branch) ? git.deleteBranch(branch) : DID_NOT_RUN;
   const remoteWas = git.hasRemoteBranch(branch);
-  const unpushed = remoteWas ? git.deleteRemoteBranch(branch) : { status: 0, stdout: '' };
+  const unpushed = remoteWas ? git.deleteRemoteBranch(branch) : DID_NOT_RUN;
   git.fetchPrune();
 
   // ------------------------------------------------------------- verification

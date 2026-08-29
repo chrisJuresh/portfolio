@@ -429,3 +429,12 @@ Put the decision in a pure function and the syscall in the layer under it. That
 split is why the four bugs above were findable at all: every one of them was in
 the glue, and each is now pinned by a test in the half that could hold it.
 `pnpm check` runs these tests before it runs a Check, so they gate a commit too.
+
+**And this directory is typechecked**, which is not true of `scripts/` at large.
+`tsconfig.scripts.json` turns `checkJs` on over `scripts/feature/**` and
+`pnpm build` runs it, so the JSDoc here is load-bearing rather than decorative: a
+`@param` left off is a build failure, and so is a `@typedef` that has drifted from
+what the code writes. It is here first because the teardown runs **after** the
+push — #170's use-before-declaration exited 1 on a change that had already landed,
+and `tsc` names that shape exactly (#183). Widening it to `scripts/checks/` or
+`scripts/editor/` is an `include` line and their own residue; nothing else.

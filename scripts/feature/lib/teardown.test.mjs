@@ -143,9 +143,7 @@ test('removeTree retries, because the lock that blocked it clears on its own', a
   const rm = () => {
     calls += 1;
     if (calls < 3) {
-      const error = new Error('EBUSY: resource busy or locked');
-      error.code = 'EBUSY';
-      throw error;
+      throw Object.assign(new Error('EBUSY: resource busy or locked'), { code: 'EBUSY' });
     }
   };
   const found = await removeTree({

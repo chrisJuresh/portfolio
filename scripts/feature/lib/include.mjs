@@ -27,7 +27,7 @@ import { dirname } from 'node:path';
  * reordered it would make a diff nobody could read. A path is taken as relative
  * to the repository root, which is the only thing it can be.
  *
- * @param {string} text the file's contents, or '' when there is no file
+ * @param {string} [text] the file's contents, or nothing when there is no file
  * @returns {string[]}
  */
 export function included(text) {
@@ -71,7 +71,10 @@ export function carry({ root, worktree, entries, copy = copyOne, exists = exists
 
 /** The directories a fresh worktree has are the ones git made for tracked files,
  *  and `.claude/` is only there because the guard is tracked. Anything deeper is
- *  this function's to create. */
+ *  this function's to create.
+ *
+ *  @param {string} from
+ *  @param {string} to */
 function copyOne(from, to) {
   mkdirSync(dirname(to), { recursive: true });
   copyFileSync(from, to);
