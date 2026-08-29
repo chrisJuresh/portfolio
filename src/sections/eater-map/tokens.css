@@ -1,0 +1,13 @@
+/* The Eater Map Section's Tokens — plain custom properties on the Section's own
+   root, and the only style file the Editor writes.
+
+   Empty, and deliberately so rather than pre-emptively populated: the numbers
+   this Section will hold are the Exploded View's — the tilt, the depths, the
+   gaps, the Cards' places on the Slab and the Lift's distance — and every one of
+   them is decided by looking at a composition that does not exist yet (#176,
+   #177). A Token invented before the thing it measures is a name the next
+   session has to argue with.
+
+   The Cards' own sizes are NOT Tokens and do not belong here. They are what the
+   app drew, reported by the generator, and they arrive on the host as
+   --eater-card-<name>-width / -height in assets/cards/cards.css. */

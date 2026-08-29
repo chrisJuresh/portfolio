@@ -1,0 +1,341 @@
+#!/usr/bin/env node
+/* ============================================================================
+   vendor.mjs — the Eater app's three Cards, taken from the app and committed here.
+
+     node design/eater-cards/vendor.mjs            # regenerate and report
+     node design/eater-cards/vendor.mjs --write    # …and take the difference
+     node design/eater-cards/vendor.mjs --check    # is the copy stale? (no browser)
+     node design/eater-cards/vendor.mjs --restaurant "St. John"
+
+   The Cards are the Eater app's own search bar, rail-lines popup and restaurant
+   detail panel (CONTEXT.md). They are drawn by the Portfolio rather than
+   photographed, which is what keeps their text real — but they are not REDRAWN:
+   this asks the app for them.
+
+   WHY THE OUTPUT IS COMMITTED RATHER THAN FETCHED AT BUILD TIME. `pnpm build` is
+   this repository's gate, and a gate that only closes when a sibling checkout
+   happens to be on disk is not one. Everything else in this tree that came from
+   somewhere else is committed bytes for the same reason.
+
+   WHAT THE STAMP IS FOR. cards.json carries the Eater commit the Cards were
+   generated from. When the app's interface moves, this says so — `--check`
+   compares the stamp against that checkout's HEAD, and a plain run regenerates
+   and REPORTS the difference rather than taking it, so a change to somebody
+   else's repository cannot land here by being run past. `--write` is how the
+   difference is accepted. Same job the recording's content digest does in the
+   Projects Panel.
+
+   WHERE THE OUTPUT LANDS. `src/sections/eater-map/assets/cards/`, because
+   check-source.mjs enforces that a Section may import from its own folder and
+   from the Kernel and nowhere else — so anywhere under design/ would be a place
+   the Section is not allowed to read.
+
+   THE PARAMETERS ARE IN config.json and nowhere else, the /export route's own
+   defaults included: that route has a fallback restaurant so it shows something
+   when it is opened by hand, and this passes every parameter explicitly so the
+   two cannot drift into disagreeing about what was vendored.
+   ========================================================================== */
+
+import { spawn, spawnSync } from 'node:child_process';
+import { existsSync, readFileSync, readdirSync } from 'node:fs';
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import { join, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { MANIFEST, files, report } from './compare.mjs';
+
+const HERE = fileURLToPath(new URL('.', import.meta.url)).replace(/[\\/]+$/, '');
+const ROOT = resolve(HERE, '..', '..');
+
+function fail(message, ...rest) {
+  console.error(`error: ${message}`);
+  for (const line of rest) console.error(`  ${line}`);
+  process.exit(1);
+}
+
+/* ---- arguments ----------------------------------------------------------- */
+
+const argv = process.argv.slice(2);
+function option(name) {
+  const at = argv.indexOf(`--${name}`);
+  if (at === -1) return undefined;
+  const value = argv[at + 1];
+  if (value === undefined || value.startsWith('--')) fail(`--${name} takes a value`);
+  return value;
+}
+const WRITE = argv.includes('--write');
+const CHECK_ONLY = argv.includes('--check');
+
+const config = JSON.parse(readFileSync(join(HERE, 'config.json'), 'utf8'));
+const RESTAURANT = option('restaurant') ?? config.restaurant;
+const QUERY = option('query') ?? config.query;
+const OUT = join(ROOT, config.out);
+
+/* ---- the Eater checkout -------------------------------------------------- */
+
+/**
+ * Where the app is.
+ *
+ * Two candidates and both are reported when neither answers, because the one
+ * that works depends on where this is run from: a session in the main checkout
+ * has the sibling directory beside it, and a session in a worktree does not —
+ * `.claude/worktrees/<name>/../eater` is not anything. So the main checkout is
+ * asked for as well, through the git directory every worktree of this repository
+ * shares.
+ */
+function eaterRoot() {
+  const named = process.env[config.eater.env];
+  if (named) {
+    const at = resolve(named);
+    if (!existsSync(at)) {
+      fail(`${config.eater.env} is set to "${named}", and there is nothing there.`);
+    }
+    return at;
+  }
+
+  const candidates = [resolve(ROOT, '..', config.eater.sibling)];
+  const common = spawnSync('git', ['rev-parse', '--path-format=absolute', '--git-common-dir'], {
+    cwd: ROOT,
+    encoding: 'utf8',
+  });
+  if (common.status === 0) {
+    const mainCheckout = resolve(common.stdout.trim(), '..');
+    candidates.push(resolve(mainCheckout, '..', config.eater.sibling));
+  }
+
+  for (const candidate of new Set(candidates)) if (existsSync(candidate)) return candidate;
+  fail(
+    `the ${config.eater.repo} checkout is not where this looked for it.`,
+    ...[...new Set(candidates)].map((one) => `tried  ${one}`),
+    '',
+    `Set ${config.eater.env} to the checkout, or clone it beside this repository:`,
+    `  git clone https://github.com/${config.eater.repo}.git`,
+  );
+}
+
+/** That it is the right checkout, and that it can actually be run. A generator
+ *  that quietly produces nothing looks exactly like one that succeeded. */
+function verify(eater) {
+  const manifest = join(eater, 'package.json');
+  if (!existsSync(manifest)) fail(`${eater} is not a checkout of ${config.eater.repo} — no package.json.`);
+  const name = JSON.parse(readFileSync(manifest, 'utf8')).name;
+  if (name !== config.eater.package) {
+    fail(`${eater} is a checkout of "${name}", not ${config.eater.package}.`);
+  }
+  if (!existsSync(join(eater, 'node_modules', 'vite'))) {
+    fail(`${eater} has no installed dependencies.`, `  cd ${eater} && pnpm install`);
+  }
+  if (!existsSync(join(eater, 'static', 'data', 'restaurants.json'))) {
+    fail(
+      `${eater} has no restaurant dataset at static/data/restaurants.json.`,
+      'The Cards are rendered for a real restaurant, so the app needs its data.',
+      `  cd ${eater} && pnpm fetch:data      (needs DATA_REPO_TOKEN)`,
+    );
+  }
+}
+
+function git(eater, ...args) {
+  const run = spawnSync('git', args, { cwd: eater, encoding: 'utf8' });
+  if (run.status !== 0) fail(`git ${args.join(' ')} failed in ${eater}`, (run.stderr || '').trim());
+  return run.stdout.trim();
+}
+
+/* ---- staleness ----------------------------------------------------------- */
+
+async function vendored() {
+  try {
+    return JSON.parse(await readFile(join(OUT, MANIFEST), 'utf8'));
+  } catch {
+    return null;
+  }
+}
+
+async function checkOnly(eater) {
+  const held = await vendored();
+  const head = git(eater, 'rev-parse', 'HEAD');
+  const subject = git(eater, 'log', '-1', '--format=%s');
+  if (!held) {
+    console.error(`eater-cards: nothing is vendored at ${config.out}.`);
+    process.exit(1);
+  }
+  if (held.eater.commit === head) {
+    console.log(`eater-cards: current — ${config.eater.repo} @ ${head.slice(0, 8)} (${held.eater.subject})`);
+    return;
+  }
+  console.error(
+    `eater-cards: STALE.\n` +
+      `  vendored from  ${held.eater.commit.slice(0, 8)}  ${held.eater.subject}\n` +
+      `  ${config.eater.repo} is now  ${head.slice(0, 8)}  ${subject}\n\n` +
+      '  The app may have moved under the Cards. Regenerate to see whether it did:\n' +
+      '    node design/eater-cards/vendor.mjs',
+  );
+  process.exit(1);
+}
+
+/* ---- the app, running ---------------------------------------------------- */
+
+async function answering(url, until) {
+  while (Date.now() < until) {
+    try {
+      const response = await fetch(url, { signal: AbortSignal.timeout(1500) });
+      if (response.ok) return true;
+    } catch {
+      // not up yet
+    }
+    await new Promise((settle) => setTimeout(settle, 300));
+  }
+  return false;
+}
+
+/**
+ * Start the app's dev server and hand back how to stop it.
+ *
+ * `node …/vite.js` rather than a package manager: a spawned `pnpm` on Windows is
+ * a shell wrapper around the process that actually holds the port, so killing
+ * the child leaves the server running and the next run fails on --strictPort
+ * with nothing to point at.
+ */
+async function serve(eater, port) {
+  const child = spawn(process.execPath, [join(eater, 'node_modules', 'vite', 'bin', 'vite.js'), '--host', '127.0.0.1', '--port', String(port), '--strictPort'], {
+    cwd: eater,
+    stdio: ['ignore', 'pipe', 'pipe'],
+  });
+  let log = '';
+  child.stdout.on('data', (chunk) => (log += chunk));
+  child.stderr.on('data', (chunk) => (log += chunk));
+
+  const stop = () => {
+    try {
+      child.kill();
+    } catch {
+      // already gone
+    }
+  };
+  const up = await answering(`http://127.0.0.1:${port}/`, Date.now() + 60_000);
+  if (!up) {
+    stop();
+    fail(`the app's dev server did not come up on 127.0.0.1:${port} within a minute.`, ...log.trim().split('\n'));
+  }
+  return stop;
+}
+
+/* ---- the files ----------------------------------------------------------- */
+
+/** What is on disk now, so the report can say what moved. */
+async function held() {
+  const out = new Map();
+  if (!existsSync(OUT)) return out;
+  for (const name of readdirSync(OUT)) out.set(name, await readFile(join(OUT, name), 'utf8'));
+  return out;
+}
+
+/* ---- the run ------------------------------------------------------------- */
+
+const eaterAt = eaterRoot();
+verify(eaterAt);
+
+if (CHECK_ONLY) {
+  await checkOnly(eaterAt);
+  process.exit(0);
+}
+
+const eater = {
+  commit: git(eaterAt, 'rev-parse', 'HEAD'),
+  subject: git(eaterAt, 'log', '-1', '--format=%s'),
+};
+const dirty = git(eaterAt, 'status', '--porcelain');
+if (dirty) {
+  // A stamp names a commit, so Cards taken off a working tree that is not that
+  // commit are stamped with a lie. Said out loud rather than refused: generating
+  // against uncommitted work is exactly what happens while the export route
+  // itself is being written.
+  //
+  // The paths are listed rather than counted, because most of what makes that
+  // checkout dirty cannot reach a Card — a note under docs/ is not the same
+  // warning as an edited component, and a warning that cannot tell them apart
+  // is one that gets read past.
+  console.warn(
+    `warning: ${eaterAt} has uncommitted changes — the Cards will be stamped ${eater.commit.slice(0, 8)},\n` +
+      '         which is not what they were taken from. Commit there first if any of\n' +
+      '         these can reach a surface:\n' +
+      dirty
+        .split('\n')
+        .map((line) => `           ${line}`)
+        .join('\n'),
+  );
+}
+
+let chromium;
+try {
+  ({ chromium } = await import('playwright'));
+} catch (error) {
+  if (error?.code !== 'ERR_MODULE_NOT_FOUND') throw error;
+  fail('playwright is not installed.', 'pnpm install');
+}
+
+const port = config.eater.port;
+const stop = await serve(eaterAt, port);
+let payload;
+const noise = [];
+try {
+  const browser = await chromium.launch();
+  try {
+    const page = await browser.newPage({ viewport: config.viewport });
+    page.on('console', (message) => message.type() === 'error' && noise.push(message.text()));
+    page.on('pageerror', (error) => noise.push(String(error)));
+
+    const url = new URL(`http://127.0.0.1:${port}/export`);
+    url.searchParams.set('restaurant', RESTAURANT);
+    url.searchParams.set('offline', config.offline);
+    if (QUERY !== null && QUERY !== undefined) url.searchParams.set('query', QUERY);
+
+    await page.goto(url.href, { waitUntil: 'load' });
+    try {
+      await page.waitForSelector('html[data-export-ready]', { timeout: 90_000 });
+    } catch {
+      const said = await page.textContent('.bar').catch(() => '');
+      fail(
+        'the export route did not finish.',
+        said ? said.trim() : 'it said nothing',
+        ...noise.map((one) => `console: ${one}`),
+      );
+    }
+    payload = await page.evaluate(() => window.__eaterCards);
+  } finally {
+    await browser.close();
+  }
+} finally {
+  stop();
+}
+
+if (noise.length) {
+  fail('the app logged errors while the Cards were being taken.', ...noise);
+}
+if (!payload?.cards?.length) fail('the export route produced no Cards.');
+
+const after = files(payload, eater, config);
+const before = await held();
+const { moved, surfacesMoved, lines } = report(before, after, config.eater.repo);
+
+if (!moved.length) {
+  console.log(`eater-cards: unchanged — ${config.eater.repo} @ ${eater.commit.slice(0, 8)}`);
+  process.exit(0);
+}
+
+if (!WRITE) {
+  const headline = surfacesMoved
+    ? 'the app has moved under the vendored Cards.'
+    : 'the app has moved, and the Cards have not.';
+  console.error(
+    `eater-cards: ${headline}\n\n${lines.join('\n')}\n\n` +
+      '  Nothing was written. Look at what changed, then take it:\n' +
+      '    node design/eater-cards/vendor.mjs --write',
+  );
+  process.exit(1);
+}
+
+await mkdir(OUT, { recursive: true });
+for (const [name, text] of after) await writeFile(join(OUT, name), text);
+console.log(`eater-cards: written to ${config.out}\n\n${lines.join('\n')}`);
+for (const card of payload.cards) {
+  console.log(`\n  ${card.name.padEnd(8)} ${card.width}×${card.height}`);
+}

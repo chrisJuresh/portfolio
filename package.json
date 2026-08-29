@@ -14,7 +14,7 @@
     "check:sections": "node scripts/check-source.mjs",
     "check:types": "astro check",
     "check:types:scripts": "tsc -p tsconfig.scripts.json",
-    "test": "node --test \"scripts/**/*.test.mjs\""
+    "test": "node --test \"scripts/**/*.test.mjs\" \"design/**/*.test.mjs\""
   },
   "engines": {
     "node": "22.x"

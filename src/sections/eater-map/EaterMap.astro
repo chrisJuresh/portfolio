@@ -1,0 +1,47 @@
+---
+// The Eater Map Section. NOTES.md is what this folder currently is and what is
+// still owed it; nothing compositional is decided here yet.
+//
+// The three Cards, as they came out of the app: no Slab under them, no camera
+// over them, and no placement. Where they go is the ticket that puts them on the
+// Slab (#176) and the one that raises them off it (#177) — the whole of what
+// this component does today is prove the vendored bytes are readable from a
+// Section, which is what forced them into this folder in the first place.
+import searchCard from './assets/cards/search.html?raw';
+import linesCard from './assets/cards/lines.html?raw';
+import detailsCard from './assets/cards/details.html?raw';
+import './assets/cards/cards.css';
+import { content } from './content';
+import './tokens.css';
+// variants.css is deliberately NOT imported — an unselected Variant costs the
+// shipped page nothing. src/sections/stub/NOTES.md, and check-source.mjs.
+---
+
+<section class="eater-map" data-section="eater-map" aria-labelledby="eater-map-heading">
+  <h2 class="eater-map__heading" id="eater-map-heading">{content.heading}</h2>
+  {/* `eater-cards` is the host the export hangs every one of its selectors off,
+      so the vendored stylesheet reaches inside this element and nowhere else.
+      The name is the export's, not this Section's — cards.json records it. */}
+  <div class="eater-cards">
+    <Fragment set:html={searchCard} />
+    <Fragment set:html={linesCard} />
+    <Fragment set:html={detailsCard} />
+  </div>
+</section>
+
+<style>
+  /* Scoped by the build. The vendored Cards are raw HTML, so Astro's attribute
+     is not on them and nothing here can reach into one — which is the right way
+     round: their styles are the app's and are not this Section's to argue with.
+     What is here is the box they sit in, and it is a placeholder. */
+  .eater-map {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .eater-cards {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+  }
+</style>

@@ -96,6 +96,21 @@ design/
                          restaurant, the camera, the viewport, what counts as
                          interface, and where the still is written. The script
                          holds none of them. README.md beside it says why
+  eater-cards/
+    vendor.mjs           TAKES the Eater Map Showcase's three Cards out of the
+                         Eater app — its own search bar, rail-lines popup and
+                         detail panel — and commits them into the Section that
+                         shows them, stamped with the Eater commit they came
+                         from. Drives that repository's own dev-only /export
+                         route headless; needs its checkout on disk and says so
+                         by name when it is not. `--check` answers "is the copy
+                         stale", and a plain run REPORTS a difference rather
+                         than taking it. design/eater-cards/README.md
+    compare.mjs          what the generated files are and what changed about
+                         them — the one decision here whose failure would be
+                         silent rather than loud, so it is pure and tested
+    config.json          the restaurant, the search text, the export viewport
+                         and the output path — declared once, and read by both
   bake/
     tuning.py            what the Editor has tuned, as the generator beside it
                          wants it. Five folders below it, one per Bake, each

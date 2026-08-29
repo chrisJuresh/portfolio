@@ -50,7 +50,11 @@ Underneath both sits the ordinary kind: **a pure function with a test beside it*
 `scripts/feature/lib/` and `scripts/editor/lib/` are written that way on purpose
 — decision in a pure function, syscall in the thin layer under it — and every bug
 those two modules have had was in the glue. `pnpm test` runs them alone; `pnpm
-check` runs them first, so they gate a commit too.
+check` runs them first, so they gate a commit too. It reaches `design/` as well,
+for the one generator that has a decision worth isolating:
+`design/eater-cards/compare.mjs` decides whether the vendored Eater Cards are
+stale, and that is the rare generator failure that would be **silent** rather
+than immediate and loud.
 
 **Where there is no seam, there is no test, and the spec says so.** A composition
 has none — its deliverable is a look. The `feature` script's git plumbing has

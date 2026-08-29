@@ -1,0 +1,14 @@
+{
+  "restaurant": "Bar Italia",
+  "query": null,
+  "offline": "ready",
+  "viewport": { "width": 390, "height": 844 },
+  "eater": {
+    "repo": "chrisJuresh/eater-map-site",
+    "package": "eater-map-site",
+    "env": "EATER_REPO",
+    "sibling": "eater",
+    "port": 5199
+  },
+  "out": "src/sections/eater-map/assets/cards"
+}
