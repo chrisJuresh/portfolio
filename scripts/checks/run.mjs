@@ -28,6 +28,7 @@ import { statSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { chromium } from 'playwright';
 
+import { check as across } from './checks/across.mjs';
 import { check as assets } from './checks/assets.mjs';
 import { check as carousel } from './checks/carousel.mjs';
 import { check as consoleQuiet } from './checks/console.mjs';
@@ -48,6 +49,7 @@ import { serve } from './lib/serve.mjs';
 const CHECKS = [
   assets,
   consoleQuiet,
+  across,
   faces,
   carousel,
   frontScreen,

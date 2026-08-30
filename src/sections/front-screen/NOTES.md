@@ -278,17 +278,34 @@ two separate expressions in `vw` — a full-bleed margin of `50% - 50vw` and a
 padding of `max(--page-side, 50vw - --col / 2)`.
 
 Both overshoot, by half a vertical scrollbar each, because `vw` counts a scrollbar
-the layout does not get. Here the margin is the same `calc(50% - 50vw)` and the
-inset is `max(side, 50% - measure / 2)` — a percentage of the SAME box the margin
-took out to 100vw. So whatever `vw` does to one it does to the other and it
+the layout does not get. Here the margin is `calc(50% - var(--page-across) / 2)`
+and the inset is `max(side, 50% - measure / 2)` — a percentage of the SAME box the
+margin took the strip out to. So whatever moves one moves the other and it
 cancels: the first photograph's left edge lands on the column's left edge exactly,
 at every window width, scrollbar or no scrollbar. Both ends are a Check.
 
-What the bleed costs is half a scrollbar of horizontal overflow at each end, and
-the answer to that is one declaration in the Kernel — `html { overflow-x: clip }`.
-It is there and not here for the reason it always is: a Section may not write a
-global rule, and "the document never scrolls sideways" is a fact about the
-document. `clip` and not `hidden`, so the axis cannot be scrolled by a stray focus.
+**THE MARGIN WAS `calc(50% - 50vw)` AND THAT WAS A BUG, not a trade** (#186). The
+agreement above survives it — the inset is a percentage of whatever box the margin
+made, so the two cancel however wide that box is — which is exactly why nothing on
+screen looked wrong and why it stood for as long as it did. What it cost was the
+box itself: `100vw` counts the gutter, so the strip came out about 15px wider than
+the page and CENTRED in what it overflowed, hanging 7.5px past each edge and
+widening the document to match. Measured at 390x844: the strip from x=-7.5 to
+x=382.5 in a 375px client width, and 383px of document. Every window with a
+classic scrollbar, DESK included.
+
+The paragraph that used to stand here said the overflow was what the bleed COST
+and that `html { overflow-x: clip }` in the Kernel was the answer to it. It is
+not. The clip is a backstop against a stray overhang; it does not give the reader
+back the 7.5px of photograph it hides, and reading it as a licence is how the same
+`100vw` trap that clipped the Plinth reached a second Section. `--page-across` is
+the length that does not count the gutter — ground.css owns it and says why it
+cannot be a viewport unit — and the `across` Check is what now notices a third.
+
+The Kernel's clip stays, and stays in the Kernel, for the reason it always did: a
+Section may not write a global rule, and "the document never scrolls sideways" is
+a fact about the document. `clip` and not `hidden`, so the axis cannot be scrolled
+by a stray focus.
 
 ### The track is out of flow, and that is what gives a photograph a height
 

@@ -878,9 +878,12 @@ async function collapsedBelowTheBand(browser, origin) {
     // and the assertion would be answering for whichever Section happens to have
     // a full-bleed box in it — it caught the Front Screen's `100vw` photograph
     // strip on its first run, which is a real 7.5px on either side and none of
-    // this ticket's business. The two lines above are the claim with teeth: a
-    // `100vw` Slab in a window with a scrollbar is 15px too wide and CENTRED in
-    // what it overflows, so it misses both edges by half of that.
+    // this ticket's business. THAT ASSERTION NOW HAS ITS OWN CHECK — `across`,
+    // added by #186, which fixed the strip — so what is left here is deliberately
+    // narrower rather than missing. The two lines above are the claim with teeth:
+    // a `100vw` Slab in a window with a scrollbar is 15px too wide and CENTRED in
+    // what it overflows, so it misses both edges by half of that, and neither
+    // half is something `across` could say about this Section.
 
     // FOUR.
     if (!(seen.pointsTop >= seen.stageBottom - 1)) {

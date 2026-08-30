@@ -502,16 +502,26 @@ const EAGER = 2;
 
   /* THE BLEED AND THE INSET ARE THE SAME PERCENTAGE OF THE SAME BOX, which is
      the whole of why the first and last photographs land exactly on the text
-     column's edges. `50% - 50vw` off the column's own width takes the strip out
-     to 100vw; `--front-screen-edge` is 50% of that same 100vw box less half the
-     measure. So whatever the vertical scrollbar does to `vw` it does to both, and
-     it cancels. Two separate expressions in `vw` — which is how the live sheet
-     writes it — each carry half a scrollbar of error, and the photographs stand
-     off the column by it. */
+     column's edges. `50% - --page-across / 2` off the column's own width takes
+     the strip out to the page's full width; `--front-screen-edge` is 50% of that
+     same box less half the measure. So whatever moves one moves the other, and it
+     cancels. Two separate expressions in absolute lengths — which is how the live
+     sheet writes it — each carry half the error, and the photographs stand off
+     the column by it.
+
+     --page-across AND NOT `100vw`, which is what the bleed was and what made the
+     whole DOCUMENT scroll sideways (#186). `100vw` counts a classic scrollbar's
+     gutter and the column this is laid out in does not, so the strip came out
+     about 15px wider than the page and CENTRED in what it overflowed — 7.5px past
+     each edge, measured at 390x844 as x=-7.5 to x=382.5 in a 375px client width.
+     Invisible on a phone, where the bar is an overlay and the two lengths agree;
+     a horizontal scrollbar under every screen of the page on a narrow desktop
+     window. ground.css owns that length and says why it cannot be a viewport
+     unit, and it is the same trap the Plinth was fixed for. */
   .front-screen__strip {
     position: relative;
     z-index: var(--front-screen-type-z);
-    margin-inline: calc(50% - 50vw);
+    margin-inline: calc(50% - var(--page-across) / 2);
   }
 
   /* OUT OF FLOW, AND THAT IS WHAT MAKES THE PHOTOGRAPHS HAVE A HEIGHT. Inside

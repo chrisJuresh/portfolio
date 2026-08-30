@@ -90,10 +90,11 @@ directory's `dist/`, on an ephemeral port so two features in flight never collid
 pane at all, which is the other half of the same rule: lazy mounting and motion
 cannot be verified there even by hand.
 
-## The fourteen Checks
+## The fifteen Checks
 
 | Check            | fails when                                                                  |
 | ---------------- | --------------------------------------------------------------------------- |
+| `across`         | anything reaches past the page across in any of the three compositions — a box sized from a viewport unit counts a scrollbar's gutter, and the root's clip then hides what it cost |
 | `assets`         | anything the page fetches 404s or never answers, in either theme, with every Effect Stack layer lit |
 | `carousel`       | the photograph strip's Timeline is not where the strip is, either end of it comes off the text column, the corner eye stops being measured off that same edge, the arrow keys or the focus ring go, the dissolve stops following the Timeline, or the one-screen budget stops affording a photograph |
 | `console`        | anything logs an error or throws, including across a theme flip — warnings deliberately not, because on this page they are nearly always Chromium's own |
@@ -325,6 +326,51 @@ file warns of:
   read as the Check being weak when it was the mutation being wrong. Check the
   cascade before believing a Check is asleep.
 
+`across` is the only Check that is not about a Section, and that is the whole
+reason it exists as a file rather than as three lines inside one. It asks the
+DOCUMENT whether anything reaches past the page across, and what it catches is a
+full-bleed box sized from a viewport unit — which Section that box lives in is
+exactly the thing nobody can predict. **A Section's Check may not answer for
+another Section's box.** `eater-map` carried this assertion for one run while #179
+was being written, caught the Front Screen's photograph strip with it, and took it
+out again for that reason; #186 fixed the strip and gave the assertion a home.
+
+**Its assertion is `scrollWidth` and its walk is only the diagnosis**, and the
+split is load-bearing. `html` carries `overflow-x: clip`, so there is no honest
+per-element rule available: an overhang inside a Section that clips its own is
+deliberate — the Plinth's slab still runs off the edge outside the landing band —
+and only reaching the ROOT's clip is never legitimate, because that is the page
+being asked to hide something. So the number is the claim, and the walk exists so
+the failure names the element instead of the number, skipping anything with a
+clipping ancestor and reporting the outermost of a nest. Measured with the strip
+put back to `100vw`: 383px of document on a 375px page at 390x844, 993 on 985 at
+1000x800, and 1432 on 1425 at DESK — **every window, including the one every other
+Check reads**, which is how the whole suite passed for as long as it did.
+
+**Its three windows are three COMPOSITIONS and not three sizes.** The landing
+band, the stacked page below it and the collapse a phone gets are three different
+drawings; a full-bleed box added to any one of them is a different rule in a
+different block, and the two below the band are the ones no other Check opens by
+default. Its tolerance is 1px and that is a rounding — `scrollWidth` is an integer
+over a subpixel layout — chosen against the lesson in the traps below: the failure
+it exists for is the width of a scrollbar, so anything looser would be the bug's
+own hiding place.
+
+Three mutations, and the third is the one that matters, because a Check with no
+opinion about which box may overhang could just as easily have no opinion about
+any of them:
+
+| mutation                                                          | wanted | got |
+| ------------------------------------------------------------------ | ------ | --- |
+| the strip's bleed back to `calc(50% - 50vw)`                        | fail   | fail at all three windows: 1432 on 1425, 993 on 985, 383 on 375, naming the strip |
+| the strip shifted 40px left, same width — the document still fits    | fail   | fail at all three: the second branch, `x=-40` with nothing but the root's clip on it |
+| nothing — the tree as it stands, at 1000x800                         | pass   | pass, and the Plinth is at `x=-44.5` to `x=1029.5` on a 985px page, held by `section.projects-panel`'s own `overflow-x: clip` |
+
+**The third is not "it passes".** The Plinth really does hang 44.5px off both
+edges down there, deliberately, and a walk without the ancestor test would fail on
+it every run. Measured rather than assumed, because "the Check would not have
+fired anyway" is the shape that costs a wrong answer.
+
 ## What a pass does not mean
 
 Three boundaries, stated because a green run is otherwise read as more than it is.
@@ -445,6 +491,12 @@ now, which moves every horizontal measurement in the suite by the gutter; that i
 the point, because those are the numbers the reader gets. Nothing else in the suite
 depended on the gutter being absent, which is worth knowing before anyone puts it
 back.
+
+**And nothing asked the real window whether the page FITTED in it** until #186,
+when the same trap turned up a second time — the Front Screen's photograph strip,
+bled to `100vw`, hanging 7.5px past both edges at every window in this suite and
+caught by none of them, DESK included. `across` is that question, and undoing the
+flag is what makes it worth asking.
 
 Two smaller lessons came out of the same bug, and both generalise. **A tolerance
 written to accommodate a known-wrong case is that case's hiding place**: the
