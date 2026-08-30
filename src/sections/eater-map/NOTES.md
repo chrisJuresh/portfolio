@@ -1,44 +1,43 @@
 # The Eater Map Section
 
 The Portfolio's third Section and its third resting place: the Showcase for the
-Eater restaurant map. Today it is a text composition with the **flat Exploded
-View** beside it — the captured Slab, and the Eater app's own three surfaces
-lying on it so that what a reader sees is a screenshot of the phone made out of a
-picture and real text (#176). #171 is the whole Showcase and the tickets under it
-are what raises it off the page.
+Eater restaurant map. It is a text composition with an **Exploded View** beside
+it — the captured Slab tilted under one camera, and the Eater app's own three
+surfaces standing off its face, so that what a reader sees is the app taken to
+pieces and made out of a picture and real text (#176, #177). #171 is the whole
+Showcase and two tickets under it are still open.
 
 ## What is here and what is not
 
 Here: the Rail, a plain masthead, the two authored subheading lines, the copy,
-the four numbered points, and the flat Exploded View. Not here, each with the
-ticket that brings it:
+the four numbered points, the Exploded View and the **Lift** that assembles it.
+Not here, each with the ticket that brings it:
 
 | not here yet | ticket |
 | --- | --- |
-| the **Lift** — the tilt, the depths, and this Section's Timeline | #177 |
 | a leader line from each point to the part it names | #178 |
 | the collapse below the band, once there is a drawing to collapse | #179 |
 | the Variants the drawing turns on — the projection, the subheading's face | #180 |
 
-**The flat state is not a step on the way to #177 — it is the frame #177 begins
-from and the frame three readers keep.** The Lift animates from flat *towards*
-raised, and the raised state is the one the markup will rest in, so a reduced-
-motion reader, a reader whose scripts never arrived and a narrow window all get a
-finished composition rather than a half-built one. That is why this ticket had to
-be right on its own before any motion existed.
+**The markup rests in the RAISED state, and that inverts the obvious build.** The
+Lift animates from flat *towards* raised, so the finished Exploded View is what a
+reader whose scripts never arrived and a reader who asked for reduced motion each
+get for nothing, and nothing in this Section is contingent on a script. The flat
+state is not a step on the way here and not a fallback: it is `--eater-map-lift: 0`,
+the frame the motion begins from, and it is still exactly the screenshot #176
+built — the same Slab at the same size with the Cards at the same scale, to the
+pixel, which is what the `eater-map` Check reads.
 
-`timeline.ts` is therefore a module with no default export, and that is a state
-the Kernel's loader has a name for rather than a gap: *a Section with no motion
-still mounts, it just registers no Timeline.* The file is still what makes this
-Section a chunk the loader fetches on approach, which is the whole of how it
-mounts lazily.
+`timeline.ts` therefore exports the Lift, and the file used to say why it exported
+nothing. Two things it recorded are worth keeping, because both are still true of
+this repository:
 
-**An EMPTY Timeline would not have done, and the reason it would not is not the
-one you would guess.** #174 left one — `gsap.timeline({ paused: true })` with
-nothing in it — on the reasoning that *an empty Timeline is still a Timeline a
-Check can hold and seek*. **Both halves of that are false**, and it survived only
-because the Section was on no page and so registered nothing. Put on the page it
-fails `moments` twice, measured rather than argued:
+**An EMPTY Timeline is not a placeholder for a Timeline.** #174 left one —
+`gsap.timeline({ paused: true })` with nothing in it — on the reasoning that *an
+empty Timeline is still a Timeline a Check can hold and seek*. **Both halves of
+that are false**, and it survived only because the Section was on no page and so
+registered nothing. Put on the page it failed `moments` twice, measured rather
+than argued:
 
 ```
 ✗ eater-map: a moment does not survive a scroll — seeked to 0.25, and the page
@@ -52,10 +51,10 @@ perfectly, animates no element, and nothing else on the page says so. **The firs
 is the one worth carrying**: a Timeline with no duration cannot be seeked to a
 fraction at all — `progress(0.25)` reads back `0`, so it is not seekable in the
 sense the seam means, and the failure reads as a broken `hold()`, which it is not.
-An empty Timeline is not a placeholder for a Timeline.
 
-So the choice is a Timeline that moves something or no default export at all, and
-until the Lift there is nothing honest to move.
+And the choice is still *a Timeline that moves something or no default export at
+all* — which is why `mountLift` returns nothing when the plane or the Cards are
+not on the page, rather than registering one that would scrub over an empty stage.
 
 ## The plane, and the one piece of arithmetic it turns on
 
@@ -101,6 +100,18 @@ Measured: at 1100x700 the derived answer is 0.5588 and the constant is still
 | the derived scale replaced by the constant | all three Cards, at 1100x700 **only** |
 | `tabindex="-1"` dropped from `cards.ts` | 13 focusable elements, at both windows |
 | `role="presentation"` dropped from `cards.ts` | 1 heading, at both windows |
+| the tilt, the swing, the dolly, the rise and the card gap all set to 0 | all three Cards in the same place at both ends of the Lift, at both windows |
+| `opacity: 0` on `.eater-map__still` | one of the Section's own boxes invisible, at both ends and at both windows |
+| `arrived()`'s first comparison back to `>=` | the reader left part way up and the Lift went on to 1, 3 runs out of 3 |
+
+**The last of those passed three times in a row before the Check was written the
+right way**, and it is the shape `scripts/checks/NOTES.md` warns about twice: *a
+mutation has to be placed where it wins*. The first version of that assertion put
+the page on the port and then jumped the scroll back to the Panel's — and a jump
+lands hundreds of pixels below the trigger's start, so the boundary the bug lives
+at is never crossed and the Check read as asleep when it was the gesture being
+wrong. It walks the reader out a pixel a frame now, and the mutation fails every
+time.
 
 **The three Cards' corners are Tokens** — `--eater-map-card-<name>-x` and `-y`,
 as shares of the Slab's width and height — so dragging one in the Editor moves it
@@ -110,9 +121,182 @@ inset at the top, the lines popup right-aligned under it, the detail panel as a
 sheet across the foot. `--eater-map-card-scale` multiplies the derived scale for
 an author who wants the interface a little larger than life; 1 is the screenshot.
 
-The plane is **clipped**, because a Card hanging off the edge of the picture is a
-Card that is not lying on it. #177 will have to lift that clip along with the
-Cards.
+The plane **used to be clipped**, because a Card hanging off the edge of the
+picture was a Card not lying on it. #177 lifted the clip, and it had no choice
+twice over: a Card standing off the surface is what the drawing is now of, and
+`overflow` other than `visible` would have flattened the whole Exploded View
+anyway — see the grouping rule below.
+
+## The Lift, and the four boxes it needs
+
+The Exploded View is one camera, one rotation, and three depths off the plane it
+rotates. `--eater-map-lift` runs 0 at the flat screenshot to 1 at the finished
+drawing, and every angle and every depth in the composition is that number times a
+Token, so progress 0 is `translateZ(0) rotate(0) rotate(0)` and every Card's depth
+is 0 — the screenshot, unchanged.
+
+**FOUR NESTED BOXES, and the fourth is forced rather than chosen.** #176 needed
+three; the reason for the extra one is two CSS rules that pull against each other
+and are both silent when broken.
+
+```
+.eater-map__stage      the grid area, centring what is in it
+  .eater-map__slab     the SIZE, and the container every length on the plane is a share of
+    .eater-map__plane  the CAMERA and the one rotation — perspective(), translateZ, rotateX, rotateZ
+      .eater-map__still    the picture
+      .eater-map__cards    the app's stylesheet host, preserve-3d
+        .eater-map__card   one depth off the plane's surface
+```
+
+**Rule one: a GROUPING element cannot preserve 3D.** `transform-style: preserve-3d`
+is forced back to `flat` on any element with `overflow` other than `visible`,
+`opacity` below 1, a `filter`, a `mask`, or `contain` — and `container-type:
+inline-size` **is** `contain: layout style inline-size`. So the Slab, which has to
+be the container for the scale arithmetic and used to carry the clip, can never be
+the element that holds the 3D space. There is no error and no warning: the Cards
+simply lie flat on the map for ever, at the right scale, looking like a screenshot.
+
+**Rule two: an element is not its own container.** The Frame's trap from the
+Projects Panel, and it is what stops the camera being written on the Slab: a `cqw`
+on the Slab's own rule resolves against the viewport, so the perspective would be
+a different camera at every window and at none of them the one that was chosen.
+
+Between them those two say the camera cannot be the `perspective` PROPERTY on the
+Slab and cannot be a plain length either. The answer is the `perspective()`
+**transform function** on the plane, which projects that element's own rotation and
+its children's depths together, and which may be written in `cqw` because the plane
+is a descendant of the container rather than the container itself. That is the
+whole of why there are four boxes and not three.
+
+**THE DOLLY IS PART OF THE CAMERA AND NOT A SIZE.** The Cards climb towards the
+lens, so they grow, and a drawing whose pieces all grow outruns the box the
+screenshot fitted — the detail panel is the biggest surface and the first to run
+off the foot of the stage. `--eater-map-dolly` pushes the whole plane away from
+the lens as the Lift runs: the map recedes, the topmost Card stays about life size,
+and **the flat frame keeps the size #176 gave it**, which shrinking the Slab would
+not have done. It is written BEFORE the two rotations in the transform list, so it
+travels along the view's own axis rather than along the tilted plane's normal.
+
+**Each Card's depth is a share of the rise, and its drift a share of the gap.**
+`--eater-map-rise` is how far the topmost Card comes off the Slab, as a share of
+the Slab's width; `--eater-map-card-<name>-depth` is each Card's place in that
+stack, in the app's own order — the detail panel is a sheet over the map, the lines
+popup floats above it, and the search bar is always on top. `--eater-map-card-gap`
+draws the stack apart ALONG the plane as it climbs, half up and half down about the
+middle of the stack, so the pieces do not all rise on one line of sight. **It is
+named for the Cards because `--eater-map-gap` was already taken** — it is the seam
+between the Rail's column and the composition, and the collision was silent: the
+grid's `column-gap` took a unitless number, went invalid, and the Rail lost its
+gutter while the Exploded View looked right.
+
+The Card's transform is `translate3d(0, drift, depth) scale(app-scale)`, and **the
+order is the arithmetic**: a transform list applies right to left, so the scale is
+the Card's own and the translate is in the PLANE's units. Written the other way
+round the app's own scale would multiply the depth and each Card would rise by a
+different amount for the same Token.
+
+## Glass cannot be carried off a surface
+
+The one thing the Lift costs that no Token puts back, and the reason a Token had
+to be spent putting something else in its place.
+
+A `backdrop-filter` samples what is painted behind an element **in its own plane**,
+and there is no such thing once the plane is turned under a camera: Chromium hands
+the filter an empty backdrop and it becomes a no-op. **At the first degree of
+tilt**, not at the first pixel of depth — measured, with the rise, the gap and the
+dolly all set to 0 and only the tilt standing, the app's frosted detail panel is
+already a sheet of clear glass with a sharp map behind its text. And measured the
+other way too, because it was the obvious suspect: `transform-style: preserve-3d`
+alone, with every angle at 0, is pixel-identical to `flat`. It is the rotation.
+
+So the composition gives each Card the plate its glass was standing in for, in step
+with that Card's own climb. `.eater-map__cards` captures the app's three glass
+colours off its own host — `--glass`, `--glass-sheet`, `--glass-sheet-float` — and
+`.eater-map__card` mixes each of them towards `--eater-map-plate` by
+`--eater-map-card-lift`. On the Slab the app's own translucency is what a
+screenshot has; off it the same surfaces are filled.
+
+**The capture and the mix are on two different elements and that is not tidiness.**
+A custom property whose value refers to its own name is a cycle and computes to
+nothing, so `--glass: color-mix(…, var(--glass), …)` on one element is not a
+darker glass, it is no glass at all.
+
+**This Section never says what colour Eater's glass is** — only which way it fills
+as it leaves the map. The app's own values are the other end of every mix, which is
+the same rule the rest of the vendoring follows: the Showcase may not drift into
+showing an interface the app does not have.
+
+## What drives the Lift, and the two pixels that decide whether it ever fires
+
+The Timeline is **paused, always**. Nothing plays it: a transport tween moves its
+playhead, which is the Front Screen's arrangement and the Turn's — the Timeline is
+the authority on where the drawing is, and the feel lives in what moves the
+playhead. Every ease inside the Timeline is `none` and the ease is on the transport,
+so the geometry is linear in the progress and a seek gives the frame the composition
+designed rather than a point on a curve.
+
+**A Timeline that plays itself cannot be held.** `hold()` disables every
+ScrollTrigger, which stops a scrub dead — and does not touch a `play()` already in
+the air. So a Check that seeked this to 0.25 would watch a `play()` walk it back out
+from under the read, and the failure would read as a broken `hold()`. The transport
+reads the playhead back on every tick and yields the moment it finds a progress it
+did not write.
+
+**No Check catches that guard being removed, and it was measured rather than
+assumed.** `settle()` scrolls the document and then waits for fonts and for the
+network to go quiet, which outlasts a whole Lift — so by the time `moments` reads,
+the transport has finished either way. The guard is there for the **Editor**, where
+the author can reach the Timeline's scrub within a second of arriving at the
+Section and the transport would still be in the air.
+
+**THE TRIGGER STARTS TWO PIXELS ABOVE THE PORT, and that is not a fudge.**
+ScrollTrigger's `isActive` is `progress > 0 && progress < 1`, so a trigger whose
+`start` is exactly the resting place is at progress **0** when the reader is
+standing on it — not active, and it never fires. The page turn eases onto the port
+and stops there to the pixel, so that is precisely the case. `top top+=2` arms the
+Lift two pixels before the turn settles, which is two pixels of an 800ms ease.
+
+Nothing here asks `self.isActive` either: `arrived()` compares the LIVE scroll
+against the trigger's own `start` and `end`, because `onRefresh` is called at
+points in ScrollTrigger's cycle where `isActive` has not been recomputed — and
+`onRefresh` is load-bearing, since it is what `release()` runs and therefore what
+puts the drawing back where the scroll says it should be after a Check or the
+Editor has held it.
+
+**BOTH OF `arrived()`'S COMPARISONS ARE STRICT, and the first one cost a
+diagnosis.** It has to be the same question ScrollTrigger asks itself —
+`progress > 0 && progress < 1` — and `>=` differs from it at exactly one scroll
+position: `scroll === start`, where ScrollTrigger says NO and `>=` says yes. The
+LEAVING toggle is delivered at exactly that position about half the time, so a
+turn back reversed the Lift on some runs and drove it on to the raised end on
+others. It read as a flaky reversal and it was an off-by-one in a comparison:
+
+```
+run 1: toggle scroll=1703 start=1706 active=false arrived=false   → reversed
+run 2: toggle scroll=1706 start=1706 active=false arrived=true    → ran on to 1
+```
+
+Six turns back in a row reverse now, measured on the built tree rather than in the
+dev server.
+
+**What a reader actually gets, driven rather than reasoned about.** Four states,
+each measured against `pnpm preview` at 1440x900, because three of them are states
+no Check can settle a Timeline in:
+
+| the reader | what was measured |
+| --- | --- |
+| turns the page in | the Lift stays at 0 through the whole 800ms turn and begins the frame the scroll lands on the port: `1708/0 1708/0.239 1708/0.449 … 1708/1` |
+| turns back part way up | caught at 0.772 and back to 0 while the page returns to the Panel: `0.772 0.769 0.555 0.379 0.249 … 0` |
+| runs no script | `--eater-map-lift` computes to `1`, and the Cards are raised, opaque and readable |
+| asks for reduced motion | at rest at 1 before anything is scrolled, and still 1 through two wheel notches |
+
+**A reader who asked for reduced motion gets the finished Exploded View and nothing
+at all moves** — not even the jump a Lift driven straight to its end would make. The
+Timeline is built, put at 1, registered so the Editor can still scrub it, and no
+trigger is created. **The turn back is a retarget and not a rewind**: the transport
+is re-aimed from wherever the drawing has got to, and it spends the time the
+DISTANCE LEFT is worth rather than the whole Lift's, so a turn taken a third of the
+way up undoes a third of a Lift.
 
 ## The Cards are the app's own markup, and their controls are neutered
 

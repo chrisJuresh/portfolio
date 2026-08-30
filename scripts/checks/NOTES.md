@@ -79,7 +79,7 @@ cannot be verified there even by hand.
 | `faces`          | a declared `@font-face` will not load, or no face Token names a declared family |
 | `front-screen`   | the Front Screen's rhyme, its one-screen budget, the Cut Title's cut or its accessible name, the crossing's span, the switch's ARIA, or the type's place in the Effect Stack breaks |
 | `projects-panel` | a control in the Frame leaves the centre its own Token names, the window and its titlebar are cut to two radii, the recording's box stops being inset on three sides, the occlusion of the subheading's second line moves or stops being painted, the titlebar reports a rung it is not made of, the chrome grows a control, the small-Frame reduction starts asking about the window instead of the Frame, the Plinth's depths stop being shares of the Frame, its slab stops being symmetric about it, its bottom-right corner comes off the page's on either branch of the fit, or the Frame moves towards the engineering points instead of away from them, the reflection stops being a life-size fold of the window, the marble stops being drawn without script, a reader who asked for reduced motion is charged for the recording, a reader who runs no script at all loses the copy that arrives with the page turn, the titlebar grows past the clearance the clip on disk was cut with, or that clip stops opening on that many rows of flat, light ground |
-| `eater-map`      | the three Cards on the Slab stop being drawn at the Slab's own scale, or the picture of the app puts a focusable control or a heading into the page |
+| `eater-map`      | the three Cards on the Slab stop being drawn at the Slab's own scale at the Lift's flat end, one of them stops moving between the Lift's two ends, one of the Section's own boxes is invisible at either end, a reader who leaves part way up is left with a Lift that ran on without them, or the picture of the app puts a focusable control or a heading into the page |
 | `ground`         | paper is not light, or the Turn does not arrive dark, in either theme         |
 | `turn`           | the Kernel's published landing measure — cap, drop or the stone the width branch leaves room for — disagrees with the Panel's own arithmetic, the Panel's masthead is visible or has lost its box, the Cut Title is not standing in that masthead's slot, the word moves or resizes across the crossing, either end of the morph is not the outline the Bake wrote, a wheel notch does not turn the page or bring it back, a notch begun on the photographs turns it, or the paragraph that arrives with the crossing is painted at the top of the document, is still arriving at the landing, moves to get there, or is left on its own compositing layer once it has |
 | `crossing`       | outside the landing band the Panel's ground parts company with the document's anywhere across the crossing, the page has not finished turning by the time the Panel owns the screen, the crossing is a flip or never finishes, the reader meets the whole of the Cut Title on the first screen, the Cut Title is cut by a box rather than by the fold — so it is still cut in the Section it heads — or stops being one drawing, or the Panel's masthead draws a second PROJECTS under it — or loses the `display` the Section's accessible name comes from |
@@ -154,7 +154,7 @@ media one is a short wide one — 1440x450, where the fit solves the Frame to 46
 while the viewport is nowhere near 520. Measured at DESK alone that whole
 mechanism could be a media query and nothing would say so.
 
-`eater-map` is the third, and it is the smallest of the three on purpose: two
+`eater-map` is the third, and it is still the smallest of the three: five
 assertions, because the Section is a composition and a composition's deliverable
 is a look. What it guards is the one thing about that composition that is not a
 look — the Cards are drawn at the Slab's own scale, derived rather than chosen —
@@ -163,8 +163,39 @@ an app puts neither a control in the tab order nor a restaurant in the outline. 
 padding**: the derivation carries an `@supports` constant behind it, and at DESK
 the constant is within a third of a per cent of the right answer, so at DESK alone
 this Check passes with the derivation deleted.
-`src/sections/eater-map/NOTES.md` carries the measurements and the two mutations
+`src/sections/eater-map/NOTES.md` carries the measurements and the five mutations
 that were made to break it.
+
+**It is also the first Check to read a Section's geometry AT A MOMENT rather than
+wherever the page left it**, and #177 is why: the Lift runs from flat to raised
+when the turn settles, so what is on screen after a `settle()` is whatever the
+scroll last drove it to — and the scale claim is about the FLAT frame, where a
+Card's drawn width is a fact about the map rather than about the camera. Both ends
+are read inside one `hold()` and the page is put back, which is `moments`' seam
+used by a Section's own Check for the first time.
+
+Two of its four assertions came with the Lift and are worth knowing apart. **The
+Cards' boxes differ between the Timeline's two ends, and no distance is asserted**
+— how far a Card climbs is the author's and lives in a Token, but a Card that does
+not move at all is the device switched off, and that IS a Token this Check has an
+opinion about. It is stronger than `moments`, which asks whether a Timeline moves
+*anything*: this asks about all three, and a Card left lying on the map while the
+other two came off it is what it catches. And **nothing of the Section's own is
+invisible at either end**, which is the mechanical form of "no element is hidden in
+CSS and uncovered by the Timeline" — checked at BOTH ends because the raised end
+is what a reader whose scripts never arrived is looking at.
+
+**Its fifth is the suite's first assertion about a Section LEAVING a state**, and
+it is worth copying the shape. The Lift reverses if the reader turns back before it
+finishes, and the bug it caught was a `>=` where ScrollTrigger's own `isActive` is
+strict — so the answer was wrong at exactly one scroll position and right
+everywhere else. **A `scrollTo` past a boundary does not cross it**: the first
+version put the page on the port and jumped back to the Panel's, and passed the
+mutation three times in a row. It walks the reader out a pixel a frame now, which
+crosses whatever position the Lift is armed at, and the mutation fails every time.
+Neither wait is a sleep — both are `waitForFunction`, one for the Lift to be
+genuinely part way up and one for it to arrive back down — so there is no sampling
+window to miss and no clock in the Check at all.
 
 `crossing` is `turn`'s counterpart below the band, and it is the clearest case in
 the suite of the definition at the top of this file: **every failure it catches is

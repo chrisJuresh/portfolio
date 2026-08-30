@@ -1,15 +1,17 @@
 ---
 // The Eater Map Section: the Rail, a plain masthead and its two authored lines,
-// the copy, the four numbered points, and the flat Exploded View — the captured
-// Slab with the app's own three surfaces lying on it. NOTES.md carries the
-// reasoning: why the masthead is a plain word rather than a Cut Title, which of
-// the Kernel's lengths this Section reads and why that is not joining the
-// landing measure, and the one piece of arithmetic the stage turns on.
+// the copy, the four numbered points, and the Exploded View — the captured Slab
+// tilted under one camera with the app's own three surfaces raised off it.
+// NOTES.md carries the reasoning: why the masthead is a plain word rather than a
+// Cut Title, which of the Kernel's lengths this Section reads and why that is
+// not joining the landing measure, and the two pieces of arithmetic the stage
+// turns on.
 //
-// This is the FLAT STATE and it is the whole of what is here. It is also what a
-// reduced-motion reader, a reader whose scripts never arrived and a narrow
-// window each keep, so it has to be right on its own — the Lift that raises the
-// Cards off the Slab is #177, and nothing below is contingent on it.
+// THE MARKUP RESTS IN THE RAISED STATE, and that inverts the obvious build
+// (#177). The Lift animates FROM flat TOWARDS raised, so the finished Exploded
+// View is what a reader whose scripts never arrived and a reader who asked for
+// reduced motion each get for nothing, and nothing here is contingent on a
+// script. Flat is `--eater-map-lift: 0` and it is where the motion begins.
 import { CARDS } from './cards';
 import { content } from './content';
 import { SLAB } from './slab';
@@ -88,42 +90,52 @@ import './tokens.css';
         </li>
       ))}
     </ol>
-    {/* THE FLAT EXPLODED VIEW: one still of the map, and the app's own three
-        surfaces lying on it at the scale the map is drawn at, so that what is on
-        screen is indistinguishable from a screenshot of the phone — and is made
-        of a picture and real text rather than of pixels.
+    {/* THE EXPLODED VIEW: one still of the map, and the app's own three surfaces
+        drawn on it at the scale the map is drawn at, so that flat it is
+        indistinguishable from a screenshot of the phone — and is made of a
+        picture and real text rather than of pixels. Raised, the same picture and
+        the same three surfaces come apart under one camera.
 
         The two numbers below are the ONLY thing the markup says about geometry,
         they are not chosen, and they are not repeated anywhere: they are the
         capture's own, out of slab.ts, and every other length on this plane is
         derived from them or is a Token. A re-capture at another phone size moves
-        them and the composition follows. NOTES.md. */}
+        them and the composition follows. NOTES.md.
+
+        FOUR BOXES AND EACH HAS ONE JOB, which is one more than the flat state
+        needed and is forced rather than chosen — NOTES.md has the two rules that
+        force it. The Slab is the SIZE and the container the plane's lengths are
+        shares of; the plane is the CAMERA and the one rotation everything on it
+        shares; the Cards' box is the app's own stylesheet host; and each Card is
+        a depth off the plane's surface. */}
     <div class="eater-map__stage">
       <div
         class="eater-map__slab"
         style={`--eater-map-app-w: ${SLAB.viewport.width}px; --eater-map-slab-ratio: ${SLAB.pixels.width} / ${SLAB.pixels.height}`}
       >
-        {/* `lazy`, so the Slab's quarter of a megabyte arrives as the reader
-            comes down the page rather than at load — the same promise the
-            Section's own chunk makes, kept declaratively so it holds with no
-            script at all. `alt` is Content: the picture carries a claim about
-            the project and a reader who cannot see it is owed the claim. */}
-        <img
-          class="eater-map__still"
-          src={SLAB.src}
-          width={SLAB.pixels.width}
-          height={SLAB.pixels.height}
-          alt={content.stage.slabAlt}
-          loading="lazy"
-          decoding="async"
-        />
-        {/* `.eater-cards` is the vendored stylesheet's host and therefore its
-            containment: every rule in that file begins with this class, so it
-            reaches nothing above this element and nothing above it reaches in. */}
-        <div class="eater-map__cards eater-cards">
-          {CARDS.map((card) => (
-            <div class="eater-map__card" data-eater-map-card={card.name} set:html={card.html} />
-          ))}
+        <div class="eater-map__plane" data-eater-map-plane>
+          {/* `lazy`, so the Slab's quarter of a megabyte arrives as the reader
+              comes down the page rather than at load — the same promise the
+              Section's own chunk makes, kept declaratively so it holds with no
+              script at all. `alt` is Content: the picture carries a claim about
+              the project and a reader who cannot see it is owed the claim. */}
+          <img
+            class="eater-map__still"
+            src={SLAB.src}
+            width={SLAB.pixels.width}
+            height={SLAB.pixels.height}
+            alt={content.stage.slabAlt}
+            loading="lazy"
+            decoding="async"
+          />
+          {/* `.eater-cards` is the vendored stylesheet's host and therefore its
+              containment: every rule in that file begins with this class, so it
+              reaches nothing above this element and nothing above it reaches in. */}
+          <div class="eater-map__cards eater-cards">
+            {CARDS.map((card) => (
+              <div class="eater-map__card" data-eater-map-card={card.name} set:html={card.html} />
+            ))}
+          </div>
         </div>
       </div>
     </div>
@@ -143,6 +155,18 @@ import './tokens.css';
      inherits the page's ground and its ink in both themes, at the far end of a
      Turn that finished before the reader got here. */
   .eater-map {
+    /* THE LIFT'S PLAYHEAD, AND IT IS NOT A TOKEN. 0 is the flat screenshot and 1
+       is the finished Exploded View; the tilt, the depths and the gaps below are
+       all it times a Token. It is declared HERE rather than in tokens.css
+       because it is not a number the author chooses — `timeline.ts` writes it,
+       the Editor's Timeline scrub is the control for it, and a second control in
+       the Tokens panel would be two handles on one thing.
+
+       IT RESTS AT 1, which is the whole of the inversion #177 asks for: the
+       markup reads as the finished composition, the Timeline animates AWAY from
+       it, and a reader whose scripts never arrived keeps the Exploded View
+       rather than a half-built one. */
+    --eater-map-lift: 1;
     box-sizing: border-box;
     display: grid;
     /* The Rail's column IS the page's left margin, the way it is in the Projects
@@ -341,11 +365,13 @@ import './tokens.css';
     color: color-mix(in oklab, var(--ink), transparent var(--eater-map-muted-veil));
   }
 
-  /* ---- the flat Exploded View --------------------------------------------
-     A picture of the map, and the app's own three surfaces lying on it. What
-     makes it read as one screenshot rather than as three stickers on a
-     photograph is that the whole plane is drawn in ONE coordinate system — the
-     phone's — and everything on it is a share of that. NOTES.md. */
+  /* ---- the Exploded View --------------------------------------------------
+     A picture of the map, and the app's own three surfaces on it. What makes it
+     read as one screenshot rather than as three stickers on a photograph is that
+     the whole plane is drawn in ONE coordinate system — the phone's — and
+     everything on it is a share of that. What keeps that true once it comes
+     apart is that there is ONE camera and ONE rotation, both on the plane, and
+     every part of the drawing is inside it. NOTES.md. */
   .eater-map__stage {
     grid-area: 2 / 4 / 3 / 13;
     align-self: stretch;
@@ -365,8 +391,14 @@ import './tokens.css';
      a `cqw` written on this rule would silently resolve against the viewport.
      Every one of them below is on a descendant.
 
-     Clipped, because a Card hanging off the edge of the picture is a Card that
-     is not lying on it. */
+     NOT CLIPPED, AND IT USED TO BE. While the Cards lay flat on the picture a
+     Card hanging off its edge was a Card not lying on it, and `overflow: hidden`
+     said so. Raised, a Card standing off the surface is exactly what the drawing
+     is of — and the clip could not have stayed in any case: `overflow` other
+     than `visible` makes an element a GROUPING element, and a grouping element's
+     `transform-style: preserve-3d` is forced back to `flat`, so the clip alone
+     would have flattened the Cards into the picture with no error and no
+     warning. NOTES.md. */
   .eater-map__slab {
     position: relative;
     height: calc(var(--eater-map-slab-fill) * 100%);
@@ -375,7 +407,40 @@ import './tokens.css';
        a share of the phone rather than of whatever the stage happens to be. */
     translate: calc(var(--eater-map-slab-shift) * 100%);
     container-type: inline-size;
-    overflow: hidden;
+  }
+
+  /* THE ONE CAMERA, AND THE ONE ROTATION EVERY PART SHARES. The picture and all
+     three Cards are inside this box, so there is exactly one projection on the
+     page and no element carries a rotation of its own — which is what makes this
+     one object taken apart rather than three stickers on a photograph.
+
+     `perspective()` IS A TRANSFORM FUNCTION HERE AND NOT THE PROPERTY, and that
+     is what saves a fifth box. The property projects an element's CHILDREN, so
+     it would have to sit on the Slab — and the Slab is `container-type`, which
+     is `contain: layout`, which is grouping, which would force this element's
+     `preserve-3d` back to `flat`. As a function it projects this element's own
+     rotation and its children's depths together, and it may be written in `cqw`
+     because the plane is not itself the container. NOTES.md carries both rules.
+
+     THE DOLLY IS PART OF THE CAMERA AND NOT A SIZE. The Cards climb towards the
+     lens, so they grow — and a drawing whose pieces all grow outruns the box the
+     screenshot fitted. The answer is the camera pulling back rather than the
+     Slab being drawn smaller: the map recedes as its pieces come off it, the
+     topmost Card stays about life size, and the FLAT frame keeps the size #176
+     gave it. It is written BEFORE the two rotations, so it pushes the drawing
+     away from the lens rather than along the tilted plane's own normal.
+
+     Every term is the Lift's playhead times a Token, so progress 0 is
+     `translateZ(0) rotate(0) rotate(0)` — the plane lies flat at the size it was
+     drawn at, and the composition is the screenshot #176 built, to the pixel. */
+  .eater-map__plane {
+    position: absolute;
+    inset: 0;
+    transform-style: preserve-3d;
+    transform: perspective(calc(var(--eater-map-camera) * 100cqw))
+      translateZ(calc(var(--eater-map-lift) * var(--eater-map-dolly) * -100cqw))
+      rotateX(calc(var(--eater-map-lift) * var(--eater-map-tilt)))
+      rotateZ(calc(var(--eater-map-lift) * var(--eater-map-swing)));
   }
 
   .eater-map__still {
@@ -393,11 +458,23 @@ import './tokens.css';
 
      `tan(atan2(a, b))` is `a / b`. CSS has no other way to divide one length by
      another: `calc()` requires the right-hand side of a `/` to be a number, and
-     that is the spec rather than an engine's gap. NOTES.md. */
+     that is the spec rather than an engine's gap. NOTES.md.
+
+     `preserve-3d` here is not decoration either: without it this box flattens its
+     children into itself and every Card's depth is discarded silently — the Cards
+     would still be there, at the right scale, lying on the map for ever. */
   .eater-map__cards {
     position: absolute;
     inset: 0;
+    transform-style: preserve-3d;
     --eater-map-app-scale: tan(atan2(100cqw, var(--eater-map-app-w)));
+    /* The app's own three glass colours, taken off its host so the Cards can be
+       given something to stand on once the Lift takes their backdrop away. Read
+       here and spent one element down, because a custom property that refers to
+       its own name is a cycle and computes to nothing. See below. */
+    --eater-map-glass: var(--glass);
+    --eater-map-glass-sheet: var(--glass-sheet);
+    --eater-map-glass-float: var(--glass-sheet-float);
   }
 
   /* An engine without the trigonometric functions gets a plausible screenshot
@@ -410,31 +487,92 @@ import './tokens.css';
     }
   }
 
-  /* Each Card at its own corner of the picture, in the picture's own units. The
-     Cards carry their own frozen pixel sizes — they are the app's markup at the
-     window it was exported at (NOTES.md) — so the scale is a transform and never
-     a width: a width would reflow another repository's interface. */
+  /* Each Card at its own corner of the picture, in the picture's own units, and
+     at its own depth off it. The Cards carry their own frozen pixel sizes — they
+     are the app's markup at the window it was exported at (NOTES.md) — so the
+     scale is a transform and never a width: a width would reflow another
+     repository's interface.
+
+     THE CARD'S OWN PLAYHEAD, defaulting to the Section's. `timeline.ts` writes
+     this one per Card so the three can climb one after another; nothing writes
+     it when no script arrives, and the `var()` then hands each Card the Section's
+     own 1 and the stack is up. Both are the same number and neither is a Token.
+
+     TRANSLATE FIRST AND SCALE SECOND, and the order is the arithmetic: a
+     transform list applies right to left, so the scale is the Card's own and the
+     translate is in the PLANE's units — a depth in the picture's own coordinate
+     system rather than in the app's. Written the other way round the app's own
+     scale would multiply the depth and each Card would rise by a different
+     amount for the same Token. Both distances are `cqw`, so they are shares of
+     the Slab as everything else on the plane is, and the drawing holds its shape
+     at every window.
+
+     GLASS CANNOT BE CARRIED OFF A SURFACE, and this is the one thing the Lift
+     costs that no Token can put back. A `backdrop-filter` samples what is painted
+     behind an element IN ITS OWN PLANE, and there is no such thing once the plane
+     is turned under a camera: Chromium hands the filter an empty backdrop and it
+     becomes a no-op, silently, at the FIRST DEGREE of tilt. Measured — with the
+     depths and the gap set to 0 and only the tilt standing, the app's frosted
+     detail panel is already a sheet of clear glass with a sharp map behind its
+     text, which is a composition a reader cannot read. NOTES.md.
+
+     So the composition gives each Card the plate its glass was standing in for,
+     in step with the Card's own climb: on the Slab the app's own translucency is
+     what a screenshot has, and off it the same surfaces are filled to
+     --eater-map-plate. The three values are the APP'S OWN, mixed rather than
+     restated — this Section never says what colour Eater's glass is, only which
+     way it fills as it leaves the map. */
   .eater-map__card {
+    --eater-map-card-lift: var(--eater-map-lift);
+    --eater-map-card-rise: calc(
+      var(--eater-map-card-lift) * var(--eater-map-rise) * var(--eater-map-card-depth)
+    );
+    /* Up the plane for the Cards near the top of the stack and down it for the
+       ones near the bottom, so the pieces draw apart as they climb instead of
+       stacking on one line of sight. Half the gap either way. */
+    --eater-map-card-drift: calc(
+      var(--eater-map-card-lift) * var(--eater-map-card-gap) * (0.5 - var(--eater-map-card-depth))
+    );
+    --eater-map-card-fill: calc(var(--eater-map-card-lift) * 100%);
+    --glass: color-mix(in srgb, var(--eater-map-glass), var(--eater-map-plate) var(--eater-map-card-fill));
+    --glass-sheet: color-mix(
+      in srgb,
+      var(--eater-map-glass-sheet),
+      var(--eater-map-plate) var(--eater-map-card-fill)
+    );
+    --glass-sheet-float: color-mix(
+      in srgb,
+      var(--eater-map-glass-float),
+      var(--eater-map-plate) var(--eater-map-card-fill)
+    );
     position: absolute;
     left: calc(var(--eater-map-card-x) * 100%);
     top: calc(var(--eater-map-card-y) * 100%);
     transform-origin: 0 0;
-    transform: scale(calc(var(--eater-map-app-scale) * var(--eater-map-card-scale)));
+    transform: translate3d(
+        0,
+        calc(var(--eater-map-card-drift) * 100cqw),
+        calc(var(--eater-map-card-rise) * 100cqw)
+      )
+      scale(calc(var(--eater-map-app-scale) * var(--eater-map-card-scale)));
   }
 
   .eater-map__card[data-eater-map-card='search'] {
     --eater-map-card-x: var(--eater-map-card-search-x);
     --eater-map-card-y: var(--eater-map-card-search-y);
+    --eater-map-card-depth: var(--eater-map-card-search-depth);
   }
 
   .eater-map__card[data-eater-map-card='lines'] {
     --eater-map-card-x: var(--eater-map-card-lines-x);
     --eater-map-card-y: var(--eater-map-card-lines-y);
+    --eater-map-card-depth: var(--eater-map-card-lines-depth);
   }
 
   .eater-map__card[data-eater-map-card='details'] {
     --eater-map-card-x: var(--eater-map-card-details-x);
     --eater-map-card-y: var(--eater-map-card-details-y);
+    --eater-map-card-depth: var(--eater-map-card-details-depth);
   }
 
   /* ---- one column, outside the band the composition is fitted to ---------

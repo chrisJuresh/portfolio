@@ -86,12 +86,14 @@
      as a 1000px column is not a phone. */
   --eater-map-slab-cap: 20rem;
 
-  /* ---- the three Cards, lying flat on it ----------------------------------
+  /* ---- the three Cards, and where they stand on the Slab ------------------
      Each Card's own corner, as a share of the Slab's width and height — so
      dragging one moves it across the picture rather than across the page, and
      the arrangement holds at every size the Slab is drawn at. The app's own
      layout is where these start: the search bar inset at the top, the lines
-     popup under it, the detail panel as a sheet across the foot.
+     popup under it, the detail panel as a sheet across the foot. These are where
+     each Card sits FLAT on the picture; how far off it each one comes is under
+     the Lift below.
 
      THE CARDS ARE NOT SCALED HERE AND CANNOT USEFULLY BE. The scale that makes
      the whole thing read as one screenshot is the Slab's drawn width over the
@@ -110,6 +112,67 @@
 
   --eater-map-card-details-x: 0.004;
   --eater-map-card-details-y: 0.57;
+
+  /* ---- the Lift: one camera, a tilted Slab, three Cards off its face -------
+     Every number here is spent by `--eater-map-lift`, which runs 0 at the flat
+     screenshot to 1 at the finished Exploded View. So a Token set to 0 does not
+     turn a piece of the drawing off, it takes that piece out of the Lift and
+     leaves it where the screenshot had it.
+
+     THE CAMERA IS A SHARE OF THE SLAB'S WIDTH rather than a length, because a
+     perspective stated in pixels is a different camera at every window: the
+     phone is 220px across at the short corner of the band and 478px at 2560, and
+     a fixed 600px eye would be standing three times closer to one than to the
+     other. Small is a wide lens standing close; large flattens towards a
+     parallel projection, which #180 is the Variant for. */
+  --eater-map-camera: 2.3;
+
+  /* How far the camera pulls back as the drawing comes apart, as a share of the
+     Slab's width. The pieces climb towards the lens and grow; this is what keeps
+     the whole of the Exploded View inside the box the flat screenshot fitted,
+     without drawing the Slab any smaller than #176 drew it. 0 is a camera that
+     stands still and a drawing that outgrows its stage. */
+  --eater-map-dolly: 0.34;
+
+  /* The plane's own attitude, and the whole of it: `tilt` tips the top of the
+     phone away from the reader, `swing` turns it on its own face. There is no
+     third angle and no per-element rotation anywhere — one camera (#177). */
+  --eater-map-tilt: 26deg;
+  --eater-map-swing: -12deg;
+
+  /* THE LIFT'S DISTANCE: how far off the Slab the topmost Card comes, as a share
+     of the Slab's width. The other two are shares of this. */
+  --eater-map-rise: 0.42;
+
+  /* THE GAP BETWEEN THE CARDS: how far the stack draws apart ALONG the plane as
+     it climbs, as a share of the Slab's width, spent half up and half down about
+     the middle of the stack. 0 leaves the three Cards climbing on one line of
+     sight. Named for the Cards because --eater-map-gap is already the seam
+     between the Rail's column and the composition beside it. */
+  --eater-map-card-gap: 0.18;
+
+  /* Each Card's own depth, as a share of the rise — which is to say its place in
+     the stack. These are the app's own stacking order: the detail panel is a
+     sheet over the map, the lines popup floats above it, and the search bar is
+     the one thing always on top. */
+  --eater-map-card-search-depth: 1;
+  --eater-map-card-lines-depth: 0.62;
+  --eater-map-card-details-depth: 0.26;
+
+  /* WHAT THE GLASS FILLS TO once it comes off the map. A backdrop filter has
+     nothing to sample the moment the plane is tilted, so the app's translucent
+     surfaces are mixed towards this in step with each Card's own climb — 0% of it
+     flat, the whole of it raised. The Section says which way they fill and never
+     what colour they are; the app's own values are the other end of the mix. */
+  --eater-map-plate: #fff;
+
+  /* How long the Lift takes end to end, and therefore how long a turn back
+     part-way through takes to undo: `timeline.ts` spends this in proportion to
+     the distance still to travel. Read per gesture rather than at mount, so
+     dragging it in the Editor changes the next Lift without a reload — the one
+     thing a Token a Timeline reads has to do to be draggable at all
+     (src/sections/NOTES.md). */
+  --eater-map-lift-time: 1.15s;
 
   /* ---- the rules the composition draws ------------------------------------ */
   --eater-map-rule-veil: 78%;
