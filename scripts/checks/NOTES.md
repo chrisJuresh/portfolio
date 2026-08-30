@@ -29,6 +29,14 @@ and threading a parameter through fourteen modules to say so would put the name
 of a temporary alternative in every one of them. **When #182 chooses, the loser
 and this flag go out together.**
 
+**It is read WHEN A PAGE IS OPENED and never at module scope**, and the first
+version got that wrong in a way this whole file is about. `run.mjs` sets the
+variable in its body — and imports all fourteen Checks at the top, every one of
+which imports `lib/page.mjs`, so ESM evaluates that module before `run.mjs`'s
+first statement runs. A `const` there is always `undefined`: the suite opened
+every page with the shipped stage, printed that it had opened them with the
+other one, and passed. Two green runs said nothing at all.
+
 **On a fresh clone, download the browser once.** `pnpm install` does not: the
 `playwright` package carries the driver and not the binaries, and pnpm blocks
 install scripts anyway.

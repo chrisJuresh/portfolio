@@ -11,7 +11,7 @@ import {
   Texture,
   WebGLRenderer,
 } from 'three';
-import { EDGE_AMBIENT, EDGE_LIGHT, type Stage, type StageParts } from './stage';
+import { edgeShade, type Stage, type StageParts } from './stage';
 
 /**
  * The WebGL stage: the same Exploded View, drawn with a Slab that has real
@@ -277,8 +277,10 @@ class Slab {
       const sy = quadrant === 0 || quadrant === 1 ? ay : -ay;
       return [sx + out * Math.cos(angle), sy + out * Math.sin(angle)];
     };
-    const lit = (nx: number, ny: number, nz: number) =>
-      EDGE_AMBIENT + (1 - EDGE_AMBIENT) * Math.max(0, nx * EDGE_LIGHT[0] + ny * EDGE_LIGHT[1] + nz * EDGE_LIGHT[2]);
+    // Every vertex has a real normal here, which is the whole of what the
+    // extrusion can put into the same formula that the DOM slices can only give
+    // a depth to.
+    const lit = edgeShade;
     const u = (x: number) => (x + width / 2) / width;
     const v = (y: number) => (y + height / 2) / height;
 
@@ -319,9 +321,25 @@ class Slab {
 }
 
 /** Every number the drawing turns on, as one string, so a frame that would draw
- *  the same picture is not drawn again. */
+ *  the same picture is not drawn again.
+ *
+ *  WRITTEN OUT AND NOT `Object.values(look)`, which would make this a function of
+ *  the order the fields happen to be declared in — a key moved for tidiness would
+ *  silently change what counts as the same frame. */
 function signature(look: Look, edge: string, colour: string): string {
-  return `${Object.values(look).join('|')}|${edge}|${colour}`;
+  return [
+    look.width,
+    look.height,
+    look.lift,
+    look.camera,
+    look.dolly,
+    look.tilt,
+    look.swing,
+    look.thickness,
+    look.radius,
+    edge,
+    colour,
+  ].join('|');
 }
 
 const mountWebglStage = async (parts: StageParts): Promise<Stage> => {
@@ -330,7 +348,16 @@ const mountWebglStage = async (parts: StageParts): Promise<Stage> => {
   // The photograph has to be decoded before it can be a texture, and this is also
   // what makes the Slab's bytes arrive: the markup asks for them lazily, and the
   // stage mounts as the Section approaches, which is the same moment.
-  await still.decode().catch(() => undefined);
+  //
+  // A FAILED DECODE IS NOT SWALLOWED, and it used to be. `catch(() => undefined)`
+  // here meant a Slab that never arrived was reported by nobody: this went on to
+  // take the `<img>` off the page, and the Section was then a blank plane with
+  // three Cards on it — which is exactly what `design/tools/pictures.mjs` refuses
+  // to photograph, except that it could no longer see the `<img>` to refuse. So
+  // this throws before anything is touched, `timeline.ts` logs it, and the page
+  // is left standing as the DOM composition it already was. A stage that cannot
+  // draw the picture does not get to take the picture away.
+  await still.decode();
 
   const canvas = document.createElement('canvas');
   canvas.className = 'eater-map__gl';
@@ -368,7 +395,10 @@ const mountWebglStage = async (parts: StageParts): Promise<Stage> => {
   scene.add(mesh);
   const camera = new PerspectiveCamera();
 
-  const colour = new Color();
+  // Mid grey, and stated rather than defaulted: `new Color()` is WHITE, which
+  // against this page's dark ground reads as a deliberate bright edge rather than
+  // as a Token nobody could parse. An unreadable edge should look wrong.
+  const colour = new Color().setRGB(0.5, 0.5, 0.5, SRGBColorSpace);
   /** The last frame's inputs, so a still page costs one style read and no draw. */
   let drawn = '';
   /** And the last drawing buffer, because remaking one is not free. */
@@ -378,23 +408,33 @@ const mountWebglStage = async (parts: StageParts): Promise<Stage> => {
     const box = slab.getBoundingClientRect();
     if (!(box.width > 0) || !(box.height > 0)) return null;
     const style = getComputedStyle(slab);
-    const token = (name: string, fallback: number) => {
+    // ZERO IS THE ONLY FALLBACK, AND THE CAMERA HAS NONE. A number written here
+    // would be a second home for a value `tokens.css` already owns, and the two
+    // would drift; zero is not a guess but the honest reading of a term that is
+    // not there — no tilt, no swing, no dolly, no depth. The camera cannot be
+    // read that way, because a perspective of zero is not a projection, so a Slab
+    // whose Token cannot be read is not drawn at all.
+    const token = (name: string) => {
       const value = Number.parseFloat(style.getPropertyValue(name));
-      return Number.isFinite(value) ? value : fallback;
+      return Number.isFinite(value) ? value : 0;
     };
+    const camera = token('--eater-map-camera');
+    if (!(camera > 0)) return null;
     return {
       width: box.width,
       height: box.height,
-      lift: token('--eater-map-lift', 1),
-      camera: token('--eater-map-camera', 2.3),
-      dolly: token('--eater-map-dolly', 0),
-      tilt: token('--eater-map-tilt', 0),
-      swing: token('--eater-map-swing', 0),
+      // The markup rests RAISED, so a playhead nothing has written yet is 1 —
+      // which is the composition, and is the same thing the stylesheet says.
+      lift: Number.parseFloat(style.getPropertyValue('--eater-map-lift')) || 1,
+      camera,
+      dolly: token('--eater-map-dolly'),
+      tilt: token('--eater-map-tilt'),
+      swing: token('--eater-map-swing'),
       // A Slab with no thickness is what the FLAT edge is, and it is also the
       // honest answer when the Token is missing: this stage's job is to draw the
       // composition, and adding a depth nobody asked for would not be it.
-      thickness: edge === 'flat' ? 0 : token('--eater-map-slab-thickness', 0),
-      radius: edge === 'flat' ? 0 : token('--eater-map-slab-edge-radius', 0),
+      thickness: edge === 'flat' ? 0 : token('--eater-map-slab-thickness'),
+      radius: edge === 'flat' ? 0 : token('--eater-map-slab-edge-radius'),
     };
   }
 

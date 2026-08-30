@@ -100,7 +100,15 @@
      pixels over the fillet. The radius is held to the thickness: an edge cannot
      be rounder than it is deep. The defaults are a phone's own proportions
      against its width — about a tenth deep, with a corner a little under half
-     of that — so the object reads as a thing rather than as a demonstration. */
+     of that — so the object reads as a thing rather than as a demonstration.
+
+     THEY ARE DRAGGABLE AND THEY MOVE NOTHING, until a stage is asked for an edge
+     to spend them on. The Editor draws a control for every Token in this file
+     (ADR 0004), so from here until #182 there are three of them that do nothing
+     on the page the author is looking at. That is the honest cost of a
+     comparison living in the real page rather than on a bench, and it goes away
+     with the judgement: either the edge ships and they are ordinary Tokens, or
+     it does not and they leave with the stage. */
   --eater-map-slab-thickness: 0.1;
   --eater-map-slab-edge-radius: 0.04;
 
@@ -112,7 +120,9 @@
      stage reads this off the page as a computed `color`, and Chromium serialises
      one as `rgb(…)` for anything in sRGB and as something else for anything that
      is not; the stage refuses what it cannot read rather than warning about it,
-     so a `color-mix()` here is an edge that quietly stays black. */
+     so a `color-mix()` here is an edge drawn in the stage's own MID GREY. Stated
+     there rather than defaulted, because three.js's own default colour is white
+     and a white edge against this page's dark ground reads as a decision. */
   --eater-map-slab-edge: #9a948a;
 
   /* ---- the three Cards, and where they stand on the Slab ------------------

@@ -3,8 +3,7 @@
 
      pnpm stages
      pnpm stages -- --viewports short,desk,wide --themes light
-     pnpm stages -- --progress 0.5           # part way up the Lift
-     pnpm stages -- --full                   # the whole Section, not the drawing
+     pnpm stages -- --progress 0,1           # the flat frame as well as the raised
 
    WHAT IS BEING COMPARED. The Eater Map Section's Exploded View is drawn by a
    STAGE — `src/sections/eater-map/stage.ts` is the boundary — and there are two
@@ -13,14 +12,18 @@
    edge out of, that is six cells:
 
                    flat          thick               wrapped
-     dom           shipped       stacked layers      —
+     dom           shipped       the solid sliced    —
      webgl         one quad      a real extrusion    the pixels round the fillet
 
-   THE EMPTY CELL IS THE RESULT AND NOT A GAP. DOM has no extrusion; a thickness
-   in it is a stack of solid layers, which gives an honest silhouette and an
-   honest edge colour and stops there. Six faces would not help: no number of
-   flat faces runs a continuous texture round a fillet. That is the one thing the
-   alternative exists to show, and it is drawn here rather than described.
+   THE EMPTY CELL IS THE RESULT AND NOT A GAP — and it is asked of the page
+   rather than listed here, so this file cannot disagree with `stage.ts` about
+   what is reachable. DOM has no extrusion; a thickness in it is the solid
+   SLICED, one flat element per section, which reaches the silhouette, the
+   rounded outline and a shaded fillet and stops there. Six faces would not help
+   and neither would six hundred slices: a slice is one element and an element
+   has one background, so the captured pixels stop at the flat face and the edge
+   is paint. That is the one thing the alternative exists to show, and it is
+   drawn here rather than described.
 
    IT SHOOTS AT THE RAISED END BY DEFAULT, because the thing being compared only
    exists there. Every depth in this Section is spent by `--eater-map-lift`, so at
@@ -41,8 +44,8 @@
 
 import { createReadStream, statSync } from 'node:fs';
 import { createServer } from 'node:http';
-import { mkdir, readFile, rm, stat, writeFile } from 'node:fs/promises';
-import { dirname, join, resolve } from 'node:path';
+import { mkdir, rm, stat, writeFile } from 'node:fs/promises';
+import { dirname, join, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { contentType, resolveFile } from '../../scripts/static-tree.mjs';
 // Every picture the Section is made of, arrived and decoded before a shot — and a
@@ -88,21 +91,40 @@ const VIEWPORTS = {
   wide: { width: 2560, height: 1440 },
 };
 
-/** Which stage, and what each can make the Slab's edge out of. Kept in step with
- *  `src/sections/eater-map/stage.ts` by being read back off the page: a cell that
- *  asks for an edge the stage refuses comes back reporting the one it drew, and
- *  the sheet says so rather than captioning a picture wrongly. */
+/** Which stage, and what each is asked to make the Slab's edge out of. */
 const STAGES = ['dom', 'webgl'];
 const EDGES = ['flat', 'thick', 'wrapped'];
 
-/** What the cell says instead of a picture, when the stage cannot draw the edge. */
-const UNREACHABLE = {
+/**
+ * WHETHER A CELL IS REACHABLE IS ASKED OF THE PAGE, NEVER LISTED HERE.
+ *
+ * `src/sections/eater-map/stage.ts` is the only authority on what each stage can
+ * draw, and it answers by refusing: a stage handed an edge it cannot reach falls
+ * back to `flat` and writes that on the Section's root. So every cell is loaded,
+ * and a cell that comes back drawing something other than what it was asked for
+ * IS the empty one. A list here would be a second copy of `REACHES` — and the
+ * first version of this file had one, under a comment claiming it was read off
+ * the page.
+ *
+ * What is listed below is only the PROSE — why a particular cell cannot be
+ * reached — which is a thing to say and not a thing to decide. A refusal with no
+ * entry here still renders as unreachable, with the general sentence.
+ */
+const WHY = {
   'dom|wrapped':
-    'DOM has no extrusion and no fillet. A thickness here is a stack of solid ' +
-    'layers, so the silhouette and the edge colour are reachable and a continuous ' +
-    'texture running round a rounded edge is not — six faces would still be six ' +
-    'flat faces. This cell is the finding.',
+    'DOM has no extrusion and no fillet to run a texture over. A thickness here ' +
+    'is the solid SLICED — one flat element per section — which reaches the ' +
+    'silhouette, the rounded outline and a shaded fillet, and stops there: a ' +
+    'slice is one element and an element has one background, so the captured ' +
+    'pixels stop at the flat face and the edge is paint. Six faces would still ' +
+    'be six flat faces. This cell is the finding.',
 };
+
+const REFUSED = (stage, edge) =>
+  WHY[`${stage}|${edge}`] ??
+  `The ${stage} stage was asked for a ${edge} edge and drew something else, so it ` +
+    'cannot reach this cell. src/sections/eater-map/stage.ts says which edges each ' +
+    'stage lists.';
 
 /* ---- args --------------------------------------------------------------- */
 
@@ -125,30 +147,11 @@ const opt = args(process.argv.slice(2));
 const list = (value, fallback) =>
   value ? value.split(',').map((one) => one.trim()).filter(Boolean) : fallback;
 
-function number(name, value, fallback) {
-  if (value === undefined) return fallback;
-  const parsed = Number(value);
-  if (!Number.isFinite(parsed) || parsed <= 0) fail(`--${name} takes a positive number, not "${value}"`);
-  return parsed;
-}
-
-function flag(name, value) {
-  if (value === undefined) return false;
-  if (value !== 'true') fail(`--${name} takes no value — got "${value}"`);
-  return true;
-}
-
 const themes = list(opt.themes, ['light', 'dark']);
 /** The two ends of the band by default: the corner it starts at, and a large
  *  desktop. One window would not show that the drawing holds its shape. */
 const viewKeys = list(opt.viewports, ['short', 'wide']);
 const progresses = list(opt.progress, ['1']).map(Number);
-const scale = number('scale', opt.scale, 1);
-const full = flag('full', opt.full);
-const format = (opt.format || 'png').toLowerCase();
-const quality = number('quality', opt.quality, 92);
-if (format !== 'png' && format !== 'jpeg') fail('--format must be png or jpeg');
-
 /** BESIDE `design/sheets/` AND NOT INSIDE IT. The Variant sheet wipes its whole
  *  directory on every run, so a comparison written under it would be deleted by
  *  the next `pnpm variants` — two regenerable outputs, and one of them silently
@@ -314,7 +317,7 @@ async function sheet(rows) {
     return `
       <figure>
         <figcaption>
-          <b>${escape(row.stage)} · ${escape(row.edge)}${row.drifted ? ' <i>not what was asked for</i>' : ''}</b>
+          <b>${escape(row.stage)} · ${escape(row.edge)}</b>
           <span>${escape(row.slab)} · lift ${escape(row.lift)}${
             row.edge === 'flat' ? '' : ` · ${escape(row.thickness)}/${escape(row.radius)}`
           }</span>
@@ -352,7 +355,7 @@ async function sheet(rows) {
 </style></head>
 <body>
   <h1>The Exploded View, drawn twice</h1>
-  <p class="meta">${rows.filter((row) => !row.unreachable).length} render(s) of ${ROUTE}, at ${scale}x, by
+  <p class="meta">${rows.filter((row) => !row.unreachable).length} render(s) of ${ROUTE} by
      <code>design/tools/render-stages.mjs</code> (#181). Two stages behind one boundary —
      <code>src/sections/eater-map/stage.ts</code> — crossed with what each can make the
      Slab's edge out of. <b>The empty cell is the result</b>: DOM can fake a thickness with
@@ -404,18 +407,8 @@ for (const viewport of viewKeys) {
   for (const theme of themes) {
     for (const stage of STAGES) {
       for (const edge of EDGES) {
-        const unreachable = UNREACHABLE[`${stage}|${edge}`];
-        if (unreachable) {
-          for (const progress of progresses) {
-            rows.push({ stage, edge, theme, viewport, progress, unreachable });
-            console.log(`  [${String(++n).padStart(String(total).length)}/${total}] ${stage} · ${edge} — unreachable`);
-          }
-          continue;
-        }
-
         const context = await browser.newContext({
           viewport: VIEWPORTS[viewport],
-          deviceScaleFactor: scale,
           colorScheme: theme,
         });
         // The Shell reads this before first paint, so it has to be here rather
@@ -430,24 +423,28 @@ for (const viewport of viewKeys) {
 
         for (const progress of progresses) {
           const info = await moment(page, progress);
-          const file = `${stage}__${edge}__${theme}__${viewport}__p${Math.round(progress * 100)}.${format}`;
-          const target = {
-            path: join(out, file),
-            ...(format === 'jpeg' ? { type: 'jpeg', quality } : { type: 'png' }),
-          };
-          const shot = full
-            ? page.locator(`[data-section="${SECTION}"]`)
-            : page.locator('.eater-map__stage');
-          await shot.screenshot(target);
+          // THE REFUSAL IS THE ANSWER. `stage.ts` holds a stage to the edges it
+          // lists and falls back to `flat` for anything else, so a cell that
+          // comes back drawing something it was not asked for IS the unreachable
+          // one — asked of the page rather than looked up here, which is what
+          // stops this file keeping a second copy of `REACHES`.
+          if (info.stage !== stage || info.edge !== edge) {
+            rows.push({ stage, edge, theme, viewport, progress, unreachable: REFUSED(stage, edge) });
+            console.log(
+              `  [${String(++n).padStart(String(total).length)}/${total}] ${stage} · ${edge}` +
+                ` — unreachable: the page drew ${info.stage} · ${info.edge}`,
+            );
+            continue;
+          }
+          const file = `${stage}__${edge}__${theme}__${viewport}__p${Math.round(progress * 100)}.png`;
+          await page.locator('.eater-map__stage').screenshot({ path: join(out, file), type: 'png' });
           const bytes = (await stat(join(out, file))).size;
-          const drifted = info.stage !== stage || info.edge !== edge;
           rows.push({
             ...info,
             theme,
             viewport,
             progress,
             file,
-            drifted,
             // WHAT ACTUALLY DREW IT, counted on the page rather than inferred
             // from the cell's name. It is the one line under each picture that
             // says which machinery is being looked at, and a stage that quietly
@@ -459,8 +456,7 @@ for (const viewport of viewKeys) {
           });
           console.log(
             `  [${String(++n).padStart(String(total).length)}/${total}] ${file}` +
-              `  ${info.slab} · lift ${info.lift}  (${Math.round(bytes / 1024)} KB)` +
-              (drifted ? `  — asked for ${stage}/${edge}, drew ${info.stage}/${info.edge}` : ''),
+              `  ${info.slab} · lift ${info.lift}  (${Math.round(bytes / 1024)} KB)`,
           );
         }
         await context.close();
@@ -473,11 +469,9 @@ await browser.close();
 server.close();
 await sheet(rows);
 
-const drifted = rows.filter((row) => row.drifted);
-console.log(`\nwrote ${OUT_REL.replace(/\\/g, '/')}/index.html`);
-if (drifted.length > 0) {
-  console.log(
-    `\n${drifted.length} cell(s) did not draw what they were asked for. The sheet marks each one;` +
-      ' a stage refuses an edge it cannot reach rather than drawing something else by the same name.',
-  );
-}
+const refused = rows.filter((row) => row.unreachable);
+console.log(`\nwrote ${OUT_REL.split(sep).join('/')}/index.html`);
+console.log(
+  `${rows.length - refused.length} cell(s) drawn and ${refused.length} unreachable — each refusal asked` +
+    ' of the page and answered by the stage, never listed in this script.',
+);

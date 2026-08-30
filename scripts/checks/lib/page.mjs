@@ -46,8 +46,38 @@ const THEME_KEY = (() => {
  * Set on the document's root element rather than put on the URL, because a Check
  * that opens a deep link chooses its own path and this must not rewrite it.
  * `src/sections/eater-map/stage.ts` reads both and prefers this one.
+ *
+ * READ WHEN A PAGE IS OPENED AND NEVER AT MODULE SCOPE, and this cost a whole
+ * verification. `run.mjs` sets the variable in its own body — but it also
+ * `import`s all fourteen Checks at the top, every one of them imports this file,
+ * and ESM evaluates the WHOLE import graph before the importing module's first
+ * statement runs. A `const` here is therefore always `undefined`, the init script
+ * below never runs, and the suite quietly opens every page with the shipped stage
+ * while printing that it opened them with the other one. It passes, which is
+ * exactly the failure NOTES.md warns about twice: a run that reads as asserting
+ * something and asserts nothing.
  */
-const STAGE = process.env.PORTFOLIO_STAGE;
+const stageAsked = () => process.env.PORTFOLIO_STAGE;
+
+/**
+ * An init script that puts one attribute on the document's root element.
+ *
+ * A MutationObserver because at document start there is no `documentElement` to
+ * hang anything off yet, and both attributes below are read by the Shell before
+ * first paint — too early for anything the page could be told afterwards.
+ *
+ * @param {string} name
+ * @param {string} value
+ */
+function stamps(name, value) {
+  return `
+    new MutationObserver((_, observer) => {
+      if (!document.documentElement) return;
+      document.documentElement.setAttribute(${JSON.stringify(name)}, ${JSON.stringify(value)});
+      observer.disconnect();
+    }).observe(document, { childList: true, subtree: true });
+  `;
+}
 
 /** A URL with the throwaway origin taken off, so a failure reads as a path. */
 export function withoutOrigin(url, origin) {
@@ -115,24 +145,12 @@ export async function open(browser, origin, options = {}) {
   // and falls back to the media query — priming only one leaves the other Check
   // asserting about whichever the browser happened to pick.
   await context.addInitScript(`try { localStorage.setItem(${JSON.stringify(THEME_KEY)}, ${JSON.stringify(theme)}) } catch {}`);
-  if (STAGE) {
-    await context.addInitScript(`
-      new MutationObserver((_, observer) => {
-        if (!document.documentElement) return;
-        document.documentElement.dataset.eaterMapStage = ${JSON.stringify(STAGE)};
-        observer.disconnect();
-      }).observe(document, { childList: true, subtree: true });
-    `);
-  }
-  if (fx !== undefined) {
-    await context.addInitScript(`
-      new MutationObserver((_, observer) => {
-        if (!document.documentElement) return;
-        document.documentElement.setAttribute('data-fx', ${JSON.stringify(fx)});
-        observer.disconnect();
-      }).observe(document, { childList: true, subtree: true });
-    `);
-  }
+  // Both of these are attributes the Shell's own script reads before first paint,
+  // so they have to be on the element before it exists — hence the observer, and
+  // hence one helper rather than two spellings of it.
+  const stage = stageAsked();
+  if (stage !== undefined) await context.addInitScript(stamps('data-eater-map-stage', stage));
+  if (fx !== undefined) await context.addInitScript(stamps('data-fx', fx));
 
   /** @type {Recording} */
   const record = { responses: [], failed: [], logged: [], thrown: [] };

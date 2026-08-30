@@ -62,12 +62,28 @@ export const EDGES: readonly EdgeName[] = ['flat', 'thick', 'wrapped'];
  * THE FRONT FACE IS NEVER LIT BY IT. It is a photograph, and both stages have to
  * draw the same photograph.
  */
-export const EDGE_LIGHT: readonly [number, number, number] = normalise(-0.36, 0.52, 0.78);
-export const EDGE_AMBIENT = 0.62;
+const EDGE_LIGHT = normalise(-0.36, 0.52, 0.78);
+const EDGE_AMBIENT = 0.62;
 
 function normalise(x: number, y: number, z: number): [number, number, number] {
   const length = Math.hypot(x, y, z) || 1;
   return [x / length, y / length, z / length];
+}
+
+/**
+ * How lit a piece of the edge is, given which way it faces.
+ *
+ * THE FORMULA IS HERE AND NOT IN EITHER STAGE for the same reason the light's
+ * position is: two stages shading differently would be a comparison of two
+ * shadings as much as of two renderers. What differs between them is what each
+ * can put in — the extrusion has a real normal per vertex, and a DOM slice has
+ * only the depth component, because one element has one background.
+ *
+ * @returns a multiplier on the edge's own colour, never below the ambient
+ */
+export function edgeShade(nx: number, ny: number, nz: number): number {
+  const facing = nx * EDGE_LIGHT[0] + ny * EDGE_LIGHT[1] + nz * EDGE_LIGHT[2];
+  return EDGE_AMBIENT + (1 - EDGE_AMBIENT) * Math.max(0, facing);
 }
 
 /** Which edges each stage can actually draw. The empty cell is a result. */

@@ -1,4 +1,4 @@
-import { EDGE_AMBIENT, EDGE_LIGHT, type Stage, type StageParts } from './stage';
+import { edgeShade, type Stage, type StageParts } from './stage';
 
 /**
  * The DOM stage: the shipped Exploded View, and the one the markup already reads
@@ -126,11 +126,13 @@ const mountDomStage = (parts: StageParts): Stage => {
         `(${ROUND}) * ${1 - out}`,
         `(${ROUND}) * ${out}`,
         `(${ROUND}) * ${1 - Math.cos(angle)}`,
-        // ONLY THE LIGHT'S DEPTH COMPONENT REACHES THIS. A slice is one element
-        // with one background, so it cannot be brighter on the side facing the
-        // light — the fillet is lit as though the light stood straight in front.
-        // That is the fake showing, and it is left showing.
-        EDGE_AMBIENT + (1 - EDGE_AMBIENT) * Math.max(0, Math.cos(angle) * EDGE_LIGHT[2]),
+        // A NORMAL WITH NO LATERAL COMPONENT, which is the fake showing and is
+        // left showing. The section's true normal points outwards as well as
+        // forwards, but a slice is one element with one background, so it cannot
+        // be brighter on the side facing the light. What reaches it is the depth
+        // component alone: the fillet is lit as though the light stood straight
+        // in front of the page.
+        edgeShade(0, 0, Math.cos(angle)),
       );
     }
     // THE WALL: straight from the fillet's foot to the back of the Slab, at the
@@ -143,7 +145,7 @@ const mountDomStage = (parts: StageParts): Stage => {
         '0px',
         `(${ROUND})`,
         `(${ROUND}) + ((${DEPTH}) - (${ROUND})) * ${along}`,
-        EDGE_AMBIENT,
+        edgeShade(0, 0, 0),
       );
     }
   }

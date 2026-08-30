@@ -550,6 +550,18 @@ is checking. An unrecognised spelling falls back to the shipped stage, because a
 query string is something a reader can be handed. `pnpm check -- --stage webgl`
 runs the whole suite that way and passes.
 
+**That flag was written wrong first, and it passed.** `lib/page.mjs` read
+`PORTFOLIO_STAGE` at MODULE SCOPE while `run.mjs` set it in its body — and
+`run.mjs` imports all fourteen Checks at the top, every one of which imports
+`page.mjs`, so ESM evaluated the whole graph first and the variable was always
+undefined. The suite opened every page with the shipped stage while printing that
+it had opened them with the other one, and passed, twice. It is read per page now.
+The lesson is `scripts/checks/NOTES.md`'s own and this is the third time it has
+been paid: **a green run is only evidence if something would have gone red.** What
+settles it here is a probe that reproduces the ordering — import `page.mjs`, then
+set the variable, then open a page and read the attribute back off `<html>` —
+which now reports `webgl` where it reported nothing before.
+
 **The WebGL stage costs the shipped page nothing.** It is behind a dynamic
 `import()`, so Vite splits it: 508 KB of `three` in a chunk nothing fetches until
 somebody asks for it, against 4 KB for the DOM one. `check-source.mjs`'s import
