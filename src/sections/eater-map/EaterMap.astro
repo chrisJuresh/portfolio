@@ -80,16 +80,6 @@ import './tokens.css';
         <p>{paragraph}</p>
       ))}
     </div>
-    {/* An <ol> because each point is numbered on the page and each will name one
-        part of the Exploded View — #178 is the leader lines. */}
-    <ol class="eater-map__points">
-      {content.points.map((point) => (
-        <li>
-          <h3>{point.title}</h3>
-          <p>{point.figure}</p>
-        </li>
-      ))}
-    </ol>
     {/* THE EXPLODED VIEW: one still of the map, and the app's own three surfaces
         drawn on it at the scale the map is drawn at, so that flat it is
         indistinguishable from a screenshot of the phone — and is made of a
@@ -139,6 +129,25 @@ import './tokens.css';
         </div>
       </div>
     </div>
+    {/* An <ol> because each point is numbered on the page and each will name one
+        part of the Exploded View — #178 is the leader lines.
+
+        AFTER THE STAGE IN THE MARKUP AND NOT BEFORE IT, which is #179's doing and
+        costs the band nothing: both boxes are placed by an explicit `grid-area`
+        up there, so the drawing is left of the points whichever order they are
+        written in. What the order buys is the COLLAPSE, where the column is
+        source order and the four features have to read as a list BENEATH the
+        Slab. Done with `order` or a `grid-row` instead, the reader looking at the
+        page and the reader hearing it would be given two different sequences;
+        moved here, there is one sequence in both regimes and in the document. */}
+    <ol class="eater-map__points">
+      {content.points.map((point) => (
+        <li>
+          <h3>{point.title}</h3>
+          <p>{point.figure}</p>
+        </li>
+      ))}
+    </ol>
   </div>
 </section>
 
@@ -167,6 +176,19 @@ import './tokens.css';
        it, and a reader whose scripts never arrived keeps the Exploded View
        rather than a half-built one. */
     --eater-map-lift: 1;
+
+    /* IS THE EXPLODED VIEW DRAWN HERE? 0 where it is, 1 where the composition has
+       collapsed to a flat full-bleed Slab with the four features under it (#179).
+
+       IT IS NOT A TOKEN AND IT IS NOT A SECOND COPY OF THE BREAKPOINT — it is the
+       breakpoint's ANSWER, declared where the breakpoint is. `timeline.ts` has to
+       know whether there is anything to lift, and the two ways of telling it are
+       a `matchMedia('(min-width: 1100px)')` in the module, which is the number
+       written twice and drifting the day one of them moves, or this, which is the
+       stylesheet saying what it already decided. A Token could not carry it at
+       all: `check-source.mjs` refuses an `@media` block in tokens.css, and rightly
+       — the Editor writes a value, not a breakpoint (src/sections/NOTES.md). */
+    --eater-map-collapsed: 0;
     box-sizing: border-box;
     display: grid;
     /* The Rail's column IS the page's left margin, the way it is in the Projects
@@ -578,9 +600,31 @@ import './tokens.css';
   /* ---- one column, outside the band the composition is fitted to ---------
      The same move the Projects Panel makes at the same width: the two-column
      drawing stops earning its columns, so it becomes a stack as tall as it needs
-     to be, with the Rail a row across the top instead of an index down an edge. */
+     to be, with the Rail a row across the top instead of an index down an edge.
+
+     AND THE EXPLODED VIEW COLLAPSES WITH IT (#179). An Exploded View is a drawing
+     fitted to a wide window: it spends width on a camera, on the distance the
+     pieces draw apart along the plane, and on a stage that is a row's remainder,
+     and a column has none of those to give. So out here the Slab lies flat and
+     runs to both edges of the window, and the four features are an ordinary list
+     under it.
+
+     ONE COMPOSITION AND NOT THREE. It is written as rules on the MARKUP'S OWN
+     RESTING STATE rather than as anything a script does, which is what makes the
+     narrow reader, the reader who asked for no motion and the reader whose
+     scripts never arrived all get the same drawing — one thing to build, and one
+     equality for the Check to assert rather than three separate compositions.
+     `timeline.ts` reads --eater-map-collapsed and never runs the Lift down here,
+     so the flat state is where the drawing STAYS rather than where it starts. */
   @media not all and (min-width: 1100px) {
     .eater-map {
+      --eater-map-collapsed: 1;
+      /* FLAT, AND SAID HERE AS WELL AS ON THE PLANE BELOW. `transform: none`
+         answers for the geometry; this answers for everything else the playhead
+         is spent on — the Cards' glass, which fills towards --eater-map-plate as
+         a Card leaves the map and must not be filled for a Card that never left
+         it. A screenshot has the app's own translucency. */
+      --eater-map-lift: 0;
       grid-template-columns: minmax(0, 1fr);
       row-gap: var(--eater-map-move);
       min-height: 0;
@@ -645,20 +689,47 @@ import './tokens.css';
       row-gap: var(--eater-map-move);
     }
 
+    /* FULL-BLEED, AND THE NEGATIVE MARGIN IS WHY IT IS NOT `100vw`. The Section
+       carries the page's margin on both edges out here, and a picture that runs
+       to the window's edges has to spend both of them back. `100vw` would be the
+       obvious way and is wrong by exactly the scrollbar's gutter on every
+       platform that reserves one — the trap `projects-panel` paid for and
+       scripts/checks/NOTES.md records, and it is worse here than it was there,
+       because this box is CENTRED in what it overflows and would hang the error
+       half out of each edge. A margin is stated against the box's own containing
+       block, so it lands on the window whether or not there is a gutter. */
     .eater-map__stage {
       margin-top: var(--eater-map-act);
+      margin-inline: calc(-1 * var(--eater-map-side));
     }
 
-    /* THE PLANE IS GIVEN A WIDTH OUT HERE, because the column is as tall as it
-       needs to be and a share of its height is a share of nothing. The cap is
-       what stops a phone being drawn as wide as a 1000px column; the proportion
-       carries the height, as it does in the band. #179 is the collapse this
-       Section eventually wants — a Slab flat and full-bleed with the four
-       features under it — and this is the honest interim rather than a first
-       attempt at it. */
+    /* THE SLAB IS THE WHOLE OF THAT, and the proportion carries the height, which
+       is the same way round as the band reads it — there the height is the row's
+       remainder and the width follows, here the width is the window and the
+       height follows. What went with it is `--eater-map-slab-cap`: a ceiling on
+       the picture's width was the interim's, and full-bleed is a picture with no
+       ceiling by definition (#179). And `translate` goes too — the shift slides
+       the Slab across a stage it is narrower than, and out here it is the stage. */
     .eater-map__slab {
       height: auto;
-      width: min(100%, var(--eater-map-slab-cap));
+      width: 100%;
+      translate: none;
+    }
+
+    /* NO PART OF THE PERSPECTIVE SURVIVES. --eater-map-lift: 0 above already
+       leaves every term of the camera at zero, and that is not enough to say so:
+       `perspective()` with nothing to project still computes to a matrix3d, the
+       Cards still stand in a 3D rendering context, and anything that later reads
+       the drawing — the next ticket's leader lines, a Variant, a Check — would be
+       asking a flattened projection rather than a plane. `transform: none` and a
+       flat rendering context are the drawing saying it outright. */
+    .eater-map__plane {
+      transform: none;
+      transform-style: flat;
+    }
+
+    .eater-map__cards {
+      transform-style: flat;
     }
   }
 

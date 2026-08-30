@@ -4,19 +4,20 @@ The Portfolio's third Section and its third resting place: the Showcase for the
 Eater restaurant map. It is a text composition with an **Exploded View** beside
 it — the captured Slab tilted under one camera, and the Eater app's own three
 surfaces standing off its face, so that what a reader sees is the app taken to
-pieces and made out of a picture and real text (#176, #177). #171 is the whole
-Showcase and two tickets under it are still open.
+pieces and made out of a picture and real text (#176, #177) — and, below the band,
+the same drawing lying flat and full-bleed with the four features as a list under
+it (#179). #171 is the whole Showcase and one ticket under it is still open.
 
 ## What is here and what is not
 
 Here: the Rail, a plain masthead, the two authored subheading lines, the copy,
-the four numbered points, the Exploded View and the **Lift** that assembles it.
-Not here, each with the ticket that brings it:
+the four numbered points, the Exploded View, the **Lift** that assembles it, and
+the collapse that puts all of it away below the band. Not here, each with the
+ticket that brings it:
 
 | not here yet | ticket |
 | --- | --- |
 | a leader line from each point to the part it names | #178 |
-| the collapse below the band, once there is a drawing to collapse | #179 |
 
 **The markup rests in the RAISED state, and that inverts the obvious build.** The
 Lift animates from flat *towards* raised, so the finished Exploded View is what a
@@ -102,6 +103,11 @@ Measured: at 1100x700 the derived answer is 0.5588 and the constant is still
 | the tilt, the swing, the dolly, the rise and the card gap all set to 0 | all three Cards in the same place at both ends of the Lift, at both windows |
 | `opacity: 0` on `.eater-map__still` | one of the Section's own boxes invisible, at both ends and at both windows |
 | `arrived()`'s first comparison back to `>=` | the reader left part way up and the Lift went on to 1, 3 runs out of 3 |
+| `transform: none` and the two `transform-style: flat` dropped from the collapse | the plane still projecting, at 390x844 |
+| the stage's negative margin written as `width: 100vw` | the Slab 390px wide at x=27.64 in a 375px document |
+| `--eater-map-lift: 0` dropped from the collapse | BOTH other readers given a playhead of 1 and all three Cards drifted, at 390x844 |
+| `collapsed()` dropped out of `arrived()` | coming to rest on the Section ran the Lift to 0.0563 |
+| the points put back before the stage in the markup | the features above the picture, and the document's order disagreeing with the screen's |
 
 **The last of those passed three times in a row before the Check was written the
 right way**, and it is the shape `scripts/checks/NOTES.md` warns about twice: *a
@@ -296,6 +302,98 @@ trigger is created. **The turn back is a retarget and not a rewind**: the transp
 is re-aimed from wherever the drawing has got to, and it spends the time the
 DISTANCE LEFT is worth rather than the whole Lift's, so a turn taken a third of the
 way up undoes a third of a Lift.
+
+## The collapse below the band
+
+An Exploded View is a drawing fitted to a wide window. It spends width on a
+camera, on the distance the pieces draw apart along the plane, and on a stage that
+is a composition row's remainder — and below 1100px a column has none of the
+three to give. So the drawing puts itself away: **the Slab lies flat and runs to
+both edges of the window, and the four features are an ordinary list under it**
+(#179).
+
+**It cost almost nothing to build, and that is #177's inversion paying out.** The
+markup already rests in the finished composition, so the collapse is rules on the
+resting state and not a second arrangement a script assembles: `--eater-map-lift`
+back to 0, `transform: none` on the plane, a negative margin on the stage, and a
+Slab given the whole of it.
+
+**ONE COMPOSITION AND NOT THREE, AND THAT IS THE ASSERTION RATHER THAN THE
+DESCRIPTION.** Three readers meet it — the narrow window, the reader who asked for
+no motion, the reader whose scripts never arrived — and describing what each should
+get is three things to keep true. So the Check opens the other two windows and
+requires every box in the Section to land where the ordinary reader's did.
+**The playhead is compared alongside the boxes**, and that was not the first draft:
+collapsed, the geometry is pinned by `transform: none` whatever `--eater-map-lift`
+holds, so a reader left at the raised end gets an identically shaped drawing whose
+Cards' glass is filled to the plate. A comparison of rects alone reports that as
+one composition, and it is a Card that has left a map it is still lying on.
+
+### Four things about it that were decided rather than fallen into
+
+**THE FEATURES MOVED IN THE MARKUP AND NOT IN THE LAYOUT.** They read as a list
+*beneath* the picture down here, and the two ways to get that are an `order` or a
+`grid-row` in the collapse block, or moving the `<ol>` after the stage in the
+template. The second is free: both boxes are placed by an explicit `grid-area` in
+the band, so the drawing is left of the points whichever order they are written
+in — and it is the only one of the two that does not hand a reader looking at the
+page and a reader hearing it two different sequences. The Check asserts both
+halves, because the visual half alone is satisfied by the wrong fix.
+
+**FULL-BLEED IS A NEGATIVE MARGIN AND NEVER `100vw`.** The Section carries the
+page's margin on both edges out here and a picture that runs to the window's edges
+has to spend both of them back. `100vw` counts a classic scrollbar's gutter and
+this box does not — the trap `projects-panel` paid for, and worse here, because
+this box is CENTRED in what it overflows and hangs half the error out of each
+edge. Measured with the mutation in: 390px wide at x=27.64 in a 375px document.
+
+**`transform: none` IS SAID OUTRIGHT AND NOT LEFT TO THE PLAYHEAD.** At
+`--eater-map-lift: 0` every term of the camera is zero, and that is not the same
+as no camera: `perspective()` with nothing to project still computes to a
+matrix3d, and the Cards still stand in a `preserve-3d` rendering context. It
+matters for what comes next rather than for what is on screen — the leader lines
+of #178, a Variant, a Check — all of which would otherwise be interrogating a
+projection that happens to be flat. And the playhead is still set to 0 beside it,
+because it is spent on the glass as well as on the geometry.
+
+**THE LIFT IS TOLD BY THE STYLESHEET, THROUGH `--eater-map-collapsed`.** The
+module has to know there is nothing to lift, and the obvious way is a
+`matchMedia('(min-width: 1100px)')` in `timeline.ts` — which is the breakpoint
+written a second time, in a second language, in a file the first copy cannot see.
+The stylesheet has already decided; the flag is that decision readable from
+script, declared in the component's `<style>` beside `--eater-map-lift` for the
+same reason that one is: it is not a number the author chooses, and a Token could
+not carry it at all, since `check-source.mjs` refuses an `@media` block in
+`tokens.css`.
+
+`arrived()` asks it LIVE rather than at mount, so a window carried across the
+boundary either way lands on the composition it is now in: a resize refreshes every
+ScrollTrigger, `onRefresh` re-asks, and the drawing is driven to the end its regime
+wants. **The trigger is therefore still built below the band**, which looks
+redundant and is what makes the resize work. The reduced-motion branch, which
+builds no trigger at all, gets the same behaviour from a `resize` listener that
+re-places the playhead and moves nothing on its own.
+
+### The one thing this trades away, stated because it is visible
+
+**BELOW THE BAND MEANS NARROWER THAN 1100px AND NOT "OUTSIDE THE ONE-SCREEN
+BAND".** The collapse is in `@media not all and (min-width: 1100px)`, which is
+where the Projects Panel stacks and where this Section's own column regime already
+lived. A short wide window — 1440x600 — is outside the band and inside the
+collapse's `min-width`, so it keeps the Exploded View and its Lift, and that is
+deliberate: the Lift's gate and the collapse are the SAME question, *is the
+Exploded View drawn here*, and a stacked column carrying a 1440px-wide phone is a
+worse answer than a wide drawing on a short screen.
+
+**AND FULL-BLEED HAS NO CEILING, WHICH IS WHAT THE WORD MEANS.** The capture's
+proportion carries the height, so the picture is as tall as the window is wide
+times 2.17 — 845px on a 390px phone, which is about one screen and is the case the
+collapse exists for, and 2220px on a 1024px tablet, which is three. The interim
+this replaced capped the width at `--eater-map-slab-cap: 20rem` for exactly that
+reason and #179 removed the cap by name. If the tall end ever reads as wrong, the
+fix is a second breakpoint inside the collapse rather than a cap on the bleed:
+a ceiling on a full-bleed picture is a picture that is not full-bleed at the only
+windows where the ceiling does anything.
 
 ## The Cards are the app's own markup, and their controls are neutered
 

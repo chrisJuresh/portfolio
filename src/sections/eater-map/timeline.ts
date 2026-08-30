@@ -39,6 +39,12 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger';
  * has got to rather than starting again. ARRIVE below carries why the trigger
  * starts two pixels ABOVE the port rather than on it — a fact about ScrollTrigger
  * whose symptom would be a Lift that never fires at all.
+ *
+ * AND IT DOES NOT RUN BELOW THE BAND AT ALL (#179). Down there the composition
+ * has collapsed — the Slab flat and full-bleed with the four features under it —
+ * so there is no Exploded View to assemble and no resting place to assemble it
+ * on. `collapsed()` is how this module is told, and it is told by the stylesheet
+ * rather than by a second copy of the breakpoint.
  */
 
 /** The plane's own share of the Timeline: it starts turning before anything rises. */
@@ -74,6 +80,28 @@ const SLACK = 0.001;
  * pixels of an 800ms ease and nothing a reader can see.
  */
 const ARRIVE = 2;
+
+/**
+ * Has the composition collapsed — is there an Exploded View here to lift at all?
+ *
+ * Below the band there is not (#179): the Slab lies flat and full-bleed with the
+ * four features under it, and that is the state the drawing STAYS in rather than
+ * one it starts from. So the Lift never runs down there, and this is how it knows.
+ *
+ * ASKED OF THE STYLESHEET RATHER THAN OF `matchMedia`, and that is the whole
+ * reason `--eater-map-collapsed` exists. A `matchMedia('(min-width: 1100px)')`
+ * here would be the breakpoint written a second time, in a second language, in a
+ * file the first one cannot see — and the day the composition collapses at some
+ * other width, this module goes on lifting a drawing that is not there, silently.
+ * The stylesheet has already decided; this reads the answer.
+ *
+ * ASKED LIVE rather than at mount, because a window crosses the boundary: a
+ * resize refreshes every ScrollTrigger, `onRefresh` below re-asks, and the drawing
+ * is put where the regime it is now in says it belongs.
+ */
+function collapsed(root: HTMLElement): boolean {
+  return Number(getComputedStyle(root).getPropertyValue('--eater-map-collapsed')) === 1;
+}
 
 /** A duration Token, in seconds, written in either `s` or `ms`. */
 function seconds(raw: string, fallback: number): number {
@@ -113,13 +141,23 @@ export default function mountLift(root: HTMLElement): gsap.core.Timeline | void 
     );
 
   const lessMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)');
-  // A reader who asked for stillness gets the finished Exploded View and NOTHING
+  // A reader who asked for stillness gets the finished composition and NOTHING
   // MOVES — not even the jump a Lift driven straight to its end would make. So
   // the drawing is put where the markup already had it and no trigger is built at
   // all. The Timeline is still registered and still seekable, because the Editor
   // scrubs it and a reader's setting is not the author's.
+  //
+  // WHICH FINISHED COMPOSITION IS THE REGIME'S ANSWER AND NOT THIS READER'S
+  // (#179). In the band it is the raised Exploded View; collapsed it is the flat
+  // full-bleed Slab, which is the SAME drawing every other reader gets down there
+  // — the collapse is one composition and not a third arrangement. The listener
+  // is what keeps that true across a resize: it moves nothing on its own, and
+  // without it a window carried over the boundary would leave a raised playhead
+  // standing on a collapsed drawing, filling glass that never left the map.
   if (lessMotion?.matches === true) {
-    lift.progress(1);
+    const place = () => lift.progress(collapsed(root) ? 0 : 1);
+    place();
+    window.addEventListener('resize', place, { passive: true });
     return lift;
   }
 
@@ -198,8 +236,15 @@ export default function mountLift(root: HTMLElement): gsap.core.Timeline | void 
    * time, and it read as a Lift that reversed on some turns back and ran on to the
    * end on others. Measured: `toggle scroll=1706 start=1706 active=false
    * arrived=true`.
+   *
+   * AND COLLAPSED THE ANSWER IS NO WHEREVER THE READER IS STANDING, because below
+   * the band there is no resting place to arrive at and no Exploded View to
+   * assemble if there were (#179). The trigger is still built down there, and
+   * deliberately: it is what re-asks this on a resize, so a window carried across
+   * the boundary either way lands on the composition it is now in.
    */
-  const arrived = (self: ScrollTrigger) => self.scroll() > self.start && self.scroll() < self.end;
+  const arrived = (self: ScrollTrigger) =>
+    !collapsed(root) && self.scroll() > self.start && self.scroll() < self.end;
 
   const trigger = ScrollTrigger.create({
     trigger: root,

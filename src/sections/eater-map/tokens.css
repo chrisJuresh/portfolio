@@ -77,14 +77,13 @@
      band at once, and 1 is "as tall as there is room for". `shift` slides it
      across, as a share of ITS OWN width, from centred: a percentage translate
      resolves against the element, so 0.5 is half a phone to the right whatever
-     the window is doing. */
+     the window is doing.
+
+     BOTH ARE THE BAND'S ONLY. Below it the Slab is full-bleed — the window's
+     width, and the capture's proportion for the height — so there is no stage
+     left to be a share of and nowhere left to slide (#179). */
   --eater-map-slab-fill: 1;
   --eater-map-slab-shift: 0;
-
-  /* Outside the band the column has no height to be a share of, so the Slab is
-     given a width instead and this is the ceiling on it. A phone drawn as wide
-     as a 1000px column is not a phone. */
-  --eater-map-slab-cap: 20rem;
 
   /* ---- the three Cards, and where they stand on the Slab ------------------
      Each Card's own corner, as a share of the Slab's width and height — so

@@ -79,7 +79,7 @@ cannot be verified there even by hand.
 | `faces`          | a declared `@font-face` will not load, or no face Token names a declared family |
 | `front-screen`   | the Front Screen's rhyme, its one-screen budget, the Cut Title's cut or its accessible name, the crossing's span, the switch's ARIA, or the type's place in the Effect Stack breaks |
 | `projects-panel` | a control in the Frame leaves the centre its own Token names, the window and its titlebar are cut to two radii, the recording's box stops being inset on three sides, the occlusion of the subheading's second line moves or stops being painted, the titlebar reports a rung it is not made of, the chrome grows a control, the small-Frame reduction starts asking about the window instead of the Frame, the Plinth's depths stop being shares of the Frame, its slab stops being symmetric about it, its bottom-right corner comes off the page's on either branch of the fit, or the Frame moves towards the engineering points instead of away from them, the reflection stops being a life-size fold of the window, the marble stops being drawn without script, a reader who asked for reduced motion is charged for the recording, a reader who runs no script at all loses the copy that arrives with the page turn, the titlebar grows past the clearance the clip on disk was cut with, or that clip stops opening on that many rows of flat, light ground |
-| `eater-map`      | the three Cards on the Slab stop being drawn at the Slab's own scale at the Lift's flat end, one of them stops moving between the Lift's two ends, one of the Section's own boxes is invisible at either end, a reader who leaves part way up is left with a Lift that ran on without them, or the picture of the app puts a focusable control or a heading into the page |
+| `eater-map`      | the three Cards on the Slab stop being drawn at the Slab's own scale at the Lift's flat end, one of them stops moving between the Lift's two ends, one of the Section's own boxes is invisible at either end, a reader who leaves part way up is left with a Lift that ran on without them, the picture of the app puts a focusable control or a heading into the page, or below the band the drawing stops collapsing — a perspective left standing on a column, a Slab that misses the window's edges, a Lift still running where there is no page turn, the four features no longer a list under the picture, or one of the three readers down there handed a composition of their own |
 | `ground`         | paper is not light, or the Turn does not arrive dark, in either theme         |
 | `turn`           | the Kernel's published landing measure — cap, drop or the stone the width branch leaves room for — disagrees with the Panel's own arithmetic, the Panel's masthead is visible or has lost its box, the Cut Title is not standing in that masthead's slot, the word moves or resizes across the crossing, either end of the morph is not the outline the Bake wrote, a wheel notch does not turn the page or bring it back, a notch begun on the photographs turns it, or the paragraph that arrives with the crossing is painted at the top of the document, is still arriving at the landing, moves to get there, or is left on its own compositing layer once it has |
 | `crossing`       | outside the landing band the Panel's ground parts company with the document's anywhere across the crossing, the page has not finished turning by the time the Panel owns the screen, the crossing is a flip or never finishes, the reader meets the whole of the Cut Title on the first screen, the Cut Title is cut by a box rather than by the fold — so it is still cut in the Section it heads — or stops being one drawing, or the Panel's masthead draws a second PROJECTS under it — or loses the `display` the Section's accessible name comes from |
@@ -154,7 +154,7 @@ media one is a short wide one — 1440x450, where the fit solves the Frame to 46
 while the viewport is nowhere near 520. Measured at DESK alone that whole
 mechanism could be a media query and nothing would say so.
 
-`eater-map` is the third, and it is still the smallest of the three: five
+`eater-map` is the third, and it is still the smallest of the three: six
 assertions, because the Section is a composition and a composition's deliverable
 is a look. What it guards is the one thing about that composition that is not a
 look — the Cards are drawn at the Slab's own scale, derived rather than chosen —
@@ -163,8 +163,32 @@ an app puts neither a control in the tab order nor a restaurant in the outline. 
 padding**: the derivation carries an `@supports` constant behind it, and at DESK
 the constant is within a third of a per cent of the right answer, so at DESK alone
 this Check passes with the derivation deleted.
-`src/sections/eater-map/NOTES.md` carries the measurements and the five mutations
+`src/sections/eater-map/NOTES.md` carries the measurements and the ten mutations
 that were made to break it.
+
+**And it reads a THIRD window, below the band, because down there the composition
+is a different one** (#179): the Slab flat and full-bleed with the four features
+as a list under it. The first thing asked there is whether it has actually
+collapsed, and that one BAILS rather than merely failing — every assertion under
+it describes the collapsed drawing and would pass against the wide one while
+reading as though it had checked something.
+
+**The assertion that ticket is really about is an EQUALITY and not a
+description.** The collapse serves three readers at once — the narrow window, the
+reader who asked for no motion, the reader whose scripts never arrived — and the
+way to keep that true is not to describe what each should get, which is three
+things to maintain, but to open the other two windows and require every box in the
+Section to land where the ordinary reader's did. **The playhead travels with the
+boxes**, and that was not the first draft: collapsed, the geometry is pinned by
+`transform: none` whatever `--eater-map-lift` holds, so a reader left at the raised
+end gets an identically shaped drawing whose Cards' glass is filled to the plate —
+a real second composition that a comparison of rects alone reports as one.
+
+**The two other readers are compared in the SECTION's own coordinates**, and that
+is load-bearing rather than tidy: a scriptless page has no Front Screen reveal and
+a Panel that answers `@media (scripting: none)`, so the Sections ABOVE this one are
+not the same height in all three. In document coordinates every box in this Section
+reads as moved by the same number, which says nothing at all about this Section.
 
 **It is also the first Check to read a Section's geometry AT A MOMENT rather than
 wherever the page left it**, and #177 is why: the Lift runs from flat to raised
