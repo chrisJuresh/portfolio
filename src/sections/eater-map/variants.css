@@ -6,10 +6,155 @@
    grammar every selector below keeps and why `:root` is load-bearing;
    docs/agents/variants.md is the authority on writing one.
 
-   TWO, AND THE SHEET IS NOT FULL YET. #180 puts the alternatives this Section's
-   drawing actually turns on — the projection, and the subheading's face — beside
-   these, once there is a drawing to project. What is here is the one question
-   the text composition raises on its own. */
+   THREE QUESTIONS, IN THREE GROUPS. The composition's own — where the four
+   points stand, and how loud the ladder is — and the two the drawing turns on,
+   which #180 added once there was a drawing to turn: the PROJECTION and the
+   SUBHEADING'S FACE. Every one of them is kept whichever way the judgement
+   goes; the losers are the record of what was compared.
+
+   THE PROJECTION GROUP IS INVISIBLE AT THE SHEET'S DEFAULT MOMENT, and that is
+   the one thing to know before rendering it. `pnpm variants` shoots at
+   `--progress 0`, and progress 0 of the Lift is the flat screenshot: the plane
+   lies flat, every Card's depth is 0, and every projection agrees about what
+   that looks like, so the cards come back marked *identical* or a hair off it
+   and the strip says nothing. The projections are a comparison of the RAISED
+   drawing and have to be asked for as one:
+
+       pnpm build
+       pnpm variants -- --sections eater-map --progress 1
+
+   The face group needs no such thing — it is text, and it is drawn at every
+   moment. */
+
+/* ==========================================================================
+   THE PROJECTION — three cameras, and the argument for one of them (#180)
+   ==========================================================================
+
+   #177 chose a shallow shared perspective and rejected two alternatives in
+   prose. These are the two rendered, so the choice can be looked at:
+
+     unselected             the shipped composition — one shared camera, a
+                            converging perspective, at the tilt and swing the
+                            Section chose for itself
+     projection-isometric   a TRUE isometric: a parallel projection, no
+                            convergence anywhere, at the canonical angles
+     projection-perspective the same canonical angles WITH the camera back, so
+                            this and the one above differ in the projection and
+                            in nothing else — which is what makes "perspective
+                            or parallel" a thing to see rather than to be told
+     projection-collage     one camera and then a rotation of its own on every
+                            surface, which is the design reference's render and
+                            is what makes it read as three stickers on a
+                            photograph rather than one object taken apart
+
+   EVERY ANGLE BELOW IS STILL SPENT BY THE LIFT, exactly as the composition's
+   are: `var(--eater-map-lift)` multiplies each one, so progress 0 stays the flat
+   screenshot #176 built and a Variant changes where the Lift ARRIVES rather than
+   where it starts. A Variant that broke that would be arguing about a second
+   thing at the same time. */
+
+/* True isometric: a PARALLEL projection, which is a `transform` written without
+   the `perspective()` function rather than a camera pushed far away — a large
+   camera only flattens towards this and never reaches it. The dolly goes with
+   it: nothing converges, so nothing grows as it climbs, and there is nothing for
+   a camera pulling back to pay for. The angles are the canonical ones —
+   atan(1/√2) is 35.264°, so 90 − 35.264 = 54.736° of tilt with the plane turned
+   45° — which is what makes the three axes foreshorten equally and makes this
+   isometric rather than merely parallel. `preserve-3d` still carries each Card's
+   depth; with no convergence it reads as an offset along the plane's normal,
+   which is exactly how an exploded view is drawn on paper. */
+:root[data-variant='projection-isometric'] .eater-map__plane {
+  transform: rotateX(calc(var(--eater-map-lift) * 54.736deg))
+    rotateZ(calc(var(--eater-map-lift) * -45deg));
+}
+
+/* The same two angles with the camera and the dolly back, so this is the
+   isometric's control: one variable changed, and the variable is the projection.
+   It is deliberately NOT the shipped composition restated — that is `unselected`
+   at the head of the strip, and a Variant that came back byte-for-byte identical
+   to it would be a card that says nothing and a warning that means nothing. */
+:root[data-variant='projection-perspective'] .eater-map {
+  --eater-map-tilt: 54.736deg;
+  --eater-map-swing: -45deg;
+}
+
+/* The collage: the shared camera stays, and then each surface is turned its own
+   way on top of it. This is the reference render and the direction #177
+   rejected — the claim being tested is that a per-element rotation stops the
+   drawing being one object.
+
+   The whole transform is restated because the composition's is one list and a
+   rotation has to go INSIDE it, between the translate and the scale: right to
+   left, the scale is the Card's own, the rotation is in the plane's units, and
+   the translate is the depth. The two distances are the composition's own
+   custom properties, read off the element the composition set them on. */
+:root[data-variant='projection-collage'] .eater-map__card {
+  transform: translate3d(
+      0,
+      calc(var(--eater-map-card-drift) * 100cqw),
+      calc(var(--eater-map-card-rise) * 100cqw)
+    )
+    rotateX(calc(var(--eater-map-card-lift) * var(--eater-map-card-cant, 0deg)))
+    rotateZ(calc(var(--eater-map-card-lift) * var(--eater-map-card-veer, 0deg)))
+    scale(calc(var(--eater-map-app-scale) * var(--eater-map-card-scale)));
+}
+
+/* One pair per Card, and no two alike — the point of the direction is that each
+   surface is on its own. */
+:root[data-variant='projection-collage'] .eater-map__card[data-eater-map-card='search'] {
+  --eater-map-card-cant: -24deg;
+  --eater-map-card-veer: 10deg;
+}
+
+:root[data-variant='projection-collage'] .eater-map__card[data-eater-map-card='lines'] {
+  --eater-map-card-cant: 15deg;
+  --eater-map-card-veer: -19deg;
+}
+
+:root[data-variant='projection-collage'] .eater-map__card[data-eater-map-card='details'] {
+  --eater-map-card-cant: -9deg;
+  --eater-map-card-veer: 16deg;
+}
+
+/* ==========================================================================
+   THE SUBHEADING'S FACE — which of the four takes it (#180)
+   ==========================================================================
+
+   The design reference sets the two authored lines in a Didone and this
+   Portfolio has no Didone. It has four faces, and one of them has to take it:
+   Host Grotesk, which is what the Section ships and therefore what `unselected`
+   draws, and the three serifs below.
+
+   ONE DECLARATION EACH, ON PURPOSE. The size, the leading, the weight and the
+   uppercase are the composition's and are held still, so the strip compares
+   faces and not four typesettings — a serif that reads small at this size is
+   telling the author something about the pairing rather than about the number.
+   Each names the KERNEL'S ROLE rather than a family, because that is the level
+   these four exist at, and the masthead above them does not move: the pairing is
+   what is being judged. */
+
+/* Vollkorn — the page's body face, which is the argument that the subheading
+   belongs to the writing rather than to the head. */
+:root[data-variant='sub-vollkorn'] .eater-map__sub {
+  font-family: var(--face-body);
+}
+
+/* Spectral — the label face, drawn for small sizes and set in caps elsewhere on
+   the page, which is the closest this Portfolio comes to the reference's own
+   register. */
+:root[data-variant='sub-spectral'] .eater-map__sub {
+  font-family: var(--face-label);
+}
+
+/* Source Serif 4 — the year face, the most upright and the least written of the
+   three, and the one whose caps sit squarest under a grotesque masthead. */
+:root[data-variant='sub-source-serif'] .eater-map__sub {
+  font-family: var(--face-year);
+}
+
+/* ==========================================================================
+   THE COMPOSITION'S OWN
+   ========================================================================== */
 
 /* LAYOUT: the points down the far side, which is how #171 describes them.
    The composition ships with them on the near side, under the masthead they

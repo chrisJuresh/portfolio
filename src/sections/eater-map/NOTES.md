@@ -17,7 +17,6 @@ Not here, each with the ticket that brings it:
 | --- | --- |
 | a leader line from each point to the part it names | #178 |
 | the collapse below the band, once there is a drawing to collapse | #179 |
-| the Variants the drawing turns on — the projection, the subheading's face | #180 |
 
 **The markup rests in the RAISED state, and that inverts the obvious build.** The
 Lift animates from flat *towards* raised, so the finished Exploded View is what a
@@ -482,6 +481,68 @@ two Sections, and the right one with three. `src/kernel/turn.ts` says it in full
 every Section after the first one, as a relationship rather than a list; the
 page turn reads its ports off the cascade and has always generalised. Neither
 file learned this Section's name.
+
+## The Variants, and the one that cannot be seen at the sheet's default moment
+
+Eight, in three groups, and `variants.css` carries the argument for each. Two are
+the text composition's own — where the four points stand, and how loud the ladder
+is. The other six are the two questions #180 asked to be judged by eye rather than
+described: the **projection**, and the **subheading's face**.
+
+**The projection group is a comparison of the RAISED drawing, and the sheet shoots
+progress 0 by default.** Progress 0 is the flat screenshot — the plane lies flat,
+every Card's depth is 0 — and every projection agrees about what that looks like,
+so at the default moment the whole group comes back *identical* to `unselected` or
+a hair off it and says nothing. It has to be asked for:
+
+```bash
+pnpm build
+pnpm variants -- --sections eater-map --progress 1
+```
+
+That is deliberate rather than a limitation: every angle a Variant sets is still
+spent by `--eater-map-lift`, exactly as the composition's are, so a Variant changes
+where the Lift **arrives** and never where it starts. One that broke that would be
+arguing about two things at once.
+
+**`projection-perspective` is not the shipped composition restated**, and that is
+the one decision in the group worth writing down. `unselected` already stands at
+the head of every strip, so a Variant that came back byte-for-byte the same as it
+would be a card that says nothing *and* a warning that means nothing — the sheet
+counts identical renders, and that count is the cue that a Variant only exists in
+motion. So the two cameras are compared at ONE pair of angles instead: the
+canonical isometric 54.736° / -45°, once as a parallel projection and once with
+the composition's camera and dolly back. They differ in the projection and in
+nothing else, which is what makes "converging or parallel" a thing to see. The
+shipped composition — the same converging camera at the tilt and swing this Section
+chose for itself — is `unselected`, and that is the third picture in the strip.
+
+**A parallel projection is a `transform` written without `perspective()`, not a
+camera pushed far away.** `--eater-map-camera` only flattens *towards* parallel and
+never reaches it, so `projection-isometric` restates the plane's whole transform
+instead. The dolly goes with the camera: nothing converges, so nothing grows as it
+climbs, and there is nothing for a camera pulling back to pay for. `preserve-3d`
+still carries each Card's depth, which with no convergence reads as an offset along
+the plane's normal — which is how an exploded view is drawn on paper.
+
+**`projection-collage` restates the Card's whole transform because a rotation has
+to go INSIDE the list**, between the translate and the scale, for the same
+right-to-left reason the composition's own order is arithmetic rather than style.
+It reads the two distances back off the custom properties the composition set on
+that element.
+
+**The face group is one declaration each, on purpose.** The reference sets the two
+authored lines in a Didone and this Portfolio has none: it has Vollkorn, Spectral,
+Source Serif 4 and Host Grotesk, and one of them has to take it. Host Grotesk is
+what the Section ships, so it is `unselected`; the three serifs are Variants. The
+size, the leading, the weight and the uppercase are held still, so the strip
+compares faces rather than four typesettings — a serif that reads small at this
+size is telling the author something about the pairing, not about the number. Each
+Variant names the **Kernel's role** — `--face-body`, `--face-label`, `--face-year`
+— rather than a family, because that is the level those four exist at.
+
+**Every one of the eight is kept whichever way the judgement goes.** The losers are
+the record of what was compared, which is the whole point of the mechanism.
 
 ## The words
 
