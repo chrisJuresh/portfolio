@@ -173,6 +173,39 @@
      (src/sections/NOTES.md). */
   --eater-map-lift-time: 1.15s;
 
+  /* ---- the leader lines ---------------------------------------------------
+     Four thin rules joining each numbered point to the part of the Exploded View
+     it names (#178). Three Tokens, and they are the three the composition can
+     have an opinion about: how heavy the rule is, how far back it stands from
+     the ink around it, and how far it runs horizontally out of its point before
+     turning towards the part. `reach` at 0 is a straight rule from the point to
+     the corner; the shoulder is what binds the rule to the row of text it
+     leaves. */
+  --eater-map-leader-weight: 1px;
+  --eater-map-leader-veil: 62%;
+  --eater-map-leader-reach: clamp(0.7rem, 0.3rem + 1.1vw, 1.6rem);
+
+  /* WHICH CORNER EACH RULE ENDS ON, as a share of the part's own width and
+     height — so it is a corner at every window and at every size the Slab is
+     drawn at, and dragging one in the Editor moves it around the Card rather
+     than around the page. 0,0 is the part's top-left and 1,1 its bottom-right.
+
+     The defaults are the corner nearest the points' column, taken down the
+     stack in the order the four points read: the search bar's foot, the lines
+     popup's foot, the detail panel's head, and the Slab's own bottom-left, which
+     is the one corner of the picture no Card is standing on. */
+  --eater-map-anchor-search-x: 0;
+  --eater-map-anchor-search-y: 1;
+
+  --eater-map-anchor-lines-x: 0;
+  --eater-map-anchor-lines-y: 1;
+
+  --eater-map-anchor-details-x: 0;
+  --eater-map-anchor-details-y: 0;
+
+  --eater-map-anchor-slab-x: 0;
+  --eater-map-anchor-slab-y: 1;
+
   /* ---- the rules the composition draws ------------------------------------ */
   --eater-map-rule-veil: 78%;
   --eater-map-muted-veil: 32%;

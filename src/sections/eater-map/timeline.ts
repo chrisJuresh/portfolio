@@ -1,6 +1,8 @@
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 
+import { mountLeaders } from './leaders';
+
 /**
  * The **Lift**: the Exploded View going from the flat screenshot to the Slab
  * tilted under one camera with the three Cards standing off its face.
@@ -139,6 +141,19 @@ export default function mountLift(root: HTMLElement): gsap.core.Timeline | void 
       { '--eater-map-card-lift': 1, duration: RISE, ease: 'none', stagger: STAGGER },
       LAG,
     );
+
+  // THE LEADER LINES REDRAW ON EVERY TICK OF THE LIFT, and this is the whole of
+  // "they stay attached throughout it": a rule's far end is a corner of a Card
+  // being turned under the camera, and where that corner lands is a fact only
+  // the compositor has. Hung on the Timeline's own onUpdate rather than on the
+  // transport, so a Check seeking a moment and the Editor scrubbing one move the
+  // rules exactly as a reader turning the page does — one line, three callers.
+  //
+  // AFTER the two tweens are added, because a `fromTo` renders immediately: the
+  // drawing is at the flat frame by the time mountLeaders takes its first
+  // reading, which is the frame the rules are first drawn on.
+  const redraw = mountLeaders(root);
+  if (redraw) lift.eventCallback('onUpdate', redraw);
 
   const lessMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)');
   // A reader who asked for stillness gets the finished composition and NOTHING

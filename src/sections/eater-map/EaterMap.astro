@@ -14,6 +14,7 @@
 // script. Flat is `--eater-map-lift: 0` and it is where the motion begins.
 import { CARDS } from './cards';
 import { content } from './content';
+import { SLAB_PART } from './leaders';
 import { SLAB } from './slab';
 // The Eater app's own stylesheet, vendored with the Cards (#174). A plain CSS
 // file, so Astro does not scope it — every selector in it begins with the
@@ -101,6 +102,7 @@ import './tokens.css';
     <div class="eater-map__stage">
       <div
         class="eater-map__slab"
+        data-eater-map-watch
         style={`--eater-map-app-w: ${SLAB.viewport.width}px; --eater-map-slab-ratio: ${SLAB.pixels.width} / ${SLAB.pixels.height}`}
       >
         <div class="eater-map__plane" data-eater-map-plane>
@@ -123,14 +125,28 @@ import './tokens.css';
               reaches nothing above this element and nothing above it reaches in. */}
           <div class="eater-map__cards eater-cards">
             {CARDS.map((card) => (
-              <div class="eater-map__card" data-eater-map-card={card.name} set:html={card.html} />
+              <div class="eater-map__card" data-eater-map-card={card.name}>
+                {/* `display: contents`, so the wrapper this Card's own markup has
+                    to arrive in — set:html replaces an element's children, and
+                    the anchor beside it would be one — generates no box at all
+                    and the Card is laid out exactly as it was without it. */}
+                <div class="eater-map__surface" set:html={card.html} />
+                <span class="eater-map__anchor" data-eater-map-anchor={card.name} />
+              </div>
             ))}
           </div>
+          {/* THE FOURTH ANCHOR IS ON THE PLANE ITSELF, because the fourth point
+              names the Slab: the offline basemap is the artefact the reader is
+              already looking at rather than something standing on it. It is a
+              sibling of the picture and inside the same camera, so it is turned
+              by the same one rotation everything else on the plane is. */}
+          <span class="eater-map__anchor" data-eater-map-anchor={SLAB_PART} />
         </div>
       </div>
     </div>
-    {/* An <ol> because each point is numbered on the page and each will name one
-        part of the Exploded View — #178 is the leader lines.
+    {/* An <ol> because each point is numbered on the page, and each names one
+        part of the Exploded View — `point.part`, which the schema holds to
+        exactly one point per part and exactly one part per point (#178).
 
         AFTER THE STAGE IN THE MARKUP AND NOT BEFORE IT, which is #179's doing and
         costs the band nothing: both boxes are placed by an explicit `grid-area`
@@ -139,15 +155,48 @@ import './tokens.css';
         source order and the four features have to read as a list BENEATH the
         Slab. Done with `order` or a `grid-row` instead, the reader looking at the
         page and the reader hearing it would be given two different sequences;
-        moved here, there is one sequence in both regimes and in the document. */}
-    <ol class="eater-map__points">
+        moved here, there is one sequence in both regimes and in the document.
+
+        `data-eater-map-watch` is the leader lines' redraw: this column changes
+        height when a face arrives or a title wraps, and the Section's own box
+        does not move when it does.
+
+        THE HOOK IS WHERE A RULE LEAVES THIS ROW, and it is a BOX rather than a
+        coordinate: its width is --eater-map-leader-reach, so the shoulder's two
+        ends are its two edges and the script reads them off one rect instead of
+        parsing a length out of a custom property, which computes to its own
+        token stream rather than to pixels. leaders.ts. */}
+    <ol class="eater-map__points" data-eater-map-watch>
       {content.points.map((point) => (
         <li>
           <h3>{point.title}</h3>
           <p>{point.figure}</p>
+          <span class="eater-map__hook" data-eater-map-hook={point.part} aria-hidden="true" />
         </li>
       ))}
     </ol>
+    {/* THE LEADER LINES. One rule per point, drawn by leaders.ts from the point's
+        hook to a zero-sized anchor at the part's own corner — which is inside
+        the camera, so what the rule is given is where that corner LANDED rather
+        than where the Card's untransformed box is. #178.
+
+        Last in the composition and positioned, so it paints over the drawing
+        without a z-index. `aria-hidden`, because the rules carry nothing that is
+        not already in the four points' own words: they are how a reader LOOKING
+        at the page knows which claim belongs to which piece, and a reader
+        listening is given the same correspondence by reading the points in
+        order. Empty of text for the same reason. `pointer-events: none` in the
+        stylesheet, so the overlay cannot take a selection off the words under it.
+
+        The polylines carry no `points` until a script arrives, so a reader whose
+        scripts never came gets the Exploded View with no rules over it — which
+        is the one thing the Lift's inversion cannot buy, and costs nothing that
+        is not also in the text. NOTES.md. */}
+    <svg class="eater-map__leaders" data-eater-map-leaders aria-hidden="true" focusable="false">
+      {content.points.map((point) => (
+        <polyline data-eater-map-leader={point.part} />
+      ))}
+    </svg>
   </div>
 </section>
 
@@ -276,6 +325,12 @@ import './tokens.css';
 
   /* ---- the composition: twelve columns, two rows ------------------------- */
   .eater-map__inner {
+    /* The leader lines' overlay is absolute against THIS box, which is what
+       makes every coordinate in leaders.ts independent of the scroll — a rule
+       computed against the viewport would be dragged across the composition by
+       the page turn. `relative` with no z-index is not a stacking context, so
+       the Exploded View still sorts its own three dimensions. */
+    position: relative;
     display: grid;
     grid-template-columns: repeat(12, minmax(0, 1fr));
     /* THE HEAD IS ITS OWN SIZE AND THE PICTURE IS EVERYTHING LEFT. `minmax(0,
@@ -301,6 +356,31 @@ import './tokens.css';
   .eater-map__masthead,
   .eater-map__sub,
   .eater-map__rail-item,
+  /* Each row is the containing block for its own hook, so `left: 100%` is this
+     column's right edge rather than the page's. */
+  .eater-map__points li {
+    position: relative;
+  }
+
+  /* WHERE A RULE LEAVES ITS POINT, and how far it runs before it turns. A box
+     rather than two numbers: its width is the reach Token spent on a real
+     property, so leaders.ts reads the shoulder's two ends off one rect instead
+     of parsing `0.9rem` out of a custom property, which is all a custom
+     property's computed value ever is.
+
+     Half a line of the title down from the row's top, so a rule leaves the
+     TITLE rather than the middle of a row whose height is however long its
+     figure ran. Derived and not a Token: it is a coordinate in the composition
+     rather than a number the author chooses (ADR 0004). */
+  .eater-map__hook {
+    position: absolute;
+    left: 100%;
+    top: calc(var(--eater-map-point-size) * var(--eater-map-point-leading) / 2);
+    width: var(--eater-map-leader-reach);
+    height: 0;
+    pointer-events: none;
+  }
+
   .eater-map__points h3 {
     text-transform: uppercase;
     font-feature-settings: 'case' 1;
@@ -579,6 +659,81 @@ import './tokens.css';
       scale(calc(var(--eater-map-app-scale) * var(--eater-map-card-scale)));
   }
 
+  /* The wrapper `set:html` needs and the layout does not: `contents` generates
+     no box, so the Card is laid out exactly as it was when its own markup was
+     the Card's only child. cards.css has no child combinator in it — checked —
+     so nothing in the vendored stylesheet notices either way. */
+  .eater-map__surface {
+    display: contents;
+  }
+
+  /* WHERE A LEADER LINE ENDS, and the whole reason the anchors are elements
+     rather than arithmetic. This box is ZERO-SIZED and lives INSIDE the camera,
+     so it projects to a POINT and `getBoundingClientRect()` hands back that
+     corner's actual position on screen. Reading the Card's own rect instead
+     gives the axis-aligned bounding box of the projected quad, whose corners are
+     nowhere on the Card once it is turned — which looks right at the flat end of
+     the Lift and wrong at every other frame of it. leaders.ts.
+
+     A share of the part it is on, so it is a corner at every window and at every
+     size the Slab is drawn at, and so dragging it in the Editor moves it around
+     the Card rather than around the page. */
+  .eater-map__anchor {
+    position: absolute;
+    left: calc(var(--eater-map-anchor-x) * 100%);
+    top: calc(var(--eater-map-anchor-y) * 100%);
+    width: 0;
+    height: 0;
+  }
+
+  .eater-map__anchor[data-eater-map-anchor='search'] {
+    --eater-map-anchor-x: var(--eater-map-anchor-search-x);
+    --eater-map-anchor-y: var(--eater-map-anchor-search-y);
+  }
+
+  .eater-map__anchor[data-eater-map-anchor='lines'] {
+    --eater-map-anchor-x: var(--eater-map-anchor-lines-x);
+    --eater-map-anchor-y: var(--eater-map-anchor-lines-y);
+  }
+
+  .eater-map__anchor[data-eater-map-anchor='details'] {
+    --eater-map-anchor-x: var(--eater-map-anchor-details-x);
+    --eater-map-anchor-y: var(--eater-map-anchor-details-y);
+  }
+
+  .eater-map__anchor[data-eater-map-anchor='slab'] {
+    --eater-map-anchor-x: var(--eater-map-anchor-slab-x);
+    --eater-map-anchor-y: var(--eater-map-anchor-slab-y);
+  }
+
+  /* ---- the leader lines --------------------------------------------------
+     Four thin rules over the composition, joining each numbered point to the
+     part of the Exploded View it names. The geometry is leaders.ts's — nothing
+     here says where a rule goes, because where a projected corner LANDED is a
+     fact only the compositor has.
+
+     `overflow: visible`, because a Card raised off the Slab can stand outside
+     the composition's own box and the rule to it has to follow. The Section's
+     own `overflow-x: clip` is still what stops anything leaving the page.
+
+     The rules are painted from --ink like every other quiet mark in this Section
+     — mixed towards transparent rather than towards a colour, so they sit
+     correctly in both themes at the far end of a Turn that finished before the
+     reader arrived. */
+  .eater-map__leaders {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    overflow: visible;
+    pointer-events: none;
+    fill: none;
+    stroke: color-mix(in oklab, var(--ink), transparent var(--eater-map-leader-veil));
+    stroke-width: var(--eater-map-leader-weight);
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
   .eater-map__card[data-eater-map-card='search'] {
     --eater-map-card-x: var(--eater-map-card-search-x);
     --eater-map-card-y: var(--eater-map-card-search-y);
@@ -701,6 +856,18 @@ import './tokens.css';
     .eater-map__stage {
       margin-top: var(--eater-map-act);
       margin-inline: calc(-1 * var(--eater-map-side));
+    }
+
+    /* NO LEADER LINES OUT HERE, and absent rather than redrawn (#178). The
+       composition is one column with the four points BENEATH the picture, so a
+       rule from a point to its part would run back up the page and join a
+       paragraph to a corner off the top of the screen. They may simply go,
+       because everything they carry is in the points' own words — and they have
+       to, because a rule drawn before a resize would otherwise still be lying
+       across the stack afterwards. leaders.ts asks this declaration rather than
+       repeating the breakpoint, so the collapse is decided in one place. */
+    .eater-map__leaders {
+      display: none;
     }
 
     /* THE SLAB IS THE WHOLE OF THAT, and the proportion carries the height, which

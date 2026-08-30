@@ -1,3 +1,4 @@
+import type { CardPart } from './leaders';
 import details from './assets/cards/details.html?raw';
 import lines from './assets/cards/lines.html?raw';
 import search from './assets/cards/search.html?raw';
@@ -80,8 +81,14 @@ function asPicture(html: string): string {
 }
 
 export interface Card {
-  /** the Token stem: --eater-map-card-<name>-x and -y place it */
-  readonly name: string;
+  /**
+   * The Token stem: `--eater-map-card-<name>-x` and `-y` place it, and
+   * `--eater-map-anchor-<name>-x` and `-y` put its leader line's anchor on one
+   * of its corners. Typed against `leaders.ts` rather than left a string, so a
+   * Card renamed here without its point being renamed with it is a build error
+   * rather than a rule that draws to nothing.
+   */
+  readonly name: CardPart;
   /** the Eater surface, as a picture of one: no tab stop, no click, no heading */
   readonly html: string;
 }
