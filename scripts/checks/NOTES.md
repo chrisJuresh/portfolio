@@ -11,10 +11,23 @@ pnpm check
 pnpm check -- --no-build --only ground,moments
 ```
 
+```bash
+pnpm check -- --stage webgl
+```
+
 Exit 0 is a pass, 1 is a broken Check or a broken tree, 2 is a runner that could
 not start. `--no-build` runs against the `dist/` that is already there, which is
 for iterating and nothing else — a Check reporting on a stale build is the one
 failure this suite cannot catch about itself.
+
+`--stage` opens every page with one of the Eater Map Section's two stages
+selected (#181), and it is a property of the RUN rather than of any Check: it is
+handed to `lib/page.mjs` through the environment, and no Check mentions it.
+`dom` is the shipped stage and the default. The reason it exists is that #181's
+last acceptance criterion is "every Check passes with either stage selected",
+and threading a parameter through fourteen modules to say so would put the name
+of a temporary alternative in every one of them. **When #182 chooses, the loser
+and this flag go out together.**
 
 **On a fresh clone, download the browser once.** `pnpm install` does not: the
 `playwright` package carries the driver and not the binaries, and pnpm blocks

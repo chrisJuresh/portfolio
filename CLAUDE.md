@@ -315,6 +315,24 @@ unselected Variant has to cost the shipped page nothing.
 [`docs/agents/variants.md`](docs/agents/variants.md) is the authority; read it
 before writing one.
 
+A **stage** is the other kind of alternative — not a direction for a composition
+but a second implementation of the thing that draws one — and it is chosen the
+same way, by looking:
+
+```bash
+pnpm stages
+```
+
+That renders the Eater Map Section's Exploded View twice into
+`design/stages/index.html`: the shipped DOM stage and the WebGL one #181 built
+beside it, crossed with what each can make the Slab's edge out of, in both themes
+and at both ends of the band. One cell is empty on purpose — DOM cannot run the
+captured pixels round a rounded edge — and the sheet draws the empty cell rather
+than skipping it. `pnpm check -- --stage webgl` runs every Check with the other
+one selected. `src/sections/eater-map/NOTES.md` is the authority on the boundary,
+the camera arithmetic that makes the two agree, and what the comparison found;
+#182 chooses, and takes the loser and its dependency out together.
+
 A Section's words are its **Content**, its named numbers are its **Tokens**, and
 the generators that produce its assets are its **Bakes**. Changing any of them is
 not an agent's job:

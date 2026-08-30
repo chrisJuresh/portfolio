@@ -134,6 +134,11 @@ portfolio/img/tex/paper-seam-proof.png
 # with the declarations it used to have. `pnpm variants` is a minute.
 design/sheets/
 
+# design/tools/render-stages.mjs's own output — the two stages of the Eater Map's
+# Exploded View side by side (#181). Beside design/sheets/ rather than under it,
+# because the Variant sheet wipes its whole directory on every run.
+design/stages/
+
 # secrets — never commit
 .env
 .env.*

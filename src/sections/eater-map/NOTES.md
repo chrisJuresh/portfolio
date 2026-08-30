@@ -16,10 +16,11 @@ the four numbered points, the Exploded View, the four leader lines that join the
 one to the other, the **Lift** that assembles it, and the collapse that puts all
 of it away below the band.
 
-Not here: the alternative stage — the same Exploded View in WebGL, with a Slab
-that has thickness — which is #181, and the judgement between it and this one,
-which is #182. The stage is one boundary with one implementation behind it for
-exactly that reason, so that judgement costs a stage and not a Section.
+Not here: which of the two stages draws the Slab. #181 built the alternative —
+the same Exploded View in WebGL, with a Slab that has thickness — and **#182 is
+the judgement**, which takes the loser and its dependency out together. That the
+stage is one boundary with two implementations behind it is what makes that
+judgement cost a stage and not a Section.
 
 **The markup rests in the RAISED state, and that inverts the obvious build.** The
 Lift animates from flat *towards* raised, so the finished Exploded View is what a
@@ -504,6 +505,164 @@ reason and #179 removed the cap by name. If the tall end ever reads as wrong, th
 fix is a second breakpoint inside the collapse rather than a cap on the bleed:
 a ceiling on a full-bleed picture is a picture that is not full-bleed at the only
 windows where the ceiling does anything.
+
+## The stage, and the two renderers behind it
+
+The part of the Exploded View that reads the Tokens and draws the **Slab** sits
+behind one boundary, `stage.ts`, with two implementations behind it: `stage-dom.ts`,
+which is the shipped composition, and `stage-webgl.ts`, which is the alternative
+#181 built so that the renderer is chosen by **looking** rather than by argument.
+#182 is the choosing, and **the loser goes out with its dependency** — a rejected
+direction is kept as prose here, never as six hundred kilobytes in the lockfile.
+
+**"Stage" means two things in this Section, and both are the tickets' own word.**
+`.eater-map__stage` is the grid area the drawing stands in — row two's remainder,
+#176's — and `stage.ts` is the renderer boundary #177 asked for and #181 put a
+second implementation behind. Nothing in `CONTEXT.md` claims the word, and nothing
+should until #182 has chosen: if the alternative loses, the boundary goes with it
+and the collision goes with the boundary. Read as: the lower-case one in a
+selector is a box, the one in a filename is a renderer.
+
+**The boundary is round the Slab and NOT round the Cards**, which is not the
+obvious split and is the one that matters. The Cards are the Eater app's own
+markup and have to stay selectable, screen-readable text (#171, #176), so they
+ride the same CSS plane under either stage and are placed by the same three rules
+in `EaterMap.astro`. A stage that drew them would be drawing a *picture* of them,
+and the Section would have traded the whole point of the vendoring for a renderer.
+So the WebGL stage replaces exactly one element — the `<img>` — with exactly one
+`<canvas>`, and everything else about the composition is untouched. That is also
+why every Check passes either way: there is nothing in a Check's reach that
+changed.
+
+**Neither stage animates.** `--eater-map-lift` is the one thing that moves, and
+`timeline.ts` is the only thing that writes it; a stage reflects it. That is what
+makes reduced motion free for both — the Timeline rests the playhead at 1 and
+builds no trigger, and each stage simply draws 1. Measured at 1440x900 with
+`prefers-reduced-motion: reduce`, in both stages and both edges: the playhead
+reads `1` at rest, stays `1` across forty frames, and stays `1` through a scroll
+away from the Section and back.
+
+**Selected at runtime and never at build time**, which is what lets one `dist/`
+render the comparison. `?stage=webgl` on the URL, or `data-eater-map-stage` on the
+document's root element for a tool that drives the page rather than links to it —
+the attribute wins, so a tool can shoot a deep link without rewriting the URL it
+is checking. An unrecognised spelling falls back to the shipped stage, because a
+query string is something a reader can be handed. `pnpm check -- --stage webgl`
+runs the whole suite that way and passes.
+
+**The WebGL stage costs the shipped page nothing.** It is behind a dynamic
+`import()`, so Vite splits it: 508 KB of `three` in a chunk nothing fetches until
+somebody asks for it, against 4 KB for the DOM one. `check-source.mjs`'s import
+allowlist gained `three` beside `gsap` and `astro`, with the same note attached —
+it is the runtime of an alternative that is being judged, and it comes out when
+the judgement lands.
+
+### The camera is the same camera, arithmetically
+
+`EaterMap.astro` writes `perspective(P) translateZ(-D) rotateX(T) rotateZ(S)`,
+which is a camera standing P in front of the plane's own centre. Matching it in
+three.js is three facts and no eyeballing:
+
+- **Both angles cross negated.** CSS's axes are x right, y **down**, z toward the
+  reader; three's are x right, y **up**, z toward the reader.
+- **The order needs no thought.** A CSS transform list applies right to left, so
+  the swing happens first; three's default Euler order composes `Rx·Ry·Rz`, which
+  is the same thing said the other way round.
+- **The projection is matched by the field of view**, never by scaling afterwards:
+  `fov = 2·atan(canvas height / 2P)` puts the plane at z = 0 on the canvas one CSS
+  pixel to one CSS pixel.
+
+Measured rather than asserted: at 1440x900, progress 0, the drawn composition is
+282px wide under the DOM stage and 284px under the WebGL one — one pixel of
+antialiasing at each edge, and nothing else. The Cards, which are still on the CSS
+plane, land on the drawn map because the drawn map is where the CSS plane says it
+is.
+
+**The canvas is outside the rotation and bigger than the Slab.** A `<canvas>`
+inside `.eater-map__plane` would be turned by the CSS rotation and then again by
+its own, so it is a sibling — and a tilted Slab with a thickness reaches outside
+the box the flat picture fitted, so the canvas is grown to the extent the
+projection actually needs. That extent is **computed and not guessed**: the eight
+corners are projected at five moments of the Lift and the union is taken, because
+the extent is not monotonic in the progress — the plane turns while the camera
+pulls back.
+
+### What the comparison found
+
+```bash
+pnpm stages
+```
+
+renders it into `design/stages/index.html` — two stages crossed with what each can
+make the Slab's edge out of, in both themes, at both ends of the band, shot at the
+raised end of the Lift in the real page. `--progress 0` renders the flat frame,
+where the two stages should agree exactly, and does.
+
+|         | flat                 | thick                       | wrapped |
+| ------- | -------------------- | --------------------------- | ------- |
+| `dom`   | the shipped picture  | 24 sliced layers            | —       |
+| `webgl` | one textured quad    | an extrusion, edge in paint | the captured pixels running over the fillet |
+
+**The empty cell is the result.** DOM has no extrusion, so a thickness in it is
+the solid **sliced**: each slice one flat element standing where that section of
+the solid stands, inset and rounded by exactly as much as the fillet is at that
+depth. That is DOM's best and it is genuinely good — it gets the silhouette, the
+rounded outline and a shaded fillet, and the sheet is worth nothing if the loser
+is not trying. Where it stops is that **a slice is one element and an element has
+one background**: the fillet cannot be brighter on the side facing the light, and
+it cannot carry the picture. Six faces would not help and neither would six
+hundred slices.
+
+**The finding underneath the finding, which was measured and is easy to get
+backwards: at this Section's own camera the side WALL is nearly edge-on, so a
+thickness shows up almost entirely as the FILLET.** At 2560x1440 the Slab is 478
+wide, the tilt is 26° and the eye stands at 2.3 Slab-widths; the bottom edge is
+466px below centre, which subtends 23° — three degrees off the tilt. Projected,
+the back of the Slab lands **2.9px** below the front. So the visible depth is not
+the wall, it is the band of front face the fillet takes over, and the whole
+comparison is a comparison of what can be drawn on that band. The first DOM fake
+written here had no fillet at all — a stack of full-size layers behind the picture
+— and changed 754 pixels out of 1.8 million against the flat frame, which read as
+a broken stage and was an honest rendering of a straw man.
+
+**How the pixels wrap, since that is the cell nothing else can fill.** The
+fillet's *shape* puts the ring at plan distance `r·sin φ` and depth `−r(1 − cos φ)`;
+its *texture* reads the picture at plan distance `r·(2φ/π)` — the same band of
+pixels spread evenly along the arc. Both ends meet the rest of the drawing
+exactly: at φ = 0 the ring is the flat face's own edge and reads the pixels it
+reads, and at φ = π/2 the ring is the silhouette and reads the picture's last row.
+So the captured pixels run off the front, round the corner, and stop precisely
+where the object does. `thick` and `wrapped` are the **same geometry** and differ
+only in which triangles belong to which material, which is what makes the pair an
+argument about one thing.
+
+### Three things about the WebGL stage that are decisions
+
+**The topology is fixed and the positions are rewritten in place.** The thickness
+is spent by the Lift, so it moves every frame; only the index buffer says how the
+surface is joined up, and that is a function of two counts and of nothing the
+composition can change. So the buffers are allocated once and refilled.
+
+**A frame loop, not a subscription.** The drawing turns on `--eater-map-lift`, on
+eight Tokens, on the Slab's box and on the page's theme — and a custom property is
+the one thing on that list nothing will tell you about. There is no event and no
+observer. So the frame reads them, and a signature of every input is what stops a
+page that is not moving from drawing at all. It also means a Token dragged in the
+Editor moves this drawing on the next frame exactly as it moves the DOM stage's.
+
+**`Color.setStyle` is never called.** It warns to the console on a syntax it does
+not know, and the `console` Check fails a page that logs — so a Variant setting
+`--eater-map-slab-edge` to a `color-mix()` would turn a colour nobody chose into a
+failing build. The stage parses `rgb()`/`rgba()` itself and refuses anything else
+in silence, which is why that Token is documented as a plain sRGB colour.
+
+**And one thing it does not do.** #180's `projection-isometric` Variant restates
+`.eater-map__plane`'s whole `transform`, so it is a change this stage cannot see —
+this stage reads the *Tokens*, not the stylesheet. `projection-perspective`, which
+moves only `--eater-map-tilt` and `--eater-map-swing`, it follows. That is a real
+limit of putting a second renderer behind a boundary that is Tokens rather than
+CSS, and it is worth having in front of #182: the DOM stage is the only one a
+Variant can argue with in full.
 
 ## The Cards are the app's own markup, and their controls are neutered
 

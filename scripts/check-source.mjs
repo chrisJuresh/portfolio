@@ -74,8 +74,20 @@ const REQUIRED = ['content.ts', 'tokens.css', 'timeline.ts', 'variants.css', 'NO
  *  banned, so scanning it would fail the build for saying `is:global` out loud. */
 const SOURCE = /\.(astro|ts|css)$/;
 
-/** A Section may read its own folder and the Kernel. Nothing else. */
-const ALLOWED_IMPORT = /^(?:\.\/|gsap(?:\/|$)|astro(?:\/|$)|\.\.\/\.\.\/kernel\/)/;
+/** A Section may read its own folder and the Kernel. Nothing else.
+ *
+ *  The three package names are the RUNTIME rather than an exception to that:
+ *  `gsap` is what a Timeline is, `astro` is what a component is, and `three` is
+ *  what the alternative stage is drawn with (#181). All three are pinned exactly
+ *  (ADR 0002).
+ *
+ *  `three` IS HERE FOR THE DURATION OF A COMPARISON. #181 builds the Exploded
+ *  View a second time in WebGL so the renderer is chosen by looking rather than
+ *  by argument, and #182 is the choosing. If the DOM stage wins, the dependency
+ *  and this name go out together — a losing alternative is kept as a record in
+ *  prose (src/sections/eater-map/NOTES.md), never as six hundred kilobytes in the
+ *  lockfile. */
+const ALLOWED_IMPORT = /^(?:\.\/|gsap(?:\/|$)|astro(?:\/|$)|three(?:\/|$)|\.\.\/\.\.\/kernel\/)/;
 
 /** Nothing in a Section imports variants.css: the sheet is not part of the build
  *  at all, which is what makes an unselected Variant cost the shipped page

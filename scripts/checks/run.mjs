@@ -87,6 +87,30 @@ if (only) {
 }
 
 /**
+ * Which stage draws the Eater Map Section's Slab, for the whole run.
+ *
+ *   pnpm check -- --stage webgl
+ *
+ * #181's last acceptance criterion is that every Check passes with either stage
+ * selected, and this is what makes that a command rather than a claim. It is a
+ * property of the SUITE and not of a Check, so it is handed to `lib/page.mjs`
+ * through the environment and no Check mentions it — see the note there. The
+ * default is the shipped stage and the default path is untouched.
+ */
+const STAGES = ['dom', 'webgl'];
+const stageArg = argv.indexOf('--stage');
+if (stageArg !== -1) {
+  const stage = argv[stageArg + 1] ?? '';
+  if (!STAGES.includes(stage)) {
+    console.error(`checks: --stage takes one of ${STAGES.join(', ')}, not "${stage}"`);
+    process.exit(2);
+  }
+  process.env.PORTFOLIO_STAGE = stage;
+  console.log(`checks: every page opens with the ${stage} stage selected.
+`);
+}
+
+/**
  * The pure logic under `scripts/`, before the browser is started.
  *
  * Not Checks — nothing here is an assertion about a Section — but they run from

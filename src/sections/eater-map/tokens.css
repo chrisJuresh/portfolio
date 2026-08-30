@@ -85,6 +85,36 @@
   --eater-map-slab-fill: 1;
   --eater-map-slab-shift: 0;
 
+  /* ---- the Slab's own thickness, which only a stage with one can draw --------
+     Spent by the Lift, as everything on the plane is: at the flat screenshot the
+     Slab has no depth at all and the frame is the one #176 built, to the pixel.
+     Both are shares of the Slab's WIDTH, so the object keeps its proportions at
+     every window the same way the camera and the rise do.
+
+     THESE ARE READ BY THE STAGE AND NOT BY THE COMPOSITION, which is why nothing
+     in `EaterMap.astro` mentions them: the shipped Exploded View is a picture
+     with no edge, and #181 is the comparison that decides whether it should have
+     one. `src/sections/eater-map/stage.ts` is the boundary they are read through
+     — the DOM stage fakes the depth with a stack of layers and cannot do the
+     rounded edge at all, and the WebGL stage extrudes it and runs the captured
+     pixels over the fillet. The radius is held to the thickness: an edge cannot
+     be rounder than it is deep. The defaults are a phone's own proportions
+     against its width — about a tenth deep, with a corner a little under half
+     of that — so the object reads as a thing rather than as a demonstration. */
+  --eater-map-slab-thickness: 0.1;
+  --eater-map-slab-edge-radius: 0.04;
+
+  /* What the Slab is made of where the picture is not. A fact about the object
+     rather than about the page, so it does not turn with the theme — the same
+     decision, for the same reason, as --eater-map-plate above.
+
+     A PLAIN sRGB COLOUR, and that is load-bearing rather than a habit. The WebGL
+     stage reads this off the page as a computed `color`, and Chromium serialises
+     one as `rgb(…)` for anything in sRGB and as something else for anything that
+     is not; the stage refuses what it cannot read rather than warning about it,
+     so a `color-mix()` here is an edge that quietly stays black. */
+  --eater-map-slab-edge: #9a948a;
+
   /* ---- the three Cards, and where they stand on the Slab ------------------
      Each Card's own corner, as a share of the Slab's width and height — so
      dragging one moves it across the picture rather than across the page, and

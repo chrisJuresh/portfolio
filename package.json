@@ -8,6 +8,7 @@
     "build": "node scripts/check-source.mjs && astro check && tsc -p tsconfig.scripts.json && astro build && node scripts/assemble-dist.mjs",
     "preview": "node scripts/serve-dist.mjs",
     "variants": "node design/tools/render-variants.mjs",
+    "stages": "node design/tools/render-stages.mjs",
     "editor": "node scripts/editor/open.mjs",
     "feature": "node scripts/feature/cli.mjs",
     "check": "node scripts/checks/run.mjs",
@@ -22,11 +23,13 @@
   "devDependencies": {
     "@astrojs/check": "0.9.10",
     "@types/node": "22.20.1",
+    "@types/three": "0.185.0",
     "astro": "7.2.4",
     "playwright": "1.62.1",
     "typescript": "6.0.3"
   },
   "dependencies": {
-    "gsap": "3.15.0"
+    "gsap": "3.15.0",
+    "three": "0.185.1"
   }
 }

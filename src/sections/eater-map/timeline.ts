@@ -1,5 +1,6 @@
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
+import { mountStage } from './stage';
 
 import { mountLeaders } from './leaders';
 
@@ -119,6 +120,19 @@ export default function mountLift(root: HTMLElement): gsap.core.Timeline | void 
   // one that scrubs perfectly and animates nothing, which is the exact failure it
   // exists to catch — so this Section registers none, as it did before #177.
   if (!plane || cards.length === 0) return;
+
+  // THE STAGE, AND IT IS NOT PART OF THE TIMELINE. `stage.ts` is the boundary the
+  // part that draws the SLAB sits behind, and it is started here for one
+  // mechanical reason: `src/kernel/loader.ts` calls this module and no other, so
+  // this is the Section's only mount point (src/kernel/NOTES.md). Nothing waits
+  // for it and nothing depends on it — the DOM stage is what the markup already
+  // reads as, so a stage that never lands costs the reader nothing, which is the
+  // same promise this whole file keeps. A failure is reported rather than
+  // swallowed: a reader who ASKED for the other stage and got neither should not
+  // have to guess.
+  void mountStage(root).catch((error: unknown) => {
+    console.error('eater-map: the stage did not mount', error);
+  });
 
   gsap.registerPlugin(ScrollTrigger);
 
