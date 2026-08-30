@@ -3,21 +3,23 @@
 The Portfolio's third Section and its third resting place: the Showcase for the
 Eater restaurant map. It is a text composition with an **Exploded View** beside
 it — the captured Slab tilted under one camera, and the Eater app's own three
-surfaces standing off its face, so that what a reader sees is the app taken to
-pieces and made out of a picture and real text (#176, #177) — and, below the band,
-the same drawing lying flat and full-bleed with the four features as a list under
-it (#179). #171 is the whole Showcase and one ticket under it is still open.
+surfaces standing off its face, with a thin rule joining each numbered point to
+the part it names, so that what a reader sees is the app taken to pieces and made
+out of a picture and real text (#176, #177, #178) — and, below the band, the same
+drawing lying flat and full-bleed with the four features as a list under it
+(#179). #171 is the whole Showcase and two tickets under it are still open.
 
 ## What is here and what is not
 
 Here: the Rail, a plain masthead, the two authored subheading lines, the copy,
-the four numbered points, the Exploded View, the **Lift** that assembles it, and
-the collapse that puts all of it away below the band. Not here, each with the
-ticket that brings it:
+the four numbered points, the Exploded View, the four leader lines that join the
+one to the other, the **Lift** that assembles it, and the collapse that puts all
+of it away below the band.
 
-| not here yet | ticket |
-| --- | --- |
-| a leader line from each point to the part it names | #178 |
+Not here: the alternative stage — the same Exploded View in WebGL, with a Slab
+that has thickness — which is #181, and the judgement between it and this one,
+which is #182. The stage is one boundary with one implementation behind it for
+exactly that reason, so that judgement costs a stage and not a Section.
 
 **The markup rests in the RAISED state, and that inverts the obvious build.** The
 Lift animates from flat *towards* raised, so the finished Exploded View is what a
@@ -108,9 +110,14 @@ Measured: at 1100x700 the derived answer is 0.5588 and the constant is still
 | `--eater-map-lift: 0` dropped from the collapse | BOTH other readers given a playhead of 1 and all three Cards drifted, at 390x844 |
 | `collapsed()` dropped out of `arrived()` | coming to rest on the Section ran the Lift to 0.0563 |
 | the points put back before the stage in the markup | the features above the picture, and the document's order disagreeing with the screen's |
+| the leader lines drawn once instead of on every tick of the Lift | all four rules off their corners half way up and raised, at both windows — and NOT at flat |
+| the rules drawn to the Card's own rect instead of to the anchor | the details rule 263px out at flat, and all four out at the other two moments |
+| the Slab's anchor moved out of the plane and onto the Slab | the slab's anchor in the same place at both ends of the Lift, at both windows |
+| `display: none` dropped from the overlay's collapse rule | the rules still drawn at 390x844 |
+| a second point given `part: 'search'` | the BUILD, on both refinements at once — no point names the slab, and two name the search |
 
-**The last of those passed three times in a row before the Check was written the
-right way**, and it is the shape `scripts/checks/NOTES.md` warns about twice: *a
+**The `arrived()` mutation passed three times in a row before the Check was
+written the right way**, and it is the shape `scripts/checks/NOTES.md` warns about twice: *a
 mutation has to be placed where it wins*. The first version of that assertion put
 the page on the port and then jumped the scroll back to the Panel's — and a jump
 lands hundreds of pixels below the trigger's start, so the boundary the bug lives
@@ -303,6 +310,109 @@ is re-aimed from wherever the drawing has got to, and it spends the time the
 DISTANCE LEFT is worth rather than the whole Lift's, so a turn taken a third of the
 way up undoes a third of a Lift.
 
+## The leader lines, and why a stylesheet cannot draw one
+
+Four thin rules, each running from one numbered point to the part of the Exploded
+View it names — three to Cards and the fourth to the Slab itself, because the
+offline basemap is the artefact the reader is already looking at (#178). They are
+structure and not decoration: they are how a reader knows which claim belongs to
+which piece, and they are the exploded-view convention the device is named for.
+
+**The correspondence is exact, and it is exact mechanically.** Every point
+carries a `part`, typed against the four parts of the drawing, and two
+refinements on the Content's own schema fail the BUILD if a part goes unnamed or
+is named twice — *no part without a number and no number without a part*. That is
+a build failure rather than a Check because a point naming nothing draws no line
+at all, which is a hole in the drawing rather than something that looks wrong.
+The design reference breaks the rule twice over, and that is what the ticket
+existed to fix: its lines begin in empty space and one of them ends nowhere.
+
+**A STYLESHEET CANNOT DRAW ONE, and that is a fact about CSS rather than a
+preference.** A rule's far end is a Card's own corner while that Card is turned
+in three dimensions under the plane's camera; its near end is a row of text that
+is not turned at all. The two ends are in different coordinate systems, and there
+is no way to ask CSS where a projected corner LANDED — the arithmetic exists only
+in the compositor. So the geometry is read back off the page, which is the one
+thing in this Section that a script has to do.
+
+**What a scriptless reader gets is the Exploded View with no rules over it**, and
+that is the one thing the Lift's inversion cannot buy. It is affordable for the
+same reason the rules are `aria-hidden`: they carry nothing that is not already
+in the four points' own words. A reader listening is given the correspondence by
+reading the points in order, and a reader whose scripts never arrived loses a
+drawing convention rather than a claim.
+
+### The anchor is an element, and it is zero-sized on purpose
+
+Each part carries a `.eater-map__anchor` **inside** the transformed subtree, at
+the corner two Tokens name. **A zero-sized box projects to a POINT**, so its
+`getBoundingClientRect()` IS that corner's position on screen.
+
+The obvious alternative is to read the Card's own rect, and it is wrong in a way
+that looks right: `getBoundingClientRect()` on a rotated element gives the
+AXIS-ALIGNED BOUNDING BOX of the projected quad, and that box's corners are
+nowhere on the Card at all. Measured, with the rules drawn to the box's
+bottom-left instead of to the anchor: right at the flat frame for three of the
+four, 263px out for the fourth, and out by 3 to 71px for every one of them at the
+other two moments. **The flat frame is the one a still is most likely to be taken
+at**, which is why the Check reads three moments and not two.
+
+The three Cards' anchors sit inside their own `.eater-map__card`, which meant the
+Card's markup needed a wrapper to arrive in — `set:html` replaces an element's
+children, and the anchor beside it would be one. That wrapper is
+`display: contents`, so it generates no box and the Card is laid out exactly as it
+was; `cards.css` has no child combinator in it, checked, so the vendored
+stylesheet does not notice either.
+
+### The shoulder is a box, because a Token is not a number to a script
+
+Each rule leaves its point horizontally for `--eater-map-leader-reach` before
+turning towards the part, and that length is the `.eater-map__hook`'s own WIDTH.
+So the module reads the shoulder's two ends off one rect and never parses a
+Token — **a custom property's computed value is its token stream**, and
+`getPropertyValue` hands back `0.9rem` rather than pixels, so a length Token a
+script needs in pixels has to be spent by the stylesheet on a real property
+first. Which of the hook's two edges the rule starts at is decided by which side
+of it the part is on, so the `points-right` Variant needs one declaration from
+this and no arithmetic.
+
+Three Tokens and no more, which are the three the composition can have an opinion
+about: `--eater-map-leader-weight`, `--eater-map-leader-veil` and that reach. The
+reach at 0 is a straight rule from the point to the corner. Where a rule leaves
+its row VERTICALLY is derived rather than a Token — half a line of the title down
+from the row's top — because it is a coordinate in a composition and not a number
+the author chooses (ADR 0004). The eight `--eater-map-anchor-<part>-x/-y` are
+Tokens for the opposite reason: which corner of a Card a rule comes off is a
+choice, and as a share of the part it is a corner at every window and at every
+size the Slab is drawn at.
+
+### When it redraws, and where it does not draw at all
+
+The redraw hangs on the **Timeline's own `onUpdate`**, which is the whole of "the
+rules stay attached throughout the Lift": a reader turning the page, a Check
+seeking a moment and the Editor scrubbing one all move the playhead, so all three
+move the rules by one line. Beside it, a `ResizeObserver` on the Section, the
+points' column and the Slab — the last two change size without the Section's own
+box moving — and `document.fonts.ready`, because a face landing moves the text a
+rule leaves from and no resize need follow it. Measured attached to a hundredth
+of a pixel at 1440x900, at 1600x1000, and back again across the breakpoint.
+
+Nothing hangs on a frame ticker. The rules are read out of the layout, so a redraw
+forces one, and one per tick of a Lift that runs for a second is the whole cost.
+
+**Below the band there are no rules and they are absent rather than redrawn.** The
+composition is one column with the four points BENEATH the picture (#179), so a
+rule between them would run back up the page and join a paragraph to a corner off
+the top of the screen. The stylesheet takes the overlay away and `leaders.ts` asks
+the overlay's own `display` rather than repeating the breakpoint — and that
+`display: none` is load-bearing rather than tidy, because a rule drawn before a
+resize would otherwise still be lying across the stack afterwards.
+
+**It asks the overlay and not `--eater-map-collapsed`**, which is the flag
+`timeline.ts` reads, and the difference is which question is being asked: the Lift
+wants to know which REGIME the composition is in, and these rules want to know
+whether they are drawn.
+
 ## The collapse below the band
 
 An Exploded View is a drawing fitted to a wide window. It spends width on a
@@ -351,9 +461,9 @@ edge. Measured with the mutation in: 390px wide at x=27.64 in a 375px document.
 `--eater-map-lift: 0` every term of the camera is zero, and that is not the same
 as no camera: `perspective()` with nothing to project still computes to a
 matrix3d, and the Cards still stand in a `preserve-3d` rendering context. It
-matters for what comes next rather than for what is on screen — the leader lines
-of #178, a Variant, a Check — all of which would otherwise be interrogating a
-projection that happens to be flat. And the playhead is still set to 0 beside it,
+matters for what else reads the drawing rather than for what is on screen — the
+leader lines, a Variant, a Check — all of which would otherwise be interrogating
+a projection that happens to be flat. And the playhead is still set to 0 beside it,
 because it is spent on the glass as well as on the geometry.
 
 **THE LIFT IS TOLD BY THE STYLESHEET, THROUGH `--eater-map-collapsed`.** The
@@ -654,5 +764,8 @@ which is a list of the same three engineering claims the four points carry with
 their figures attached, and saying them twice would cost the paragraph lines it
 does not have. Same cut, for the same reason, as the Panel's.
 
-The four points are the ticket's own four, one per part of the Exploded View that
-#178 will draw a leader line to. The fourth names the Slab itself.
+The four points are the ticket's own four, one per part of the Exploded View, and
+each carries the `part` its leader line is drawn to. The fourth names the Slab
+itself. That field is Content and the words are Content, and the Editor offers
+the words and never the field — it matches an element against the text it DRAWS,
+and a part is drawn nowhere.

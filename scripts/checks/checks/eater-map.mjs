@@ -1,7 +1,7 @@
 import { DESK, open, settle } from '../lib/page.mjs';
 
 /**
- * The Eater Map Section's Exploded View — the five things about it that break
+ * The Eater Map Section's Exploded View — the six things about it that break
  * without anybody noticing.
  *
  * None is aesthetic and none is a number somebody chose. Every Token in
@@ -64,7 +64,29 @@ import { DESK, open, settle } from '../lib/page.mjs';
  * The Section's own boxes are checked at BOTH ends, because at the raised end
  * they are what a scriptless reader is looking at.
  *
- * FIVE. BELOW THE BAND THE DRAWING HAS COLLAPSED, AND EVERY READER GETS THE SAME
+ * FIVE. EVERY RULE IS STILL ATTACHED TO THE PART IT NAMES. The four leader lines
+ * are the correspondence between the numbered points and the pieces of the
+ * drawing, and each one's far end is a Card's own corner while that Card is
+ * turned in three dimensions. So the failure is a rule computed from where the
+ * Card's UNTRANSFORMED box is, or computed once and never again: both look right
+ * at the flat end of the Lift, which is the one frame a still is most likely to
+ * be taken at, and are wrong at every other. Read at THREE moments for that
+ * reason — flat, half way, raised — against the anchor's own projected position,
+ * which is a fact this Check reads off the page rather than one the drawing
+ * hands it. An anchor that is not inside the camera passes all of that, and is
+ * caught by the anchors themselves having to move between the Lift's two ends.
+ *
+ * AND THE CORRESPONDENCE IS COUNTED. No part without a number and no number
+ * without a part: one rule per numbered point, and the parts they name are
+ * exactly the parts that carry an anchor. The Content's own schema fails the
+ * build on the first half of that; this is the half a schema cannot see, because
+ * a part is a thing on the page rather than a string in a file.
+ *
+ * NO POSITION AND NO ANGLE IS ASSERTED. Which corner a rule ends on is a Token
+ * and how far its shoulder runs is another; what is asserted is that the end of
+ * the rule is where the anchor is and that the anchor is somewhere on the part.
+ *
+ * SIX. BELOW THE BAND THE DRAWING HAS COLLAPSED, AND EVERY READER GETS THE SAME
  * ONE. An Exploded View is fitted to a wide window; a column has no width to
  * spend on a camera. So down there the Slab lies flat and full-bleed with the four
  * features as a list under it, and the Lift never runs (#179). Four of the five
@@ -72,7 +94,7 @@ import { DESK, open, settle } from '../lib/page.mjs';
  * column is a drawing skewed by a degree or two, a Slab that stops short of the
  * window's edge is a composition rather than a fault, a Card at the wrong scale
  * is a plausible screenshot of another phone, and a Lift still running is a phone
- * quietly tilting itself under a column. THE FIFTH IS THE ONE THE TICKET IS ABOUT: the narrow reader, the reader
+ * quietly tilting itself under a column. THE LAST IS THE ONE #179 IS ABOUT: the narrow reader, the reader
  * who asked for no motion and the reader whose scripts never arrived are handed
  * the same composition, and that is asserted as an EQUALITY between the three
  * rather than as three separate descriptions — which is what stops a fourth
@@ -130,12 +152,29 @@ const CREEP = 12;
  *  written against. `[tabindex]` catches one added by hand later. */
 const FOCUSABLE = 'a[href], button, input, select, textarea, [tabindex], [contenteditable]';
 
+/** How far a leader line's end may sit from the corner it is drawn to, in px.
+ *  The two are read one after the other out of one layout, so this is rounding
+ *  and nothing else — measured at a hundredth of a pixel — and it is nowhere near
+ *  loose enough to swallow a rule drawn to an untransformed box, which is tens of
+ *  pixels out at the first degree of tilt. */
+const ATTACHED = 1;
+
+/** How far outside its part's own box an anchor may sit, in px. A point inside
+ *  the unit square of a rotated Card is inside that Card's bounding box by
+ *  convexity, whatever the two placement Tokens are set to — so this is rounding
+ *  again, and the failure it names is an anchor that is not on the part at all. */
+const ON_THE_PART = 1;
+
+/** The moment between the two ends, where a rule drawn once and never again is
+ *  wrong and a still of either end would not say so. */
+const HALF_WAY = 0.5;
+
 async function atWindow(browser, origin, viewport) {
   const { context, page } = await open(browser, origin, { viewport });
   try {
     const failures = (await settle(page)).map((why) => `${viewport.width}x${viewport.height}: ${why}`);
 
-    const seen = await page.evaluate(async (focusable) => {
+    const seen = await page.evaluate(async ({ focusable, onThePart, halfWay }) => {
       const slab = document.querySelector('.eater-map__slab');
       if (!slab) return { missing: 'no .eater-map__slab on the page' };
       const kernel = window.portfolio;
@@ -167,6 +206,51 @@ async function atWindow(browser, origin, viewport) {
           };
         });
 
+      // WHICH ELEMENT EACH POINT NAMES. Three of the four are Cards and the
+      // fourth is the picture itself, and knowing that here is the point: it is
+      // the claim being checked rather than something the drawing hands over.
+      const partNamed = (part) =>
+        part === 'slab'
+          ? document.querySelector('.eater-map__plane')
+          : document.querySelector(`[data-eater-map-card="${part}"]`);
+
+      const overlay = document.querySelector('[data-eater-map-leaders]');
+      const rules = () => {
+        if (!overlay) return [];
+        const frame = overlay.getBoundingClientRect();
+        return [...overlay.querySelectorAll('[data-eater-map-leader]')].map((line) => {
+          const part = line.getAttribute('data-eater-map-leader') ?? '(unnamed)';
+          const anchor = document.querySelector(`[data-eater-map-anchor="${part}"]`);
+          const hook = document.querySelector(`[data-eater-map-hook="${part}"]`);
+          const on = partNamed(part);
+          // The drawn geometry, exactly as the overlay carries it.
+          const drawn = (line.getAttribute('points') ?? '')
+            .trim()
+            .split(/\s+/)
+            .filter(Boolean)
+            .map((pair) => pair.split(',').map(Number));
+          // A zero-sized box inside the camera projects to a POINT, so this rect
+          // IS the corner's position on screen — which is the whole difference
+          // between the anchor and the Card's own axis-aligned bounding box.
+          const at = anchor?.getBoundingClientRect();
+          const box = on?.getBoundingClientRect();
+          return {
+            part,
+            drawn,
+            anchor: at ? { x: round(at.left - frame.left), y: round(at.top - frame.top) } : null,
+            hookY: hook ? round(hook.getBoundingClientRect().top - frame.top) : null,
+            named: Boolean(on),
+            sits:
+              at && box
+                ? at.left >= box.left - onThePart &&
+                  at.left <= box.right + onThePart &&
+                  at.top >= box.top - onThePart &&
+                  at.top <= box.bottom + onThePart
+                : null,
+          };
+        });
+      };
+
       // Only the boxes this Section drew. The Eater app's own markup may hide
       // whatever it likes inside a Card — that is another repository's decision
       // about its own interface, and this is a claim about the Portfolio's.
@@ -184,9 +268,13 @@ async function atWindow(browser, origin, viewport) {
         lift.progress(0);
         const flat = cardBoxes();
         const flatHidden = invisible();
+        const rulesFlat = rules();
+        lift.progress(halfWay);
+        const rulesHalfWay = rules();
         lift.progress(1);
         const raised = cardBoxes();
         const raisedHidden = invisible();
+        const rulesRaised = rules();
 
         const stage = document.querySelector('.eater-map__stage');
         const reachable = stage
@@ -211,13 +299,24 @@ async function atWindow(browser, origin, viewport) {
           raisedHidden,
           reachable,
           announced,
+          overlay: overlay
+            ? {
+                spoken: overlay.getAttribute('aria-hidden') !== 'true',
+                says: (overlay.textContent ?? '').trim(),
+              }
+            : null,
+          numbered: document.querySelectorAll('.eater-map__points > li').length,
+          anchored: [...document.querySelectorAll('[data-eater-map-anchor]')].map((element) =>
+            element.getAttribute('data-eater-map-anchor'),
+          ),
+          rules: { flat: rulesFlat, halfWay: rulesHalfWay, raised: rulesRaised },
         };
       } finally {
         window.scrollTo(0, was.scroll);
         lift.progress(was.progress);
         kernel.release?.();
       }
-    }, FOCUSABLE);
+    }, { focusable: FOCUSABLE, onThePart: ON_THE_PART, halfWay: HALF_WAY });
 
     const where = `${viewport.width}x${viewport.height}`;
     if (seen.missing) {
@@ -289,6 +388,127 @@ async function atWindow(browser, origin, viewport) {
           `${where}: ${hidden.length} of the Section's own boxes are invisible at the Lift's ${end} end — ` +
             `${hidden.join(', ')}. Nothing here may be hidden in CSS and uncovered by the Timeline: the ` +
             'raised end is what a reader whose scripts never arrived is looking at',
+        );
+      }
+    }
+
+    // ---- the leader lines -------------------------------------------------
+    if (seen.overlay === null) {
+      failures.push(
+        `${where}: the composition has no leader-line overlay, so nothing joins the four numbered ` +
+          'points to the parts of the Exploded View they name',
+      );
+    } else {
+      if (seen.overlay.spoken) {
+        failures.push(
+          `${where}: the leader lines are not aria-hidden — they carry nothing that is not already ` +
+            "in the four points' own words, and a reader listening is owed the words rather than " +
+            'four rules read out as graphics',
+        );
+      }
+      if (seen.overlay.says.length > 0) {
+        failures.push(
+          `${where}: the leader-line overlay carries text — "${seen.overlay.says.slice(0, 40)}". A rule ` +
+            'may say nothing the text does not',
+        );
+      }
+
+      const named = seen.rules.raised.map((rule) => rule.part);
+      // ONE RULE PER POINT AND ONE PART PER RULE. The schema fails the build if a
+      // point names no part or if two name one; this is the half a schema cannot
+      // see — whether the parts named are the parts that are actually there.
+      if (named.length !== seen.numbered) {
+        failures.push(
+          `${where}: ${seen.numbered} numbered point(s) and ${named.length} leader line(s) — every point ` +
+            'is joined to the part it names, and no rule belongs to no point',
+        );
+      }
+      for (const part of seen.anchored) {
+        if (!named.includes(part)) {
+          failures.push(
+            `${where}: the ${part} is part of the Exploded View and no numbered point names it — ` +
+              'no part without a number',
+          );
+        }
+      }
+      for (const rule of seen.rules.raised) {
+        if (!rule.named) {
+          failures.push(
+            `${where}: a point names "${rule.part}", which is nothing in the Exploded View — ` +
+              'no number without a part',
+          );
+        }
+      }
+    }
+
+    // EVERY MOMENT, NOT JUST THE TWO ENDS. A rule computed from a Card's
+    // untransformed box, or computed once and never again, is right at the flat
+    // frame and wrong everywhere else — and the flat frame is the one a still is
+    // most likely to be taken at.
+    for (const [when, drawn] of [
+      ['flat', seen.rules.flat],
+      [`${HALF_WAY} of the way up`, seen.rules.halfWay],
+      ['raised', seen.rules.raised],
+    ]) {
+      for (const rule of drawn) {
+        if (rule.anchor === null || rule.hookY === null) {
+          failures.push(
+            `${where}: the ${rule.part} rule has no ${rule.anchor === null ? 'anchor' : 'hook'} to be ` +
+              'drawn between, so nothing about where it lands was checked',
+          );
+          continue;
+        }
+        if (rule.drawn.length < 2) {
+          failures.push(
+            `${where}, ${when}: the ${rule.part} rule is not drawn — ${rule.drawn.length} point(s) on it. ` +
+              'A numbered point with no line is a claim with nothing to attach it to',
+          );
+          continue;
+        }
+        const [tipX, tipY] = rule.drawn[rule.drawn.length - 1];
+        const off = Math.hypot(tipX - rule.anchor.x, tipY - rule.anchor.y);
+        // NaN on either side is a comparison that is false, which would read as a
+        // pass — the shape scripts/checks/NOTES.md warns about three times.
+        if (!Number.isFinite(off)) {
+          failures.push(
+            `${where}, ${when}: the ${rule.part} rule cannot be measured — it ends at ${tipX},${tipY} and ` +
+              `the corner is at ${rule.anchor.x},${rule.anchor.y}. Nothing about it was asserted`,
+          );
+        } else if (off > ATTACHED) {
+          failures.push(
+            `${where}, ${when}: the ${rule.part} rule ends ${off.toFixed(1)}px from the corner it names — ` +
+              `at ${tipX},${tipY} against ${rule.anchor.x},${rule.anchor.y}. A leader line beginning in ` +
+              'empty space is the fault the design reference has and this Section does not',
+          );
+        }
+        const [footX, footY] = rule.drawn[0];
+        if (Math.abs(footY - rule.hookY) > ATTACHED) {
+          failures.push(
+            `${where}, ${when}: the ${rule.part} rule leaves its point at ${footX},${footY} and the point's ` +
+              `own row is at ${rule.hookY} — the rule is not attached to the number it belongs to`,
+          );
+        }
+        if (rule.sits === false) {
+          failures.push(
+            `${where}, ${when}: the ${rule.part} rule's anchor is not on the part it names — it is drawn ` +
+              'from a corner of something else, so the correspondence is wrong wherever it looks right',
+          );
+        }
+      }
+    }
+
+    // THE ANCHOR RIDES THE CAMERA. An anchor outside the transformed subtree
+    // stands still while its Card is turned, and a rule to it stays attached to
+    // the anchor and detaches from the CARD — which every assertion above would
+    // still pass.
+    for (const rule of seen.rules.flat) {
+      const up = seen.rules.raised.find((other) => other.part === rule.part);
+      if (!rule.anchor || !up?.anchor) continue;
+      if (Math.hypot(up.anchor.x - rule.anchor.x, up.anchor.y - rule.anchor.y) <= ATTACHED) {
+        failures.push(
+          `${where}: the ${rule.part}'s anchor is in the same place at both ends of the Lift — ` +
+            `${rule.anchor.x},${rule.anchor.y}. It is not inside the camera, so what the rule is drawn to ` +
+            'is where the part would be if it were never turned',
         );
       }
     }
@@ -472,7 +692,7 @@ function composition(page) {
 /**
  * Below the band: the drawing has collapsed, and every reader gets the same one.
  *
- * Five things, and the reason each is here rather than left to a person looking
+ * Six things, and the reason each is here rather than left to a person looking
  * at the page is that each fails by a few pixels or by nothing visible at all.
  *
  * ONE. IT IS ACTUALLY COLLAPSED. Asked first and answered with a bail, because
@@ -498,7 +718,15 @@ function composition(page) {
  * the page and a reader hearing it would be given two different sequences — which
  * is invisible to everyone who can see the screen.
  *
- * FIVE. THE LIFT DOES NOT RUN. Waited out rather than sampled: the Lift takes
+ * FIVE. THERE ARE NO LEADER LINES. The points stand BENEATH the picture out
+ * here, so a rule from one to its part would run back up the page and join a
+ * paragraph to a corner off the top of the screen (#178). The rules may go —
+ * everything they carry is in the points' own words — and they have to, because
+ * a rule drawn before a resize would otherwise still be lying across the stack
+ * afterwards. Asserted of the overlay's own `display`, which is the declaration
+ * leaders.ts reads, so this is the same question the drawing asks itself.
+ *
+ * SIX. THE LIFT DOES NOT RUN. Waited out rather than sampled: the Lift takes
  * `--eater-map-lift-time` end to end, so the page is put on the Section and the
  * playhead is watched for longer than that. A Lift that ran would be well off 0
  * within a frame or two of arriving. **The pass is a TIMEOUT and not merely a
@@ -567,6 +795,10 @@ async function collapsedBelowTheBand(browser, origin) {
             })
             .map((element) => element.className),
           reachable: [...stage.querySelectorAll(focusable)].filter((el) => el.tabIndex >= 0).length,
+          leaders: (() => {
+            const overlay = document.querySelector('[data-eater-map-leaders]');
+            return overlay ? getComputedStyle(overlay).display : null;
+          })(),
         };
       },
       FOCUSABLE,
@@ -695,7 +927,16 @@ async function collapsedBelowTheBand(browser, origin) {
       );
     }
 
-    // FIVE. Long enough that a Lift which ran would be at its far end, read off
+    // FIVE.
+    if (seen.leaders !== null && seen.leaders !== 'none') {
+      failures.push(
+        `${where}: the leader lines are still drawn (display: ${seen.leaders}) where the Exploded View has ` +
+          'collapsed — the points stand beneath the picture out here, so a rule from one to its part runs ' +
+          'back up the page to a corner off the top of the screen',
+      );
+    }
+
+    // SIX. Long enough that a Lift which ran would be at its far end, read off
     // the Section's own Token rather than guessed at, so a slower Lift does not
     // quietly turn this into a sampling window that misses.
     const lifted = await page
@@ -825,8 +1066,8 @@ async function everyReaderGetsIt(browser, origin, ordinary) {
 export const check = {
   name: 'eater-map',
   title:
-    'the Cards lie on the Slab at its own scale, come off it and go back, are only a picture, and lie ' +
-    'flat and full-bleed below the band',
+    'the Cards lie on the Slab at its own scale, come off it and go back, are joined to their numbers, ' +
+    'are only a picture, and lie flat and full-bleed below the band',
 
   /** @param {{ browser: import('playwright').Browser, origin: string }} ctx */
   async run({ browser, origin }) {

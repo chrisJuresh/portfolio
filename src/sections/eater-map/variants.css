@@ -160,14 +160,24 @@
    The composition ships with them on the near side, under the masthead they
    belong to, and the two readings are genuinely different: near, the points are
    the head's evidence; far, they are the picture's index and each is where its
-   own leader line will start (#178). Worth having drawn before the leader lines
-   are, because they cannot be moved afterwards for free. */
+   own leader line starts (#178).
+
+   THE LEADER LINES FOLLOW IT AND NEED ONE DECLARATION TO DO SO. leaders.ts
+   decides which edge of the hook a rule leaves by which side of it the part is
+   on, so the shoulder turns round on its own; what it cannot work out is which
+   edge of the ROW the hook should stand on, because that is a composition
+   decision. This is that decision, and it is the whole cost of the direction. */
 :root[data-variant='points-right'] .eater-map__points {
   grid-area: 2 / 10 / 3 / 13;
 }
 
 :root[data-variant='points-right'] .eater-map__stage {
   grid-area: 2 / 1 / 3 / 10;
+}
+
+:root[data-variant='points-right'] .eater-map__hook {
+  left: auto;
+  right: 100%;
 }
 
 /* TOKENS ONLY: the same composition on a quieter ladder — one step tighter
