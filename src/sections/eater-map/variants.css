@@ -12,13 +12,14 @@
    SUBHEADING'S FACE. Every one of them is kept whichever way the judgement
    goes; the losers are the record of what was compared.
 
-   THE PROJECTION GROUP IS INVISIBLE AT THE SHEET'S DEFAULT MOMENT, and that is
-   the one thing to know before rendering it. `pnpm variants` shoots at
-   `--progress 0`, and progress 0 of the Lift is the flat screenshot: the plane
-   lies flat, every Card's depth is 0, and every projection agrees about what
-   that looks like, so the cards come back marked *identical* or a hair off it
-   and the strip says nothing. The projections are a comparison of the RAISED
-   drawing and have to be asked for as one:
+   THE PROJECTION GROUP IS VISIBLE AT THE SHEET'S DEFAULT MOMENT NOW, AND IT WAS
+   NOT. `pnpm variants` shoots at `--progress 0`, and progress 0 used to be the
+   flat screenshot — the plane lying flat, every Card's depth at 0, every
+   projection agreeing about what that looks like — so the whole group came back
+   marked *identical* and the strip said nothing. Since #189 the plane's attitude
+   is not a term of the Lift, so the Slab stands at it at every moment and the
+   default shot compares the projections properly. The RAISED moment is still
+   worth asking for, because it is where the Cards are off the map:
 
        pnpm build
        pnpm variants -- --sections eater-map --progress 1
@@ -27,55 +28,62 @@
    moment. */
 
 /* ==========================================================================
-   THE PROJECTION — three cameras, and the argument for one of them (#180)
+   THE PROJECTION — three drawings, and the argument for one of them (#180)
    ==========================================================================
 
    #177 chose a shallow shared perspective and rejected two alternatives in
-   prose. These are the two rendered, so the choice can be looked at:
+   prose; #189 then chose one of the alternatives, so the strip has moved under
+   this group and the group is still worth having. What is compared now:
 
-     unselected             the shipped composition — one shared camera, a
-                            converging perspective, at the tilt and swing the
-                            Section chose for itself
-     projection-isometric   a TRUE isometric: a parallel projection, no
-                            convergence anywhere, at the canonical angles
-     projection-perspective the same canonical angles WITH the camera back, so
-                            this and the one above differ in the projection and
-                            in nothing else — which is what makes "perspective
-                            or parallel" a thing to see rather than to be told
-     projection-collage     one camera and then a rotation of its own on every
-                            surface, which is the design reference's render and
-                            is what makes it read as three stickers on a
+     unselected             the shipped composition — a PARALLEL projection at
+                            the attitude #187 signed off, 52deg of tilt and
+                            33deg of swing, which is almost isometric without
+                            being canonically so
+     projection-isometric   a TRUE isometric: the same absence of convergence at
+                            the CANONICAL angles, so this and `unselected` differ
+                            in the attitude and in nothing else
+     projection-perspective the canonical angles WITH a converging camera, which
+                            is what the Section shipped until #189 — so this and
+                            the one above differ in the projection and in nothing
+                            else, and "converging or parallel" stays a thing to
+                            see rather than to be told
+     projection-collage     one projection and then a rotation of its own on
+                            every surface, which is the design reference's render
+                            and is what makes it read as three stickers on a
                             photograph rather than one object taken apart
 
-   EVERY ANGLE BELOW IS STILL SPENT BY THE LIFT, exactly as the composition's
-   are: `var(--eater-map-lift)` multiplies each one, so progress 0 stays the flat
-   screenshot #176 built and a Variant changes where the Lift ARRIVES rather than
-   where it starts. A Variant that broke that would be arguing about a second
-   thing at the same time. */
+   NO ANGLE BELOW IS SPENT BY THE LIFT ANY MORE, which is #189's inversion
+   reaching the sheet: the composition's own attitude is a constant, so a Variant
+   that multiplied its angles by `--eater-map-lift` would be arguing about the
+   projection AND about whether the Slab moves. The Lift is the Cards' now, and
+   every one of these draws the same Slab at both ends of it. */
 
-/* True isometric: a PARALLEL projection, which is a `transform` written without
-   the `perspective()` function rather than a camera pushed far away — a large
-   camera only flattens towards this and never reaches it. The dolly goes with
-   it: nothing converges, so nothing grows as it climbs, and there is nothing for
-   a camera pulling back to pay for. The angles are the canonical ones —
-   atan(1/√2) is 35.264°, so 90 − 35.264 = 54.736° of tilt with the plane turned
-   45° — which is what makes the three axes foreshorten equally and makes this
-   isometric rather than merely parallel. `preserve-3d` still carries each Card's
-   depth; with no convergence it reads as an offset along the plane's normal,
-   which is exactly how an exploded view is drawn on paper. */
-:root[data-variant='projection-isometric'] .eater-map__plane {
-  transform: rotateX(calc(var(--eater-map-lift) * 54.736deg))
-    rotateZ(calc(var(--eater-map-lift) * -45deg));
+/* True isometric: the canonical angles, which is the one thing `unselected` is
+   not. atan(1/√2) is 35.264°, so 90 − 35.264 = 54.736° of tilt with the plane
+   turned 45° — which is what makes the three axes foreshorten equally and makes
+   this isometric rather than merely parallel. The projection is the composition's
+   own, so this is two Tokens and not a restated transform. */
+:root[data-variant='projection-isometric'] .eater-map {
+  --eater-map-tilt: 54.736deg;
+  --eater-map-swing: -45deg;
 }
 
-/* The same two angles with the camera and the dolly back, so this is the
-   isometric's control: one variable changed, and the variable is the projection.
-   It is deliberately NOT the shipped composition restated — that is `unselected`
-   at the head of the strip, and a Variant that came back byte-for-byte identical
-   to it would be a card that says nothing and a warning that means nothing. */
+/* The same two angles with a CONVERGING camera, so this is the isometric's
+   control: one variable changed, and the variable is the projection. The camera
+   is stated here rather than read from a Token because the composition no longer
+   has one — a parallel projection has no eye distance, `--eater-map-camera` went
+   out with #189, and the number below is the one the Section shipped with. The
+   dolly goes with the camera and is not restored: it existed to pay for pieces
+   growing as they climbed towards the lens, which is a cost only a converging
+   camera has, and putting it back would make this argue about two things. */
 :root[data-variant='projection-perspective'] .eater-map {
   --eater-map-tilt: 54.736deg;
   --eater-map-swing: -45deg;
+}
+
+:root[data-variant='projection-perspective'] .eater-map__plane {
+  transform: perspective(calc(2.3 * 100cqw)) rotateX(var(--eater-map-tilt))
+    rotateZ(var(--eater-map-swing));
 }
 
 /* The collage: the shared camera stays, and then each surface is turned its own
@@ -90,8 +98,8 @@
    custom properties, read off the element the composition set them on. */
 :root[data-variant='projection-collage'] .eater-map__card {
   transform: translate3d(
-      0,
-      calc(var(--eater-map-card-drift) * 100cqw),
+      calc(var(--eater-map-card-drift-x) * 100cqw),
+      calc(var(--eater-map-card-drift-y) * 100cqw),
       calc(var(--eater-map-card-rise) * 100cqw)
     )
     rotateX(calc(var(--eater-map-card-lift) * var(--eater-map-card-cant, 0deg)))

@@ -1,16 +1,15 @@
 import { DESK, open, settle } from '../lib/page.mjs';
 
 /**
- * The Eater Map Section's Exploded View — the six things about it that break
+ * The Eater Map Section's Exploded View — the eight things about it that break
  * without anybody noticing.
  *
- * None is aesthetic and none is a number somebody chose. Every Token in
- * `src/sections/eater-map/tokens.css` may be set to anything without failing the
- * first two: the Slab may take any share of the stage, the Cards may sit anywhere
- * on it, the camera may stand anywhere and the plane may be tilted to any angle.
- * What is asserted is a RELATIONSHIP that has to hold whatever those are set to,
- * and facts about the markup. The one Token this Check does have an opinion about
- * is named where that opinion is, below.
+ * None is aesthetic. Every Token in `src/sections/eater-map/tokens.css` may be set
+ * to anything without failing most of what is here: the Slab may take any share of
+ * the stage, the Cards may sit anywhere on it, and the plane may be tilted to any
+ * attitude. What is asserted is a RELATIONSHIP that has to hold whatever those are
+ * set to, and facts about the markup. **FOUR TOKENS THIS CHECK HAS AN OPINION
+ * ABOUT**, each named where its opinion is: the rise, and the three depths.
  *
  * EVERY GEOMETRY IS READ AT A MOMENT OF THE LIFT AND NOT WHEREVER THE PAGE LEFT
  * IT. The Timeline runs from flat to raised, the markup rests at raised, and what
@@ -21,7 +20,7 @@ import { DESK, open, settle } from '../lib/page.mjs';
  * Section's Timeline is driven by a transport tween, and a seek without a hold is
  * scrubbed back out from under the read within a frame.
  *
- * ONE. THE CARDS ARE DRAWN AT THE SLAB'S OWN SCALE, FLAT. The whole trick of this
+ * ONE. THE CARDS ARE DRAWN AT THE SLAB'S OWN SCALE. The whole trick of this
  * Section is that a photograph and three live surfaces read as one screenshot,
  * and the only thing making that true is that the Cards are scaled by the Slab's
  * drawn width over the phone Eater was captured at. The composition derives that
@@ -29,10 +28,15 @@ import { DESK, open, settle } from '../lib/page.mjs';
  * another, and it carries a constant to fall back on. So the failure this exists
  * for is the derivation quietly going away: the fallback renders a perfectly
  * plausible screenshot, and it is a plausible screenshot at ONE window and an
- * interface floating over a map of the wrong scale at every other. Asserted at
- * the Lift's flat end, which is the frame the claim is about — raised, the Cards
- * are drawn under a projection and a Card's drawn width is a fact about the
- * camera rather than about the map.
+ * interface floating over a map of the wrong scale at every other.
+ *
+ * READ WITH THE PROJECTION LIFTED, AND THAT IS #189's DOING. A Card's rect is the
+ * axis-aligned bounding box of a quad projected under the plane's rotation, which
+ * is not the Card's drawn width — the two agreed while the Lift's flat end was an
+ * untilted screenshot, and the Slab stands at its attitude at every moment now. So
+ * the plane's transform comes off for the length of one read and goes straight back
+ * on. The alternative is reading `--eater-map-app-scale` off the element, which
+ * would be asking the composition to confirm its own arithmetic.
  *
  * TWO WINDOWS FOR EXACTLY THAT REASON, and it is the lesson `front-screen`
  * already paid for. At DESK the constant is within a third of a per cent of the
@@ -54,9 +58,31 @@ import { DESK, open, settle } from '../lib/page.mjs';
  * Card climbs is the author's and lives in a Token. `moments` already asks
  * whether a Timeline moves ANYTHING; this asks whether it moves all three, which
  * is the failure that would otherwise ship as a Card left on the map while the
- * other two came off it. **This is the one assertion here that a Token can fail**:
- * setting the rise, the gap, the dolly and the tilt all to zero is not a taste
- * decision, it is the device switched off, and this Section exists for the device.
+ * other two came off it.
+ *
+ * SEVEN. THE SLAB DOES NOT MOVE, AND IT STANDS IN A PARALLEL PROJECTION (#189).
+ * The two halves of the Section's headline invariant, and the author's own first
+ * concern: turning onto the Section must not resize the thing being looked at. The
+ * plane's projected box is read at both ends of the Lift and has to be the same
+ * box, which fails the moment either angle goes back inside a `calc()` with the
+ * playhead in it. And two identical PROBES — boxes this Check puts on the plane at
+ * the Slab's head and foot and takes back off — have to project to the same size,
+ * which is the only way to ask whether a projection converges: the head leans away
+ * from the reader and the foot leans towards them, so a `perspective()` at any
+ * distance anybody would compose with draws one bigger than the other. Restoring
+ * the camera the Section shipped with before #189 fails it by 12%.
+ *
+ * EIGHT. THE THREE CARDS RISE TOGETHER, AND STILL IN THE APP'S ORDER. Each Card's
+ * screen-space rise is measured against the same Card with its rise taken away, and
+ * the three have to agree within a stated tolerance — which is the difference
+ * between one object taken apart and three objects hanging at three heights, and is
+ * the one place this Check has an opinion about a Token's VALUE rather than about a
+ * relationship. Two mutations fall out of it and both are meant to: spreading the
+ * depths back out to 1 / 0.62 / 0.26 fails the tolerance, and setting all three
+ * equal fails the ordering underneath it. **And a floor under each rise is what
+ * makes a dead drawing fail**: a depth under a parallel projection reaches the
+ * screen only through the attitude, so a plane at zero attitude has three Cards
+ * that climb and never move — which SEVEN's two assertions both pass.
  *
  * FOUR. NOTHING IS HIDDEN AND UNCOVERED. A reveal written the obvious way puts
  * `opacity: 0` in the stylesheet and lets the Timeline take it off — and then a
@@ -85,6 +111,13 @@ import { DESK, open, settle } from '../lib/page.mjs';
  * NO POSITION AND NO ANGLE IS ASSERTED. Which corner a rule ends on is a Token
  * and how far its shoulder runs is another; what is asserted is that the end of
  * the rule is where the anchor is and that the anchor is somewhere on the part.
+ *
+ * AND WHETHER AN ANCHOR IS INSIDE THE CAMERA IS ASKED OF THE MARKUP NOW. It was
+ * geometry — an anchor outside the projection stands still while its part turns, so
+ * both ends of the Lift found it in one place — and the SLAB's anchor stands still
+ * legitimately since #189, because the Slab does. Containment is what that
+ * assertion was asking all along; the movement half is kept for the three Cards,
+ * which are what the Lift carries.
  *
  * SIX. BELOW THE BAND THE DRAWING HAS COLLAPSED, AND EVERY READER GETS THE SAME
  * ONE. An Exploded View is fitted to a wide window; a column has no width to
@@ -169,12 +202,48 @@ const ON_THE_PART = 1;
  *  wrong and a still of either end would not say so. */
 const HALF_WAY = 0.5;
 
+/** How far the Slab's projected box may move between the two ends of the Lift, in
+ *  px. Rounding and nothing else: it is one element under one constant transform
+ *  read twice out of the same layout, so the two answers are the same number or
+ *  the attitude is a term of the playhead again (#189). */
+const STILL = 0.5;
+
+/** The two probes' size, in px, and how far their projected boxes may differ as a
+ *  share of the larger.
+ *
+ *  A PROBE IS A BOX THIS CHECK PUTS ON THE PLANE AND TAKES BACK OFF, which is the
+ *  only way to ask whether a projection converges: two identical boxes at opposite
+ *  ends of the Slab project to the same size under a parallel projection and to
+ *  different sizes under any camera standing at a finite distance. Measured with
+ *  the composition's own camera restored, the two differed by 12% at DESK — so
+ *  this tolerance is antialiasing on two rects and nowhere near loose enough to
+ *  swallow a `perspective()` anybody would compose with. */
+const PROBE = 40;
+const PARALLEL = 0.01;
+
+/** How far the three Cards' screen-space rises may differ, as a share of the
+ *  largest, and the floor under each one in px.
+ *
+ *  THE FIRST IS THE ONE OPINION THIS CHECK HAS ABOUT THREE TOKENS, and it is
+ *  #189's own: the three Cards RISE TOGETHER, so the drawing reads as one object
+ *  taken apart rather than as three objects hanging at three heights. The depths
+ *  that shipped before it were 1 / 0.62 / 0.26, which is 74% apart; 1 / 0.94 /
+ *  0.88 is 12%. The author may move all three and may reorder nothing.
+ *
+ *  THE SECOND IS WHAT MAKES A DEAD DRAWING FAIL. A rise is a translation along the
+ *  plane's own normal, and under a parallel projection a normal pointing at the
+ *  reader projects to nothing at all — so a plane at zero attitude has three Cards
+ *  that climb and never move, which is the Exploded View switched off while every
+ *  other assertion here passes. */
+const TOGETHER = 0.2;
+const RISEN = 1;
+
 async function atWindow(browser, origin, viewport) {
   const { context, page } = await open(browser, origin, { viewport });
   try {
     const failures = (await settle(page)).map((why) => `${viewport.width}x${viewport.height}: ${why}`);
 
-    const seen = await page.evaluate(async ({ focusable, onThePart, halfWay }) => {
+    const seen = await page.evaluate(async ({ focusable, onThePart, halfWay, probe }) => {
       const slab = document.querySelector('.eater-map__slab');
       if (!slab) return { missing: 'no .eater-map__slab on the page' };
       const kernel = window.portfolio;
@@ -262,19 +331,105 @@ async function atWindow(browser, origin, viewport) {
           })
           .map((element) => element.className);
 
+      const plane = document.querySelector('.eater-map__plane');
+      const cardHost = document.querySelector('.eater-map__cards');
+
+      /** The Slab's own projected box, which #189 asks to be the same at both ends
+       *  of the Lift. The plane is the picture's box exactly — `inset: 0` on the
+       *  Slab — so this rect IS the drawing's outline under the projection. */
+      const planeBox = () => {
+        const box = plane.getBoundingClientRect();
+        return { x: round(box.x), y: round(box.y), w: round(box.width), h: round(box.height) };
+      };
+
+      /** TWO IDENTICAL BOXES AT OPPOSITE ENDS OF THE SLAB, projected. Put on the
+       *  plane and taken back off inside one read, because a probe is a question
+       *  and not part of the composition — and put on `.eater-map__cards`, which is
+       *  the box inside the projection whose own transform is nothing, so what
+       *  moves them is the plane's projection and nothing else.
+       *
+       *  THE TILT IS WHAT MAKES THIS THE RIGHT PAIR: the head of the Slab leans
+       *  away from the reader and the foot leans towards them, so under a camera at
+       *  a finite distance these two are at different distances from the lens and
+       *  are drawn at different sizes. Under a parallel projection they are
+       *  congruent, and `getBoundingClientRect` on a rotated box is the projected
+       *  quad's axis-aligned bounding box — which is the same box for two congruent
+       *  quads wherever they stand. */
+      const probes = () => {
+        const at = (top) => {
+          const box = document.createElement('div');
+          box.style.cssText =
+            `position:absolute;left:50%;top:${top}%;width:${probe}px;height:${probe}px;` +
+            'pointer-events:none;visibility:hidden';
+          cardHost.append(box);
+          const rect = box.getBoundingClientRect();
+          box.remove();
+          return { w: round(rect.width), h: round(rect.height) };
+        };
+        return { head: at(0), foot: at(100) };
+      };
+
+      /** Each Card's SCREEN-SPACE RISE off the plane, in px.
+       *
+       *  Measured against the same Card with its rise taken away rather than
+       *  against a second element, so what is being read is the Card the reader is
+       *  looking at. `--eater-map-card-rise` is the derived length the transform
+       *  spends, so setting it to 0 removes the depth and leaves the along-plane
+       *  slide standing — which is the difference between "how far did it come off
+       *  the map" and "where did it end up".
+       *
+       *  OFF THE ANCHOR AND NOT OFF THE CARD'S OWN RECT, for the reason the leader
+       *  lines are: a zero-sized box projects to a POINT, and the bounding box of a
+       *  projected quad moves by a different amount from the quad itself. */
+      const rises = () =>
+        [...document.querySelectorAll('.eater-map__card')].map((card) => {
+          const anchor = card.querySelector('.eater-map__anchor');
+          const name = card.getAttribute('data-eater-map-card') ?? '(unnamed)';
+          if (!anchor) return { name, rise: null };
+          const up = anchor.getBoundingClientRect();
+          const held = card.style.getPropertyValue('--eater-map-card-rise');
+          card.style.setProperty('--eater-map-card-rise', '0');
+          const down = anchor.getBoundingClientRect();
+          if (held) card.style.setProperty('--eater-map-card-rise', held);
+          else card.style.removeProperty('--eater-map-card-rise');
+          return { name, rise: round(Math.hypot(up.x - down.x, up.y - down.y)) };
+        });
+
       const was = { progress: lift.progress(), scroll: window.scrollY };
       kernel.hold?.();
       try {
         lift.progress(0);
-        const flat = cardBoxes();
+        const down = cardBoxes();
+        const flatPlane = planeBox();
         const flatHidden = invisible();
         const rulesFlat = rules();
         lift.progress(halfWay);
         const rulesHalfWay = rules();
         lift.progress(1);
         const raised = cardBoxes();
+        const raisedPlane = planeBox();
         const raisedHidden = invisible();
         const rulesRaised = rules();
+        const probed = probes();
+        const risen = rises();
+
+        // THE CAMERA IS LIFTED FOR ONE READ, AND ONLY FOR THE SCALE. A Card's
+        // `getBoundingClientRect` is the axis-aligned bounding box of a quad
+        // projected under the plane's rotation, which is not the Card's own drawn
+        // width and never was — it agreed with it while the Lift's flat end was an
+        // untilted screenshot, and #189 took that frame away. So the projection is
+        // taken off the plane for the length of this read and put straight back: the
+        // Card's own `scale()` is what is left, and its rect over its declared width
+        // IS the scale the composition applied. `transform-style: flat` goes with it,
+        // or the Cards' depths would still be carried under a plane that no longer
+        // turns and the topmost Card would be measured a per cent large.
+        const heldTransform = plane.style.transform;
+        const heldStyle = plane.style.transformStyle;
+        plane.style.transform = 'none';
+        plane.style.transformStyle = 'flat';
+        const square = cardBoxes();
+        plane.style.transform = heldTransform;
+        plane.style.transformStyle = heldStyle;
 
         const stage = document.querySelector('.eater-map__stage');
         const reachable = stage
@@ -293,8 +448,13 @@ async function atWindow(browser, origin, viewport) {
           // it on — so this reads the composition's own number rather than a copy.
           app: Number.parseFloat(getComputedStyle(slab).getPropertyValue('--eater-map-app-w')),
           slabWidth: round(slab.getBoundingClientRect().width),
-          flat,
+          square,
+          down,
           raised,
+          flatPlane,
+          raisedPlane,
+          probed,
+          risen,
           flatHidden,
           raisedHidden,
           reachable,
@@ -306,9 +466,16 @@ async function atWindow(browser, origin, viewport) {
               }
             : null,
           numbered: document.querySelectorAll('.eater-map__points > li').length,
-          anchored: [...document.querySelectorAll('[data-eater-map-anchor]')].map((element) =>
-            element.getAttribute('data-eater-map-anchor'),
-          ),
+          // AND WHETHER EACH ONE IS INSIDE THE CAMERA, which is a fact about the
+          // markup and has to be, since #189. An anchor outside the transformed
+          // subtree used to be caught by geometry — it stood still while its part
+          // was turned, and both ends of the Lift found it in one place — and the
+          // Slab's own anchor now stands still legitimately, because the Slab does.
+          // Containment is the question that assertion was asking all along.
+          anchored: [...document.querySelectorAll('[data-eater-map-anchor]')].map((element) => ({
+            part: element.getAttribute('data-eater-map-anchor'),
+            projected: plane.contains(element),
+          })),
           rules: { flat: rulesFlat, halfWay: rulesHalfWay, raised: rulesRaised },
         };
       } finally {
@@ -316,7 +483,7 @@ async function atWindow(browser, origin, viewport) {
         lift.progress(was.progress);
         kernel.release?.();
       }
-    }, { focusable: FOCUSABLE, onThePart: ON_THE_PART, halfWay: HALF_WAY });
+    }, { focusable: FOCUSABLE, onThePart: ON_THE_PART, halfWay: HALF_WAY, probe: PROBE });
 
     const where = `${viewport.width}x${viewport.height}`;
     if (seen.missing) {
@@ -330,12 +497,12 @@ async function atWindow(browser, origin, viewport) {
     if (!(seen.slabWidth > 0)) {
       failures.push(`${where}: the Slab has no width, so nothing about the scale on it could be read`);
     }
-    if (seen.flat.length === 0) {
+    if (seen.square.length === 0) {
       failures.push(`${where}: no Card on the Slab, so nothing about their scale was checked`);
     }
 
     const slabScale = seen.slabWidth / seen.app;
-    for (const card of seen.flat) {
+    for (const card of seen.square) {
       const drawnScale = card.drawn / card.declared;
       // EVERY COMPARISON BELOW IS FALSE WHEN EITHER SIDE IS NaN, which is the
       // shape scripts/checks/NOTES.md warns about three times: a Card that is
@@ -351,17 +518,17 @@ async function atWindow(browser, origin, viewport) {
       const off = Math.abs(drawnScale - slabScale) / slabScale;
       if (off > SCALE_TOLERANCE) {
         failures.push(
-          `${where}: flat, the ${card.name} Card is drawn at ${drawnScale.toFixed(4)} and the Slab at ` +
-            `${slabScale.toFixed(4)} — the Card is not at the map's scale, so this is three ` +
-            'stickers on a photograph rather than one screenshot',
+          `${where}: with the projection lifted, the ${card.name} Card is drawn at ` +
+            `${drawnScale.toFixed(4)} and the Slab at ${slabScale.toFixed(4)} — the Card is not at the ` +
+            "map's scale, so this is three stickers on a photograph rather than one screenshot",
         );
       }
     }
 
-    for (const card of seen.flat) {
+    for (const card of seen.down) {
       const up = seen.raised.find((other) => other.name === card.name);
       if (!up) {
-        failures.push(`${where}: the ${card.name} Card is on the flat frame and not on the raised one`);
+        failures.push(`${where}: the ${card.name} Card is down on the map and not on the raised drawing`);
         continue;
       }
       const apart = Math.max(
@@ -373,9 +540,102 @@ async function atWindow(browser, origin, viewport) {
       if (!(apart > MOVED)) {
         failures.push(
           `${where}: the ${card.name} Card is in the same place at both ends of the Lift — ` +
-            `${card.drawn}x${card.height} at ${card.x},${card.y} flat and ${up.drawn}x${up.height} at ` +
+            `${card.drawn}x${card.height} at ${card.x},${card.y} down and ${up.drawn}x${up.height} at ` +
             `${up.x},${up.y} raised. The Exploded View is not exploding this one`,
         );
+      }
+    }
+
+    // ---- the Slab stands still, and it stands in a parallel projection --------
+    // THE INVARIANT #189 IS ABOUT, and the one the author cares most about: a
+    // reader turning onto the Section does not watch the thing they are looking at
+    // resize itself. Both angles were terms of `--eater-map-lift` before it, so the
+    // plane tipped up as the page arrived; the mutation that puts either of them
+    // back inside a `calc()` with the playhead in it fails here.
+    const slabMoved = Math.max(
+      Math.abs(seen.raisedPlane.x - seen.flatPlane.x),
+      Math.abs(seen.raisedPlane.y - seen.flatPlane.y),
+      Math.abs(seen.raisedPlane.w - seen.flatPlane.w),
+      Math.abs(seen.raisedPlane.h - seen.flatPlane.h),
+    );
+    if (!Number.isFinite(slabMoved)) {
+      failures.push(
+        `${where}: the Slab's projected box cannot be measured — ${JSON.stringify(seen.flatPlane)} down ` +
+          `against ${JSON.stringify(seen.raisedPlane)} raised. Nothing about it standing still was asserted`,
+      );
+    } else if (slabMoved > STILL) {
+      failures.push(
+        `${where}: the Slab is drawn ${seen.flatPlane.w}x${seen.flatPlane.h} at ` +
+          `${seen.flatPlane.x},${seen.flatPlane.y} at one end of the Lift and ` +
+          `${seen.raisedPlane.w}x${seen.raisedPlane.h} at ${seen.raisedPlane.x},${seen.raisedPlane.y} at ` +
+          `the other — ${slabMoved.toFixed(2)}px apart. It does not change when the reader turns onto ` +
+          'the Section; only the Cards move',
+      );
+    }
+
+    const { head, foot } = seen.probed;
+    const spread = Math.max(
+      Math.abs(head.w - foot.w) / Math.max(head.w, foot.w),
+      Math.abs(head.h - foot.h) / Math.max(head.h, foot.h),
+    );
+    if (!Number.isFinite(spread)) {
+      failures.push(
+        `${where}: the two probes cannot be measured — ${head.w}x${head.h} at the Slab's head and ` +
+          `${foot.w}x${foot.h} at its foot. Nothing about the projection was asserted`,
+      );
+    } else if (spread > PARALLEL) {
+      failures.push(
+        `${where}: two identical ${PROBE}px probes are drawn ${head.w}x${head.h} at the Slab's head and ` +
+          `${foot.w}x${foot.h} at its foot — ${(spread * 100).toFixed(1)}% apart. The projection is ` +
+          'converging, and this drawing is parallel: nothing may grow because it is nearer the reader',
+      );
+    }
+
+    // ---- and the three Cards rise together -----------------------------------
+    const rises = seen.risen.filter((one) => Number.isFinite(one.rise));
+    if (rises.length !== seen.risen.length) {
+      failures.push(
+        `${where}: ${seen.risen.length - rises.length} Card(s) have no measurable rise off the plane — ` +
+          `${JSON.stringify(seen.risen)}. Nothing about the Lift's distance was asserted`,
+      );
+    }
+    for (const one of rises) {
+      if (!(one.rise > RISEN)) {
+        failures.push(
+          `${where}: the ${one.name} Card rises ${one.rise}px off the plane — a depth under a parallel ` +
+            'projection reaches the screen only through the attitude, so a plane standing at none is an ' +
+            'Exploded View with nothing exploded, and every other assertion here passes',
+        );
+      }
+    }
+    if (rises.length > 1) {
+      const highest = Math.max(...rises.map((one) => one.rise));
+      const lowest = Math.min(...rises.map((one) => one.rise));
+      const apart = (highest - lowest) / highest;
+      if (apart > TOGETHER) {
+        failures.push(
+          `${where}: the three Cards rise ${rises.map((one) => `${one.name} ${one.rise}px`).join(', ')} — ` +
+            `${(apart * 100).toFixed(0)}% apart, against ${TOGETHER * 100}% allowed. They come off the map ` +
+            'TOGETHER, so the drawing reads as one object taken apart rather than three objects hanging ' +
+            'at three heights',
+        );
+      }
+      // AND THEY ARE STILL A STACK. Rising together is half of it; the other half
+      // is that the app's own order survives — the detail panel is a sheet on the
+      // map, the lines popup floats above it, the search bar is on top. Three equal
+      // depths satisfy the tolerance above perfectly and draw one raised plate.
+      const order = ['search', 'lines', 'details'];
+      for (let index = 1; index < order.length; index += 1) {
+        const above = rises.find((one) => one.name === order[index - 1]);
+        const below = rises.find((one) => one.name === order[index]);
+        if (!above || !below) continue;
+        if (!(above.rise - below.rise > RISEN)) {
+          failures.push(
+            `${where}: the ${order[index - 1]} Card rises ${above.rise}px and the ${order[index]} Card ` +
+              `${below.rise}px — the stack has lost its order, and three Cards at one depth are a raised ` +
+              'plate rather than an exploded assembly',
+          );
+        }
       }
     }
 
@@ -423,7 +683,7 @@ async function atWindow(browser, origin, viewport) {
             'is joined to the part it names, and no rule belongs to no point',
         );
       }
-      for (const part of seen.anchored) {
+      for (const { part } of seen.anchored) {
         if (!named.includes(part)) {
           failures.push(
             `${where}: the ${part} is part of the Exploded View and no numbered point names it — ` +
@@ -497,18 +757,37 @@ async function atWindow(browser, origin, viewport) {
       }
     }
 
-    // THE ANCHOR RIDES THE CAMERA. An anchor outside the transformed subtree
-    // stands still while its Card is turned, and a rule to it stays attached to
-    // the anchor and detaches from the CARD — which every assertion above would
-    // still pass.
+    // THE ANCHOR RIDES THE CAMERA, AND SINCE #189 THAT IS ASKED OF THE MARKUP. An
+    // anchor outside the transformed subtree stands still while its part is turned,
+    // and a rule to it stays attached to the anchor and detaches from the PART —
+    // which every assertion above would still pass. It used to be caught by
+    // geometry: both ends of the Lift found such an anchor in one place. The SLAB's
+    // anchor is in one place at both ends now because the Slab is, which is the
+    // whole point of the ticket, so the geometry can no longer tell the two apart
+    // and containment is the question that assertion was asking all along.
+    for (const { part, projected } of seen.anchored) {
+      if (!projected) {
+        failures.push(
+          `${where}: the ${part}'s anchor is not inside .eater-map__plane — it stands outside the ` +
+            'projection, so what the rule is drawn to is where the part would be if it were never turned',
+        );
+      }
+    }
+
+    // AND THE THREE CARDS' ANCHORS STILL MOVE, which is the geometry half and is
+    // the Cards' alone: they are what the Lift carries, so an anchor of theirs that
+    // stands still is one that is not riding the depth even though it is inside the
+    // projection — a `position: fixed` in the vendored markup would do it, and
+    // containment would not notice.
     for (const rule of seen.rules.flat) {
+      if (rule.part === 'slab') continue;
       const up = seen.rules.raised.find((other) => other.part === rule.part);
       if (!rule.anchor || !up?.anchor) continue;
       if (Math.hypot(up.anchor.x - rule.anchor.x, up.anchor.y - rule.anchor.y) <= ATTACHED) {
         failures.push(
           `${where}: the ${rule.part}'s anchor is in the same place at both ends of the Lift — ` +
-            `${rule.anchor.x},${rule.anchor.y}. It is not inside the camera, so what the rule is drawn to ` +
-            'is where the part would be if it were never turned',
+            `${rule.anchor.x},${rule.anchor.y}. It is inside the projection and is not riding its Card's ` +
+            'own climb, so a rule to it comes off the map rather than off the Card',
         );
       }
     }

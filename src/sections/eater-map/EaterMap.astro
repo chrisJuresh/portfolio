@@ -240,6 +240,10 @@ import './tokens.css';
        all: `check-source.mjs` refuses an `@media` block in tokens.css, and rightly
        — the Editor writes a value, not a breakpoint (src/sections/NOTES.md). */
     --eater-map-collapsed: 0;
+    /* WHETHER THE SLAB IS A SOLID, which is the same kind of declaration as the
+       two above it and is read by the stage rather than by this stylesheet. 1 in
+       the band, 0 in the collapse — see there. */
+    --eater-map-solid: 1;
     box-sizing: border-box;
     display: grid;
     /* The Rail's column IS the page's left margin, the way it is in the Projects
@@ -513,38 +517,39 @@ import './tokens.css';
     container-type: inline-size;
   }
 
-  /* THE ONE CAMERA, AND THE ONE ROTATION EVERY PART SHARES. The picture and all
+  /* THE ONE ROTATION EVERY PART SHARES, AND IT NEVER MOVES. The picture and all
      three Cards are inside this box, so there is exactly one projection on the
      page and no element carries a rotation of its own — which is what makes this
      one object taken apart rather than three stickers on a photograph.
 
-     `perspective()` IS A TRANSFORM FUNCTION HERE AND NOT THE PROPERTY, and that
-     is what saves a fifth box. The property projects an element's CHILDREN, so
-     it would have to sit on the Slab — and the Slab is `container-type`, which
-     is `contain: layout`, which is grouping, which would force this element's
-     `preserve-3d` back to `flat`. As a function it projects this element's own
-     rotation and its children's depths together, and it may be written in `cqw`
-     because the plane is not itself the container. NOTES.md carries both rules.
+     NOT A TERM OF THE LIFT, WHICH IS #189. Both angles used to be multiplied by
+     `--eater-map-lift`, so the Slab tilted itself up as the reader arrived and
+     progress 0 was the flat screenshot #176 built. It stands at its attitude the
+     whole time now: the same solid, at the same size, with the same projected
+     corners at both ends of the Lift and at both ends of the band, and only the
+     Cards move. The Lift's flat end is the Cards down on a plane that is already
+     turned, and the flat screenshot is no longer a state the drawing passes
+     through.
 
-     THE DOLLY IS PART OF THE CAMERA AND NOT A SIZE. The Cards climb towards the
-     lens, so they grow — and a drawing whose pieces all grow outruns the box the
-     screenshot fitted. The answer is the camera pulling back rather than the
-     Slab being drawn smaller: the map recedes as its pieces come off it, the
-     topmost Card stays about life size, and the FLAT frame keeps the size #176
-     gave it. It is written BEFORE the two rotations, so it pushes the drawing
-     away from the lens rather than along the tilted plane's own normal.
+     A PARALLEL PROJECTION, WHICH IS THE ABSENCE OF `perspective()` and not a
+     camera pushed far away — a large camera only flattens towards this and never
+     reaches it, which is why #180's isometric Variant had to restate this whole
+     list. So there is no `perspective()`, no `--eater-map-camera` and no dolly:
+     nothing converges, so nothing grows as it climbs and there is nothing for a
+     camera pulling back to pay for. `preserve-3d` still carries each Card's
+     depth, and with no convergence that reads as an offset along the plane's own
+     normal — which is how an exploded view is drawn on paper.
 
-     Every term is the Lift's playhead times a Token, so progress 0 is
-     `translateZ(0) rotate(0) rotate(0)` — the plane lies flat at the size it was
-     drawn at, and the composition is the screenshot #176 built, to the pixel. */
+     `preserve-3d` HERE AND NOT ON THE SLAB. The Slab is `container-type`, which
+     is `contain: layout`, which is grouping, and a grouping element's
+     `preserve-3d` is forced back to `flat` with no error and no warning — the
+     Cards would lie flat on the map for ever, at the right scale, looking like a
+     screenshot. NOTES.md carries that rule and the one under it. */
   .eater-map__plane {
     position: absolute;
     inset: 0;
     transform-style: preserve-3d;
-    transform: perspective(calc(var(--eater-map-camera) * 100cqw))
-      translateZ(calc(var(--eater-map-lift) * var(--eater-map-dolly) * -100cqw))
-      rotateX(calc(var(--eater-map-lift) * var(--eater-map-tilt)))
-      rotateZ(calc(var(--eater-map-lift) * var(--eater-map-swing)));
+    transform: rotateX(var(--eater-map-tilt)) rotateZ(var(--eater-map-swing));
   }
 
   .eater-map__still {
@@ -607,9 +612,11 @@ import './tokens.css';
      translate is in the PLANE's units — a depth in the picture's own coordinate
      system rather than in the app's. Written the other way round the app's own
      scale would multiply the depth and each Card would rise by a different
-     amount for the same Token. Both distances are `cqw`, so they are shares of
-     the Slab as everything else on the plane is, and the drawing holds its shape
-     at every window.
+     amount for the same Token. All three distances are `cqw`, so they are shares
+     of the Slab's WIDTH as everything else on the plane is — including the `top`
+     below, which is why it is not a percentage (#189): a percentage `top`
+     resolves against the containing block's HEIGHT, which put the placement and
+     the slide in two different units while they read as a pair.
 
      GLASS CANNOT BE CARRIED OFF A SURFACE, and this is the one thing the Lift
      costs that no Token can put back. A `backdrop-filter` samples what is painted
@@ -631,11 +638,17 @@ import './tokens.css';
     --eater-map-card-rise: calc(
       var(--eater-map-card-lift) * var(--eater-map-rise) * var(--eater-map-card-depth)
     );
-    /* Up the plane for the Cards near the top of the stack and down it for the
-       ones near the bottom, so the pieces draw apart as they climb instead of
-       stacking on one line of sight. Half the gap either way. */
-    --eater-map-card-drift: calc(
-      var(--eater-map-card-lift) * var(--eater-map-card-gap) * (0.5 - var(--eater-map-card-depth))
+    /* WHERE THE CARD SLIDES TO as it climbs, along the plane, in both of the
+       plane's own directions and as a share of the Slab's width. Two Tokens per
+       Card rather than one gap spent by the depth (#189): the three depths are
+       within 12% of each other now, so `(0.5 - depth)` would slide all three the
+       same way by the same amount, which is a translation of the drawing rather
+       than a gap in it. */
+    --eater-map-card-drift-x: calc(
+      var(--eater-map-card-lift) * var(--eater-map-card-slide-x)
+    );
+    --eater-map-card-drift-y: calc(
+      var(--eater-map-card-lift) * var(--eater-map-card-slide-y)
     );
     --eater-map-card-fill: calc(var(--eater-map-card-lift) * 100%);
     --glass: color-mix(in srgb, var(--eater-map-glass), var(--eater-map-plate) var(--eater-map-card-fill));
@@ -650,12 +663,12 @@ import './tokens.css';
       var(--eater-map-plate) var(--eater-map-card-fill)
     );
     position: absolute;
-    left: calc(var(--eater-map-card-x) * 100%);
-    top: calc(var(--eater-map-card-y) * 100%);
+    left: calc(var(--eater-map-card-x) * 100cqw);
+    top: calc(var(--eater-map-card-y) * 100cqw);
     transform-origin: 0 0;
     transform: translate3d(
-        0,
-        calc(var(--eater-map-card-drift) * 100cqw),
+        calc(var(--eater-map-card-drift-x) * 100cqw),
+        calc(var(--eater-map-card-drift-y) * 100cqw),
         calc(var(--eater-map-card-rise) * 100cqw)
       )
       scale(calc(var(--eater-map-app-scale) * var(--eater-map-card-scale)));
@@ -740,18 +753,24 @@ import './tokens.css';
     --eater-map-card-x: var(--eater-map-card-search-x);
     --eater-map-card-y: var(--eater-map-card-search-y);
     --eater-map-card-depth: var(--eater-map-card-search-depth);
+    --eater-map-card-slide-x: var(--eater-map-card-search-slide-x);
+    --eater-map-card-slide-y: var(--eater-map-card-search-slide-y);
   }
 
   .eater-map__card[data-eater-map-card='lines'] {
     --eater-map-card-x: var(--eater-map-card-lines-x);
     --eater-map-card-y: var(--eater-map-card-lines-y);
     --eater-map-card-depth: var(--eater-map-card-lines-depth);
+    --eater-map-card-slide-x: var(--eater-map-card-lines-slide-x);
+    --eater-map-card-slide-y: var(--eater-map-card-lines-slide-y);
   }
 
   .eater-map__card[data-eater-map-card='details'] {
     --eater-map-card-x: var(--eater-map-card-details-x);
     --eater-map-card-y: var(--eater-map-card-details-y);
     --eater-map-card-depth: var(--eater-map-card-details-depth);
+    --eater-map-card-slide-x: var(--eater-map-card-details-slide-x);
+    --eater-map-card-slide-y: var(--eater-map-card-details-slide-y);
   }
 
   /* ---- one column, outside the band the composition is fitted to ---------
@@ -782,6 +801,16 @@ import './tokens.css';
          a Card leaves the map and must not be filled for a Card that never left
          it. A screenshot has the app's own translucency. */
       --eater-map-lift: 0;
+      /* AND NO THICKNESS, for the same reason and by the same route. The Slab's
+         depth stopped being a term of the playhead in #189, so `--eater-map-lift:
+         0` no longer takes it away — and an edge is a thing an Exploded View has,
+         not a thing a full-bleed picture at the top of a column has. The stage
+         multiplies its depth and its radius by this, so the whole solid closes up
+         to the flat picture down here and opens again on a resize back into the
+         band without anything being re-mounted. Declared beside the playhead and
+         not in tokens.css for the reason --eater-map-collapsed is: it is a regime
+         and not a number the author chooses. */
+      --eater-map-solid: 0;
       grid-template-columns: minmax(0, 1fr);
       row-gap: var(--eater-map-move);
       min-height: 0;
@@ -885,13 +914,16 @@ import './tokens.css';
       translate: none;
     }
 
-    /* NO PART OF THE PERSPECTIVE SURVIVES. --eater-map-lift: 0 above already
-       leaves every term of the camera at zero, and that is not enough to say so:
-       `perspective()` with nothing to project still computes to a matrix3d, the
-       Cards still stand in a 3D rendering context, and anything that later reads
-       the drawing — the next ticket's leader lines, a Variant, a Check — would be
-       asking a flattened projection rather than a plane. `transform: none` and a
-       flat rendering context are the drawing saying it outright. */
+    /* NO PART OF THE PROJECTION SURVIVES, AND THIS IS NOW THE ONLY THING SAYING
+       SO. It used to be belt and braces — every angle was a term of
+       --eater-map-lift, so the 0 above already flattened the plane and this said
+       it outright for the things that read the drawing rather than look at it.
+       Since #189 the attitude is a constant the playhead does not touch, so
+       without these two declarations a column below the band would carry a Slab
+       tilted 52 degrees. `transform-style: flat` goes with it for the reason it
+       always did: the Cards would otherwise still stand in a 3D rendering
+       context, and the leader lines, a Variant and a Check would each be asking
+       a flattened projection rather than a plane. */
     .eater-map__plane {
       transform: none;
       transform-style: flat;

@@ -85,32 +85,30 @@
   --eater-map-slab-fill: 1;
   --eater-map-slab-shift: 0;
 
-  /* ---- the Slab's own thickness, which only a stage with one can draw --------
-     Spent by the Lift, as everything on the plane is: at the flat screenshot the
-     Slab has no depth at all and the frame is the one #176 built, to the pixel.
-     Both are shares of the Slab's WIDTH, so the object keeps its proportions at
-     every window the same way the camera and the rise do.
+  /* ---- the Slab's own thickness, which is what makes it an object ----------
+     NOT SPENT BY THE LIFT, and that is the whole of #189 in two lines. The Slab
+     is the same solid at both ends of the Lift, so its depth is a constant and
+     not a term the playhead multiplies — a thickness that grew as the reader
+     arrived would be the Slab changing under them, which is the one thing this
+     Section is now built against. Both are shares of the Slab's WIDTH, so the
+     object keeps its proportions at every window the same way the rise does.
 
-     THESE ARE READ BY THE STAGE AND NOT BY THE COMPOSITION, which is why nothing
-     in `EaterMap.astro` mentions them: the shipped Exploded View is a picture
-     with no edge, and #181 is the comparison that decides whether it should have
-     one. `src/sections/eater-map/stage.ts` is the boundary they are read through
-     — the DOM stage fakes the depth with a stack of layers and cannot do the
-     rounded edge at all, and the WebGL stage extrudes it and runs the captured
-     pixels over the fillet. The radius is held to the thickness: an edge cannot
-     be rounder than it is deep. The defaults are a phone's own proportions
-     against its width — about a tenth deep, with a corner a little under half
-     of that — so the object reads as a thing rather than as a demonstration.
+     THREE PER CENT DEEP, WHICH IS A PHONE. It was 0.1 while the edge was a
+     comparison nothing shipped and a tenth of a phone's width is a paving slab;
+     0.03 is what the reference is and what #187 states. The radius is the plan
+     corner AND the fillet in the DOM stage — one `border-radius` per slice — so
+     it is held to the thickness: an edge cannot be rounder than it is deep.
+     Chosen by looking, on the sheet `pnpm stages` renders.
 
-     THEY ARE DRAGGABLE AND THEY MOVE NOTHING, until a stage is asked for an edge
-     to spend them on. The Editor draws a control for every Token in this file
-     (ADR 0004), so from here until #182 there are three of them that do nothing
-     on the page the author is looking at. That is the honest cost of a
-     comparison living in the real page rather than on a bench, and it goes away
-     with the judgement: either the edge ships and they are ordinary Tokens, or
-     it does not and they leave with the stage. */
-  --eater-map-slab-thickness: 0.1;
-  --eater-map-slab-edge-radius: 0.04;
+     READ BY THE STAGE AND NOT BY THE COMPOSITION, which is why nothing in
+     `EaterMap.astro` mentions them: `stage.ts` is the boundary, the DOM stage
+     slices the solid into stacked rounded rectangles whose corners are the same
+     element as their sides, and the WebGL stage extrudes it. #182 is still the
+     judgement between the two and is NOT decided here — what changed is that the
+     shipped page now asks for an edge at all, so these are ordinary Tokens that
+     move the drawing rather than three that wait for a decision. */
+  --eater-map-slab-thickness: 0.03;
+  --eater-map-slab-edge-radius: 0.02;
 
   /* What the Slab is made of where the picture is not. A fact about the object
      rather than about the page, so it does not turn with the theme — the same
@@ -126,13 +124,24 @@
   --eater-map-slab-edge: #9a948a;
 
   /* ---- the three Cards, and where they stand on the Slab ------------------
-     Each Card's own corner, as a share of the Slab's width and height — so
-     dragging one moves it across the picture rather than across the page, and
-     the arrangement holds at every size the Slab is drawn at. The app's own
+     Each Card's own corner, as a share of the Slab's WIDTH — both coordinates,
+     which is the correction #189 asked for. `y` used to be a share of the Slab's
+     HEIGHT, because a percentage `top` resolves against the containing block's
+     height while a percentage `left` resolves against its width, and the Slab is
+     2.17 times as tall as it is wide. That put this Token and the slide below it
+     in two different units while they read as a pair, so dragging the one moved
+     the Card 2.17 times as far as dragging the other and neither control said
+     so. A share of the width is what everything else on the plane is — the rise,
+     the slides, the thickness — so it is the one the pair collapsed onto, and it
+     is why `details-y` is greater than 1: 57% of the way down a phone is 1.24
+     phone-widths.
+
+     Dragging one moves the Card across the picture rather than across the page,
+     and the arrangement holds at every size the Slab is drawn at. The app's own
      layout is where these start: the search bar inset at the top, the lines
      popup under it, the detail panel as a sheet across the foot. These are where
-     each Card sits FLAT on the picture; how far off it each one comes is under
-     the Lift below.
+     each Card sits FLAT on the picture; how far off it each one comes, and where
+     it slides to as it climbs, are under the Lift below.
 
      THE CARDS ARE NOT SCALED HERE AND CANNOT USEFULLY BE. The scale that makes
      the whole thing read as one screenshot is the Slab's drawn width over the
@@ -144,59 +153,85 @@
   --eater-map-card-scale: 1;
 
   --eater-map-card-search-x: 0.034;
-  --eater-map-card-search-y: 0.07;
+  --eater-map-card-search-y: 0.152;
 
   --eater-map-card-lines-x: 0.304;
-  --eater-map-card-lines-y: 0.141;
+  --eater-map-card-lines-y: 0.306;
 
   --eater-map-card-details-x: 0.004;
-  --eater-map-card-details-y: 0.57;
+  --eater-map-card-details-y: 1.236;
 
-  /* ---- the Lift: one camera, a tilted Slab, three Cards off its face -------
-     Every number here is spent by `--eater-map-lift`, which runs 0 at the flat
-     screenshot to 1 at the finished Exploded View. So a Token set to 0 does not
-     turn a piece of the drawing off, it takes that piece out of the Lift and
-     leaves it where the screenshot had it.
+  /* ---- the plane's attitude, which the Lift does not touch -----------------
+     `tilt` tips the top of the phone away from the reader and `swing` turns it on
+     its own face, and BETWEEN THEM THEY ARE THE WHOLE OF THE PROJECTION. There
+     is no third angle, no per-element rotation and — since #189 — no camera
+     distance and no dolly: the plane is drawn in PARALLEL PROJECTION, which is a
+     `transform` written without the `perspective()` function rather than a camera
+     pushed far away. Two identical probes at opposite ends of the Slab therefore
+     project to the same area, which is what the `eater-map` Check asserts and
+     what a restored `perspective()` fails.
 
-     THE CAMERA IS A SHARE OF THE SLAB'S WIDTH rather than a length, because a
-     perspective stated in pixels is a different camera at every window: the
-     phone is 220px across at the short corner of the band and 478px at 2560, and
-     a fixed 600px eye would be standing three times closer to one than to the
-     other. Small is a wide lens standing close; large flattens towards a
-     parallel projection, which #180 is the Variant for. */
-  --eater-map-camera: 2.3;
+     NEITHER IS SPENT BY THE LIFT. The Slab stands at this attitude the whole
+     time the reader is on the Section, so it is the same solid, at the same size,
+     at both ends of the Lift and at both ends of the band. That inverts part of
+     #177: the flat screenshot is no longer a state the drawing passes through,
+     and `--eater-map-lift: 0` is now the Cards down on a plane that is already
+     turned rather than the whole composition lying flat.
 
-  /* How far the camera pulls back as the drawing comes apart, as a share of the
-     Slab's width. The pieces climb towards the lens and grow; this is what keeps
-     the whole of the Exploded View inside the box the flat screenshot fitted,
-     without drawing the Slab any smaller than #176 drew it. 0 is a camera that
-     stands still and a drawing that outgrows its stage. */
-  --eater-map-dolly: 0.34;
+     52 AND 33 ARE MEASURED. The reference's own map edge solves to 59deg/38deg;
+     52 is that stood up toward the reader, which is the correction the author
+     asked for, and #187 signed both off. Almost isometric, foot toward the
+     bottom-left and head toward the right. */
+  --eater-map-tilt: 52deg;
+  --eater-map-swing: 33deg;
 
-  /* The plane's own attitude, and the whole of it: `tilt` tips the top of the
-     phone away from the reader, `swing` turns it on its own face. There is no
-     third angle and no per-element rotation anywhere — one camera (#177). */
-  --eater-map-tilt: 26deg;
-  --eater-map-swing: -12deg;
+  /* ---- the Lift: three Cards off the face of a Slab that does not move ------
+     What is left in the playhead once the plane is out of it: each Card's depth,
+     each Card's slide along the plane, and the glass. `--eater-map-lift` runs 0
+     with the Cards down on the picture to 1 with them raised, so a Token set to 0
+     does not turn a piece of the drawing off, it takes that piece out of the Lift
+     and leaves it where the Cards started.
 
-  /* THE LIFT'S DISTANCE: how far off the Slab the topmost Card comes, as a share
+     THE LIFT'S DISTANCE: how far off the Slab the topmost Card comes, as a share
      of the Slab's width. The other two are shares of this. */
-  --eater-map-rise: 0.42;
-
-  /* THE GAP BETWEEN THE CARDS: how far the stack draws apart ALONG the plane as
-     it climbs, as a share of the Slab's width, spent half up and half down about
-     the middle of the stack. 0 leaves the three Cards climbing on one line of
-     sight. Named for the Cards because --eater-map-gap is already the seam
-     between the Rail's column and the composition beside it. */
-  --eater-map-card-gap: 0.18;
+  --eater-map-rise: 0.3;
 
   /* Each Card's own depth, as a share of the rise — which is to say its place in
      the stack. These are the app's own stacking order: the detail panel is a
      sheet over the map, the lines popup floats above it, and the search bar is
-     the one thing always on top. */
+     the one thing always on top.
+
+     THE THREE RISE TOGETHER, AND THAT IS WHAT THESE NUMBERS ARE FOR. They were
+     1 / 0.62 / 0.26, which is a quarter of the rise against the whole of it —
+     three separate objects hanging at three heights rather than one object taken
+     apart. 1 / 0.94 / 0.88 keeps the app's order and reads as one exploded
+     assembly; the `eater-map` Check asserts that the three screen-space rises
+     agree within a stated tolerance AND that they are still in this order, so
+     setting them equal fails it as surely as spreading them out again does. */
   --eater-map-card-search-depth: 1;
-  --eater-map-card-lines-depth: 0.62;
-  --eater-map-card-details-depth: 0.26;
+  --eater-map-card-lines-depth: 0.94;
+  --eater-map-card-details-depth: 0.88;
+
+  /* WHERE EACH CARD SLIDES TO as it climbs, along the plane, as a share of the
+     Slab's WIDTH — the same unit as the placement above, which is the pairing
+     #189 fixed. Spent by the Lift like the depth, so at 0 the Card is where the
+     app put it and at 1 it is where the drawing wants it.
+
+     PER CARD, AND NOT ONE GAP SPENT BY THE DEPTH. `--eater-map-card-gap` used to
+     draw the stack apart by `(0.5 - depth)`, which was a real device while the
+     depths were far apart and is a no-op now they are within 12% of each other:
+     it would slide all three the same way by the same amount, which is a
+     translation of the drawing rather than a gap in it. Two numbers per Card say
+     where that Card goes, which is what the reference actually shows, and none of
+     them is larger than 0.11. */
+  --eater-map-card-search-slide-x: -0.02;
+  --eater-map-card-search-slide-y: -0.11;
+
+  --eater-map-card-lines-slide-x: -0.045;
+  --eater-map-card-lines-slide-y: -0.02;
+
+  --eater-map-card-details-slide-x: -0.1;
+  --eater-map-card-details-slide-y: 0.075;
 
   /* WHAT THE GLASS FILLS TO once it comes off the map. A backdrop filter has
      nothing to sample the moment the plane is tilted, so the app's translucent

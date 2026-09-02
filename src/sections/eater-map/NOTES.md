@@ -2,12 +2,21 @@
 
 The Portfolio's third Section and its third resting place: the Showcase for the
 Eater restaurant map. It is a text composition with an **Exploded View** beside
-it — the captured Slab tilted under one camera, and the Eater app's own three
-surfaces standing off its face, with a thin rule joining each numbered point to
-the part it names, so that what a reader sees is the app taken to pieces and made
-out of a picture and real text (#176, #177, #178) — and, below the band, the same
-drawing lying flat and full-bleed with the four features as a list under it
-(#179). #171 is the whole Showcase and two tickets under it are still open.
+it — the captured Slab standing almost isometric in a parallel projection, with
+real thickness, and the Eater app's own three surfaces rising off its face
+together, with a thin rule joining each numbered point to the part it names, so
+that what a reader sees is the app taken to pieces and made out of a picture and
+real text (#176, #177, #178, #189) — and, below the band, the same drawing lying
+flat and full-bleed with the four features as a list under it (#179). #187 is the
+rebuild to the reference and several tickets under it are still open.
+
+**THE SLAB DOES NOT MOVE, AND THAT IS THE INVARIANT TO KNOW FIRST (#189).** Its
+attitude, its projection and its thickness are constants: the same solid, at the
+same size, with the same projected corners at both ends of the Lift and at both
+ends of the band. Only the Cards move. What that inverts is stated where the Lift
+is, below — the flat screenshot #176 built is no longer a state this drawing
+passes through, and half of what #177 spent the playhead on is spent by nothing
+now.
 
 ## What is here and what is not
 
@@ -23,13 +32,27 @@ stage is one boundary with two implementations behind it is what makes that
 judgement cost a stage and not a Section.
 
 **The markup rests in the RAISED state, and that inverts the obvious build.** The
-Lift animates from flat *towards* raised, so the finished Exploded View is what a
+Lift animates from down *towards* raised, so the finished Exploded View is what a
 reader whose scripts never arrived and a reader who asked for reduced motion each
-get for nothing, and nothing in this Section is contingent on a script. The flat
-state is not a step on the way here and not a fallback: it is `--eater-map-lift: 0`,
-the frame the motion begins from, and it is still exactly the screenshot #176
-built — the same Slab at the same size with the Cards at the same scale, to the
-pixel, which is what the `eater-map` Check reads.
+get for nothing, and almost nothing in this Section is contingent on a script.
+
+**WHAT `--eater-map-lift: 0` IS NOW, AND WHAT IT STOPPED BEING.** It used to be
+exactly the screenshot #176 built — the same Slab at the same size with the Cards
+at the same scale, to the pixel — because every angle and every depth in the
+composition was a term of the playhead. #189 took the plane out of it. So the
+Lift's near end is the three Cards lying on a map that is ALREADY turned, and the
+flat screenshot is not a frame the drawing has any more. The `eater-map` Check
+reads the scale with the projection lifted off the plane for one read instead,
+which is the only honest way to ask a rotated Card how wide it is drawn.
+
+**THE ONE THING A SCRIPT IS STILL NEEDED FOR IS THE SLAB'S EDGE**, and it is
+named here rather than buried in the stage. The thickness is twenty-four elements
+a stylesheet cannot conjure, and which of the two renderers builds them is #182 —
+so a reader whose scripts never arrived gets the Exploded View at its full
+attitude with the Cards raised, and a Slab with no depth. That is the same trade
+the leader lines make (#178) and it is affordable for the same reason: what is
+lost is a drawing convention rather than a claim. It is also the one part of this
+Section a template could not hold on behalf of both stages.
 
 `timeline.ts` therefore exports the Lift, and the file used to say why it exported
 nothing. Two things it recorded are worth keeping, because both are still true of
@@ -96,14 +119,33 @@ unitless ratio of two lengths in a stylesheet. The component uses it, and
 1440x900 the fallback is 0.72 and the derived answer is 0.7185 — a third of a per
 cent apart, so a Check run only at DESK passes with the derivation deleted.
 Measured: at 1100x700 the derived answer is 0.5588 and the constant is still
-0.72. Both mutations below have been made on purpose and both were caught.
+0.72.
+
+**AND IT IS THE REASON THAT CHECK LIFTS THE PROJECTION FOR ONE READ (#189).** A
+Card's `getBoundingClientRect` is the axis-aligned bounding box of a quad
+projected under the plane's rotation, which is not the Card's drawn width and
+never was — the two agreed only while the Lift's near end was an untilted
+screenshot. The Slab stands at its attitude at every moment now, so there is no
+frame where the rect answers the question. The Check takes the plane's
+`transform` off, and its `transform-style` with it, for the length of one read
+and puts both straight back; what is left is the Card's own `scale()`, and its
+rect over its declared width IS the scale the composition applied. The
+alternative — reading `--eater-map-app-scale` off the element — is asking the
+composition to confirm its own arithmetic.
+
+Every mutation below has been made on purpose and every one was caught.
 
 | mutation | what failed |
 | --- | --- |
 | the derived scale replaced by the constant | all three Cards, at 1100x700 **only** |
 | `tabindex="-1"` dropped from `cards.ts` | 13 focusable elements, at both windows |
 | `role="presentation"` dropped from `cards.ts` | 1 heading, at both windows |
-| the tilt, the swing, the dolly, the rise and the card gap all set to 0 | all three Cards in the same place at both ends of the Lift, at both windows |
+| the rise and the three slides all set to 0 | all three Cards in the same place at both ends of the Lift, at both windows |
+| the plane's attitude set to 0 | all three Cards rising 0px off the plane, and the stack with no order, at both windows — a depth under a parallel projection reaches the screen only through the attitude |
+| the three Card depths set equal | the search Card and the lines Card both rising 66.75px, so the stack has lost its order, at both windows |
+| the three depths spread back to 1 / 0.62 / 0.26 | the three rises 74% apart against 20% allowed — 17.36 / 41.39 / 66.75px at 1440x900 |
+| `perspective()` put back on the plane | two identical 40px probes drawn 41.79x20.87 at the Slab's head and 89.84x79.62 at its foot, 73.8% apart, at both windows — **and the stack's order gone too**, because a converging camera makes a rise a function of where the Card is as well as of how deep it is |
+| the attitude multiplied by `--eater-map-lift` again | the Slab drawn 282.36x612.16 at one end of the Lift and 570.21x410.76 at the other, 287.85px apart, at both windows |
 | `opacity: 0` on `.eater-map__still` | one of the Section's own boxes invisible, at both ends and at both windows |
 | `arrived()`'s first comparison back to `>=` | the reader left part way up and the Lift went on to 1, 3 runs out of 3 |
 | `transform: none` and the two `transform-style: flat` dropped from the collapse | the plane still projecting, at 390x844 |
@@ -113,7 +155,7 @@ Measured: at 1100x700 the derived answer is 0.5588 and the constant is still
 | the points put back before the stage in the markup | the features above the picture, and the document's order disagreeing with the screen's |
 | the leader lines drawn once instead of on every tick of the Lift | all four rules off their corners half way up and raised, at both windows — and NOT at flat |
 | the rules drawn to the Card's own rect instead of to the anchor | the details rule 263px out at flat, and all four out at the other two moments |
-| the Slab's anchor moved out of the plane and onto the Slab | the slab's anchor in the same place at both ends of the Lift, at both windows |
+| an anchor moved out of the plane and onto the Slab | that anchor not inside `.eater-map__plane`, at both windows. **This used to be geometry and had to stop being** — it was caught by the anchor standing in one place at both ends of the Lift, and the Slab's own anchor stands still legitimately now, because the Slab does. The movement half is kept for the three Cards, which are what the Lift carries |
 | `display: none` dropped from the overlay's collapse rule | the rules still drawn at 390x844 |
 | a second point given `part: 'search'` | the BUILD, on both refinements at once — no point names the slab, and two name the search |
 
@@ -142,11 +184,25 @@ anyway — see the grouping rule below.
 
 ## The Lift, and the four boxes it needs
 
-The Exploded View is one camera, one rotation, and three depths off the plane it
-rotates. `--eater-map-lift` runs 0 at the flat screenshot to 1 at the finished
-drawing, and every angle and every depth in the composition is that number times a
-Token, so progress 0 is `translateZ(0) rotate(0) rotate(0)` and every Card's depth
-is 0 — the screenshot, unchanged.
+The Exploded View is one projection, one rotation, and three depths off the plane
+it rotates. `--eater-map-lift` runs 0 with the Cards down on the map to 1 at the
+finished drawing, and **what it multiplies is the Cards and nothing else** — each
+Card's depth, each Card's slide along the plane, and the glass. The plane's own
+attitude is a constant it does not touch (#189), so progress 0 is three Cards
+lying on a Slab that is already standing where it will stand.
+
+**WHAT #189 TOOK OUT OF THE PLAYHEAD, and why each thing left rather than being
+set to a constant.** The tilt and the swing stopped being terms of it because the
+Slab must not change under the reader; the CAMERA and the DOLLY left the Section
+altogether, because the projection is now PARALLEL and a parallel projection has
+neither. `--eater-map-camera` was an eye distance and there is no eye;
+`--eater-map-dolly` existed to pay for pieces growing as they climbed towards the
+lens, and under a parallel projection nothing grows, so there is nothing to pay
+for. Both are gone from `tokens.css` rather than pinned at a value that does
+nothing — a Token the Editor draws a control for and the page ignores is worse
+than an absent one. The `projection-perspective` Variant states its own camera,
+which is what a Variant arguing for a projection the composition does not have
+should do.
 
 **FOUR NESTED BOXES, and the fourth is forced rather than chosen.** #176 needed
 three; the reason for the extra one is two CSS rules that pull against each other
@@ -155,7 +211,8 @@ and are both silent when broken.
 ```
 .eater-map__stage      the grid area, centring what is in it
   .eater-map__slab     the SIZE, and the container every length on the plane is a share of
-    .eater-map__plane  the CAMERA and the one rotation — perspective(), translateZ, rotateX, rotateZ
+    .eater-map__plane  the PROJECTION and the one rotation — rotateX, rotateZ, and no perspective()
+      .eater-map__slice x24  the Slab's thickness, built by the stage
       .eater-map__still    the picture
       .eater-map__cards    the app's stylesheet host, preserve-3d
         .eater-map__card   one depth off the plane's surface
@@ -170,41 +227,65 @@ the element that holds the 3D space. There is no error and no warning: the Cards
 simply lie flat on the map for ever, at the right scale, looking like a screenshot.
 
 **Rule two: an element is not its own container.** The Frame's trap from the
-Projects Panel, and it is what stops the camera being written on the Slab: a `cqw`
-on the Slab's own rule resolves against the viewport, so the perspective would be
-a different camera at every window and at none of them the one that was chosen.
+Projects Panel: a `cqw` on the Slab's own rule resolves against the viewport, so
+every length that is a share of the Slab has to be written a box further in. That
+is what made the fourth box necessary while there was a camera to write, and it is
+still what puts every `cqw` in the component on a descendant.
 
-Between them those two say the camera cannot be the `perspective` PROPERTY on the
-Slab and cannot be a plain length either. The answer is the `perspective()`
-**transform function** on the plane, which projects that element's own rotation and
-its children's depths together, and which may be written in `cqw` because the plane
-is a descendant of the container rather than the container itself. That is the
-whole of why there are four boxes and not three.
+**THE FOURTH BOX SURVIVED THE CAMERA LEAVING (#189), and rule one is why.** The
+camera used to be the reason for it: the `perspective` PROPERTY projects an
+element's CHILDREN, so it would have had to sit on the Slab — which is
+`container-type`, which is `contain: layout`, which is grouping, which would have
+forced the plane's `preserve-3d` back to `flat`. There is no `perspective()` any
+more, and the rotation alone still cannot go on the Slab for exactly the same
+reason: the element that holds the 3D space cannot be the container. So four boxes
+and not three, on rule one now rather than on the camera.
 
-**THE DOLLY IS PART OF THE CAMERA AND NOT A SIZE.** The Cards climb towards the
-lens, so they grow, and a drawing whose pieces all grow outruns the box the
-screenshot fitted — the detail panel is the biggest surface and the first to run
-off the foot of the stage. `--eater-map-dolly` pushes the whole plane away from
-the lens as the Lift runs: the map recedes, the topmost Card stays about life size,
-and **the flat frame keeps the size #176 gave it**, which shrinking the Slab would
-not have done. It is written BEFORE the two rotations in the transform list, so it
-travels along the view's own axis rather than along the tilted plane's normal.
+**THE THICKNESS IS A PARALLEL PROJECTION'S ONLY REAL DEPTH CUE, and #189 turned it
+on for that reason as much as for the object.** Nothing converges, so nothing
+about the drawing says "this edge is nearer" except the edge itself: the Slab is
+3% of its own width deep, with a 2% fillet, and at 52 degrees of tilt the bottom
+wall projects to `0.03 x sin 52` of the Slab's width — 6.7px at 1440x900 and
+11.3px at 2560x1440. That is a real band rather than the 2.9px the shallow
+converging camera left, which is what made every earlier attempt at an edge read
+as fake. The stage builds it; `tokens.css` carries both shares.
 
-**Each Card's depth is a share of the rise, and its drift a share of the gap.**
-`--eater-map-rise` is how far the topmost Card comes off the Slab, as a share of
-the Slab's width; `--eater-map-card-<name>-depth` is each Card's place in that
-stack, in the app's own order — the detail panel is a sheet over the map, the lines
-popup floats above it, and the search bar is always on top. `--eater-map-card-gap`
-draws the stack apart ALONG the plane as it climbs, half up and half down about the
-middle of the stack, so the pieces do not all rise on one line of sight. **It is
-named for the Cards because `--eater-map-gap` was already taken** — it is the seam
-between the Rail's column and the composition, and the collision was silent: the
-grid's `column-gap` took a unitless number, went invalid, and the Rail lost its
-gutter while the Exploded View looked right.
+**Each Card's depth is a share of the rise, and its slide is two Tokens of its
+own.** `--eater-map-rise` is how far the topmost Card comes off the Slab, as a
+share of the Slab's width; `--eater-map-card-<name>-depth` is each Card's place in
+that stack, in the app's own order — the detail panel is a sheet over the map, the
+lines popup floats above it, and the search bar is always on top.
 
-The Card's transform is `translate3d(0, drift, depth) scale(app-scale)`, and **the
-order is the arithmetic**: a transform list applies right to left, so the scale is
-the Card's own and the translate is in the PLANE's units. Written the other way
+**THE THREE DEPTHS ARE 1 / 0.94 / 0.88 AND THAT IS THE COMPOSITION'S MEANING.**
+They were 1 / 0.62 / 0.26, which is a quarter of the rise against the whole of it,
+and #187's complaint about it was that the Cards "read as three separate objects
+at three different heights rather than one stack coming apart". Under a parallel
+projection a Card's screen-space rise is exactly proportional to its depth, so the
+three now agree within 12% and the `eater-map` Check holds them to 20% — and holds
+them to their ORDER as well, because three equal depths satisfy a tolerance
+perfectly and draw one raised plate.
+
+**`--eater-map-card-gap` IS GONE AND EACH CARD HAS `slide-x` AND `slide-y`
+INSTEAD.** The gap drew the stack apart along the plane by `(0.5 - depth)`, which
+was a real device while the depths were far apart: it separated pieces that would
+otherwise have climbed on one line of sight. With the depths within 12% of each
+other it slides all three the same way by the same amount, which is a translation
+of the drawing rather than a gap in it. Two numbers per Card say where that Card
+goes, which is what the reference shows, and none of the six is larger than 0.11.
+
+**AND BOTH OF A CARD'S PAIRS ARE IN THE SAME UNIT NOW, WHICH THEY WERE NOT.** A
+percentage `left` resolves against the containing block's WIDTH and a percentage
+`top` against its HEIGHT, so `--eater-map-card-<name>-y` was a share of a box 2.17
+times as tall as it is wide while the slide beside it was a share of the width.
+Two Tokens that read as a pair, in two units, moving a Card 2.17 times as far one
+way as the other for the same drag — which is the Editor's problem as much as the
+stylesheet's, since the control cannot say so. The `top` is `100cqw` now and the
+three `y` values were converted with it, which is why `details-y` is 1.236: 57% of
+the way down a phone is 1.24 phone-widths.
+
+The Card's transform is `translate3d(slide-x, slide-y, depth) scale(app-scale)`,
+and **the order is the arithmetic**: a transform list applies right to left, so the
+scale is the Card's own and the translate is in the PLANE's units. Written the other way
 round the app's own scale would multiply the depth and each Card would rise by a
 different amount for the same Token.
 
@@ -352,11 +433,15 @@ the corner two Tokens name. **A zero-sized box projects to a POINT**, so its
 The obvious alternative is to read the Card's own rect, and it is wrong in a way
 that looks right: `getBoundingClientRect()` on a rotated element gives the
 AXIS-ALIGNED BOUNDING BOX of the projected quad, and that box's corners are
-nowhere on the Card at all. Measured, with the rules drawn to the box's
-bottom-left instead of to the anchor: right at the flat frame for three of the
-four, 263px out for the fourth, and out by 3 to 71px for every one of them at the
-other two moments. **The flat frame is the one a still is most likely to be taken
-at**, which is why the Check reads three moments and not two.
+nowhere on the Card at all. Measured while the Lift's near end was still an
+untilted screenshot, with the rules drawn to the box's bottom-left instead of to
+the anchor: right at that frame for three of the four, 263px out for the fourth,
+and out by 3 to 71px for every one of them at the other two moments. Since #189
+there is no untilted frame, so the near end is wrong for all four as well — but
+the Check still reads three moments and not two, because a rule computed ONCE is
+right wherever it was computed and wrong everywhere else, and one moment cannot
+tell the two apart. **That same fact is why the `eater-map` Check has to lift the
+projection to read a Card's SCALE**; the scale section above has it.
 
 The three Cards' anchors sit inside their own `.eater-map__card`, which meant the
 Card's markup needed a wrapper to arrive in — `set:html` replaces an element's
@@ -417,8 +502,8 @@ whether they are drawn.
 ## The collapse below the band
 
 An Exploded View is a drawing fitted to a wide window. It spends width on a
-camera, on the distance the pieces draw apart along the plane, and on a stage that
-is a composition row's remainder — and below 1100px a column has none of the
+projection, on the distance the pieces draw apart along the plane, and on a stage
+that is a composition row's remainder — and below 1100px a column has none of the
 three to give. So the drawing puts itself away: **the Slab lies flat and runs to
 both edges of the window, and the four features are an ordinary list under it**
 (#179).
@@ -426,8 +511,18 @@ both edges of the window, and the four features are an ordinary list under it**
 **It cost almost nothing to build, and that is #177's inversion paying out.** The
 markup already rests in the finished composition, so the collapse is rules on the
 resting state and not a second arrangement a script assembles: `--eater-map-lift`
-back to 0, `transform: none` on the plane, a negative margin on the stage, and a
-Slab given the whole of it.
+back to 0, `--eater-map-solid` to 0, `transform: none` on the plane, a negative
+margin on the stage, and a Slab given the whole of it.
+
+**`--eater-map-solid` IS THE FLAG #189 ADDED, AND IT IS THERE FOR THE SAME REASON
+`--eater-map-collapsed` IS.** The Slab's depth stopped being a term of the
+playhead, so `--eater-map-lift: 0` no longer takes it away — and an edge is
+something an Exploded View has, not something a full-bleed picture at the top of a
+column has. The stage multiplies its depth and its radius by this, so the whole
+solid closes up to the flat picture down here and opens again on a resize back
+into the band without anything being re-mounted. It is declared in the component's
+`<style>` and never in `tokens.css`, because it is a regime and not a number the
+author chooses.
 
 **ONE COMPOSITION AND NOT THREE, AND THAT IS THE ASSERTION RATHER THAN THE
 DESCRIPTION.** Three readers meet it — the narrow window, the reader who asked for
@@ -458,14 +553,16 @@ this box does not — the trap `projects-panel` paid for, and worse here, becaus
 this box is CENTRED in what it overflows and hangs half the error out of each
 edge. Measured with the mutation in: 390px wide at x=27.64 in a 375px document.
 
-**`transform: none` IS SAID OUTRIGHT AND NOT LEFT TO THE PLAYHEAD.** At
-`--eater-map-lift: 0` every term of the camera is zero, and that is not the same
-as no camera: `perspective()` with nothing to project still computes to a
-matrix3d, and the Cards still stand in a `preserve-3d` rendering context. It
-matters for what else reads the drawing rather than for what is on screen — the
-leader lines, a Variant, a Check — all of which would otherwise be interrogating
-a projection that happens to be flat. And the playhead is still set to 0 beside it,
-because it is spent on the glass as well as on the geometry.
+**`transform: none` WAS BELT AND BRACES AND IS NOW THE ONLY THING SAYING SO.**
+While every angle was a term of `--eater-map-lift`, the 0 above already flattened
+the plane and this said it outright for the things that READ the drawing rather
+than look at it: `perspective()` with nothing to project still computes to a
+matrix3d, and the Cards still stand in a `preserve-3d` rendering context, so the
+leader lines, a Variant and a Check would each have been interrogating a
+projection that happened to be flat. Since #189 the attitude is a constant the
+playhead does not touch, so **without these two declarations a column below the
+band would carry a Slab tilted 52 degrees**. The playhead is still set to 0 beside
+them, because it is spent on the Cards' glass as well as on their geometry.
 
 **THE LIFT IS TOLD BY THE STYLESHEET, THROUGH `--eater-map-collapsed`.** The
 module has to know there is nothing to lift, and the obvious way is a
@@ -514,6 +611,16 @@ which is the shipped composition, and `stage-webgl.ts`, which is the alternative
 #181 built so that the renderer is chosen by **looking** rather than by argument.
 #182 is the choosing, and **the loser goes out with its dependency** — a rejected
 direction is kept as prose here, never as six hundred kilobytes in the lockfile.
+
+**THE EDGE IS THE SHIPPED PAGE'S NOW (#189).** `chosenEdge` defaulted to `flat`
+while the thickness was a comparison nothing shipped, so the Portfolio drew a
+picture with no depth at all and three Tokens the Editor offered the author moved
+nothing. It defaults to `thick`, and `flat` is what the collapse reaches through
+`--eater-map-solid` rather than through this name. **#182 IS NOT ANSWERED BY THAT
+AND WAS NOT MEANT TO BE**: what changed is that the page asks for an edge, not
+which renderer draws it. `--eater-map-slab-thickness` is 0.03 — it was 0.1, which
+is a tenth of a phone's width and a paving slab — and the radius is 0.02, both
+chosen by looking on the sheet.
 
 **"Stage" means two things in this Section, and both are the tickets' own word.**
 `.eater-map__stage` is the grid area the drawing stands in — row two's remainder,
@@ -569,35 +676,38 @@ allowlist gained `three` beside `gsap` and `astro`, with the same note attached 
 it is the runtime of an alternative that is being judged, and it comes out when
 the judgement lands.
 
-### The camera is the same camera, arithmetically
+### The camera is the same camera, arithmetically, and it is orthographic
 
-`EaterMap.astro` writes `perspective(P) translateZ(-D) rotateX(T) rotateZ(S)`,
-which is a camera standing P in front of the plane's own centre. Matching it in
-three.js is three facts and no eyeballing:
+`EaterMap.astro` writes `rotateX(T) rotateZ(S)` and nothing else — no
+`perspective()`, so nothing converges (#189). Matching that in three.js is three
+facts and no eyeballing:
 
 - **Both angles cross negated.** CSS's axes are x right, y **down**, z toward the
   reader; three's are x right, y **up**, z toward the reader.
 - **The order needs no thought.** A CSS transform list applies right to left, so
   the swing happens first; three's default Euler order composes `Rx·Ry·Rz`, which
   is the same thing said the other way round.
-- **The projection is matched by the field of view**, never by scaling afterwards:
-  `fov = 2·atan(canvas height / 2P)` puts the plane at z = 0 on the canvas one CSS
-  pixel to one CSS pixel.
+- **The projection is an `OrthographicCamera` whose frustum is the canvas in CSS
+  pixels**, which is one CSS pixel to one CSS pixel with nothing to correct
+  afterwards. It was a `PerspectiveCamera` with `fov = 2·atan(canvas height / 2P)`
+  matched to the CSS camera's own distance, and **a very long lens is not this** —
+  that is the same fact the `projection-isometric` Variant exists to show, and it
+  is why the field-of-view match had to be replaced rather than stretched.
 
-Measured rather than asserted: at 1440x900, progress 0, the drawn composition is
-282px wide under the DOM stage and 284px under the WebGL one — one pixel of
-antialiasing at each edge, and nothing else. The Cards, which are still on the CSS
-plane, land on the drawn map because the drawn map is where the CSS plane says it
-is.
+Measured rather than asserted: the two stages draw the map, the outline and the
+edge band in the same place, within a pixel of antialiasing at each edge. The
+Cards, which are still on the CSS plane, land on the drawn map because the drawn
+map is where the CSS plane says it is.
 
 **The canvas is outside the rotation and bigger than the Slab.** A `<canvas>`
 inside `.eater-map__plane` would be turned by the CSS rotation and then again by
 its own, so it is a sibling — and a tilted Slab with a thickness reaches outside
 the box the flat picture fitted, so the canvas is grown to the extent the
 projection actually needs. That extent is **computed and not guessed**: the eight
-corners are projected at five moments of the Lift and the union is taken, because
-the extent is not monotonic in the progress — the plane turns while the camera
-pulls back.
+corners are projected and the box is taken from them. It used to be the union over
+five moments of the Lift, because the extent was not monotonic in the progress
+while the plane turned and the camera pulled back; one attitude and no camera is
+one box.
 
 ### What the comparison found
 
@@ -607,35 +717,52 @@ pnpm stages
 
 renders it into `design/stages/index.html` — two stages crossed with what each can
 make the Slab's edge out of, in both themes, at both ends of the band, shot at the
-raised end of the Lift in the real page. `--progress 0` renders the flat frame,
-where the two stages should agree exactly, and does.
+raised end of the Lift in the real page. `--progress 0` renders the Lift's near
+end, which since #189 is the same Slab with the Cards down: the two stages should
+agree exactly at both, and do.
 
 |         | flat                 | thick                       | wrapped |
 | ------- | -------------------- | --------------------------- | ------- |
-| `dom`   | the shipped picture  | 24 sliced layers            | —       |
+| `dom`   | a picture with no depth | 24 sliced layers — **the shipped page** | — |
 | `webgl` | one textured quad    | an extrusion, edge in paint | the captured pixels running over the fillet |
 
-**The empty cell is the result.** DOM has no extrusion, so a thickness in it is
-the solid **sliced**: each slice one flat element standing where that section of
-the solid stands, inset and rounded by exactly as much as the fillet is at that
-depth. That is DOM's best and it is genuinely good — it gets the silhouette, the
-rounded outline and a shaded fillet, and the sheet is worth nothing if the loser
-is not trying. Where it stops is that **a slice is one element and an element has
-one background**: the fillet cannot be brighter on the side facing the light, and
-it cannot carry the picture. Six faces would not help and neither would six
-hundred slices.
+**The empty cell is a result and it is NOT #182's answer**, which is the one thing
+about this table that has been got wrong. DOM has no extrusion, so a thickness in
+it is the solid **sliced**: each slice one flat element standing where that section
+of the solid stands, inset and rounded by exactly as much as the fillet is at that
+depth. Where it stops is that **a slice is one element and an element has one
+background**: the fillet cannot be brighter on the side facing the light, and it
+cannot carry the picture. Six faces would not help and neither would six hundred
+slices.
 
-**The finding underneath the finding, which was measured and is easy to get
-backwards: at this Section's own camera the side WALL is nearly edge-on, so a
-thickness shows up almost entirely as the FILLET.** At 2560x1440 the Slab is 478
-wide, the tilt is 26° and the eye stands at 2.3 Slab-widths; the bottom edge is
-466px below centre, which subtends 23° — three degrees off the tilt. Projected,
-the back of the Slab lands **2.9px** below the front. So the visible depth is not
-the wall, it is the band of front face the fillet takes over, and the whole
-comparison is a comparison of what can be drawn on that band. The first DOM fake
-written here had no fillet at all — a stack of full-size layers behind the picture
-— and changed 754 pixels out of 1.8 million against the flat frame, which read as
-a broken stage and was an honest rendering of a straw man.
+**WHAT DOES NOT FOLLOW FROM THAT IS THE RENDERER.** #189 was specified on the
+grounds that DOM cannot run captured pixels round a fillet, so the WebGL stage was
+decided — and the second half never followed from the first. A slice is a FULL
+PERIMETER, so its corners are the same element as its sides: the silhouette and
+the rounded outline are right, and the corner is closed. What is left to judge is
+narrower and is a thing to look at rather than argue about — **whether a faceted
+24-slice fillet is distinguishable from a swept one at the size the Slab is
+actually drawn**. That is judged on the sheet, on its own merits, and #182 is open.
+
+**FOUR HINGED WALLS IS THE BUILD TO AVOID, and it was #189's own prescription
+before it was corrected.** A wall hinged along one edge of a rounded rectangle has
+to be inset by the corner radius at BOTH ends, so four of them leave four empty
+notches — 17.1 x 11.4px on a 380px Slab, which is the author's "the corners are
+missing". The slice stack has nothing to leave out.
+
+**The finding underneath the finding, and #189 moved it.** It used to read: at this
+Section's own camera the side WALL is nearly edge-on, so a thickness shows up
+almost entirely as the FILLET — at 2560x1440 the Slab was 478 wide, the tilt 26°
+and the eye at 2.3 Slab-widths, the bottom edge subtended 23°, and the back of the
+Slab landed **2.9px** below the front. **That is why every earlier attempt at an
+edge looked fake, and it is no longer the arithmetic.** The projection is parallel
+and the tilt is 52°, so the bottom wall projects to `thickness x sin 52` of the
+Slab's width — 11.3px at 2560x1440 and 6.7px at 1440x900, with no dependence on
+where the edge stands in the frame. There is a real wall to draw now as well as a
+fillet, which is what #197 has to shade. The first DOM fake written here had no
+fillet at all — a stack of full-size layers behind the picture — and changed 754
+pixels out of 1.8 million against the flat frame, which read as a broken stage and
+was an honest rendering of a straw man.
 
 **How the pixels wrap, since that is the cell nothing else can fill.** The
 fillet's *shape* puts the ring at plan distance `r·sin φ` and depth `−r(1 − cos φ)`;
@@ -651,16 +778,19 @@ argument about one thing.
 ### Three things about the WebGL stage that are decisions
 
 **The topology is fixed and the positions are rewritten in place.** The thickness
-is spent by the Lift, so it moves every frame; only the index buffer says how the
-surface is joined up, and that is a function of two counts and of nothing the
-composition can change. So the buffers are allocated once and refilled.
+is a Token, so a drag in the Editor moves it every frame of the drag; only the
+index buffer says how the surface is joined up, and that is a function of two
+counts and of nothing the composition can change. So the buffers are allocated
+once and refilled.
 
-**A frame loop, not a subscription.** The drawing turns on `--eater-map-lift`, on
-eight Tokens, on the Slab's box and on the page's theme — and a custom property is
-the one thing on that list nothing will tell you about. There is no event and no
-observer. So the frame reads them, and a signature of every input is what stops a
-page that is not moving from drawing at all. It also means a Token dragged in the
-Editor moves this drawing on the next frame exactly as it moves the DOM stage's.
+**A frame loop, not a subscription.** The drawing turns on four Tokens, on
+`--eater-map-solid`, on the Slab's box and on the page's theme — and a custom
+property is the one thing on that list nothing will tell you about. There is no
+event and no observer. So the frame reads them, and a signature of every input is
+what stops a page that is not moving from drawing at all. It also means a Token
+dragged in the Editor moves this drawing on the next frame exactly as it moves the
+DOM stage's. **`--eater-map-lift` is not on that list any more (#189)**: the Slab
+does not move, and the Cards were never this stage's.
 
 **`Color.setStyle` is never called.** It warns to the console on a syntax it does
 not know, and the `console` Check fails a page that logs — so a Variant setting
@@ -861,48 +991,54 @@ every Section after the first one, as a relationship rather than a list; the
 page turn reads its ports off the cascade and has always generalised. Neither
 file learned this Section's name.
 
-## The Variants, and the one that cannot be seen at the sheet's default moment
+## The Variants, and the group #189 moved the ground under
 
 Eight, in three groups, and `variants.css` carries the argument for each. Two are
 the text composition's own — where the four points stand, and how loud the ladder
 is. The other six are the two questions #180 asked to be judged by eye rather than
 described: the **projection**, and the **subheading's face**.
 
-**The projection group is a comparison of the RAISED drawing, and the sheet shoots
-progress 0 by default.** Progress 0 is the flat screenshot — the plane lies flat,
-every Card's depth is 0 — and every projection agrees about what that looks like,
-so at the default moment the whole group comes back *identical* to `unselected` or
-a hair off it and says nothing. It has to be asked for:
+**The projection group used to be invisible at the sheet's default moment and is
+not any more.** `pnpm variants` shoots at `--progress 0`, and progress 0 was the
+flat screenshot — the plane lying flat, every Card's depth at 0, every projection
+agreeing about what that looks like — so the whole group came back marked
+*identical* and the strip said nothing. Since #189 the attitude is not a term of
+the Lift, so the Slab stands at it at every moment and the default shot compares
+the projections properly. The raised moment is still worth asking for, because it
+is where the Cards are off the map:
 
 ```bash
 pnpm build
 pnpm variants -- --sections eater-map --progress 1
 ```
 
-That is deliberate rather than a limitation: every angle a Variant sets is still
-spent by `--eater-map-lift`, exactly as the composition's are, so a Variant changes
-where the Lift **arrives** and never where it starts. One that broke that would be
-arguing about two things at once.
+**NO ANGLE IN THE GROUP IS SPENT BY THE LIFT ANY MORE, and that inverted too.** It
+used to be a rule that every Variant multiplied its angles by `--eater-map-lift`,
+exactly as the composition did, so a Variant changed where the Lift ARRIVED rather
+than where it started. The composition's own attitude is a constant now, so a
+Variant that kept the multiplier would be arguing about the projection AND about
+whether the Slab moves.
 
-**`projection-perspective` is not the shipped composition restated**, and that is
-the one decision in the group worth writing down. `unselected` already stands at
-the head of every strip, so a Variant that came back byte-for-byte the same as it
-would be a card that says nothing *and* a warning that means nothing — the sheet
-counts identical renders, and that count is the cue that a Variant only exists in
-motion. So the two cameras are compared at ONE pair of angles instead: the
-canonical isometric 54.736° / -45°, once as a parallel projection and once with
-the composition's camera and dolly back. They differ in the projection and in
-nothing else, which is what makes "converging or parallel" a thing to see. The
-shipped composition — the same converging camera at the tilt and swing this Section
-chose for itself — is `unselected`, and that is the third picture in the strip.
+**WHAT THE GROUP COMPARES NOW, WHICH IS NOT WHAT IT COMPARED BEFORE.**
+`unselected` was a converging camera at this Section's own tilt and swing; it is a
+parallel projection at 52° / 33°, which is #189's own answer to the question the
+group was asking. So the strip re-cuts rather than retires: `projection-isometric`
+is the same absence of convergence at the CANONICAL angles — 54.736° / -45°, which
+is what makes the three axes foreshorten equally — so it and `unselected` differ in
+the attitude and in nothing else. `projection-perspective` is those canonical
+angles with a CONVERGING camera, so it and the isometric differ in the projection
+and in nothing else, and "converging or parallel" stays a thing to see. That
+Variant states its own camera share, because the composition no longer has one to
+read; the dolly is not restored with it, since restoring it would make one Variant
+argue about two things.
 
 **A parallel projection is a `transform` written without `perspective()`, not a
-camera pushed far away.** `--eater-map-camera` only flattens *towards* parallel and
-never reaches it, so `projection-isometric` restates the plane's whole transform
-instead. The dolly goes with the camera: nothing converges, so nothing grows as it
-climbs, and there is nothing for a camera pulling back to pay for. `preserve-3d`
-still carries each Card's depth, which with no convergence reads as an offset along
-the plane's normal — which is how an exploded view is drawn on paper.
+camera pushed far away** — a large camera only flattens *towards* it and never
+reaches it. That was the reason `projection-isometric` had to restate the plane's
+whole transform when the composition converged, and it is why it is two Tokens
+now: the projection it wanted is the one the composition has. `preserve-3d` still
+carries each Card's depth, which with no convergence reads as an offset along the
+plane's normal — which is how an exploded view is drawn on paper.
 
 **`projection-collage` restates the Card's whole transform because a rotation has
 to go INSIDE the list**, between the translate and the scale, for the same

@@ -5,7 +5,7 @@ import {
   LinearMipmapLinearFilter,
   Mesh,
   MeshBasicMaterial,
-  PerspectiveCamera,
+  OrthographicCamera,
   Scene,
   SRGBColorSpace,
   Texture,
@@ -19,10 +19,14 @@ import { edgeShade, type Stage, type StageParts } from './stage';
  *
  * WHY THERE IS A SECOND STAGE AT ALL. Not so the Portfolio can have a renderer —
  * so the renderer is chosen by LOOKING. The shipped stage is DOM and it is very
- * good, and the one thing it genuinely cannot do is a Slab whose captured pixels
- * continue over a rounded edge: DOM would need six faces to get the silhouette,
- * and six faces still cannot run a continuous texture round a fillet. That gap is
- * the finding, and `design/tools/render-stages.mjs` is where it is rendered.
+ * good: it slices the solid into stacked full-perimeter rounded rectangles, so it
+ * gets the silhouette AND the closed corner, and #189 turned that on. The one
+ * thing it cannot do is put the captured pixels on the roll, because a slice is
+ * one element with one background. **THAT GAP DOES NOT DECIDE #182**, which is
+ * what it was going to be read as: what is left to judge is whether a faceted
+ * 24-slice fillet is distinguishable from this one's swept fillet at the size the
+ * Slab is actually drawn. `design/tools/render-stages.mjs` is where it is
+ * rendered and where it is judged.
  *
  * IT DRAWS THE SLAB AND NOTHING ELSE. The Cards stay DOM, on the same CSS plane,
  * positioned by the same rules — they are the Eater app's own markup and have to
@@ -30,34 +34,33 @@ import { edgeShade, type Stage, type StageParts } from './stage';
  * `<img>` with one `<canvas>` and matches the CSS camera exactly, and everything
  * else about the composition is untouched.
  *
- * THE CAMERA IS THE SAME CAMERA, ARITHMETICALLY AND NOT BY EYE. `EaterMap.astro`
- * writes `perspective(P) translateZ(-D) rotateX(T) rotateZ(S)`, which is a camera
- * standing P in front of the plane's own centre. CSS's axes are x right, y DOWN,
- * z toward the reader; three's are x right, y UP, z toward the reader — so the two
- * rotations come across NEGATED, and the order survives because a CSS transform
- * list applies right to left and three's default Euler order 'XYZ' composes
- * Rx.Ry.Rz, which is the same "Z first". The projection is matched by choosing the
- * field of view rather than by scaling anything afterwards:
+ * THE CAMERA IS THE SAME CAMERA, ARITHMETICALLY AND NOT BY EYE, AND SINCE #189 IT
+ * IS ORTHOGRAPHIC. `EaterMap.astro` writes `rotateX(T) rotateZ(S)` and nothing
+ * else — no `perspective()`, so nothing converges — and a parallel projection in
+ * three.js is an `OrthographicCamera` whose frustum is the canvas in CSS pixels.
+ * That is the exact match rather than a very long-lensed approximation, and it is
+ * why the two stages still agree to within a pixel of antialiasing at each edge.
  *
- *     fov = 2 x atan(canvas height / 2P)
+ * CSS's axes are x right, y DOWN, z toward the reader; three's are x right, y UP,
+ * z toward the reader — so the two rotations come across NEGATED, and the order
+ * survives because a CSS transform list applies right to left and three's default
+ * Euler order 'XYZ' composes Rx.Ry.Rz, which is the same "Z first".
  *
- * which makes the plane at z = 0 land on the canvas one CSS pixel to one CSS
- * pixel. That is the whole of why the flat frame of this stage is the flat frame
- * of the other one, and it is why the Cards — which are still on the CSS plane —
- * sit exactly where the drawn map says they should.
- *
- * IT NEVER ANIMATES. `--eater-map-lift` is read off the page each frame and the
- * drawing follows it; nothing here has a clock. That is what makes reduced motion
- * free, exactly as it is for the DOM stage: `timeline.ts` rests the playhead at 1
- * and builds no trigger, this reads 1, and the finished Exploded View is what is
- * drawn without a frame of movement.
+ * IT NEVER ANIMATES, AND SINCE #189 THE SLAB DOES NOT MOVE AT ALL.
+ * `--eater-map-lift` is what the Cards ride and the Cards are not this stage's;
+ * every term of the Slab — its attitude, its depth, its radius — is a constant, so
+ * this drawing is a function of the Slab's box and the Tokens and of nothing the
+ * playhead holds. Reduced motion is free for the same reason it always was, and
+ * more cheaply: there is nothing to redraw.
  *
  * THE CANVAS IS OUTSIDE THE ROTATION AND BIGGER THAN THE SLAB. It is a sibling of
  * `.eater-map__plane` rather than a child, because a child would be turned by the
  * CSS rotation and then turned again by this one; and a tilted slab with a
  * thickness reaches outside the box the flat picture fitted, so the canvas is
- * grown to the extent the projection actually needs — measured by projecting the
- * corners at several moments of the Lift rather than guessed at.
+ * grown to the extent the projection actually needs — projected from the eight
+ * corners rather than guessed at. It used to be the union over five moments of the
+ * Lift, because the extent was not monotonic in the progress while the plane
+ * turned and the camera pulled back; one attitude and no camera is one box.
  */
 
 /** Samples per quadrant of the Slab's outline, and rings across the fillet.
@@ -71,12 +74,7 @@ const RINGS = 8;
 /** Points around one ring. */
 const RING = 4 * ARC;
 
-/** Moments of the Lift the canvas is sized against. The extent is not monotonic
- *  in the progress — the plane turns while the camera pulls back — so the box is
- *  the union of a few frames rather than the raised one. */
-const SAMPLES = [0, 0.25, 0.5, 0.75, 1];
-
-/** Slack around that box, in CSS pixels, for the half-pixel a rounded canvas
+/** Slack around the extent, in CSS pixels, for the half-pixel a rounded canvas
  *  loses at each edge. */
 const PAD = 2;
 
@@ -107,43 +105,40 @@ function srgb(value: string): [number, number, number] | null {
 interface Look {
   width: number;
   height: number;
-  lift: number;
-  camera: number;
-  dolly: number;
   tilt: number;
   swing: number;
   thickness: number;
   radius: number;
 }
 
-/** The eight corners of the Slab, projected the way the CSS camera projects them,
- *  as the box in CSS pixels the canvas has to cover. */
+/**
+ * The eight corners of the Slab, projected the way the CSS transform projects
+ * them, as the box in CSS pixels the canvas has to cover.
+ *
+ * A PARALLEL PROJECTION IS THE ROTATION AND THEN NOTHING — no division by a
+ * distance, which is exactly what "two probes at opposite ends project to the same
+ * area" means. So the depth term reaches the screen only through the tilt, and a
+ * Slab lying flat would need no more room than its own picture.
+ */
 function extent(look: Look): { width: number; height: number } {
-  const eye = look.camera * look.width;
+  const tilt = (look.tilt * Math.PI) / 180;
+  const swing = (look.swing * Math.PI) / 180;
+  const depth = look.thickness * look.width;
   let x = look.width / 2;
   let y = look.height / 2;
-  for (const lift of SAMPLES) {
-    const tilt = (look.tilt * lift * Math.PI) / 180;
-    const swing = (look.swing * lift * Math.PI) / 180;
-    const depth = look.thickness * lift * look.width;
-    const dolly = look.dolly * lift * look.width;
-    for (const sx of [-0.5, 0.5]) {
-      for (const sy of [-0.5, 0.5]) {
-        for (const sz of [0, -depth]) {
-          // CSS's own order: swing about z, then tilt about x, then the dolly
-          // along the view's axis. Written in CSS's axes — y down — because this
-          // is asking what the stylesheet would have drawn.
-          const px = sx * look.width;
-          const py = sy * look.height;
-          const rx = px * Math.cos(swing) - py * Math.sin(swing);
-          const ry = px * Math.sin(swing) + py * Math.cos(swing);
-          const ty = ry * Math.cos(tilt) - sz * Math.sin(tilt);
-          const tz = ry * Math.sin(tilt) + sz * Math.cos(tilt) - dolly;
-          const near = eye - tz;
-          if (!(near > 1)) continue;
-          x = Math.max(x, Math.abs((rx * eye) / near));
-          y = Math.max(y, Math.abs((ty * eye) / near));
-        }
+  for (const sx of [-0.5, 0.5]) {
+    for (const sy of [-0.5, 0.5]) {
+      for (const sz of [0, -depth]) {
+        // CSS's own order: swing about z, then tilt about x. Written in CSS's
+        // axes — y down — because this is asking what the stylesheet would have
+        // drawn.
+        const px = sx * look.width;
+        const py = sy * look.height;
+        const rx = px * Math.cos(swing) - py * Math.sin(swing);
+        const ry = px * Math.sin(swing) + py * Math.cos(swing);
+        const ty = ry * Math.cos(tilt) - sz * Math.sin(tilt);
+        x = Math.max(x, Math.abs(rx));
+        y = Math.max(y, Math.abs(ty));
       }
     }
   }
@@ -154,10 +149,10 @@ function extent(look: Look): { width: number; height: number } {
  * The Slab, as a rounded-edge extrusion whose topology never changes.
  *
  * THE TOPOLOGY IS FIXED AND THE POSITIONS ARE REWRITTEN IN PLACE, because the
- * thickness is spent by the Lift and therefore moves every frame. Only the index
- * buffer says how the surface is joined up, and that is a function of the two
- * counts above and of nothing the composition can change — so it is built once
- * and the three float arrays are refilled.
+ * thickness is a Token and a Token dragged in the Editor moves it every frame of
+ * the drag. Only the index buffer says how the surface is joined up, and that is a
+ * function of the two counts above and of nothing the composition can change — so
+ * it is built once and the three float arrays are refilled.
  *
  * HOW A POINT ON THE OUTLINE IS FOUND. The Slab is a rectangle inset by the edge
  * radius, offset outwards by a distance: at offset 0 that is the inner rectangle,
@@ -330,9 +325,6 @@ function signature(look: Look, edge: string, colour: string): string {
   return [
     look.width,
     look.height,
-    look.lift,
-    look.camera,
-    look.dolly,
     look.tilt,
     look.swing,
     look.thickness,
@@ -393,7 +385,7 @@ const mountWebglStage = async (parts: StageParts): Promise<Stage> => {
   const mesh = new Mesh(shape.geometry, [picture, side]);
   const scene = new Scene();
   scene.add(mesh);
-  const camera = new PerspectiveCamera();
+  const camera = new OrthographicCamera();
 
   // Mid grey, and stated rather than defaulted: `new Color()` is WHITE, which
   // against this page's dark ground reads as a deliberate bright edge rather than
@@ -408,33 +400,33 @@ const mountWebglStage = async (parts: StageParts): Promise<Stage> => {
     const box = slab.getBoundingClientRect();
     if (!(box.width > 0) || !(box.height > 0)) return null;
     const style = getComputedStyle(slab);
-    // ZERO IS THE ONLY FALLBACK, AND THE CAMERA HAS NONE. A number written here
-    // would be a second home for a value `tokens.css` already owns, and the two
-    // would drift; zero is not a guess but the honest reading of a term that is
-    // not there — no tilt, no swing, no dolly, no depth. The camera cannot be
-    // read that way, because a perspective of zero is not a projection, so a Slab
-    // whose Token cannot be read is not drawn at all.
+    // ZERO IS THE ONLY FALLBACK. A number written here would be a second home for
+    // a value `tokens.css` already owns, and the two would drift; zero is not a
+    // guess but the honest reading of a term that is not there — no tilt, no
+    // swing, no depth. There is nothing left that cannot be read that way: the
+    // camera distance used to be, because a perspective of zero is not a
+    // projection, and a parallel projection has no distance to fail on (#189).
     const token = (name: string) => {
       const value = Number.parseFloat(style.getPropertyValue(name));
       return Number.isFinite(value) ? value : 0;
     };
-    const camera = token('--eater-map-camera');
-    if (!(camera > 0)) return null;
+    // WHETHER THE SLAB IS A SOLID AT THIS WINDOW, which is the composition's own
+    // declaration and not a breakpoint read a second time: 1 in the band and 0
+    // where the Section has collapsed. Missing reads as 1, because the band is
+    // where the Exploded View is drawn and a stage that quietly flattened the
+    // Slab on a page that did not say to would be the harder failure to see.
+    const solid = Number.parseFloat(style.getPropertyValue('--eater-map-solid'));
+    const depth = edge === 'flat' ? 0 : Number.isFinite(solid) ? solid : 1;
     return {
       width: box.width,
       height: box.height,
-      // The markup rests RAISED, so a playhead nothing has written yet is 1 —
-      // which is the composition, and is the same thing the stylesheet says.
-      lift: Number.parseFloat(style.getPropertyValue('--eater-map-lift')) || 1,
-      camera,
-      dolly: token('--eater-map-dolly'),
       tilt: token('--eater-map-tilt'),
       swing: token('--eater-map-swing'),
       // A Slab with no thickness is what the FLAT edge is, and it is also the
       // honest answer when the Token is missing: this stage's job is to draw the
       // composition, and adding a depth nobody asked for would not be it.
-      thickness: edge === 'flat' ? 0 : token('--eater-map-slab-thickness'),
-      radius: edge === 'flat' ? 0 : token('--eater-map-slab-edge-radius'),
+      thickness: depth * token('--eater-map-slab-thickness'),
+      radius: depth * token('--eater-map-slab-edge-radius'),
     };
   }
 
@@ -450,11 +442,10 @@ const mountWebglStage = async (parts: StageParts): Promise<Stage> => {
     if (rgb) colour.setRGB(rgb[0], rgb[1], rgb[2], SRGBColorSpace);
 
     // THE BOX IS SET ONLY WHEN IT MOVES, and that is not tidiness: `setSize`
-    // reallocates the drawing buffer, so calling it on every frame of the Lift
-    // would throw away and remake a couple of megabytes sixty times a second. The
-    // extent is a function of the Slab's box and the Tokens and is deliberately
-    // NOT a function of the playhead — it is the union over five moments of the
-    // Lift — so during a Lift there is nothing here to do.
+    // reallocates the drawing buffer, so calling it on every frame a Token is
+    // being dragged would throw away and remake a couple of megabytes sixty times
+    // a second. The extent is a function of the Slab's box and the Tokens and of
+    // nothing the playhead holds, so a Lift running past this does nothing here.
     const box = extent(look);
     const ratio = window.devicePixelRatio || 1;
     const buffer = `${box.width}x${box.height}@${ratio}`;
@@ -472,30 +463,28 @@ const mountWebglStage = async (parts: StageParts): Promise<Stage> => {
       renderer.setSize(box.width, box.height, false);
     }
 
-    const eye = look.camera * look.width;
-    camera.fov = (2 * Math.atan(box.height / (2 * eye)) * 180) / Math.PI;
-    camera.aspect = box.width / box.height;
-    camera.position.set(0, 0, eye);
+    // THE FRUSTUM IS THE CANVAS, IN CSS PIXELS, which is what makes a parallel
+    // projection one CSS pixel to one CSS pixel with nothing to correct
+    // afterwards. `near` and `far` only have to contain the solid, and the eye
+    // stands a Slab-width in front of it — under a parallel projection where it
+    // stands changes nothing about the picture, only what is in front of the
+    // clipping plane.
+    camera.left = -box.width / 2;
+    camera.right = box.width / 2;
+    camera.top = box.height / 2;
+    camera.bottom = -box.height / 2;
+    camera.near = 0;
+    camera.far = 4 * (look.width + look.height);
+    camera.position.set(0, 0, look.width + look.height);
     camera.updateProjectionMatrix();
 
     // CSS's y points down and three's points up, so both angles cross negated.
     // The order needs no thought: a CSS transform list applies right to left, so
     // the swing happens first, and three's default Euler order composes Rx.Ry.Rz,
     // which is the same thing said the other way round.
-    mesh.rotation.set(
-      (-look.tilt * look.lift * Math.PI) / 180,
-      0,
-      (-look.swing * look.lift * Math.PI) / 180,
-    );
-    mesh.position.set(0, 0, -look.dolly * look.lift * look.width);
+    mesh.rotation.set((-look.tilt * Math.PI) / 180, 0, (-look.swing * Math.PI) / 180);
 
-    shape.write(
-      look.width,
-      look.height,
-      look.thickness * look.lift * look.width,
-      look.radius * look.lift * look.width,
-      colour,
-    );
+    shape.write(look.width, look.height, look.thickness * look.width, look.radius * look.width, colour);
     renderer.render(scene, camera);
   }
 

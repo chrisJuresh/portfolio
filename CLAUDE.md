@@ -328,10 +328,16 @@ That renders the Eater Map Section's Exploded View twice into
 beside it, crossed with what each can make the Slab's edge out of, in both themes
 and at both ends of the band. One cell is empty on purpose — DOM cannot run the
 captured pixels round a rounded edge — and the sheet draws the empty cell rather
-than skipping it. `pnpm check -- --stage webgl` runs every Check with the other
-one selected. `src/sections/eater-map/NOTES.md` is the authority on the boundary,
-the camera arithmetic that makes the two agree, and what the comparison found;
-#182 chooses, and takes the loser and its dependency out together.
+than skipping it. **That empty cell does NOT decide #182, and #189 corrected a
+spec that read it as deciding.** DOM's slice stack is a full perimeter, so its
+corners are the same element as its sides and the outline is right; the Slab is
+drawn with thickness on the shipped page by that stage. What is left to judge is
+whether a faceted 24-slice fillet is distinguishable from WebGL's swept one at the
+size the Slab is actually drawn — which is a thing to look at on the sheet.
+`pnpm check -- --stage webgl` runs every Check with the other one selected.
+`src/sections/eater-map/NOTES.md` is the authority on the boundary, the camera
+arithmetic that makes the two agree, and what the comparison found; #182 chooses,
+and takes the loser and its dependency out together.
 
 A Section's words are its **Content**, its named numbers are its **Tokens**, and
 the generators that produce its assets are its **Bakes**. Changing any of them is

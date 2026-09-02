@@ -35,13 +35,23 @@ export type StageName = 'dom' | 'webgl';
 /**
  * What the Slab's edge is made of.
  *
- * `flat` is the shipped composition — a picture with no thickness at all, which
- * is what the flat frame of the Lift is and what every Check reads. The other two
- * are #181's comparison: `thick` is a Slab with a depth and a plain edge, and
- * `wrapped` is the same Slab with the captured pixels continuing over its rounded
- * edge. **`wrapped` is the cell DOM cannot reach**, and that is the finding rather
- * than a gap in the work: six faces would give DOM the silhouette and no amount of
- * them runs a continuous texture round a fillet.
+ * `thick` IS THE SHIPPED COMPOSITION SINCE #189 — a Slab with a real depth,
+ * three per cent of its own width, drawn at every window in the band. `flat` is a
+ * picture with no thickness at all: it was the default while the edge was a
+ * comparison nothing shipped, and what it is now is the collapsed composition
+ * below the band, reached through `--eater-map-solid` rather than through this
+ * name. `wrapped` is the captured pixels continuing over the rounded edge, and it
+ * is #181's third column.
+ *
+ * **`wrapped` IS THE ONE CELL DOM CANNOT REACH, AND THE ARGUMENT THAT USED TO GO
+ * WITH IT IS SPENT.** It was read as "DOM cannot run captured pixels round a
+ * fillet, so the renderer is decided" — and the second half never followed from
+ * the first. The DOM stage's slice stack closes the corner with the same element
+ * that draws the side, so its silhouette and its outline are right; what it
+ * cannot do is put the photograph on the roll. #182 is the narrower question that
+ * is left — whether a faceted 24-slice fillet is distinguishable from a swept one
+ * at the size the Slab is actually drawn — and it is judged on the sheet, not
+ * here.
  */
 export type EdgeName = 'flat' | 'thick' | 'wrapped';
 
@@ -156,10 +166,18 @@ export function chosenStage(): StageName {
   );
 }
 
-/** Which edge this page is asking for, held to what the chosen stage can draw. */
+/**
+ * Which edge this page is asking for, held to what the chosen stage can draw.
+ *
+ * `thick` IS THE DEFAULT AND THAT IS THE SHIPPED PAGE (#189). The fall-back for a
+ * spelling nobody recognises is `flat` rather than the default, for the reason
+ * `chosenStage` falls back to `dom`: a query string is something a reader can be
+ * handed, and the honest answer to `?edge=chrome` is the plainest drawing rather
+ * than a guess at which of the two the reader meant.
+ */
 export function chosenEdge(stage: StageName = chosenStage()): EdgeName {
   const asked =
-    named(document.documentElement.dataset.eaterMapEdge, EDGES) ?? named(param('edge'), EDGES) ?? 'flat';
+    named(document.documentElement.dataset.eaterMapEdge, EDGES) ?? named(param('edge'), EDGES) ?? 'thick';
   return reaches(stage, asked) ? asked : 'flat';
 }
 

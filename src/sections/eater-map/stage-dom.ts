@@ -4,34 +4,41 @@ import { edgeShade, type Stage, type StageParts } from './stage';
  * The DOM stage: the shipped Exploded View, and the one the markup already reads
  * as.
  *
- * FLAT IS THIS MODULE DOING NOTHING, and that is the point rather than an
- * omission. The camera, the rotation, the Cards' depths and the picture itself
- * are all in `EaterMap.astro`'s scoped stylesheet, spent by `--eater-map-lift`,
- * so a reader whose scripts never arrived has the whole composition and this
- * module is bytes they were never sent. What is here is the ONE thing the shipped
- * composition does not draw and #181 asks for a comparison of: a Slab with
- * thickness.
+ * THE PROJECTION IS NOT THIS MODULE'S, and that has not changed. The rotation,
+ * the Cards' depths and the picture itself are all in `EaterMap.astro`'s scoped
+ * stylesheet, so a reader whose scripts never arrived has the whole composition
+ * out of the markup. What is here is the ONE thing a stylesheet cannot draw: the
+ * Slab's own solidity. **A READER WITH NO SCRIPTS THEREFORE GETS THE EXPLODED
+ * VIEW WITHOUT AN EDGE**, exactly as they get it without the leader lines
+ * (#178), and that is the honest cost of the boundary rather than an oversight —
+ * an extrusion is twenty-four elements and a renderer choice (#182), and it is
+ * the one part of this Section a template could not hold on behalf of both
+ * stages.
  *
- * AND IT IS A FAKE, WHICH IS THE FINDING. DOM has no extrusion. What it has is
- * elements at depths — so the Slab is SLICED, and each slice is one flat element
- * standing where that slice of the solid would stand. The slices are the real
- * solid's own: a quarter-round fillet rolling from the front face to the side
- * wall, then the wall itself, each slice inset and rounded by exactly as much as
- * the section at its depth is. Enough of them and the steps close up.
+ * THE SLAB IS SLICED, WHICH IS DOM'S ANSWER TO HAVING NO EXTRUSION. What it has
+ * is elements at depths, so each slice is one flat element standing where that
+ * slice of the solid stands. The slices are the real solid's own: a quarter-round
+ * fillet rolling from the front face to the side wall, then the wall itself, each
+ * inset and rounded by exactly as much as the section at its depth is. Enough of
+ * them and the steps close up.
  *
- * This is DOM's BEST attempt and not a straw man, and the sheet is worth nothing
- * if it is not: the comparison is only interesting where the two stages are both
- * trying. So the picture is clipped back to the flat face the way the extrusion
- * clips it, the fillet is a real quarter-round rather than a chamfer, and the
- * slices are shaded down their depth.
+ * FOUR HINGED WALLS WAS THE OBVIOUS BUILD AND IT IS WRONG, which is worth having
+ * written down because #189 was specified that way before it was corrected. A
+ * wall hinged along one edge of a rounded rectangle has to be inset by the corner
+ * radius at BOTH ends, so four of them leave four empty notches — 17.1 x 11.4px
+ * on a 380px Slab, which is the author's "the corners are missing". A slice is a
+ * full perimeter: its corners are the same element as its sides, so there is
+ * nothing to leave out.
  *
- * WHERE IT STOPS IS EXACTLY WHERE #181 SAYS IT STOPS. Every slice is ONE COLOUR
- * ALL THE WAY ROUND, because a slice is one element and an element has one
- * background — so the fillet cannot be lit from a direction, and it cannot carry
- * the picture. Six faces would not help and neither would six hundred slices:
- * the captured pixels stop at the flat face and the edge is paint. `wrapped` is
- * not in this stage's list of edges for that reason, and the empty cell on the
- * sheet is the result.
+ * WHERE IT STOPS. Every slice is ONE COLOUR ALL THE WAY ROUND, because a slice is
+ * one element and an element has one background — so the fillet cannot be lit
+ * from a direction, and it cannot carry the picture. Six faces would not help and
+ * neither would six hundred slices: the captured pixels stop at the flat face and
+ * the edge is paint. `wrapped` is not in this stage's list of edges for that
+ * reason, and the empty cell on the sheet is the result. **What that empty cell
+ * does NOT settle is #182**: the corner is closed, so what is left to judge is
+ * whether a faceted fillet is distinguishable from a swept one at the size the
+ * Slab is drawn. Giving each slice a direction is #197 and is one line below.
  *
  * WHY THE SLICES ARE INLINE-STYLED. Astro scopes a component's `<style>` by
  * stamping an attribute on the elements ITS OWN TEMPLATE renders, and these are
@@ -39,12 +46,18 @@ import { edgeShade, type Stage, type StageParts } from './stage';
  * hits with the vendored markup, and the same answer. `:global()` is the escape
  * hatch and `check-source.mjs` fails the build on it.
  *
- * EVERY LENGTH BELOW IS SPENT BY THE LIFT, so the flat frame is untouched: at
- * progress 0 the thickness is 0, the fillet is 0, the clip is `inset(0)` and the
- * composition is the screenshot #176 built, to the pixel. And every one is
- * written in `cqw` for the reason everything else on the plane is — these are
- * children of `.eater-map__slab`, which is the container, so a share of the Slab
- * holds at every window.
+ * NO LENGTH BELOW IS SPENT BY THE LIFT, AND THAT IS #189. They all used to be:
+ * at progress 0 the thickness was 0, the fillet was 0, the clip was `inset(0)`
+ * and the composition was the screenshot #176 built, to the pixel. The Slab is
+ * the same solid at both ends of the Lift now — a depth that grew as the reader
+ * arrived would be the Slab changing under them, which is the one thing this
+ * Section is built against — so what these are spent by is `--eater-map-solid`
+ * instead: 1 in the band and 0 below it, which is the collapse taking the edge
+ * away without anything being re-mounted on a resize.
+ *
+ * Every one is written in `cqw` for the reason everything else on the plane is —
+ * these are children of `.eater-map__slab`, which is the container, so a share of
+ * the Slab holds at every window.
  */
 
 /**
@@ -65,11 +78,13 @@ const WALL = 8;
  *  name: nothing styles it. */
 const SLICE = 'eater-map__slice';
 
-/** The Lift's playhead times the Token, as a length on the plane. Written out
- *  rather than held in a variable, because these are CSS expressions the browser
- *  re-evaluates as the Lift runs — nothing here is computed once at mount. */
-const DEPTH = 'var(--eater-map-lift) * var(--eater-map-slab-thickness) * 100cqw';
-const ROUND = 'var(--eater-map-lift) * var(--eater-map-slab-edge-radius) * 100cqw';
+/** The Token, as a length on the plane, closed up to nothing where the Section has
+ *  collapsed. Written out rather than held in a variable, because these are CSS
+ *  expressions the browser re-evaluates — nothing here is computed once at mount,
+ *  which is what lets a Token dragged in the Editor and a window carried across
+ *  the breakpoint both move the drawing. */
+const DEPTH = 'var(--eater-map-solid) * var(--eater-map-slab-thickness) * 100cqw';
+const ROUND = 'var(--eater-map-solid) * var(--eater-map-slab-edge-radius) * 100cqw';
 
 const mountDomStage = (parts: StageParts): Stage => {
   const { plane, still, edge } = parts;
