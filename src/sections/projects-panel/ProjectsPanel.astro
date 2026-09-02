@@ -1,8 +1,12 @@
 ---
-// The Projects Panel: the Rail, the masthead and its two authored lines, the
-// copy, the engineering points, the Frame, and the Plinth it stands on.
-// NOTES.md carries the reasoning — what each share was measured from, and the
-// two relationships the Cut Title is cut to.
+// The Projects Panel: the masthead and its two authored lines, the copy, the
+// engineering points, the Frame, and the Plinth it stands on. NOTES.md carries
+// the reasoning — what each share was measured from, and the two relationships
+// the Cut Title is cut to.
+//
+// THE RAIL IS NOT THIS SECTION'S ANY MORE (#192). It is one piece of furniture
+// standing on the page, in src/kernel/rail/, and this Section leaves it the
+// column it always stood in — the page's own left margin — and nothing else.
 import { content } from './content';
 // The recording's poster and its own pixels. Imported rather than written out
 // here so the module that fetches the clip and the element that shows it name
@@ -13,9 +17,8 @@ import './tokens.css';
 // variants.css is deliberately NOT imported. NOTES.md, and check-source.mjs if
 // this is ever undone.
 
-/** The fragment the Rail's own entry names, and the Section's deep link. */
+/** The Section's deep link, and the fragment the Rail's own entry names. */
 const here = 'projects';
-const selected = (project: { href?: string }) => project.href === `#${here}`;
 ---
 
 {/* data-section is the loader's handle. No data-turn: the crossing into dark
@@ -27,27 +30,6 @@ const selected = (project: { href?: string }) => project.href === `#${here}`;
   data-section="projects-panel"
   aria-labelledby="projects-panel-masthead"
 >
-  <nav class="projects-panel__rail" aria-label={content.rail.label}>
-    {/* role="list" on a list that already is one: `list-style: none` costs a
-        list its semantics in VoiceOver, and the Rail is meant to be announced
-        as a list of projects. */}
-    <ul class="projects-panel__rail-items" role="list">
-      {content.rail.projects.map((project) => (
-        <li class:list={['projects-panel__rail-item', { 'is-selected': selected(project) }]}>
-          {project.href ? (
-            <a href={project.href} aria-current={selected(project) ? 'true' : undefined}>
-              {project.name}
-            </a>
-          ) : (
-            <Fragment>
-              {project.name}
-              <span class="projects-panel__quiet">{content.rail.unbuilt}</span>
-            </Fragment>
-          )}
-        </li>
-      ))}
-    </ul>
-  </nav>
   <div class="projects-panel__inner">
     <header class="projects-panel__head">
       <h2 class="projects-panel__masthead" id="projects-panel-masthead">{content.masthead}</h2>
@@ -256,13 +238,8 @@ const selected = (project: { href?: string }) => project.href === `#${here}`;
       var(--projects-panel-figure-floor),
       calc(var(--projects-panel-figure-share) * var(--projects-panel-w))
     );
-    --projects-panel-rail-size: max(
-      var(--projects-panel-rail-floor),
-      calc(var(--projects-panel-rail-share) * var(--projects-panel-w))
-    );
 
     /* ---- the gutters, resolved -------------------------------------------- */
-    --projects-panel-gap: calc(var(--projects-panel-gap-share) * var(--projects-panel-w));
     --projects-panel-gutter: calc(var(--projects-panel-gutter-share) * var(--projects-panel-w));
     --projects-panel-copy-inset: calc(
       var(--projects-panel-copy-inset-share) * var(--projects-panel-w)
@@ -272,9 +249,6 @@ const selected = (project: { href?: string }) => project.href === `#${here}`;
     );
     --projects-panel-points-air: calc(
       var(--projects-panel-points-air-share) * var(--projects-panel-w)
-    );
-    --projects-panel-rail-w: calc(
-      var(--projects-panel-leading) * var(--projects-panel-rail-size)
     );
 
     /* ---- the two lengths the composition's height is built out of --------- */
@@ -413,14 +387,20 @@ const selected = (project: { href?: string }) => project.href === `#${here}`;
     box-sizing: border-box;
     position: relative;
     display: grid;
-    grid-template-columns: var(--projects-panel-rail-w) minmax(0, var(--projects-panel-w));
+    /* ONE COLUMN, AND IT USED TO BE TWO. The first was the Rail's, and the Rail
+       is the Kernel's now (#192): out of the band it is a row printed once at
+       the head of the index, above this Section, so there is no column here for
+       it to stand in and reserving one would be air the composition cannot
+       explain. The drawing is centred as a whole instead, which moves it left by
+       half the column it no longer leaves. */
+    grid-template-columns: minmax(0, var(--projects-panel-w));
     justify-content: center;
     align-items: center;
-    column-gap: var(--projects-panel-gap);
     min-height: var(--fold);
     padding: var(--projects-panel-inset);
     /* Clip, not hidden, and only across: `hidden` would make the Section a
-       scroll container and break the Rail. */
+       scroll container, which is what the Plinth's overhang would then scroll
+       inside of. */
     overflow-x: clip;
     background: var(--projects-panel-bg);
     color: var(--projects-panel-ink);
@@ -431,68 +411,6 @@ const selected = (project: { href?: string }) => project.href === `#${here}`;
        link comes to rest on the masthead's cap top rather than on the Section's
        own edge. */
     scroll-margin-top: calc(var(--projects-panel-inset) - var(--projects-panel-mast-top));
-  }
-
-  /* ---- the Rail --------------------------------------------------------- */
-  .projects-panel__rail {
-    /* The one thing in the Section that answers to the SCREEN and not to the
-       composition. */
-    display: flex;
-    align-self: stretch;
-  }
-
-  .projects-panel__rail-items {
-    list-style: none;
-    margin: 0;
-    padding: 0;
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    align-items: center;
-  }
-
-  .projects-panel__rail-item {
-    /* Turned per ITEM and not on the list: rotating the list would rotate the
-       order with it. */
-    writing-mode: vertical-rl;
-    transform: rotate(180deg);
-    white-space: nowrap;
-    font-size: var(--projects-panel-rail-size);
-    letter-spacing: var(--projects-panel-rail-tracking);
-    color: var(--projects-panel-muted);
-  }
-
-  .projects-panel__rail-item.is-selected {
-    color: var(--projects-panel-ink);
-  }
-
-  .projects-panel__rail-item a {
-    color: inherit;
-    /* Three words in a margin: an underline across a rotated one reads as a
-       strikethrough. */
-    text-decoration: none;
-  }
-
-  .projects-panel__rail-item:not(.is-selected) a:hover {
-    color: var(--projects-panel-ink);
-  }
-
-  .projects-panel__rail-item a:focus-visible {
-    outline: 1px solid currentColor;
-    outline-offset: 3px;
-  }
-
-  .projects-panel__quiet {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    margin: -1px;
-    padding: 0;
-    border: 0;
-    clip-path: inset(50%);
-    overflow: hidden;
-    white-space: nowrap;
   }
 
   /* ---- the composition: twelve columns, two rows ------------------------- */
@@ -515,12 +433,12 @@ const selected = (project: { href?: string }) => project.href === `#${here}`;
     margin-bottom: calc(-1 * var(--projects-panel-sub-line));
   }
 
-  /* ---- how the five capitalised things are set --------------------------- */
+  /* ---- how the four capitalised things are set --------------------------- */
   /* Listed rather than hoisted onto the Section: `case` on the body copy would
-     raise the hyphen in "content-addressed" off its own baseline. */
+     raise the hyphen in "content-addressed" off its own baseline. It was five
+     while the Rail was in here. */
   .projects-panel__masthead,
   .projects-panel__sub,
-  .projects-panel__rail-item,
   .projects-panel__points h3,
   .projects-panel__points p {
     text-transform: uppercase;
@@ -1329,7 +1247,6 @@ const selected = (project: { href?: string }) => project.href === `#${here}`;
       --projects-panel-copy-size: var(--projects-panel-copy-stacked);
       --projects-panel-point-size: var(--projects-panel-point-stacked);
       --projects-panel-figure-size: var(--projects-panel-figure-stacked);
-      --projects-panel-rail-size: var(--projects-panel-rail-stacked);
       /* The air between a point's title and its figure is the ladder's tightest
          step out here, and it is the FIGURE'S OWN top margin in the base sheet.
          0.35em is the band's measure of the same thing and has nothing to do
@@ -1338,40 +1255,18 @@ const selected = (project: { href?: string }) => project.href === `#${here}`;
          title's baseline. */
       --projects-panel-figure-air: 0;
 
-      /* THE TOP IS A CLEARANCE AND THE BOTTOM IS THE PAGE'S MARGIN, which is why
-         this is a longhand rather than the two-value shorthand it was. What
-         hangs over the top edge is the Front Screen's cut PROJECTS — see
-         --projects-panel-stack-crown in tokens.css, which carries the measured
-         overhang and what the Rail was printing through before it. */
-      padding: var(--projects-panel-stack-crown) var(--projects-panel-stack-side)
+      /* THE TOP IS THE SEAM UNDER THE RAIL AND THE BOTTOM IS THE PAGE'S MARGIN,
+         which is why this is a longhand rather than the two-value shorthand it
+         was. It used to be a CLEARANCE — the Front Screen's cut PROJECTS hangs
+         over this Section's top edge out here, and what it hung over was the
+         Rail's own box. The Rail left this Section in #192 and took the
+         clearance with it: `--rail-crown` in src/kernel/tokens/rail.css is that
+         same measured overhang, paid by the box the letters actually reach.
+         What is left here is the seam between the index and the thing it
+         indexes, which was this box's row gap while both were inside it. */
+      padding: var(--projects-panel-stack-move) var(--projects-panel-stack-side)
         var(--projects-panel-inset);
       grid-template-columns: minmax(0, 1fr);
-      /* The Rail and the composition are the Section's two rows, so this is the
-         one seam this box owns: the index, and then the thing it indexes. */
-      row-gap: var(--projects-panel-stack-move);
-    }
-
-    /* Three names across the top instead of three down an edge, and they wrap:
-       360 and 320 are real screens and RECORD ENGINE does not fit beside the
-       other two on either. Both gaps are multiples of the names' own size, so
-       the row shrinks as one drawing — the column gap used to be a rem clamp
-       with its own vw slope, which opened the gaps as the type closed. */
-    .projects-panel__rail-items {
-      flex-direction: row;
-      flex-wrap: wrap;
-      justify-content: flex-start;
-      align-items: baseline;
-      column-gap: calc(
-        var(--projects-panel-stack-rail-gap) * var(--projects-panel-rail-size)
-      );
-      row-gap: calc(
-        var(--projects-panel-stack-rail-rows) * var(--projects-panel-rail-size)
-      );
-    }
-
-    .projects-panel__rail-item {
-      writing-mode: horizontal-tb;
-      transform: none;
     }
 
     /* NO ROW GAP, AND THE FOUR SEAMS ARE MARGINS INSTEAD. A grid's row gap is
@@ -1556,10 +1451,11 @@ const selected = (project: { href?: string }) => project.href === `#${here}`;
       /* ---- THE LIFT: how far above the screen's top edge this Section begins --
          The Section starts above the fold so the word can be cut off the screen
          above, and this is that overhang: the landing's own top margin less the
-         drop the masthead's cap top sits at. Two things need it and used to say
-         it twice — the port the turn rests on, and the Rail, which runs the
-         SCREEN's height rather than the Section's box and therefore has to
-         subtract it back off. */
+         drop the masthead's cap top sits at. It is the port the turn rests on.
+         The Rail used to be the second thing that needed it — it runs the
+         SCREEN's height rather than this box's and had to subtract it back off —
+         and no longer does, because the Rail is pinned to the window now and has
+         no Section's box to correct for (#192). */
       --projects-panel-lift: calc(var(--landing-top) - var(--projects-panel-mast-top));
 
       /* ---- THE REACH: what the drawing could not spend, and the three things
@@ -1922,81 +1818,27 @@ const selected = (project: { href?: string }) => project.href === `#${here}`;
       }
     }
 
-    /* THE RAIL MOVES OUT INTO THE PAGE'S MARGIN, which is what "the composition
-       starts where the word starts" costs. In the grid it holds the first column
-       and everything after it — the masthead included — is pushed right by its
-       width and a gutter, so the word and this Section's own title could not be
-       set to the same line. Out of flow and standing in the margin instead: it is
-       one line of vertical type, the margin is exactly the white the page already
-       leaves there, and an index in the margin is a thing a printed page does.
-       The insets are against the Section's padding box, which is its whole box —
-       absolute insets ignore padding — so `left: 0` is the window's edge and the
-       width IS the margin, with the items' own centring putting the type down the
-       middle of it.
+    /* THE RAIL STOOD IN THE PAGE'S MARGIN HERE, AND IT STILL DOES — it is simply
+       not this Section's any more (#192). What this block held was an absolute
+       box at `left: 0`, the width of --landing-side, running the SCREEN's height
+       rather than the Section's, and arriving on --turn; every one of those is
+       now in src/kernel/rail/Rail.astro, against the window instead of against
+       this box, which is what makes the index stand still across the page turn
+       rather than being carried off the top of the screen with this Section.
 
-       AND IT RUNS THE SCREEN'S HEIGHT AND NOT THE SECTION'S, which is the half of
-       that sentence the box used to get wrong. An index in a margin runs the
-       height of the PAGE, and down here the page is the screen: the Section
-       begins --projects-panel-lift above the screen's top edge, so subtracting
-       the lift back off is what puts the first name at the top of the window
-       instead of a page margin down from it, and dropping the bottom inset is
-       what puts the last one at the foot. What is left at each end is
-       --projects-panel-side, the page's own small margin — the three names are
-       spread `space-between`, so those two lengths are exactly where the first
-       and the last of them stand. */
-    .projects-panel__rail {
-      position: absolute;
-      left: 0;
-      top: calc(var(--projects-panel-side) - var(--projects-panel-lift));
-      bottom: var(--projects-panel-side);
-      /* THE WIDTH IS THE MARGIN, and the margin is the landing's — the same
-         length the Section is padded by above and the word is set on. It was
-         --projects-panel-inset while the two were the same clamp, and what that
-         cost once the clamp was cut to 2.7vh was three rotated names wider than
-         the column they are centred in: one line of --projects-panel-rail-size at
-         its 1.5 leading is about 2.1% of the composition, and the margin was
-         1.7%. The names ran off the left of the page and nothing said so. */
-      width: var(--landing-side);
-
-      /* AND IT ARRIVES WITH THE PAGE, for the reason the paragraph above it does
-         and which the lift has just made true of the Rail as well: the top of this
-         box is on the screen ABOVE, and the only thing that strip is for is the
-         cut word. A name standing there is half a name — the box runs off the top
-         of the Front Screen mid-letter — so it reads as a fragment beside the one
-         word the composition cut on purpose.
-
-         --turn AND NO WINDOW OF ITS OWN, which is the difference between this and
-         the copy's arrival. The paragraph waits until a third of the way across
-         because it answers a question the reader has not been asked yet; three
-         words in a margin answer nothing, so they can simply come up with the
-         page. Linear on the Kernel's own number, so it inherits the page turn's
-         ease, is exact at both resting places and at a deep link, and is a state
-         rather than a movement for a reader who asked for less motion.
-
-         `opacity` AND NOT A MIX, which is the other way round from the copy: what
-         a mix buys there is the paragraph's subpixel antialiasing, and every name
-         in here is drawn through a rotation, which has already cost it. What
-         opacity buys instead is one declaration for the whole box — the two inks,
-         the hover and the focus ring — and it costs the resting page nothing,
-         because --turn is exactly 1 where the turn comes to rest. */
-      opacity: var(--turn);
-    }
-
-    /* A BROWSER THAT RUNS NOTHING GETS THE RAIL, the same reader and the same
-       answer as the paragraph's: nothing would ever drive --turn for them, so an
-       arrival is an index deleted rather than an index waiting. */
-    @media (scripting: none) {
-      .projects-panel__rail {
-        opacity: 1;
-      }
-    }
+       WHAT IS LEFT HERE IS THE HALF THAT IS THE COMPOSITION'S: the padding-left
+       above IS that margin, so the word and this Section's own title are set to
+       the same line and the Rail's column is the white the page already leaves.
+       --projects-panel-side is still the length the Rail's two insets were
+       declared off, and src/kernel/tokens/rail.css says so where it restates
+       it. */
   }
 
   /* ---- out of the band, the masthead's BOX goes with the word -------------
      THE WORD ONE SCREEN UP IS THIS SECTION'S HEAD OUT HERE TOO. The Cut Title is
      the last thing on the screen above, cut by the fold the way it is at every
-     window; the three names are the first thing in here; and out here the box
-     between them is holding a slot for nothing. In the band that same box is
+     window; the Rail's three names are the first thing under it; and out here the
+     box between them is holding a slot for nothing. In the band that same box is
      load-bearing three times over and stays exactly where it is — the block
      above says why — so this is gated to everywhere that block is not.
 

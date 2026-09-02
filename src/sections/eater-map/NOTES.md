@@ -31,7 +31,7 @@ now.
 
 ## What is here and what is not
 
-Here: the Rail, the masthead PROJECTS, the four authored lines of the serif
+Here: the masthead PROJECTS, the four authored lines of the serif
 project title under it, the copy at the foot of that column, the four numbered
 points down the right edge with a number and an icon each, the Exploded View, the
 four leader lines that join the one to the other and the two dots on each, the
@@ -1379,9 +1379,12 @@ where the masthead's BOX goes given that `--landing-top` is where the word's CAP
 TOP comes to rest. That is exactly what the Panel spends `--projects-panel-lift` on
 — its port sits that far above its Section's top edge and its masthead's box sits
 on that edge — and this Section's port IS its top edge, so the same distance is its
-padding. The Rail's column gap goes to nothing for the other half of it: the
-composition beside the Rail starts at `--landing-side`, where the Panel's inner
-starts and where the word stands on both screens.
+padding. The other half of it is across: the composition starts at `--landing-side`,
+where the Panel's inner starts and where the word stands on both screens. That was
+a grid column of that width with nothing after it while this Section drew a Rail
+of its own, and it is the Section's own `padding-inline` since #192 made the Rail
+the Kernel's — same left edge, one fewer box, and anything at all between the two
+would push the word right of the word it is meant not to have moved from.
 
 **Three numbers are still Tokens and agree by VALUE**: the leading, the weight and
 the tracking. A Section may read the Kernel and nothing else, and the Kernel
@@ -1450,8 +1453,9 @@ collapse and hand the scriptless reader a different column from everybody else.
 **This Section JOINED the landing measure in #191, and that is a change of
 decision rather than a drift.** It used to read two of the Kernel's lengths and no
 more — `--landing-inset` for the page's top margin and `--landing-side` for its
-left one, so the third screen's white agreed with the second's and both Rails stood
-in one column — and this heading used to say, at length, that reading those two was
+left one, so the third screen's white agreed with the second's and the two Rails
+the page then had stood in one column — and this heading used to say, at length,
+that reading those two was
 deliberately NOT joining the measure: the measure is `--landing-w`, `--landing-cap`
 and `--landing-mast-top`, the width two Sections have to agree about *because a cut
 word has to land in a masthead's slot*, and this Section had no cut word.
@@ -1588,8 +1592,11 @@ the record of what was compared, which is the whole point of the mechanism.
 
 ## The words
 
-All of them are Content, including the two the Rail speaks and never prints and
-the one word in the placeholder.
+All of them are Content, including the one word in the placeholder. The two the
+Rail speaks and never prints are no longer among them: there is one Rail on the
+page, it is the Kernel's, and this Section held the second copy of its words until
+#192 — along with a second copy of its four Tokens, at a size that did not even
+agree with the Panel's.
 
 The copy is the Career Record's `projects/eater-map-site.md`, "Page intro" — its
 first two sentences and its last. **Cut, and cut rather than re-written**: every

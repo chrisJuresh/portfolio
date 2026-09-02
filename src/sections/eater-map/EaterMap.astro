@@ -1,8 +1,8 @@
 ---
 // The Eater Map Section, recomposed to the reference by #191: three standing
-// blocks rather than a band of writing over a picture. The Rail; then the word
-// PROJECTS at the head of the left column — the Gallery's own masthead, in the
-// Gallery's own box — with the serif project title under it and the copy at that
+// blocks rather than a band of writing over a picture. The word PROJECTS at the
+// head of the left column — the Gallery's own masthead, in the Gallery's own
+// box — with the serif project title under it and the copy at that
 // column's foot; the Exploded View down the middle, the captured Slab standing
 // still under one parallel projection with the app's own three surfaces raised off
 // it; and the four numbered points down the right edge, each joined to the part it
@@ -59,32 +59,11 @@ import './tokens.css';
   data-section="eater-map"
   aria-labelledby="eater-map-masthead"
 >
-  <nav class="eater-map__rail" aria-label={content.rail.label}>
-    {/* role="list" on a list that already is one: `list-style: none` costs a
-        list its semantics in VoiceOver, and the Rail is meant to be announced
-        as a list of projects. */}
-    <ul class="eater-map__rail-items" role="list">
-      {content.rail.projects.map((project) => (
-        <li
-          class:list={[
-            'eater-map__rail-item',
-            { 'is-selected': project.href === '#eater-map' },
-          ]}
-        >
-          {project.href ? (
-            <a href={project.href} aria-current={project.href === '#eater-map' ? 'true' : undefined}>
-              {project.name}
-            </a>
-          ) : (
-            <Fragment>
-              {project.name}
-              <span class="eater-map__quiet">{content.rail.unbuilt}</span>
-            </Fragment>
-          )}
-        </li>
-      ))}
-    </ul>
-  </nav>
+  {/* No Rail here. It is one piece of furniture standing on the page and the
+      Kernel's (#192) — this Section drew a second copy of it and swapped it in
+      as the reader turned, which is the thing that ticket deleted. What is left
+      of it here is the column it stands in, which is the page's own left margin
+      and is what the padding below leaves. */}
   <div class="eater-map__inner">
     {/* PROJECTS, IN THE GALLERY'S OWN BOX (#191). The word the reader met on the
         Panel, drawn again here at the landing's own size and standing at the
@@ -377,88 +356,29 @@ import './tokens.css';
 
     box-sizing: border-box;
     display: grid;
-    /* The Rail's column IS the page's left margin, the way it is in the Projects
-       Panel: the names are set across it, so the margin has a floor under it and
-       that floor is one rotated line of --eater-map-rail-size at its leading. */
-    grid-template-columns: var(--eater-map-side) minmax(0, 1fr);
-    column-gap: var(--eater-map-gap);
+    /* ONE COLUMN, AND THE MARGIN IS A PADDING. It was two, and the first was the
+       Rail's — the Rail is the Kernel's now (#192), so the Section's own box
+       starts at the page's margin rather than one grid column into it. Same left
+       edge, one fewer box: --eater-map-side is what the Rail's column was, and it
+       is still the page's own margin. */
+    grid-template-columns: minmax(0, 1fr);
     /* STRETCH AND NOT CENTRE, and it is the difference between a composition
-       that fits the screen and one that is taller than it. The Rail is spread
-       `space-between` down its whole column, the stage is the one row's whole
-       height, and the four Points spread themselves down theirs — so all three
-       need the Section's own height handed to them. Centring would size the box to
-       its content instead, and the content would then be whatever the four points
-       and a picture-shaped box happen to add up to. */
+       that fits the screen and one that is taller than it. The stage is the one
+       row's whole height and the four Points spread themselves down theirs, so
+       both need the Section's own height handed to them. Centring would size the
+       box to its content instead, and the content would then be whatever the four
+       points and a picture-shaped box happen to add up to. */
     align-items: stretch;
     min-height: var(--fold);
     padding-block: var(--eater-map-inset);
-    padding-inline-end: var(--eater-map-side);
+    padding-inline: var(--eater-map-side);
     /* Clip, not hidden, and only across: `hidden` would make the Section a
-       scroll container and break the Rail. */
+       scroll container, which is what the Slab's full-bleed collapse would then
+       scroll inside of. */
     overflow-x: clip;
     font-family: var(--face-panel);
     font-weight: 400;
     line-height: var(--eater-map-leading);
-  }
-
-  /* ---- the Rail ---------------------------------------------------------- */
-  .eater-map__rail {
-    display: flex;
-    align-self: stretch;
-  }
-
-  .eater-map__rail-items {
-    list-style: none;
-    margin: 0;
-    padding: 0;
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    align-items: center;
-  }
-
-  .eater-map__rail-item {
-    /* Turned per ITEM and not on the list: rotating the list would rotate the
-       order with it and put the last project at the top. */
-    writing-mode: vertical-rl;
-    transform: rotate(180deg);
-    white-space: nowrap;
-    font-size: var(--eater-map-rail-size);
-    letter-spacing: var(--eater-map-rail-tracking);
-    color: color-mix(in oklab, var(--ink), transparent var(--eater-map-muted-veil));
-  }
-
-  .eater-map__rail-item.is-selected {
-    color: var(--ink);
-  }
-
-  .eater-map__rail-item a {
-    color: inherit;
-    /* Three words in a margin: an underline across a rotated one reads as a
-       strikethrough. */
-    text-decoration: none;
-  }
-
-  .eater-map__rail-item:not(.is-selected) a:hover {
-    color: var(--ink);
-  }
-
-  .eater-map__rail-item a:focus-visible {
-    outline: 1px solid currentColor;
-    outline-offset: 3px;
-  }
-
-  .eater-map__quiet {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    margin: -1px;
-    padding: 0;
-    border: 0;
-    clip-path: inset(50%);
-    overflow: hidden;
-    white-space: nowrap;
   }
 
   /* ---- the composition: twelve columns and ONE row ------------------------
@@ -510,7 +430,6 @@ import './tokens.css';
      sentences rather than labels. */
   .eater-map__masthead,
   .eater-map__title,
-  .eater-map__rail-item,
   /* Each row is the containing block for its own hook, so `right: 100%` is this
      column's left edge rather than the page's. */
   .eater-map__points li {
@@ -1292,28 +1211,14 @@ import './tokens.css';
          not in tokens.css for the reason --eater-map-collapsed is: it is a regime
          and not a number the author chooses. */
       --eater-map-solid: 0;
+      /* The columns and the side padding are the base rule's out here too, since
+         the Rail left the grid (#192) — they are restated because this block used
+         to be undoing a two-column grid and a right-only padding, and stating
+         them costs nothing while a reader wondering whether the collapse still
+         answers for them costs something. */
       grid-template-columns: minmax(0, 1fr);
-      row-gap: var(--eater-map-move);
       min-height: 0;
       padding-inline: var(--eater-map-side);
-    }
-
-    /* Three names across the top and they wrap: 360 and 320 are real screens and
-       the longest of the three does not fit beside the other two on either. Both
-       gaps are multiples of the names' own size, so the row shrinks as one
-       drawing. */
-    .eater-map__rail-items {
-      flex-direction: row;
-      flex-wrap: wrap;
-      justify-content: flex-start;
-      align-items: baseline;
-      column-gap: calc(var(--eater-map-rail-gap) * var(--eater-map-rail-size));
-      row-gap: calc(var(--eater-map-rail-rows) * var(--eater-map-rail-size));
-    }
-
-    .eater-map__rail-item {
-      writing-mode: horizontal-tb;
-      transform: none;
     }
 
     /* NO ROW GAP, AND THE SEAMS ARE MARGINS INSTEAD. A grid's row gap is one
@@ -1450,22 +1355,23 @@ import './tokens.css';
      padding. Both mastheads then stand at the same place on the screen at rest,
      which is what the `eater-map` Check compares.
 
-     AND NO COLUMN GAP, for the same reason and it is the second half of it. The
-     Rail's column IS the page's left margin, so the composition beside it starts
-     at `--landing-side` — where the Panel's own inner starts and where PROJECTS
-     stands on both screens. A gap here would push the word one gap right of the
-     word it is meant not to have moved from.
+     AND THE LEFT MARGIN IS `--landing-side` EXACTLY, which is the second half of
+     it. That margin is the Rail's column — the Kernel's Rail stands in it now
+     (#192), pinned to the window — so the composition starts at its far edge,
+     where the Panel's own inner starts and where PROJECTS stands on both
+     screens. It was a grid column of that width with no gap after it, and it is
+     the Section's own padding now; the word's left edge is unmoved either way,
+     and anything between the two would push it right of the word it is meant not
+     to have moved from.
 
      The foot keeps the page's own bottom margin: the drawing does not stand on
      the page's bottom edge the way the Panel's Plinth does. */
   @media (min-width: 1100px) and (min-height: 700px) {
     .eater-map {
       --eater-map-mast: var(--landing-mast-size);
-      grid-template-columns: var(--landing-side) minmax(0, 1fr);
-      column-gap: 0;
       padding-block: calc(var(--landing-top) - var(--landing-mast-top))
         var(--landing-inset);
-      padding-inline-end: var(--landing-side);
+      padding-inline: var(--landing-side);
     }
   }
 </style>

@@ -40,8 +40,8 @@ education, contact, theme toggle — fitted to exactly one screen.
 _Avoid_: front page, home, hero, above the fold
 
 **Projects Panel**:
-The dark Section presenting one project at a time: a Rail, a masthead, copy, and
-the Frame on its Plinth.
+The dark Section presenting one project at a time: a masthead, copy, and the
+Frame on its Plinth. The Rail stands beside it and is the Kernel's.
 _Avoid_: projects page, photo gallery page, gallery
 
 ## What the composition is made of
@@ -95,8 +95,10 @@ the Exploded View.
 _Avoid_: reveal, raise, rise, explode, the animation
 
 **Rail**:
-The list down a Section's edge naming what can be shown there, marking which is
-selected and which is not yet built.
+The list down the page's own left edge naming every project the Portfolio can
+show, marking which one is on screen and which are not yet built. One piece of
+furniture belonging to the Kernel, not a thing a Section draws: turning from one
+project to the next moves the highlight and nothing else.
 _Avoid_: nav, sidebar, menu, tabs
 
 **Effect Stack**:

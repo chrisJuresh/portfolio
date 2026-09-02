@@ -6,8 +6,13 @@ Sections, and an entry with no link is a Section that does not exist yet.
 
 This needs writing down because the Rail reads as the opposite. It marks one
 entry selected and two as not yet built, which is exactly how a control that will
-one day switch the Panel's contents would look, and a reader arriving at
-`projects-panel/content.ts` will reasonably assume that is what it is for.
+one day switch a Showcase's contents would look, and a reader arriving at
+`src/kernel/rail/content.ts` will reasonably assume that is what it is for. #192
+sharpened the confusion rather than settling it: the Rail is now one element
+standing on the page, pinned to the window, with the current entry derived from
+the Section at rest — which is precisely what a selector would look like. It is
+not one. What changes when the highlight moves is which Section the reader is
+standing in front of, and the Section is what the composition is.
 
 ## Considered Options
 
@@ -43,4 +48,7 @@ decision.
 
 The Rail's own contents become a maintenance obligation rather than a display:
 adding a Showcase means giving its entry a link in the same change, and the
-`deep-links` Check already fails a build whose Section has no working URL.
+`deep-links` Check already fails a build whose Section has no working URL. Since
+#192 there is exactly one place to do it — `src/kernel/rail/content.ts` — where
+there were one per Section, and the `rail` Check fails a document carrying a
+second Rail.

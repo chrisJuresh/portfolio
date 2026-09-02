@@ -291,6 +291,18 @@ Every dependency version is pinned exactly and nothing is updated on a schedule
 ignores `.npmrc` for `saveExact`, and the failure mode is a caret quietly
 reappearing in `package.json`.
 
+**The Rail — Photo Vault / Eater Map / Record Engine — is the KERNEL's, and there
+is exactly one of it.** #192 took it out of the two Sections that each drew one
+and swapped them as the reader turned. It is `src/kernel/rail/`, its Tokens are
+`src/kernel/tokens/rail.css`, and `src/pages/portfolio.astro` places it between
+the Front Screen and the Gallery — which both regimes need: pinned to the window
+inside the band, so a page turn moves the highlight and nothing else, and in flow
+outside it, at the head of the index. **Its words are the one Content file the
+Editor cannot reach**, because that boundary discovers `src/sections/*` and
+nothing else, so they are changed by hand. The current entry is derived from the
+Section at rest and never declared; the `rail` Check asserts the count, that the
+box does not move across the turn, and that the highlight follows it back.
+
 **Read [`src/kernel/NOTES.md`](src/kernel/NOTES.md) before touching the Kernel,
 and [`src/sections/NOTES.md`](src/sections/NOTES.md) before adding a
 Section.** Between them they carry the folder convention, what the build actually

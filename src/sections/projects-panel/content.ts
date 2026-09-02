@@ -3,8 +3,10 @@ import { defineContent, z } from '../../kernel/content';
 /**
  * The Projects Panel's Content, and its schema.
  *
- * Every word the Section draws is here, and the two the Rail speaks without ever
- * printing. NOTES.md says where each of them came from and what was cut.
+ * Every word the Section draws is here. The Rail's are not: it is one piece of
+ * furniture standing on the page rather than a thing this Section draws (#192),
+ * so its words are the Kernel's — src/kernel/rail/content.ts. NOTES.md says
+ * where each of these came from and what was cut.
  */
 const schema = z.object({
   /** The Section's accessible name, and the word the Cut Title stands in for. */
@@ -15,28 +17,6 @@ const schema = z.object({
    * front of — so it is authored rather than a consequence of the column's width.
    */
   subheading: z.tuple([z.string().min(1), z.string().min(1)]),
-  rail: z.object({
-    /** The landmark's name. Spoken, never drawn. */
-    label: z.string().min(1),
-    /**
-     * Said after a project with no Section of its own. Grey says it to anything
-     * looking; this says it to anything listening.
-     */
-    unbuilt: z.string().min(1),
-    /**
-     * An entry is a route if it holds a link, and that is the whole of the
-     * machinery — the fragment already names the Section, so no attribute has to.
-     * An entry with no `href` is one of the two that are not built yet.
-     */
-    projects: z
-      .array(
-        z.object({
-          name: z.string().min(1),
-          href: z.string().min(1).optional(),
-        }),
-      )
-      .min(1),
-  }),
   copy: z.array(z.string().min(1)).min(1),
   /**
    * The Frame's address field. Content and not a Token, because it is a fact
@@ -63,15 +43,6 @@ export type ProjectsPanelContent = z.output<typeof schema>;
 export const content = defineContent(schema, {
   masthead: 'Projects',
   subheading: ['Self-stacking', 'photo gallery'],
-  rail: {
-    label: 'Projects',
-    unbuilt: ' — no page yet',
-    projects: [
-      { name: 'Photo Vault', href: '#projects' },
-      { name: 'Eater Map', href: '#eater-map' },
-      { name: 'Record Engine' },
-    ],
-  },
   frame: { address: '127.0.0.1:8770' },
   copy: [
     'Twenty years of photographs had turned into 1,374,328 file paths across ' +

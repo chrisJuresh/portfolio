@@ -1,0 +1,213 @@
+---
+// The Rail: Photo Vault / Eater Map / Record Engine, once, for the whole page.
+//
+// ONE PIECE OF FURNITURE AND NOT A THING EACH SECTION DRAWS AGAIN (#192). Both
+// Sections used to render one of these and the page swapped them as the reader
+// turned, which is what "the list is recreated as its own thing when you scroll
+// down" was. There is exactly one in the document now, it belongs to the Kernel,
+// and the current entry is derived from the Section the page is resting on
+// rather than declared by whichever Section is drawing it.
+//
+// src/kernel/NOTES.md carries the reasoning: where it stands in the document and
+// why it has to stand there, the two regimes, and what the Check holds.
+import '../tokens/rail.css';
+import { content } from './content';
+
+/**
+ * The entry a reader with no scripts is given, and the one the page opens on.
+ *
+ * The FIRST entry that names a Section, which is the Gallery — the Rail is
+ * printed at the head of the index and the index begins there. `rail.ts` takes
+ * it over on the first scroll; a reader whose scripts never arrive keeps it, and
+ * it is right for them, because without a script nothing has moved the page
+ * either.
+ */
+const opensOn = content.projects.findIndex((project) => project.href);
+---
+
+{/* data-rail is the handle, and it is what "exactly one Rail" is counted by.
+    role="list" on a list that already is one: `list-style: none` costs a list
+    its semantics in VoiceOver, and the Rail is meant to be announced as a list
+    of projects. */}
+<nav class="kernel-rail" data-rail aria-label={content.label}>
+  <ul class="kernel-rail__items" role="list">
+    {content.projects.map((project, index) => (
+      <li
+        class:list={['kernel-rail__item', { 'is-selected': index === opensOn }]}
+        data-rail-item
+        data-rail-for={project.href?.slice(1)}
+      >
+        {project.href ? (
+          <a href={project.href} aria-current={index === opensOn ? 'true' : undefined}>
+            {project.name}
+          </a>
+        ) : (
+          <Fragment>
+            {project.name}
+            <span class="kernel-rail__quiet">{content.unbuilt}</span>
+          </Fragment>
+        )}
+      </li>
+    ))}
+  </ul>
+</nav>
+
+<style>
+  /* ---- outside the band: a row at the head of the index -------------------
+     The page is a scroll out here and there is no page turn to stand still
+     across, so the Rail is printed ONCE, in flow, where the index it names
+     begins — which is exactly where the Projects Panel used to draw it, and this
+     block is that Section's rules moved rather than rewritten. Three names
+     across the top and they wrap: 360 and 320 are real screens and the longest
+     of the three does not fit beside the other two on either.
+
+     THE CROWN IS THE CLEARANCE AND IT CAME WITH THE RAIL. Out here the Front
+     Screen's cut PROJECTS is given its whole cap slab and hands the difference
+     back as a negative bottom margin, so the letters hang past that Section's
+     foot and over whatever is under them — which is this. The Panel paid for
+     that clearance while the Rail was inside it; tokens/rail.css has where the
+     number was measured. */
+  .kernel-rail {
+    padding: var(--rail-crown) var(--rail-side) 0;
+    /* The face and the leading the Rail used to inherit from the Section it
+       stood in. It stands in none now, so it says both for itself. */
+    font-family: var(--face-panel);
+    font-weight: 400;
+    line-height: var(--rail-leading);
+    --rail-size: var(--rail-stacked);
+  }
+
+  .kernel-rail__items {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    /* Both gaps are multiples of the names' own size, so the row shrinks as one
+       drawing — a rem clamp with its own vw slope opens the gaps as the type
+       closes. */
+    column-gap: calc(var(--rail-gap) * var(--rail-size));
+    row-gap: calc(var(--rail-rows) * var(--rail-size));
+  }
+
+  .kernel-rail__item {
+    white-space: nowrap;
+    font-size: var(--rail-size);
+    letter-spacing: var(--rail-tracking);
+    text-transform: uppercase;
+    font-feature-settings: 'case' 1;
+    color: color-mix(in oklab, var(--ink), transparent var(--rail-veil));
+  }
+
+  .kernel-rail__item.is-selected {
+    color: var(--ink);
+  }
+
+  .kernel-rail__item a {
+    color: inherit;
+    /* Three words in a margin: an underline across a rotated one reads as a
+       strikethrough, and the two regimes have one rule between them. */
+    text-decoration: none;
+  }
+
+  .kernel-rail__item:not(.is-selected) a:hover {
+    color: var(--ink);
+  }
+
+  .kernel-rail__item a:focus-visible {
+    outline: 1px solid currentColor;
+    outline-offset: 3px;
+  }
+
+  .kernel-rail__quiet {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    border: 0;
+    clip-path: inset(50%);
+    overflow: hidden;
+    white-space: nowrap;
+  }
+
+  /* ---- in the band: an index down the page's own edge, and it does not move -
+     THE WHOLE POINT OF #192 IS IN THE `fixed`. Inside the band the document is a
+     page turn, and the Rail used to be drawn inside whichever Section the reader
+     was standing on — so turning from the Gallery to the Eater Map carried one
+     index off the top of the screen and brought another up from the bottom.
+     Pinned to the window instead, a turn moves the highlight and nothing else,
+     which is the sentence the ticket is written in. The `rail` Check asserts it
+     by comparing the box at the two resting places.
+
+     THE COLUMN IS THE PAGE'S OWN LEFT MARGIN and is the Kernel's own length, so
+     nothing moved when the Rail became the Kernel's: --landing-side is what both
+     Sections already read for it, the word PROJECTS stands on it, and
+     tokens/landing.css records that the margin is floored against one rotated
+     line of THIS type. The insets are the air at each end — the names are spread
+     `space-between`, so they are exactly where the first and the last of them
+     stand.
+
+     OUT OF FLOW AND BEFORE THE GALLERY IN THE DOCUMENT, which needs no z-index
+     and would be broken by one. In the band the Panel paints no ground of its
+     own and the Eater Map is not positioned at all, so nothing covers this; a
+     z-index would instead lift it out over the Effect Stack, which treats the
+     page and has treated the Rail with it since there was one. */
+  @media (min-width: 1100px) and (min-height: 700px) {
+    .kernel-rail {
+      position: fixed;
+      left: 0;
+      top: var(--rail-inset);
+      bottom: var(--rail-inset);
+      width: var(--landing-side);
+      padding: 0;
+      display: flex;
+      --rail-size: max(var(--rail-floor), calc(var(--rail-share) * var(--landing-w)));
+
+      /* AND IT ARRIVES WITH THE PAGE. The Rail belongs to the index and the
+         first screen is not part of it — a name standing beside the Front
+         Screen's cut word reads as a second fragment beside the one the
+         composition cut on purpose.
+
+         --turn AND NO WINDOW OF ITS OWN: three words in a margin answer nothing,
+         so they can simply come up with the page. Linear on the Kernel's own
+         number, so it inherits the page turn's ease, is exact at both resting
+         places and at a deep link, and is a state rather than a movement for a
+         reader who asked for less motion.
+
+         `opacity` AND NOT A MIX, because every name in here is drawn through a
+         rotation and has already given up its subpixel antialiasing. What
+         opacity buys is one declaration for the whole box — both inks, the hover
+         and the focus ring — and it costs the resting page nothing, because
+         --turn is exactly 1 where the turn comes to rest. */
+      opacity: var(--turn);
+    }
+
+    /* A BROWSER THAT RUNS NOTHING GETS THE RAIL: nothing would ever drive --turn
+       for that reader, so an arrival is an index deleted rather than an index
+       waiting. */
+    @media (scripting: none) {
+      .kernel-rail {
+        opacity: 1;
+      }
+    }
+
+    .kernel-rail__items {
+      flex: 1;
+      flex-direction: column;
+      flex-wrap: nowrap;
+      justify-content: space-between;
+      align-items: center;
+      column-gap: 0;
+      row-gap: 0;
+    }
+
+    .kernel-rail__item {
+      /* Turned per ITEM and not on the list: rotating the list would rotate the
+         order with it and put the last project at the top. */
+      writing-mode: vertical-rl;
+      transform: rotate(180deg);
+    }
+  }
+</style>

@@ -1,0 +1,80 @@
+/* The Rail's numbers, apart from what draws it — src/kernel/rail/Rail.astro is
+   that, and src/kernel/NOTES.md says why the Rail is the Kernel's rather than a
+   Section's at all.
+
+   EVERY VALUE HERE CAME OFF THE PROJECTS PANEL, and that is deliberate rather
+   than lazy: #192 moved one existing piece of furniture into the Kernel, so the
+   Rail is meant to stand exactly where it stood. Each one names the Token it was
+   taken from, the way tokens/landing.css names the Section each of its terms
+   came from — and for the same reason, which is that the Kernel may not read a
+   Section (CONTEXT.md), so a number that has to agree with one is restated here
+   and held to it by a Check rather than by hope. The `rail` Check is what holds
+   the two that can actually drift apart: the column in the band, and the left
+   edge the names share with the composition below them outside it. */
+
+:root {
+  /* ---- how the names are set ---------------------------------------------
+     The leading is --projects-panel-leading, which is what the Section the Rail
+     used to stand in set its whole ladder at, and the tracking is that Section's
+     --projects-panel-rail-tracking. Both were the Eater Map's too, to the
+     hundredth, which is one of the two things #192 found already agreed. */
+  --rail-leading: 1.5;
+  --rail-tracking: 0.22em;
+
+  /* HOW FAR THE UNSELECTED NAMES ARE LET GO, as transparency against the page's
+     own ink. The Eater Map's --eater-map-muted-veil, which is the newer of the
+     two answers and the one that is a function of --ink rather than of a
+     Section's own far end — so it crosses with the page for nothing. */
+  --rail-veil: 32%;
+
+  /* ---- the size, in the band ---------------------------------------------
+     A share of the landing's own composition width, floored in px so the names
+     do not vanish on a small window. --projects-panel-rail-share and
+     --projects-panel-rail-floor, unchanged: in the band the Panel's own
+     --projects-panel-w IS --landing-w, so this is the same length the Rail has
+     been drawn at all along.
+
+     THE COLUMN IS FLOORED AGAINST THIS AND NOT THE OTHER WAY ROUND.
+     tokens/landing.css's --landing-side has to be wider than one rotated line of
+     it — leading times size — or the names run off the left of the page, which
+     has happened. Move the share and read that note. */
+  --rail-share: 0.01397;
+  --rail-floor: 10px;
+
+  /* ---- and outside it, where the Rail is a row rather than an index -------
+     --projects-panel-rail-stacked, resolved. That was
+     `0.618 x clamp(0.85rem, 0.727rem + 0.6vw, 1.05rem)` — the quietest rung of
+     the Panel's stacked ladder, phi-inverse off its unit — and the multiplication
+     is done here because the Kernel cannot refer to that Section's unit. The
+     terms are exact: 0.618 of each of the clamp's three. */
+  --rail-stacked: clamp(0.5253rem, 0.449286rem + 0.3708vw, 0.6489rem);
+
+  /* Both in multiples of the Rail's OWN size, so the row of names is one drawing
+     that scales with the type in it — --projects-panel-stack-rail-gap and
+     --projects-panel-stack-rail-rows. */
+  --rail-gap: 1.6;
+  --rail-rows: 0.9;
+
+  /* ---- where the Rail stands ---------------------------------------------
+     IN THE BAND, THE AIR AT EACH END OF THE COLUMN. The names are spread
+     `space-between` down the screen, so this is exactly where the first and the
+     last of them stand. --projects-panel-side, which that Section's own
+     tokens.css already described as the length "the landing Rail's two insets
+     are declared off". */
+  --rail-inset: 1.35rem;
+
+  /* OUTSIDE IT, THE PAGE'S OWN SIDE MARGIN. --projects-panel-stack-side, and it
+     has to stay equal to it: the row of names stands at the head of the index
+     and its left edge is the composition's. The `rail` Check compares the two on
+     the page rather than trusting this. */
+  --rail-side: clamp(1.35rem, 1rem + 2.2vw, 3.5rem);
+
+  /* AND THE AIR UNDER THE OVERHANGING WORD, which is the clearance the Rail has
+     always needed and the Projects Panel used to pay for it. Out of the band the
+     Front Screen's cut PROJECTS hangs past that Section's foot, and what it hung
+     over was the Rail: the index printed through the bottom of the letters at
+     every window from a tablet to the band's own edge. --projects-panel-stack-crown
+     is where it was measured, and that Section's tokens.css carries the
+     derivation; it comes with the Rail because it was only ever the Rail's. */
+  --rail-crown: clamp(2.88rem, 1.8rem + 5.3vw, 4.6rem);
+}

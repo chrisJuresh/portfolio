@@ -6,6 +6,7 @@
 // deployment (ADR 0001) and opened at the Section the last segment names. The
 // rewrites are declared in vercel.json, the local servers mirror them out of
 // that same file, and the Shell makes the jump.
+import Rail from '../kernel/rail/Rail.astro';
 import EaterMap from '../sections/eater-map/EaterMap.astro';
 import FrontScreen from '../sections/front-screen/FrontScreen.astro';
 import ProjectsPanel from '../sections/projects-panel/ProjectsPanel.astro';
@@ -44,8 +45,18 @@ const HERE = 'https://chrisj.uk/portfolio';
       says so as a relationship, not as a list), so a Section added here is a
       port the day it lands and the Kernel never learns its name. The crossing
       finishes at the second one, so the Panel and everything after it are dark —
-      src/kernel/turn.ts. */}
+      src/kernel/turn.ts.
+
+      AND THE RAIL STANDS BETWEEN THE FIRST SECTION AND THE INDEX IT NAMES, which
+      is a fact about the document and therefore belongs beside the order rather
+      than inside either Section (#192). It is the Kernel's furniture and there is
+      exactly one of it: pinned to the window inside the landing band, so a page
+      turn moves the highlight and nothing else, and in flow out here, at the head
+      of the index, where the Projects Panel used to draw it. Both need it HERE —
+      out of flow it costs the document nothing, and in flow it has to be the box
+      immediately above the Gallery. src/kernel/NOTES.md. */}
   <FrontScreen />
+  <Rail />
   <ProjectsPanel />
   <EaterMap />
 </Shell>

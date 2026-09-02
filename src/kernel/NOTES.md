@@ -2,8 +2,8 @@
 
 The small set of things every Section may rely on, and the only thing permitted
 to cross a Section boundary: the faces, the theme and the Turn, the Effect Stack,
-the corner pictures, the Section loader, and the page turn between the Sections
-along with the landing it arrives at.
+the corner pictures, the Rail, the Section loader, and the page turn between the
+Sections along with the landing it arrives at.
 
 It is also the only place in `src/` allowed to write a global selector. A Section
 that wants something global wants it in here, and adding it is a decision rather
@@ -16,6 +16,7 @@ than a convenience.
 | `faces.css` / `tokens/faces.css` | the five families, six files, the face Tokens, and the page's own type size — the zoom, the ceiling and the give-way |
 | `ground.css`                | the theme's two papers, the Turn across them, and that the document never scrolls sideways |
 | `corners.css` / `corners.ts`| the plate, the car and the eye — geometry, and which rung    |
+| `rail/` / `tokens/rail.css` | the Rail — the one index on the page, its words, its two regimes, and which entry is current |
 | `effect-stack/`             | the nine layers, and the grain tile                          |
 | `theme.ts`                  | which paper, where it is stored, and who is told when it changes |
 | `turn.ts`                   | the Turn, as one named seekable Timeline, how far it runs in each regime, and `onTurn()` for anything drawn against it that CSS cannot draw |
@@ -315,6 +316,122 @@ light on the same number, so the two must have the same luminance somewhere in
 the middle. Spanning the crossing over one screen is what keeps that to a moment.
 Anything that removes it — a hard flip, an eased `--turn`, a drawn edge — is a
 change to the design and belongs to the author.
+
+## The Rail
+
+Three project names down the page's left edge, reading bottom to top, marking
+which project is being shown and which two are not built. **One of them, for the
+whole page** — #192, and that is the whole of what that ticket did.
+
+**Both Sections used to draw one and the page swapped them**, which the author
+reported as "the list is recreated as its own thing when you scroll down". Inside
+the band that is literally what a reader saw: the Gallery's index rode off the
+top of the screen on a wheel notch and the Eater Map's came up from the bottom,
+and the two were not even the same size — the Panel solved its names as a share of
+the composition and the Eater Map typed `0.62rem`. There is exactly one in the
+document now, it is the Kernel's, and turning the page moves the highlight and
+nothing else.
+
+**Its column is the page's own left margin, so nothing moved when it changed
+owners.** `--landing-side` is the length both Sections already read for the white
+the composition leaves, the word PROJECTS is set on it, and `tokens/landing.css`
+records that the margin is floored against one rotated line of the Rail's own type
+— which is a real floor and not a hypothetical: while that margin restated
+`--front-screen-rhyme` and the rhyme had been cut to 2.7vh, the list was 44.6px
+wide in a 35.4px column at 2560×1311 and all three names ran off the page.
+
+### Where it stands in the document, and why there
+
+`src/pages/portfolio.astro` renders it **between the Front Screen and the
+Gallery**, which is a fact about the document rather than a composition decision,
+and both regimes need it exactly there.
+
+Out of the band the Rail is **in flow**: the page is a scroll, there is no page
+turn to stand still across, and the index is printed once at the head of the
+thing it indexes. That is the box immediately above the Gallery, and there is no
+way to be that box from anywhere else in the document.
+
+In the band it is **`position: fixed`**, so it costs the document no height at
+all and the DOM position is free. What it buys is the ticket's own sentence: the
+box is in the same place at the Gallery's resting place and at the Eater Map's,
+to the pixel, and the `rail` Check compares the two rects rather than describing
+either.
+
+**It needs no z-index and would be broken by one.** In the band the Panel paints
+`background: none` and the Eater Map is not positioned at all, so nothing covers a
+fixed box that precedes them in tree order. A `z-index` would lift the Rail out
+over the Effect Stack, which treats the whole page and has treated the Rail with it
+since there was one to treat.
+
+### It arrives with the page, and it runs the screen's height
+
+An index in a margin runs the height of the **page**, and inside the band the page
+is the screen. `--rail-inset` at each end, and the three names spread
+`space-between`, so those two lengths are exactly where the first and the last of
+them stand. Before #192 that was an absolute box inside a Section, which had to
+subtract the Panel's own `--projects-panel-lift` back off its top to find the
+screen's edge; pinned to the window there is no Section's box to correct for, and
+the lift is one length with one reader again.
+
+**The first screen is not part of the index**, and a name standing beside the
+Front Screen's cut word is half a name — the box would run off the top of the
+screen mid-letter. So the Rail is drawn against `--turn`, the same device the
+Panel's arriving paragraph uses and for the same reason. Two differences from that
+paragraph, both deliberate: **no window of its own**, because the copy waits a
+third of the way across to answer a question the reader has not been asked and
+three words in a margin answer nothing; and **`opacity` rather than a mix**,
+because what a mix buys the paragraph is subpixel antialiasing and every name here
+is drawn through a rotation, which has already cost it. A reader who runs no
+script gets the Rail outright — `@media (scripting: none)`, the same escape and
+the same reader as the paragraph's.
+
+Out of the band it is a row, and two things about the row are worth keeping.
+**`--rail-crown` is a clearance and not a margin**: out here the Front Screen's cut
+PROJECTS hangs past that Section's foot, and what it hangs over is this. The
+Projects Panel paid that bill while the Rail was inside it, and its NOTES.md
+carries the measurement. And **the names WRAP** — RECORD ENGINE at 0.22em of
+tracking is a long word and 360 and 320 are real screens; without `wrap` the third
+project is simply not named, which is not a Rail. Both of its gaps are multiples
+of the names' own size, so the row shrinks as one drawing rather than opening up
+as the type closes.
+
+### An entry is a route if it holds a link
+
+That is the whole of the machinery — no attribute says which Section an entry
+names, because the link's own fragment already does (ADR 0007). The other two
+projects become entries with an `href` on the day their Sections arrive, and
+nothing else changes.
+
+That is also what earns the `<nav>` and the `aria-current`: a landmark announcing
+a set of links to nowhere would be worse than no landmark, and one of the three
+leads somewhere. `aria-current` goes on the `<a>`, where it is announced, rather
+than on the `<li>`, where a screen reader is not obliged to say anything about it.
+The entries that lead nowhere carry a visually-hidden qualifier instead — grey says
+"not selected" to anything looking, and the qualifier says "no page yet" to
+anything listening. `role="list"` on a list that already is one, because the items
+carry `list-style: none` and VoiceOver drops list semantics from a list with no
+markers.
+
+**Which entry is current is DERIVED and not declared**, and that is the half of
+#192 that is not CSS. `rail/rail.ts` picks the last Section at or above the reader
+that the Rail actually names, asking each one for its port the way `page-turn.ts`
+does — the box's top edge less its own `scroll-margin-top`. The Front Screen names
+none, so the Gallery's entry stands from the top of the document until the Eater
+Map's port goes past, and the same rule gives the right answer in both regimes
+without either being written down. The markup already marks the entry the page
+opens on, so the script agrees with the server at rest and writes nothing until
+the reader moves — which is also what a reader with no scripts is left holding.
+
+### Its words are the one Content file the Editor cannot reach
+
+`rail/content.ts` is Content by every part of CONTEXT.md's definition except the
+word *Section*, and the Editor's Content boundary discovers `src/sections/*` and
+nothing else (`scripts/editor/lib/sections.mjs`). So the Rail's five words are the
+only ones on the page an agent has to change by hand. That is a ticket of its own
+and a small one — the Kernel's **Tokens** already answer to `kernel-<stem>` on that
+surface, and Content would be the same move at the other boundary. It is not this
+one, and the alternative was leaving one of the two Sections owning the words for
+a list that is no longer either Section's.
 
 ## The page turn, and who owns a notch
 

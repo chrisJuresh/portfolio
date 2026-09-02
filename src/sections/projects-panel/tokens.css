@@ -19,39 +19,46 @@
      hairline crosses at a different rate from the ground it is drawn on. */
   --projects-panel-rule-near: color-mix(in oklab, var(--paper-ink-soft), transparent 88%);
 
-  /* ---- the page's two margins, kept rather than invented ------------------ */
+  /* ---- the page's margin, kept rather than invented -----------------------
+     It was two. The other was --projects-panel-side, 1.35rem flat, and the only
+     thing that ever read it was the Rail's two insets in the band — so it left
+     with the Rail (#192) rather than staying here as a Token the Editor draws a
+     control for and nothing on the page answers. `--rail-inset` in
+     src/kernel/tokens/rail.css is that same value, and it names where it came
+     from. */
   --projects-panel-inset: clamp(1.25rem, 2.7vh, 2rem);
-  --projects-panel-side: 1.35rem;
 
   /* ---- the two constants the composition's width is solved from ----------- */
   --projects-panel-fit: 0.6042;
   --projects-panel-across: 0.9597;
 
   /* ---- the type scale: shares of the composition, not of the window -------
-     SIX, and it was five: the engineering point's title and its figure were one
-     size called `small` and are now two. NOTES.md has where each of these came
-     from, and the rule that binds them — MOVING EITHER OF THE FIRST TWO MEANS
-     RE-DERIVING `--projects-panel-fit`, and `--landing-fit` beside it, because
-     those two shares ARE the composition's height. */
+     FIVE, and it has been six and five before that: the engineering point's
+     title and its figure were one size called `small` and became two, and the
+     Rail's went to the Kernel with the Rail (#192) — `--rail-share` and
+     `--rail-floor` in src/kernel/tokens/rail.css are the same two numbers, spent
+     against --landing-w, which in the band IS --projects-panel-w. NOTES.md has
+     where each of these came from, and the rule that binds them — MOVING EITHER
+     OF THE FIRST TWO MEANS RE-DERIVING `--projects-panel-fit`, and
+     `--landing-fit` beside it, because those two shares ARE the composition's
+     height. */
   --projects-panel-masthead-share: 0.0885;
   --projects-panel-sub-share: 0.0466;
   --projects-panel-copy-share: 0.01634;
   --projects-panel-point-share: 0.01863;
   --projects-panel-figure-share: 0.00858;
-  --projects-panel-rail-share: 0.01397;
 
-  /* Three of the six get a floor, and it is in px. NOTES.md says which and why. */
+  /* Two of the five get a floor, and it is in px. NOTES.md says which and why. */
   --projects-panel-point-floor: 14px;
   --projects-panel-figure-floor: 11px;
-  --projects-panel-rail-floor: 10px;
 
-  /* ---- the same six, for the one column outside the band -----------------
-     ONE SIZE, AND FIVE SHARES OF IT. In the band the composition is one drawing
+  /* ---- the same five, for the one column outside the band ----------------
+     ONE SIZE, AND FOUR SHARES OF IT. In the band the composition is one drawing
      solved to a screen, and every length is a share of its width; out here the
      column is whatever the window gives, so the drawing needs a different
      invariant and this is it. `--projects-panel-stack-size` IS the copy, and the
-     other five are ratios of it — so the ladder is the same shape at 360 as at
-     1099 and the page reads as one design rather than as six clamps that happen
+     other four are ratios of it — so the ladder is the same shape at 360 as at
+     1099 and the page reads as one design rather than as five clamps that happen
      to overlap.
 
      WHAT IT REPLACES LOOKED REASONABLE AND WAS NOT, which is the part worth
@@ -64,9 +71,12 @@
      against a picture that was not.
 
      THE RATIOS ARE POWERS OF THE GOLDEN RATIO at the half step (√φ = 1.272),
-     which is the coarsest scale that still gives six distinguishable sizes:
+     which is the coarsest scale that still gives six distinguishable sizes. The
+     Rail's rung is kept in the table because the Rail is still set on it — it is
+     `--rail-stacked` in src/kernel/tokens/rail.css now, resolved against this
+     unit, and this is where the arithmetic is:
 
-       rail    φ⁻¹    0.618   the quietest thing on the page: an index
+       rail    φ⁻¹    0.618   the quietest thing on the page: an index (the Kernel's)
        figure  √φ⁻¹   0.786   a caption under a label
        copy    1      1.000   THE UNIT
        point   √φ     1.272   a label, made loud by caps and weight, not by size
@@ -87,7 +97,6 @@
      flow as well. It is declared only because the base sheet reads
      `--projects-panel-masthead-size` for an element that is one pixel square. */
   --projects-panel-stack-size: clamp(0.85rem, 0.727rem + 0.6vw, 1.05rem);
-  --projects-panel-stack-rail-ratio: 0.618;
   --projects-panel-stack-figure-ratio: 0.786;
   --projects-panel-stack-point-ratio: 1.272;
   --projects-panel-stack-sub-ratio: 2.618;
@@ -115,12 +124,12 @@
   --projects-panel-figure-stacked: calc(
     var(--projects-panel-stack-figure-ratio) * var(--projects-panel-stack-size)
   );
-  --projects-panel-rail-stacked: calc(
-    var(--projects-panel-stack-rail-ratio) * var(--projects-panel-stack-size)
-  );
 
-  /* ---- the gutters, as shares for the same reason ------------------------- */
-  --projects-panel-gap-share: 0.01935;
+  /* ---- the gutters, as shares for the same reason -------------------------
+     --projects-panel-gap-share was the seam between the Rail's column and the
+     composition beside it, and it went out with that column (#192): outside the
+     band the Rail is a row above the Section and there is no column for a gap to
+     be between. */
   --projects-panel-gutter-share: 0.01231;
   --projects-panel-copy-inset-share: 0.01407;
   /* THE POINTS' GAP IS A FLOOR AND NOT THE GAP. The list spreads itself down
@@ -137,7 +146,6 @@
   --projects-panel-masthead-tracking: -0.005em;
   --projects-panel-sub-leading: 1;
   --projects-panel-copy-leading: 1.5;
-  --projects-panel-rail-tracking: 0.22em;
   --projects-panel-point-weight: 500;
   --projects-panel-point-leading: 1.25;
   --projects-panel-point-tracking: 0.045em;
@@ -182,32 +190,16 @@
      read. Floored at the same 1.35rem, so nothing about a phone changes. */
   --projects-panel-stack-side: clamp(1.35rem, 1rem + 2.2vw, 3.5rem);
 
-  /* THE AIR UNDER THE OVERHANGING WORD. Out of the band the Front Screen's cut
-     PROJECTS is given its whole cap slab and hands the difference back as a
-     negative bottom margin, so `1 - --front-screen-cut-show` of the letters hang
-     PAST that Section's foot and over this one's top edge — measured, 5.73% of
-     the word's own width, which is 29.5px once the word stops growing at about
-     600px of window.
-
-     THIS SECTION CANNOT READ THAT NUMBER: the Front Screen declares its cut
-     Tokens on its own root, not on `:root`, so the overhang is re-measured here
-     rather than referenced. What the Section had instead was
-     --projects-panel-inset, a 2.7vh margin that knows nothing about the word,
-     and from 600px of window up the Rail's own box started ABOVE the letters'
-     feet — the index printed through the bottom of PROJECTS at every window from
-     a tablet to the band's own edge, by 2 to 6px.
-
-     So this is the overhang plus a deliberate amount of air, not a padding that
-     happens to clear it. RE-DERIVE IT if --front-screen-cut-show moves, or if
-     the word's own width stops being capped where it is. */
-  --projects-panel-stack-crown: clamp(2.88rem, 1.8rem + 5.3vw, 4.6rem);
-
-  /* Both in multiples of the Rail's OWN size rather than in rem, so the row of
-     names is one drawing that scales with the type in it — the same reason the
-     points' gap below is stated the way it is. The column gap was a rem clamp
-     with a 4vw slope, which grew the gaps as the names shrank. */
-  --projects-panel-stack-rail-gap: 1.6;
-  --projects-panel-stack-rail-rows: 0.9;
+  /* THE AIR UNDER THE OVERHANGING WORD WENT WITH THE RAIL (#192). Out of the
+     band the Front Screen's cut PROJECTS is given its whole cap slab and hands
+     the difference back as a negative bottom margin, so part of the letters hang
+     PAST that Section's foot and over whatever is under them — which was the
+     Rail's own box, standing at the top of this Section. That clearance was
+     --projects-panel-stack-crown here and is `--rail-crown` in
+     src/kernel/tokens/rail.css now, where the measurement and the two things to
+     re-derive it against are written down. This Section's own top padding out
+     here is the seam under the Rail instead, which is --projects-panel-stack-move
+     below. */
 
   /* The measure the paragraph is set to. IT IS THE PARAGRAPH'S AND NOT THE
      BOX'S: the hairline above the copy is that box's top border, so capping the

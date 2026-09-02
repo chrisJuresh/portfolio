@@ -4,9 +4,11 @@ import { PARTS } from './leaders';
 /**
  * The Eater Map Section's Content, and its schema.
  *
- * Every word the Section draws is here, including the two the Rail speaks and
- * never prints and the one word standing where the Slab will go. NOTES.md says
- * where the copy came from and what was cut out of it.
+ * Every word the Section draws is here, including the one standing where the
+ * Slab will go. The Rail's are not: there is one Rail on the page and it is the
+ * Kernel's (#192), so its words are in src/kernel/rail/content.ts and this
+ * Section held the second copy of them. NOTES.md says where the copy came from
+ * and what was cut out of it.
  */
 const schema = z.object({
   /**
@@ -37,26 +39,6 @@ const schema = z.object({
     z.string().min(1),
     z.string().min(1),
   ]),
-  rail: z.object({
-    /** The landmark's name. Spoken, never drawn. */
-    label: z.string().min(1),
-    /** Said after a project with no Section of its own. Grey says it to anything
-     *  looking; this says it to anything listening. */
-    unbuilt: z.string().min(1),
-    /**
-     * An entry is a route if it holds a link, and the fragment already names the
-     * Section, so no attribute has to. `#eater-map` is this Section's own, which
-     * is what marks this entry current here — ADR 0007.
-     */
-    projects: z
-      .array(
-        z.object({
-          name: z.string().min(1),
-          href: z.string().min(1).optional(),
-        }),
-      )
-      .min(1),
-  }),
   copy: z.array(z.string().min(1)).min(1),
   /**
    * The Exploded View's own words, which are one sentence: what the Slab is a
@@ -119,15 +101,6 @@ export type EaterMapContent = z.output<typeof schema>;
 export const content = defineContent(schema, {
   masthead: 'Projects',
   title: ['Every Eater', 'guide in', 'London on', 'one map'],
-  rail: {
-    label: 'Projects',
-    unbuilt: ' — no page yet',
-    projects: [
-      { name: 'Photo Vault', href: '#projects' },
-      { name: 'Eater Map', href: '#eater-map' },
-      { name: 'Record Engine' },
-    ],
-  },
   stage: {
     slabAlt:
       'The Eater map over Soho and Covent Garden, restaurants marked across it and the ' +

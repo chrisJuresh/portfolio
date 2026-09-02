@@ -29,19 +29,19 @@
   --eater-map-act: calc(2.618 * var(--eater-map-step));
 
   /* ---- the grid ------------------------------------------------------------
-     The gutter between the twelve columns, and the gap between the Rail's own
-     column and the composition beside it. */
+     The gutter between the twelve columns. --eater-map-gap was the seam between
+     the Rail's own column and the composition beside it, and it went out with
+     that column: there is one Rail on the page, it is the Kernel's, and this
+     Section leaves it the page's left margin as padding rather than as a grid
+     track (#192). */
   --eater-map-gutter: clamp(0.75rem, 0.4rem + 1vw, 1.5rem);
-  --eater-map-gap: clamp(1rem, 0.5rem + 1.6vw, 2.5rem);
 
-  /* ---- the Rail ------------------------------------------------------------
-     Its column is the page's own left margin in the band, so both Rails on the
-     page stand in one column; out here it is a row across the top and the width
-     is the whole of it. */
-  --eater-map-rail-size: 0.62rem;
-  --eater-map-rail-tracking: 0.22em;
-  --eater-map-rail-gap: 2.6;
-  --eater-map-rail-rows: 1.2;
+  /* ---- the Rail's four numbers came here and left again --------------------
+     They were --eater-map-rail-size, -tracking, -gap and -rows, and they were a
+     SECOND ANSWER to numbers the Projects Panel already had: a 0.62rem name here
+     against a name solved as a share of the composition there, so the two Rails
+     the page swapped between were not even the same size. src/kernel/tokens/rail.css
+     holds one set now, and the Panel's is the one it kept. */
 
   /* ---- the type ladder ---------------------------------------------------- */
   --eater-map-leading: 1.5;
