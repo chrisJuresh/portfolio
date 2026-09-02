@@ -128,15 +128,26 @@ misspelled `parameter`, and one of the two has to be a refusal.
 
 ### How each rewrite is declared
 
-Each entry in `retheme.rewrites` says which `parameter` it carries, which
-`module` URLs it claims, what to `find` there (always global), what to `replace`
-it with — `{value}` is where the parameter goes — and **`expect`, how many times
-it must match**. A value is rendered for the JavaScript it is pasted into: a word
-as itself, a number as itself, a list as an alternation, so `drop` arrives as
-`pois|address_label` inside Eater's own layer filter.
+Each entry in `retheme.rewrites` says which `parameter` it carries, what it `is`,
+which `module` URLs it claims, what to `find` there (always global), what to
+`replace` it with — `{value}` is where the parameter goes — and **`expect`, how
+many times it must match**. A value is rendered for the JavaScript it is pasted
+into: a word as itself, a number as itself, a list as an alternation, so `drop`
+arrives as `pois|address_label` inside Eater's own layer filter.
 
-`retheme.mjs` holds the three decisions — plan, rewrite, audit — as pure
-functions, and `retheme.test.mjs` beside it is what `pnpm test` runs.
+**The whole entry is read before a dev server is started**, and a field that is
+missing, mistyped or not a regular expression is a refusal naming the rewrite and
+the field — in a second, rather than three minutes in behind a boot and a page
+load. One of those checks is not about shape: **a `replace` with no `{value}` in
+it is refused**, because it would fire, make its declared number of substitutions
+and pass the audit while the parameter reached nothing. That is a light Slab
+under a dark declaration with every count agreeing, arriving through the
+declaration itself.
+
+`retheme.mjs` holds the decisions — plan, rewrite, audit, and the two sentences
+the run says about them — as pure functions, and `retheme.test.mjs` beside it is
+what `pnpm test` runs. `capture-slab.mjs` keeps the file, the socket and the
+browser, and none of the decisions.
 
 ## What is stripped, and what is not
 
@@ -210,8 +221,15 @@ is neither. It writes a file that opens, is the right size, is of the right plac
 and is the wrong colour — and it fails that way not when this repository changes
 but when *another one* does, on a run nobody is watching for it. So the decision
 about whether a rewrite landed is a pure function with a text fixture, and the
-test drives the three failures on purpose: a rewrite applied, a count that does
-not agree, and a source with nothing in it to match.
+test drives every way it can go wrong on purpose: a rewrite applied, a count that
+does not agree, a source with nothing in it to match, a module never served, a
+module served twice where only one fetch is bad, and each field a rewrite can
+declare wrongly.
+
+The Agent Contract names it as the second of `design/`'s two seams, beside
+`design/eater-cards/compare.mjs`, and says what they have in common — both decide
+something whose failure would be **silent**, and both fail when a repository that
+is not this one moves.
 
 **The capture around it still has no test**, and that is still deliberate: a
 fixture for a headless browser driving another repository's dev server costs more

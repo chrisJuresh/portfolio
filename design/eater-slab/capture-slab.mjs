@@ -99,7 +99,7 @@ import { mkdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 import { dirname, isAbsolute, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { chromium } from 'playwright';
-import { auditRetheme, planRetheme, rewriteModule } from './retheme.mjs';
+import { auditRetheme, planRetheme, rethemeHeld, rethemeReport, rewriteModule } from './retheme.mjs';
 
 const HERE = fileURLToPath(new URL('.', import.meta.url));
 const REPO = resolve(HERE, '..', '..');
@@ -494,26 +494,6 @@ export function stamp(bytes) {
   return createHash('sha256').update(bytes).digest('hex').slice(0, 8);
 }
 
-/**
- * The re-theme, as the report says it before a browser is started.
- *
- * The plan is printed rather than summarised because the whole claim being made
- * is "the Slab you are about to get is this one" — a run that says only "re-themed"
- * is a run whose reader still has to open slab.json to know what they got.
- *
- * @param {ReturnType<typeof planRetheme>} plan
- * @param {string} checkout
- * @returns {string[]}
- */
-function rethemeReport(plan, checkout) {
-  if (plan.length === 0) return ['slab: no re-theme declared — Eater\'s own modules, unmodified'];
-  const width = Math.max(...plan.map((one) => one.id.length));
-  return [
-    `slab: re-themed in flight; nothing in ${checkout} is edited`,
-    ...plan.map((one) => `slab:   ${one.id.padEnd(width)}  ${one.value}  (x${one.expect}, ${one.is})`),
-  ];
-}
-
 async function capture({ origin, asked, output, plan }) {
   let browser;
   try {
@@ -547,8 +527,8 @@ async function capture({ origin, asked, output, plan }) {
     const served = [];
     /** @type {string[]} */
     const unfetchable = [];
-    for (const source of new Set(plan.map((one) => one.module.source))) {
-      await context.route(new RegExp(source), async (route) => {
+    for (const pattern of new Set(plan.map((one) => one.module.source))) {
+      await context.route(new RegExp(pattern), async (route) => {
         const url = route.request().url();
         let response;
         try {
@@ -798,24 +778,17 @@ async function main() {
     console.log(`slab: Eater on ${eater.origin}\n`);
     const written = await capture({ origin: eater.origin, asked, output, plan });
     console.log(`slab: ${output}`);
+    // The size line is also an INSTRUCTION, and says so on the same line rather
+    // than on one of its own underneath. `pixels` is the other number slab.ts
+    // carries; it rarely moves, which is exactly why it is the one left behind
+    // when it does — and a wrong `pixels` is an intrinsic ratio fighting the
+    // layout. Saying it twice was how #188 shipped it, and once is enough.
     console.log(
-      `slab: ${written.width}x${written.height} px, ${(written.bytes / 1024).toFixed(0)} KB webp ` +
-        `(from ${(written.shot / 1024).toFixed(0)} KB png)`,
+      `slab: ${written.width}x${written.height} px — that is SLAB.pixels in src/sections/eater-map/slab.ts — ` +
+        `${(written.bytes / 1024).toFixed(0)} KB webp (from ${(written.shot / 1024).toFixed(0)} KB png)`,
     );
-    if (plan.length > 0) {
-      const made = written.retheme.reduce((sum, one) => sum + one.found.reduce((n, got) => n + got.count, 0), 0);
-      console.log(
-        `slab: re-theme held — ${made} substitution(s) over ${written.retheme.length} module fetch(es), ` +
-          'every count as declared',
-      );
-    }
-    // The size is the OTHER number slab.ts carries, and the size line above is
-    // easy to read as information rather than as an instruction. It rarely
-    // moves, which is exactly why it is the one that gets left behind when it
-    // does — and a wrong `pixels` is an intrinsic ratio that fights the layout.
-    console.log(
-      `slab: pixels ${written.width}x${written.height} — the other number in src/sections/eater-map/slab.ts`,
-    );
+    const held = rethemeHeld(written.retheme);
+    if (held) console.log(held);
     // The last line is the one that has to be acted on, so it says what to do
     // with it rather than printing a digest and leaving the reader to work it
     // out. /portfolio/img/ is cached by the deployment, so a Slab whose stamp did

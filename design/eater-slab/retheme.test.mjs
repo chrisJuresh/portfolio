@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
-import { auditRetheme, planRetheme, renderValue, rewriteModule } from './retheme.mjs';
+import { auditRetheme, planRetheme, renderValue, rethemeHeld, rethemeReport, rewriteModule } from './retheme.mjs';
 
 const SHIPPED = JSON.parse(readFileSync(new URL('./slab.json', import.meta.url), 'utf8')).retheme;
 
@@ -114,6 +114,65 @@ test('a value that would not survive being inlined is refused rather than inline
 test('a rewrite naming a parameter the block does not declare is refused', () => {
   const bent = declared({ rewrites: [{ ...SHIPPED.rewrites[0], parameter: 'flavour' }] });
   assert.throws(() => planRetheme(bent), /flavour/);
+});
+
+// ---------------------------------------------------------------------------
+// The declaration is checked WHOLE, and here rather than three minutes in
+// ---------------------------------------------------------------------------
+
+/** The shipped block with one field of the `flavor` rewrite bent. */
+const bend = (field, to) => {
+  const [first, ...rest] = SHIPPED.rewrites;
+  const bent = { ...first };
+  if (to === undefined) delete bent[field];
+  else bent[field] = to;
+  return declared({ rewrites: [bent, ...rest] });
+};
+
+test('every field a rewrite needs is checked, and the refusal names the rewrite and the field', () => {
+  // The point is WHERE this happens. planRetheme runs before Eater's dev server
+  // is started; auditRetheme runs three minutes later, behind a boot, a page
+  // load and a settle. A missing `expect` used to plan fine and refuse there.
+  for (const [field, to] of [
+    ['expect', undefined],
+    ['expect', '2'],
+    ['expect', 1.5],
+    ['expect', 0],
+    ['find', undefined],
+    ['find', ''],
+    ['module', undefined],
+    ['replace', undefined],
+    ['is', undefined],
+  ]) {
+    assert.throws(
+      () => planRetheme(bend(field, to)),
+      (error) => error.message.includes(field) && /flavor/.test(error.message),
+      `${field} = ${JSON.stringify(to)} was accepted`,
+    );
+  }
+});
+
+test('a rewrite with no id is refused, and says so instead of naming a rewrite it cannot name', () => {
+  assert.throws(() => planRetheme(bend('id', '')), /a rewrite with no id/);
+  assert.throws(() => planRetheme(bend('id', undefined)), /a rewrite with no id/);
+});
+
+test('a pattern that is not a regex is refused where it is written, not where it is used', () => {
+  assert.throws(() => planRetheme(bend('find', 'namedFlavor(')), /find/);
+  assert.throws(() => planRetheme(bend('module', '[')), /module/);
+});
+
+test('a replacement that does not carry {value} is refused — the parameter would be inert', () => {
+  // This is the silent one the whole file is against: the rewrite still fires,
+  // every count still agrees, and the parameter reaches nothing. Moving `flavor`
+  // to "dark" would leave the map light and the run would report success.
+  assert.throws(() => planRetheme(bend('replace', "namedFlavor('dark')")), /replace/);
+});
+
+test('a rewrite is checked even when its own parameter is turned off', () => {
+  // A skipped rewrite is still part of the declaration, and a broken entry in it
+  // is broken whichever way the parameters happen to be set today.
+  assert.throws(() => planRetheme({ ...bend('expect', undefined), flavor: 'light' }), /expect/);
 });
 
 // ---------------------------------------------------------------------------
@@ -237,6 +296,34 @@ test('nothing served at all refuses once per rewrite rather than passing vacuous
 
 test('an empty plan audits clean over an empty run — the reversal does not refuse itself', () => {
   assert.deepEqual(auditRetheme([], []), []);
+});
+
+// ---------------------------------------------------------------------------
+// What the run says it did
+// ---------------------------------------------------------------------------
+
+test('the report names every rewrite, its value and its count, and says the checkout is untouched', () => {
+  const said = rethemeReport(planRetheme(SHIPPED), 'D:/somewhere/eater').join('\n');
+  assert.match(said, /nothing in D:\/somewhere\/eater is edited/);
+  for (const rewrite of planRetheme(SHIPPED)) {
+    assert.ok(said.includes(rewrite.id), `${rewrite.id} is not in the report`);
+    assert.ok(said.includes(rewrite.value), `${rewrite.id}'s value is not in the report`);
+    assert.ok(said.includes(rewrite.is), `${rewrite.id} does not say what it does`);
+  }
+  assert.match(said, /x2/);
+});
+
+test('an empty plan says so, and does not claim to have edited anything', () => {
+  const said = rethemeReport([], 'D:/somewhere/eater').join('\n');
+  assert.match(said, /no re-theme declared/);
+  assert.ok(!/edited/.test(said), 'a run that rewrote nothing should not mention editing');
+});
+
+test('the tally counts substitutions and fetches, and is nothing over an empty run', () => {
+  const plan = planRetheme(SHIPPED);
+  const served = [serve(STYLE_URL, STYLE, plan), serve(CONSTANTS_URL, CONSTANTS, plan)];
+  assert.match(rethemeHeld(served), /4 substitution\(s\) over 2 module fetch\(es\)/);
+  assert.equal(rethemeHeld([]), null);
 });
 
 test('a module served twice has to agree BOTH times', () => {

@@ -1,35 +1,23 @@
 /* ============================================================================
-   retheme.mjs — the re-theme, as three pure functions.
+   retheme.mjs — the re-theme's decisions, as pure functions.
 
-   The Slab is a dark map and Eater's own source draws a light one. The re-theme
-   is how it becomes dark WITHOUT ANYTHING IN THE EATER CHECKOUT BEING EDITED:
-   the modules its dev server serves are rewritten on their way to the browser,
-   by the capture, from a declaration in slab.json.
+   WHAT a re-theme is, WHY it lives in this repository rather than in the Eater
+   checkout, and what each field of slab.json's `retheme` means are all in
+   README.md beside this, under "The re-theme", and are not repeated here.
 
-   Nothing here touches a file, a socket or a browser. `capture-slab.mjs` owns
-   all three; this owns the decisions, which is what makes them testable — and
-   they are the decisions that most need to be, because the failure they guard
-   against is silent. README.md, "The re-theme", says why it lives here.
+   What a reader of THIS FILE needs is two things.
 
-   THREE FUNCTIONS, IN THE ORDER A RUN USES THEM
-   ---------------------------------------------
-   `planRetheme` turns the declaration into the rewrites it means, refusing a
-   value that would not survive being inlined. `rewriteModule` applies the ones
-   that claim a module to that module's text, counting each. `auditRetheme`
-   reads every fetch back and says which rewrites did not get what they declared.
+   NOTHING HERE TOUCHES A FILE, A SOCKET OR A BROWSER, which is what makes it
+   testable — `capture-slab.mjs` owns all three. Read in the order a run uses
+   them: `planRetheme` turns the declaration into the rewrites it means and
+   refuses one it cannot trust; `rewriteModule` applies the ones that claim a
+   module to that module's text, counting each; `auditRetheme` reads every fetch
+   back and says which rewrites did not get what they declared. `rethemeReport`
+   and `rethemeHeld` are what the run says about all of it.
 
-   The third is the one the whole file is for. A rewrite that quietly stops
-   matching — Eater renames a function, protomaps moves a call site — writes a
-   LIGHT Slab, and a light Slab on disk looks exactly like a right one until
-   somebody opens it. That is the same argument `keep` and `strip` already make
-   in the capture, and this is the same answer: declare what must be true, ask
-   whether it was, and refuse.
-
-   WHY EVERY MATCH IS COUNTED PER FETCH RATHER THAN TOTALLED
-   ---------------------------------------------------------
-   vite re-serves a module on an HMR round trip, so a run can be handed the same
-   file twice. A total that only had to reach its count would let one good fetch
-   cover for a bad one; every fetch has to agree on its own.
+   AND THE COUNTS ARE PER FETCH RATHER THAN TOTALLED. vite re-serves a module on
+   an HMR round trip, so a run can be handed the same file twice, and a total
+   that only had to be reached would let one good fetch cover for a bad one.
    ========================================================================== */
 
 /**
@@ -68,6 +56,67 @@ function inlinable(value) {
 /** Two declared values are the same one when they say the same thing. */
 const same = (a, b) => JSON.stringify(a ?? null) === JSON.stringify(b ?? null);
 
+/** Where `{value}` goes in a `replace`, and the reason a `replace` needs one. */
+const SLOT = '{value}';
+
+/**
+ * Everything a rewrite has to say before it is worth planning, and what says it.
+ *
+ * The order matters only in the message: a reader is told the first thing wrong
+ * with the rewrite, and told it by name.
+ *
+ * @type {Array<[string, (given: any) => boolean, string]>}
+ */
+const FIELDS = [
+  ['id', (given) => typeof given === 'string' && given.length > 0, 'a name, so a refusal can say which rewrite'],
+  ['parameter', (given) => typeof given === 'string' && given.length > 0, "the name of the parameter it carries"],
+  ['is', (given) => typeof given === 'string' && given.length > 0, 'what it does, for the report and the refusal'],
+  ['module', (given) => typeof given === 'string' && given.length > 0, 'a regex for the module URLs it claims'],
+  ['find', (given) => typeof given === 'string' && given.length > 0, 'a regex for what it replaces'],
+  ['replace', (given) => typeof given === 'string' && given.includes(SLOT), `what it replaces them with, carrying ${SLOT}`],
+  ['expect', (given) => Number.isInteger(given) && given > 0, 'how many times it must match, a whole number above zero'],
+];
+
+/**
+ * Read a rewrite's whole entry, or refuse naming the rewrite and the field.
+ *
+ * WHY HERE AND NOT IN auditRetheme. This runs before Eater's dev server is
+ * started; the audit runs three minutes later, behind a boot, a page load and a
+ * settle. A `rewrites` entry with no `expect` used to plan perfectly well and
+ * fail down there, which is the exact cost `capture-slab.mjs` says planning
+ * early avoids.
+ *
+ * THE `replace` CHECK IS THE ONE THAT EARNS ITS KEEP, and it is not a shape
+ * check. A replacement with no `{value}` in it still fires, still makes its
+ * declared number of substitutions and still passes the audit — while the
+ * parameter reaches nothing. Moving `flavor` to `"dark"` would leave the map
+ * light and the run would report success, which is the failure this whole file
+ * exists to prevent, arriving through the file itself.
+ *
+ * @param {any} rule
+ * @returns {void}
+ */
+function readRewrite(rule) {
+  const named = typeof rule?.id === 'string' && rule.id ? `the ${rule.id} rewrite` : 'a rewrite with no id';
+  for (const [field, holds, wants] of FIELDS) {
+    if (holds(rule?.[field])) continue;
+    throw new Error(
+      `${named} in slab.json's retheme declares ${field} as ${JSON.stringify(rule?.[field])}, ` +
+        `and ${field} wants ${wants}.`,
+    );
+  }
+  for (const field of ['module', 'find']) {
+    try {
+      new RegExp(rule[field]);
+    } catch (error) {
+      throw new Error(
+        `${named}'s ${field} is not a regular expression — ${String(error?.message ?? error)}. ` +
+          'Written here it is a refusal; left to be compiled later it is a run that never rewrites anything.',
+      );
+    }
+  }
+}
+
 /**
  * @typedef {object} Rewrite
  * @property {string} id        which rewrite this is, in a report and in a refusal
@@ -97,6 +146,10 @@ export function planRetheme(declared) {
   /** @type {Rewrite[]} */
   const plan = [];
   for (const rule of declared.rewrites ?? []) {
+    // Read whole, and read BEFORE the skip: a rewrite whose parameter is turned
+    // off today is still part of the declaration, and a broken entry in it is
+    // broken whichever way the parameters happen to be set.
+    readRewrite(rule);
     if (!(rule.parameter in declared)) {
       throw new Error(
         `the ${rule.id} rewrite carries a parameter called ${JSON.stringify(rule.parameter)}, ` +
@@ -120,7 +173,7 @@ export function planRetheme(declared) {
       // Always global: the count is the whole point, and a non-global regex
       // caps every rewrite at one match and makes `expect: 2` unsatisfiable.
       find: new RegExp(rule.find, 'g'),
-      replace: rule.replace.replaceAll('{value}', renderValue(value)),
+      replace: rule.replace.replaceAll(SLOT, renderValue(value)),
       expect: rule.expect,
     });
   }
@@ -200,4 +253,39 @@ export function auditRetheme(plan, served) {
     }
   }
   return refusals;
+}
+
+/**
+ * What the run says it is about to do, before a browser is started.
+ *
+ * The plan is printed rather than summarised because the claim being made is
+ * "the Slab you are about to get is this one", and a run that says only
+ * "re-themed" leaves its reader to open slab.json to find out what they got.
+ *
+ * @param {readonly Rewrite[]} plan
+ * @param {string} checkout
+ * @returns {string[]}
+ */
+export function rethemeReport(plan, checkout) {
+  if (plan.length === 0) return ["slab: no re-theme declared — Eater's own modules, unmodified"];
+  const width = Math.max(...plan.map((one) => one.id.length));
+  return [
+    `slab: re-themed in flight; nothing in ${checkout} is edited`,
+    ...plan.map((one) => `slab:   ${one.id.padEnd(width)}  ${one.value}  (x${one.expect}, ${one.is})`),
+  ];
+}
+
+/**
+ * And what it actually did, once the audit has passed.
+ *
+ * `null` for a run that planned nothing, so the caller has nothing to print
+ * rather than a sentence claiming a re-theme held that was never attempted.
+ *
+ * @param {readonly Served[]} served
+ * @returns {string | null}
+ */
+export function rethemeHeld(served) {
+  if (served.length === 0) return null;
+  const made = served.reduce((sum, one) => sum + one.found.reduce((n, got) => n + got.count, 0), 0);
+  return `slab: re-theme held — ${made} substitution(s) over ${served.length} module fetch(es), every count as declared`;
 }
