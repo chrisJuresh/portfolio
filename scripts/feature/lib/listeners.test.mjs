@@ -20,7 +20,7 @@ test('it finds the process listening on a port', () => {
   // handle on the server that is reliably true. That cost a teardown that
   // reported killing something and killed nothing.
   assert.deepEqual(fromNetstat(NETSTAT, 4321), [3628]);
-  assert.deepEqual(fromNetstat(NETSTAT, 26140 === 0 ? 0 : 4322), [26140]);
+  assert.deepEqual(fromNetstat(NETSTAT, 4322), [26140]);
 });
 
 test('a longer port that merely starts with the wanted one is not it', () => {
@@ -100,8 +100,10 @@ test('a lock the socket does not confirm is named and never stopped', () => {
     onRecordedPort: [],
   });
   assert.equal(rows.length, 1);
-  assert.equal(rows[0].confirmed, false);
-  assert.match(rows[0].from, /does not confirm/);
+  const [row] = rows;
+  assert.ok(row);
+  assert.equal(row.confirmed, false);
+  assert.match(row.from, /does not confirm/);
   assert.deepEqual(stop, []);
 });
 
@@ -156,6 +158,9 @@ const PROCESSES = [
   .map((row) => row.join(TAB))
   .join('\n');
 
+/** @param {string} output
+ *  @param {string} worktree
+ *  @param {number} [self] */
 const pids = (output, worktree, self) =>
   fromCommandLines(output, worktree, self)
     .map((one) => one.pid)
@@ -200,9 +205,11 @@ test('the directory the command was run in is reported, and believed', () => {
   // is blocked waiting for us.
   const rows = standingIn({ worktree: TREE, startedIn: `${TREE}/scripts` });
   assert.equal(rows.length, 1);
-  assert.equal(rows[0].pid, null);
-  assert.equal(rows[0].confirmed, true);
-  assert.match(rows[0].from, /working directory|run in/i);
+  const [row] = rows;
+  assert.ok(row);
+  assert.equal(row.pid, null);
+  assert.equal(row.confirmed, true);
+  assert.match(row.from, /working directory|run in/i);
 });
 
 test('the worktree root itself counts as being inside it', () => {
@@ -251,7 +258,9 @@ test('a command line is named but never believed', () => {
     named: [{ pid: 3628, said: `node ${TREE}/node_modules/astro/bin/astro.mjs` }],
   });
   assert.equal(rows.length, 1);
-  assert.equal(rows[0].pid, 3628);
-  assert.equal(rows[0].confirmed, false);
-  assert.match(rows[0].from, /command line/i);
+  const [row] = rows;
+  assert.ok(row);
+  assert.equal(row.pid, 3628);
+  assert.equal(row.confirmed, false);
+  assert.match(row.from, /command line/i);
 });

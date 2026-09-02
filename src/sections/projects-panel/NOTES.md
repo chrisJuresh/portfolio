@@ -1,10 +1,15 @@
 # The Projects Panel
 
-The dark Section presenting one project at a time. This folder holds the Rail,
-the masthead and its two authored lines, the copy and the engineering points, the
+The dark Section presenting one project at a time. This folder holds the masthead
+and its two authored lines, the copy and the engineering points, the
 **Frame** — the browser window with the glass titlebar the recording stands
 inside — and the **Plinth** the Frame stands on, with the Frame's live reflection
 lying in it.
+
+It held the **Rail** too, until #192 made it one piece of furniture standing on
+the page. `src/kernel/rail/` is where it is and `src/kernel/NOTES.md` is where its
+reasoning went; what this Section still owes it is the column, and there is a
+heading below saying which lengths that is.
 
 It is a **port**. Every share, every colour and every word here is
 `portfolio/styles.css`'s and `portfolio/index.html`'s, carried over unchanged.
@@ -35,7 +40,7 @@ Two things can bind it, and the smaller wins:
 
 | branch     | what it is                                                                 |
 | ---------- | -------------------------------------------------------------------------- |
-| the width  | what the page has across, less the Rail and its gap. `--projects-panel-across` is 1 − 0.0403, and 0.0403 is the Rail's own width plus the gap as a share of the composition — added up once, because a grid track cannot be sized from its own siblings. It rounds towards asking for LESS, which is safe twice over: the Rail's floor makes it relatively wider on a small window, and `100vw` counts a scrollbar the layout does not get. Over-asking cannot overflow either way, because the track is `minmax(0, …)`. |
+| the width  | what the page has across, less the Rail and its gap. `--projects-panel-across` is 1 − 0.0403, and 0.0403 is the Rail's own width plus the gap as a share of the composition — added up once, because a grid track cannot be sized from its own siblings. It rounds towards asking for LESS, which is safe twice over: the Rail's floor makes it relatively wider on a small window, and `100vw` counts a scrollbar the layout does not get. Over-asking cannot overflow either way, because the track is `minmax(0, …)`. **The Rail left that grid in #192 and this Token was deliberately not moved**: 0.0403 of the screen is now air the drawing does not spend rather than a column it leaves, the composition is centred as a whole in it, and picking a new share is a decision about how wide the Section's one non-landing regime should be — which is the author's, not a consequence of moving an index. |
 | the height | the screen less the page's two margins, divided by `--projects-panel-fit` — the composition's height as a share of its width. |
 
 ### Where 0.6042 comes from, and when to re-derive it
@@ -201,11 +206,35 @@ if that window ever matters.
 
 ## The masthead, the Cut Title, and why this is a relationship
 
-The word **PROJECTS** is drawn twice and appears once: in the one-screen band the
-Cut Title — the word cut as a picture at the Front Screen's
-foot — stands in this masthead's slot, and the masthead goes `visibility: hidden`
-underneath it. The word does not fly down to the Section; **the Section comes up
-to the word.**
+The word **PROJECTS** is drawn twice and appears once, **at every window**: the
+Cut Title — the word cut as a picture at the Front Screen's foot — is this
+Section's head, and this masthead goes `visibility: hidden` underneath it. In the
+one-screen band the Cut Title literally stands in this masthead's slot; the word
+does not fly down to the Section, **the Section comes up to the word.** Out of the
+band there is no slot to stand in, and the relationship is the reader's rather
+than the layout's: they scroll past a cut PROJECTS and arrive at the index it is
+the title of, with nothing between the two.
+
+**The hiding is unconditional and the box is not**, which is the one distinction
+worth carrying out of this section. `visibility: hidden` is in the base block, so
+there is no regime it does not cover. What is per-regime is whether the BOX stays:
+in the band it is load-bearing three times over — row one's stated height, the
+line the subheading hangs off, the slot the word occupies — and out of the band it
+is holding a slot for nothing and is taken out of flow. Neither is ever
+`display: none`: this Section's `aria-labelledby` names this element, and a
+directly-referenced hidden element still supplies an accessible name where a
+display:none one supplies nothing.
+
+**That gate has been wrong once, and it is the failure to know about.** The hiding
+used to live inside the band's own media query, because out of the band a
+different device — a drawn line climbing the page, with the word printed twice and
+masked at it — was hiding the masthead by another route. `fcba8d6` deleted that
+device, correctly and for three reasons of its own, and the band gate stayed
+behind: the masthead came back at every window below 1100x700 and every window
+shorter than 700, and the page said PROJECTS twice in two faces a few lines apart.
+The `crossing` Check asserts the masthead is hidden out here now, in the same
+words `turn` asserts it in the band, so the two halves of one rule have a Check
+each.
 
 Two measured quantities are what make that true at every window size rather than
 at the one it was tuned on, and both are declared in the component:
@@ -247,12 +276,17 @@ beside them was the one thing left, and it showed as two lines of small type in
 the white beside the word, answering a question the reader had not been asked yet.
 
 **Which column it starts in is the band's decision and not the base rule's.**
-Outside the band the paragraph is columns seven to twelve, because the masthead is
-on the page and a paragraph starting at the sixth would be printed over the last
-two letters of it. Inside the band the masthead draws nothing — the Cut Title
-stands in its slot — so the sixth column is free, and the copy takes it rather
-than standing a whole column further over. What that turns on is the masthead
-being invisible rather than anything about the width.
+Inside the band the copy is columns six to twelve: the head's row is the
+subheading and nothing else, so the sixth column is free and the paragraph starts
+one gutter to the right of where the word ends rather than a whole column further
+over. The base rule leaves it at the seventh.
+
+**The reason the base rule gives has expired, and the rule has not.** It used to
+be that outside the band the masthead was on the page and a paragraph starting at
+the sixth would be printed over its last two letters. The masthead is hidden at
+every window now, so nothing is there to collide with and the seventh column is a
+composition's choice rather than a collision's — a choice, therefore, that is the
+author's to keep or spend, not an agent's to quietly reclaim.
 
 **And its rule stands one gutter INTO that column rather than on its line.** The
 sixth is shared — the head is placed across one to six and the paragraph across
@@ -362,16 +396,41 @@ against `none` rather than against a length.
 The five `-far` Tokens are what the Section **is** once the page has turned, and
 they are the same in both themes: the theme toggle chooses what the Panel crosses
 *from*, and nothing about where it ends up. The read halves are `color-mix`es
-against the Kernel's `--ground`, `--ink` and `--ink-soft`, weighted by `--turn`,
-so at the top of the page the Panel is as light as the page above it and it
-arrives black. The near end and the far end cannot share a name — a custom
-property that reads itself is a cycle and drops to unset — which is why there are
-ten declarations rather than five.
+weighted by `--turn`, so at the top of the page the Panel is as light as the page
+above it and it arrives black. The near end and the far end cannot share a name —
+a custom property that reads itself is a cycle and drops to unset — which is why
+there are ten declarations rather than five.
+
+**THE NEAR END IS THE THEME'S PAPER AND NEVER `--ground`, AND THAT IS THE WHOLE
+OF WHY THE PAGE HAS NO SEAM IN IT.** These used to mix against the Kernel's
+`--ground`, `--ink` and `--ink-soft`, which sounds like the same thing and is
+not: those three are themselves crossings on this same `--turn`, so mixing into
+one composes two of them. At `t` the document's ground is
+`paper·(1−t) + dark·t` and this Section's was `paper·(1−t)² + dark·(1−(1−t)²)` —
+a quarter of the way apart at the middle of the crossing, and in the same
+direction on every frame between the two ends. Both are white at 0 and black at
+1, so a still of either resting place looked right and only the crossing was
+wrong: a hard step across the page at this Section's top edge, travelling up with
+the scroll. **That is the banding that was reported.** Against `--paper`,
+`--paper-ink` and `--paper-ink-soft` it is one crossing, `--projects-panel-bg-far`
+is `--dark`, and the two grounds are the same colour by construction rather than
+by luck.
 
 `--projects-panel-rule-near` is the one value here that is not the live sheet's.
 Its near end there is `--rule-soft`, the CV's own hairline, and the Kernel
-publishes no hairline colour; it is stated as a share of `--ink-soft` until the
-Front Screen's port brings one.
+publishes no hairline colour; it is stated as a share of `--paper-ink-soft` — the
+paper end for the same reason as the five above — until the Front Screen's port
+brings one.
+
+**What a continuous crossing costs, so nobody rediscovers it as a bug.** The
+ground goes light to dark and the ink goes dark to light on one number, so
+somewhere in the middle they have the same luminance and the type is briefly
+unreadable. That is not a mistake in the mix; two monotone curves running
+opposite ways must cross. In the band it is a fifth of a second of an ease
+nothing can stop on. Out of the band it is a stretch of scroll, which is why
+`src/kernel/turn.ts` spans the crossing over the FIRST SECTION rather than over
+the document — a page that turns over one screen has one grey moment in it, and
+one that turns over four screens is grey for two of them.
 
 Two divergences from the live page, both deliberate:
 
@@ -381,87 +440,51 @@ Two divergences from the live page, both deliberate:
   at every width.
 - **`data-turn` is not on this Section.** The crossing happens across the scroll
   of the Section *above* this one — that is where the reader is while it happens
-  — and the Panel is where it arrives. Today that is the stub; when #136 lands
-  the Front Screen the mark moves there. Marking this Section instead would also
-  give the Turn a zero-length scroll to run in, because the Panel's own height is
-  one screen.
+  — and the Panel is where it arrives. Out of the band `src/kernel/turn.ts` says
+  so in as many words: the Turn's span is the first Section's own height, so the
+  page has finished turning at exactly the moment this Section's top edge reaches
+  the top of the window. Marking this Section instead would give the Turn a
+  zero-length scroll to run in, because the Panel's own height is one screen.
 
-## The Rail
+## The Rail is not this Section's, and this is where it was
 
-Three project names down the left edge, reading bottom to top, spread over the
-full height of the composition. `writing-mode` plus a half turn **on each item
-and not on the list**: rotating the list would rotate the order with it and put
-Record Engine at the top. Each item then measures as a tall narrow box in an
-ordinary column, so `space-between` still means what it says.
+Three project names down the page's left edge, an index in a margin, marking
+which project is being shown and which two are not built. It lived here, it was
+drawn here, and every paragraph that used to be under this heading is now in
+[`src/kernel/NOTES.md`](../../kernel/NOTES.md) — because #192 found the Eater Map
+Section drawing a second one and the page swapping them as the reader turned. The
+Rail is one piece of furniture standing on the page now, in `src/kernel/rail/`,
+pinned to the window inside the band so a page turn moves the highlight and
+nothing else.
 
-**An entry is a route if it holds a link**, and that is the whole of the
-machinery — there is no attribute saying which Section an entry names, because
-the link's own fragment already does. So the other two projects become two more
-entries with an `href` on the day their Sections arrive, and nothing else
-changes. `selected` is derived the same way: the entry whose fragment names *this*
-Section is the one that is current.
+**What is left here is the column, and the column is the page's own left
+margin.** In the band this Section's `padding-left` is `--landing-side` and the
+Rail's width is the same length, so the composition starts where the word starts
+and the index stands in the white the page already leaves. Outside the band the
+Rail is a row printed once at the head of this Section — above it in the
+document, not inside it — and this Section's top padding out here is the seam
+under it rather than the clearance the cut word needs, which went with the Rail
+as `--rail-crown`.
 
-That is also what earns the `<nav>` and `aria-current` — a landmark announcing a
-set of links to nowhere would be worse than no landmark, and one of the three
-leads somewhere. `aria-current` goes on the `<a>`, where it is announced, rather
-than on the `<li>`, where screen readers are not obliged to say anything about
-it. The two that lead nowhere carry the visually-hidden qualifier instead: grey
-says "not selected" to anything looking, and the qualifier says "no page yet" to
-anything listening.
+**Wide and short is the one regime where this Section's own drawing moved**, and
+it is worth having the number: the Rail used to be a grid column in the centred
+two-column base rule, so dropping it takes the composition LEFT by half the
+column and the gap — about 14px at 1440×450 — and out there the index is the row
+above rather than a column beside. `src/kernel/NOTES.md` has why the split is the
+band rather than the width, and what a fixed index would have cost instead.
 
-`role="list"` on a list that already is one, because the items carry
-`list-style: none` and VoiceOver drops list semantics from a list with no
-markers.
-
-### In the band it runs the SCREEN's height, and it arrives with the page
-
-An index in a margin runs the height of the **page**, and inside the landing band
-the page is the screen — which the Section's own box is not. The Section begins
-`--projects-panel-lift` above the screen's top edge so the word can be cut off the
-screen above, and it ends on the screen's bottom edge because the Plinth stands
-there. So the Rail subtracts the lift back off its top and drops the bottom inset
-the base rule carries, leaving `--projects-panel-side` at each end: the three
-names are spread `space-between`, so those two lengths are exactly where the first
-and the last of them stand.
-
-`--projects-panel-lift` is `--landing-top` less the masthead's drop, and it was
-already written out once as the Section's `scroll-margin-top` — the port the turn
-rests on is the same length measured from the other end. Naming it is what stops
-the two drifting.
-
-**Across, the Rail's width IS the page's left margin, and that margin has a floor
-under it that nothing used to check.** The box is `width: var(--landing-side)` —
-the same length the Section is padded by and the word is set on — and the names
-are centred across it. So a side margin narrower than one rotated line of
-`--projects-panel-rail-size` at its leading is three names running off the left of
-the page. That is not hypothetical: while the margin restated
-`--front-screen-rhyme` and the rhyme had been cut to 2.7vh, the list was 44.6px
-wide in a 35.4px column at 2560×1311 and all three were clipped. One line is about
-2.1% of the composition — `0.01397 × 1.5` — and `--landing-side` clears it at
-every window in the band with room to spare, which is one of the two floors that
-Token is chosen against.
-
-**And that puts the Rail in the strip the copy's arrival exists for.** The top of
-the box is on the Front Screen, and the only thing that strip is for is the cut
-word; a name standing there is half a name, because the box runs off the top of
-the screen mid-letter. So the Rail is drawn against `--turn`, the same device and
-for the same reason — the `turn` Check states that rule for the paragraph, in the
-failure it raises.
-
-Two differences from the paragraph's, both deliberate. It takes **no window of its
-own**: the copy waits until a third of the way across because it answers a
-question the reader has not been asked yet, and three words in a margin answer
-nothing. And it is written as **`opacity` rather than a mix**: what the mix buys
-the paragraph is its subpixel antialiasing, and every name in here is drawn
-through a rotation, which has already cost it — so opacity is one declaration for
-the two inks, the hover and the focus ring, and it costs the resting page nothing
-because `--turn` is exactly 1 where the turn comes to rest. A browser that runs no
-script gets the Rail outright, the same escape and the same reader as the
-paragraph's.
+Three Tokens went with it and one was deleted outright. `--projects-panel-rail-share`,
+`--projects-panel-rail-floor` and the Rail's rung of the stacked ladder are
+`--rail-share`, `--rail-floor` and `--rail-stacked`; `--projects-panel-side` was
+read by nothing but the Rail's two insets, so it is `--rail-inset` and is no
+longer a control this Section draws for a number nothing on its page answers to.
+`--projects-panel-gap-share` was the seam between the Rail's grid column and the
+composition, and there is no such column any more.
 
 ## The words
 
-All of them are Content, including the two the Rail speaks and never prints.
+All of them are Content. The two the Rail speaks and never prints are no longer
+among them — one Rail, one Content file, and it is the Kernel's (#192).
 
 The copy is the Career Record's `projects/photos.md`, "Page intro" — its first
 sentence, the head of its second, and its last. **Cut, and cut rather than
@@ -495,7 +518,12 @@ figures. On the paragraph it would quietly raise every hyphen in
 ## One column, outside the band
 
 Below 1100px the composition becomes a single column as tall as it needs to be:
-the Rail turned across the top, then the masthead, the copy, and the points.
+the head, the copy, and the points. The Rail is the row ABOVE it — turned across
+the page, in flow, printed once, and standing outside this Section since #192
+made it the Kernel's. The head is the subheading alone out here — the masthead is
+hidden at every window and its box is out of flow at every window outside the
+band, so the names close up under the Cut Title one screen above and that word is
+the title they are an index of.
 
 The gate is a **width** and only a width, which was measured rather than assumed.
 Taking the whole one-screen band negated is the tidier sentence and it is wrong:
@@ -518,19 +546,128 @@ exact complement at fractional widths too.
 
 Three things about the stack:
 
-- **The side margin is the page's horizontal one**, not `--projects-panel-inset`.
-  The inset is 9vh — a vertical measure, and one that reads as an error the
-  moment it is used across: on a 390×844 phone it is 76px a side. Top and bottom
-  keep it, where it is measuring what it was written for.
-- **The Rail wraps.** RECORD ENGINE at 0.22em of tracking is a long word, and 360
-  and 320 are real screens; without `wrap` the third project is simply not named,
-  which is not a Rail. The size and the gap are solved together against the three
-  names: at the floors they measure 299 and the row comes to 328, one line from
-  374px of window up.
-- **The points' internal gap becomes a multiple of their own size**, and the
-  number it has to beat is the 0.35em already inside each point: anything at or
-  under that spaces four points exactly as far apart as the two lines of one, and
-  the list reads as eight lines rather than four pairs.
+- **The side margin is a horizontal one**, not `--projects-panel-inset`. The
+  inset is 9vh — a vertical measure, and one that reads as an error the moment it
+  is used across: on a 390×844 phone it is 76px a side. Top and bottom keep it,
+  where it is measuring what it was written for. It is **not**
+  `--projects-panel-side` either, which is the band's and is flat: 1.35rem is a
+  phone's margin, and on a 1024 tablet it left the column 2.5% clear of the glass
+  and the composition ran edge to edge like a document. `--projects-panel-stack-side`
+  is the stack's own, floored at the same 1.35rem so nothing about a phone moves.
+  `--projects-panel-side` is gone: the landing Rail's two insets were the only
+  thing that read it, and they went to the Kernel with the Rail as `--rail-inset`
+  (#192). The Rail's own margin out here is `--rail-side`, a restatement of the
+  clamp above, and the `rail` Check holds the two to the same left edge on the
+  page rather than trusting them to stay spelled alike.
+- **The Rail wraps, and both of its gaps are multiples of its own size.** Both
+  paragraphs moved to `src/kernel/NOTES.md` with the Rail. What is worth keeping
+  here is the number they turn on: the names are φ⁻¹ of this Section's stacked
+  copy size, so the row is one line from 353px of window up, and
+  `--rail-stacked` is that multiplication done once because the Kernel may not
+  read this Section.
+
+### The ladder, and the flat gap it replaced
+
+Two things were wrong out here and they were the same thing twice: **nothing was
+stated against anything else**, so neither the type nor the space had a shape.
+
+**Six sizes, six clamps.** Each of the six had its own floor, its own vw slope
+and its own ceiling, so the ratios *between* them swung as the window moved — the
+subheading was 1.55× the copy at 390 and 2.51× at 1024. One page, flat and
+undifferentiated on a phone and top-heavy on a tablet. And four of the six hit
+their ceiling at about 795px of window and stopped there while the Frame beside
+them went on growing to 1047: type frozen against a picture that was not.
+
+There is one size now — `--projects-panel-stack-size`, which *is* the copy — and
+five ratios of it, at half-steps of the golden ratio (√φ = 1.272): the rail at
+φ⁻¹, the figure at √φ⁻¹, the copy at 1, the point's title at √φ and the
+subheading at φ². **The ladder is therefore the same shape at 360 as at 1099**,
+which is the out-of-band answer to what `--projects-panel-fit` is inside it.
+
+Two of the six needed more than a ratio, and both are documented at the Token:
+
+- **The subheading takes the smaller of its ratio and a share of the column.**
+  It is two *authored* lines, so a size the column cannot take does not wrap
+  gracefully — it makes three lines out of two. Below about 375px the ratio asks
+  for more width than there is, and `--projects-panel-stack-display-fill` is the
+  other bound. That constant is a glyph measurement and goes stale if the two
+  lines or the face change.
+- **The point's title is 1.272 and was 1.6 × its figure**, which is 2.04 of these
+  steps and put four uppercase labels at 1.45× the body — a third head competing
+  with the project's name. At 1.272 all four are one line from 414px up, where at
+  1.6 three of them were still wrapping at 768.
+
+**One gap, five seams.** `--projects-panel-stack-gap` was the air between the
+Rail and the title, and between the title and the copy, and between the copy and
+the window, and between the window and the points. Space is the only thing that
+says which of two things belong together, and a page that spends the same amount
+everywhere has spent it saying nothing.
+
+The ladder is `tight`/`close`/`step`/`move`/`act` at φ⁻², φ⁻¹, 1, φ and φ² off
+one step. The two `act`s are the whole point of it: the stack has exactly two
+places where the reader changes what they are doing — leaving the writing for the
+picture, and leaving the picture for the evidence — and everything else on the
+page is a smaller move than either. The inner grid's `row-gap` is **0** so those
+four seams can be four different sizes; each block asks for its own by margin.
+
+### The points are a table where the row will carry one
+
+Each point is a title and the figure that makes it checkable — two halves of one
+statement — and from about 970px of window the column is wide enough to set them
+side by side. **No breakpoint decides that.** The `li` is a wrapping flex row and
+both children carry a `flex-basis` in their *own* em, so the layout asks the only
+question that matters — has this column room for the longest title *and* a figure
+at the sizes the ladder has chosen — and asks it again at every width, in the type
+that is actually there. A media query would be a guess at the answer and would go
+stale the moment the ladder or the words moved.
+
+Three things about it that were got wrong once each while it was being fitted:
+
+- **The title does not grow and the figure does.** `flex: 0 1` against `flex: 1 1`.
+  All four titles are one size, so a title that takes exactly its basis takes the
+  same width in every row and the figures all start on one line down the page.
+  Letting both grow splits the slack evenly instead, which moves the second column
+  nowhere and spends the width on a title that had already fitted while the figure
+  beside it wrapped a third time.
+- **The changeover is set by the FIGURE's basis**, not the title's. At 20em the
+  table came on at 900 with three of the four figures on two lines against
+  one-line titles, which is a table only in the sense that it has two columns. At
+  26em it comes on at 970 and only the longest figure wraps.
+- **The longest figure is wider than any column this layout can give it**, at
+  every window under the band: it sets about 32em, the title beside it needs 18,
+  and 50em of one-line table does not fit 1099px of screen at these sizes. So
+  there is no basis that makes all four one line, and `text-wrap: balance` on the
+  figure is what the second line is actually tuned for — the difference between
+  two even lines and one orphaned word.
+
+### The word hangs over the Rail out here, and the clearance went with the Rail
+
+Out of the band the Front Screen's cut PROJECTS is given its whole cap slab and
+hands the difference back as a negative bottom margin, so `1 − --front-screen-cut-show`
+of the letters hang **past that Section's foot and over whatever is under them** —
+measured, 5.73% of the word's own width, which is 29.5px once the word stops
+growing at about 600px of window. What is under them is the Rail: it was the
+first thing inside this Section, and it is the box immediately above this Section
+now (#192). The reach of the letters did not change and neither did which box
+they land on.
+
+What that box had at its top was `--projects-panel-inset`, a 2.7vh margin that
+knows nothing about the word. From 600px up the Rail's own box started *above*
+the letters' feet: the index printed through the bottom of PROJECTS at every
+window from a tablet to the band's own edge, by 2 to 6px, and at 390 it cleared
+by 4.4. The clearance was `--projects-panel-stack-crown` and is `--rail-crown` in
+`src/kernel/tokens/rail.css` — the same clamp, the same overhang plus a
+deliberate amount of air, paid by the box the letters actually reach.
+
+**Neither this Section nor the Kernel can read that number.** The Front Screen
+declares its cut Tokens on its own root rather than on `:root`, so the overhang is
+re-measured rather than referenced — and re-derived if `--front-screen-cut-show`
+moves, or if the word's width stops being capped where it is.
+
+**This Section's own top padding out here is `--projects-panel-stack-move`
+instead**, which is the seam between the index and the thing it indexes. It was
+this box's row gap while the two were inside it, so nothing about that seam
+moved either.
 
 ## What is still nobody's
 

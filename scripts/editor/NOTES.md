@@ -259,6 +259,21 @@ tween initialises, so that one takes a reload. Nothing here can tell the two apa
 and nothing here should: the preview writes the custom property, and where a
 Section reads it from is the Section's decision.
 
+**And one Section watches this sheet, which makes it a seam rather than an
+implementation detail** (#196). The Eater Map's extruded edge is GENERATED from its
+Tokens — a slice's `conic-gradient` is arithmetic on the light, the attitude and the
+outline, so it cannot be an expression the browser re-evaluates — and
+`src/sections/eater-map/redraw.ts` puts a `MutationObserver` on
+`style[data-editor]` and rebuilds when any `--eater-map-` declaration in it moves.
+Nothing was added here for it and nothing here knows about it: watching the sheet
+needs no cooperation, and it opens no route by which anything can be written, so
+ADR 0004's boundary is where it was. **What that costs this file is one obligation**
+— a preview that stopped reaching the page through a stylesheet in the document, or
+through one carrying `data-editor`, would take that Section's live rebuild with it,
+and the failure is a Token that drags and moves nothing rather than an error. The
+`editor` Check drags that Token on a real page for exactly this reason, so the
+coupling is asserted rather than remembered.
+
 ## Measuring: an Annotation, and optionally an Override
 
 The fourth surface, and the one that exists because the other three cannot express
@@ -1361,7 +1376,7 @@ plain length on exactly one rule, as the width of the element it is about to
 measure. Its second rule is a trap: later in the sheet, so it would win on source
 order, inside a `@media` that never holds.
 
-Twenty-seven mutations have been shown to fail it: the boundary writing nothing, the
+Thirty mutations have been shown to fail it: the boundary writing nothing, the
 handshake requirement removed, the surface binding nothing, empty Content values
 allowed — the last of which is caught by `content.test.mjs` before the browser
 starts, which is where it belongs — no Tokens discovered, a drag that does not move
@@ -1390,7 +1405,12 @@ just put the focus and therefore silently loses the press the author reaches for
 first; and, for the press inside what is picked, a press that re-picks the child
 under the pointer instead of dragging the box that covers it, a click inside that
 picks nothing and so seals every parent shut, and a slop of zero, which reads two
-pixels of hand-shake as a drag and takes the click away again.
+pixels of hand-shake as a drag and takes the click away again; and, for #196, a
+Section that never wired the redraw its generated geometry needs, a redraw the
+stage supplies nothing for — which leaves the Slab lit by the light the page
+loaded with while all four Card surfaces follow, so it is caught only because the
+comparison is per surface — and a redraw that builds without clearing, which took
+the Slab's edge from 24 slices to 48 on one drag and 72 out and back.
 
 Six were real bugs rather than invented mutations — four of #145's nine, the
 unclosed CSS rule of #162's three, and the content box of #165's — and none of them

@@ -4,6 +4,7 @@ import { handles } from './handles';
 import { mountSections, observeSection } from './loader';
 import { hold, release } from './motion';
 import { mountPageTurn, ports, snapping } from './page-turn';
+import { mountRail } from './rail/rail';
 import { followSystemTheme, toggleTheme } from './theme';
 import { createTurn } from './turn';
 import { mountWheel } from './wheel';
@@ -23,6 +24,10 @@ followSystemTheme();
 // capture phase, but only for events that arrive after it is attached.
 mountWheel();
 mountPageTurn();
+// After the page turn and before the Sections: it reads where the Sections are
+// and writes nothing else, so it only has to be on the page before the reader's
+// first scroll. The markup already names the entry the page opens on.
+mountRail();
 mountSections();
 
 const kernel = handles();

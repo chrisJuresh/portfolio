@@ -53,6 +53,7 @@ const USAGE = `feature — the change lifecycle (ADR 0005)
 `;
 
 const [verb, ...rest] = process.argv.slice(2);
+/** @param {string} name */
 const flag = (name) => rest.includes(`--${name}`);
 const words = rest.filter((word) => !word.startsWith('--'));
 const cwd = process.cwd();
@@ -113,7 +114,7 @@ try {
 } catch (error) {
   // Anything that was refused has already been recorded by the session that hit
   // it. This is the one line that says what stopped.
-  console.error(`\nfeature: ${String(error?.message ?? error)}`);
+  console.error(`\nfeature: ${String(/** @type {{ message?: unknown }} */ (error)?.message ?? error)}`);
   code = 1;
 } finally {
   const written = sh.finish(frictionLog);
@@ -127,7 +128,10 @@ try {
 
 process.exit(code);
 
-/** What is in flight. The answer to "which port was that again". */
+/** What is in flight. The answer to "which port was that again".
+ *
+ *  @param {ReturnType<import('./lib/exec.mjs').session>} sh
+ *  @param {string} cwd */
 async function list(sh, cwd) {
   const git = gitOf(sh, cwd);
   const state = statePath(git.mainCheckout().common);

@@ -53,7 +53,8 @@ const BANNER = /^\s*(?:┃\s*)?Local\s+(\S+)/;
  * writes a second line. Taking the first would hand the teardown a port the
  * server has since given up.
  *
- * @param {string} output whatever astro has written since the spawn
+ * @param {string} [output] whatever astro has written since the spawn, if it has
+ *   written anything at all
  * @returns {Announcement | null}
  */
 export function announced(output) {
@@ -90,16 +91,17 @@ function unwrap(line) {
   }
 }
 
-/** @returns {Announcement | null} */
+/** @param {string} said
+ *  @returns {Announcement | null} */
 function fromLine(said) {
   const sentence = SENTENCE.exec(said);
   if (sentence) {
-    const port = portOf(sentence[1]);
+    const port = portOf(sentence[1] ?? '');
     if (port !== null) return { port, pid: numberOr(sentence[2], null) };
   }
   const banner = BANNER.exec(said);
   if (banner) {
-    const port = portOf(banner[1]);
+    const port = portOf(banner[1] ?? '');
     // The banner names no pid. Null rather than the spawned one: the spawned pid
     // is exactly the lie this module exists to stop telling.
     if (port !== null) return { port, pid: null };
@@ -132,8 +134,11 @@ function portOf(url) {
  * A half-written or superseded one reads as nothing: every field this cares
  * about has to be there and be a number.
  *
- * @param {string} text
- * @returns {Announcement | null}
+ * @param {string} [text] the file's bytes, or nothing when there is no file
+ * @returns {{ port: number, pid: number } | null} narrower than an
+ *   `Announcement` on purpose: the lock names the process that BOUND, so a
+ *   record without a pid in it is not a lock this can use, and `server.mjs`
+ *   asks whether that pid is alive without checking for null first.
  */
 export function locked(text) {
   try {
@@ -148,7 +153,11 @@ export function locked(text) {
 }
 
 /** A positive integer, or the fallback. `Number('')` is 0, which is why this is
- *  not a bare cast. */
+ *  not a bare cast.
+ *
+ *  @param {unknown} value
+ *  @param {number | null} fallback
+ *  @returns {number | null} */
 function numberOr(value, fallback) {
   if (value === undefined || value === null || value === '') return fallback;
   const parsed = Number(value);

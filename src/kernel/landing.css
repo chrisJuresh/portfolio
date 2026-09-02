@@ -121,8 +121,8 @@
     --landing-top: calc(var(--landing-inset) + var(--landing-name-lead));
   }
 
-  /* ---- the two resting places ---------------------------------------------
-     The document is two ports and nothing between, which is what makes the turn
+  /* ---- the resting places -------------------------------------------------
+     The document is ports and nothing between, which is what makes the turn
      a turn: a mandatory snap means the scroller must COME TO REST on a port, so
      there is nowhere to stop half way. page-turn.ts is what eases between them
      on a wheel notch — the browser's own fling owns the scroller for as long as

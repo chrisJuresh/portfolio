@@ -37,7 +37,7 @@ export function fromNetstat(output, port) {
     // has the wanted port as its FOREIGN address.
     if (fields.length < 5 || fields[3] !== 'LISTENING') continue;
     // Anchored at the end, so 43210 is not read as 4321.
-    if (!new RegExp(`:${port}$`).test(fields[1])) continue;
+    if (!new RegExp(`:${port}$`).test(fields[1] ?? '')) continue;
     const pid = Number(fields[4]);
     if (Number.isInteger(pid) && pid > 0) found.add(pid);
   }
@@ -114,6 +114,12 @@ export function holders({ lock, onLockPort, lockPidAlive, recordedPort, onRecord
   /** @type {{ port: number, pid: number, from: string, confirmed: boolean }[]} */
   const rows = [];
   const seen = new Set();
+  /**
+   * @param {number} port
+   * @param {number} pid
+   * @param {string} from
+   * @param {boolean} confirmed
+   */
   const note = (port, pid, from, confirmed) => {
     const key = `${port}:${pid}`;
     if (seen.has(key)) return;
@@ -132,7 +138,12 @@ export function holders({ lock, onLockPort, lockPidAlive, recordedPort, onRecord
   }
 
   const stop = [
-    ...new Set([recordedPort, ...rows.filter((row) => row.confirmed).map((row) => row.port)]),
+    ...new Set([
+      // Spread rather than included and filtered out again: `null` is how "this
+      // feature has no recorded port" arrives, and it is not a port.
+      ...(recordedPort === null ? [] : [recordedPort]),
+      ...rows.filter((row) => row.confirmed).map((row) => row.port),
+    ]),
   ].filter((port) => Number.isInteger(port) && port > 0);
 
   return { rows, stop };

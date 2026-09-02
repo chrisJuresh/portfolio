@@ -1,0 +1,204 @@
+/* GENERATED — do not edit.
+   chrisJuresh/eater-map-site @ 980d553038a0fa558d82f11bfc754604a699a79d
+   Merge pull request #28 from chrisJuresh/export-pseudo
+   node design/eater-cards/vendor.mjs --write */
+
+.eater-cards {
+  color: rgb(0, 0, 0);
+  color-scheme: light;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Helvetica Neue", Inter, "Segoe UI", system-ui, sans-serif;
+  font-size: 16px;
+  font-style: normal;
+  font-weight: 400;
+  font-variant-numeric: normal;
+  letter-spacing: -0.16px;
+  line-height: normal;
+  text-align: start;
+  text-transform: none;
+  direction: ltr;
+  -webkit-font-smoothing: antialiased;
+}
+.eater-cards {
+  --label: #000000;
+  --label-secondary: rgba(60, 60, 67, 0.6);
+  --separator: rgba(60, 60, 67, 0.14);
+  --fill-secondary: rgba(120, 120, 128, 0.16);
+  --blue: #007aff;
+  --blue-tint: rgba(0, 122, 255, 0.14);
+  --glass-thick: rgba(255, 255, 255, 0.84);
+  --glass-filter: saturate(180%) blur(30px);
+  --glass-rim: inset 0 0.5px 0 rgba(255, 255, 255, 0.95), inset 0 0 0 0.5px rgba(255, 255, 255, 0.4),
+    0 0 0 0.5px rgba(0, 0, 0, 0.05);
+  --elev-2: 0 2px 6px rgba(0, 0, 0, 0.07), 0 12px 32px rgba(0, 0, 0, 0.12);
+  --r-card: 20px;
+  --r-full: 999px;
+  --control-h-sm: 44px;
+  --control-weight: 590;
+}
+.eater-cards, .eater-cards * {
+  box-sizing: border-box;
+}
+.eater-cards button {
+  font: inherit;
+  letter-spacing: inherit;
+}
+.eater-cards button {
+  -webkit-tap-highlight-color: transparent;
+  transition: opacity 120ms, transform 120ms, background-color 160ms, color 160ms;
+}
+.eater-cards button:active {
+  opacity: 0.55;
+}
+.eater-cards :focus-visible {
+  outline: 2px solid var(--blue);
+  outline-offset: 2px;
+}
+.eater-cards .results-shell.svelte-1rvuwz4 {
+  position: absolute;
+  top: calc(max(12px, 0px) + var(--topbar-height, 48px) + 8px);
+  left: 12px;
+  bottom: calc(max(12px, 0px) + var(--control-h-sm) + 8px);
+  width: min(420px, -24px + 390px);
+  z-index: 12;
+  pointer-events: none;
+}
+.eater-cards .results-panel.svelte-1rvuwz4 {
+  position: relative;
+  width: 100%;
+  max-height: 100%;
+  overflow: auto;
+  border: 0px;
+  border-radius: var(--r-card);
+  background: var(--glass-thick);
+  backdrop-filter: var(--glass-filter);
+  box-shadow: var(--glass-rim), var(--elev-2);
+  pointer-events: auto;
+}
+.eater-cards .search-results-scrollbar.svelte-1rvuwz4 {
+  display: none;
+}
+.eater-cards .results-panel.svelte-1rvuwz4 button:where(.svelte-1rvuwz4) {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 10px 14px;
+  border: 0px;
+  text-align: left;
+  color: var(--label);
+  background-attachment: initial;
+  background-origin: initial;
+  background-clip: initial;
+  background-color: transparent;
+  cursor: pointer;
+  background-image: linear-gradient(var(--separator), var(--separator));
+  background-size: calc(100% - 52px) 0.5px;
+  background-position: 52px 100%;
+  background-repeat: no-repeat;
+}
+.eater-cards .results-panel.svelte-1rvuwz4 button:where(.svelte-1rvuwz4):hover {
+  background-color: rgba(120, 120, 128, 0.1);
+}
+.eater-cards .results-panel.svelte-1rvuwz4 button:where(.svelte-1rvuwz4):last-child {
+  background-image: none;
+}
+.eater-cards .row-glyph.svelte-1rvuwz4 {
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: var(--r-full);
+  color: var(--label-secondary);
+  background: var(--fill-secondary);
+}
+.eater-cards .row-glyph.tinted.svelte-1rvuwz4 {
+  color: var(--blue);
+  background: var(--blue-tint);
+}
+.eater-cards .row-text.svelte-1rvuwz4 {
+  display: grid;
+  gap: 1px;
+  min-width: 0px;
+}
+.eater-cards .results-panel.svelte-1rvuwz4 strong:where(.svelte-1rvuwz4) {
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.25;
+}
+.eater-cards .results-panel.svelte-1rvuwz4 .row-text:where(.svelte-1rvuwz4) span:where(.svelte-1rvuwz4) {
+  color: var(--label-secondary);
+  font-size: 13px;
+  line-height: 1.3;
+}
+.eater-cards .results-panel.svelte-1rvuwz4 .place-row:where(.svelte-1rvuwz4) {
+  font-weight: var(--control-weight);
+  color: var(--blue);
+}
+.eater-cards .place-label.svelte-1rvuwz4 {
+  min-width: 0px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: inherit;
+  font-size: 15px;
+}
+.eater-cards .results-shell.svelte-1rvuwz4 {
+  bottom: auto;
+  max-height: calc(var(--mobile-search-visible-results, 4) * 56px);
+}
+.eater-cards .results-panel.svelte-1rvuwz4 {
+  height: auto;
+  max-height: calc(var(--mobile-search-visible-results, 4) * 56px);
+  overscroll-behavior: contain;
+  scrollbar-width: none;
+}
+.eater-cards .results-panel.svelte-1rvuwz4::-webkit-scrollbar {
+  display: none;
+  width: 0px;
+  height: 0px;
+}
+.eater-cards .results-panel.svelte-1rvuwz4 button:where(.svelte-1rvuwz4) {
+  height: 56px;
+  padding: 8px 14px;
+  overflow: hidden;
+}
+.eater-cards .results-panel.svelte-1rvuwz4 strong:where(.svelte-1rvuwz4),
+.eater-cards .results-panel.svelte-1rvuwz4 .row-text:where(.svelte-1rvuwz4) span:where(.svelte-1rvuwz4) {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.eater-cards .search-results-scrollbar.svelte-1rvuwz4 {
+  display: block;
+  position: absolute;
+  top: 6px;
+  right: 4px;
+  bottom: 6px;
+  width: 3px;
+  border-radius: var(--r-full);
+  background: transparent;
+  pointer-events: none;
+}
+.eater-cards .search-results-scrollbar.svelte-1rvuwz4 span:where(.svelte-1rvuwz4) {
+  position: absolute;
+  left: 0px;
+  right: 0px;
+  min-height: 18%;
+  border-radius: var(--r-full);
+  background: rgba(60, 60, 67, 0.35);
+}
+/* Off the map: each surface is a block of the size the app drew it
+   at, and nothing here says where it goes. */
+.eater-cards {
+  --eater-card-results-width: 366px;
+  --eater-card-results-height: 112px;
+}
+.eater-cards [data-eater-card='results'] {
+  position: relative !important;
+  inset: auto !important;
+  transform: none !important;
+  margin: 0 !important;
+  width: var(--eater-card-results-width) !important;
+  height: var(--eater-card-results-height) !important;
+}

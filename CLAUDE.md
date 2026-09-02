@@ -63,10 +63,13 @@ the legitimate one that removes a sibling worktree. Three entries in
 `docs/friction-log.md` are that gate, five refusals between them, and every one is
 avoided by not entering the tree in the first place.
 
-The guard's own `SessionStart` message says to call `EnterWorktree`, and will keep
-saying it: that is upstream's protocol, vendored along with the guard, and this
-repository is not upstream. Where the two disagree — `EnterWorktree`, the pull
-request, the merge command, the teardown by hand — ADR 0005 and the two commands
+**The guard used to say the opposite, and no longer does.** Its `SessionStart`
+briefing and its `Stop` block both read their steps out of the `delivery` block in
+`.claude/worktree-per-change.json` now, and this repository declares
+`enterWorktree: false` — so they print the `cd` rule and `pnpm feature land`, and
+`ExitWorktree` and the pull request are gone from them rather than renumbered
+around. A message that still names either is coming from a guard older than
+`c8574fd`; resync. Where anything else disagrees, ADR 0005 and the two commands
 win. `/worktree-per-change` is still the authority on the *worktree* half, and on
 nothing past it.
 
@@ -111,20 +114,38 @@ reply, log it, and stop.
 this repo** — a fix made here is lost at the next resync and leaves the copy
 undatable. Fix it upstream and resync.
 
-One known false positive, so a session that hits it does not spend a turn deciding
-the guard is right: the spent-worktree mark is written whenever the phrase that
-merges a pull request appears **anywhere in a shell command string**, matched by
-regex rather than by what ran. So a `grep` for that phrase — or a document
-quoting it — marks the worktree it was run in as merged, and the next edit in that
-tree is denied. The check the denial names settles it: `gh pr list --head <branch>
---state all` returning nothing means there is no pull request to have merged, and
-this repository stopped opening them. Delete the marker it names. Report it
-upstream; do not patch it here, and do log it.
+**The guard's messages are this repository's now, and that is a declaration in a
+file rather than a fork.** `.claude/worktree-per-change.json` carries a `delivery`
+block — `pnpm feature land`, `pnpm feature clean <name>`, `enterWorktree: false` —
+and the guard prints those instead of `git push`, `gh pr create`, `gh pr merge` and
+`ExitWorktree`. The invariant is still the guard's; only the steps are ours. So a
+`Stop` block or a `SessionStart` briefing that names a pull request is one printed
+by a guard older than `c8574fd`, and the answer to it is a resync rather than a
+judgement about which document wins.
+
+Four false positives this file used to warn about are gone with that resync, and
+`docs/friction-log.md` marks each **Resolved** with what landed. The one worth
+knowing by name, because a session that meets an old marker still has to clear it:
+the spent-worktree mark used to be written whenever the phrase that merges a pull
+request appeared **anywhere in a shell command string**, so a `grep` for it — or a
+document quoting it — spent the worktree it ran in. It is a token parse now, with
+heredoc bodies dropped before the lexer sees them. If a denial like that ever
+appears again, `gh pr list --head <branch> --state all` returning nothing settles
+it: there is no pull request to have merged, and this repository stopped opening
+them. Delete the marker it names, log it, and report it upstream — do not patch it
+here.
 
 `.claude/worktree-per-change.json` records which upstream commit the copy came
 from and the sha256 of its LF-normalised bytes, so "is this current" is a question
 this repo can answer on its own. Both are written by the installer; to resync,
-from a worktree:
+**`cd` into a worktree in a call of its own, with the path written out** — a
+compound `cd <path> && python …` does not persist the working directory, and the
+installer is a Python process opening files, so the guard cannot see where it is
+writing and will not stop it landing the whole install in the main checkout. That
+happened once; the restore is `git show HEAD:<path> > <path>` per tracked file,
+since `git checkout` is denied there, and it is in the friction log.
+
+From that worktree:
 
 ```bash
 python ~/.claude/skills/worktree-per-change/scripts/install.py --repo . --branch development --dry-run
@@ -133,10 +154,20 @@ python ~/.claude/skills/worktree-per-change/scripts/install.py --repo . --branch
 Then without `--dry-run`. That path is the skill link the installer makes itself,
 so it works wherever the skill is installed; `${CLAUDE_SKILL_DIR}` is only set
 while a skill is running and is unset in a plain shell. `--status` alone reports
-what is installed and what each worktree is still holding.
+what is installed and what each worktree is still holding — and it reads the
+**main checkout**, so a declaration made in a worktree does not show up there until
+it has landed.
 
-The install also rewrites `.claude/settings.json` — revert it if the only change
-is line endings — and leaves a `settings.json.*.bak` to delete.
+**Three things the install leaves that this repository does not take**, so a resync
+is four steps and not one. It rewrites `.claude/settings.json` — revert it if the
+only change is line endings — and leaves a `settings.json.*.bak` to delete. It
+writes the installer's own line endings, which are CRLF here; normalise the files
+it touched to LF. And it installs `.claude/scripts/land.py` with a `land` record
+beside the `guard` one and a `Bash(python .claude/scripts/land.py:*)` grant —
+**delete all three every time**. `land.py` pushes, opens a pull request and merges
+it, which is exactly what ADR 0005 removed, and an allowlisted copy of it sitting
+in the tree is a pre-approved way to land without the Checks. `pnpm feature land`
+is the only route, and the Checks failing is the only gate.
 
 `.gitignore` ignores `.claude/` except what every worktree needs: `settings.json`,
 `hooks/worktree-guard.py`, `worktree-per-change.json`, the `launch.json` the
@@ -186,6 +217,15 @@ pnpm build
 `pnpm dev` runs Astro's dev server with those four paths and the deep-link
 rewrites answered beside it, so one origin behaves as the deployment does.
 `pnpm build` runs the source checks, typechecks, builds, and assembles `dist/`.
+It typechecks **twice**, because `.mjs` and `.astro` are two projects: `astro
+check` reads `tsconfig.json`, which is `src/` and nothing else, and `tsc -p
+tsconfig.scripts.json` reads the JavaScript with `checkJs` on. That second
+project is deliberately narrow — `scripts/feature/`, `static-tree.mjs` and
+`astro.config.mjs`, named one by one — and `tsconfig.scripts.json`'s own comment
+says which bodies are out and why. `include` without `checkJs` reads as coverage
+and is none (#183), so a file is either in that project or in no project at all,
+and `scripts/checks/` and `scripts/editor/` are honestly the second.
+
 `pnpm preview` serves that `dist/`, **of the tree it is run from**, which is why
 it exists rather than the in-app preview: that serves the main checkout and would
 report on `development` while looking like it reported on your branch.
@@ -199,25 +239,72 @@ production does. A Section is deep-linkable by carrying an `id`, and the
 requires a working link for each — so a Section added without its rewrite fails
 the build rather than shipping a URL that 404s.
 
-**Above 1100x700 the document is a PAGE TURN and not a scroll.** Two Sections,
-two resting places and nothing between them: one wheel notch carries the reader
-from one to the other, and the Front Screen's cut PROJECTS stands in the Projects
-Panel masthead's slot and morphs out of Friz Quadrata into the sans as the page
-crosses — the word never moves and never resizes, the document moves past it.
-`src/kernel/landing.css` is the device and the one measure the two Sections share;
-`src/kernel/page-turn.ts` is the notch and `src/kernel/wheel.ts` is who owns it.
+**Above 1100x700 the document is a PAGE TURN and not a scroll.** One resting
+place per Section and nothing between them: one wheel notch carries the reader
+from one to the next, and on the FIRST notch the Front Screen's cut PROJECTS
+stands in the Projects Panel masthead's slot and morphs out of Friz Quadrata into
+the sans as the page crosses — the word never moves and never resizes, the
+document moves past it. **The crossing is that first notch and not the document's
+whole scroll**, which were the same number while there were two Sections and are
+not now; `src/kernel/turn.ts` says so, and `src/kernel/NOTES.md` says what it
+cost to find out.
+`src/kernel/landing.css` is the device and the one measure the two Sections share
+— a THIRD Section joining that list is a decision and #172 decided against it —
+and `src/kernel/page-turn.ts` is the notch, `src/kernel/wheel.ts` who owns it.
 Read `src/kernel/NOTES.md` before touching any of the three. **A Check or a script
-that needs the page placed between the two resting places has to lift the snapping
+that needs the page placed between two resting places has to lift the snapping
 first** — `window.portfolio.snapping(false)` — or every `scrollTo` in between is
 pulled straight back onto the port it left, silently.
+
+**Below that band it is a scroll, and it is the SAME crossing rather than a
+second one.** The whole page — every Section, one number — starts on paper and
+arrives at dark together, PROJECTS is still cut by the fold on the first screen,
+and **it is still the ONLY PROJECTS**: the Panel's masthead is
+`visibility: hidden` at every window, so the cut word the reader scrolls past is
+the Panel's title out here as much as it is in the band. That hiding used to be
+gated on the band, because a device that has since been deleted was hiding the
+masthead by another route outside it; the gate outlived the device once and the
+page said the word twice. It is unconditional now and the `crossing` Check
+asserts it. Four things about this regime are expensive to rediscover, and each
+has been got wrong once. **The Panel's palette mixes from the theme's `--paper` and never
+from `--ground`**, because `--ground` is itself a crossing on `--turn` and mixing
+into it composes two — which puts a step across the page at the Panel's top edge
+that travels with the scroll, and that is what "banding" has meant both times it
+was reported. **The Turn's span out here is the FIRST SECTION's own height and
+not the document's scroll**, so the page is dark at exactly the moment the Panel
+owns the screen rather than a quarter short of it. And **the word is cut by the
+FOLD out here and never by a box**: it is given the cap slab's full height and
+handed the difference back as a negative bottom margin, so it contributes exactly
+what the clipped box did and hangs the rest past the Section's foot. That is what
+makes it part-cut on the first screen and a WHOLE title when the reader reaches
+the Section it heads — both are required, and cutting it with a box satisfies the
+first and breaks the second, which shipped once. Growing the box instead of
+overhanging it breaks the other half: the column is `flex: 1 1 auto` inside a
+Section floored at `--fold`, so a taller box is absorbed and its foot stays on
+the fold with the whole word above it.
+`src/kernel/NOTES.md` and `src/sections/projects-panel/NOTES.md` carry the
+arithmetic, including the one thing none of this removes — a continuous crossing
+has a moment in the middle where ground and ink meet at the same luminance.
 
 Every dependency version is pinned exactly and nothing is updated on a schedule
 (ADR 0002). pnpm's settings live in `pnpm-workspace.yaml`, not `.npmrc` — pnpm 11
 ignores `.npmrc` for `saveExact`, and the failure mode is a caret quietly
 reappearing in `package.json`.
 
+**The Rail — Photo Vault / Eater Map / Record Engine — is the KERNEL's, and there
+is exactly one of it.** #192 took it out of the two Sections that each drew one
+and swapped them as the reader turned. It is `src/kernel/rail/`, its Tokens are
+`src/kernel/tokens/rail.css`, and `src/pages/portfolio.astro` places it between
+the Front Screen and the Gallery — which both regimes need: pinned to the window
+inside the band, so a page turn moves the highlight and nothing else, and in flow
+outside it, at the head of the index. **Its words are the one Content file the
+Editor cannot reach**, because that boundary discovers `src/sections/*` and
+nothing else, so they are changed by hand. The current entry is derived from the
+Section at rest and never declared; the `rail` Check asserts the count, that the
+box does not move across the turn, and that the highlight follows it back.
+
 **Read [`src/kernel/NOTES.md`](src/kernel/NOTES.md) before touching the Kernel,
-and [`src/sections/stub/NOTES.md`](src/sections/stub/NOTES.md) before adding a
+and [`src/sections/NOTES.md`](src/sections/NOTES.md) before adding a
 Section.** Between them they carry the folder convention, what the build actually
 enforces about it, and the two things that have already cost a wrong diagnosis:
 `hold()` before you seek a Timeline, and one mount point per Section.
@@ -239,6 +326,30 @@ the composition it argues with, and nothing imports `variants.css`, because an
 unselected Variant has to cost the shipped page nothing.
 [`docs/agents/variants.md`](docs/agents/variants.md) is the authority; read it
 before writing one.
+
+A **stage** is the other kind of alternative — not a direction for a composition
+but a second implementation of the thing that draws one — and it is chosen the
+same way, by looking:
+
+```bash
+pnpm stages
+```
+
+That renders the Eater Map Section's Exploded View twice into
+`design/stages/index.html`: the shipped DOM stage and the WebGL one #181 built
+beside it, crossed with what each can make the Slab's edge out of, in both themes
+and at both ends of the band. One cell is empty on purpose — DOM cannot run the
+captured pixels round a rounded edge — and the sheet draws the empty cell rather
+than skipping it. **That empty cell does NOT decide #182, and #189 corrected a
+spec that read it as deciding.** DOM's slice stack is a full perimeter, so its
+corners are the same element as its sides and the outline is right; the Slab is
+drawn with thickness on the shipped page by that stage. What is left to judge is
+whether a faceted 24-slice fillet is distinguishable from WebGL's swept one at the
+size the Slab is actually drawn — which is a thing to look at on the sheet.
+`pnpm check -- --stage webgl` runs every Check with the other one selected.
+`src/sections/eater-map/NOTES.md` is the authority on the boundary, the camera
+arithmetic that makes the two agree, and what the comparison found; #182 chooses,
+and takes the loser and its dependency out together.
 
 A Section's words are its **Content**, its named numbers are its **Tokens**, and
 the generators that produce its assets are its **Bakes**. Changing any of them is

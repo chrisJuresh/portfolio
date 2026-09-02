@@ -5,7 +5,7 @@ import { join, sep } from 'node:path';
 import { EMPTY, PROPERTIES, parse as parseOverrides } from '../../editor/lib/overrides.mjs';
 import { OVERRIDES, discover, discoverBakes, discoverKernel } from '../../editor/lib/sections.mjs';
 import { start } from '../../editor/server.mjs';
-import { PAGE, open } from '../lib/page.mjs';
+import { PAGE, open, settle } from '../lib/page.mjs';
 
 /**
  * The Editor, driven end to end: open it, click a piece of text, change it, find
@@ -42,12 +42,19 @@ import { PAGE, open } from '../lib/page.mjs';
  * suite's. So the response, console and throw recording is the shared one rather
  * than a second hand-rolled copy of it.
  *
- * IT DOES NOT SETTLE THE PAGE, which is the one place this Check disagrees with
- * every other one. `settle()` exists because a Section mounts on approach, so its
- * TIMELINE is not there at load — but the markup and every word in it are
- * prerendered and present immediately, and the Editor binds to words. Scrolling
- * the document first would assert nothing extra and would move the element this
- * Check is about to click.
+ * IT DOES NOT SETTLE THE PAGE IT CLICKS, which is the one place this Check
+ * disagrees with every other one. `settle()` exists because a Section mounts on
+ * approach, so its TIMELINE is not there at load — but the markup and every word
+ * in it are prerendered and present immediately, and the Editor binds to words.
+ * Scrolling the document first would assert nothing extra and would move the
+ * element this Check is about to click.
+ *
+ * ONE GROUP OPENS A SECOND PAGE AND DOES SETTLE IT (#196), and the split is the
+ * reason rather than an exception to it. The Eater Map's extruded edge is
+ * GENERATED from its Tokens rather than expressed in them, so a drag reaches it
+ * only through a rebuild — and a rebuild is a thing that mounts on approach. That
+ * assertion needs a settled page and the one above needs an unsettled one, so it
+ * gets a page of its own rather than a compromise.
  */
 
 const MARKER = 'Edited by the smoke Check';
@@ -148,7 +155,9 @@ function snapshot(root, at = root, into = new Map()) {
 
 export const check = {
   name: 'editor',
-  title: 'the Editor changes a word and drags a Token, on the real page and in the file',
+  title:
+    'the Editor changes a word and drags a Token, on the real page and in the file — including one the ' +
+    'drawing is generated from rather than one a stylesheet reads',
 
   /** @param {{ browser: import('playwright').Browser, origin: string, repoRoot: string, dist: string }} ctx */
   async run({ browser, origin, repoRoot, dist }) {
@@ -375,6 +384,199 @@ export const check = {
         failures.push(`putting ${property} back did not restore ${tokenSection}/tokens.css to what it was`);
       }
       notes.push(`put ${property} back to what it was before the session`);
+
+      // ---- a Token the page GENERATES from, and not one it reads (#196) ----
+
+      // THE ONE TOKEN THIS CHECK NAMES, AND WHY IT HAS TO. Everything above is
+      // deliberately blind to which Token it picked, because a Check that named
+      // one would fail the day the composition renamed it. This half cannot be:
+      // the claim is about a particular mechanism rather than about the surface.
+      // The Eater Map's extruded edge bakes its shading into a `conic-gradient`
+      // at mount — arithmetic, not a length — so a preview sheet moves every
+      // other Token in that Section on its own and cannot move this one.
+      // `src/sections/eater-map/redraw.ts` is what makes it move, by watching the
+      // sheet the Editor was already writing, and it is GATED on this page having
+      // an Editor over it. The `eater-map` Check asserts the same gate from the
+      // shipped side, where nothing may rebuild at all; either half alone is
+      // satisfied by a mechanism that never runs.
+      //
+      // A PAGE OF ITS OWN, AND SETTLED. A Section mounts on approach, so its
+      // slices are not on a page nobody has scrolled — and the page above is
+      // deliberately left unsettled, because the Content half binds to words and
+      // scrolling would move the element it clicks.
+      //
+      // PREVIEWED AND NEVER RELEASED: an `input` and no `change`, so this group
+      // posts nothing and writes no file. That a release writes is asserted above,
+      // on whichever Token the surface happened to draw first.
+      const { context: shown, page: view } = await open(browser, served.origin, { path: PAGE });
+      try {
+        failures.push(...(await settle(view)).map((why) => `the Exploded View: ${why}`));
+        await view.waitForSelector('aside[data-editor]', { timeout: 15_000 });
+
+        /**
+         * TWO READINGS, BECAUSE THERE ARE TWO CLAIMS AND THEY ARE NOT THE SAME SET.
+         *
+         * `edges` is the slices, grouped by the surface they belong to. That is what
+         * has to CHANGE when the light moves, and it is per surface because a redraw
+         * wired to the stage and not to the Cards moves the Slab and leaves three
+         * Cards lit by the light the page loaded with — while every whole-page count
+         * agrees with itself.
+         *
+         * `built` is every element a redraw puts on the page, the blurred copies of
+         * the map included. That is what has to be UNCHANGED after a drag out and
+         * back, and the backdrops belong in it rather than in `edges` for a reason
+         * worth stating: `mountGlass` clears the slices and the copies on
+         * consecutive lines, so a comparison that counted only slices would let a
+         * regression in the second clear double the copies per drag with nothing to
+         * fail — one line from the clear that IS covered. A copy of the map is not
+         * lit by the light, so requiring it to move would fail a correct drawing.
+         */
+        const read = () =>
+          view.evaluate(() => {
+            const section = document.querySelector('.eater-map');
+            /** @type {Record<string, string[]>} */
+            const edges = {};
+            for (const slice of document.querySelectorAll('.eater-map__slice')) {
+              const name = slice.dataset.eaterMapEdge ?? '(unnamed)';
+              (edges[name] ??= []).push(slice.style.background);
+            }
+            const built = [
+              ...document.querySelectorAll('.eater-map__slice, .eater-map__glass'),
+            ].map((one) => `${one.className}|${one.getAttribute('style') ?? ''}`);
+            // THE TWO WAYS OF HAVING NO MARKER ARE NAMED APART. `section?.dataset.x`
+            // is undefined both for a Section that is not on the page and for one
+            // that is and never wired the observer, and those are a different
+            // diagnosis — the first would mean this group checked nothing.
+            return {
+              redraw: section ? (section.dataset.eaterMapRedraw ?? '(not wired)') : '(no Section)',
+              edges,
+              built,
+            };
+          });
+        /** Two frames: one for a rebuild coalesced onto the next frame to happen,
+         *  and one for it to be on the page to read. */
+        const settled = () =>
+          view.evaluate(() => new Promise((ok) => requestAnimationFrame(() => requestAnimationFrame(ok))));
+
+        const stood = await read();
+        const surfaces = Object.keys(stood.edges);
+        const azimuth = view.locator('[data-editor-token$="--eater-map-light-azimuth"]').first();
+        if (surfaces.length === 0) {
+          failures.push(
+            'nothing on the page under the Editor is a slice, so there was no generated geometry to drag a' +
+              ' Token into — the Exploded View never mounted and nothing about the rebuild was checked',
+          );
+        } else if (stood.redraw !== 'editor') {
+          failures.push(
+            `the Eater Map Section reports data-eater-map-redraw="${stood.redraw}" on a page with the Editor` +
+              ' over it — nothing is watching the preview sheet, so its light, its thickness and its radii' +
+              ' are Tokens that write their file and leave the drawing where it was until a reload',
+          );
+        } else if ((await azimuth.count()) === 0) {
+          failures.push(
+            'the Tokens surface drew no control for --eater-map-light-azimuth — the light is declared in' +
+              ' eater-map/tokens.css, so this is the Token being renamed or the surface not finding it',
+          );
+        } else {
+          const slider = azimuth.locator('input[type="range"]').first();
+          const was = await slider.inputValue();
+          // Kept whole rather than looked for by value: what has to be true is that
+          // a preview writes NOTHING, and a search for the number this drag happens
+          // to produce stops asking that the day the light is pointed elsewhere.
+          const lightFile = join(to.sections, 'eater-map', 'tokens.css');
+          const lightWas = readFileSync(lightFile, 'utf8');
+          // THE ROW'S FAR END, AND NOT A NUMBER OF DEGREES. `control()` derives a
+          // slider's range from the value in the file — four times it, on the side
+          // the author chose it on — so "add 180 and clamp" is half a turn at
+          // today's 315deg and silently less than that at a small one, which would
+          // leave this group blaming the redraw for a drag too small to see. The
+          // end furthest from where the row is standing is a real move at every
+          // value, and `moved` below is what stops that being an assumption.
+          const end = await slider.evaluate((input, here) => {
+            const far =
+              Math.abs(Number(input.max) - Number(here)) > Math.abs(Number(here) - Number(input.min))
+                ? input.max
+                : input.min;
+            input.value = far;
+            input.dispatchEvent(new Event('input', { bubbles: true }));
+            return input.value;
+          }, was);
+          await settled();
+          const during = await read();
+          if (end === was) {
+            failures.push(
+              `dragging --eater-map-light-azimuth to the end of its row left it at ${was}, so the gesture` +
+                ' this group is built on never moved and everything below it asserted nothing',
+            );
+          }
+
+          for (const name of surfaces) {
+            const before = stood.edges[name] ?? [];
+            const dragged = during.edges[name] ?? [];
+            if (dragged.length !== before.length) {
+              failures.push(
+                `dragging the light took the ${name} edge from ${before.length} slices to ${dragged.length}` +
+                  ' — a rebuild has to land on the DOM it started from',
+              );
+              continue;
+            }
+            if (before.every((one, index) => one === dragged[index])) {
+              failures.push(
+                `dragging --eater-map-light-azimuth left all ${before.length} of the ${name} edge's slices` +
+                  ' painted exactly as they were, so the drag moved the file and not the drawing — which is' +
+                  ' what a Token generated FROM rather than read by a stylesheet does without a rebuild',
+              );
+            }
+          }
+          if (readFileSync(lightFile, 'utf8') !== lightWas) {
+            failures.push('previewing the light wrote eater-map/tokens.css — a drag previews and a release writes');
+          }
+
+          // ...and back, which is the whole of "the same number of elements in the
+          // DOM as it started with": every element a redraw builds, in the same
+          // number and carrying the same style the mount wrote it with.
+          await slider.evaluate((input, back) => {
+            input.value = back;
+            input.dispatchEvent(new Event('input', { bubbles: true }));
+          }, was);
+          await settled();
+          const after = await read();
+          if (after.built.length !== stood.built.length) {
+            failures.push(
+              `the Exploded View is made of ${after.built.length} generated element(s) after a drag out and` +
+                ` back, against ${stood.built.length} before it — the redraw leaks elements, and a session of` +
+                ' tuning by eye is a great many drags',
+            );
+          } else if (!stood.built.every((one, index) => one === after.built[index])) {
+            failures.push(
+              'the Exploded View came back from a drag out and back drawn differently to how it mounted, with' +
+                ' the same Token values — the redraw is not a function of the Tokens alone',
+            );
+          }
+
+          // THE THICKNESS IS NOT DRAGGED HERE, AND THAT IS A JUDGEMENT RATHER THAN
+          // AN OVERSIGHT. It reaches the drawing two ways: the depth of every
+          // slice is a CSS expression naming it, which the browser re-evaluates
+          // with nothing observed at all, and the gradient's own outline is
+          // arithmetic — the same read path the light's assertion above covers,
+          // through the same signature and the same redraw. What is left that is
+          // specific to the thickness is only the `min(radius, thickness)` clamp,
+          // and a Slab dragged THICKER leaves that clamp where it was: an
+          // assertion built on it would have to drag the row to zero and would
+          // fail the day the author chose a square-edged Slab, which is a
+          // legitimate Token value. NOTES.md carries the whole of it.
+          //
+          // WHAT WAS DONE AND NOT WHAT WAS CONCLUDED: a note saying the surfaces
+          // followed the light contradicts any failure standing beside it, and this
+          // is printed on a failing run too.
+          notes.push(
+            `dragged --eater-map-light-azimuth ${was} → ${end} → ${was} over ${surfaces.length} extruded` +
+              ` surface(s) and ${stood.built.length} generated element(s): ${surfaces.join(', ')}`,
+          );
+        }
+      } finally {
+        await shown.close();
+      }
 
       // ---- the Kernel's Tokens --------------------------------------------
 

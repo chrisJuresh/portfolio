@@ -16,8 +16,17 @@ import { existsSync, mkdirSync, readFileSync, rmSync, statSync, writeFileSync } 
 import { dirname } from 'node:path';
 import { listsWorktree } from './teardown.mjs';
 
-/** @typedef {{ branch: string, directory: string, path: string, port: number,
- *              pid: number | null, startedAt: string }} Feature */
+/** A row in the registry, as `feature start` writes it.
+ *
+ *  `port` and `listener` are as nullable as `pid`, and were not said to be until
+ *  #183 turned `checkJs` on over this directory: `--no-server` records a feature
+ *  with no port at all, and astro announcing a port it will not say who holds
+ *  records the port without the listener. `listener` was missing from this
+ *  typedef outright while `takedown.mjs` read it on every land.
+ *
+ *  @typedef {{ branch: string, directory: string, path: string,
+ *              port: number | null, pid: number | null, listener: number | null,
+ *              startedAt: string }} Feature */
 /** @typedef {{ features: Feature[] }} State */
 
 /**
@@ -85,7 +94,12 @@ export function remove(state, branch) {
  * @returns {Set<number>}
  */
 export function ports(state) {
-  return new Set(state.features.map((held) => held.port).filter((port) => Number.isInteger(port)));
+  /** @type {number[]} */
+  const held = [];
+  for (const feature of state.features) {
+    if (Number.isInteger(feature.port)) held.push(Number(feature.port));
+  }
+  return new Set(held);
 }
 
 /**
@@ -205,7 +219,10 @@ export async function lock(file, { attempts = 40, wait = 50, stale = 30_000 } = 
   );
 }
 
-/** Held by a process that is gone, or held longer than any start takes. */
+/** Held by a process that is gone, or held longer than any start takes.
+ *
+ *  @param {string} path
+ *  @param {number} stale */
 function staleEnough(path, stale) {
   if (!existsSync(path)) return false;
   try {

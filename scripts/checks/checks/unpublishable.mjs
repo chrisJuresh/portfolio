@@ -4,13 +4,22 @@ import { PATTERNS, localPatterns, scan } from '../lib/denylist.mjs';
 import { open, settle } from '../lib/page.mjs';
 
 /**
- * No Section says anything the employment record marks as unpublishable.
+ * Nothing the page draws says anything the employment record marks as
+ * unpublishable.
  *
  * READ OFF THE BUILT PAGE, and off every Section that mounted, rather than out of
  * the source. The words reach a Section as Content, and Content is data — so a
  * term can be introduced in `content.ts`, in a Variant, or in an asset's alt
  * text, and the only place all three meet is the rendered document. Every Section
  * is mounted before the grep for exactly that reason.
+ *
+ * AND THE RAIL, WHICH IS NOT A SECTION. It was two Sections' Content until #192
+ * and is the Kernel's now, standing outside every `[data-section]` on the page —
+ * so a scan of the Sections alone would quietly stop reading the one list on the
+ * page that names things by name. It is the only element outside a Section that
+ * draws Content, which is why this is two attributes and not "the whole
+ * document": the Shell holds no composition, and its head is a different question
+ * with no Check.
  *
  * The attributes are read as well as the text: a name in an `alt` or an
  * `aria-label` is read aloud to a screen reader and is invisible to a person
@@ -26,7 +35,7 @@ const SPOKEN = ['alt', 'title', 'aria-label', 'aria-description', 'aria-roledesc
 
 export const check = {
   name: 'unpublishable',
-  title: 'no Section says anything the record marks unpublishable',
+  title: 'nothing the page draws says anything the record marks unpublishable',
 
   /** @param {{ browser: import('playwright').Browser, origin: string, repoRoot: string }} ctx */
   async run({ browser, origin, repoRoot }) {
@@ -49,7 +58,7 @@ export const check = {
       const failures = [...(await settle(page))];
 
       const said = await page.evaluate((spoken) => {
-        return [...document.querySelectorAll('[data-section]')].map((root) => {
+        return [...document.querySelectorAll('[data-section], [data-rail]')].map((root) => {
           const attributes = [];
           for (const element of [root, ...root.querySelectorAll('*')]) {
             for (const name of spoken) {
@@ -72,15 +81,20 @@ export const check = {
             if (line.length > 0) lines.push(line);
           }
           return {
-            section: root.dataset.section ?? '(unnamed)',
+            section: root.dataset.section ?? (root.hasAttribute('data-rail') ? 'the Rail' : '(unnamed)'),
+            rail: root.hasAttribute('data-rail'),
             text: lines.join('\n'),
             attributes: attributes.join('\n'),
           };
         });
       }, SPOKEN);
 
-      if (said.length === 0) {
+      const sections = said.filter((one) => !one.rail).length;
+      if (sections === 0) {
         failures.push('no Section mounted, so no Section text was read — nothing was checked');
+      }
+      if (said.length === sections) {
+        failures.push('no [data-rail] on the page — the one list of words outside a Section went unread');
       }
 
       for (const { section, text, attributes } of said) {
@@ -99,7 +113,7 @@ export const check = {
 
       return {
         failures,
-        notes: [`${said.length} Section(s) read; ${localNote}`],
+        notes: [`${sections} Section(s) and ${said.length - sections} Rail read; ${localNote}`],
       };
     } finally {
       await context.close();

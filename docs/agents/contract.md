@@ -50,7 +50,19 @@ Underneath both sits the ordinary kind: **a pure function with a test beside it*
 `scripts/feature/lib/` and `scripts/editor/lib/` are written that way on purpose
 — decision in a pure function, syscall in the thin layer under it — and every bug
 those two modules have had was in the glue. `pnpm test` runs them alone; `pnpm
-check` runs them first, so they gate a commit too.
+check` runs them first, so they gate a commit too. It reaches `design/` as well,
+for the three decisions in it worth isolating, and **every one of them is a
+decision whose failure would be silent** — which is what earns a seam in a folder
+where everything else fails immediately and loudly.
+`design/eater-cards/compare.mjs` decides whether the vendored Eater Cards are
+stale. `design/eater-slab/retheme.mjs` decides whether the Slab's re-theme
+landed, and a re-theme that missed writes a file that opens, is the right size,
+is of the right place and is the wrong colour. `design/eater-cards/rows.mjs`
+decides whether the results dropdown's row cap landed, and a cap that missed
+writes a card of the right app, of the right restaurants, at the wrong height.
+All three fail when **another
+repository** moves rather than when this one does, which is the other half of
+why looking is not enough.
 
 **Where there is no seam, there is no test, and the spec says so.** A composition
 has none — its deliverable is a look. The `feature` script's git plumbing has
@@ -88,8 +100,11 @@ answer, three of which make a Check silently assert nothing while reading as
 though it asserts something. **Read it before adding or changing a Check.**
 
 A green `pnpm check` does not mean a Section is right. It means nothing invisible
-broke. `astro check` answers for types; `pnpm test` answers for the pure
-functions; the look is answered by the author, looking.
+broke. `astro check` answers for the Portfolio's types and `tsc -p
+tsconfig.scripts.json` for the `feature` script's — **and for nothing else under
+`scripts/`**, which is a decision stated in that file rather than an oversight
+(#183); `pnpm test` answers for the pure functions; the look is answered by the
+author, looking.
 
 ## Which skills to run, and which to skip
 
@@ -175,7 +190,7 @@ authority is in the right-hand column.
 | **An image pasted into a chat cannot be written to disk.** Adding a photograph needs a path or a folder. Pasting is for *judging* photographs, never for adding them. | #129 |
 | **The in-app preview serves the main checkout**, so in a worktree it verifies `development` while looking like it verified the branch. Never verify a change with it, and never open the Editor through it — that would write Content against one tree while looking at another. | `scripts/checks/NOTES.md` |
 | **`hold()` a Timeline before seeking it**, and release it after. | `src/kernel/NOTES.md` |
-| **One mount point per Section.** | `src/sections/stub/NOTES.md` |
+| **One mount point per Section.** | `src/kernel/NOTES.md` |
 | **A Variant's selector needs `:root`** to outrank the composition it argues with, and **nothing imports `variants.css`** — an unselected Variant must cost the shipped page nothing. Both are silent when wrong. | `docs/agents/variants.md` |
 | **The Editor matches an element against the value the SERVED BUILD was made from**, not the current one. That is what makes an edit survive a reload. | `scripts/editor/NOTES.md` |
 | **The Editor replaces one string literal's bytes** rather than re-serialising the file, which is what keeps a Content file's comments and formatting. Its **Overrides** boundary is the exception and inverts the rule: that file is generated, so it always re-serialises, and what pays for it is refusing any bytes it did not write. | `scripts/editor/NOTES.md` |

@@ -15,21 +15,21 @@ A Section's Variants live in its own `variants.css`, one file per Section, any
 number of Variants in it. Every selector reads:
 
 ```css
-:root[data-variant='split'] .stub__points li { flex: 1 1 0 }
-└──────── the gate ────────┘ └── owned ──┘ └ its descendants ┘
+:root[data-variant='quiet'] .eater-map__points li { row-gap: 0 }
+└──────── the gate ────────┘ └───── owned ─────┘ └ descendants ┘
 ```
 
 - **the gate** — `:root[data-variant='<name>']`, exactly. Lower case, digits and
   dashes in the name.
 - **owned** — the compound straight after the gate must be the Section's:
-  `.stub`, `.stub__…`, or `[data-stub-…]`.
-- **after that** — anything. `li`, `:first-child`, `> .stub__measure`. It is all a
-  descendant of something the Section owns, so it can match nothing outside it.
+  `.<section>`, `.<section>__…`, or `[data-<section>-…]`.
+- **after that** — anything. `li`, `:first-child`, `> .eater-map__slab`. It is all
+  a descendant of something the Section owns, so it can match nothing outside it.
 - **no sibling combinator** anywhere. A sibling of a Section's root is another
   Section.
 - **declare anything** — layout, palette, surface, a motion distance. Custom
   properties are the one exception: they inherit, so they have to be named
-  `--stub-…`.
+  `--<section>-…`.
 - **no at-rules.** The file is a flat list of rules. A Variant is a direction, not
   something that arrives at a width; a direction that only holds on one viewport
   is two Variants.
@@ -55,7 +55,7 @@ back byte-for-byte the same as it — the honest answer for a Variant that only
 exists in motion, and the cue to pass `--progress`.
 
 ```bash
-pnpm variants -- --sections stub --variants split,plate
+pnpm variants -- --sections eater-map --variants points-right,quiet
 pnpm variants -- --progress 0,0.5,1     # a Variant that is only visible in motion
 pnpm variants -- --turn 1               # past the Kernel's crossing into dark
 pnpm variants -- --viewports desktop,tablet,mobile --format jpeg
@@ -67,15 +67,15 @@ the Effect Stack's grain and halftone are noise by construction, so a screen of
 near-blank paper is over a megabyte of PNG. It smears the grain, which is the one
 thing on the page nobody chooses a Variant on.
 
-## The three things that are decisions
+## The four things that are decisions
 
 **`:root` is what makes a Variant win.** Astro narrows every compound of a scoped
 rule, and its default strategy narrows with a bare attribute selector worth
 (0,1,0) *per compound* — so a scoped rule's weight grows with the length of its
 selector, and a Variant, which is one fixed gate in front of the same selector,
 wins or loses depending on how many compounds the composition happened to write.
-`.stub__points li` was an exact tie, settled by whichever stylesheet the bundler
-emitted second. So `astro.config.mjs` sets `scopedStyleStrategy: 'where'`, which
+A two-compound selector was an exact tie, settled by whichever stylesheet the
+bundler emitted second. So `astro.config.mjs` sets `scopedStyleStrategy: 'where'`, which
 selects identically and weighs nothing, and the gate then outranks the
 composition by (0,2,0) in every case.
 
@@ -93,10 +93,10 @@ still be in flight when a Section's Timeline reads its Tokens with
 `getComputedStyle`, which would hand it the shipped value under a Variant's name.
 `check-source.mjs` fails the build if an import is ever added back.
 
-**The sheet shoots the first screen of a Section, held at a moment.** A Section is
-taller than a screen — the stub is 240svh, because its Timeline is scrubbed by its
-own scroll — so the shot is the Section's top at the top of the window, which is
-what a reader arriving at it sees. Two consequences:
+**The sheet shoots the first screen of a Section, held at a moment.** A Section
+can be taller than a screen — one whose Timeline is scrubbed by its own scroll has
+to be — so the shot is the Section's top at the top of the window, which is what a
+reader arriving at it sees. Two consequences:
 
 - A Variant that centres anything *vertically* centres it in that whole box and
   out of the frame. The picture comes back as empty paper, and it is right: the
@@ -104,6 +104,48 @@ what a reader arriving at it sees. Two consequences:
 - The moment is reached by `hold()` and then seeking the Section's Timeline, per
   `src/kernel/NOTES.md`. A bare seek survives about one frame, and that cost a
   wrong diagnosis once already.
+
+**It refuses to shoot a Section whose pictures have not arrived** (#185). Before
+any shot, every `<img>` inside the Section is promoted to `loading="eager"`,
+waited for, and `decode()`d; a picture that never arrives ends the run naming the
+Section and the `src`, and a picture that is already `complete` with no intrinsic
+width is answered at once as a failed request rather than after the fifteen-second
+budget. Three parts of that are the decision:
+
+- **A refusal, not a retry.** A Slab is `loading="lazy" decoding="async"`, so it
+  is in neither `load` nor `document.fonts.ready`, and settling used to return
+  with the fetch that scrolling had just started still in flight. One shot in
+  thirty-six of the Eater Map came back as three Cards over bare ground, and
+  nothing caught it: the `identical` digest compares a Variant against
+  `unselected` in its own group, and a missing picture differs from it, so the
+  sheet captioned it as a normal render. The only signal was 111 KB against 156
+  KB. That is this tool's worst failure mode — the sheet exists so a direction is
+  chosen by **looking**, so a picture missing a composition's largest element
+  reads as a broken Variant rather than as a dropped frame, and the losing
+  Variants are then the record of a judgement made against something untrue.
+- **Eager first**, which is the decision the `animation: none` injection is and is
+  made for the same reason: two shots of one Variant should differ only where the
+  Variant does. A Section can be taller than a screen and `--full` shoots all of
+  it, so waiting on a lazy picture still below the fold would hang on a page
+  behaving perfectly. Load order is not something any Variant is judged on.
+- **Only `<img>`.** A picture reached through `background-image` is not covered,
+  because there is nothing to ask — CSS gives no per-element load state. Every
+  picture on a Section today is an element; one that stops being one needs this
+  step extended rather than trusted.
+- **It is asked twice, and the second one is load-bearing.** Once while settling,
+  which starts a lazy fetch early and ends the run on a broken asset before a
+  file has been written; and once per moment, after the Timeline has been
+  scrubbed and immediately before the shutter. Settling is not the state that
+  gets photographed: the Eater Map's markup rests *raised*, so seeking to
+  progress 0 changes the Slab's drawn box from 361x535 to 282x612 and the picture
+  is re-rastered at a size it was not decoded at. Every missing-Slab shot seen so
+  far was at progress 0 and none at 1 — the half of the matrix that needs no
+  resize. The load half of this is proven, by holding the Slab back a second and
+  a half and shooting 112 KB without the wait against 160 KB with it; the resize
+  half is reasoning from where the failures fell, and has not been reproduced
+  against a settle-time-only wait in 180 further shots. The second call is a
+  `decode()` on an already-decoded picture and costs almost nothing, so it is
+  asked where the answer has to be true rather than where it is cheapest.
 
 ## Traps
 

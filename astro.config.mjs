@@ -54,15 +54,25 @@ const repoRoot = fileURLToPath(new URL('.', import.meta.url)).replace(/[\\/]+$/,
  */
 function servesWhatAstroDoesNotBuild() {
   // Filled in by the routes:resolved hook below, and read on every request.
+  /** @type {RegExp[]} */
   let astroRoutes = [];
 
   const middleware = {
     name: 'portfolio:unbuilt-paths',
     enforce: 'pre',
+    /** Structurally, rather than as `ViteDevServer`: vite is astro's dependency
+     *  and not one of ours, so naming its type here would be a `tsc` failure the
+     *  moment astro moved it.
+     *
+     *  @param {{ middlewares: { use: (handler: (
+     *      req: import('node:http').IncomingMessage,
+     *      res: import('node:http').ServerResponse,
+     *      next: () => void,
+     *    ) => void) => void } }} server */
     configureServer(server) {
       server.middlewares.use((req, res, next) => {
         const url = req.url ?? '/';
-        const pathname = url.split('?')[0];
+        const pathname = url.split('?')[0] ?? '/';
         const query = url.slice(pathname.length);
 
         // A FILE FIRST, A REWRITE LAST, which is the order Vercel resolves in
@@ -88,6 +98,8 @@ function servesWhatAstroDoesNotBuild() {
         return next();
       });
 
+      /** @param {import('node:http').ServerResponse} res
+       *  @param {string} file */
       function serve(res, file) {
         res.setHeader('content-type', contentType(file));
         // A read that fails after the stat would otherwise take the dev
@@ -102,10 +114,12 @@ function servesWhatAstroDoesNotBuild() {
   return {
     name: 'portfolio:unbuilt-paths',
     hooks: {
-      'astro:config:setup': ({ updateConfig }) => {
+      'astro:config:setup': (/** @type {{ updateConfig: (config: object) => void }} */ { updateConfig }) => {
         updateConfig({ vite: { plugins: [middleware] } });
       },
-      'astro:routes:resolved': ({ routes }) => {
+      'astro:routes:resolved': (
+        /** @type {{ routes: { origin: string, patternRegex: RegExp }[] }} */ { routes },
+      ) => {
         // Only routes somebody wrote under src/pages. Astro's own — /404,
         // /_image, /_server-islands/[name] — come through as
         // `origin: 'internal'`, and none of them is a page a static path could
@@ -135,14 +149,14 @@ export default defineConfig({
   // (0,1,0) of specificity per compound. That makes a scoped rule's weight grow
   // with the length of its selector, and a Variant, which is one fixed gate in
   // front of the same selector, then wins or loses depending on how many
-  // compounds the composition happened to write. `.stub__points li` was an exact
-  // tie, settled by whichever stylesheet the bundler emitted second.
+  // compounds the composition happened to write. A two-compound selector was an
+  // exact tie, settled by whichever stylesheet the bundler emitted second.
   //
   // `where` wraps the same attribute in :where(), so it selects identically and
   // weighs nothing. Scoped rules keep the specificity they are written with, and
   // `:root[data-variant='…']` in front of one always outranks it by (0,2,0) —
   // which is the whole mechanism a Variant is selected by. See
-  // src/sections/stub/NOTES.md.
+  // src/sections/NOTES.md.
   scopedStyleStrategy: 'where',
   devToolbar: { enabled: false },
   integrations: [servesWhatAstroDoesNotBuild()],

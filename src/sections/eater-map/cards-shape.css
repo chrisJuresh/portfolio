@@ -1,0 +1,26 @@
+/*
+ * What this Section says about the SHAPE of a vendored Card surface. A plain,
+ * unscoped stylesheet, because a shape needs a SELECTOR and a scoped one cannot
+ * reach markup that arrived through `set:html`. NOTES.md, "A shape is the one
+ * thing a variable cannot carry", is the authority — including the three rules a
+ * rule added here has to keep. Two of them are worth having at the line:
+ *
+ *   * SELECT ONLY THROUGH THE BOXES THE RULER GIVES THE CLONE — `.eater-cards`,
+ *     `.eater-map__face`, `.eater-map__surface`, and `.eater-map__hang` for a hung
+ *     surface (#194). A rule anchored any deeper applies to the page and not to
+ *     the measurement — the surface rounds, and its backdrop and its edge stay cut
+ *     square. The first two of those four are the safest to write through, because
+ *     they are what the ruler has always had.
+ *   * NEVER NAME THE EXPORT'S `svelte-…` CLASS. It is a build fingerprint, and the
+ *     weight has to come from real handles instead: (0,4,0) against the (0,3,0)
+ *     `cards.css` states its own rules at.
+ *
+ * THE DETAILS SHEET'S FOOT, and the trap is that the squareness is in the RULE.
+ * `--r-sheet` is already a single `28px`; the two zeroes are in `border-radius:
+ * var(--r-sheet) var(--r-sheet) 0 0`. Overriding the VARIABLE sets 28px to 28px
+ * and is a no-op — it is what was done the first time this corner was compared,
+ * and why the before and the after were the same picture.
+ */
+.eater-cards .eater-map__surface .details-panel[data-eater-card='details'] {
+  border-radius: var(--r-sheet);
+}

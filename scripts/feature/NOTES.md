@@ -305,6 +305,25 @@ see **Landing and taking down are two things** above.
 broken tree. `lib/ports.mjs` skips them; `scripts/checks/lib/serve.mjs` carries
 the same list for its ephemeral allocation.
 
+## What a fresh worktree does not get, and `start` carries in
+
+A worktree is a checkout of **tracked** files and nothing else, so everything
+`.gitignore` covers is simply absent from one. `node_modules` is the loud case and
+`start` installs it. The quiet case is `.claude/settings.local.json`, which holds
+this machine's permission mode: without it a new worktree falls back to the
+default, and the protocol's own writes start being refused in a tree cut minutes
+after one where they were allowed. That reads as the tool being broken rather than
+as a file being missing, which is the whole reason it is worth a section.
+
+`.worktreeinclude` at the repository root is what names them, one path a line. It
+is the vendored `worktree-per-change` installer's file, and everywhere else it is
+Claude Code's `EnterWorktree` that reads it — which this repository never calls
+(ADR 0005). So `start` reads it, because `start` is what cuts worktrees here, and
+a file naming a requirement that nothing acts on is worse than no file.
+`lib/include.mjs` is the parse and the copy, both tested; the report says what was
+carried **even when it carried everything**, because the failure it prevents is
+invisible and a run that carried nothing has to say so.
+
 ## The pre-commit hook
 
 `.githooks/pre-commit` runs `pnpm check` and blocks the commit if it fails
@@ -410,3 +429,12 @@ Put the decision in a pure function and the syscall in the layer under it. That
 split is why the four bugs above were findable at all: every one of them was in
 the glue, and each is now pinned by a test in the half that could hold it.
 `pnpm check` runs these tests before it runs a Check, so they gate a commit too.
+
+**And this directory is typechecked**, which is not true of `scripts/` at large.
+`tsconfig.scripts.json` turns `checkJs` on over `scripts/feature/**` and
+`pnpm build` runs it, so the JSDoc here is load-bearing rather than decorative: a
+`@param` left off is a build failure, and so is a `@typedef` that has drifted from
+what the code writes. It is here first because the teardown runs **after** the
+push — #170's use-before-declaration exited 1 on a change that had already landed,
+and `tsc` names that shape exactly (#183). Widening it to `scripts/checks/` or
+`scripts/editor/` is an `include` line and their own residue; nothing else.

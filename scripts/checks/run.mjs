@@ -28,16 +28,20 @@ import { statSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { chromium } from 'playwright';
 
+import { check as across } from './checks/across.mjs';
 import { check as assets } from './checks/assets.mjs';
 import { check as carousel } from './checks/carousel.mjs';
 import { check as consoleQuiet } from './checks/console.mjs';
+import { check as crossing } from './checks/crossing.mjs';
 import { check as deepLinks } from './checks/deep-links.mjs';
+import { check as eaterMap } from './checks/eater-map.mjs';
 import { check as editor } from './checks/editor.mjs';
 import { check as faces } from './checks/faces.mjs';
 import { check as frontScreen } from './checks/front-screen.mjs';
 import { check as ground } from './checks/ground.mjs';
 import { check as moments } from './checks/moments.mjs';
 import { check as projectsPanel } from './checks/projects-panel.mjs';
+import { check as rail } from './checks/rail.mjs';
 import { check as turn } from './checks/turn.mjs';
 import { check as unpublishable } from './checks/unpublishable.mjs';
 import { serve } from './lib/serve.mjs';
@@ -46,12 +50,16 @@ import { serve } from './lib/serve.mjs';
 const CHECKS = [
   assets,
   consoleQuiet,
+  across,
   faces,
   carousel,
   frontScreen,
   projectsPanel,
+  eaterMap,
+  rail,
   ground,
   turn,
+  crossing,
   moments,
   deepLinks,
   unpublishable,
@@ -80,6 +88,30 @@ if (only) {
     );
     process.exit(2);
   }
+}
+
+/**
+ * Which stage draws the Eater Map Section's Slab, for the whole run.
+ *
+ *   pnpm check -- --stage webgl
+ *
+ * #181's last acceptance criterion is that every Check passes with either stage
+ * selected, and this is what makes that a command rather than a claim. It is a
+ * property of the SUITE and not of a Check, so it is handed to `lib/page.mjs`
+ * through the environment and no Check mentions it — see the note there. The
+ * default is the shipped stage and the default path is untouched.
+ */
+const STAGES = ['dom', 'webgl'];
+const stageArg = argv.indexOf('--stage');
+if (stageArg !== -1) {
+  const stage = argv[stageArg + 1] ?? '';
+  if (!STAGES.includes(stage)) {
+    console.error(`checks: --stage takes one of ${STAGES.join(', ')}, not "${stage}"`);
+    process.exit(2);
+  }
+  process.env.PORTFOLIO_STAGE = stage;
+  console.log(`checks: every page opens with the ${stage} stage selected.
+`);
 }
 
 /**

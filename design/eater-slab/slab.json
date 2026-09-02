@@ -1,0 +1,112 @@
+{
+  "note": "The Slab's parameters and their defaults. One file, so that changing the project's example is changing a field here rather than reading a script — capture-slab.mjs reads this and holds no number of its own. design/eater-slab/README.md says what each one is for.",
+
+  "eater": {
+    "checkout": null,
+    "needs": [
+      {
+        "id": "checkout",
+        "path": "package.json",
+        "is": "the Eater checkout itself",
+        "fix": "clone it, or point EATER_CHECKOUT (or eater.checkout above) at where it already is"
+      },
+      {
+        "id": "vite",
+        "path": "node_modules/vite/bin/vite.js",
+        "is": "the Eater checkout's installed dependencies",
+        "fix": "run `pnpm install` in that checkout"
+      },
+      {
+        "id": "dataset",
+        "path": "static/data/restaurants.json",
+        "is": "the Eater restaurant dataset",
+        "fix": "run `pnpm export:data` in that checkout"
+      },
+      {
+        "id": "basemap-gb",
+        "path": "static/basemap/gb.pmtiles",
+        "is": "the Eater bundled basemap, coarse whole-country tiles",
+        "fix": "run `pnpm build:basemap` in that checkout"
+      },
+      {
+        "id": "basemap-detail",
+        "path": "static/basemap/detail.pmtiles",
+        "is": "the Eater bundled basemap, detailed restaurant-area tiles",
+        "fix": "run `pnpm build:basemap` in that checkout"
+      }
+    ],
+    "readyTimeoutMs": 180000
+  },
+
+  "restaurant": "Bar Italia",
+  "centre": null,
+  "zoom": 15,
+  "zoomRange": { "min": 4, "max": 18 },
+
+  "viewport": {
+    "width": 393,
+    "height": 852,
+    "deviceScaleFactor": 2
+  },
+
+  "capture": {
+    "container": ".map",
+    "keep": [".map-canvas", ".marker-layer"],
+    "strip": [
+      ".app-shell > :not(.map) { display: none !important; }",
+      ".app-shell ~ * { display: none !important; }",
+      ".map > :not(.map-canvas):not(.marker-layer) { display: none !important; }",
+      ".maplibregl-control-container, .maplibregl-ctrl-container { display: none !important; }",
+      ".map { background-image: none !important; }"
+    ],
+    "settleMs": 1500,
+    "stableProbes": 24,
+    "stableGapMs": 300,
+    "cameraTolerance": { "zoom": 0.01, "degrees": 0.0001 }
+  },
+
+  "retheme": {
+    "note": "What makes the Slab a DARK map, applied to the modules Eater's dev server serves rather than to the Eater checkout. design/eater-slab/README.md, under \"The re-theme\", says how it works, why it lives here, and how to reverse it.",
+
+    "flavor": "dark",
+    "drop": ["pois", "address_label"],
+    "markerOpacity": 0.82,
+
+    "rewrites": [
+      {
+        "id": "flavor",
+        "parameter": "flavor",
+        "is": "protomaps' flavour, stated at both of Eater's style call sites",
+        "default": "light",
+        "module": "/src/lib/map/style\\.js(?:$|\\?)",
+        "find": "namedFlavor\\(\\s*'light'\\s*\\)",
+        "replace": "namedFlavor('{value}')",
+        "expect": 2
+      },
+      {
+        "id": "drop",
+        "parameter": "drop",
+        "is": "the seam every basemap layer passes through, where these ids are filtered out",
+        "default": [],
+        "module": "/src/lib/map/style\\.js(?:$|\\?)",
+        "find": "function composeTransit\\(baseLayers\\) \\{",
+        "replace": "function composeTransit(baseLayers) { baseLayers = baseLayers.filter((l) => !/(^|_)({value})$/.test(l.id));",
+        "expect": 1
+      },
+      {
+        "id": "markerOpacity",
+        "parameter": "markerOpacity",
+        "is": "the flat opacity the restaurant markers composite at; 0.42 reads maroon on dark",
+        "default": null,
+        "module": "/src/lib/constants\\.js(?:$|\\?)",
+        "find": "MARKER_LAYER_OPACITY\\s*=\\s*0\\.42",
+        "replace": "MARKER_LAYER_OPACITY = {value}",
+        "expect": 1
+      }
+    ]
+  },
+
+  "encode": { "quality": 0.9 },
+
+  "output": "portfolio/img/eater/slab.webp"
+}

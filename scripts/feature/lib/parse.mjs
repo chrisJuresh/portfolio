@@ -24,8 +24,9 @@ export function worktrees(output) {
     }
     // A detached worktree says `detached` and no `branch`, so branch stays null
     // — it is still holding its directory name and still has to be listed.
-    if (line.startsWith('branch ') && found.length > 0) {
-      found[found.length - 1].branch = line.slice('branch refs/heads/'.length).trim();
+    const last = found[found.length - 1];
+    if (line.startsWith('branch ') && last) {
+      last.branch = line.slice('branch refs/heads/'.length).trim();
     }
   }
   return found;
@@ -85,7 +86,7 @@ export function taken({ local, remote, worktrees: trees }) {
     // the main checkout's own directory is not a feature name and would
     // otherwise reserve the repository's own folder name forever.
     const match = /[\\/]\.claude[\\/]worktrees[\\/]([^\\/]+)[\\/]?$/.exec(tree.path);
-    if (match) found.add(match[1]);
+    if (match?.[1]) found.add(match[1]);
     if (tree.branch) found.add(tree.branch);
   }
   return found;
@@ -110,7 +111,7 @@ export function uncommitted(output) {
     // any reason has already eaten, and a blind slice then reports `ackage.json`
     // in a message whose whole job is to name a file. That cost a bug here once.
     const shaped = /^(..) (.*)$/.exec(line);
-    const path = shaped ? shaped[2] : line.replace(/^\s*\S{1,2}\s+/, '');
+    const path = shaped?.[2] ?? line.replace(/^\s*\S{1,2}\s+/, '');
     const arrow = path.indexOf(' -> ');
     found.push(arrow === -1 ? path.trim() : path.slice(arrow + 4).trim());
   }

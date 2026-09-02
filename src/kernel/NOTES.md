@@ -2,8 +2,8 @@
 
 The small set of things every Section may rely on, and the only thing permitted
 to cross a Section boundary: the faces, the theme and the Turn, the Effect Stack,
-the corner pictures, the Section loader, and the page turn between the Sections
-along with the landing it arrives at.
+the corner pictures, the Rail, the Section loader, and the page turn between the
+Sections along with the landing it arrives at.
 
 It is also the only place in `src/` allowed to write a global selector. A Section
 that wants something global wants it in here, and adding it is a decision rather
@@ -16,11 +16,12 @@ than a convenience.
 | `faces.css` / `tokens/faces.css` | the five families, six files, the face Tokens, and the page's own type size — the zoom, the ceiling and the give-way |
 | `ground.css`                | the theme's two papers, the Turn across them, and that the document never scrolls sideways |
 | `corners.css` / `corners.ts`| the plate, the car and the eye — geometry, and which rung    |
+| `rail/` / `tokens/rail.css` | the Rail — the one index on the page, its words, its two regimes, and which entry is current |
 | `effect-stack/`             | the nine layers, and the grain tile                          |
 | `theme.ts`                  | which paper, where it is stored, and who is told when it changes |
-| `turn.ts`                   | the Turn, as one named seekable Timeline, and `onTurn()` for anything drawn against it that CSS cannot draw |
-| `landing.css` / `tokens/landing.css` | the landing band, the measure two Sections share across it, and the two resting places |
-| `page-turn.ts`              | one wheel notch between those resting places, and a link into a Section going the same way |
+| `turn.ts`                   | the Turn, as one named seekable Timeline, how far it runs in each regime, and `onTurn()` for anything drawn against it that CSS cannot draw |
+| `landing.css` / `tokens/landing.css` | the landing band, the measure two Sections share across it, and the resting places — one per Section, stated as a relationship so a new one costs nothing |
+| `page-turn.ts`              | one wheel notch between two resting places, and a link into a Section going the same way |
 | `wheel.ts`                  | who owns a wheel gesture — the page, or a roll inside it     |
 | `loader.ts`                 | mounting a Section as it approaches the viewport             |
 | `motion.ts`                 | `hold()` / `release()` — see below                            |
@@ -137,11 +138,400 @@ is a decision, not a convenience.
 the Cut Title computes. That is why the landing's fit constant substitutes the
 masthead's own drop out of the equation rather than referring to the word.
 
+### The third Section does not join it: the Eater Map Section has no Cut Title
+
+Decided by measuring rather than by arguing, #172. **A second Cut Title — cut off
+the Projects Panel's foot into an Eater Map masthead's slot, the way PROJECTS is
+cut off the Front Screen's — costs about 9% of the Panel's composition at every
+window a browser actually has, and the whole of the marble's corner at every
+window in the band.** The Eater Map Section takes a plain masthead reading "Eater
+Map", the landing measure stays two Sections', and the Panel is bound at one end
+only and stays free to be reworked.
+
+**What a second solve would take is `d`, and `d` is a number the Front Screen
+already pays.** The device costs the Section carrying the cut word exactly one
+thing at its foot: the air above the word's cap plus the part of the cap that
+shows — `--front-screen-cut-gap + --front-screen-cut-clip`, which is
+`--front-screen-cut-show` (0.62) of the NEXT Section's cap, plus that air. So the
+bill for a second landing was not invented: it was measured at the foot of the
+first, on the live page, with `window.portfolio.snapping(false)` lifted before the
+page was placed anywhere between the two ports. All lengths in px.
+
+| window | `d` | width branch | height branch | binds | `--landing-w` | with `d` | cost |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| 1100x700   |  54.7 |  984.8 | 1116.5 | width  |  984.8 |  984.8 |   0.0 (0.00%) |
+| 1536x760   |  64.9 | 1388.4 | 1212.2 | height | 1212.1 | 1103.4 | 108.7 (8.97%) |
+| 1920x980   |  83.7 | 1733.7 | 1563.0 | height | 1563.0 | 1422.9 | 140.2 (8.97%) |
+| 2560x1311  | 112.3 | 2311.3 | 2091.7 | height | 2091.7 | 1903.5 | 188.1 (8.99%) |
+
+**The cost is `d / --landing-fit`, which is the coefficient this file already
+carried, confirmed against the live page to a tenth of a pixel.** And it is free
+only where the width branch bound by more than that: 131.6px of slack at the
+band's short corner against the 91.7 `d` asks for there, which is why that row
+costs nothing. At the three windows a browser actually has, the height branch is
+already binding by 170 to 220px, so there is no slack at all and the whole of `d`
+comes out of the drawing. **The 9% is not a coincidence of these four windows
+either** — `d` is 0.62 of a cap that is itself `0.7 x --landing-mast-share` of the
+composition, so `d` is about `0.038 W` plus a rhyme, and `d / --landing-fit` is
+about 6.4% of `W` plus that rhyme's share, everywhere in the band.
+
+**What moves, at 1920x980, the ordinary window:**
+
+| | before | after |
+| --- | --- | --- |
+| Frame | 1167.5 | 1062.8 (−104.7) |
+| Plinth | 1388.6 | 1264.1 (−124.5) |
+| masthead size / its cap | 138.3 / 96.8 | 125.9 / 88.1 |
+| `--projects-panel-reach` | 182.7 | 332.8 (+150.1) |
+| the points | 559.0 | 675.3 (+116.3) |
+| the copy | 1067.2 | 1138.0 (+70.8) |
+| the Rail's column | 63.7 | 63.7 |
+
+The two type blocks GROW because they grow by the reach, and the gutter the points
+stand behind tracks its own Token exactly through the change — 19.23 to 17.50
+against a Token of 19.23 to 17.50 — so the window does not walk into the list and
+that assertion of `projects-panel` holds. The Rail's column is
+`--landing-side`, which is the page's own margin in `vh` and is not a function of
+the composition, so it does not move at all.
+
+**The first landing pays for the second, and that is the part that is easy to
+miss.** The Cut Title on the Front Screen is fitted to `--landing-cap`, and
+`--landing-cap` is a share of `--landing-w` — so shrinking the Panel to make room
+for a second cut word shrinks the FIRST one. PROJECTS loses 7 to 9% of its cap
+wherever the height branch binds: 96.8px to 88.1 at 1920x980, 129.6 to 117.9 at
+2560x1311. A device paid for in the size of the word the device exists to show.
+
+**And one target is lost outright, which is the reason this is a "no" rather than
+a price.** The Plinth's foot leaves the page's by the whole of `d` — 54.7, 64.9,
+83.7, 112.3px — at every window in the band, INCLUDING the one where the
+composition costs nothing. There is no vertical analogue of the reach and there
+cannot be one: the reach carries the stage out into page the drawing was too
+narrow to fill, and the space at the Panel's foot in this scenario is not empty,
+it is exactly where the cut word has to be. `projects-panel`'s corner assertion
+fails by that much, down, and that Check exists because every way the corner
+breaks is quiet.
+
+**What would have to change for this to be worth revisiting.** One thing, really,
+and the other two only change the size of the bill:
+
+1. **The Panel stops being solved to fill the screen's height.** The cost is
+   `d / --landing-fit` only because the composition is self-similar and pinned
+   from `--landing-inset` to the page's own foot; and the corner is lost only
+   because the Plinth stands on that foot. A reworked Panel that does neither pays
+   `d` out of somewhere that is not its width and gives up no corner, and none of
+   the arithmetic above applies to it. This is the one that could actually flip
+   the answer.
+2. **The height branch stops binding at the author's windows.** `d` is free only
+   where the width branch wins by more than `d / --landing-fit`. It does that in
+   the corner of the band and nowhere near the rest of it, and closing a 170px gap
+   would need `--landing-fit` to fall a long way — a much flatter composition than
+   this one.
+3. **The third Section's masthead is much smaller than the Panel's.** `d` is 0.62
+   of the NEXT Section's cap, and this assumed the Eater Map Section would share
+   `--landing-mast-share`. A masthead a third the size asks about a third of the
+   cap back — still 50-odd px against no slack at 1920x980, so it makes the bill
+   smaller and does not make it zero, and it does not touch the corner at all.
+
+**Re-measure before acting on these numbers rather than trusting them.** Every one
+is a share of a width the Panel's own rework is expected to move, and they are the
+composition as it stood when #172 was answered.
+
+## Out of the band the crossing is still one crossing, over the first Section
+
+There is no fold out here, so the temptation is to give the two Sections
+different treatments and the answer is that they must not have any. **The whole
+page starts on paper and arrives at dark on one number, at one rate, and the
+Projects Panel is on that number with everything else.** A Section that pins
+itself past the page, or a near end written against `--ground` rather than
+against the theme's paper, puts a step across the page at that Section's top edge
+that travels up with the scroll — which is what the banding readers reported was,
+both times. `src/sections/projects-panel/NOTES.md` has the arithmetic; the short
+version is that `--ground` is itself a crossing on `--turn`, so mixing into it
+composes two.
+
+**What is different out here is the LENGTH of it, and `turn.ts` states it rather
+than inheriting it.** In the band the crossing is ONE NOTCH — from the first
+resting place to the second, which is the Panel's, read off `ports()` rather than
+counted. **That used to say "the document's whole scroll", and it was the same
+number to the pixel until a third Section landed**: with two Sections the second
+port IS the foot of the document, 677px at 1536x760 on either reading. With three
+the document is two notches long, so spanning it would leave the Panel a shade
+off black at its own resting place and finish the crossing in a Section that has
+nothing to do with it. #175 is where that changed, and the shape of the mistake
+is worth keeping: a length stated as *the document* when what was meant was *the
+turn*, correct for exactly as long as the two were the same. Out
+here the document is as tall as its content, and spread over that the page is
+still a quarter short of black by the time the Panel owns the screen: a grey
+Section, at rest, on a page that has finished turning everywhere except in its
+own colours. So the span is the FIRST SECTION's own height — the same fold the
+band snaps across, going past — and the page is dark at exactly the moment the
+Panel's top edge reaches the top of the window. Measured rather than assumed: out
+here the first Section is as tall as its content and only floored at `--fold`, so
+a phone crosses over more than a screen.
+
+**And the word is cut by that fold at every window — by the FOLD, and not by a
+box.** The reader meets PROJECTS part-cut on the first screen whether or not the
+page snaps, and that is the first screen's last gesture; a whole word up there
+takes it away. But the word is also this Section's own head, and out here the
+Panel's masthead is hidden, so it is the only title that Section has: it has to
+be a WHOLE word by the time the reader is standing in front of it. Both, at once.
+
+**What buys both is an overhang, and the arithmetic is worth carrying.** Out of
+the band `.front-screen__cut > a` is given the cap slab's full height and handed
+the difference straight back as a negative bottom margin, so its contribution to
+the flow is exactly `--front-screen-cut-show` of the slab — the same as the
+clipped box's, to the pixel. Nothing below it moves: the Front Screen's height,
+the document's scroll, the Panel's top edge and this crossing's whole span are
+the numbers they already were. The letters simply hang past the Section's foot
+instead of being cut off at it, and they paint over the Section below by the
+ordinary order, needing no z-index of their own.
+
+Then the FOLD does the cutting, because the Front Screen is floored at `--fold`
+and that box is flush with its bottom edge: where the floor binds, the box's foot
+lands on the fold and the rest of the cap hangs below it; where the content is
+taller, the word is under the fold altogether and the reader meets none of it.
+
+**Growing the box instead is the mistake, and it has shipped.** The column is
+`flex: 1 1 auto` inside a Section floored at the fold, so a taller box is
+absorbed by the column and its foot stays exactly where it was — which puts the
+WHOLE word above the fold on any window short enough for the floor to bind. The
+`crossing` Check asserts both halves: at most nine tenths of the cap on the first
+screen, and a box the full height of the slab.
+
+**And it is still the only PROJECTS, which is also the base rule and not a
+regime.** `.projects-panel__masthead` is `visibility: hidden` unconditionally, so
+the cut word the reader scrolls past is the Panel's title out here exactly as it
+is in the band — the difference is only that in the band it is standing in that
+masthead's own slot, and out here it is simply the last thing on the screen above
+the index. The hiding used to be gated on the band, because out here a drawn
+line was hiding the masthead by another route; when that device was deleted the
+gate stayed and the page said the word twice, in two faces, a few lines apart.
+That is the shape of this mistake to watch for: a rule left gated on the regime
+of the thing that used to do its job elsewhere. The `crossing` Check asserts it
+now.
+
+**A continuous crossing has one unreadable moment in it, and that is arithmetic
+rather than a bug.** The ground runs light to dark while the ink runs dark to
+light on the same number, so the two must have the same luminance somewhere in
+the middle. Spanning the crossing over one screen is what keeps that to a moment.
+Anything that removes it — a hard flip, an eased `--turn`, a drawn edge — is a
+change to the design and belongs to the author.
+
+## The Rail
+
+Three project names down the page's left edge, reading bottom to top, marking
+which project is being shown and which two are not built. **One of them, for the
+whole page** — #192, and that is the whole of what that ticket did.
+
+**Both Sections used to draw one and the page swapped them**, which the author
+reported as "the list is recreated as its own thing when you scroll down". Inside
+the band that is literally what a reader saw: the Gallery's index rode off the
+top of the screen on a wheel notch and the Eater Map's came up from the bottom,
+and the two were not even the same size — the Panel solved its names as a share of
+the composition and the Eater Map typed `0.62rem`. There is exactly one in the
+document now, it is the Kernel's, and turning the page moves the highlight and
+nothing else.
+
+**Its column is the page's own left margin, so nothing moved when it changed
+owners.** `--landing-side` is the length both Sections already read for the white
+the composition leaves, the word PROJECTS is set on it, and `tokens/landing.css`
+records that the margin is floored against one rotated line of the Rail's own type
+— which is a real floor and not a hypothetical: while that margin restated
+`--front-screen-rhyme` and the rhyme had been cut to 2.7vh, the list was 44.6px
+wide in a 35.4px column at 2560×1311 and all three names ran off the page.
+
+### Where it stands in the document, and why there
+
+`src/pages/portfolio.astro` renders it **between the Front Screen and the
+Gallery**, which is a fact about the document rather than a composition decision,
+and both regimes need it exactly there.
+
+Out of the band the Rail is **in flow**: the page is a scroll, there is no page
+turn to stand still across, and the index is printed once at the head of the
+thing it indexes. That is the box immediately above the Gallery, and there is no
+way to be that box from anywhere else in the document.
+
+In the band it is **`position: fixed`**, so it costs the document no height at
+all and the DOM position is free. What it buys is the ticket's own sentence: the
+box is in the same place at the Gallery's resting place and at the Eater Map's,
+to the pixel, and the `rail` Check compares the two rects rather than describing
+either.
+
+**It needs a `z-index`, and this paragraph said the opposite for one commit.**
+The reasoning that was here — the Panel paints `background: none` in the band and
+the Eater Map is not positioned, so nothing covers a fixed box that precedes them
+in tree order — is true of PAINTING and false of HIT TESTING. `.projects-panel`
+*is* positioned and follows the Rail in tree order, so it is hit first across the
+whole of the page's left margin: **every link in the Rail was dead at the
+Gallery's resting place**, and alive at the Eater Map's, because that Section is
+unpositioned. Invisible, asymmetric, and a screenshot of either screen is
+perfect. The `rail` Check asks `document.elementFromPoint` at each entry now,
+which is the only question that sees it.
+
+What the `z-index` costs is the Effect Stack, and only across the crossing. `.fx`
+may not declare one — it would isolate the stack — so a positive one here paints
+the Rail over the treatment. At both resting places that is free, because
+`--fx-veil` runs to 0 across the Turn and the stack contributes nothing to either
+Section at rest; on the first screen the Rail is transparent anyway. What is left
+is the middle of the crossing, where an index at partial opacity goes untreated
+for a few hundred milliseconds. That is the trade, and it is smaller than three
+links that do not work.
+
+**And an invisible index is unreachable too, which `opacity` does not give you.**
+`opacity: 0` hides a box and leaves it hit-testable AND focusable, so the fixed
+Rail put three invisible links and three invisible tab stops over the Front
+Screen's own left margin — one of them over the photograph strip. The old Rail was
+a descendant of the Panel and simply was not up there. `--turn` is a number and a
+stylesheet cannot branch on one, so `rail.ts` writes `data-rail-away` while the
+Turn is at 0 through `onTurn()` — which is exactly what that seam is for — and the
+rule is **`visibility: hidden`** rather than `pointer-events: none`, because only
+the first of those two takes the tab stops with it. A reader who runs no script
+never gets the attribute, which is the same reader `@media (scripting: none)`
+hands `opacity: 1`, so the two answers agree by construction.
+
+### It arrives with the page, and it runs the screen's height
+
+An index in a margin runs the height of the **page**, and inside the band the page
+is the screen. `--rail-inset` at each end, and the three names spread
+`space-between`, so those two lengths are exactly where the first and the last of
+them stand. Before #192 that was an absolute box inside a Section, which had to
+subtract the Panel's own `--projects-panel-lift` back off its top to find the
+screen's edge; pinned to the window there is no Section's box to correct for, and
+the lift is one length with one reader again.
+
+**The first screen is not part of the index**, and a name standing beside the
+Front Screen's cut word is half a name — the box would run off the top of the
+screen mid-letter. So the Rail is drawn against `--turn`, the same device the
+Panel's arriving paragraph uses and for the same reason. Two differences from that
+paragraph, both deliberate: **no window of its own**, because the copy waits a
+third of the way across to answer a question the reader has not been asked and
+three words in a margin answer nothing; and **`opacity` rather than a mix**,
+because what a mix buys the paragraph is subpixel antialiasing and every name here
+is drawn through a rotation, which has already cost it. A reader who runs no
+script gets the Rail outright — `@media (scripting: none)`, the same escape and
+the same reader as the paragraph's.
+
+Out of the band it is a row, and two things about the row are worth keeping.
+**`--rail-crown` is a clearance and not a margin**: out here the Front Screen's cut
+PROJECTS hangs past that Section's foot, and what it hangs over is this. The
+Projects Panel paid that bill while the Rail was inside it, and its NOTES.md
+carries the measurement. And **the names WRAP** — RECORD ENGINE at 0.22em of
+tracking is a long word and 360 and 320 are real screens; without `wrap` the third
+project is simply not named, which is not a Rail. Both of its gaps are multiples
+of the names' own size, so the row shrinks as one drawing rather than opening up
+as the type closes.
+
+### The one place the Rail actually moved: wide and short
+
+**The split is the BAND, and the two Sections used to split on the width alone.**
+So above 1100px and under 700 — a maximised browser on a short laptop, and the
+window `projects-panel` opens for its container query — the Rail was a vertical
+grid column INSIDE each Section, and out here it is the row. That is the only
+regime in which anything about its placement changed, and it is a deliberate
+choice rather than a consequence:
+
+- **Two regimes to hold rather than three**, gated on the same query
+  `landing.css` uses for the landing and the page turn. A third would be a third
+  set of rules for a corner of the viewport space.
+- **Down there the page is a scroll**, like everything else outside the band —
+  there is no page turn for a pinned index to stand still across, and an index
+  printed once at the head of the thing it indexes is what the rest of that
+  regime already does.
+- **A fixed vertical index would not have been where it was either.** In that
+  regime the Panel's composition is capped by the screen's height and centred, so
+  the Rail's grid column stood wherever the centring put it — 359px in from the
+  page's edge at 1440×450 — and the Kernel cannot read that offset. Pinned to the
+  page's own margin it would be 300px away from where it used to be, which is a
+  bigger move than the row is.
+
+What it costs, measured at 1440×450: the composition moves LEFT by about 14px,
+which is half the column and the gap it no longer leaves, and the row of names
+stands at the page's own left margin rather than beside the drawing. The Rail's
+left edge and the composition's therefore do NOT agree out there, and the `rail`
+Check only compares them at the stacked window where they do — asserting it at a
+window where the composition is centred would be asserting a coincidence.
+
+### An entry is a route if it holds a link
+
+That is the whole of the machinery — no attribute says which Section an entry
+names, because the link's own fragment already does (ADR 0007). The other two
+projects become entries with an `href` on the day their Sections arrive, and
+nothing else changes.
+
+That is also what earns the `<nav>` and the `aria-current`: a landmark announcing
+a set of links to nowhere would be worse than no landmark, and one of the three
+leads somewhere. `aria-current` goes on the `<a>`, where it is announced, rather
+than on the `<li>`, where a screen reader is not obliged to say anything about it.
+The entries that lead nowhere carry a visually-hidden qualifier instead — grey says
+"not selected" to anything looking, and the qualifier says "no page yet" to
+anything listening. `role="list"` on a list that already is one, because the items
+carry `list-style: none` and VoiceOver drops list semantics from a list with no
+markers.
+
+**Which entry is current is DERIVED and not declared**, and that is the half of
+#192 that is not CSS. `rail/rail.ts` picks the last Section at or above the reader
+that the Rail actually names, asking each one for its port the way `page-turn.ts`
+does — the box's top edge less its own `scroll-margin-top`. The Front Screen names
+none, so the Gallery's entry stands from the top of the document until the Eater
+Map's port goes past, and the same rule gives the right answer in both regimes
+without either being written down. The markup already marks the entry the page
+opens on, so the script agrees with the server at rest and writes nothing until
+the reader moves — which is also what a reader with no scripts is left holding.
+
+**What that costs a scriptless reader at a DEEP LINK, stated because it is a real
+regression and not an oversight.** `/portfolio/eater-map` is this same document,
+rewritten onto that path by the deployment (ADR 0001), so the bytes are identical
+at all three URLs — the build is static and cannot know which one was asked for.
+Each Section used to render its own selection, so a scriptless deep link to the
+Eater Map showed the Eater Map's entry current; now it shows the Gallery's,
+because that is what the one document says. With scripts it is right within a
+frame of the jump: the Shell's deep-link script scrolls to the Section and the
+scroll listener here answers. The criterion asked for "a sensible current entry"
+and the head of the index is one; making it exact would mean either a document per
+path, which ADR 0001 refuses, or a rewrite that varies the bytes, which the
+deployment does not do.
+
+### The place this leaves for the persistent PROJECTS
+
+#192 is the ordinary half of the persistence the author asked for and #193 is the
+hard half: one PROJECTS for the page, rather than the Front Screen's cut word, the
+Panel's hidden masthead and the Eater Map's own drawing of it. **The place that
+ticket takes over is `src/kernel/rail/`'s shape rather than a slot in this file**,
+and the shape is the deliverable: a Kernel part with its own component, its own
+Content, its own Tokens under `tokens/`, two regimes gated on the band, a
+client half mounted from `kernel.ts`, and a current state DERIVED from the
+Section at rest instead of declared by whichever Section is drawing it. Every one
+of those is what a persistent word needs too, and none of them existed in the
+Kernel before this.
+
+Two things this deliberately did NOT do for it, so the next ticket is not
+surprised. The word is a great deal harder than the list, because the Rail is
+three names in a margin that no Section's composition is solved against, and
+PROJECTS stands in the Projects Panel masthead's own box to the pixel — it is on
+the landing measure, `--landing-mast-size`, `--landing-cap` and
+`--landing-mast-top`, and the Front Screen's cut word morphs across the Turn. So
+a persistent PROJECTS is a Kernel element reading the landing rather than one
+reading a margin. And the Eater Map's masthead is still that Section's own
+element (`src/sections/eater-map/NOTES.md` says the slot is being held), which is
+where #193 starts.
+
+### Its words are the one Content file the Editor cannot reach
+
+`rail/content.ts` is Content by every part of CONTEXT.md's definition except the
+word *Section*, and the Editor's Content boundary discovers `src/sections/*` and
+nothing else (`scripts/editor/lib/sections.mjs`). So the Rail's five words are the
+only ones on the page an agent has to change by hand. That is a ticket of its own
+and a small one — the Kernel's **Tokens** already answer to `kernel-<stem>` on that
+surface, and Content would be the same move at the other boundary. It is not this
+one, and the alternative was leaving one of the two Sections owning the words for
+a list that is no longer either Section's.
+
 ## The page turn, and who owns a notch
 
-Inside the band the document is **two ports and nothing between** — a zero-height
-box at the top and every Section after the first — so a mandatory snap means the
-scroller must come to rest on one of them.
+Inside the band the document is **ports and nothing between** — a zero-height box
+at the top and every Section after the first — so a mandatory snap means the
+scroller must come to rest on one of them. There are three now and there were two;
+nothing here counts them, which is the property worth keeping.
 
 `page-turn.ts` is why the turn is a script and not the browser's own snap fling:
 that fling owns the scroller for as long as it flies, and a notch the other way

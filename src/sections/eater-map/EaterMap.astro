@@ -1,0 +1,1411 @@
+---
+// The Eater Map Section, recomposed to the reference by #191: three standing
+// blocks rather than a band of writing over a picture. The word PROJECTS at the
+// head of the left column — the Gallery's own masthead, in the Gallery's own
+// box — with the serif project title under it and the copy at that
+// column's foot; the Exploded View down the middle, the captured Slab standing
+// still under one parallel projection with the app's own three surfaces raised off
+// it; and the four numbered points down the right edge, each joined to the part it
+// names by a rule that ends in a lit dot.
+//
+// NOTES.md carries the reasoning: how the masthead hits the Gallery's box and why
+// that means this Section HAS joined the landing measure, why the title's two
+// ratios need a script, and the two pieces of arithmetic the stage turns on.
+//
+// THE MARKUP RESTS IN THE RAISED STATE, and that inverts the obvious build
+// (#177). The Lift animates FROM flat TOWARDS raised, so the finished Exploded
+// View is what a reader whose scripts never arrived and a reader who asked for
+// reduced motion each get for nothing, and nothing here is contingent on a
+// script. Flat is `--eater-map-lift: 0` and it is where the motion begins.
+import { CARDS } from './cards';
+import { content } from './content';
+import { markFor } from './icons';
+import { SLAB_PART } from './leaders';
+import { SLAB } from './slab';
+// The Eater app's own stylesheet, vendored with the Cards (#174). A plain CSS
+// file, so Astro does not scope it — every selector in it begins with the
+// `.eater-cards` host, and that host is the containment. NOTES.md.
+import './assets/cards/cards.css';
+// The fourth surface's own stylesheet, and it is a second file rather than an
+// edit to the one above because it came out of a second run of the same
+// collector — the three off `/export`, the dropdown off the running app, which
+// is the only way to get it without changing the harness in that repository
+// (#194). `design/eater-cards/README.md` is the authority.
+import './assets/cards/results.css';
+// The one thing this Section says to the app's own markup that the dark theme's
+// inherited custom properties cannot carry: a corner. Plain CSS and not the
+// scoped block below, because a `border-radius` needs a SELECTOR and a scoped
+// selector cannot reach markup that arrived through `set:html`. After the export
+// on purpose, though it does not depend on the order — the file says why.
+import './cards-shape.css';
+import './tokens.css';
+// variants.css is deliberately NOT imported: an unselected Variant has to cost
+// the shipped page nothing, so the sheet is not part of the build at all and the
+// render tool injects it. NOTES.md, and check-source.mjs if this is ever undone.
+---
+
+{/* data-section is the loader's handle: it names the Section whose timeline.ts
+    is fetched as this element approaches the viewport, and it is what makes this
+    a resting place — src/kernel/landing.css declares every Section after the
+    first a port, as a relationship rather than a list, so nothing in the Kernel
+    had to learn this Section's name.
+
+    No data-turn. The crossing spans the FIRST Section and is finished by the
+    time the Projects Panel comes to rest, so the page is already dark when the
+    reader arrives here and there is no second crossing to run. src/kernel/turn.ts. */}
+<section
+  class="eater-map"
+  id="eater-map"
+  data-section="eater-map"
+  aria-labelledby="eater-map-masthead"
+>
+  {/* No Rail here. It is one piece of furniture standing on the page and the
+      Kernel's (#192) — this Section drew a second copy of it and swapped it in
+      as the reader turned, which is the thing that ticket deleted. What is left
+      of it here is the column it stands in, which is the page's own left margin
+      and is what the padding below leaves. */}
+  <div class="eater-map__inner">
+    {/* PROJECTS, IN THE GALLERY'S OWN BOX (#191). The word the reader met on the
+        Panel, drawn again here at the landing's own size and standing at the
+        landing's own margin — so turning onto this screen does not move it. It is
+        still THIS Section's element and this Section's accessible name: making the
+        page's PROJECTS one persistent thing is #193, and the slot it takes over is
+        this one.
+
+        THE SERIF TITLE UNDER IT IS SIZED AND PLACED BY `title.ts`, off the
+        masthead's real ink, because the two ratios the reference states are
+        between CAP HEIGHTS and a stylesheet can only divide font sizes. The
+        stylesheet's fallbacks are a whole title about four per cent small rather
+        than a hole, which is what a reader whose scripts never arrived gets. */}
+    <header class="eater-map__head">
+      <h2 class="eater-map__masthead" id="eater-map-masthead" data-eater-map-masthead>
+        {content.masthead}
+      </h2>
+      <p class="eater-map__title" data-eater-map-title>
+        {content.title.map((line) => (
+          <span>{line}</span>
+        ))}
+      </p>
+    </header>
+    <div class="eater-map__copy">
+      {content.copy.map((paragraph) => (
+        <p>{paragraph}</p>
+      ))}
+    </div>
+    {/* THE EXPLODED VIEW: one still of the map, and the app's own three surfaces
+        drawn on it at the scale the map is drawn at, so that flat it is
+        indistinguishable from a screenshot of the phone — and is made of a
+        picture and real text rather than of pixels. Raised, the same picture and
+        the same three surfaces come apart under one camera.
+
+        The two numbers below are the ONLY thing the markup says about geometry,
+        they are not chosen, and they are not repeated anywhere: they are the
+        capture's own, out of slab.ts, and every other length on this plane is
+        derived from them or is a Token. A re-capture at another phone size moves
+        them and the composition follows. NOTES.md.
+
+        FOUR BOXES AND EACH HAS ONE JOB, which is one more than the flat state
+        needed and is forced rather than chosen — NOTES.md has the two rules that
+        force it. The Slab is the SIZE and the container the plane's lengths are
+        shares of; the plane is the CAMERA and the one rotation everything on it
+        shares; the Cards' box is the app's own stylesheet host; and each Card is
+        a depth off the plane's surface. */}
+    <div class="eater-map__stage">
+      <div
+        class="eater-map__slab"
+        data-eater-map-watch
+        data-eater-map-slab
+        style={`--eater-map-app-w: ${SLAB.viewport.width}px; --eater-map-slab-ratio: ${SLAB.pixels.width} / ${SLAB.pixels.height}; --eater-map-slab-tall: ${SLAB.pixels.height / SLAB.pixels.width}`}
+      >
+        <div class="eater-map__plane" data-eater-map-plane>
+          {/* `lazy`, so the Slab's quarter of a megabyte arrives as the reader
+              comes down the page rather than at load — the same promise the
+              Section's own chunk makes, kept declaratively so it holds with no
+              script at all. `alt` is Content: the picture carries a claim about
+              the project and a reader who cannot see it is owed the claim. */}
+          <img
+            class="eater-map__still"
+            data-eater-map-still
+            src={SLAB.src}
+            width={SLAB.pixels.width}
+            height={SLAB.pixels.height}
+            alt={content.stage.slabAlt}
+            loading="lazy"
+            decoding="async"
+          />
+          {/* `.eater-cards` is the vendored stylesheet's host and therefore its
+              containment: every rule in that file begins with this class, so it
+              reaches nothing above this element and nothing above it reaches in. */}
+          <div class="eater-map__cards eater-cards">
+            {CARDS.map((card) => (
+              <div class="eater-map__card" data-eater-map-card={card.name}>
+                {/* THE FLAT FACE, AND IT IS FORCED RATHER THAN TIDY (#190).
+                    The Card is `preserve-3d`, so its blurred copy of the map and
+                    its own content would both be at z: 0 under it, `z-index` would
+                    stop deciding between them and the two would interleave — in
+                    the prototype that made the details Card read as two smeared
+                    panels. A `flat` face holds both, and the Card's edge slices
+                    are that face's SIBLINGS, because a depth inside a flat face is
+                    nothing at all. glass.ts.
+
+                    THIS IS HALF A RULE ON ITS OWN, and it shipped as half for
+                    three tickets (#203): the slices are siblings of the face so
+                    that they can have a depth, and until the CARD was made a 3D
+                    context there was no depth for them to have. Both halves are in
+                    the stylesheet, next to each other, with the measurement.
+
+                    It is in the template rather than built by the script so that
+                    the box structure is the same for every reader, and it does not
+                    change the Card's own size: the vendored root inside it carries
+                    its frozen width and height, and this box is the only thing in
+                    flow either way. */}
+                <div class="eater-map__face">
+                  {/* `display: contents`, so the wrapper this Card's own markup has
+                      to arrive in — set:html replaces an element's children, and
+                      the backdrop beside it would be one — generates no box at all
+                      and the Card is laid out exactly as it was without it. */}
+                  <div class="eater-map__surface" set:html={card.html} />
+                  {/* AND THE SEARCH CARD'S SECOND VENDORED ROOT (#194): the app's
+                      own results dropdown, hanging off the bar it is typed into.
+                      A BOX and not `display: contents`, unlike the one above,
+                      because the gap between the two has to be a length and the
+                      collector's own normalisation writes `margin: 0 !important`
+                      on every vendored root — so the margin goes on a box of this
+                      Section's own, which is the one thing that rule cannot reach.
+
+                      The row cap is restated HERE and inline, which is the one
+                      value the collector cannot carry: the app sets
+                      `--mobile-search-visible-results` inline on this shell, and a
+                      root's inline style is exactly what the export strips, since
+                      that is where the app writes a surface's placement. Without
+                      it the panel falls back to the FOUR in its own `var()`
+                      default and draws four rows inside a host box sized for two.
+                      The number is the capture's, out of `cards.json` — the app's
+                      variable, never a height. */}
+                  {card.hung && (
+                    <div
+                      class="eater-map__hang"
+                      style={`--mobile-search-visible-results: ${card.rows}`}
+                      set:html={card.hung}
+                    />
+                  )}
+                </div>
+                <span class="eater-map__anchor" data-eater-map-anchor={card.name} />
+              </div>
+            ))}
+          </div>
+          {/* THE FOURTH ANCHOR IS ON THE PLANE ITSELF, because the fourth point
+              names the Slab: the offline basemap is the artefact the reader is
+              already looking at rather than something standing on it. It is a
+              sibling of the picture and inside the same camera, so it is turned
+              by the same one rotation everything else on the plane is. */}
+          <span class="eater-map__anchor" data-eater-map-anchor={SLAB_PART} />
+        </div>
+      </div>
+    </div>
+    {/* An <ol> because each point is numbered on the page, and each names one
+        part of the Exploded View — `point.part`, which the schema holds to
+        exactly one point per part and exactly one part per point (#178).
+
+        AFTER THE STAGE IN THE MARKUP AND NOT BEFORE IT, which is #179's doing and
+        costs the band nothing: both boxes are placed by an explicit `grid-area`
+        up there, so the drawing is left of the points whichever order they are
+        written in. What the order buys is the COLLAPSE, where the column is
+        source order and the four features have to read as a list BENEATH the
+        Slab. Done with `order` or a `grid-row` instead, the reader looking at the
+        page and the reader hearing it would be given two different sequences;
+        moved here, there is one sequence in both regimes and in the document.
+
+        `data-eater-map-watch` is the leader lines' redraw: this column changes
+        height when a face arrives or a title wraps, and the Section's own box
+        does not move when it does.
+
+        THE HOOK IS WHERE A RULE LEAVES THIS ROW, and it is a BOX rather than a
+        coordinate: its width is --eater-map-leader-reach, so the shoulder's two
+        ends are its two edges and the script reads them off one rect instead of
+        parsing a length out of a custom property, which computes to its own
+        token stream rather than to pixels. leaders.ts. */}
+    <ol class="eater-map__points" data-eater-map-watch>
+      {content.points.map((point, at) => (
+        <li>
+          {/* THE NUMBER IS THE ORDINAL AND NOT A WORD, so it is derived from the
+              list's own order rather than authored beside each point: an <ol>
+              whose numbers are typed is two orders to keep in step, and the
+              Editor would be offering a figure that means "which one this is".
+              Drawn rather than left to a marker because a `list-style` number is
+              not a thing a composition can set in the accent at its own size.
+
+              `aria-hidden` on both marks in this row. The list is an <ol>, so a
+              reader listening is already told which of four this is, and the icon
+              says what the title beside it says. */}
+          <div class="eater-map__mark" aria-hidden="true">
+            <span class="eater-map__number">{`0${at + 1}.`}</span>
+            <svg
+              class="eater-map__icon"
+              viewBox="0 0 24 24"
+              focusable="false"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              set:html={markFor(point.part)}
+            />
+          </div>
+          <h3>{point.title}</h3>
+          <p>{point.figure}</p>
+          <span class="eater-map__hook" data-eater-map-hook={point.part} aria-hidden="true" />
+        </li>
+      ))}
+    </ol>
+    {/* THE LEADER LINES. One rule per point, drawn by leaders.ts from the point's
+        hook to a zero-sized anchor at the part's own corner — which is inside
+        the camera, so what the rule is given is where that corner LANDED rather
+        than where the Card's untransformed box is. #178.
+
+        Last in the composition and positioned, so it paints over the drawing
+        without a z-index. `aria-hidden`, because the rules carry nothing that is
+        not already in the four points' own words: they are how a reader LOOKING
+        at the page knows which claim belongs to which piece, and a reader
+        listening is given the same correspondence by reading the points in
+        order. Empty of text for the same reason. `pointer-events: none` in the
+        stylesheet, so the overlay cannot take a selection off the words under it.
+
+        The polylines carry no `points` until a script arrives, so a reader whose
+        scripts never came gets the Exploded View with no rules over it — which
+        is the one thing the Lift's inversion cannot buy, and costs nothing that
+        is not also in the text. NOTES.md. */}
+    <svg class="eater-map__leaders" data-eater-map-leaders aria-hidden="true" focusable="false">
+      {content.points.map((point) => (
+        <Fragment>
+          <polyline data-eater-map-leader={point.part} />
+          {/* THE SHOULDER'S DOT AND THE PART'S. Two marks per rule, drawn by the
+              same module that draws the rule and for the same reason: where a
+              projected corner landed is a fact only the compositor has. Both
+              carry no `cx` until a script arrives, and an SVG circle with no
+              centre and no radius paints nothing — so a reader whose scripts
+              never came gets the Exploded View with no rules and no dots over
+              it, which is the state the markup already reads as. */}
+          <circle data-eater-map-knee={point.part} />
+          <circle data-eater-map-tip={point.part} />
+        </Fragment>
+      ))}
+    </svg>
+  </div>
+</section>
+
+<style>
+  /* Scoped by the build. Astro rewrites every selector below with this
+     component's own attribute, so none of them can match an element in another
+     Section even by accident.
+
+     THE SECTION PAINTS NO GROUND, and that is the rule rather than an omission.
+     The page's ground is `html { background: var(--ground) }` in the Kernel and
+     --ground is itself a crossing on --turn, so a Section that paints its own
+     composes two crossings and puts a step across the page at its own top edge —
+     which is what "banding" has meant both times it was reported. This Section
+     inherits the page's ground and its ink in both themes, at the far end of a
+     Turn that finished before the reader got here. */
+  .eater-map {
+    /* THE LIFT'S PLAYHEAD, AND IT IS NOT A TOKEN. 0 is the flat screenshot and 1
+       is the finished Exploded View; the tilt, the depths and the gaps below are
+       all it times a Token. It is declared HERE rather than in tokens.css
+       because it is not a number the author chooses — `timeline.ts` writes it,
+       the Editor's Timeline scrub is the control for it, and a second control in
+       the Tokens panel would be two handles on one thing.
+
+       IT RESTS AT 1, which is the whole of the inversion #177 asks for: the
+       markup reads as the finished composition, the Timeline animates AWAY from
+       it, and a reader whose scripts never arrived keeps the Exploded View
+       rather than a half-built one. */
+    --eater-map-lift: 1;
+
+    /* IS THE EXPLODED VIEW DRAWN HERE? 0 where it is, 1 where the composition has
+       collapsed to a flat full-bleed Slab with the four features under it (#179).
+
+       IT IS NOT A TOKEN AND IT IS NOT A SECOND COPY OF THE BREAKPOINT — it is the
+       breakpoint's ANSWER, declared where the breakpoint is. `timeline.ts` has to
+       know whether there is anything to lift, and the two ways of telling it are
+       a `matchMedia('(min-width: 1100px)')` in the module, which is the number
+       written twice and drifting the day one of them moves, or this, which is the
+       stylesheet saying what it already decided. A Token could not carry it at
+       all: `check-source.mjs` refuses an `@media` block in tokens.css, and rightly
+       — the Editor writes a value, not a breakpoint (src/sections/NOTES.md). */
+    --eater-map-collapsed: 0;
+    /* WHETHER THE SLAB IS A SOLID, which is the same kind of declaration as the
+       two above it and is read by the stage rather than by this stylesheet. 1 in
+       the band, 0 in the collapse — see there. */
+    --eater-map-solid: 1;
+
+    /* ---- THE MASTHEAD'S SIZE, WHICH IS ONE NUMBER WITH TWO ANSWERS ----------
+       Inside the band it is the LANDING's, so PROJECTS occupies the Projects
+       Panel masthead's own box to the pixel and the word does not move when the
+       reader turns onto this screen (#191); out of the band there is no landing
+       to read and no page turn to stand still across, so it is the Section's own
+       clamp. Declared here as one name rather than as two `font-size` rules,
+       because three other lengths on this composition are shares of it and would
+       each need the same pair.
+
+       NOT A TOKEN, and that is the point of the split: a size the author could
+       drag is exactly the number that takes the word out of the box it is meant
+       to be occupying. The three the author still has — the leading, the weight
+       and the tracking — are in tokens.css, set to the Panel's own values, and
+       the `eater-map` Check compares the two BOXES rather than any of them.
+
+       THE TWO LITERALS BELOW ARE FACE METRICS AND NOT CHOICES, which is why they
+       are not Tokens either: Host Grotesk's cap is 0.700 of its em and its cap
+       top sits 0.080 below its line box's top edge at this leading. The Kernel
+       writes the same two for the landing and the Panel writes them for itself;
+       these are the third copy, and they exist so the title's FALLBACK — the one
+       a reader with no script gets — can be stated at all. `title.ts` measures
+       the real ink and overrides both. */
+    --eater-map-mast: var(--eater-map-masthead-size);
+    --eater-map-mast-cap: calc(0.7 * var(--eater-map-mast));
+    --eater-map-mast-top: calc(0.08 * var(--eater-map-mast));
+
+    box-sizing: border-box;
+    display: grid;
+    /* ONE COLUMN, AND THE MARGIN IS A PADDING. It was two, and the first was the
+       Rail's — the Rail is the Kernel's now (#192), so the Section's own box
+       starts at the page's margin rather than one grid column into it. Same left
+       edge, one fewer box: --eater-map-side is what the Rail's column was, and it
+       is still the page's own margin. */
+    grid-template-columns: minmax(0, 1fr);
+    /* STRETCH AND NOT CENTRE, and it is the difference between a composition
+       that fits the screen and one that is taller than it. The stage is the one
+       row's whole height and the four Points spread themselves down theirs, so
+       both need the Section's own height handed to them. Centring would size the
+       box to its content instead, and the content would then be whatever the four
+       points and a picture-shaped box happen to add up to. */
+    align-items: stretch;
+    min-height: var(--fold);
+    padding-block: var(--eater-map-inset);
+    padding-inline: var(--eater-map-side);
+    /* Clip, not hidden, and only across: `hidden` would make the Section a
+       scroll container, which is what the Slab's full-bleed collapse would then
+       scroll inside of. */
+    overflow-x: clip;
+    font-family: var(--face-panel);
+    font-weight: 400;
+    line-height: var(--eater-map-leading);
+  }
+
+  /* ---- the composition: twelve columns and ONE row ------------------------
+     THREE STANDING BLOCKS AND NOT TWO STACKED ONES (#191). The writing takes the
+     left four columns, the drawing the middle six, and the four numbered Points
+     the right two — each of them the whole height of the Section, and the two
+     things in the left column pinned to its two ends: PROJECTS and the title at
+     the head, the copy at the foot. That is the reference's own arrangement and it
+     replaces the two-row grid the Section shipped with, where the writing was a
+     band across the top and the picture everything under it.
+
+     WHY THE MIDDLE SIX ARE WHERE THEY ARE. The drawing is centred in its column
+     and its projected outline is WIDER than the column — a Slab as tall as the row
+     projects to about 770px across at 1600x900 against a 731px column — so what
+     the six columns actually buy is the CENTRE of the free space between the
+     writing and the Points, which is where the outline hangs symmetrically. Give
+     the stage a column count that is not centred between the other two and the
+     drawing leans into one of them. */
+  .eater-map__inner {
+    /* The leader lines' overlay is absolute against THIS box, which is what
+       makes every coordinate in leaders.ts independent of the scroll — a rule
+       computed against the viewport would be dragged across the composition by
+       the page turn. `relative` with no z-index is not a stacking context, so
+       the Exploded View still sorts its own three dimensions. */
+    position: relative;
+    display: grid;
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    /* ONE ROW, AND `minmax(0, 1fr)` RATHER THAN `1fr`: a bare `1fr` floors at the
+       row's min-content, so the four points and the box would push the Section
+       past the fold rather than being given what the screen has. NOTES.md. */
+    grid-template-rows: minmax(0, 1fr);
+    column-gap: var(--eater-map-gutter);
+  }
+
+  /* THE TWO ENDS OF THE LEFT COLUMN, and they are one grid area used twice
+     rather than two rows. The head is start-aligned and the copy end-aligned in
+     the SAME cell, which is what "the copy at the foot of the left column" is —
+     the drawing beside it is the whole height of the Section, so a row boundary
+     between the two would be a line across the composition that nothing else
+     answers to. */
+  .eater-map__head {
+    grid-area: 1 / 1 / 2 / 5;
+    align-self: start;
+  }
+
+  /* ---- how the capitalised things are set --------------------------------
+     Listed rather than hoisted onto the Section: `case` on the copy would raise
+     the hyphen in "offline-first" off its own baseline, and the figures are
+     sentences rather than labels. */
+  .eater-map__masthead,
+  .eater-map__title,
+  /* Each row is the containing block for its own hook, so `right: 100%` is this
+     column's left edge rather than the page's. */
+  .eater-map__points li {
+    position: relative;
+  }
+
+  /* WHERE A RULE LEAVES ITS POINT, and how far it runs before it turns. A box
+     rather than two numbers: its width is the reach Token spent on a real
+     property, so leaders.ts reads the shoulder's two ends off one rect instead
+     of parsing `0.9rem` out of a custom property, which is all a custom
+     property's computed value ever is.
+
+     ON THE ROW'S LEFT EDGE AND AT ITS TOP, which is the whole of what moving the
+     Points across the page cost the leader lines (#191). `leaders.ts` decides
+     which EDGE of this box a rule leaves from by which side of it the part is on,
+     so the shoulder turned round on its own; which edge of the ROW the box stands
+     on is a composition decision and this is it. And `top: 0` rather than half a
+     line down, because the row's own rule is drawn across its top edge now — so
+     the leader continues that line out of the Point rather than leaving from the
+     middle of it. Derived and not a Token: a coordinate in the composition rather
+     than a number the author chooses (ADR 0004). */
+  .eater-map__hook {
+    position: absolute;
+    right: 100%;
+    top: 0;
+    width: var(--eater-map-leader-reach);
+    height: 0;
+    pointer-events: none;
+  }
+
+  .eater-map__points h3 {
+    text-transform: uppercase;
+    font-feature-settings: 'case' 1;
+  }
+
+  /* A PLAIN MASTHEAD, AND IT PAINTS — and since #191 the word it paints is
+     PROJECTS, in the Gallery's own box. The Projects Panel's own masthead is
+     hidden because the Front Screen's Cut Title is already that Section's head;
+     nothing is cut into this one's slot, because #172 measured what a second
+     landing solve would cost and the answer was the Panel's whole marble corner.
+     So this element is a second DRAWING of the word rather than a second Cut
+     Title, standing where the first one stands at rest — and #193 is what makes
+     the two one element. NOTES.md.
+
+     `text-transform` rather than an authored capital, which is the Panel's rule
+     too: the word is `Projects` in the Content and the composition is what shouts
+     it. `case` so the tracking is the caps' own. */
+  .eater-map__masthead {
+    margin: 0;
+    font-size: var(--eater-map-mast);
+    font-weight: var(--eater-map-masthead-weight);
+    line-height: var(--eater-map-masthead-leading);
+    letter-spacing: var(--eater-map-masthead-tracking);
+    text-transform: uppercase;
+    font-feature-settings: 'case' 1;
+    color: var(--ink);
+  }
+
+  /* THE SERIF PROJECT TITLE, AND BOTH ITS LENGTHS ARE FALLBACKS.
+     `title.ts` writes `--eater-map-title-size` and `--eater-map-title-lead` off
+     the two faces' real ink, which is the only way to hold a ratio between CAP
+     HEIGHTS — the two Tokens the fallbacks below spend are ratios, and a
+     grotesque's cap is about 0.70 of its em against this serif's 0.67.
+
+     WHAT THE FALLBACKS ARE, so the four per cent is a known quantity rather than
+     a surprise. The size applies the cap ratio to the masthead's SIZE instead of
+     to its cap, which draws the title about 4% short. The lead puts the first
+     LINE BOX where the first CAP TOP belongs — the masthead's baseline stands
+     `leading − top − cap` above its own box bottom, and that difference is what
+     the drop is measured from — so it ignores the title's own half-leading, which
+     is a few pixels at this size. Both are a whole composition rather than a hole,
+     which is the thing a reader with no script is owed.
+
+     `--face-year` is the Kernel's role for Source Serif 4: the most upright and
+     least written of the page's three serifs, and the one whose caps sit squarest
+     under a grotesque masthead — which is what the `sub-source-serif` Variant
+     argued for and what #191 adopted. */
+  .eater-map__title {
+    margin: var(
+        --eater-map-title-lead,
+        calc(
+          var(--eater-map-title-drop) * var(--eater-map-mast-cap) -
+            (
+              var(--eater-map-masthead-leading) * var(--eater-map-mast) -
+                var(--eater-map-mast-top) - var(--eater-map-mast-cap)
+            )
+        )
+      )
+      0 0;
+    font-family: var(--face-year);
+    font-size: var(
+      --eater-map-title-size,
+      calc(var(--eater-map-title-cap) * var(--eater-map-mast))
+    );
+    font-weight: 400;
+    line-height: var(--eater-map-title-leading);
+    letter-spacing: var(--eater-map-title-tracking);
+    text-transform: uppercase;
+    font-feature-settings: 'case' 1;
+    /* Near-white rather than the ink, so the masthead above it is still the
+       loudest thing on the screen and the two read as a title and its project. */
+    color: color-mix(in oklab, var(--ink), transparent var(--eater-map-title-veil));
+  }
+
+  /* `block` on the spans rather than a <br>, so the break is a property of the
+     composition and not a character a screen reader has to read around. And
+     `nowrap`, because the four lines are AUTHORED: a line re-broken by the column
+     is a fifth line the composition never asked for, and the block is set to fit
+     the column at the size the ratios give it. */
+  .eater-map__title span {
+    display: block;
+    white-space: nowrap;
+  }
+
+  /* AT THE FOOT OF THE LEFT COLUMN (#191), which is the same grid area the head
+     is in, end-aligned instead of start-aligned. It used to be a band across the
+     top right, opposite the masthead; the reference reads down the left edge — the
+     title at the top, the description at the bottom — and the drawing has the
+     middle of the screen.
+
+     THE RULE GOES WITH IT. A border on the left edge divided the copy from the
+     masthead beside it; there is nothing beside it now, and the seam worth drawing
+     is the one between the writing and the air above it. */
+  .eater-map__copy {
+    grid-area: 1 / 1 / 2 / 5;
+    align-self: end;
+    border-top: 1px solid
+      color-mix(in oklab, var(--ink), transparent var(--eater-map-rule-veil));
+    padding-top: var(--eater-map-close);
+    font-size: var(--eater-map-copy-size);
+    line-height: var(--eater-map-copy-leading);
+    color: var(--ink-soft);
+  }
+
+  .eater-map__copy p {
+    margin: 0;
+  }
+
+  .eater-map__copy p + p {
+    margin-top: 1em;
+  }
+
+  /* THE FOUR POINTS, DOWN THE RIGHT EDGE (#191). They stood on the left, under
+     the masthead they belonged to; the reference puts them beside the drawing they
+     annotate, and each one is where its own leader line starts. Two columns rather
+     than three, and that is not a taste: the drawing between them and the writing
+     is centred in what those two leave, so a wider index moves the picture as well
+     as itself.
+
+     They take the whole of their column and spread themselves down it, the way the
+     Panel's do: the air is what a point growing a paragraph spends, down to the
+     step and no further. */
+  .eater-map__points {
+    grid-area: 1 / 11 / 2 / 13;
+    align-self: stretch;
+    margin: 0;
+    list-style: none;
+    padding: 0;
+    display: grid;
+    grid-auto-rows: min-content;
+    align-content: space-between;
+    row-gap: var(--eater-map-step);
+  }
+
+  /* THE RULE ABOVE EACH POINT, and it is the leader line's own first inch. The
+     accent at 36%, across the row and no further — the rule continues out of the
+     row's left edge as the leader's shoulder, in the leader's own colour, so what
+     the reader follows from a number to a part is one line that changes weight
+     once. Drawn as a border on the row rather than as a box, so a point growing a
+     second line of title does not move it. */
+  .eater-map__points li {
+    border-top: 1px solid
+      color-mix(in oklab, var(--eater-map-accent), transparent var(--eater-map-accent-veil));
+    padding-top: var(--eater-map-point-air);
+  }
+
+  /* The number and the icon on one line, the number on the baseline and the icon
+     against the column's far edge: the pair reads as an annotation's label rather
+     than as two things that happen to be near each other. */
+  .eater-map__mark {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: var(--eater-map-gutter);
+  }
+
+  .eater-map__number {
+    font-size: var(--eater-map-number-size);
+    font-weight: 400;
+    line-height: var(--eater-map-number-leading);
+    color: var(--eater-map-accent);
+  }
+
+  /* `stroke` and no `fill`, at a weight that does not scale with the box: the
+     marks are line drawings at 24 units, so a stroke stated in user units gets
+     lighter as the icon grows and this one is stated to stay put. */
+  .eater-map__icon {
+    display: block;
+    flex: none;
+    width: var(--eater-map-icon-size);
+    height: var(--eater-map-icon-size);
+    fill: none;
+    stroke: var(--eater-map-accent);
+    stroke-width: var(--eater-map-icon-weight);
+  }
+
+  .eater-map__points h3 {
+    margin: var(--eater-map-point-air) 0 0;
+    font-size: var(--eater-map-point-size);
+    font-weight: var(--eater-map-point-weight);
+    line-height: var(--eater-map-point-leading);
+    letter-spacing: var(--eater-map-point-tracking);
+    color: var(--ink);
+    /* A title set to fit its column on one line at the window it was drawn at
+       wraps on a narrower one rather than being made to fit by a size nobody
+       chose; `balance` makes the two lines halves of a title. */
+    text-wrap: balance;
+  }
+
+  .eater-map__points p {
+    margin: var(--eater-map-figure-air) 0 0;
+    font-size: var(--eater-map-figure-size);
+    line-height: var(--eater-map-figure-leading);
+    color: color-mix(in oklab, var(--ink), transparent var(--eater-map-muted-veil));
+  }
+
+  /* ---- the Exploded View --------------------------------------------------
+     A picture of the map, and the app's own three surfaces on it. What makes it
+     read as one screenshot rather than as three stickers on a photograph is that
+     the whole plane is drawn in ONE coordinate system — the phone's — and
+     everything on it is a share of that. What keeps that true once it comes
+     apart is that there is ONE camera and ONE rotation, both on the plane, and
+     every part of the drawing is inside it. NOTES.md. */
+  /* `container-type: inline-size` HERE AS WELL AS ON THE SLAB, and it is what the
+     cap below is measured against. An element is not its own container, so a
+     `cqw` written on `.eater-map__slab` resolves against the nearest container
+     ABOVE it — which is this box. That is the Frame's trap used deliberately: it
+     is the only way for the Slab's own rule to say "a share of the stage's width"
+     while the Slab is a container for everything on the plane.
+
+     `inline-size` and NOT `size`, which would contain the height too: below the
+     band this box's height is its contents' and `contain: size` would collapse it
+     to nothing. */
+  .eater-map__stage {
+    grid-area: 1 / 5 / 2 / 11;
+    align-self: stretch;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    container-type: inline-size;
+  }
+
+  /* THE PLANE. Its height is the stage's, times the one Token that says how much
+     of that to take, capped by what the stage's WIDTH will carry once the outline
+     is projected; its width follows from the capture's own proportion — so the
+     phone is as big as the screen allows at every window in the band and the
+     composition never has to be told a size. The cap is the rule below and #191's:
+     the drawing stands in a column between the writing and the four Points now,
+     so there are two ways to run out of room and the height alone is not one.
+
+     `container-type: inline-size` is what lets everything on the plane be a
+     share of the plane. It is the Frame's arrangement in the Projects Panel and
+     it carries the Frame's trap with it: AN ELEMENT IS NOT ITS OWN CONTAINER, so
+     a `cqw` written on this rule resolves against the STAGE — which the cap below
+     uses on purpose, and which every other one has to avoid.
+     Every one of them below is on a descendant.
+
+     NOT CLIPPED, AND IT USED TO BE. While the Cards lay flat on the picture a
+     Card hanging off its edge was a Card not lying on it, and `overflow: hidden`
+     said so. Raised, a Card standing off the surface is exactly what the drawing
+     is of — and the clip could not have stayed in any case: `overflow` other
+     than `visible` makes an element a GROUPING element, and a grouping element's
+     `transform-style: preserve-3d` is forced back to `flat`, so the clip alone
+     would have flattened the Cards into the picture with no error and no
+     warning. NOTES.md. */
+  .eater-map__slab {
+    position: relative;
+    height: calc(var(--eater-map-slab-fill) * 100%);
+    /* AND CAPPED BY WHAT THE STAGE IS WIDE ENOUGH TO CARRY, which is a different
+       question from how tall it is and was not asked before #191. The drawing used
+       to be a row's remainder with the four points beside the writing above it;
+       the Points stand down the right edge now and the writing down the left, so
+       the stage is a COLUMN between two things that have to stay legible — and a
+       Slab sized only by the height runs its projected corners under both of them
+       at the band's short corner. Measured: 599px of outline in 528px of room at
+       1100x700, which is the rail overlay's paragraph with a phone drawn over it.
+
+       THE PROJECTED WIDTH IS THE THING TO CAP, and it is not the Slab's width. A
+       `w x h` rectangle turned by the swing spans `w·cos(s) + h·sin(s)` across the
+       screen — the tilt takes nothing off it, because `rotateX` moves the y axis
+       and leaves x alone — so with `h = tall·w` the outline is `w·(cos s + tall·sin
+       s)` and the height that fits a stage `W` wide is `tall·W` over that. Both
+       terms are the composition's own: the swing is the Token the plane is turned
+       by, and `tall` is the capture's own proportion, written on the element beside
+       the ratio it comes from. Drag either and this follows.
+
+       ON `max-height` AND NOT ON `height`, so the aspect ratio survives it: the
+       width is `auto` and derived from the ratio, so clamping the definite axis
+       re-derives the other one. Clamping the width instead would hold the height
+       and break the proportion.
+
+       `100cqw` IS THE STAGE'S WIDTH AND NOT THIS BOX'S — an element is not its own
+       container, and this box is one. See the stage's own rule. */
+    max-height: calc(
+      var(--eater-map-slab-fill) * 100cqw * var(--eater-map-slab-tall) /
+        (
+          cos(var(--eater-map-swing)) + var(--eater-map-slab-tall) *
+            sin(var(--eater-map-swing))
+        )
+    );
+    aspect-ratio: var(--eater-map-slab-ratio);
+    /* A percentage translate resolves against the element's own box, so this is
+       a share of the phone rather than of whatever the stage happens to be. */
+    translate: calc(var(--eater-map-slab-shift) * 100%);
+    container-type: inline-size;
+  }
+
+  /* THE ONE ROTATION EVERY PART SHARES, AND IT NEVER MOVES. The picture and all
+     three Cards are inside this box, so there is exactly one projection on the
+     page and no element carries a rotation of its own — which is what makes this
+     one object taken apart rather than three stickers on a photograph.
+
+     NOT A TERM OF THE LIFT, WHICH IS #189. Both angles used to be multiplied by
+     `--eater-map-lift`, so the Slab tilted itself up as the reader arrived and
+     progress 0 was the flat screenshot #176 built. It stands at its attitude the
+     whole time now: the same solid, at the same size, with the same projected
+     corners at both ends of the Lift and at both ends of the band, and only the
+     Cards move. The Lift's flat end is the Cards down on a plane that is already
+     turned, and the flat screenshot is no longer a state the drawing passes
+     through.
+
+     A PARALLEL PROJECTION, WHICH IS THE ABSENCE OF `perspective()` and not a
+     camera pushed far away — a large camera only flattens towards this and never
+     reaches it, which is why #180's isometric Variant had to restate this whole
+     list. So there is no `perspective()`, no `--eater-map-camera` and no dolly:
+     nothing converges, so nothing grows as it climbs and there is nothing for a
+     camera pulling back to pay for. `preserve-3d` still carries each Card's
+     depth, and with no convergence that reads as an offset along the plane's own
+     normal — which is how an exploded view is drawn on paper.
+
+     `preserve-3d` HERE AND NOT ON THE SLAB. The Slab is `container-type`, which
+     is `contain: layout`, which is grouping, and a grouping element's
+     `preserve-3d` is forced back to `flat` with no error and no warning — the
+     Cards would lie flat on the map for ever, at the right scale, looking like a
+     screenshot. NOTES.md carries that rule and the one under it. */
+  .eater-map__plane {
+    position: absolute;
+    inset: 0;
+    transform-style: preserve-3d;
+    transform: rotateX(var(--eater-map-tilt)) rotateZ(var(--eater-map-swing));
+  }
+
+  .eater-map__still {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  /* THE ONE PIECE OF ARITHMETIC THE STAGE TURNS ON: the scale everything on the
+     plane is drawn at is the Slab's drawn width over the phone Eater was driven
+     at. Get it from anywhere else — a number chosen by eye, a share of the
+     viewport — and the Cards are the right size at one window and floating over
+     a map of the wrong scale at every other.
+
+     `tan(atan2(a, b))` is `a / b`. CSS has no other way to divide one length by
+     another: `calc()` requires the right-hand side of a `/` to be a number, and
+     that is the spec rather than an engine's gap. NOTES.md.
+
+     `preserve-3d` here is not decoration either: without it this box flattens its
+     children into itself and every Card's depth is discarded silently — the Cards
+     would still be there, at the right scale, lying on the map for ever. */
+  .eater-map__cards {
+    position: absolute;
+    inset: 0;
+    transform-style: preserve-3d;
+    --eater-map-app-scale: tan(atan2(100cqw, var(--eater-map-app-w)));
+  }
+
+  /* An engine without the trigonometric functions gets a plausible screenshot
+     rather than an interface drawn at the app's own pixel size over a map a
+     third that scale, which is what an invalid scale would leave. The number is
+     the ratio at the window the Checks run at. */
+  @supports not (scale: tan(atan2(1px, 1px))) {
+    .eater-map__cards {
+      --eater-map-app-scale: 0.72;
+    }
+  }
+
+  /* Each Card at its own corner of the picture, in the picture's own units, and
+     at its own depth off it. The Cards carry their own frozen pixel sizes — they
+     are the app's markup at the window it was exported at (NOTES.md) — so the
+     scale is a transform and never a width: a width would reflow another
+     repository's interface.
+
+     THE CARD'S OWN PLAYHEAD, defaulting to the Section's. `timeline.ts` writes
+     this one per Card so the three can climb one after another; nothing writes
+     it when no script arrives, and the `var()` then hands each Card the Section's
+     own 1 and the stack is up. Both are the same number and neither is a Token.
+
+     TRANSLATE FIRST AND SCALE SECOND, and the order is the arithmetic: a
+     transform list applies right to left, so the scale is the Card's own and the
+     translate is in the PLANE's units — a depth in the picture's own coordinate
+     system rather than in the app's. Written the other way round the app's own
+     scale would multiply the depth and each Card would rise by a different
+     amount for the same Token. All three distances are `cqw`, so they are shares
+     of the Slab's WIDTH as everything else on the plane is — including the `top`
+     below, which is why it is not a percentage (#189): a percentage `top`
+     resolves against the containing block's HEIGHT, which put the placement and
+     the slide in two different units while they read as a pair.
+
+     GLASS CANNOT BE CARRIED OFF A SURFACE, and this is the one thing the Lift
+     costs that no Token can put back. A `backdrop-filter` samples what is painted
+     behind an element IN ITS OWN PLANE, and there is no such thing once the plane
+     is turned under a camera: Chromium hands the filter an empty backdrop and it
+     becomes a no-op, silently, at the FIRST DEGREE of tilt. Measured — with the
+     depths and the gap set to 0 and only the tilt standing, the app's frosted
+     detail panel is already a sheet of clear glass with a sharp map behind its
+     text, which is a composition a reader cannot read. NOTES.md.
+
+     WHAT THIS USED TO DO ABOUT IT WAS THE OPPOSITE OF THE REFERENCE (#190). The
+     composition mixed each of the app's three glass colours towards
+     `--eater-map-plate` in step with the Card's climb, so a raised Card went
+     opaque WHITE — legible, and the reverse of glass. The plate is gone and so is
+     the mix; `glass.ts` gives each glass SURFACE a blurred copy of the Slab
+     instead, offset by that surface's own place on it, and the palette below is
+     what makes the Card dark enough to lie over a dark map. */
+  .eater-map__card {
+    --eater-map-card-lift: var(--eater-map-lift);
+    --eater-map-card-rise: calc(
+      var(--eater-map-card-lift) * var(--eater-map-rise) * var(--eater-map-card-depth)
+    );
+    /* WHERE THE CARD SLIDES TO as it climbs, along the plane, in both of the
+       plane's own directions and as a share of the Slab's width. Two Tokens per
+       Card rather than one gap spent by the depth (#189): the three depths are
+       within 12% of each other now, so `(0.5 - depth)` would slide all three the
+       same way by the same amount, which is a translation of the drawing rather
+       than a gap in it.
+
+       BOTH FALL BACK TO 0, and that is not belt and braces. A `var()` with no
+       fallback makes the whole `transform` below invalid the moment a Card has no
+       per-name block — so a fourth Card added to cards.ts without one would be
+       drawn UNROTATED at the app's own frozen pixel size over a map at 0.72 of
+       it, which reads as a broken vendoring rather than as a missing Token. 0 is
+       a Card that does not slide, which is the honest reading. */
+    --eater-map-card-drift-x: calc(
+      var(--eater-map-card-lift) * var(--eater-map-card-slide-x, 0)
+    );
+    --eater-map-card-drift-y: calc(
+      var(--eater-map-card-lift) * var(--eater-map-card-slide-y, 0)
+    );
+    position: absolute;
+    left: calc(var(--eater-map-card-x) * 100cqw);
+    top: calc(var(--eater-map-card-y) * 100cqw);
+    transform-origin: 0 0;
+    transform: translate3d(
+        calc(var(--eater-map-card-drift-x) * 100cqw),
+        calc(var(--eater-map-card-drift-y) * 100cqw),
+        calc(var(--eater-map-card-rise) * 100cqw)
+      )
+      scale(calc(var(--eater-map-app-scale) * var(--eater-map-card-scale)));
+  }
+
+  /* ---- THE CARDS ARE DARK, AND IT IS AN OVERRIDE RATHER THAN A FORK ---------
+     A light interface floating over a dark map is what #187 complained about, and
+     the vendored export already publishes every colour its surfaces are made of.
+     So this block sets THOSE NAMES and nothing else: no rule in `cards.css` is
+     edited, nothing here selects into another repository's markup, and a
+     re-vendoring — which rewrites that file and not this one — leaves the dark
+     theme standing.
+
+     ON THE CARD AND NOT ON `.eater-map__cards`, which is the vendored host itself.
+     A declaration on the host would be `.eater-cards` against `.eater-cards` — the
+     same weight, settled by whichever stylesheet the bundler emitted second, and
+     `cards.css` is an ordinary import while this block is Astro's own. One element
+     in and it is not a contest at all: the values inherit down to every surface,
+     which is exactly how the plate mix reached them before.
+
+     THE THREE GLASS COLOURS ARE TOKENS AND THE REST ARE NOT, and the split is
+     which of them the author has an opinion about. How dark and how transparent a
+     Card's surface is IS the composition #190 is about — it is what "the map is
+     visibly present through the Cards" comes down to — and the labels, separators
+     and rims are that palette's consequences rather than choices.
+
+     `--glass-sheet-float` IS THE DETAILS SHEET'S OWN BACKGROUND at the viewport
+     the Cards were exported at, which is #190's "floating actions bar": the
+     `.actions` row is `background: transparent` down there, so the only thing that
+     could veil the paragraph under it is the sheet, and it drops to near-nothing.
+     The paragraph then sits on the blurred map rather than on a fogged panel.
+
+     THE APP'S OWN `backdrop-filter`s ARE LEFT ALONE, and that is deliberate. In
+     the band they sample an empty backdrop and are no-ops, so overriding them
+     would buy nothing; below the band the plane is flat and they are exactly the
+     frost a screenshot has. */
+  .eater-map__card {
+    --label: #f3f3f5;
+    --label-secondary: rgba(235, 235, 245, 0.66);
+    --label-tertiary: rgba(235, 235, 245, 0.38);
+    --separator: rgba(255, 255, 255, 0.1);
+    --separator-strong: rgba(255, 255, 255, 0.17);
+    --fill-secondary: rgba(255, 255, 255, 0.13);
+    --blue: #4c9dff;
+    --blue-tint: rgba(76, 157, 255, 0.18);
+    --green: #40d867;
+    --glass: var(--eater-map-glass);
+    --glass-sheet: var(--eater-map-glass-sheet);
+    --glass-sheet-float: var(--eater-map-glass-float);
+    /* The results dropdown's own material, and the fourth name in this list
+       rather than a reuse of one above it: `cards.css` publishes three glasses
+       and `results.css` a fourth, because the app draws the dropdown thicker
+       than the pill it hangs from — it is the one surface with two rows of
+       reading on it. #194. */
+    --glass-thick: var(--eater-map-glass-thick);
+    --glass-rim: inset 0 0.5px 0 rgba(255, 255, 255, 0.26),
+      inset 0 0 0 0.5px rgba(255, 255, 255, 0.13);
+    --glass-rim-strong: inset 0 1px 0 rgba(255, 255, 255, 0.3),
+      inset 0 0 0 0.5px rgba(255, 255, 255, 0.16);
+    /* The host paints `color: rgb(0, 0, 0)` on itself, so the ink has to be said
+       as well as the palette — read back off the name above rather than repeated,
+       which is a property reading a custom property and not a cycle. */
+    color: var(--label);
+    /* So the text field's caret and any UA-drawn part of a control are dark-theme
+       too. The app's own dark mode is out of scope (#187) and this is not it: it
+       is one declaration about how a picture of it is painted here. */
+    color-scheme: dark;
+  }
+
+  /* THE FLAT FACE THE BACKDROP AND THE CONTENT BOTH LIVE IN. A `preserve-3d`
+     parent puts every child in one 3D space, so a copy of the map at z: 0 and the
+     Card's own markup at z: 0 are sorted by depth rather than by `z-index` and
+     they interleave — the details Card read as two smeared panels in the
+     prototype. Flat, the face composites its children into one plane and paint
+     order decides, which is what a stack of glass and ink wants.
+
+     `relative`, because the backdrops are absolutely positioned against it, and it
+     is the Card's only in-flow child so the Card is still exactly the size of the
+     vendored surface inside it. */
+  .eater-map__face {
+    position: relative;
+    transform-style: flat;
+  }
+
+  /* AND THE CARD IS THE 3D SPACE THE FACE IS FLAT INSIDE OF, which is the other
+     half of the rule above and shipped without it. #190 moved the edge slices OUT
+     of the flat face, on the grounds that "a depth inside a flat face is nothing
+     at all" — and that is true, but the slices landed in the CARD, which was
+     `flat` too, so their depth went on being nothing. Measured: every one of the
+     details Card's wall slices sat at `translateZ(-3.6px)` with a screen rect
+     IDENTICAL to the face's, so all twenty-four painted underneath it and the
+     Cards read as decals lying on the map.
+
+     THIS IS WHY DRAGGING THE THICKNESS DID NOTHING, and why that read as "the
+     edge is too thin" rather than as a bug: `--eater-map-card-thickness` only
+     ever moved a `translateZ` inside a flat parent, so four times the depth was
+     four times nothing. The Slab never had the fault because ITS slices are the
+     `preserve-3d` plane's own children.
+
+     AND IT IS SAFE HERE IN A WAY IT WAS NOT IN THE PROTOTYPE. What #190 saw when
+     it put `preserve-3d` on the Card was the backdrop and the copy interleaving,
+     because both were direct children at z: 0 and depth sorting replaced
+     `z-index`. They are not children any more — the flat face above holds both
+     and composites them into one plane by paint order — so what sorts against
+     that plane here is the edge, which is the one thing that HAS a depth.
+
+     The `eater-map` Check asserts a Card's edge stands off its face, so the pair
+     cannot come apart again silently. */
+  .eater-map__card {
+    transform-style: preserve-3d;
+  }
+
+  /* WHERE A HUNG SURFACE STANDS, AND THE CLEARANCE IS DERIVED RATHER THAN TYPED
+     (#194). The search results dropdown hangs off the bar it is typed into, and
+     it has to clear that bar's EDGE and not its face — a wall of thickness `t`
+     sinks into the plane, so it projects DOWN-SCREEN by `t x sin(tilt)`, while a
+     gap `g` along the plane projects down by only `g x cos(tilt)`. The dropdown
+     therefore clears only when
+
+         g  >  t x tan(tilt)
+
+     which is about five plane-px at today's thickness and tilt — and rendered at
+     exactly that minimum the two are still a hairline apart, because a minimum
+     behaves like one. So twice it. WRITTEN AGAINST THE TWO TOKENS AND NOT AS A
+     THIRD NUMBER: a gap typed here would go on reading as correct while a later
+     change to the thickness or the tilt walked the edge back into the bar above
+     it.
+
+     IN THE CARD'S OWN UNITS, which is why the thickness — a share of the SLAB's
+     width — is spent against the phone's width and divided by the Card's boost.
+     `glass.ts` writes the same two conversions for the same reason, and its
+     `Solid.filletBack` says why a Card's face and its depth are different units.
+
+     NOT MULTIPLIED BY `--eater-map-solid`. Below the band the plane is flat and
+     no wall projects anywhere, so the derivation has nothing to say down there —
+     but a dropdown touching the bar it hangs from is not an interface the app
+     has, and what is left at this size is within a couple of pixels of the app's
+     own gap. So it is a gap out there and a clearance in the band. */
+  .eater-map__card {
+    --eater-map-results-clear: calc(
+      2 * var(--eater-map-card-thickness) * var(--eater-map-app-w) *
+        tan(var(--eater-map-tilt)) / var(--eater-map-card-scale)
+    );
+  }
+
+  /* An engine without the trigonometric functions gets the same clearance at the
+     tilt the composition ships at, for the same reason the scale above it has a
+     constant to fall back on: what would otherwise happen is an invalid `calc()`,
+     a margin of zero, and a dropdown lying against the search bar's wall. Only
+     `tan(tilt)` is pinned; the thickness is still read as the Token it is. */
+  @supports not (scale: tan(atan2(1px, 1px))) {
+    .eater-map__card {
+      --eater-map-results-clear: calc(
+        2 * var(--eater-map-card-thickness) * var(--eater-map-app-w) * 1.28 /
+          var(--eater-map-card-scale)
+      );
+    }
+  }
+
+  /* THE BOX A HUNG SURFACE ARRIVES IN, and it is a box rather than
+     `display: contents` for one mechanical reason: the vendored root inside it
+     carries `margin: 0 !important` from the collector's own normalisation, so
+     the clearance above it cannot be written on the vendored element at all.
+     This is the element that rule does not reach.
+
+     `glass.ts` reads this class as well, which is how a surface knows it is hung:
+     the ruler is given a clearance of zero and a hung surface's measured top is
+     handed back with the clearance added as an expression, so the number written
+     down stays frozen to the export's viewport and the offset stays live. */
+  .eater-map__hang {
+    margin-top: var(--eater-map-results-clear);
+  }
+
+  /* The wrapper `set:html` needs and the layout does not: `contents` generates
+     no box, so the Card is laid out exactly as it was when its own markup was
+     the Card's only child. cards.css has no child combinator in it — checked —
+     so nothing in the vendored stylesheet notices either way. */
+  .eater-map__surface {
+    display: contents;
+  }
+
+  /* WHERE A LEADER LINE ENDS, and the whole reason the anchors are elements
+     rather than arithmetic. This box is ZERO-SIZED and lives INSIDE the camera,
+     so it projects to a POINT and `getBoundingClientRect()` hands back that
+     corner's actual position on screen. Reading the Card's own rect instead
+     gives the axis-aligned bounding box of the projected quad, whose corners are
+     nowhere on the Card once it is turned — which looks right at the flat end of
+     the Lift and wrong at every other frame of it. leaders.ts.
+
+     A share of the part it is on, so it is a corner at every window and at every
+     size the Slab is drawn at, and so dragging it in the Editor moves it around
+     the Card rather than around the page. */
+  .eater-map__anchor {
+    position: absolute;
+    left: calc(var(--eater-map-anchor-x) * 100%);
+    top: calc(var(--eater-map-anchor-y) * 100%);
+    width: 0;
+    height: 0;
+  }
+
+  .eater-map__anchor[data-eater-map-anchor='search'] {
+    --eater-map-anchor-x: var(--eater-map-anchor-search-x);
+    --eater-map-anchor-y: var(--eater-map-anchor-search-y);
+  }
+
+  .eater-map__anchor[data-eater-map-anchor='lines'] {
+    --eater-map-anchor-x: var(--eater-map-anchor-lines-x);
+    --eater-map-anchor-y: var(--eater-map-anchor-lines-y);
+  }
+
+  .eater-map__anchor[data-eater-map-anchor='details'] {
+    --eater-map-anchor-x: var(--eater-map-anchor-details-x);
+    --eater-map-anchor-y: var(--eater-map-anchor-details-y);
+  }
+
+  .eater-map__anchor[data-eater-map-anchor='slab'] {
+    --eater-map-anchor-x: var(--eater-map-anchor-slab-x);
+    --eater-map-anchor-y: var(--eater-map-anchor-slab-y);
+  }
+
+  /* ---- the leader lines --------------------------------------------------
+     Four thin rules over the composition, joining each numbered point to the
+     part of the Exploded View it names. The geometry is leaders.ts's — nothing
+     here says where a rule goes, because where a projected corner LANDED is a
+     fact only the compositor has.
+
+     `overflow: visible`, because a Card raised off the Slab can stand outside
+     the composition's own box and the rule to it has to follow. The Section's
+     own `overflow-x: clip` is still what stops anything leaving the page.
+
+     The rules are painted from --ink like every other quiet mark in this Section
+     — mixed towards transparent rather than towards a colour, so they sit
+     correctly in both themes at the far end of a Turn that finished before the
+     reader arrived. */
+  .eater-map__leaders {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    overflow: visible;
+    pointer-events: none;
+    fill: none;
+    stroke: color-mix(in oklab, var(--ink), transparent var(--eater-map-leader-veil));
+    stroke-width: var(--eater-map-leader-weight);
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  /* THE TWO DOTS, and they are filled where the rules are stroked — so `fill:
+     none` on the overlay has to be undone per circle rather than left to be
+     inherited into nothing. The one on the PART is lit: the ink straight, at the
+     larger radius, which is what makes it read as the thing the number points at.
+     The one at the shoulder is the rule's own colour and smaller, and says only
+     that the line turned.
+
+     `stroke: none` on both. A circle inherits the overlay's stroke, and a filled
+     dot with a half-pixel ring round it in another colour is a dot drawn twice. */
+  .eater-map__leaders circle {
+    stroke: none;
+  }
+
+  /* AND EACH RADIUS IS GATED ON THE CENTRE THE SCRIPT SETS. An SVG circle with no
+     `cx` sits at the overlay's own origin, so a radius written unconditionally
+     here would paint four dots stacked in the composition's top-left corner for a
+     reader whose scripts never arrived. `r`'s initial value is 0 and a circle of
+     radius 0 renders nothing, so gating on `[cx]` is the same shape the polylines
+     above already have — they carry no `points` until a script comes, and paint
+     nothing until then.
+
+     The radius is a Token spent on a real property rather than parsed out of a
+     custom property by the script, which is the rule the shoulder's reach is
+     under: a custom property's computed value is its own token stream, so
+     `0.2rem` read from script is the string `0.2rem`. */
+  .eater-map__leaders [data-eater-map-tip][cx] {
+    r: var(--eater-map-leader-tip);
+    fill: var(--ink);
+  }
+
+  .eater-map__leaders [data-eater-map-knee][cx] {
+    r: var(--eater-map-leader-knee);
+    fill: color-mix(in oklab, var(--ink), transparent var(--eater-map-leader-veil));
+  }
+
+  .eater-map__card[data-eater-map-card='search'] {
+    --eater-map-card-x: var(--eater-map-card-search-x);
+    --eater-map-card-y: var(--eater-map-card-search-y);
+    --eater-map-card-depth: var(--eater-map-card-search-depth);
+    --eater-map-card-slide-x: var(--eater-map-card-search-slide-x);
+    --eater-map-card-slide-y: var(--eater-map-card-search-slide-y);
+  }
+
+  .eater-map__card[data-eater-map-card='lines'] {
+    --eater-map-card-x: var(--eater-map-card-lines-x);
+    --eater-map-card-y: var(--eater-map-card-lines-y);
+    --eater-map-card-depth: var(--eater-map-card-lines-depth);
+    --eater-map-card-slide-x: var(--eater-map-card-lines-slide-x);
+    --eater-map-card-slide-y: var(--eater-map-card-lines-slide-y);
+  }
+
+  .eater-map__card[data-eater-map-card='details'] {
+    --eater-map-card-x: var(--eater-map-card-details-x);
+    --eater-map-card-y: var(--eater-map-card-details-y);
+    --eater-map-card-depth: var(--eater-map-card-details-depth);
+    --eater-map-card-slide-x: var(--eater-map-card-details-slide-x);
+    --eater-map-card-slide-y: var(--eater-map-card-details-slide-y);
+  }
+
+  /* ---- one column, outside the band the composition is fitted to ---------
+     The same move the Projects Panel makes at the same width: the two-column
+     drawing stops earning its columns, so it becomes a stack as tall as it needs
+     to be, with the Rail a row across the top instead of an index down an edge.
+
+     AND THE EXPLODED VIEW COLLAPSES WITH IT (#179). An Exploded View is a drawing
+     fitted to a wide window: it spends width on a camera, on the distance the
+     pieces draw apart along the plane, and on a stage that is a row's remainder,
+     and a column has none of those to give. So out here the Slab lies flat and
+     runs to both edges of the window, and the four features are an ordinary list
+     under it.
+
+     ONE COMPOSITION AND NOT THREE. It is written as rules on the MARKUP'S OWN
+     RESTING STATE rather than as anything a script does, which is what makes the
+     narrow reader, the reader who asked for no motion and the reader whose
+     scripts never arrived all get the same drawing — one thing to build, and one
+     equality for the Check to assert rather than three separate compositions.
+     `timeline.ts` reads --eater-map-collapsed and never runs the Lift down here,
+     so the flat state is where the drawing STAYS rather than where it starts. */
+  @media not all and (min-width: 1100px) {
+    .eater-map {
+      --eater-map-collapsed: 1;
+      /* FLAT, AND SAID HERE AS WELL AS ON THE PLANE BELOW. `transform: none`
+         answers for the geometry the plane carries; this answers for the Cards,
+         which are placed by the playhead rather than by the plane.
+
+         AND IT IS WHAT MAKES THE GLASS TRUE DOWN HERE (#190). Each surface's copy
+         of the map is offset by that Card's RESTING place on the Slab, so at
+         playhead 0 — no drift, no rise — every copy lines up exactly with the map
+         beneath it and the collapsed drawing is an honestly frosted screenshot.
+         A Card left at the raised end would be the same shape with a map behind
+         its glass that is not the map under it, which is the difference a
+         comparison of rects alone cannot see. */
+      --eater-map-lift: 0;
+      /* AND NO THICKNESS, for the same reason and by the same route. The Slab's
+         depth stopped being a term of the playhead in #189, so `--eater-map-lift:
+         0` no longer takes it away — and an edge is a thing an Exploded View has,
+         not a thing a full-bleed picture at the top of a column has. The stage
+         multiplies its depth and its radius by this, so the whole solid closes up
+         to the flat picture down here and opens again on a resize back into the
+         band without anything being re-mounted. Declared beside the playhead and
+         not in tokens.css for the reason --eater-map-collapsed is: it is a regime
+         and not a number the author chooses. */
+      --eater-map-solid: 0;
+      /* The columns and the side padding are the base rule's out here too, since
+         the Rail left the grid (#192) — they are restated because this block used
+         to be undoing a two-column grid and a right-only padding, and stating
+         them costs nothing while a reader wondering whether the collapse still
+         answers for them costs something. */
+      grid-template-columns: minmax(0, 1fr);
+      min-height: 0;
+      padding-inline: var(--eater-map-side);
+    }
+
+    /* NO ROW GAP, AND THE SEAMS ARE MARGINS INSTEAD. A grid's row gap is one
+       length for every row it has, and the seams down this column are different
+       sizes of decision — the head to the copy is not the copy to the picture. */
+    .eater-map__inner {
+      grid-template-columns: minmax(0, 1fr);
+      grid-template-rows: none;
+      row-gap: 0;
+    }
+
+    /* THE FOUR AUTHORED LINES MAY RE-BREAK OUT HERE, and that is the one thing
+       the collapse takes off the title. In the band they are set to fit a column
+       four twelfths wide at a size the two ratios give them; down here the column
+       is the window, which is 390px on the phone this collapse exists for, and
+       `nowrap` would run the longest of them off the screen. The break is still
+       the composition's wherever the line fits. */
+    .eater-map__title span {
+      white-space: normal;
+    }
+
+    /* `grid-row: auto` AND NOT ONLY `grid-column: 1`, which is the trap this
+       reset has: the four areas above are `grid-area` shorthands, so each pins a
+       ROW as well as a column. Taking the columns back and leaving the rows
+       stacks the head on the copy and the points inside the picture — two pairs
+       of overlapping text, which is what it did. Auto-placed, they come out in
+       source order, which is the order this column reads in. */
+    .eater-map__head,
+    .eater-map__copy,
+    .eater-map__points,
+    .eater-map__stage {
+      grid-column: 1;
+      grid-row: auto;
+      align-self: auto;
+    }
+
+    /* The rule is already across the copy's top edge in both regimes since #191,
+       so what the collapse still owes it is the seam above it: in the band the
+       copy stands at the foot of a column and the air above it is whatever the
+       column has left, and down here it is one block after another. */
+    .eater-map__copy {
+      margin-top: var(--eater-map-move);
+    }
+
+    .eater-map__points {
+      margin-top: var(--eater-map-act);
+      row-gap: var(--eater-map-move);
+    }
+
+    /* FULL-BLEED, AND THE NEGATIVE MARGIN IS WHY IT IS NOT `100vw`. The Section
+       carries the page's margin on both edges out here, and a picture that runs
+       to the window's edges has to spend both of them back. `100vw` would be the
+       obvious way and is wrong by exactly the scrollbar's gutter on every
+       platform that reserves one — the trap `projects-panel` paid for and
+       scripts/checks/NOTES.md records, and it is worse here than it was there,
+       because this box is CENTRED in what it overflows and would hang the error
+       half out of each edge. A margin is stated against the box's own containing
+       block, so it lands on the window whether or not there is a gutter. */
+    .eater-map__stage {
+      margin-top: var(--eater-map-act);
+      margin-inline: calc(-1 * var(--eater-map-side));
+    }
+
+    /* NO LEADER LINES OUT HERE, and absent rather than redrawn (#178). The
+       composition is one column with the four points BENEATH the picture, so a
+       rule from a point to its part would run back up the page and join a
+       paragraph to a corner off the top of the screen. They may simply go,
+       because everything they carry is in the points' own words — and they have
+       to, because a rule drawn before a resize would otherwise still be lying
+       across the stack afterwards. leaders.ts asks this declaration rather than
+       repeating the breakpoint, so the collapse is decided in one place. */
+    .eater-map__leaders {
+      display: none;
+    }
+
+    /* THE SLAB IS THE WHOLE OF THAT, and the proportion carries the height, which
+       is the same way round as the band reads it — there the height is the row's
+       remainder and the width follows, here the width is the window and the
+       height follows. What went with it is `--eater-map-slab-cap`: a ceiling on
+       the picture's width was the interim's, and full-bleed is a picture with no
+       ceiling by definition (#179). And `translate` goes too — the shift slides
+       the Slab across a stage it is narrower than, and out here it is the stage. */
+    .eater-map__slab {
+      height: auto;
+      width: 100%;
+      translate: none;
+      /* AND NO CAP ON THE HEIGHT. The cap in the band is a bound on the drawing's
+         PROJECTED outline, and nothing is projected down here — the plane carries
+         no transform at all — so the same expression would be clamping a flat
+         picture to the width its outline WOULD have had if it were turned, which
+         is 0.5 of the picture. Full-bleed is a picture with no ceiling by
+         definition (#179), and this is the second thing that had to say so. */
+      max-height: none;
+    }
+
+    /* NO PART OF THE PROJECTION SURVIVES, AND THIS IS NOW THE ONLY THING SAYING
+       SO. It used to be belt and braces — every angle was a term of
+       --eater-map-lift, so the 0 above already flattened the plane and this said
+       it outright for the things that read the drawing rather than look at it.
+       Since #189 the attitude is a constant the playhead does not touch, so
+       without these two declarations a column below the band would carry a Slab
+       tilted 52 degrees. `transform-style: flat` goes with it for the reason it
+       always did: the Cards would otherwise still stand in a 3D rendering
+       context, and the leader lines, a Variant and a Check would each be asking
+       a flattened projection rather than a plane. */
+    .eater-map__plane {
+      transform: none;
+      transform-style: flat;
+    }
+
+    .eater-map__cards {
+      transform-style: flat;
+    }
+  }
+
+  /* ---- the landing band --------------------------------------------------
+     THIS SECTION JOINS THE LANDING MEASURE HERE, AND #191 IS THE DECISION THAT
+     PUT IT ON THAT LIST. It used to read two of the Kernel's lengths and no more
+     — the page's top margin and its left one — and say in NOTES.md that reading
+     them was deliberately not joining the measure, because this Section had no cut
+     word and was a function of none of `--landing-w`, `--landing-cap` or
+     `--landing-mast-top`. It has the Gallery's WORD now, in the Gallery's own box,
+     so it is a function of all three. That is a change of decision rather than a
+     drift, and #193 — one persistent PROJECTS for the page — is what it is on the
+     way to.
+
+     THE TOP MARGIN IS THE PANEL'S OWN LIFT, and this is the whole of "to the
+     pixel". `--landing-top` is where the word's CAP TOP comes to rest and
+     `--landing-mast-top` is how far the cap top sits below its line box's own top
+     edge — so the difference is where the masthead's BOX goes, which is exactly
+     what the Panel spends its `--projects-panel-lift` on. The Panel's port sits
+     that far above its Section's top edge and its masthead's box sits on that
+     edge; this Section's port IS its top edge, so the same distance is its top
+     padding. Both mastheads then stand at the same place on the screen at rest,
+     which is what the `eater-map` Check compares.
+
+     AND THE LEFT MARGIN IS `--landing-side` EXACTLY, which is the second half of
+     it. That margin is the Rail's column — the Kernel's Rail stands in it now
+     (#192), pinned to the window — so the composition starts at its far edge,
+     where the Panel's own inner starts and where PROJECTS stands on both
+     screens. It was a grid column of that width with no gap after it, and it is
+     the Section's own padding now; the word's left edge is unmoved either way,
+     and anything between the two would push it right of the word it is meant not
+     to have moved from.
+
+     The foot keeps the page's own bottom margin: the drawing does not stand on
+     the page's bottom edge the way the Panel's Plinth does. */
+  @media (min-width: 1100px) and (min-height: 700px) {
+    .eater-map {
+      --eater-map-mast: var(--landing-mast-size);
+      padding-block: calc(var(--landing-top) - var(--landing-mast-top))
+        var(--landing-inset);
+      padding-inline: var(--landing-side);
+    }
+  }
+</style>

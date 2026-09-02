@@ -20,7 +20,7 @@ export function whichFailed({ status, stdout, stderr }) {
 
   // `checks: 2 of 6 failed — 3 thing(s) broken: ground, moments`
   const broken = /checks: \d+ of \d+ failed[^\n]*?broken: ([^\n]+)/.exec(said);
-  if (broken) return `these Checks failed: ${broken[1].trim()}`;
+  if (broken) return `these Checks failed: ${(broken[1] ?? '').trim()}`;
 
   // The three ways the suite stops before any Check has run. Each has a
   // different fix, and none of them is in a Check.

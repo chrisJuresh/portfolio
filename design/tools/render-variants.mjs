@@ -2,7 +2,7 @@
    render-variants.mjs — render every Variant of every Section into one sheet.
 
      pnpm variants
-     pnpm variants -- --sections stub --variants split,plate
+     pnpm variants -- --sections eater-map --variants points-right,quiet
      pnpm variants -- --progress 0,0.5,1        # a Variant that is only motion
      pnpm variants -- --turn 1                  # past the crossing into dark
      pnpm variants -- --viewports desktop,mobile --themes light
@@ -17,7 +17,7 @@
    Section's own variants.css and selected by the attribute that file's selectors
    gate on. What is here is the matrix, the harness, and the sheet.
 
-   Three things about it that are decisions rather than details:
+   Four things about it that are decisions rather than details:
 
    IT SERVES THE dist/ OF THE TREE IT IS RUN FROM, for the reason
    scripts/serve-dist.mjs exists at all — the in-app preview serves the main
@@ -37,6 +37,15 @@
    about one frame — src/kernel/NOTES.md has the whole of that, and it cost a
    wrong diagnosis once already.
 
+   IT REFUSES TO SHOOT A SECTION WHOSE PICTURES HAVE NOT ARRIVED. A Slab is
+   `loading="lazy" decoding="async"`, so it is in neither `load` nor
+   `document.fonts.ready`, and settling used to return with the fetch it had just
+   started by scrolling still in flight. One shot in thirty-six came back without
+   it and was captioned as a normal render. A wrong picture is this tool's worst
+   failure mode — the sheet exists so a direction is chosen by LOOKING — so
+   `pictures()` waits for every one of them and fails loudly rather than shoot.
+   It is asked TWICE, and where the second one is matters: see its own comment.
+
    Playwright resolves out of design/tools/node_modules, like every other tool in
    this directory:  cd design/tools && npm ci
    ========================================================================== */
@@ -49,6 +58,10 @@ import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { contentType, resolveFile } from '../../scripts/static-tree.mjs';
 import { rules, variantsIn, withoutComments } from '../../scripts/variant-sheet.mjs';
+// Every picture the Section is made of, arrived and decoded before a shot — and a
+// refusal rather than a shot if one never did (#185). Shared with
+// render-stages.mjs, which photographs the same Sections and meets the same race.
+import { pictures } from './pictures.mjs';
 
 /* Playwright is design/tools/'s dependency, not the root install's, so the first
    thing this can fail at is not finding it — and a bare ERR_MODULE_NOT_FOUND for
@@ -310,6 +323,7 @@ async function settle(page, section) {
   await page.evaluate(async () => {
     await document.fonts.ready;
   });
+  await pictures(page, section, fail);
   await page.addStyleTag({ content: STILL });
 }
 
@@ -493,6 +507,12 @@ for (const viewport of viewKeys) {
             path: join(out, file),
             ...(format === 'jpeg' ? { type: 'jpeg', quality } : { type: 'png' }),
           };
+          // The moment is set, so this is the layout that will be photographed
+          // — and therefore the only place the Section's pictures being ready
+          // is a statement about the shot rather than about a state it has
+          // since left. pictures()' own comment has why that distinction is not
+          // pedantry here.
+          await pictures(page, section.name, fail);
           if (full) await page.locator(`[data-section="${section.name}"]`).screenshot(target);
           else await page.screenshot(target);
           const bytes = (await stat(join(out, file))).size;

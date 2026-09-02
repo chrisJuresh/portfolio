@@ -5,7 +5,7 @@ import { pageOwnsWheel } from './wheel';
  * place to the next, and one notch the other way brings them back.
  *
  * WHY THIS IS A SCRIPT AND NOT THE BROWSER'S OWN SNAP FLING. Inside the landing
- * band the document is two ports and nothing between (src/kernel/landing.css),
+ * band the document is ports and nothing between (src/kernel/landing.css),
  * so the browser will turn the page for us — with a fling that OWNS THE SCROLLER
  * for as long as it flies. Wheel events that land while it is in the air are
  * filtered out, so the turn back cannot be taken until it has landed: you stop,

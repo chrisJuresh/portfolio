@@ -61,7 +61,7 @@ const REWRITES = (() => {
  * @returns {string | null}
  */
 export function rewriteTarget(pathname, rewrites = REWRITES) {
-  const path = pathname.split('?')[0].split('#')[0];
+  const path = pathname.split(/[?#]/)[0] ?? '';
   // `cleanUrls` serves `/portfolio/projects/` as `/portfolio/projects`; the
   // rewrite has to see the same path either way.
   const bare = path.length > 1 ? path.replace(/\/+$/, '') : path;
@@ -69,6 +69,7 @@ export function rewriteTarget(pathname, rewrites = REWRITES) {
   return found ? found.destination : null;
 }
 
+/** @type {Record<string, string>} */
 const MIME = {
   '.html': 'text/html; charset=utf-8',
   '.css': 'text/css; charset=utf-8',
@@ -88,9 +89,11 @@ const MIME = {
   '.md': 'text/markdown; charset=utf-8',
 };
 
+/** @param {string} file */
 export function contentType(file) {
   const dot = file.lastIndexOf('.');
-  return (dot === -1 ? null : MIME[file.slice(dot).toLowerCase()]) ?? 'application/octet-stream';
+  const extension = dot === -1 ? '' : file.slice(dot).toLowerCase();
+  return MIME[extension] ?? 'application/octet-stream';
 }
 
 /**
@@ -108,7 +111,7 @@ export function contentType(file) {
 export function resolveFile(baseDir, pathname, fs) {
   let decoded;
   try {
-    decoded = decodeURIComponent(pathname.split('?')[0].split('#')[0]);
+    decoded = decodeURIComponent(pathname.split(/[?#]/)[0] ?? '');
   } catch {
     return null;
   }
@@ -185,9 +188,11 @@ export function servedFromStaticTree(pathname, astroRoutes = []) {
   return !astroRoutes.some((pattern) => pattern.test(pathname));
 }
 
-/** True when `pathname` is one of the paths STATIC_ROOTS owns. */
+/** True when `pathname` is one of the paths STATIC_ROOTS owns.
+ *
+ *  @param {string} pathname */
 export function isStaticPath(pathname) {
-  const first = pathname.replace(/^\/+/, '').split('/')[0];
+  const first = pathname.replace(/^\/+/, '').split('/')[0] ?? '';
   if (first === '') return true; // the portal at /
   return STATIC_ROOTS.includes(first);
 }

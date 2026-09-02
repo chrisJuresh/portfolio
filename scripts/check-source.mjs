@@ -74,8 +74,31 @@ const REQUIRED = ['content.ts', 'tokens.css', 'timeline.ts', 'variants.css', 'NO
  *  banned, so scanning it would fail the build for saying `is:global` out loud. */
 const SOURCE = /\.(astro|ts|css)$/;
 
-/** A Section may read its own folder and the Kernel. Nothing else. */
+/** A Section may read its own folder and the Kernel. Nothing else. The two
+ *  package names are the RUNTIME rather than an exception to that: `gsap` is what
+ *  a Timeline is and `astro` is what a component is, and both are pinned exactly
+ *  (ADR 0002). */
 const ALLOWED_IMPORT = /^(?:\.\/|gsap(?:\/|$)|astro(?:\/|$)|\.\.\/\.\.\/kernel\/)/;
+
+/**
+ * One package, allowed in ONE Section, for as long as one comparison lasts.
+ *
+ * #181 builds the Eater Map's Exploded View a second time in WebGL so that the
+ * renderer is chosen by looking rather than by argument, and `three` is what the
+ * alternative is drawn with. **#182 is the choosing, and takes the loser and this
+ * entry out together** — a rejected direction is kept as prose in that Section's
+ * NOTES.md, never as six hundred kilobytes in the lockfile.
+ *
+ * PER SECTION AND NOT REPO-WIDE, which is the whole reason this is a second
+ * constant rather than another branch of the one above. A temporary dependency
+ * added to the global allowlist is a temporary dependency every Section may
+ * quietly start importing, and then it is not removable by one ticket any more.
+ *
+ * @type {Record<string, RegExp>}
+ */
+const ALLOWED_PER_SECTION = {
+  'eater-map': /^three(?:\/|$)/,
+};
 
 /** Nothing in a Section imports variants.css: the sheet is not part of the build
  *  at all, which is what makes an unselected Variant cost the shipped page
@@ -91,7 +114,7 @@ const SCOPE_ESCAPES = [
 
 /**
  * Every compound after the gate has to be one the Section owns, and only the
- * first one does: `.stub__points li` can match nothing outside `.stub__points`,
+ * first one does: `.a-section__points li` can match nothing outside `.a-section__points`,
  * which is why the rest of a selector is the Variant's business.
  */
 function ownedBy(section, compound) {
@@ -157,9 +180,10 @@ for (const section of sections) {
       if (pattern.test(code)) fail(file, why);
     }
 
+    const alsoAllowed = ALLOWED_PER_SECTION[section];
     for (const specifier of imports(code)) {
       // Reaching another Section, whether by relative path or by alias.
-      if (!ALLOWED_IMPORT.test(specifier)) {
+      if (!ALLOWED_IMPORT.test(specifier) && !alsoAllowed?.test(specifier)) {
         fail(file, `imports "${specifier}" — a Section may read its own folder and src/kernel/ only`);
       }
       if (VARIANT_SHEET.test(specifier)) {
@@ -245,8 +269,8 @@ for (const section of sections) {
 // strategy appends a bare attribute selector, worth (0,1,0) — PER COMPOUND — so a
 // scoped rule's weight grows with the length of its selector, and a Variant, which
 // is one fixed gate in front of the same selector, wins or loses on how many
-// compounds the composition happened to write. `.stub__points li` came out an
-// exact tie, settled by whichever stylesheet the bundler emitted second.
+// compounds the composition happened to write. A two-compound selector came out
+// an exact tie, settled by whichever stylesheet the bundler emitted second.
 // `scopedStyleStrategy: 'where'` wraps the same narrowing in :where(), which
 // selects identically and weighs nothing, so the gate outranks the composition by
 // (0,2,0) in every case.

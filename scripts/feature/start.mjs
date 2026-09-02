@@ -12,6 +12,7 @@
 import { existsSync } from 'node:fs';
 import { git as gitOf } from './lib/git.mjs';
 import { ensureHooksPath, hooksReport } from './lib/hooks.mjs';
+import { carry, declared } from './lib/include.mjs';
 import { pick } from './lib/names.mjs';
 import { choosePort } from './lib/ports.mjs';
 import { logPath, start as startServer } from './lib/server.mjs';
@@ -48,11 +49,12 @@ export async function start({ sh, cwd, name, install, server }) {
   // Two windows rather than one held across the install, which is minutes: the
   // name and the branch are claimed under the first, the port under the second.
   // Between them nothing is being chosen, so nothing can be chosen twice.
+  /** @type {{ branch: string, directory: string, path: string }} */
   let chosen;
   let held = await lock(state);
   try {
-    chosen = pick(name, git.takenNames());
-    const path = `${root}/.claude/worktrees/${chosen.directory}`;
+    const named = pick(name, git.takenNames());
+    const path = `${root}/.claude/worktrees/${named.directory}`;
     if (existsSync(path)) {
       // A directory git does not know about, left by a worktree that was removed
       // from the index but not from disk. `pick` cannot see it, and
@@ -61,11 +63,32 @@ export async function start({ sh, cwd, name, install, server }) {
         `${path} already exists but is not a worktree — delete it, or run \`git worktree prune\`.`,
       );
     }
-    console.log(`feature: cutting ${chosen.branch} from origin/development…`);
-    git.addWorktree(path, chosen.branch, 'origin/development');
-    chosen.path = path;
+    console.log(`feature: cutting ${named.branch} from origin/development…`);
+    git.addWorktree(path, named.branch, 'origin/development');
+    chosen = { ...named, path };
   } finally {
     held.release();
+  }
+
+  // Before the install, because everything after this point runs under whatever
+  // permission mode the new tree has. A worktree is a checkout of TRACKED files
+  // and nothing else, so `.claude/settings.local.json` — this machine's mode, and
+  // gitignored — is simply absent from a fresh one, and the protocol's own writes
+  // start being refused in a tree cut minutes after one where they were allowed.
+  // `.worktreeinclude` is what names the files that have to be carried; `feature
+  // start` honours it because nothing else here does. ADR 0005 means
+  // `EnterWorktree`, which is what reads that file everywhere else, is never
+  // called.
+  const wanted = declared(root);
+  if (wanted.length > 0) {
+    const brought = carry({ root, worktree: chosen.path, entries: wanted });
+    // Said even when it carried everything: the failure this prevents is
+    // invisible, so a run that carried nothing has to say it carried nothing.
+    console.log(
+      `feature: carried ${brought.carried.length ? brought.carried.join(', ') : 'nothing'} ` +
+        `from the main checkout (.worktreeinclude)` +
+        (brought.missing.length > 0 ? ` — not there to carry: ${brought.missing.join(', ')}` : ''),
+    );
   }
 
   if (install) {
@@ -98,6 +121,7 @@ export async function start({ sh, cwd, name, install, server }) {
   // after two seconds with "another feature is already choosing a port" — the
   // exact case the lock exists to make work. Once the port is in the state file
   // it is reserved, so nothing else can pick it while this one comes up.
+  /** @type {import('./lib/state.mjs').Feature} */
   const record = {
     branch: chosen.branch,
     directory: chosen.directory,
@@ -113,6 +137,14 @@ export async function start({ sh, cwd, name, install, server }) {
 
   held = await lock(state);
   let dropped = [];
+  // Kept beside the record rather than read back off it: the record's port is
+  // overwritten below with the port astro actually took, and this is the one it
+  // was ASKED for, which is what the "astro took X, not the Y it was asked for"
+  // line compares against. Non-null exactly when a server was wanted — a
+  // `choosePort` that finds nothing throws rather than answering null — so it is
+  // also the condition the server block runs under.
+  /** @type {number | null} */
+  let asked = null;
   try {
     // Reconciled first, because `ports` below is the whole reason the registry is
     // read here and a row whose worktree is gone reserves a port nothing is
@@ -122,7 +154,10 @@ export async function start({ sh, cwd, name, install, server }) {
       listed: git.worktrees().map((tree) => tree.path),
     });
     dropped = spent;
-    if (server) record.port = await choosePort({ taken: ports(live) });
+    if (server) {
+      asked = await choosePort({ taken: ports(live) });
+      record.port = asked;
+    }
     save(state, add(live, record));
   } finally {
     held.release();
@@ -134,8 +169,7 @@ export async function start({ sh, cwd, name, install, server }) {
     );
   }
 
-  if (server) {
-    const asked = record.port;
+  if (asked !== null) {
     console.log(`feature: starting a dev server on ${asked}…`);
     const started = await startServer({ worktree: chosen.path, port: asked });
     record.pid = started.pid;
@@ -185,6 +219,13 @@ export async function start({ sh, cwd, name, install, server }) {
   return 0;
 }
 
+/**
+ * @param {object} said
+ * @param {{ branch: string, path: string }} said.chosen
+ * @param {number | null} said.port
+ * @param {number | null} said.listener
+ * @param {string} said.root
+ */
 function report({ chosen, port, listener, root }) {
   const lines = [
     '',
@@ -221,7 +262,10 @@ function report({ chosen, port, listener, root }) {
   console.log(lines.join('\n'));
 }
 
-/** The shortest way to say the path, for a line meant to be pasted. */
+/** The shortest way to say the path, for a line meant to be pasted.
+ *
+ *  @param {string} root
+ *  @param {string} path */
 function relative(root, path) {
   const from = root.replace(/\\/g, '/');
   const to = path.replace(/\\/g, '/');

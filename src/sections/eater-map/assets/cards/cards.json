@@ -1,0 +1,46 @@
+{
+  "generator": "design/eater-cards/vendor.mjs",
+  "eater": {
+    "repo": "chrisJuresh/eater-map-site",
+    "commit": "980d553038a0fa558d82f11bfc754604a699a79d",
+    "subject": "Merge pull request #28 from chrisJuresh/export-pseudo"
+  },
+  "restaurant": {
+    "id": "ZXQyOm1hcDo1NzgyMTI:025",
+    "name": "Bar Italia",
+    "address": "22 Frith St, Soho, London W1D 4RF, UK"
+  },
+  "viewport": {
+    "width": 390,
+    "height": 844
+  },
+  "host": "eater-cards",
+  "cards": [
+    {
+      "name": "search",
+      "file": "search.html",
+      "width": 366,
+      "height": 48
+    },
+    {
+      "name": "lines",
+      "file": "lines.html",
+      "width": 260,
+      "height": 176
+    },
+    {
+      "name": "details",
+      "file": "details.html",
+      "width": 390,
+      "height": 366
+    },
+    {
+      "name": "results",
+      "file": "results.html",
+      "width": 366,
+      "height": 112,
+      "style": "results.css",
+      "rows": 2
+    }
+  ]
+}

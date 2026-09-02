@@ -364,6 +364,35 @@ const EAGER = 2;
     flex-direction: column;
   }
 
+  /* AND ON A TALL WINDOW THE SLACK IS SPENT AT BOTH ENDS. Out of the band the
+     Section is floored at the fold and the composition is usually shorter than
+     one, so the auto margin above put every pixel of the surplus under the last
+     contact line and left the page hanging off the top of the screen — a phone
+     held in portrait, or any window taller than it is wide, met the whole resume
+     pressed into its first third. The column takes the free space as its own BOX
+     and centres what is in it: half above the name, half below the last contact
+     line, which is the same sentence the band writes one block down and for the
+     same reason — the page's one vertical rhyme has to survive a screen taller
+     than the composition.
+
+     THIS GROWS THE COLUMN RATHER THAN SPLITTING THE AUTO MARGIN IN TWO, and the
+     Cut Title is why. `margin: auto` top and bottom would hand half the surplus
+     to the space ABOVE the column and lift the word half a screen off the fold —
+     and the fold is what takes the bite out of it out here (see the last block in
+     this sheet). Growing the column spends the whole surplus inside the column,
+     so the Cut Title's box stays flush with the Section's bottom edge and the
+     bite is the one it was.
+
+     Inert once the composition is taller than the fold: there is then no free
+     space to distribute and the column is its content's height either way. */
+  @media not all and (min-width: 1100px) and (min-height: 700px) {
+    .front-screen__col {
+      flex: 1 1 auto;
+      justify-content: center;
+      margin-bottom: 0;
+    }
+  }
+
   /* Every gap down the column is stated as a margin-top on the block below it,
      and nothing declares a margin-bottom. In a flex column margins do not
      collapse, so a pair of them would add where they used to merge. */
@@ -386,6 +415,41 @@ const EAGER = 2;
   .front-screen__listing {
     position: relative;
     z-index: var(--front-screen-type-z);
+  }
+
+  /* WHAT THAT LIFT COSTS ON A PHONE, AND THE ONE LINE THAT PAYS IT. Being above
+     the stack means being painted AFTER it, so on Chrome for Android these
+     blocks are rastered as part of the same tiles as a `mix-blend-mode` layer
+     the height of the whole DOCUMENT — the halftone is that layer, oversized to
+     150% and rotated, which on a phone is a texture several times taller than
+     the compositor will hand out in one piece. Scroll to the foot of the page
+     and back and the tiles come back without the type in them: the boxes are
+     still laid out, the photographs are still there, and the words are gone.
+     Reported from a phone, and the reader's own description is the diagnosis —
+     the gap the type used to fill was still the right size.
+
+     `will-change: transform` puts each block on a layer of its own, so its
+     raster no longer depends on that blend group's. It is the same thing that
+     already saves the photographs by accident: `.front-screen__photos` is a
+     scroll container, so it has a layer anyway, and it is the one block of the
+     four that never went missing.
+
+     GATED ON TOUCH, and that is not a guess at where the bug is — it is where
+     the fix is free. Promoting a block of text takes it off subpixel
+     antialiasing, which a phone never had and a desktop does, so the gate buys
+     the phone its layers without softening a single glyph on the screens this
+     composition was drawn on.
+
+     If the type still goes missing after this, the next lever is the layer
+     itself rather than what stands on it: the stack spans the document because
+     of one seam at the fold (effect-stack.css says which), and a stack the
+     height of the VIEWPORT has no oversized texture to lose. */
+  @media (hover: none) and (pointer: coarse) {
+    .front-screen__masthead,
+    .front-screen__intro,
+    .front-screen__listing {
+      will-change: transform;
+    }
   }
 
   /* ---- the masthead ------------------------------------------------------ */
@@ -438,16 +502,26 @@ const EAGER = 2;
 
   /* THE BLEED AND THE INSET ARE THE SAME PERCENTAGE OF THE SAME BOX, which is
      the whole of why the first and last photographs land exactly on the text
-     column's edges. `50% - 50vw` off the column's own width takes the strip out
-     to 100vw; `--front-screen-edge` is 50% of that same 100vw box less half the
-     measure. So whatever the vertical scrollbar does to `vw` it does to both, and
-     it cancels. Two separate expressions in `vw` — which is how the live sheet
-     writes it — each carry half a scrollbar of error, and the photographs stand
-     off the column by it. */
+     column's edges. `50% - --page-across / 2` off the column's own width takes
+     the strip out to the page's full width; `--front-screen-edge` is 50% of that
+     same box less half the measure. So whatever moves one moves the other, and it
+     cancels. Two separate expressions in absolute lengths — which is how the live
+     sheet writes it — each carry half the error, and the photographs stand off
+     the column by it.
+
+     --page-across AND NOT `100vw`, which is what the bleed was and what made the
+     whole DOCUMENT scroll sideways (#186). `100vw` counts a classic scrollbar's
+     gutter and the column this is laid out in does not, so the strip came out
+     about 15px wider than the page and CENTRED in what it overflowed — 7.5px past
+     each edge, measured at 390x844 as x=-7.5 to x=382.5 in a 375px client width.
+     Invisible on a phone, where the bar is an overlay and the two lengths agree;
+     a horizontal scrollbar under every screen of the page on a narrow desktop
+     window. ground.css owns that length and says why it cannot be a viewport
+     unit, and it is the same trap the Plinth was fixed for. */
   .front-screen__strip {
     position: relative;
     z-index: var(--front-screen-type-z);
-    margin-inline: calc(50% - 50vw);
+    margin-inline: calc(50% - var(--page-across) / 2);
   }
 
   /* OUT OF FLOW, AND THAT IS WHAT MAKES THE PHOTOGRAPHS HAVE A HEIGHT. Inside
@@ -1182,6 +1256,59 @@ const EAGER = 2;
       overflow: visible;
       height: var(--front-screen-cut-slab);
       margin-top: calc(-1 * var(--front-screen-cut-show) * var(--front-screen-cut-slab));
+    }
+  }
+
+  /* ---- out of the band, the FOLD does the cutting here too ---------------
+     THE WORD IS WHOLE AND THE SCREEN'S BOTTOM EDGE IS WHAT TAKES THE BITE OUT
+     OF IT, which is the same sentence as the band's and had stopped being true
+     out here. The base rule above clips the link to `--front-screen-cut-show`
+     of the cap slab, so out of the band the reader met a headline chopped
+     through the middle by a box — cut on the first screen, and still cut when
+     they got to the Section it is the head of. It is a title down there. It has
+     to be a whole one.
+
+     TWO THINGS HAVE TO BE TRUE AT ONCE, and this is the rule that buys both.
+     The reader may not meet the whole word before scrolling — that is the first
+     screen's last gesture, and it is why the bite exists. And the whole word has
+     to be standing there once the Panel owns the screen, because with the
+     Panel's masthead hidden this drawing is the only title that Section has.
+
+     THE FLOW IS UNTOUCHED, WHICH IS THE WHOLE TRICK. The box is given the full
+     slab and then handed the difference straight back as a negative bottom
+     margin, so what this contributes to its Section's height is exactly what the
+     clipped box contributed — `--front-screen-cut-show` of the slab, to the
+     pixel. Nothing below moves. The Front Screen's own height, the scroll the
+     document has, the Panel's top edge and therefore the Turn's whole span —
+     `src/kernel/turn.ts` measures it off this Section — are all the numbers they
+     already were, and the letters simply hang past the Section's foot instead of
+     being cut off at it.
+
+     AND THAT IS WHY THE FOLD STILL BITES. The Section is floored at `--fold` and
+     this box is flush with its bottom edge, so on a window whose content is
+     shorter than a screen the box's foot lands exactly on the fold and
+     `1 - --front-screen-cut-show` of the cap hangs below it — the same bite, from
+     the screen's edge rather than from a clip. On a window whose content is
+     taller the word is below the fold altogether and the reader meets none of it.
+     Growing the box instead of overhanging it is what breaks this, and it is the
+     failure that shipped once: the column is `flex: 1 1 auto`, so a taller box
+     inside a Section floored at the fold is absorbed by the column and the box's
+     foot stays on the fold — which puts the WHOLE word above it.
+
+     THE OVERHANG PAINTS OVER THE PANEL, and it needs nothing to make it: this
+     box is positioned and carries `--front-screen-type-z`, and the Section below
+     is not positioned at all, so the letters paint above its ground by the
+     ordinary order. Nor does it need the second copy that used to be here — both
+     Sections cross on one `--turn` at one rate now, so the ground under the
+     overhanging third is the same colour as the ground under the rest of the
+     word, and one drawing in `--ink` reads correctly over both. */
+  @media not all and (min-width: 1100px) and (min-height: 700px) {
+    .front-screen__cut > a {
+      overflow: visible;
+      height: var(--front-screen-cut-slab);
+      margin-bottom: calc(
+        (var(--front-screen-cut-show) - 1) * var(--front-screen-cut-slab)
+      );
     }
   }
 </style>

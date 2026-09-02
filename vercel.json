@@ -12,7 +12,8 @@
   ],
   "rewrites": [
     { "source": "/portfolio/front-screen", "destination": "/portfolio" },
-    { "source": "/portfolio/projects", "destination": "/portfolio" }
+    { "source": "/portfolio/projects", "destination": "/portfolio" },
+    { "source": "/portfolio/eater-map", "destination": "/portfolio" }
   ],
   "headers": [
     {
