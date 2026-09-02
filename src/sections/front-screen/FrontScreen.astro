@@ -429,25 +429,45 @@ const EAGER = 2;
      the gap the type used to fill was still the right size.
 
      `will-change: transform` puts each block on a layer of its own, so its
-     raster no longer depends on that blend group's. It is the same thing that
-     already saves the photographs by accident: `.front-screen__photos` is a
-     scroll container, so it has a layer anyway, and it is the one block of the
-     four that never went missing.
+     raster no longer depends on that blend group's.
+
+     THE STRIP IS ON THIS LIST BECAUSE THE REASON IT WAS LEFT OFF IT WAS WRONG.
+     That reason was that the photographs were saved by accident —
+     `.front-screen__photos` is a scroll container, so it has a layer anyway, and
+     it was the one lifted block of the four that never went missing. But the
+     layer that has to survive is the STRIP's and not the scroller's inside it:
+     `.front-screen__strip` is MASKED, and a mask renders its whole subtree
+     through the masked element, so the scroller having a layer of its own buys
+     the photographs nothing once the strip's tiles are the ones that go. The
+     second report is that one: the photographs cut straight across at one
+     height with the bottom of every one of them gone, which is a tile row and
+     not a length. The boxes measure identically before and after three sweeps of
+     the document on a phone-shaped window — the strip 412x336, every slide
+     252x336, every picture filling its slide — so the layout is right and it is
+     the pixels that are wrong, which is the same signature the words had.
 
      GATED ON TOUCH, and that is not a guess at where the bug is — it is where
      the fix is free. Promoting a block of text takes it off subpixel
      antialiasing, which a phone never had and a desktop does, so the gate buys
      the phone its layers without softening a single glyph on the screens this
-     composition was drawn on.
+     composition was drawn on. The strip has no glyphs to soften and would be
+     safe at every window, but it is gated with the rest of them because a layer
+     is memory a desktop is being asked to spend on a phone's bug.
 
-     If the type still goes missing after this, the next lever is the layer
+     `.front-screen__bar` and `.front-screen__cut` carry the same lift and are
+     deliberately NOT here: neither has been reported missing, and a promotion
+     nobody has asked for is a layer nobody has paid for. If either goes, this is
+     the rule it joins.
+
+     If any of them still goes missing after this, the next lever is the layer
      itself rather than what stands on it: the stack spans the document because
      of one seam at the fold (effect-stack.css says which), and a stack the
      height of the VIEWPORT has no oversized texture to lose. */
   @media (hover: none) and (pointer: coarse) {
     .front-screen__masthead,
     .front-screen__intro,
-    .front-screen__listing {
+    .front-screen__listing,
+    .front-screen__strip {
       will-change: transform;
     }
   }
