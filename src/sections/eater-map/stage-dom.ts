@@ -77,7 +77,11 @@ const FILLET =
 const mountDomStage = (parts: StageParts): Stage => {
   const { root, plane, still, edge } = parts;
 
-  if (edge !== 'thick') return { name: 'dom', edge };
+  // `flat` IS THE ONE THIS STAGE HAS NOTHING TO DRAW FOR — a picture with no
+  // thickness is the markup on its own. `thick` and `wrapped` are the same solid
+  // and differ only in what the fillet is painted from (#182's third column, and
+  // no longer WebGL's alone).
+  if (edge === 'flat') return { name: 'dom', edge };
 
   /**
    * The whole of the Slab's solidity, as something that can be run TWICE — a mount
@@ -153,6 +157,14 @@ const mountDomStage = (parts: StageParts): Stage => {
       filletBack: FILLET,
       depth: DEPTH,
       colour: 'var(--eater-map-slab-edge)',
+      // THE PICTURE THE FILLET IS PAINTED FROM, on `wrapped` and on nothing else.
+      // `currentSrc` and not `src`, because that is the URL the browser actually
+      // chose and settled on — the one already decoded and in cache, so the roll
+      // and the face are the same bytes rather than a second fetch that might
+      // resolve differently. It is empty until the image has begun loading, which
+      // is why `src` stands behind it: this Slab is `loading="lazy"` and a redraw
+      // can land before the picture has.
+      wrap: edge === 'wrapped' ? still.currentSrc || still.src : undefined,
       surface: 'slab',
     });
   };

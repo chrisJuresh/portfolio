@@ -338,15 +338,20 @@ pnpm stages
 That renders the Eater Map Section's Exploded View twice into
 `design/stages/index.html`: the shipped DOM stage and the WebGL one #181 built
 beside it, crossed with what each can make the Slab's edge out of, in both themes
-and at both ends of the band. One cell is empty on purpose — DOM cannot run the
-captured pixels round a rounded edge — and the sheet draws the empty cell rather
-than skipping it. **That empty cell does NOT decide #182, and #189 corrected a
-spec that read it as deciding.** DOM's slice stack is a full perimeter, so its
-corners are the same element as its sides and the outline is right; the Slab is
-drawn with thickness on the shipped page by that stage. What is left to judge is
-whether a faceted 24-slice fillet is distinguishable from WebGL's swept one at the
-size the Slab is actually drawn — which is a thing to look at on the sheet.
-`pnpm check -- --stage webgl` runs every Check with the other one selected.
+and at both ends of the band. **There is no empty cell any more** — #204 taught
+the DOM stage `wrapped`, so both stages draw all three edges. The cell that used
+to be empty never decided #182 anyway, and #189 corrected a spec that read it as
+deciding; #204 removed the premise under it as well.
+
+**The Slab's edge is `wrapped` on the shipped page**, which is the map running off
+the front and round the roll rather than edge material wrapping the map — a phone
+with a curved screen. `--eater-map-slab-fillet` is how far round it goes, and it
+has a measured ceiling: past about **0.015** the DOM stage's faceting shows as a
+comb across anything with a hard edge in it, because its rings carry the picture at
+a rigid scale each while the geometry steps by `sin`. That is what is left of #182,
+and it is now a number rather than a guess. `pnpm check -- --stage webgl` runs
+every Check with the other renderer, and `pnpm check -- --edge thick` with the
+other edge; all six combinations pass.
 `src/sections/eater-map/NOTES.md` is the authority on the boundary, the camera
 arithmetic that makes the two agree, and what the comparison found; #182 chooses,
 and takes the loser and its dependency out together.

@@ -364,9 +364,14 @@ async function sheet(rows) {
   <p class="meta">${rows.filter((row) => !row.unreachable).length} render(s) of ${ROUTE} by
      <code>design/tools/render-stages.mjs</code> (#181). Two stages behind one boundary —
      <code>src/sections/eater-map/stage.ts</code> — crossed with what each can make the
-     Slab's edge out of. <b>The empty cell is the result</b>: DOM can fake a thickness with
-     a stack of solid layers and cannot run the captured pixels round a rounded edge at
-     all. Every depth here is spent by the Lift, so <code>--progress 0</code> renders the
+     Slab's edge out of. <b>There is no empty cell any more</b> (#204): DOM ran out of
+     reach at <code>wrapped</code> until a slice was given the picture instead of a
+     gradient, and both stages draw all three edges now. What is left to judge is the
+     one thing this sheet was always for — whether a faceted 24-slice fillet is
+     distinguishable from a swept one at the size the Slab is actually drawn, which
+     depends on the roll and crosses over around
+     <code>--eater-map-slab-fillet: 0.015</code>.
+     Every depth here is spent by the Lift, so <code>--progress 0</code> renders the
      flat screenshot, where the two stages should agree exactly. Click a picture for full
      size. Every run rewrites this directory.</p>
 ${[...groups.keys()]

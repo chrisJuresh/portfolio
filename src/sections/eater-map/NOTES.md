@@ -1029,6 +1029,55 @@ Rendered at four values against the reference before choosing. Copying the
 mockup's clip instead would draw map pixels outside the solid's own cross-section
 at z = 0, which is the overhang #200 said to reproduce honestly rather than copy.
 
+### The map wraps the edge, and DOM reaches it (#204)
+
+The author's correction to #200: what was wanted was **the map wrapping slightly
+round the edge, not the edge wrapping round the map** — a phone with a curved
+screen, all the way round. That is `wrapped`, which `stage.ts` has named since
+#181, and it is the shipped default now.
+
+**The only difference between `thick` and `wrapped` is what the FILLET is painted
+from**, which is exactly what `stage-webgl.ts`'s `faces()` has always said: the
+geometry is identical and the WALL is edge colour either way. A screen curls over
+its own shoulder; the side of the phone is still aluminium.
+
+**Running the picture onto a ring is two percentages and `center`.** A slice's box
+is the face's box inset by `a` on all four sides, and the picture covers the face —
+so the two rectangles are **concentric**, the mapping is a pure scale about their
+shared centre, and the offset a `background-position` would otherwise have to carry
+works out to exactly 50%. Only the size is left, and a `background-size` percentage
+resolves against the slice's own box, so both factors are pure numbers:
+`1 / (1 - 2u/W)` across and `1 / (1 - 2u/H)` down. `edge.ts`'s `wrapped()` is the
+whole of it. `u` is the same texture inset the WebGL stage walks —
+`roll(1 - 2phi/pi)`, the band spread evenly along the arc — so the two stages read
+the same pixels onto the same ring.
+
+**So the sheet has no empty cell any more, and #182 is the narrow question it was
+always meant to be.** `REACHES` says `dom: ['flat', 'thick', 'wrapped']`. What is
+left is whether a faceted 24-slice fillet is distinguishable from a swept one — and
+this now has a measured answer rather than a guess: **it depends on the roll, and
+the crossover is about 0.015.** The rings carry the picture at a rigid scale each
+while the geometry steps by `sin` and the pixels are spread evenly along the arc,
+so consecutive rings do not quite meet. At 0.012 that is invisible at actual size;
+at 0.020 it reads as a comb across anything with a hard edge in it — a restaurant
+pin at the Slab's foot is where it shows first — while WebGL's swept fillet stays
+clean. Laddered at 0.006 / 0.009 / 0.012 / 0.020, both stages, at actual size and
+not only zoomed.
+
+**`pnpm check -- --edge thick` is the second axis**, added with this and mirroring
+`--stage` exactly, because both stages reaching all three edges is what made "every
+Check passes whatever the Slab is made of" a claim the suite can be asked to make.
+All six combinations pass. `--edge flat` SKIPS the edge group with a printed note
+rather than failing it: a picture with no thickness has no slices by design, and
+only a stage that mounted writes the attribute that says so — which is what keeps
+that skip from swallowing "nothing came up".
+
+**And the Check asks it both ways round.** Under `wrapped` every one of the Slab's
+fillet rings must carry the picture; under `thick` none of them may; and a Card's
+glass is never wrapped whatever the Slab is. Both directions verified by mutation —
+a `wrapped` edge silently drawn as `thick` fails, and a `thick` edge silently
+wrapping fails under `--edge thick`.
+
 **And a Check keeps the split split.** `CORNER_SURVIVES` reads the widest and the
 narrowest corner anywhere in the Slab's slice stack — the plan corner off a wall
 slice, and what is left of it on the fillet's innermost ring — and requires the
