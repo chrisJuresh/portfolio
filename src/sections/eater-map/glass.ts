@@ -54,6 +54,15 @@ import { SLAB } from './slab';
  * window carried across the breakpoint both move the drawing with nothing
  * re-mounted.
  *
+ * AND THE ONE LENGTH THAT IS NEITHER IS CARRIED RATHER THAN MEASURED (#194). The
+ * results dropdown hangs a derived clearance below the search bar, and that
+ * clearance is a function of two Tokens the author may drag — so measuring it
+ * would write a number that goes stale the first time either moves, and the
+ * dropdown would slide out from under its own glass. The ruler is handed a
+ * clearance of ZERO and a hung surface's top comes back as `<measured>px +
+ * var(…)`, so the measurement stays the constant it claims to be and the offset
+ * stays live.
+ *
  * A READER WITH NO SCRIPTS GETS THE APP'S OWN TRANSLUCENCY OVER THE MAP, which is
  * the same trade the Slab's edge and the leader lines make and is affordable for
  * the same reason: what is lost is a drawing convention rather than a claim. It is
@@ -95,12 +104,37 @@ const CARD_DEPTH = `${SOLID} * var(--eater-map-card-thickness)`;
 const CARD_ROUND =
   `${SOLID} * min(var(--eater-map-card-edge-radius), var(--eater-map-card-thickness))`;
 
+/**
+ * The gap a hung surface stands below the one it hangs from, and the ONE length
+ * in a Card that is not frozen to the export's viewport (#194).
+ *
+ * `EaterMap.astro` derives it from the Card's thickness and the plane's tilt,
+ * because a surface sitting below another on the plane has to clear that one's
+ * EDGE rather than its face. So it moves when either Token is dragged — which is
+ * why it is carried through the measurement as an expression rather than
+ * measured: the ruler is given a clearance of ZERO and every hung surface's top
+ * comes back as `<measured>px + this`, so what is written down stays a constant
+ * and what the author can move stays live.
+ */
+const HANG = 'var(--eater-map-results-clear)';
+
+/** The box a hung surface arrives in, which is what says it is hung at all. */
+const HUNG = 'eater-map__hang';
+
 /** One glass surface, measured off the vendored stylesheet at its natural size. */
 interface Surface {
   /** `<card> <selector>`, written on the backdrop and on every slice of its edge */
   readonly name: string;
   readonly x: number;
-  readonly y: number;
+  /**
+   * Where its top edge is inside the Card, as a BARE CSS expression — the
+   * convention `edge.ts` states, so it composes without being unwrapped.
+   *
+   * A STRING WHERE `x` IS A NUMBER, and the asymmetry is the whole of what a hung
+   * surface costs: nothing in this composition moves a surface sideways inside its
+   * Card, and the clearance above one moves down.
+   */
+  readonly top: string;
   readonly w: number;
   readonly h: number;
   /** top-left clockwise, already clamped to the box the way a browser clamps them */
@@ -113,11 +147,16 @@ interface Surface {
  * The vendored subtree is CLONED rather than re-parsed from `cards.ts`, so what is
  * measured is the markup that is actually on the page — including whatever
  * `cards.ts` did to it on the way in.
+ *
+ * THE CARD'S FACE AND NOT ITS FIRST SURFACE, since #194: a Card may hold a second
+ * vendored root hanging under the first, and both are the face's children. The
+ * face carries no size of its own, so cloning it changes nothing about what the
+ * measurement finds for the three Cards that have one root.
  */
 function measure(ruler: HTMLElement, card: HTMLElement, selectors: readonly string[]): Surface[] {
   const name = card.dataset.eaterMapCard ?? '(unnamed)';
-  const surface = card.querySelector('.eater-map__surface');
-  if (!surface) return [];
+  const face = card.querySelector('.eater-map__face');
+  if (!face) return [];
 
   const host = document.createElement('div');
   // The vendored stylesheet's own host, which is its containment: every selector in
@@ -128,7 +167,16 @@ function measure(ruler: HTMLElement, card: HTMLElement, selectors: readonly stri
   // load-bearing rather than incidental: it is the whole of what a rule in
   // `cards-shape.css` may select through (#195). NOTES.md.
   host.className = 'eater-cards';
-  host.append(surface.cloneNode(true));
+  // STATED RATHER THAN LEFT UNRESOLVED. The Section's Tokens are out of scope down
+  // here, so the clearance would compute to nothing anyway — and a measurement that
+  // is right by accident is one that stops being right the day the ruler moves.
+  host.style.setProperty('--eater-map-results-clear', '0px');
+  const copy = face.cloneNode(true) as HTMLElement;
+  // A backdrop built on an earlier mount would be measured as part of the Card.
+  // They are cleared before this runs; this is what makes that ordering a fact
+  // rather than a hope.
+  for (const stale of copy.querySelectorAll(`.${GLASS}`)) stale.remove();
+  host.append(copy);
   ruler.append(host);
 
   const root = host.querySelector('[data-eater-card]');
@@ -145,10 +193,11 @@ function measure(ruler: HTMLElement, card: HTMLElement, selectors: readonly stri
     }
     const box = element.getBoundingClientRect();
     const style = getComputedStyle(element);
+    const y = box.top - origin.top;
     found.push({
       name: `${name} ${selector}`,
       x: box.left - origin.left,
-      y: box.top - origin.top,
+      top: element.closest(`.${HUNG}`) ? `${y}px + ${HANG}` : `${y}px`,
       w: box.width,
       h: box.height,
       // `border-radius: 999px` is what a pill STATES and `999px` is what the
@@ -176,7 +225,7 @@ function backdrop(surface: Surface): HTMLElement {
   box.style.cssText = [
     'position:absolute',
     `left:${surface.x}px`,
-    `top:${surface.y}px`,
+    `top:calc(${surface.top})`,
     `width:${surface.w}px`,
     `height:${surface.h}px`,
     `border-radius:${surface.radii.map((r) => `${r}px`).join(' ')}`,
@@ -199,7 +248,7 @@ function backdrop(surface: Surface): HTMLElement {
   map.style.cssText = [
     'position:absolute',
     `left:calc(-1 * var(--eater-map-card-x) * ${APP_W}px / ${BOOST} - ${surface.x}px)`,
-    `top:calc(-1 * var(--eater-map-card-y) * ${APP_W}px / ${BOOST} - ${surface.y}px)`,
+    `top:calc(-1 * var(--eater-map-card-y) * ${APP_W}px / ${BOOST} - (${surface.top}))`,
     `width:calc(${APP_W}px / ${BOOST})`,
     `height:calc(${APP_H}px / ${BOOST})`,
     'object-fit:cover',
@@ -274,7 +323,7 @@ export default function mountGlass(root: HTMLElement): void {
         extrude(card, face, {
           box: {
             x: `${surface.x}px`,
-            y: `${surface.y}px`,
+            y: surface.top,
             w: `${surface.w}px`,
             h: `${surface.h}px`,
           },

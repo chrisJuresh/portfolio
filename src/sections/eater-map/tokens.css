@@ -228,8 +228,17 @@
   --eater-map-card-search-x: 0.034;
   --eater-map-card-search-y: 0.152;
 
+  /* THE RAIL POPUP MOVED DOWN THE SLAB, AND THE SEARCH CARD'S ARRIVAL IS WHY
+     (#194). At the search bar's own place the results dropdown now hangs 112
+     capture-pixels below it, and the popup stood where the dropdown lands. So
+     the head of the Slab reads down as one stack: the bar, what searching it
+     produces, and then the rail lines. Chosen so that the two clear each other
+     at both ends of the band and at both ends of the Lift, which the `eater-map`
+     Check asserts — the drift the Lift spends is different for the two Cards, so
+     the flat arrangement is the tighter of the two and is also what a reader
+     below the band is looking at. */
   --eater-map-card-lines-x: 0.304;
-  --eater-map-card-lines-y: 0.306;
+  --eater-map-card-lines-y: 0.61;
 
   --eater-map-card-details-x: 0.004;
   --eater-map-card-details-y: 1.236;
@@ -370,6 +379,14 @@
   --eater-map-glass: rgba(78, 78, 88, 0.46);
   --eater-map-glass-sheet: rgba(62, 62, 72, 0.6);
   --eater-map-glass-float: rgba(255, 255, 255, 0.045);
+
+  /* AND THE FOURTH, which is the search results dropdown (#194). The app calls
+     it `--glass-thick` and draws it at the highest alpha of the four, because it
+     is the one surface with two rows of reading on it rather than a label or a
+     control. Here it is the details sheet's material at the pill's own hue: the
+     dropdown hangs off the pill and belongs to it, and the pill's own alpha is
+     not enough to read an address through. */
+  --eater-map-glass-thick: rgba(62, 62, 72, 0.6);
 
   /* ---- and a Card is a solid too -------------------------------------------
      The same pair the Slab has above, in the same unit — shares of the SLAB's

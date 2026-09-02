@@ -61,7 +61,18 @@ export const MANIFEST = 'cards.json';
  */
 const lf = (text) => String(text).replace(/\r\n?/g, '\n');
 
-/** Everything the export becomes on disk, by name. */
+/**
+ * Everything the export becomes on disk, by name.
+ *
+ * A CARD MAY CARRY ITS OWN STYLESHEET AND ITS OWN ROW CAP, and both are the
+ * fourth surface's (#194). The three off `/export` come out of one collector run
+ * and share `cards.css`; the results dropdown is taken off the RUNNING APP in a
+ * second run, so its stylesheet is a second file rather than an edit to that
+ * one. `rows` is the cap the capture applied, recorded because the panel's
+ * height is `rows x 56px` in the app's own arithmetic and the Section restates
+ * the variable rather than typing the height — so the number the Section states
+ * is read back out of this manifest instead of being a second opinion.
+ */
 export function files(payload, eater, config) {
   const out = new Map();
   out.set(
@@ -78,6 +89,8 @@ export function files(payload, eater, config) {
           file: `${card.name}.html`,
           width: card.width,
           height: card.height,
+          ...(card.css === undefined ? {} : { style: `${card.name}.css` }),
+          ...(card.rows === undefined ? {} : { rows: card.rows }),
         })),
       },
       null,
@@ -87,6 +100,9 @@ export function files(payload, eater, config) {
   out.set('cards.css', `${stamp('css', config.eater.repo, eater)}\n${lf(payload.css)}`);
   for (const card of payload.cards) {
     out.set(`${card.name}.html`, `${stamp('html', config.eater.repo, eater)}${lf(card.html)}\n`);
+    if (card.css !== undefined) {
+      out.set(`${card.name}.css`, `${stamp('css', config.eater.repo, eater)}\n${lf(card.css)}`);
+    }
   }
   return out;
 }

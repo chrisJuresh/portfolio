@@ -33,6 +33,14 @@
       "file": "details.html",
       "width": 390,
       "height": 366
+    },
+    {
+      "name": "results",
+      "file": "results.html",
+      "width": 366,
+      "height": 112,
+      "style": "results.css",
+      "rows": 2
     }
   ]
 }

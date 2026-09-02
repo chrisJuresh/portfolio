@@ -1,8 +1,9 @@
 # The Eater Cards
 
-The three **Cards** of the Eater Map Showcase — the app's own search bar, its
-rail-lines popup and its restaurant detail panel — taken out of the Eater app and
-committed into this repository as markup and a stylesheet.
+The **Cards** of the Eater Map Showcase — the app's own search bar, its
+rail-lines popup, its restaurant detail panel and the search results dropdown
+that hangs off the first — taken out of the Eater app and committed into this
+repository as markup and a stylesheet.
 
 ```bash
 node design/eater-cards/vendor.mjs            # regenerate, and report what moved
@@ -27,6 +28,59 @@ carries the reasoning, and `collect.js` is where the work is.
 **`vendor.mjs` is this half.** It finds that checkout, starts its dev server,
 drives the route headless, and writes the result here with the Eater commit
 stamped into every file.
+
+## The fourth surface
+
+**`/export` declares three surfaces and the Showcase wants four.** The Showcase
+shows the app searching, so it shows what searching produces — and the app's own
+`SearchResults` component has never been exported, for the single reason that the
+harness over there names `['search', 'lines', 'details']` and nothing else.
+
+Adding a fourth name to that harness is a change in the other repository and is a
+**decision rather than a detail**, so until it is taken this half does the other
+thing that is available: it drives the **running app** instead of `/export`, types
+a query, and hands the app's own collector — `src/routes/export/collect.js`, the
+same module the route calls — the `.results-shell` element as a fourth root. The
+markup and the stylesheet therefore come out through the same code path the other
+three did, which is what keeps re-vendoring honest, and **nothing in the Eater
+checkout is edited**.
+
+That is one run of `vendor.mjs` and not a second script. It writes `results.html`
+beside the other three and `results.css` beside `cards.css` — a second stylesheet
+rather than an edit to the first, because it came out of a second collector run,
+and the two are subsets of the same declarations at the same viewport.
+
+### The cap, and why it refuses
+
+The panel's height is `visible rows x 56px`, off `MOBILE_SEARCH_VISIBLE_RESULTS`
+in `src/lib/constants.js`. The drawing shows **two** rows, which is that constant
+rewritten **in flight and asserted** — the same discipline #188 puts on the dark
+Slab, and for the same reason: **a four-row card on disk looks exactly like a
+two-row one**, of the same app, of the same restaurants, at the wrong height, and
+nothing downstream would ever say so. The run refuses when the rewrite does not
+match exactly once, naming the module and what it found.
+
+`rows.mjs` is that decision as pure functions — plan, apply, audit, report — with
+`rows.test.mjs` beside it, and it is the only part of this that is tested.
+Everything else here fails loudly and immediately. `results` in `config.json` is
+where the query, the row count, the selectors and the rewrite are all declared;
+**delete that block and the run takes three cards off `/export` alone**, which is
+the same reversal `slab.json`'s re-theme has.
+
+### The one thing the collector cannot carry
+
+**Inline custom properties.** The app sets
+`--mobile-search-visible-results` inline on `.results-shell`, and `collect.js`
+strips a root's inline `style` on purpose — that is where the app writes a
+surface's *placement*, which is the whole thing the export exists to drop. So the
+panel arrives with `max-height: calc(var(--mobile-search-visible-results, 4) *
+56px)` and no variable, falls back to **four** rows inside a host box the
+collector sized for two, and the overflow is invisible unless somebody counts the
+rows.
+
+The number is therefore recorded in `cards.json` as that card's `rows`, and the
+Section restates it — **as the app's variable, never as a height**. The
+`eater-map` Check counts the rows the panel shows and fails a build that lost it.
 
 ## Why the output is committed
 
@@ -64,11 +118,12 @@ could not tell the two apart would cry wolf on every unrelated commit — and a
 tool that cries wolf is one whose report gets skimmed, which is the failure this
 whole mechanism exists to prevent. When only the stamp differs it says so.
 
-That comparison is `compare.mjs`, on its own with a test beside it, and it is the
-only part of this that is tested. Everything else here fails loudly and
-immediately — a missing checkout, a dev server that will not come up, a route
-that never finished — and the Agent Contract's rule is that those are not worth a
-fixture. A wrong "unchanged" is the opposite: silent, and the whole guarantee.
+That comparison is `compare.mjs`, on its own with a test beside it. It and
+`rows.mjs` are the only parts of this that are tested. Everything else here fails
+loudly and immediately — a missing checkout, a dev server that will not come up, a
+route that never finished — and the Agent Contract's rule is that those are not
+worth a fixture. A wrong "unchanged", and a cap that missed, are the opposite:
+silent, and the whole guarantee.
 
 Neither `--check` nor a plain run is a Check, and that is deliberate: `pnpm
 check` may only assert things about the served Portfolio, and "is a sibling
@@ -93,8 +148,8 @@ restaurant, so the app needs its data on disk.
 ## Everything that can be chosen is in `config.json`
 
 The restaurant, the search text, the offline state, the export viewport, the
-sibling directory's name, the port, and the output path. `--restaurant` and
-`--query` override for one run.
+sibling directory's name, the port, the output path, and the whole of the fourth
+surface's `results` block. `--restaurant` and `--query` override for one run.
 
 The `/export` route has defaults of its own and they are **not** the authority:
 they are there so the page shows something when it is opened by hand. `vendor.mjs`
@@ -123,7 +178,17 @@ and anything else it refuses will fail the same silent way.
 
 **The export is taken with the app's own dev server, not `pnpm preview`.** The
 built app registers a service worker, and a worker answering from a stale cache is
-a Card exported from a build nobody made.
+a Card exported from a build nobody made. The fourth surface needs the dev server
+for a second reason on top of that one: it imports `collect.js` out of the running
+origin, which only a dev server serving source can answer.
+
+**The dropdown is a SCROLL CONTAINER and the Section has to refuse it.** 81
+matching rows sit behind `overflow: auto` — which is what the app has and what the
+capture keeps — and the app also sets `overscroll-behavior: contain` on it. Left
+alone in the Portfolio that is a reader dragging the page with a finger over the
+panel, scrolling restaurants instead of the page, and no scroll chaining when the
+panel reaches its end. `src/sections/eater-map/cards.ts` is where that is refused
+and why it has to be inline.
 
 **Uncommitted work in the Eater checkout is warned about and not refused.** A
 stamp names a commit, so Cards taken off a dirty tree are stamped with a lie —

@@ -3,7 +3,8 @@
 The Portfolio's third Section and its third resting place: the Showcase for the
 Eater restaurant map. It is a text composition with an **Exploded View** beside
 it — the captured Slab standing almost isometric in a parallel projection, with
-real thickness, and the Eater app's own three surfaces rising off its face
+real thickness, and the Eater app's own surfaces — five of them across three
+Cards since #194 — rising off its face
 together, with a thin rule joining each numbered point to the part it names, so
 that what a reader sees is the app taken to pieces and made out of a picture and
 real text (#176, #177, #178, #189) — and, below the band, the same drawing lying
@@ -221,6 +222,8 @@ Every mutation below has been made on purpose and every one was caught.
 | the foot's override written as `--r-sheet: 28px` instead of as the rule | the same failure, at both windows — which is the point: the VARIABLE is already a single value, so the broken toggle that made the first comparison read "indistinguishable" now fails rather than passing quietly |
 | `cards-shape.css`'s selector anchored on `.eater-map__card` | the sheet rounded and its backdrop and its edge still cut `28/28/0/0`, at both windows — the ruler is `.eater-cards` and a clone of `.eater-map__surface`, and a rule that cannot reach it is measured as though it were not there |
 | the `radii` handed to `extrude` squared while the backdrop keeps its own | all four glass surfaces' edges drawn to `0/0/0/0` against `24/24/24/24`, `14/14/14/14` and `28/28/28/28`, at both windows — and **nothing else failed**, which is the point: the edge is asserted at its own corner rather than inferred from the backdrop beside it |
+| the row cap's restatement dropped off `.eater-map__hang` | the results panel drawn 224px tall inside its own 112px box, showing 4 of its 81 rows against the 2 the capture capped it to, and overlapping the rail popup on the plane at both ends of the Lift — eight failures, at both windows |
+| `--eater-map-card-lines-y` back to 0.306 | the rail popup and the results dropdown overlapping on the plane at both ends of the Lift, at both windows |
 
 **The `arrived()` mutation passed three times in a row before the Check was
 written the right way**, and it is the shape `scripts/checks/NOTES.md` warns about twice: *a
@@ -286,8 +289,14 @@ and are both silent when broken.
           .eater-map__face      FLAT, so z-index decides inside it
             .eater-map__glass x1 per glass surface  the blurred copy of the map
             .eater-map__surface   display: contents, and the app's own markup
+            .eater-map__hang      a BOX, and a second vendored root under the first
           .eater-map__anchor    where a leader line ends
 ```
+
+`.eater-map__hang` is the search Card's alone and is the one box in that list
+that is not `display: contents`: the gap it carries has to be a length, and the
+collector writes `margin: 0 !important` on every vendored root. The fourth
+surface, above, has the rest of it.
 
 **Rule one: a GROUPING element cannot preserve 3D.** `transform-style: preserve-3d`
 is forced back to `flat` on any element with `overflow` other than `visible`,
@@ -399,7 +408,91 @@ is a `.topbar` holding **two** separate pills — `.search` and `.offline-button
 with an 8px gap — and one backdrop and one extrusion round the pair weld them into
 a single long component with two buttons stuck on the end, which is not an
 interface the app has. `cards.ts` names the surfaces per Card; the rail popup and
-the details sheet are one each, and theirs is the vendored root itself.
+the details sheet are one each, and theirs is the vendored root itself. **The
+search Card has THREE since #194**, and the third is below.
+
+### The fourth surface, and why it is not a fourth part
+
+**The search results dropdown is a surface of the search Card and not a Card of
+its own (#194).** The Showcase shows the app searching, so it shows what searching
+produces: `design/eater-cards/` takes the app's own `SearchResults` component off
+the running app with the app's own collector, and the Section draws it as the
+search Card's third glass surface — same backdrop, same edge, same radius read off
+the export, no special case.
+
+**A SURFACE AND NOT A FIFTH PART, which the BUILD enforces.** The Content schema's
+two refinements are *no part without a number and no number without a part*, and
+there are four numbered Points; a fourth drawn thing that declared itself a part
+would need a fifth. It does not need one — the dropdown is what Point 01 is
+already about. So the drawing is **four parts across five surfaces**, the search
+Card keeps one anchor and one leader line, and the `eater-map` Check counts both.
+
+**A SECOND VENDORED ROOT INSIDE ONE CARD, AND THAT IS WHAT MAKES THE SCALE FREE.**
+A dropdown narrower or wider than the bar it hangs from reads as a different
+component, and #187 states that whatever scale the two carry they must carry the
+same one. Inside one Card there is one `scale()` and nothing to keep in step.
+`.eater-map__hang` is the box it arrives in — a real box rather than
+`display: contents` like `.eater-map__surface`, because the gap between the two
+has to be a length and the collector writes `margin: 0 !important` on every
+vendored root, so the margin has to go on an element that rule cannot reach.
+
+**THE CLEARANCE IS DERIVED FROM THE THICKNESS AND THE TILT, AND THAT IS THE POINT
+OF IT.** A surface sitting below another on the plane has to clear that one's
+**edge** and not its face: a wall of thickness `t` sinks into the plane, so it
+projects DOWN-SCREEN by `t x sin(tilt)`, while a gap `g` along the plane projects
+down by only `g x cos(tilt)`. So the dropdown clears when `g > t x tan(tilt)` —
+about five plane-px at today's thickness and tilt, and rendered at exactly that
+minimum the two are still a hairline apart, because a minimum behaves like one.
+`EaterMap.astro` spends twice it. **Written against the two Tokens and never as a third number**,
+or a later change to either walks the edge back into the bar above it while the
+number here goes on reading as correct. It is **not** multiplied by
+`--eater-map-solid`: below the band no wall projects anywhere, but a dropdown
+lying against the bar it hangs from is not an interface the app has, and what is
+left down there is within a couple of pixels of the app's own gap.
+
+**No Check asserts the clearance itself**, and that is deliberate rather than
+missing: whether a wall reads as cleared is a look, and a Check that recomputed
+`t x tan(tilt)` would be asking the composition to confirm its own arithmetic —
+the same objection this file makes to reading `--eater-map-app-scale` off the
+element. What IS asserted is that no two glass surfaces overlap **on the plane**,
+at both ends of the Lift, which is the claim a rect can answer.
+
+**AND IT IS THE ONE LENGTH IN A CARD THAT IS NOT FROZEN TO THE EXPORT'S
+VIEWPORT.** Everything else `glass.ts` measures is the same number at every window
+— that is what "measured once" means below — but this one moves when either Token
+is dragged in the Editor. So the ruler is handed a clearance of **zero** and a
+hung surface's top comes back as `<measured>px + var(…)`: the number written down
+stays the constant it claims to be, and the offset stays live. Measured instead,
+the dropdown would slide out from under its own glass the first time somebody
+dragged the thickness.
+
+**THE ROW CAP IS RESTATED AS THE APP'S VARIABLE, NEVER AS A HEIGHT.** The panel's
+height is `calc(var(--mobile-search-visible-results, 4) * 56px)` set **inline** on
+its shell by the app — and a root's inline style is exactly what the collector
+strips, because that is where the app writes a surface's placement. So the card
+arrives with the variable gone, falls back to the FOUR in its own `var()` default,
+and draws four rows out of the bottom of a host box the collector sized for two;
+the overflow is invisible unless somebody counts. The Section restates it inline
+on `.eater-map__hang`, with the number read back out of `cards.json` — the
+capture's own, not a second opinion — and the Check counts the rows.
+
+**THE RAIL POPUP MOVED DOWN THE SLAB TO MAKE ROOM.** At the search bar's own place
+the dropdown lands exactly where the popup stood, so
+`--eater-map-card-lines-y` went from 0.306 to 0.61 and the head of the Slab reads
+down as one stack: the bar, what searching it produces, then the rail lines. It is
+a Token and the Check holds it only to *not overlapping* — which is asserted at
+both ends of the Lift, because the two Cards drift by different amounts as they
+climb and the flat arrangement is the tighter of the two as well as being what a
+reader below the band is looking at.
+
+**THE DROPDOWN IS A SCROLL CONTAINER, AND THAT IS A THIRD INPUT ROUTE.** 81
+matching rows sit behind the panel's own `overflow: auto`, which is what the app
+has, and the app also sets `overscroll-behavior: contain` on it — so a reader
+dragging the page with a finger over the panel scrolls restaurants instead of the
+page and gets no chaining when the panel ends. `cards.ts` refuses the pointer on
+every element a Card names as a glass surface, inline, because `cards.css` gives
+the panel `pointer-events: auto` explicitly and nothing in a stylesheet this
+Section could write outweighs that without `!important`.
 
 **AND EVERY NUMBER IS MEASURED RATHER THAN TYPED.** The markup is rendered into an
 offscreen ruler at its natural size and each surface's offset and its four computed
@@ -513,11 +606,15 @@ the palette:
   its third class. Matching that weight leaves the winner to whichever stylesheet
   the bundler emitted second, and naming the hash builds a selector out of a number
   this repository does not own. (0,4,0) out of real handles wins outright.
-* **Select only through `.eater-cards` and `.eater-map__surface`**, for the reason
-  the ruler paragraph above gives. This is the one that is silent in the source —
-  the page looks right and the drawing does not — and it is a Check rather than a
-  wish: anchored deeper, the `eater-map` Check fails at both windows on the
-  backdrop and on the edge.
+* **Select only through the boxes the RULER gives the clone** — `.eater-cards`,
+  `.eater-map__face`, `.eater-map__surface`, and `.eater-map__hang` for a hung
+  surface (#194) — for the reason the ruler paragraph above gives. This is the one
+  that is silent in the source — the page looks right and the drawing does not —
+  and it is a Check rather than a wish: anchored deeper, the `eater-map` Check
+  fails at both windows on the backdrop and on the edge. Two of those four are new
+  since the rule was written, and the shorter list is still the safer one: a rule
+  written through `.eater-cards` and the surface it names cannot be wrong whatever
+  the ruler grows next.
 
 The first two are not Checks and do not need to be. Writing in `assets/cards/` is
 denied by the vendoring's own README and undone by the next regeneration, and a
@@ -1191,9 +1288,10 @@ and every file there carries a header saying so.
 
 | file | what it is |
 | --- | --- |
-| `cards.json` | the manifest: the Eater commit, the restaurant, the export viewport, and each Card's file and measured size |
-| `cards.css` | every rule the three surfaces use, re-homed under one host |
+| `cards.json` | the manifest: the Eater commit, the restaurant, the export viewport, each Card's file and measured size, and the results panel's row cap |
+| `cards.css` | every rule the three `/export` surfaces use, re-homed under one host |
 | `search.html`, `lines.html`, `details.html` | one Card each, as markup |
+| `results.html`, `results.css` | the fourth surface and its own stylesheet, off a second run of the same collector against the running app (#194) |
 
 Three things about them that are easy to get wrong, and the plane above turns
 on all three:

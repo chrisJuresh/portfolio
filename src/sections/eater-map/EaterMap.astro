@@ -26,6 +26,12 @@ import { SLAB } from './slab';
 // file, so Astro does not scope it — every selector in it begins with the
 // `.eater-cards` host, and that host is the containment. NOTES.md.
 import './assets/cards/cards.css';
+// The fourth surface's own stylesheet, and it is a second file rather than an
+// edit to the one above because it came out of a second run of the same
+// collector — the three off `/export`, the dropdown off the running app, which
+// is the only way to get it without changing the harness in that repository
+// (#194). `design/eater-cards/README.md` is the authority.
+import './assets/cards/results.css';
 // The one thing this Section says to the app's own markup that the dark theme's
 // inherited custom properties cannot carry: a corner. Plain CSS and not the
 // scoped block below, because a `border-radius` needs a SELECTOR and a scoped
@@ -174,6 +180,30 @@ import './tokens.css';
                       the backdrop beside it would be one — generates no box at all
                       and the Card is laid out exactly as it was without it. */}
                   <div class="eater-map__surface" set:html={card.html} />
+                  {/* AND THE SEARCH CARD'S SECOND VENDORED ROOT (#194): the app's
+                      own results dropdown, hanging off the bar it is typed into.
+                      A BOX and not `display: contents`, unlike the one above,
+                      because the gap between the two has to be a length and the
+                      collector's own normalisation writes `margin: 0 !important`
+                      on every vendored root — so the margin goes on a box of this
+                      Section's own, which is the one thing that rule cannot reach.
+
+                      The row cap is restated HERE and inline, which is the one
+                      value the collector cannot carry: the app sets
+                      `--mobile-search-visible-results` inline on this shell, and a
+                      root's inline style is exactly what the export strips, since
+                      that is where the app writes a surface's placement. Without
+                      it the panel falls back to the FOUR in its own `var()`
+                      default and draws four rows inside a host box sized for two.
+                      The number is the capture's, out of `cards.json` — the app's
+                      variable, never a height. */}
+                  {card.hung && (
+                    <div
+                      class="eater-map__hang"
+                      style={`--mobile-search-visible-results: ${card.rows}`}
+                      set:html={card.hung}
+                    />
+                  )}
                 </div>
                 <span class="eater-map__anchor" data-eater-map-anchor={card.name} />
               </div>
@@ -988,6 +1018,12 @@ import './tokens.css';
     --glass: var(--eater-map-glass);
     --glass-sheet: var(--eater-map-glass-sheet);
     --glass-sheet-float: var(--eater-map-glass-float);
+    /* The results dropdown's own material, and the fourth name in this list
+       rather than a reuse of one above it: `cards.css` publishes three glasses
+       and `results.css` a fourth, because the app draws the dropdown thicker
+       than the pill it hangs from — it is the one surface with two rows of
+       reading on it. #194. */
+    --glass-thick: var(--eater-map-glass-thick);
     --glass-rim: inset 0 0.5px 0 rgba(255, 255, 255, 0.26),
       inset 0 0 0 0.5px rgba(255, 255, 255, 0.13);
     --glass-rim-strong: inset 0 1px 0 rgba(255, 255, 255, 0.3),
@@ -1015,6 +1051,67 @@ import './tokens.css';
   .eater-map__face {
     position: relative;
     transform-style: flat;
+  }
+
+  /* WHERE A HUNG SURFACE STANDS, AND THE CLEARANCE IS DERIVED RATHER THAN TYPED
+     (#194). The search results dropdown hangs off the bar it is typed into, and
+     it has to clear that bar's EDGE and not its face — a wall of thickness `t`
+     sinks into the plane, so it projects DOWN-SCREEN by `t x sin(tilt)`, while a
+     gap `g` along the plane projects down by only `g x cos(tilt)`. The dropdown
+     therefore clears only when
+
+         g  >  t x tan(tilt)
+
+     which is about five plane-px at today's thickness and tilt — and rendered at
+     exactly that minimum the two are still a hairline apart, because a minimum
+     behaves like one. So twice it. WRITTEN AGAINST THE TWO TOKENS AND NOT AS A
+     THIRD NUMBER: a gap typed here would go on reading as correct while a later
+     change to the thickness or the tilt walked the edge back into the bar above
+     it.
+
+     IN THE CARD'S OWN UNITS, which is why the thickness — a share of the SLAB's
+     width — is spent against the phone's width and divided by the Card's boost.
+     `glass.ts` writes the same two conversions for the same reason, and its
+     `Solid.filletBack` says why a Card's face and its depth are different units.
+
+     NOT MULTIPLIED BY `--eater-map-solid`. Below the band the plane is flat and
+     no wall projects anywhere, so the derivation has nothing to say down there —
+     but a dropdown touching the bar it hangs from is not an interface the app
+     has, and what is left at this size is within a couple of pixels of the app's
+     own gap. So it is a gap out there and a clearance in the band. */
+  .eater-map__card {
+    --eater-map-results-clear: calc(
+      2 * var(--eater-map-card-thickness) * var(--eater-map-app-w) *
+        tan(var(--eater-map-tilt)) / var(--eater-map-card-scale)
+    );
+  }
+
+  /* An engine without the trigonometric functions gets the same clearance at the
+     tilt the composition ships at, for the same reason the scale above it has a
+     constant to fall back on: what would otherwise happen is an invalid `calc()`,
+     a margin of zero, and a dropdown lying against the search bar's wall. Only
+     `tan(tilt)` is pinned; the thickness is still read as the Token it is. */
+  @supports not (scale: tan(atan2(1px, 1px))) {
+    .eater-map__card {
+      --eater-map-results-clear: calc(
+        2 * var(--eater-map-card-thickness) * var(--eater-map-app-w) * 1.28 /
+          var(--eater-map-card-scale)
+      );
+    }
+  }
+
+  /* THE BOX A HUNG SURFACE ARRIVES IN, and it is a box rather than
+     `display: contents` for one mechanical reason: the vendored root inside it
+     carries `margin: 0 !important` from the collector's own normalisation, so
+     the clearance above it cannot be written on the vendored element at all.
+     This is the element that rule does not reach.
+
+     `glass.ts` reads this class as well, which is how a surface knows it is hung:
+     the ruler is given a clearance of zero and a hung surface's measured top is
+     handed back with the clearance added as an expression, so the number written
+     down stays frozen to the export's viewport and the offset stays live. */
+  .eater-map__hang {
+    margin-top: var(--eater-map-results-clear);
   }
 
   /* The wrapper `set:html` needs and the layout does not: `contents` generates

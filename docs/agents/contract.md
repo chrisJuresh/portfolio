@@ -51,13 +51,16 @@ Underneath both sits the ordinary kind: **a pure function with a test beside it*
 — decision in a pure function, syscall in the thin layer under it — and every bug
 those two modules have had was in the glue. `pnpm test` runs them alone; `pnpm
 check` runs them first, so they gate a commit too. It reaches `design/` as well,
-for the two generators that have a decision worth isolating, and **they are the
-two whose failure would be silent** — which is what earns a seam in a folder
+for the three decisions in it worth isolating, and **every one of them is a
+decision whose failure would be silent** — which is what earns a seam in a folder
 where everything else fails immediately and loudly.
 `design/eater-cards/compare.mjs` decides whether the vendored Eater Cards are
 stale. `design/eater-slab/retheme.mjs` decides whether the Slab's re-theme
 landed, and a re-theme that missed writes a file that opens, is the right size,
-is of the right place and is the wrong colour. Both fail when **another
+is of the right place and is the wrong colour. `design/eater-cards/rows.mjs`
+decides whether the results dropdown's row cap landed, and a cap that missed
+writes a card of the right app, of the right restaurants, at the wrong height.
+All three fail when **another
 repository** moves rather than when this one does, which is the other half of
 why looking is not enough.
 

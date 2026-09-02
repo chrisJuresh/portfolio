@@ -93,15 +93,40 @@ import { DESK, open, settle } from '../lib/page.mjs';
  * A raised Card that is OPAQUE — which is what this Section shipped until #190,
  * because it mixed every surface towards a white plate in step with the climb, so
  * the mutation that puts the mix back fails at the raised end and passes at the
- * flat one. A search Card drawn as ONE box round two pills, which welds a component
- * the app does not have; asked in the Card's own layout units, because "is there a
- * gap between them" is a question a projected rect cannot answer. A backdrop cut to
+ * flat one. A search Card drawn as ONE box round its pills, which welds a component
+ * the app does not have. A backdrop cut to
  * a radius somebody TYPED here — the mockup's `24 / 18 / 22` against the export's
  * own 24 / 14 / 28 — asked by reading `cards.css`'s stated number and clamping it
  * the way a browser clamps it. And a glass surface with NO EDGE, which is #197's
  * rebuild bug: the clear is per box and the host is per Card, so the second
  * surface's clear deletes the first surface's slices and the survivor looks
  * perfect.
+ *
+ * TEN. THE FOURTH SURFACE, AND THE TWO THINGS ITS ARRIVAL COSTS (#194). The search
+ * Card draws THREE glass surfaces now — its two pills and the results dropdown hung
+ * off them — and the dropdown is a surface of the search PART rather than a fifth
+ * part, so the drawing is four parts across five surfaces and the leader lines are
+ * unchanged.
+ *
+ * NOTHING IS DRAWN ON TOP OF ANYTHING, asked ON THE PLANE with the projection
+ * lifted. That is the only form of the question with an answer: two rotated quads
+ * can have overlapping bounding boxes and share no pixel, and two Cards at
+ * different depths may legitimately be drawn over one another, which is what an
+ * exploded view is. It replaces the one-axis gap this used to assert between the
+ * two pills — the same claim, in two dimensions, over every pair in the drawing —
+ * and it is what the rail popup moving down the Slab answers to: at the search
+ * bar's own place the dropdown lands exactly where the popup stood. Read at BOTH
+ * ends of the Lift, because the Cards drift by different amounts as they climb and
+ * the flat arrangement is also what a reader below the band is looking at.
+ *
+ * AND THE DROPDOWN SHOWS THE ROWS IT WAS CAPPED TO. The panel's height is
+ * `calc(var(--mobile-search-visible-results, 4) * 56px)` set INLINE on its shell by
+ * the app, and a root's inline style is exactly what the app's collector strips —
+ * that is where a surface's placement is written and the whole thing the export
+ * drops. So a Section that lost the restatement draws the app's own FOUR rows out
+ * of the bottom of a host box the export sized for two, and the overflow is
+ * invisible unless somebody counts. Two assertions, and the first needs no number:
+ * a scrolling surface may not be taller than the box the export sized for it.
  *
  * Beside them, two claims about the mechanism rather than about the look. The dark
  * theme has to be an OVERRIDE of names `cards.css` already publishes, or a
@@ -358,13 +383,37 @@ const STAGES = ['dom', 'webgl'];
  * time, for the same reason the stack order below it is: this file cannot import
  * that one, and a MISSED NAME HAS TO BE A FAILURE rather than a skip.
  *
- * TWO FOR THE SEARCH CARD IS THE WHOLE OF IT. Its `.topbar` holds two separate
+ * THREE FOR THE SEARCH CARD IS THE WHOLE OF IT. Its `.topbar` holds two separate
  * pills with an 8px gap between them, and one backdrop and one extrusion round the
  * pair weld them into a single long component with two buttons stuck on the end,
- * which is not an interface the app has. A build that draws one box round both
- * fails this, and fails the gap below it as well.
+ * which is not an interface the app has. The third is the results dropdown #194
+ * hung off the bar — a SURFACE of the search part and not a fifth part, because
+ * there are four numbered points and the dropdown is what point 01 is already
+ * about. So: FOUR PARTS ACROSS FIVE SURFACES, and a build that draws one box round
+ * any of the search Card's three fails this and fails the overlap below it too.
  */
-const SURFACES = { search: 2, lines: 1, details: 1 };
+const SURFACES = { search: 3, lines: 1, details: 1 };
+
+/** The hung surface, and how many rows of it the drawing shows.
+ *
+ *  `design/eater-cards/config.json`'s `results.rows` is where that number is
+ *  chosen and the manifest is what carries it to the Section; this is it written a
+ *  third time, on purpose and for the reason `SURFACES` is written twice — a Check
+ *  that read the number off the page it is checking would assert that the panel
+ *  shows as many rows as it shows.
+ *
+ *  WHAT IT CATCHES is the one thing the app's own collector cannot carry: the
+ *  panel's height is `calc(var(--mobile-search-visible-results, 4) * 56px)` set
+ *  INLINE on its shell, a root's inline style is what the export strips, and a
+ *  Section that lost the restatement would draw FOUR rows inside a host box sized
+ *  for two — which reads as a composition rather than as a break. */
+const DROPDOWN = 'search .results-panel';
+const ROWS = 2;
+
+/** How far two glass surfaces may come to each other ON THE PLANE before they are
+ *  the same surface, in drawn px. Zero would be the claim; this is the rounding
+ *  two rects read out of one layout carry. */
+const APART = 0.5;
 
 /** How far a drawn backdrop's corner may sit from the corner `cards.css` states
  *  for the surface it is drawn round, in px. The two are the same number read two
@@ -734,10 +783,31 @@ async function atWindow(browser, origin, viewport) {
             }
             const skin = surface ? getComputedStyle(surface) : null;
             const map = box.querySelector('img');
+            // A SURFACE THAT SCROLLS, and what it is showing of what it holds.
+            // Only the results dropdown does: the app keeps every matching
+            // restaurant in the DOM behind the panel's own scroll and shows a
+            // stated number of them, so this is the one surface whose drawn height
+            // is arithmetic on a variable rather than a size.
+            const scroller =
+              surface && surface.scrollHeight > surface.clientHeight + 1
+                ? {
+                    shown: [...surface.children].filter(
+                      (row) => row.offsetTop + row.offsetHeight <= surface.clientHeight + 0.5,
+                    ).length,
+                    held: surface.children.length,
+                    own: surface.offsetHeight,
+                    // The box the export sized for it. A panel taller than its own
+                    // shell is the restatement lost and the `var()` default taken.
+                    host: surface.parentElement?.clientHeight ?? null,
+                  }
+                : null;
             return {
               name: drawn,
               left: box.offsetLeft,
+              top: box.offsetTop,
               width: box.offsetWidth,
+              height: box.offsetHeight,
+              scroller,
               radii: corners(getComputedStyle(box)),
               stated: skin
                 ? clamped(surface.offsetWidth, surface.offsetHeight, corners(skin))
@@ -813,6 +883,62 @@ async function atWindow(browser, origin, viewport) {
           published: getComputedStyle(cardHost).getPropertyValue(name).trim().length > 0,
         }));
       };
+
+      /**
+       * The projection taken off the plane for the length of one read, and put
+       * straight back.
+       *
+       * A rect on this plane is the axis-aligned bounding box of a PROJECTED
+       * QUAD, whose corners are nowhere on the element — so every question that
+       * is about a distance rather than about a position has to be asked with the
+       * rotation lifted. `transform-style: flat` goes with it, or the Cards'
+       * depths would still be carried under a plane that no longer turns.
+       *
+       * Restored the way the playhead and the scroll are: an inline
+       * `transform: none` left standing would outlive the failure that caused it,
+       * so a screenshot taken to work out why the run broke would show a drawing
+       * nobody composed.
+       */
+      const lifted = (read) => {
+        const heldTransform = plane.style.transform;
+        const heldStyle = plane.style.transformStyle;
+        try {
+          plane.style.transform = 'none';
+          plane.style.transformStyle = 'flat';
+          return read();
+        } finally {
+          plane.style.transform = heldTransform;
+          plane.style.transformStyle = heldStyle;
+        }
+      };
+
+      /**
+       * Every glass surface's rectangle ON THE PLANE, in drawn pixels.
+       *
+       * WITH THE PROJECTION LIFTED, which is what makes "do these two overlap" an
+       * answerable question at all: two rotated quads can have overlapping
+       * bounding boxes and share no pixel, and two quads at different depths can
+       * legitimately be drawn over each other — that is what an exploded view is.
+       * What the composition actually claims is about the PLANE the pieces lie on:
+       * the map shows through between them, and a surface underneath another is a
+       * surface nobody composed. Everything on this plane is a share of the Slab's
+       * width, so this arrangement is the same one at every window.
+       */
+      const onThePlane = () =>
+        lifted(() =>
+          [...document.querySelectorAll('[data-eater-map-glass]')].map((box) => {
+            const rect = box.getBoundingClientRect();
+            return {
+              // `<card> <selector>`, which is what the Section wrote on it — so a
+              // failure names both pieces without this having to look either up.
+              name: box.getAttribute('data-eater-map-glass') ?? '(unnamed)',
+              left: round(rect.left),
+              top: round(rect.top),
+              right: round(rect.right),
+              bottom: round(rect.bottom),
+            };
+          }),
+        );
 
       /** How wide the map behind each Card's glass is DRAWN, which only means
        *  anything with the projection lifted — see below. */
@@ -935,6 +1061,11 @@ async function atWindow(browser, origin, viewport) {
         const flatPlane = planeBox();
         const flatHidden = invisible();
         const rulesFlat = rules();
+        // BOTH ENDS, because the two Cards a dropdown can land on drift by
+        // different amounts as they climb — so the arrangement that clears at one
+        // end is not the arrangement at the other, and the flat one is also what a
+        // reader below the band is looking at.
+        const flatGlassPlane = onThePlane();
         lift.progress(halfWay);
         const rulesHalfWay = rules();
         lift.progress(1);
@@ -949,6 +1080,7 @@ async function atWindow(browser, origin, viewport) {
         // playhead, so it was the app's own translucency at the flat end and solid
         // white here. A read taken at progress 0 would have passed it.
         const glassed = glass();
+        const raisedGlassPlane = onThePlane();
 
         // THE CAMERA IS LIFTED FOR ONE READ, AND ONLY FOR THE SCALE. A Card's
         // `getBoundingClientRect` is the axis-aligned bounding box of a quad
@@ -957,11 +1089,7 @@ async function atWindow(browser, origin, viewport) {
         // untilted screenshot, and #189 took that frame away. So the projection is
         // taken off the plane for the length of this read and put straight back: the
         // Card's own `scale()` is what is left, and its rect over its declared width
-        // IS the scale the composition applied. `transform-style: flat` goes with it,
-        // or the Cards' depths would still be carried under a plane that no longer
-        // turns and the topmost Card would be measured a per cent large.
-        const heldTransform = plane.style.transform;
-        const heldStyle = plane.style.transformStyle;
+        // IS the scale the composition applied.
         const heldBoost = section.style.getPropertyValue('--eater-map-card-scale');
         let square;
         // AND THE MAP INSIDE THE GLASS IS MEASURED IN THE SAME BREATH, for the same
@@ -974,21 +1102,15 @@ async function atWindow(browser, origin, viewport) {
         let plainMap;
         let boostedMap;
         try {
-          plane.style.transform = 'none';
-          plane.style.transformStyle = 'flat';
-          square = cardBoxes();
-          plainMap = mapWidths();
-          section.style.setProperty('--eater-map-card-scale', String(boosted));
-          boostedMap = mapWidths();
+          lifted(() => {
+            square = cardBoxes();
+            plainMap = mapWidths();
+            section.style.setProperty('--eater-map-card-scale', String(boosted));
+            boostedMap = mapWidths();
+          });
         } finally {
           if (heldBoost) section.style.setProperty('--eater-map-card-scale', heldBoost);
           else section.style.removeProperty('--eater-map-card-scale');
-          // Restored the way the playhead and the scroll are, and for the same
-          // reason: an inline `transform: none` left standing on the plane would
-          // outlive the failure that caused it, so a screenshot taken to work out
-          // why the run broke would show a drawing nobody composed.
-          plane.style.transform = heldTransform;
-          plane.style.transformStyle = heldStyle;
         }
 
         const stage = document.querySelector('.eater-map__stage');
@@ -1010,6 +1132,7 @@ async function atWindow(browser, origin, viewport) {
           slabWidth: round(slab.getBoundingClientRect().width),
           square,
           glassed,
+          onThePlane: { flat: flatGlassPlane, raised: raisedGlassPlane },
           rethemed: rethemed(),
           plainMap,
           boostedMap,
@@ -1376,26 +1499,29 @@ async function atWindow(browser, origin, viewport) {
             'the search bar and the offline button welds them into a component the app does not have',
         );
       }
-      // AND THEY DO NOT TOUCH. Two boxes is satisfied by two boxes lying on each
-      // other; the app's own 8px gap is what makes the pair read as two controls,
-      // and it is where the map has to show through.
-      const across = [...card.surfaces].sort((a, b) => a.left - b.left);
-      for (let index = 1; index < across.length; index += 1) {
-        const left = across[index - 1];
-        const right = across[index];
-        if (!(right.left > left.left + left.width)) {
-          failures.push(
-            `${where}: the ${name} Card's ${left.name} runs to ${left.left + left.width} and its ` +
-              `${right.name} starts at ${right.left} — the two glass surfaces meet, so there is no map ` +
-              'visible between them and the pair is drawn as one component',
-          );
-        }
-      }
-      const covered = card.surfaces.reduce((sum, one) => sum + one.width, 0);
-      if (card.surfaces.length > 1 && !(covered < card.width)) {
+      // AND THEY DO NOT FILL THE BOX THAT HOLDS THEM. Three boxes is satisfied by
+      // three boxes covering everything between them; the app's own 8px gap
+      // between the pills, and the clearance the dropdown hangs at, are where the
+      // map has to show through. Areas rather than widths since #194: the search
+      // Card's surfaces are a row and a panel under it, so their widths sum past
+      // the Card's own and always did the moment a surface stopped being beside
+      // the others.
+      const span = card.surfaces.reduce(
+        (box, one) => ({
+          left: Math.min(box.left, one.left),
+          top: Math.min(box.top, one.top),
+          right: Math.max(box.right, one.left + one.width),
+          bottom: Math.max(box.bottom, one.top + one.height),
+        }),
+        { left: Infinity, top: Infinity, right: -Infinity, bottom: -Infinity },
+      );
+      const held = (span.right - span.left) * (span.bottom - span.top);
+      const covered = card.surfaces.reduce((sum, one) => sum + one.width * one.height, 0);
+      if (card.surfaces.length > 1 && !(covered < held)) {
         failures.push(
-          `${where}: the ${name} Card's glass covers ${covered} of its own ${card.width}px — its surfaces ` +
-            'have grown into the box round them, which is the one thing drawing them separately was for',
+          `${where}: the ${name} Card's glass covers ${covered} of the ${held} square pixels its own ` +
+            'surfaces span — they have grown into the box round them, which is the one thing drawing them ' +
+            'separately was for',
         );
       }
       for (const surface of card.surfaces) {
@@ -1521,6 +1647,86 @@ async function atWindow(browser, origin, viewport) {
           );
         }
       }
+    }
+
+    // ---- and no surface is drawn on top of another ---------------------------
+    // #194's own claim, and it is why the rail popup moved down the Slab: at the
+    // search bar's own place the results dropdown lands exactly where the popup
+    // stood. Asked ON THE PLANE and not on the screen, which is the only form of
+    // the question that has an answer — two rotated quads can have overlapping
+    // bounding boxes and share no pixel, and two Cards at different depths may
+    // legitimately be drawn over one another, since that is what an exploded view
+    // is. What the composition claims is about the plane the pieces lie on.
+    for (const [when, drawn] of [
+      ['flat', seen.onThePlane.flat],
+      ['at rest', seen.onThePlane.raised],
+    ]) {
+      if (drawn.length === 0) {
+        failures.push(
+          `${where}, ${when}: no glass surface could be read on the plane — nothing about the pieces of ` +
+            'the drawing lying clear of each other was asserted',
+        );
+        continue;
+      }
+      for (let a = 0; a < drawn.length; a += 1) {
+        for (let b = a + 1; b < drawn.length; b += 1) {
+          const one = drawn[a];
+          const other = drawn[b];
+          const over =
+            one.left < other.right - APART &&
+            other.left < one.right - APART &&
+            one.top < other.bottom - APART &&
+            other.top < one.bottom - APART;
+          if (over) {
+            failures.push(
+              `${where}, ${when}: the ${one.name} and the ${other.name} overlap on the plane — ` +
+                `${one.left},${one.top} to ${one.right},${one.bottom} against ${other.left},${other.top} ` +
+                `to ${other.right},${other.bottom}. Every piece of this drawing lies on one plane, so a ` +
+                'surface under another is a surface nobody composed and a gap the map cannot show through',
+            );
+          }
+        }
+      }
+    }
+
+    // ---- and the dropdown shows the rows it was capped to ---------------------
+    // THE TRAP #194 PAID FOR. The panel's height is
+    // `calc(var(--mobile-search-visible-results, 4) * 56px)`, set inline on its
+    // shell by the app — and a root's inline style is exactly what the collector
+    // strips, because that is where the app writes a surface's placement. So the
+    // card arrives with the variable gone, falls back to the FOUR in its own
+    // `var()` default, and draws four rows inside a host box the collector sized
+    // for two. Two assertions, and the first needs no number at all.
+    const scrollers = seen.glassed.flatMap((card) =>
+      card.surfaces.filter((one) => one.scroller).map((one) => one),
+    );
+    for (const one of scrollers) {
+      const { own, host } = one.scroller;
+      if (host !== null && own > host + 0.5) {
+        failures.push(
+          `${where}: the ${one.name} is drawn ${own}px tall inside a ${host}px box — the export sized that ` +
+            'box for the surface it captured, so a surface taller than it is one drawn to a number the ' +
+            'vendored markup no longer carries',
+        );
+      }
+    }
+    const dropdown = scrollers.find((one) => one.name === DROPDOWN);
+    if (!dropdown) {
+      // A MISSED NAME IS A FAILURE AND NOT A SKIP, for the third time in this
+      // file: without this the whole of #194's row cap would go unasserted the
+      // moment the surface stopped scrolling, which is exactly what losing the
+      // restatement does not do and exactly what deleting the dropdown does.
+      failures.push(
+        `${where}: no surface is named ${DROPDOWN} with rows behind its own scroll — the drawing shows ` +
+          `${ROWS} of the app's matching restaurants, and nothing about that was asserted`,
+      );
+    } else if (dropdown.scroller.shown !== ROWS) {
+      failures.push(
+        `${where}: the ${DROPDOWN} shows ${dropdown.scroller.shown} of the ${dropdown.scroller.held} rows ` +
+          `it holds, against the ${ROWS} the capture capped it to — the Section restates the app's own ` +
+          '--mobile-search-visible-results, which the collector cannot carry, and a build that lost it ' +
+          "draws the app's own four rows out of the bottom of a box sized for two",
+      );
     }
 
     // THE DARK THEME IS AN OVERRIDE AND NOT A FORK, asked of the cascade rather

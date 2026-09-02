@@ -42,6 +42,7 @@ import { mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { MANIFEST, files, report, staleness } from './compare.mjs';
+import { auditRowCap, capModule, planRowCap, rowCapReport } from './rows.mjs';
 
 const HERE = fileURLToPath(new URL('.', import.meta.url)).replace(/[\\/]+$/, '');
 const ROOT = resolve(HERE, '..', '..');
@@ -295,6 +296,145 @@ async function serve(eater, port) {
   return stop;
 }
 
+/* ---- the fourth surface, off the running app ----------------------------- */
+
+/**
+ * The search results dropdown, which `/export` does not declare.
+ *
+ * WHY THIS IS A SECOND STAGE AND NOT A FOURTH NAME IN THE HARNESS. The export
+ * route over there declares `['search', 'lines', 'details']`, and the Showcase
+ * wants what SEARCHING PRODUCES as well as the bar it is typed into (#194).
+ * Adding a fourth surface to that harness is a change in the other repository
+ * and is a decision rather than a detail, so until it is taken this drives the
+ * REAL APP instead and hands the app's own collector a fourth root. The markup
+ * and the stylesheet therefore come out through the same code path the other
+ * three did, which is what keeps re-vendoring honest, and nothing in the Eater
+ * checkout is edited.
+ *
+ * THE ROW CAP IS REWRITTEN IN FLIGHT AND ASSERTED, which is the same discipline
+ * #188 puts on the dark Slab and is here for the same reason: the panel's height
+ * is `rows x 56px` off one constant, and a four-row card on disk looks exactly
+ * like a two-row one. `rows.mjs` is the decision; this is the socket under it.
+ *
+ * @param {import('playwright').Browser} browser
+ * @param {number} port
+ * @param {import('./rows.mjs').RowCap} plan
+ * @param {any} config
+ */
+async function results(browser, port, plan, config) {
+  const asked = config.results;
+  const refuse = (...lines) => {
+    throw new Error(lines.join('\n'));
+  };
+
+  const context = await browser.newContext({ viewport: config.viewport });
+  /** @type {import('./rows.mjs').Served[]} */
+  const served = [];
+  /** @type {string[]} */
+  const unfetchable = [];
+  // One route, over the module the cap claims and nothing else — so a run with
+  // no `results` block never stands between vite and the page at all.
+  await context.route(new RegExp(plan.module.source), async (route) => {
+    const url = route.request().url();
+    let response;
+    try {
+      response = await route.fetch();
+    } catch (error) {
+      // Recorded rather than thrown: this runs on Playwright's own thread, and a
+      // throw here is swallowed into a hung request. What it becomes downstream
+      // is the audit's "never served", which is true but is the symptom rather
+      // than the cause, so the cause is carried out beside it.
+      unfetchable.push(`could not fetch ${url} — ${String(error?.message ?? error).split('\n')[0]}`);
+      return route.abort();
+    }
+    const { source, count } = capModule(url, await response.text(), plan);
+    served.push({ url, count });
+    await route.fulfill({ response, body: source });
+  });
+
+  try {
+    const page = await context.newPage();
+    /** @type {string[]} */
+    const thrown = [];
+    page.on('pageerror', (error) => thrown.push(String(error).split('\n')[0]));
+
+    await page.goto(`http://127.0.0.1:${port}/`, { waitUntil: 'load' });
+    const field = page.locator(asked.field).first();
+    try {
+      await field.waitFor({ timeout: 60_000 });
+    } catch {
+      refuse(
+        `the app's search field (${asked.field}) never appeared, so there was nothing to type into.`,
+        ...thrown.map((one) => `  the app threw: ${one}`),
+      );
+    }
+    await field.click();
+    await field.fill(asked.query);
+    try {
+      await page.waitForSelector(asked.shell, { timeout: 30_000 });
+    } catch {
+      refuse(
+        `"${asked.query}" produced no ${asked.shell} in the app, so there is no dropdown to take.`,
+        'Either the dataset has moved under the query or the component has been renamed;',
+        'results.query and results.shell in config.json are where both are said.',
+      );
+    }
+    await page.waitForTimeout(asked.settleMs);
+
+    // A module the cap could not fetch is ABORTED above, so the app then throws
+    // about an import it could not resolve — which is true, and is the symptom.
+    // Reported first for that reason.
+    if (unfetchable.length > 0) {
+      refuse('the row cap could not read a module it had claimed, so Eater was served nothing for it:', ...unfetchable);
+    }
+
+    // BEFORE the collector, and that order is the whole point: a cap that missed
+    // collects perfectly — the right component, of the right restaurants, at the
+    // wrong height — and every check after this one would pass.
+    const missed = auditRowCap(plan, served);
+    if (missed.length > 0) {
+      refuse(
+        "the row cap did not take, so this would be the app's own uncapped panel:",
+        ...missed.map((one) => `  ${one}`),
+        '',
+        "  results.cap in config.json no longer matches Eater's source.",
+      );
+    }
+
+    const got = await page.evaluate(
+      async ({ shell, row }) => {
+        // The app's OWN collector, imported out of the running dev server rather
+        // than reimplemented here — the same module `/export` calls, so the
+        // fourth surface is emitted by the same code path as the other three.
+        const { collect } = await import('/src/routes/export/collect.js');
+        const root = document.querySelector(shell);
+        if (!root) return null;
+        const out = collect([{ name: 'results', root }], document, window);
+        const card = out.cards.find((one) => one.name === 'results');
+        return card ? { ...card, css: out.css, held: root.querySelectorAll(row).length } : null;
+      },
+      { shell: asked.shell, row: asked.row },
+    );
+    if (!got) {
+      refuse(
+        "the app's own collector produced no results card.",
+        `  ${asked.shell} was on the page, so this is the collector itself or its name for the surface.`,
+      );
+    }
+    if (thrown.length > 0) {
+      refuse('the app threw while the dropdown was being taken, so this would be a card of a broken app:', ...thrown.map((one) => `  ${one}`));
+    }
+
+    console.log(
+      `eater-cards: results  ${got.width}x${got.height}, ${plan.rows} row(s) shown of ${got.held} in the ` +
+        "panel's own scroll",
+    );
+    return { name: 'results', width: got.width, height: got.height, html: got.html, css: got.css, rows: plan.rows };
+  } finally {
+    await context.close();
+  }
+}
+
 /* ---- the files ----------------------------------------------------------- */
 
 /** The generated files as they stand, so the report can say what moved. */
@@ -349,9 +489,18 @@ try {
   fail('playwright is not installed.', 'pnpm install');
 }
 
+// Read before a browser is started, so a declaration that cannot be met is a
+// refusal now rather than a minute from now, and printed so the run says which
+// card it is about to take and at what cap.
+const plan = planRowCap(config.results);
+for (const line of rowCapReport(plan, eaterAt)) console.log(line);
+
 const port = config.eater.port;
 const stop = await serve(eaterAt, port);
 let payload;
+let fourth = null;
+/** @type {Error | null} */
+let refused = null;
 const noise = [];
 try {
   const browser = await chromium.launch();
@@ -377,6 +526,18 @@ try {
       );
     }
     payload = await page.evaluate(() => window.__eaterCards);
+    await page.close();
+
+    // AND THE FOURTH, off the running app rather than off /export. Its refusals
+    // are carried out rather than exited on, so the browser and the dev server
+    // are put down before anything is printed.
+    if (plan) {
+      try {
+        fourth = await results(browser, port, plan, config);
+      } catch (error) {
+        refused = error instanceof Error ? error : new Error(String(error));
+      }
+    }
   } finally {
     await browser.close();
   }
@@ -384,10 +545,12 @@ try {
   stop();
 }
 
+if (refused) fail(...String(refused.message).split('\n'));
 if (noise.length) {
   fail('the app logged errors while the Cards were being taken.', ...noise);
 }
 if (!payload?.cards?.length) fail('the export route produced no Cards.');
+if (fourth) payload.cards.push(fourth);
 
 const after = files(payload, eater, config);
 const before = await onDisk();

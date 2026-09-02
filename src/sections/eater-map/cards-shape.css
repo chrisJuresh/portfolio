@@ -5,10 +5,12 @@
  * thing a variable cannot carry", is the authority — including the three rules a
  * rule added here has to keep. Two of them are worth having at the line:
  *
- *   * SELECT ONLY THROUGH `.eater-cards` AND `.eater-map__surface`. Those are
- *     every ancestor `glass.ts`'s offscreen ruler gives the clone it measures, so
- *     a rule anchored any deeper applies to the page and not to the measurement —
- *     the surface rounds, and its backdrop and its edge stay cut square.
+ *   * SELECT ONLY THROUGH THE BOXES THE RULER GIVES THE CLONE — `.eater-cards`,
+ *     `.eater-map__face`, `.eater-map__surface`, and `.eater-map__hang` for a hung
+ *     surface (#194). A rule anchored any deeper applies to the page and not to
+ *     the measurement — the surface rounds, and its backdrop and its edge stay cut
+ *     square. The first two of those four are the safest to write through, because
+ *     they are what the ruler has always had.
  *   * NEVER NAME THE EXPORT'S `svelte-…` CLASS. It is a build fingerprint, and the
  *     weight has to come from real handles instead: (0,4,0) against the (0,3,0)
  *     `cards.css` states its own rules at.
