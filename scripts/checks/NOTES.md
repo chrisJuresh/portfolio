@@ -102,7 +102,7 @@ cannot be verified there even by hand.
 | `front-screen`   | the Front Screen's rhyme, its one-screen budget, the Cut Title's cut or its accessible name, the crossing's span, the switch's ARIA, or the type's place in the Effect Stack breaks |
 | `projects-panel` | a control in the Frame leaves the centre its own Token names, the window and its titlebar are cut to two radii, the recording's box stops being inset on three sides, the occlusion of the subheading's second line moves or stops being painted, the titlebar reports a rung it is not made of, the chrome grows a control, the small-Frame reduction starts asking about the window instead of the Frame, the Plinth's depths stop being shares of the Frame, its slab stops being symmetric about it, its bottom-right corner comes off the page's on either branch of the fit, or the Frame moves towards the engineering points instead of away from them, the reflection stops being a life-size fold of the window, the marble stops being drawn without script, a reader who asked for reduced motion is charged for the recording, a reader who runs no script at all loses the copy that arrives with the page turn, the titlebar grows past the clearance the clip on disk was cut with, or that clip stops opening on that many rows of flat, light ground |
 | `eater-map`      | PROJECTS stops standing where the Gallery's own masthead stands or stops being the same word, the serif title's cap height or its drop below the masthead's baseline stops matching the two ratios the Section declares — which a font size proportional to the masthead does, by 4% — the copy leaves the foot of the column PROJECTS heads or the Points leave the right of the drawing, the three Cards on the Slab stop being drawn at the Slab's own scale at the Lift's flat end, one of them stops moving between the Lift's two ends, one of the Section's own boxes is invisible at either end, a reader who leaves part way up is left with a Lift that ran on without them, a leader line comes off the corner it names part way up the Lift or stops ending in a lit dot on it, a point and a part stop being one to one, the picture of the app puts a focusable control or a heading into the page, an extruded edge stops having a direction or stops taking it from the one page-fixed light, a corner of the Slab shows the page behind it, `--eater-map-slab-edge` stops being live inside the gradient, or below the band the drawing stops collapsing — a perspective left standing on a column, a Slab that misses the window's edges, a Lift still running where there is no page turn, the four features no longer a list under the picture, or one of the three readers down there handed a composition of their own |
-| `rail`           | the page carries more than one Rail or none, at any of three windows; the Rail moves when the page turns; it stops standing in the page's own left margin, or stops sharing the composition's left edge below the band; the current entry stops naming the Section at rest, in either direction; the entry with no Section of its own stops saying so to a screen reader; or a reader who runs no script gets no Rail or no current entry |
+| `rail`           | the page carries more than one Rail or none, at any of four windows; the Rail moves when the page turns; it stops standing in the page's own left margin, or stops sharing the composition's left edge below the band; the current entry stops naming the Section at rest, in either direction; an entry stops being reachable at a resting place because a Section is hit-tested over it; the Rail stays reachable on the first screen, where it is drawn transparent; the entry with no Section of its own stops saying so to a screen reader; or a reader who runs no script gets no Rail or no current entry |
 | `ground`         | paper is not light, or the Turn does not arrive dark, in either theme         |
 | `turn`           | the Kernel's published landing measure — cap, drop or the stone the width branch leaves room for — disagrees with the Panel's own arithmetic, the Panel's masthead is visible or has lost its box, the Cut Title is not standing in that masthead's slot, the word moves or resizes across the crossing, either end of the morph is not the outline the Bake wrote, a wheel notch does not turn the page or bring it back, a notch begun on the photographs turns it, or the paragraph that arrives with the crossing is painted at the top of the document, is still arriving at the landing, moves to get there, or is left on its own compositing layer once it has |
 | `crossing`       | outside the landing band the Panel's ground parts company with the document's anywhere across the crossing, the page has not finished turning by the time the Panel owns the screen, the crossing is a flip or never finishes, the reader meets the whole of the Cut Title on the first screen, the Cut Title is cut by a box rather than by the fold — so it is still cut in the Section it heads — or stops being one drawing, or the Panel's masthead draws a second PROJECTS under it — or loses the `display` the Section's accessible name comes from |
@@ -294,13 +294,38 @@ two readings to be the same reading. A Rail drawn inside a Section fails it by a
 whole screen; one moved to the Kernel and left in the document flow fails it by
 the same amount; and neither failure is visible in a still of either end.
 
-**It reads three windows and a fourth reader.** The Rail has two regimes — pinned
+**It reads four windows and a fifth reader.** The Rail has two regimes — pinned
 to the window inside the band, in flow outside it — so both have to be opened; the
 band's SHORT corner is read as well, because the column is a `vh` clamp and the
 type in it is a share of a composition, and the two only part company where the
-window is short. The fourth is scripting off, and it is asserting something the
-other three cannot: nothing will ever run `rail.ts` for that reader, so the entry
-the page opens on has to be in the document Astro rendered.
+window is short. The fourth is **wide and short**, and it is there because a Spec
+review pointed out that it is the ONE regime #192 moved — the two Sections split
+the Rail on the width alone, so above 1100px and under 700 it was a vertical grid
+column inside each of them — and the Check opened no window on it. The fifth is
+scripting off, and it is asserting something the other four cannot: nothing will
+ever run `rail.ts` for that reader, so the entry the page opens on has to be in
+the document Astro rendered.
+
+**THE ASSERTION THAT MATTERS MOST IS THE ONE ADDED LAST, and it is a lesson about
+what a rect cannot see.** The first version of this Check compared boxes and read
+`aria-current`, and it passed a page whose Rail was **completely unclickable at
+the Gallery's resting place**. The Rail is out of flow and BEFORE the Gallery in
+the document; `.projects-panel` is positioned and follows it, so it is hit-tested
+above the Rail across the whole of the page's left margin. Painting was correct —
+that Section paints no ground in the band — so every screenshot was perfect, and
+the failure was asymmetric, because the Eater Map is unpositioned and the links
+worked there. It asks `document.elementFromPoint` at each entry's centre now, at
+each of the three stops, and requires the answer to be inside the Rail. **Where a
+Check asserts that something is in the right place, ask separately whether a
+reader can reach it** — those are two questions and only one of them is geometry.
+
+**And the same question inverted, one screen up.** In the band the Rail is
+revealed on `--turn`, so at the top of the document it is transparent — and
+`opacity: 0` leaves a box hit-testable and focusable, which put three invisible
+links and three invisible tab stops over the Front Screen's own margin. So the
+Check also requires that NONE of the entries is reachable where `--turn` is 0.
+The two assertions are the same mechanism read in both directions, and each is
+satisfiable by breaking the other.
 
 **Two of its assertions exist to hold a RESTATEMENT**, which is the same job the
 `turn` Check does for the landing. The Kernel may not read a Section, so
@@ -329,22 +354,27 @@ cannot — but a padding that ever stopped resolving would hand the comparison a
 subtracting two measured numbers has to say what it does when one of them is not a
 number, and "nothing" is the wrong answer.
 
-Six mutations, all caught:
+Eight mutations, all caught:
 
 | mutation                                                         | wanted | got |
 | ------------------------------------------------------------------ | ------ | --- |
-| a second `<Rail />` in the document                                 | fail   | fail at all four readers: 2 elements carry `[data-rail]` |
+| a second `<Rail />` in the document                                 | fail   | fail at all readers: 2 elements carry `[data-rail]` |
 | the band's `position: fixed` weakened to `absolute`                 | fail   | fail: 900px apart at DESK, 700 at the corner |
 | `mountRail()` never called                                          | fail   | fail: at the Eater Map the current entry still names `projects` |
 | the highlight allowed to advance only                               | fail   | fail twice: at the Gallery, and at the Gallery again — "which a one-way walk would pass" |
 | the unbuilt entry's clipped span deleted                            | fail   | fail: `"Record Engine"` and no clipped span |
 | `--rail-side`'s vw slope drifted from the Panel's                   | fail   | fail below the band: names at x=32.2, composition at x=37.1 |
+| the Rail's `z-index` removed — the shipped bug                      | fail   | fail: "3 of 3 entries are covered — projects is under section.projects-panel", at the Gallery and at the Gallery again, at both band windows |
+| `data-rail-away` never written, so the invisible Rail stays live     | fail   | fail: "2 of its 3 entries are still hit-testable (`visibility: visible`)" |
 
-**The fourth is the one to keep.** A Check that walked from the Gallery to the
-Eater Map and stopped would pass a highlight that never comes back, which is
-exactly half of "follows the page turn in both directions" and is the half a
-reader meets on the way up. The third stop is the Gallery again, and its failure
-says so in as many words.
+**The fourth is the one to keep, and the seventh is the one that was real.** A
+Check that walked from the Gallery to the Eater Map and stopped would pass a
+highlight that never comes back — exactly half of "follows the page turn in both
+directions", and the half a reader meets on the way up; the third stop is the
+Gallery again and its failure says so in as many words. The seventh is not a
+mutation at all in the usual sense: it is the tree as it was actually committed
+once, and the assertion was written because a review found the bug rather than
+the other way round.
 
 `crossing` is `turn`'s counterpart below the band, and it is the clearest case in
 the suite of the definition at the top of this file: **every failure it catches is

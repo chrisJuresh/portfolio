@@ -149,11 +149,26 @@ const opensOn = content.projects.findIndex((project) => project.href);
      `space-between`, so they are exactly where the first and the last of them
      stand.
 
-     OUT OF FLOW AND BEFORE THE GALLERY IN THE DOCUMENT, which needs no z-index
-     and would be broken by one. In the band the Panel paints no ground of its
-     own and the Eater Map is not positioned at all, so nothing covers this; a
-     z-index would instead lift it out over the Effect Stack, which treats the
-     page and has treated the Rail with it since there was one. */
+     OUT OF FLOW AND BEFORE THE GALLERY IN THE DOCUMENT, WHICH NEEDS A Z-INDEX —
+     AND THIS PARAGRAPH SAID THE OPPOSITE FOR ONE COMMIT. The reasoning that was
+     here is true of PAINTING and false of HIT TESTING, which is the trap: in the
+     band the Panel paints no ground of its own and the Eater Map is not
+     positioned, so nothing covers this box and it looks perfect. But
+     `.projects-panel` IS positioned and follows this element in tree order, so it
+     is hit FIRST across the whole of the page's left margin — every link in the
+     Rail was dead at the Gallery's resting place, and working at the Eater Map's,
+     because that Section is unpositioned. Invisible, asymmetric, and a screenshot
+     of either screen is correct. The `rail` Check asks
+     `document.elementFromPoint` at each entry now.
+
+     WHAT IT COSTS is the Effect Stack, and only for the crossing. `.fx` may not
+     declare a z-index (it would isolate the stack), so a positive one here paints
+     the Rail over the treatment. At both resting places that is free — `--fx-veil`
+     runs to 0 across the Turn, so the stack contributes nothing to the Panel or
+     the Eater Map at rest — and on the first screen the Rail is transparent
+     anyway. What is left is the middle of the crossing, where an index at partial
+     opacity is untreated for a few hundred milliseconds. That is the trade, and it
+     is smaller than three links that do not work. */
   @media (min-width: 1100px) and (min-height: 700px) {
     .kernel-rail {
       position: fixed;
@@ -163,6 +178,7 @@ const opensOn = content.projects.findIndex((project) => project.href);
       width: var(--landing-side);
       padding: 0;
       display: flex;
+      z-index: 1;
       --rail-size: max(var(--rail-floor), calc(var(--rail-share) * var(--landing-w)));
 
       /* AND IT ARRIVES WITH THE PAGE. The Rail belongs to the index and the
@@ -182,6 +198,33 @@ const opensOn = content.projects.findIndex((project) => project.href);
          and the focus ring — and it costs the resting page nothing, because
          --turn is exactly 1 where the turn comes to rest. */
       opacity: var(--turn);
+    }
+
+    /* AND AN INVISIBLE INDEX IS NOT REACHABLE EITHER. `opacity: 0` hides a box
+       and leaves it hit-testable and focusable, so a fixed Rail put three
+       invisible links and three invisible tab stops over the Front Screen's own
+       left margin — one of which was over the photograph strip. The old Rail was
+       a descendant of the Panel and simply was not up there.
+
+       `--turn` IS A NUMBER AND CSS CANNOT BRANCH ON IT, which is exactly what
+       `onTurn()` in src/kernel/turn.ts exists for: "anything drawn against the
+       Turn that CSS cannot draw for itself". rail.ts sets this attribute while the
+       Turn is at 0 and takes it off otherwise, so the rule is a state and the
+       arithmetic is where the arithmetic lives.
+
+       `visibility` AND NOT `pointer-events`, which was the first answer and is
+       half of one: `pointer-events: none` stops the clicks and the hover and
+       leaves the three TAB STOPS exactly where they were, so a keyboard reader
+       still walked into an index that is not on the screen. `visibility: hidden`
+       takes a box out of hit testing and out of the tab order together, and it
+       costs nothing here because the attribute is only ever set where the box is
+       already fully transparent.
+
+       A READER WHO RUNS NOTHING NEVER GETS THE ATTRIBUTE, which is the same
+       reader the query below is for, so the two answers agree by construction:
+       the index is visible and it works. */
+    .kernel-rail[data-rail-away] {
+      visibility: hidden;
     }
 
     /* A BROWSER THAT RUNS NOTHING GETS THE RAIL: nothing would ever drive --turn

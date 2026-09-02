@@ -60,6 +60,12 @@ const CORNER = { width: 1100, height: 700 };
  *  Check in this suite declares for itself. */
 const STACKED = { width: 820, height: 1180 };
 
+/** Wide enough for the band and too short for it — the regime the two Sections
+ *  drew a vertical Rail in and the Kernel draws the row in, and therefore the one
+ *  regime #192 moved. The same window `projects-panel` opens for its container
+ *  query, so a failure here and a failure there are comparable. */
+const WIDE_SHORT = { width: 1440, height: 450 };
+
 /** Two lengths that are meant to be the same length, in px. Chromium lays boxes
  *  out in 1/64px units and a clamp resolved twice is not resolved twice — this is
  *  rounding, and the failures it is drawn against are a whole column wide. */
@@ -100,6 +106,37 @@ export const check = {
             const rect = rail.getBoundingClientRect();
             return { x: rect.x, y: rect.y, w: rect.width, h: rect.height };
           };
+          /**
+           * WHAT IS ACTUALLY HIT AT EACH ENTRY, which is a different question
+           * from where the Rail is drawn and the one this Check did not ask.
+           *
+           * The Rail is out of flow and BEFORE the Gallery in the document, so
+           * a positioned Section following it is hit-tested ABOVE it however
+           * correctly the box paints. That shipped for one commit: every link in
+           * the Rail was dead at the Gallery's resting place and alive at the
+           * Eater Map's — because that Section is unpositioned — and both screens
+           * screenshot perfectly. A rect cannot see it and neither can
+           * `aria-current`.
+           *
+           * Reported as "is the thing under the pointer inside the Rail", per
+           * entry, because that is the whole claim: the reader can reach the
+           * index. Which ELEMENT it is is handed back too, so a failure names
+           * what is covering it.
+           */
+          const reachable = () =>
+            [...rail.querySelectorAll('[data-rail-item]')].map((item) => {
+              const rect = item.getBoundingClientRect();
+              const hit = document.elementFromPoint(rect.x + rect.width / 2, rect.y + rect.height / 2);
+              return {
+                entry: item.getAttribute('data-rail-for') ?? '(unbuilt)',
+                inside: hit instanceof Node && rail.contains(hit),
+                hit: hit
+                  ? hit.tagName.toLowerCase() +
+                    (typeof hit.className === 'string' && hit.className ? `.${hit.className.split(' ')[0]}` : '')
+                  : 'nothing',
+              };
+            });
+
           /** Which entry is current, by the Section it names. One name and not a
            *  list: `count` is what says whether more than one was marked, and it
            *  is asserted separately. */
@@ -151,10 +188,32 @@ export const check = {
             // One further rendering opportunity once it has arrived: the scroll
             // event for the last movement is delivered before it.
             await frame();
-            stops.push({ label, y, wants, landed: window.scrollY, box: box(), current: current() });
+            stops.push({
+              label,
+              y,
+              wants,
+              landed: window.scrollY,
+              box: box(),
+              current: current(),
+              reachable: reachable(),
+            });
           }
+
+          // AND THE FIRST SCREEN, WHERE THE RAIL IS INVISIBLE AND MUST THEREFORE
+          // BE UNREACHABLE. `opacity: 0` leaves a box hit-testable and focusable,
+          // so a fixed Rail put three invisible links over the Front Screen's own
+          // margin — the opposite failure from the one above, in the same
+          // mechanism, and it needs the same question asked with the answer
+          // inverted.
           window.scrollTo(0, 0);
           await frame();
+          await frame();
+          const atTop = {
+            turn: Number(getComputedStyle(document.documentElement).getPropertyValue('--turn')) || 0,
+            reachable: reachable(),
+            focusable: rail.querySelectorAll('a').length,
+            visibility: getComputedStyle(rail).visibility,
+          };
 
           const style = getComputedStyle(rail);
 
@@ -190,6 +249,7 @@ export const check = {
           return {
             rails: 1,
             stops,
+            atTop,
             margin,
             position: style.position,
             entries: rail.querySelectorAll('[data-rail-item]').length,
@@ -286,6 +346,43 @@ export const check = {
                 (stop.label.endsWith('again') ? ' BACK, which a one-way walk would pass.' : '.'),
             );
           }
+
+          // ---- and the reader can actually reach it -------------------------
+          const covered = stop.reachable.filter((one) => !one.inside);
+          if (covered.length > 0) {
+            failures.push(
+              `${name}: at ${stop.label} ${covered.length} of ${stop.reachable.length} entries are ` +
+                `covered — ${covered.map((one) => `${one.entry} is under ${one.hit}`).join(', ')}. The Rail ` +
+                'is out of flow and BEFORE the Gallery in the document, so a positioned Section after it ' +
+                'is hit-tested above it however correctly the box paints: the links are dead and both ' +
+                'screens screenshot perfectly. A z-index on the Rail is what settles it.',
+            );
+          }
+        }
+
+        // ---- invisible on the first screen means unreachable there ----------
+        if (read.atTop.turn > 0) {
+          failures.push(
+            `${name}: --turn is ${read.atTop.turn} at the top of the document, so the Rail is not ` +
+              'transparent there and this assertion is about the wrong screen',
+          );
+        } else {
+          const live = read.atTop.reachable.filter((one) => one.inside);
+          if (live.length > 0) {
+            failures.push(
+              `${name}: at the top of the document the Rail is drawn at --turn 0 and ${live.length} of ` +
+                `its ${read.atTop.reachable.length} entries are still hit-testable (\`visibility: ` +
+                `${read.atTop.visibility}\`). An invisible index over the Front Screen's own margin is ` +
+                `${read.atTop.focusable} links and ${read.atTop.focusable} tab stops a reader cannot see ` +
+                '— `opacity` hides a box and leaves both, so the Rail has to be taken out of hit testing ' +
+                'and out of the tab order while it is away.',
+            );
+          } else {
+            notes.push(
+              `${name}: at the top the Rail is \`visibility: ${read.atTop.visibility}\` — invisible, and ` +
+                'unreachable with it',
+            );
+          }
         }
 
         // ---- and the entry with no Section says so out loud ------------------
@@ -313,9 +410,26 @@ export const check = {
     }
 
     // ---- outside the band: one Rail, at the head of the index ---------------
-    {
-      const where = `stacked ${STACKED.width}x${STACKED.height}`;
-      const { context, page } = await open(browser, origin, { viewport: STACKED });
+    //
+    // TWO WINDOWS, AND THE SECOND IS THE ONE REGIME THIS TICKET ACTUALLY MOVED.
+    // The two Sections split the Rail on the WIDTH alone, so above 1100px and
+    // under 700 it was a vertical grid column inside each of them; the Kernel
+    // splits on the BAND, so out there it is the row. That is the only placement
+    // that changed and it would otherwise have shipped with no window opened on
+    // it — which is this file's own rule about a Check reading three windows
+    // because they are three compositions rather than three sizes.
+    //
+    // ONLY THE STACKED ONE SHARES A LEFT EDGE WITH THE COMPOSITION, and the flag
+    // says so rather than the assertion being quietly skipped. Wide and short,
+    // the Panel's composition is capped by the screen's HEIGHT and centred, so
+    // it stands hundreds of pixels in from the page's margin the Rail is set on
+    // — asserting they agree there would be asserting a coincidence, and
+    // src/kernel/NOTES.md carries why the Kernel cannot read that offset.
+    for (const { where, viewport, sharesEdge } of [
+      { where: `stacked ${STACKED.width}x${STACKED.height}`, viewport: STACKED, sharesEdge: true },
+      { where: `wide-short ${WIDE_SHORT.width}x${WIDE_SHORT.height}`, viewport: WIDE_SHORT, sharesEdge: false },
+    ]) {
+      const { context, page } = await open(browser, origin, { viewport });
       try {
         failures.push(...(await settle(page)).map((why) => `${where}: ${why}`));
 
@@ -390,7 +504,14 @@ export const check = {
           // stopped resolving would make the comparison below pass rather than
           // fail — which is NOTES.md's own trap, and the one the band's margin
           // probe exists for a few lines up.
-          if (!Number.isFinite(read.railInk) || !Number.isFinite(read.galleryInk)) {
+          if (!sharesEdge) {
+            notes.push(
+              `${where}: one Rail, in flow at ${read.railTop.toFixed(0)}px — its left edge is the page's ` +
+                `own at x=${read.railInk.toFixed(1)}, against the Section's content edge at ` +
+                `x=${read.galleryInk.toFixed(1)} with the composition centred inside it. The two are not ` +
+                'meant to agree here, and this is the one regime #192 moved',
+            );
+          } else if (!Number.isFinite(read.railInk) || !Number.isFinite(read.galleryInk)) {
             failures.push(
               `${where}: the Rail's left inset read ${read.railInk} and the Gallery's ${read.galleryInk} ` +
                 '— one of the two paddings did not resolve, so the two left edges were not compared at all',

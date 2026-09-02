@@ -357,11 +357,37 @@ box is in the same place at the Gallery's resting place and at the Eater Map's,
 to the pixel, and the `rail` Check compares the two rects rather than describing
 either.
 
-**It needs no z-index and would be broken by one.** In the band the Panel paints
-`background: none` and the Eater Map is not positioned at all, so nothing covers a
-fixed box that precedes them in tree order. A `z-index` would lift the Rail out
-over the Effect Stack, which treats the whole page and has treated the Rail with it
-since there was one to treat.
+**It needs a `z-index`, and this paragraph said the opposite for one commit.**
+The reasoning that was here — the Panel paints `background: none` in the band and
+the Eater Map is not positioned, so nothing covers a fixed box that precedes them
+in tree order — is true of PAINTING and false of HIT TESTING. `.projects-panel`
+*is* positioned and follows the Rail in tree order, so it is hit first across the
+whole of the page's left margin: **every link in the Rail was dead at the
+Gallery's resting place**, and alive at the Eater Map's, because that Section is
+unpositioned. Invisible, asymmetric, and a screenshot of either screen is
+perfect. The `rail` Check asks `document.elementFromPoint` at each entry now,
+which is the only question that sees it.
+
+What the `z-index` costs is the Effect Stack, and only across the crossing. `.fx`
+may not declare one — it would isolate the stack — so a positive one here paints
+the Rail over the treatment. At both resting places that is free, because
+`--fx-veil` runs to 0 across the Turn and the stack contributes nothing to either
+Section at rest; on the first screen the Rail is transparent anyway. What is left
+is the middle of the crossing, where an index at partial opacity goes untreated
+for a few hundred milliseconds. That is the trade, and it is smaller than three
+links that do not work.
+
+**And an invisible index is unreachable too, which `opacity` does not give you.**
+`opacity: 0` hides a box and leaves it hit-testable AND focusable, so the fixed
+Rail put three invisible links and three invisible tab stops over the Front
+Screen's own left margin — one of them over the photograph strip. The old Rail was
+a descendant of the Panel and simply was not up there. `--turn` is a number and a
+stylesheet cannot branch on one, so `rail.ts` writes `data-rail-away` while the
+Turn is at 0 through `onTurn()` — which is exactly what that seam is for — and the
+rule is **`visibility: hidden`** rather than `pointer-events: none`, because only
+the first of those two takes the tab stops with it. A reader who runs no script
+never gets the attribute, which is the same reader `@media (scripting: none)`
+hands `opacity: 1`, so the two answers agree by construction.
 
 ### It arrives with the page, and it runs the screen's height
 
@@ -451,6 +477,43 @@ Map's port goes past, and the same rule gives the right answer in both regimes
 without either being written down. The markup already marks the entry the page
 opens on, so the script agrees with the server at rest and writes nothing until
 the reader moves — which is also what a reader with no scripts is left holding.
+
+**What that costs a scriptless reader at a DEEP LINK, stated because it is a real
+regression and not an oversight.** `/portfolio/eater-map` is this same document,
+rewritten onto that path by the deployment (ADR 0001), so the bytes are identical
+at all three URLs — the build is static and cannot know which one was asked for.
+Each Section used to render its own selection, so a scriptless deep link to the
+Eater Map showed the Eater Map's entry current; now it shows the Gallery's,
+because that is what the one document says. With scripts it is right within a
+frame of the jump: the Shell's deep-link script scrolls to the Section and the
+scroll listener here answers. The criterion asked for "a sensible current entry"
+and the head of the index is one; making it exact would mean either a document per
+path, which ADR 0001 refuses, or a rewrite that varies the bytes, which the
+deployment does not do.
+
+### The place this leaves for the persistent PROJECTS
+
+#192 is the ordinary half of the persistence the author asked for and #193 is the
+hard half: one PROJECTS for the page, rather than the Front Screen's cut word, the
+Panel's hidden masthead and the Eater Map's own drawing of it. **The place that
+ticket takes over is `src/kernel/rail/`'s shape rather than a slot in this file**,
+and the shape is the deliverable: a Kernel part with its own component, its own
+Content, its own Tokens under `tokens/`, two regimes gated on the band, a
+client half mounted from `kernel.ts`, and a current state DERIVED from the
+Section at rest instead of declared by whichever Section is drawing it. Every one
+of those is what a persistent word needs too, and none of them existed in the
+Kernel before this.
+
+Two things this deliberately did NOT do for it, so the next ticket is not
+surprised. The word is a great deal harder than the list, because the Rail is
+three names in a margin that no Section's composition is solved against, and
+PROJECTS stands in the Projects Panel masthead's own box to the pixel — it is on
+the landing measure, `--landing-mast-size`, `--landing-cap` and
+`--landing-mast-top`, and the Front Screen's cut word morphs across the Turn. So
+a persistent PROJECTS is a Kernel element reading the landing rather than one
+reading a margin. And the Eater Map's masthead is still that Section's own
+element (`src/sections/eater-map/NOTES.md` says the slot is being held), which is
+where #193 starts.
 
 ### Its words are the one Content file the Editor cannot reach
 

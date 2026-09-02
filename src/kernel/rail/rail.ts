@@ -25,12 +25,42 @@
  * server at the top of the document and writes nothing until the reader moves.
  */
 
+import { onTurn } from '../turn';
+
 /** A pixel of travel is "already there" — the same slack page-turn.ts uses. */
 const SLACK = 1;
 
 export function mountRail(): void {
   const rail = document.querySelector<HTMLElement>('[data-rail]');
   if (!rail) return;
+
+  /**
+   * WHILE THE RAIL IS INVISIBLE IT IS ALSO UNREACHABLE.
+   *
+   * In the band the Rail is pinned to the window and revealed on `--turn`, so at
+   * the top of the document it is a transparent box lying over the Front
+   * Screen's own left margin — and `opacity: 0` hides a box while leaving it
+   * hit-testable AND focusable. Three invisible links and three invisible tab
+   * stops, one of them over the photograph strip. The Rail used to be a
+   * descendant of the Projects Panel and simply was not up there.
+   *
+   * `--turn` is a number and a stylesheet cannot branch on one, which is what
+   * `onTurn()` is for (src/kernel/turn.ts). The attribute is the state; the rule
+   * that spends it is in Rail.astro, and it is `visibility: hidden` rather than
+   * `pointer-events: none` because only the first of those two takes the tab
+   * stops with it.
+   *
+   * OUTSIDE THE BAND THIS IS INERT, and correctly so: out there the Rail is in
+   * flow at the head of the index with no reveal on it, and the rule that reads
+   * the attribute is inside the band's own query. The attribute is still written,
+   * because what it states is a fact about the Turn rather than about a regime.
+   *
+   * `onTurn` calls back at once with where the Turn already is, so this is right
+   * before the reader's first scroll and needs no second call here.
+   */
+  onTurn((turn) => {
+    rail.toggleAttribute('data-rail-away', turn <= 0);
+  });
   const entries = [...rail.querySelectorAll<HTMLElement>('[data-rail-item]')];
   const named = entries.filter((entry) => entry.dataset.railFor);
   const first = named[0];
