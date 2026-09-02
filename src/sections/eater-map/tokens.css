@@ -258,6 +258,37 @@
   --eater-map-tilt: 52deg;
   --eater-map-swing: 33deg;
 
+  /* ---- the light the edges are lit by, and it stands on the PAGE -------------
+     ONE LIGHT, SHARED BY THE SLAB AND EVERY CARD, or the drawing contradicts
+     itself: every extruded surface in the Exploded View is turned by the one
+     plane above, so a light stated per object would be four lights and a picture
+     that reads as a collage. `stage.ts` is where it is dotted and `edge.ts` is
+     what runs it round a perimeter, so both stages and every glass surface answer
+     to these three.
+
+     PAGE-FIXED AND NOT OBJECT-FIXED, WHICH IS THE WHOLE OF #197's CORRECTION.
+     The light used to be two constants in the SLAB's OWN axes, so turning the
+     object dragged its light round with it — the one thing a light must not do.
+     The local normal is carried into screen space by the tilt and the swing above
+     before it is dotted against this, which is why dragging the attitude now
+     moves which side of the edge is bright and dragging the light moves it the
+     other way.
+
+     `azimuth` IS A BEARING ON THE PAGE: 0deg straight up, turning clockwise, the
+     way every other angle in CSS is stated. `elevation` is how far out of the
+     page the light stands — 0deg grazing the screen, 90deg straight at the
+     reader. `ambient` is how lit the edge is before it is pointed anywhere, so 1
+     is a flat edge with no direction at all and 0 is a black one.
+
+     315 / 38 / 0.42 ARE SIGNED OFF, off a rendered sweep of four azimuths (#187,
+     SHEET H) — a light above and to the left of the page, which at the attitude
+     above makes the Slab's FOOT the brighter of the two flanks that face the
+     reader and its right flank the darker. Rotating the azimuth by 180deg swaps
+     those two, which is one of the mutations the `eater-map` Check exists for. */
+  --eater-map-light-azimuth: 315deg;
+  --eater-map-light-elevation: 38deg;
+  --eater-map-light-ambient: 0.42;
+
   /* ---- the Lift: three Cards off the face of a Slab that does not move ------
      What is left in the playhead once the plane is out of it: each Card's depth,
      each Card's slide along the plane, and the glass. `--eater-map-lift` runs 0

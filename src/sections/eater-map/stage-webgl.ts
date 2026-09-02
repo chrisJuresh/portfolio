@@ -11,7 +11,14 @@ import {
   Texture,
   WebGLRenderer,
 } from 'three';
-import { edgeShade, type Stage, type StageParts } from './stage';
+import {
+  edgeShade,
+  lightingIn,
+  type Lighting,
+  type Shade,
+  type Stage,
+  type StageParts,
+} from './stage';
 
 /**
  * The WebGL stage: the same Exploded View, drawn with a Slab that has real
@@ -20,9 +27,10 @@ import { edgeShade, type Stage, type StageParts } from './stage';
  * WHY THERE IS A SECOND STAGE AT ALL. Not so the Portfolio can have a renderer —
  * so the renderer is chosen by LOOKING. The shipped stage is DOM and it is very
  * good: it slices the solid into stacked full-perimeter rounded rectangles, so it
- * gets the silhouette AND the closed corner, and #189 turned that on. The one
- * thing it cannot do is put the captured pixels on the roll, because a slice is
- * one element with one background. **THAT GAP DOES NOT DECIDE #182**, which is
+ * gets the silhouette AND the closed corner, and #189 turned that on — and since
+ * #197 each of those slices is lit round its own perimeter by a conic gradient, so
+ * it gets the DIRECTION too. The one thing it cannot do is put the captured pixels
+ * on the roll. **THAT GAP DOES NOT DECIDE #182**, which is
  * what it was going to be read as: what is left to judge is whether a faceted
  * 24-slice fillet is distinguishable from this one's swept fillet at the size the
  * Slab is actually drawn. `design/tools/render-stages.mjs` is where it is
@@ -109,6 +117,7 @@ interface Look {
   swing: number;
   thickness: number;
   radius: number;
+  light: Lighting;
 }
 
 /**
@@ -244,8 +253,20 @@ class Slab {
     this.geometry.addGroup(front, Slab.INDICES - front, 1);
   }
 
-  /** @param edge the Slab's side colour, already in the renderer's working space */
-  write(width: number, height: number, depth: number, round: number, edge: Color): void {
+  /** @param edge the Slab's side colour, already in the renderer's working space
+   *  @param lit how lit each direction is, for the attitude and the light the page
+   *             is currently asking for. HANDED IN AND NOT IMPORTED, because the
+   *             light is PAGE-fixed since #197: a normal has to be carried into
+   *             screen space by the plane's own rotation before it is dotted, and
+   *             the rotation is a Token this class never reads. */
+  write(
+    width: number,
+    height: number,
+    depth: number,
+    round: number,
+    edge: Color,
+    lit: Shade,
+  ): void {
     const radius = Math.max(0, Math.min(round, depth, width / 2, height / 2));
     const ax = width / 2 - radius;
     const ay = height / 2 - radius;
@@ -272,10 +293,6 @@ class Slab {
       const sy = quadrant === 0 || quadrant === 1 ? ay : -ay;
       return [sx + out * Math.cos(angle), sy + out * Math.sin(angle)];
     };
-    // Every vertex has a real normal here, which is the whole of what the
-    // extrusion can put into the same formula that the DOM slices can only give
-    // a depth to.
-    const lit = edgeShade;
     const u = (x: number) => (x + width / 2) / width;
     const v = (y: number) => (y + height / 2) / height;
 
@@ -329,6 +346,9 @@ function signature(look: Look, edge: string, colour: string): string {
     look.swing,
     look.thickness,
     look.radius,
+    look.light.azimuth,
+    look.light.elevation,
+    look.light.ambient,
     edge,
     colour,
   ].join('|');
@@ -427,6 +447,11 @@ const mountWebglStage = async (parts: StageParts): Promise<Stage> => {
       // composition, and adding a depth nobody asked for would not be it.
       thickness: depth * token('--eater-map-slab-thickness'),
       radius: depth * token('--eater-map-slab-edge-radius'),
+      // NOT `token()`: a missing ambient reads as a BLACK edge, which is a
+      // decision nobody made, so the light's three fallbacks are `stage.ts`'s and
+      // are the values `tokens.css` states. In the signature above as well, so a
+      // light dragged in the Editor redraws this stage on the next frame.
+      light: lightingIn(style),
     };
   }
 
@@ -484,7 +509,18 @@ const mountWebglStage = async (parts: StageParts): Promise<Stage> => {
     // which is the same thing said the other way round.
     mesh.rotation.set((-look.tilt * Math.PI) / 180, 0, (-look.swing * Math.PI) / 180);
 
-    shape.write(look.width, look.height, look.thickness * look.width, look.radius * look.width, colour);
+    shape.write(
+      look.width,
+      look.height,
+      look.thickness * look.width,
+      look.radius * look.width,
+      colour,
+      // Every vertex has a real normal here, which is what this stage can put
+      // into the boundary's own formula. Since #197 the DOM slices can put a
+      // lateral normal into it too, through a conic gradient — so the two stages
+      // are asking one function the same question rather than two.
+      edgeShade({ tilt: look.tilt, swing: look.swing }, look.light),
+    );
     renderer.render(scene, camera);
   }
 

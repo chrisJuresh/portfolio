@@ -59,22 +59,74 @@ export type EdgeName = 'flat' | 'thick' | 'wrapped';
 export const STAGES: readonly StageName[] = ['dom', 'webgl'];
 export const EDGES: readonly EdgeName[] = ['flat', 'thick', 'wrapped'];
 
+/** Degrees to radians. */
+const RAD = Math.PI / 180;
+
 /**
- * Where the light for the Slab's edge stands, in the plane's own axes, and how
- * much of the edge is lit before it is pointed anywhere.
+ * Where the light for the edge stands, ON THE PAGE, and how much of the edge is
+ * lit before it is pointed anywhere.
  *
- * ON THE BOUNDARY AND NOT IN EITHER STAGE, because it is a fact about the DRAWING
- * rather than about a renderer: two stages lit differently would be a comparison
- * of two lightings as much as of two renderers, which is exactly the confound the
- * sheet exists to remove. What each stage can DO with it is the honest difference
- * — the extrusion points every vertex at it, and the DOM slices can only take its
- * depth component, because a slice is one element with one background.
+ * `azimuth` is a bearing on the page — 0deg straight up, turning clockwise, the
+ * way every other angle in CSS is stated — and `elevation` is how far out of the
+ * page the light stands, 0deg grazing and 90deg straight at the reader.
+ *
+ * ON THE BOUNDARY AND NOT IN EITHER STAGE, so one light serves both renderers and
+ * every glass surface the Cards are made of. `NOTES.md` carries why it is the page
+ * it is fixed to and not the object, and what that cost to get wrong.
  *
  * THE FRONT FACE IS NEVER LIT BY IT. It is a photograph, and both stages have to
  * draw the same photograph.
  */
-const EDGE_LIGHT = normalise(-0.36, 0.52, 0.78);
-const EDGE_AMBIENT = 0.62;
+export interface Lighting {
+  readonly azimuth: number;
+  readonly elevation: number;
+  readonly ambient: number;
+}
+
+/** The plane's attitude — the two angles `EaterMap.astro` writes as
+ *  `rotateX(tilt) rotateZ(swing)`, in degrees. */
+export interface Attitude {
+  readonly tilt: number;
+  readonly swing: number;
+}
+
+/** How lit a piece of the edge is, given which way it faces in the drawn
+ *  object's OWN axes. A multiplier on the edge's colour, never below the
+ *  ambient. */
+export type Shade = (nx: number, ny: number, nz: number) => number;
+
+/**
+ * A LIGHT TO FALL BACK ON, AND NOT A SECOND HOME FOR THE COMPOSITION'S.
+ *
+ * A Token that cannot be read must not paint NOTHING. The DOM stage bakes the
+ * shading into a `conic-gradient`, and one `NaN%` in one stop makes the whole
+ * `background` declaration invalid at parse time — so an unreadable Token would
+ * leave twenty-four transparent slices and an edge that was never drawn, which
+ * looks exactly like a Slab with no thickness. Zero is the honest reading of a
+ * missing TILT (no tilt), and it is not the honest reading of a missing ambient:
+ * zero ambient is a black edge, which is a decision nobody made.
+ *
+ * **NOTHING KEEPS THESE EQUAL TO `tokens.css`, AND NOTHING SHOULD.** They agree
+ * today because they were written together, but the composition's light is the
+ * Token's and an author who drags it is not obliged to come here — this is a
+ * floor under a degenerate page and never the value the drawing is made from. A
+ * Check that asserted the two agreed would be a Check that fails on a legitimate
+ * drag, which is the one thing `docs/adr/0006` says the suite may not do.
+ */
+const LIGHT: Lighting = { azimuth: 315, elevation: 38, ambient: 0.42 };
+
+/** The three light Tokens, off whatever element the stage is reading. */
+export function lightingIn(style: CSSStyleDeclaration): Lighting {
+  const token = (name: string, fallback: number) => {
+    const value = Number.parseFloat(style.getPropertyValue(name));
+    return Number.isFinite(value) ? value : fallback;
+  };
+  return {
+    azimuth: token('--eater-map-light-azimuth', LIGHT.azimuth),
+    elevation: token('--eater-map-light-elevation', LIGHT.elevation),
+    ambient: token('--eater-map-light-ambient', LIGHT.ambient),
+  };
+}
 
 function normalise(x: number, y: number, z: number): [number, number, number] {
   const length = Math.hypot(x, y, z) || 1;
@@ -82,19 +134,41 @@ function normalise(x: number, y: number, z: number): [number, number, number] {
 }
 
 /**
- * How lit a piece of the edge is, given which way it faces.
+ * How lit each direction is, for one attitude and one light.
  *
  * THE FORMULA IS HERE AND NOT IN EITHER STAGE for the same reason the light's
- * position is: two stages shading differently would be a comparison of two
- * shadings as much as of two renderers. What differs between them is what each
- * can put in — the extrusion has a real normal per vertex, and a DOM slice has
- * only the depth component, because one element has one background.
+ * position is. What differs between them is what each can put IN: the extrusion
+ * has a real normal per vertex, and a DOM slice has one background — which since
+ * #197 is a `conic-gradient`, so it has a real lateral normal too and the two
+ * stages are asking the same question of the same function.
  *
- * @returns a multiplier on the edge's own colour, never below the ambient
+ * THE ROTATION IS CSS's OWN, WRITTEN OUT. `rotateX(tilt) rotateZ(swing)` applies
+ * right to left, so the swing happens first and the matrix is `Rx . Rz` in CSS's
+ * axes — x right, y DOWN, z towards the reader. Multiplied out rather than held
+ * in an array, because every term is used exactly once and the third column of
+ * the first row is zero.
  */
-export function edgeShade(nx: number, ny: number, nz: number): number {
-  const facing = nx * EDGE_LIGHT[0] + ny * EDGE_LIGHT[1] + nz * EDGE_LIGHT[2];
-  return EDGE_AMBIENT + (1 - EDGE_AMBIENT) * Math.max(0, facing);
+export function edgeShade(attitude: Attitude, light: Lighting): Shade {
+  const ca = Math.cos(attitude.tilt * RAD);
+  const sa = Math.sin(attitude.tilt * RAD);
+  const cc = Math.cos(attitude.swing * RAD);
+  const sc = Math.sin(attitude.swing * RAD);
+  // The direction TOWARDS the light, in screen axes. `-cos` on y because y
+  // points down: a light bearing north stands UP the page.
+  const lateral = Math.cos(light.elevation * RAD);
+  const [lx, ly, lz] = normalise(
+    lateral * Math.sin(light.azimuth * RAD),
+    -lateral * Math.cos(light.azimuth * RAD),
+    Math.sin(light.elevation * RAD),
+  );
+  const ambient = Math.min(1, Math.max(0, light.ambient));
+  return (nx, ny, nz) => {
+    const sx = cc * nx - sc * ny;
+    const sy = ca * sc * nx + ca * cc * ny - sa * nz;
+    const sz = sa * sc * nx + sa * cc * ny + ca * nz;
+    const facing = sx * lx + sy * ly + sz * lz;
+    return ambient + (1 - ambient) * Math.max(0, facing);
+  };
 }
 
 /** Which edges each stage can actually draw. The empty cell is a result. */

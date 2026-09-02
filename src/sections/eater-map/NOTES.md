@@ -209,6 +209,14 @@ Every mutation below has been made on purpose and every one was caught.
 | the copy given `align-self: start` in the right-hand columns, and the Points put back on the left | four failures at each window: the copy in another column, off the foot, printed over the head, and the Points left of the drawing |
 | the lit dot written at the shoulder instead of at the terminus | all four dots, at all three moments and both windows — 322.5px to 625.2px from the rule's own last point |
 | `--eater-map-leader-tip` dragged to 0 | all four lit dots in the document painting nothing, at all three moments and both windows |
+| the lateral normal dropped out of the edge's gradient | ALL FIVE extruded surfaces at once — the Slab's four sides all at luminance 0.0488 and every glass surface's all at 0.0772, 0% apart against 5% required, at both windows. This is exactly what the code did before #197, and asking it per surface is what makes a build that lit the Slab and left the Cards flat fail too |
+| `--eater-map-light-azimuth` rotated 180deg | the Slab's foot at luminance 0.1174 against its right flank's 0.2690, at both windows — the two flanks that face the reader, lit the wrong way round |
+| the plane's rotation left out of `edgeShade`, so the LOCAL normal is dotted | the foot and the right flank both at luminance 0.0488, at both windows — an object-fixed light, which is the thing #197 removed |
+| the corner sweeps taken out of the perimeter (`ARC = 1`) | the largest step between two stops 100% of the gradient's whole spread against 50% allowed, at both windows |
+| every slice's `border-radius` multiplied by 4, so its outline pulls off the corner | three of the Slab's four corners finding no slice under them, at both windows — the notch four hinged walls leave. The fourth is legitimately covered by the deeper slices the projection displaces over it |
+| the edge's colour resolved in JavaScript instead of `color-mix(… var(…) …)` | every slice naming no Token, AND the mutated Token not moving the resolved gradient — two failures, because a string that names it and a `var()` that resolves are two claims |
+| the slice outline measured off `getBoundingClientRect` and rounded to whole pixels | every gradient different at 1100x700 from 1440x900. **Only the SECOND MOUNT catches this** — resizing one page and comparing the strings passes, because nothing recomputes on a resize, and that version of the assertion read as checking something and checked nothing |
+| the mounted stage reporting itself as something neither stage answers to | the Section reporting its stage as `chrome`, at 1440x900 — the twelfth group SKIPS under `--stage webgl` and had to be able to tell a skip from an Exploded View that never came up |
 
 **The `arrived()` mutation passed three times in a row before the Check was
 written the right way**, and it is the shape `scripts/checks/NOTES.md` warns about twice: *a
@@ -815,8 +823,10 @@ two implementations, and a second copy is one boundary answering a Token two way
 which is the confound the sheet exists to remove. So `stage-dom.ts` is a thin
 caller: it says which Tokens the Slab's solid is made of and that the picture is
 clipped back to the flat face, and `edge.ts` builds the slices for it and for
-`glass.ts` alike. Giving each slice a DIRECTION is #197, and is one line inside
-`edge.ts` rather than two lines in two files.
+`glass.ts` alike. **#197 is what made that pay.** The shading is one
+`conic-gradient` function and one light, so the Slab and all four glass surfaces
+are lit alike for the price of one line — and two copies of it would have been two
+lightings on one drawing.
 So the WebGL stage replaces exactly one element — the `<img>` — with exactly one
 `<canvas>`, and everything else about the composition is untouched. That is also
 why every Check passes either way: there is nothing in a Check's reach that
@@ -904,17 +914,23 @@ agree exactly at both, and do.
 
 |         | flat                 | thick                       | wrapped |
 | ------- | -------------------- | --------------------------- | ------- |
-| `dom`   | a picture with no depth | 24 sliced layers — **the shipped page** | — |
+| `dom`   | a picture with no depth | 24 sliced layers, each lit round its own perimeter — **the shipped page** | — |
 | `webgl` | one textured quad    | an extrusion, edge in paint | the captured pixels running over the fillet |
 
 **The empty cell is a result and it is NOT #182's answer**, which is the one thing
 about this table that has been got wrong. DOM has no extrusion, so a thickness in
 it is the solid **sliced**: each slice one flat element standing where that section
 of the solid stands, inset and rounded by exactly as much as the fillet is at that
-depth. Where it stops is that **a slice is one element and an element has one
-background**: the fillet cannot be brighter on the side facing the light, and it
-cannot carry the picture. Six faces would not help and neither would six hundred
-slices.
+depth. Where it stops is that a slice cannot carry the **picture**: the captured
+pixels end at the flat face and the edge is paint.
+
+**"A slice is one element with one background, so it cannot be brighter on the side
+facing the light" WAS THE SECOND HALF OF THAT, AND #197 DELETED IT.** It was false.
+An element has one background and a `conic-gradient` VARIES a background around a
+box, which is the one variation an edge needs — so every slice carries one stop per
+point of its own perimeter, each mixed by the shade of the direction the edge faces
+there. The fillet is faceted in DEPTH and smooth in PLAN, and only the picture is
+out of DOM's reach now.
 
 **WHAT DOES NOT FOLLOW FROM THAT IS THE RENDERER.** #189 was specified on the
 grounds that DOM cannot run captured pixels round a fillet, so the WebGL stage was
@@ -940,7 +956,7 @@ edge looked fake, and it is no longer the arithmetic.** The projection is parall
 and the tilt is 52°, so the bottom wall projects to `thickness x sin 52` of the
 Slab's width — 11.3px at 2560x1440 and 6.7px at 1440x900, with no dependence on
 where the edge stands in the frame. There is a real wall to draw now as well as a
-fillet, which is what #197 has to shade. The first DOM fake written here had no
+fillet, and #197 shaded both. The first DOM fake written here had no
 fillet at all — a stack of full-size layers behind the picture — and changed 754
 pixels out of 1.8 million against the flat frame, which read as a broken stage and
 was an honest rendering of a straw man.
@@ -955,6 +971,80 @@ So the captured pixels run off the front, round the corner, and stop precisely
 where the object does. `thick` and `wrapped` are the **same geometry** and differ
 only in which triangles belong to which material, which is what makes the pair an
 argument about one thing.
+
+### The edge has a direction, and one page-fixed light gives it (#197)
+
+`edge.ts` runs the light round a perimeter and `stage.ts` is where the light stands.
+Between them they are what makes an extrusion read as an object rather than as a
+grey band, and six things about them are expensive to rediscover.
+
+**A straight side is FLAT and that is correct.** Both endpoints of a side carry the
+same outward normal, so the gradient does not vary across it — a flat side's normal
+really is constant. The ramp happens only across a corner's angular range, which is
+why the shading is EXACT for the four sides and an approximation only round the
+fillet. Measured on the Slab: each corner sweep subtends about 1.3° of the conic
+angle, because the plan radius is 7.9 phone-pixels against a box 393 wide.
+
+**A SQUARE corner is one hard stop, and that is correct too.** Two coincident points
+carrying two different normals, which is a hard transition in a conic gradient
+because there is no arc to run a ramp along. Not hypothetical: the details sheet's
+plan corner is `28px 28px 0 0` in `cards.css`'s own words, so two of its four
+corners take that branch. **This is also the one thing the Check got wrong first** —
+it measured the largest step between consecutive stops and that surface read 100%
+of its spread while looking perfect. A step between two stops at the SAME ANGLE is
+skipped now, which is what tells a hard CORNER from a shading that steps.
+
+**The gradient is EXACTLY scale-invariant, which is what lets it be computed once
+at mount.** Every stop's angle is `atan2(x, −y)` of a point whose coordinates all
+scale together, so multiplying a width, a height and the radii by one factor leaves
+every angle identical. Verified at the three widths the Slab is drawn at — 220, 380
+and 478 — which produce **one** gradient string and not three, and asserted by
+comparing two mounts at the two ends of the band: all 120 gradients come out byte
+for byte. So there is no measurement, no `ResizeObserver` and nothing to redo when
+the window changes size. Rounded to whole pixels the aspect drifts and the worst
+stop moves 0.0627°, which is why an outline is stated as proportions and never read
+off the drawn box — and why a Card's plan is **not** divided by its boost while
+every length beside it is.
+
+**The light stands on the PAGE and not on the object, and that is the correction.**
+It was two constants in the Slab's own axes, which means turning the object dragged
+its light round with it. The local normal is carried into screen space by
+`Rx(tilt)·Rz(swing)` — CSS's own order, CSS's own axes, y DOWN — before it is
+dotted. `extrude` reads both off its own HOST rather than taking them as a
+parameter, because every caller is inside `.eater-map` and custom properties
+inherit: there is then no way for two callers to be handed two lights.
+`--eater-map-light-azimuth`, `-elevation` and `-ambient` are Tokens; `stage.ts`
+carries fallbacks so that a Token nobody can read cannot make one `NaN%` invalidate
+a whole `background` declaration and leave a transparent edge, and **nothing keeps
+those fallbacks equal to `tokens.css`** — they are a floor under a degenerate page,
+not a second home for the value.
+
+**ONLY TWO OF THE FOUR SIDES CAN BE LIT AT ONCE.** Opposite sides of a rectangle
+carry exactly opposite normals, so their dots against the light are exact negatives
+and one of each pair is always clamped to the ambient. At 52°/33° with the light at
+315°/38° the Slab's four sides come out at shade 0.42 / 0.42 / 0.665 / 0.646 — head
+and right flank at the ambient, foot and left flank lit. **That is not a bug and it
+is not a gap in the shading**: it is also which two flanks the reader can SEE. A
+wall is visible when its screen normal points at the reader, which is the right
+flank (`sz = +0.43`) and the foot (`sz = +0.66`). So "every side a different
+brightness" reads as the sides DIFFERING, and what the drawing shows is a lit foot
+against a darker right flank.
+
+**The Check reads those as WCAG luminance and never as a channel mean**, because
+`scripts/checks/lib/colour.mjs` owns the one number three bytes become and says why
+in a sentence. Off `#9a948a` the Slab's four sides measure 0.0488 / 0.0488 / 0.1243
+/ 0.1170 — 60.7% apart, largest step 22.3% of the spread — and off the Cards' own
+edge colour all four glass surfaces measure 0.0772 / 0.0772 / 0.2116 / 0.1981, 63.5%
+apart. All of it is printed as notes on a passing run, so a reader of the log can
+tell a comfortable pass from one sitting on a threshold.
+
+**Where the gradient is expensive.** Twenty-eight perimeter points and a closing
+stop, each a `color-mix()` naming a Token, is about 2 KB of inline style per slice —
+so 47 KB for the Slab and about 240 KB across the page's 120 slices. That is runtime
+DOM rather than shipped bytes and costs the page nothing to load, but it is a
+quarter of a megabyte of CSS to re-parse per frame for anything that rebuilds an
+edge while a Token is being dragged, which is #196's problem to price rather than
+this one's.
 
 ### Three things about the WebGL stage that are decisions
 

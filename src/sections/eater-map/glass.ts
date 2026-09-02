@@ -227,6 +227,24 @@ export default function mountGlass(root: HTMLElement): void {
   const cards = [...root.querySelectorAll<HTMLElement>('[data-eater-map-card]')];
   if (cards.length === 0) return;
 
+  /** How far a surface's fillet rolls in across its face, in the APP'S OWN PIXELS
+   *  — the plan half of `CARD_ROUND`, for the shading (#197).
+   *
+   *  A SHARE OF THE SLAB'S WIDTH TIMES THE PHONE'S OWN WIDTH, which is the same
+   *  arithmetic `CARD_ROUND` does in `cqw` and `APP_W` puts into the Card's units.
+   *  Held to the thickness here as `min()` holds it there, so one constraint is not
+   *  two opinions. */
+  const style = getComputedStyle(root);
+  const token = (name: string) => {
+    const value = Number.parseFloat(style.getPropertyValue(name));
+    return Number.isFinite(value) ? value : 0;
+  };
+  const round =
+    Math.max(
+      0,
+      Math.min(token('--eater-map-card-edge-radius'), token('--eater-map-card-thickness')),
+    ) * APP_W;
+
   const ruler = document.createElement('div');
   ruler.setAttribute('aria-hidden', 'true');
   // Off the left of the document, which costs no scroll in a left-to-right page,
@@ -262,6 +280,22 @@ export default function mountGlass(root: HTMLElement): void {
             `${surface.radii[2]}px`,
             `${surface.radii[3]}px`,
           ],
+          // THE SAME OUTLINE AS ARITHMETIC, for the shading (#197), in the app's
+          // own pixels — which is what `measure` already handed back, so a Card's
+          // plan costs one field and no second measurement. Its four radii are the
+          // browser's own clamped values, and the details sheet's really are
+          // `28 / 28 / 0 / 0`, so two of its corners are a hard stop in the
+          // gradient and two are a sweep.
+          //
+          // NOT DIVIDED BY THE BOOST, unlike every length beside it. The gradient
+          // is exactly scale-invariant, so scaling this outline changes not one
+          // stop — and the boost is a scale.
+          plan: {
+            w: surface.w,
+            h: surface.h,
+            radii: surface.radii,
+            fillet: round,
+          },
           // ACROSS THE FACE, in the Card's own units — divided by the boost,
           // because the Card's face is scaled by it.
           fillet: `(${CARD_ROUND}) * ${APP_W}px / ${BOOST}`,

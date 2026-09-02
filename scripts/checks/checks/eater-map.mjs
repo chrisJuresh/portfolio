@@ -1,7 +1,8 @@
+import { luminance } from '../lib/colour.mjs';
 import { DESK, open, settle } from '../lib/page.mjs';
 
 /**
- * The Eater Map Section's Exploded View — the eleven things about it that break
+ * The Eater Map Section's Exploded View — the twelve things about it that break
  * without anybody noticing.
  *
  * None is aesthetic. Every Token in `src/sections/eater-map/tokens.css` may be set
@@ -299,6 +300,58 @@ const PARALLEL = 0.01;
  *  other assertion here passes. */
 const TOGETHER = 0.2;
 const RISEN = 1;
+
+/**
+ * How far along a corner's own radius the page is sampled for an open corner, as
+ * a share of it.
+ *
+ * HALF, BECAUSE THAT IS THE MIDDLE OF THE NOTCH. The region a hinged wall would
+ * leave empty runs from the corner's centre out to a full radius along the
+ * diagonal, so half a radius is as far from both boundaries as it is possible to
+ * stand — about 2.8px at DESK and 2.2px at the short end. Measured at three
+ * windows: every corner finds a slice at 0.3 through 0.7 and the head corners
+ * start missing at 0.85, which is the fillet running out rather than a hole.
+ */
+const AT_THE_CORNER = 0.5;
+
+/**
+ * How different two of an edge's sides have to be to count as differently lit, as
+ * a share of the brighter — and the same margin the Slab's foot has to beat its
+ * right flank by. In WCAG luminance, which is what `lib/colour.mjs` turns three
+ * channels into.
+ *
+ * Measured 60.7% on the Slab. The mutation this floor exists for — the lateral
+ * normal dropped, which is what the code did before #197 — measures exactly 0, so
+ * the number only has to be off the floor rather than tuned.
+ */
+const DIRECTED = 0.05;
+
+/**
+ * The largest step between two consecutive stops, as a share of the whole
+ * gradient's spread.
+ *
+ * Measured 22.3% on the Slab. With the corner sweeps taken out the largest step IS
+ * the whole spread and it measures 100%, so half is well clear of both.
+ */
+const CONTINUOUS = 0.5;
+
+/** How close two stops' angles have to be to count as the SAME angle, in degrees.
+ *  `edge.ts` writes them at two decimal places, so two coincident points come back
+ *  identical and this is only guarding the comparison. */
+const SAME_ANGLE = 0.005;
+
+/** Something the edge is definitely not, for asking whether the Token is live
+ *  inside the gradient. Any colour would do; a saturated one is unmistakable in a
+ *  screenshot if the restore ever fails. */
+const MUTANT_EDGE = '#ff0000';
+
+/** The two renderers `src/sections/eater-map/stage.ts` will admit to being, so a
+ *  stage that never mounted can be told from the one this suite was asked to
+ *  compare against. Written out rather than lifted from that module, for the reason
+ *  `lib/page.mjs` lifts `THEME_KEY` and cannot here: this is a `.mjs` script and
+ *  Node will not import a `.ts` one. A rename shows up as this Check reporting that
+ *  the Exploded View never came up. */
+const STAGES = ['dom', 'webgl'];
 
 /**
  * How many glass surfaces each Card draws — `cards.ts`'s own list written a second
@@ -2199,6 +2252,551 @@ async function everyReaderGetsIt(browser, origin, ordinary) {
   return failures;
 }
 
+/**
+ * What the slice stack baked into its gradients, read off the page.
+ *
+ * SERIALISED INTO THE PAGE AND CALLED TWICE — once at each end of the band — so it
+ * closes over nothing and takes its two numbers as arguments. Everything it reads
+ * is `edge.ts`'s OWN OUTPUT: the string each slice was written with, the colours the
+ * browser resolved that string to, and what is actually under the four corners of
+ * the Slab. Nothing here recomputes the shading, because a Check that re-derived it
+ * would be asking the composition to confirm its own arithmetic.
+ *
+ * CHANNELS AND NOT A BRIGHTNESS. Turning three bytes into the one number a Check
+ * asserts on is `lib/colour.mjs`'s job and it is emphatic about how: WCAG
+ * luminance, linearised and weighted, never a channel mean. So this half reads the
+ * colour and the node half weighs it, which is the arrangement the `ground` Check
+ * already has.
+ *
+ * IT PUTS THE SECTION ON SCREEN FIRST, and it has to: `elementsFromPoint` takes
+ * VIEWPORT coordinates, and `settle()` leaves the page at the top with the Exploded
+ * View a couple of thousand pixels below the fold — where every rect still reads
+ * correctly and every hit test finds nothing at all. The snapping is lifted for the
+ * scroll for the reason `scripts/checks/NOTES.md` gives, and put back.
+ *
+ * @param {{ corner: number, mutant: string }} spec
+ */
+async function edgeAsBuilt(spec) {
+  const section = document.querySelector('.eater-map');
+  const slab = document.querySelector('.eater-map__slab');
+  const cards = document.querySelector('.eater-map__cards');
+  if (!section || !slab || !cards) {
+    return { missing: 'the Section, the Slab or the Cards are not on the page' };
+  }
+
+  const kernel = window.portfolio;
+  const ports = kernel?.ports?.() ?? [];
+  kernel?.snapping?.(false);
+  window.scrollTo(0, ports[ports.length - 1] ?? 0);
+  await new Promise((frame) => requestAnimationFrame(frame));
+  await new Promise((frame) => requestAnimationFrame(frame));
+
+  const stage = section.dataset.eaterMapStage ?? '(never mounted)';
+  const slices = [...document.querySelectorAll('.eater-map__slice')];
+  const style = getComputedStyle(section);
+  const token = (name) => Number.parseFloat(style.getPropertyValue(name));
+
+  /** Every stop of a resolved gradient, as an angle and three 0-255 channels.
+   *
+   *  Chromium serialises a computed gradient's colours with the `var()` and the
+   *  `color-mix()` already resolved — as `color(srgb …)` for anything in sRGB — so
+   *  these are the colours the reader is shown and not the expressions `edge.ts`
+   *  wrote. `rgb()` is read too, because which of the two an engine picks is its
+   *  own business. Clamped, because `lib/colour.mjs` refuses a channel outside
+   *  0-255 and a `color(srgb …)` may serialise one a hair over after a mix. */
+  const stopsIn = (value) =>
+    [
+      ...value.matchAll(
+        /(?:color\(srgb ([-\d.]+) ([-\d.]+) ([-\d.]+)[^)]*\)|rgba?\(([^)]*)\))\s+([-\d.]+)deg/g,
+      ),
+    ].map((found) => {
+      const channels = found[4]
+        ? found[4]
+            .split(/[\s,/]+/)
+            .filter(Boolean)
+            .slice(0, 3)
+            .map((one) => Number.parseFloat(one))
+        : [Number(found[1]) * 255, Number(found[2]) * 255, Number(found[3]) * 255];
+      return {
+        at: Number(found[5]),
+        rgb: channels.map((one) => Math.min(255, Math.max(0, one))),
+      };
+    });
+
+  /** The stop nearest one bearing, wrapping. For 0, 90, 180 and 270 that is always
+   *  an ENDPOINT OF THE SIDE those bearings point at — a rectangle's four sides
+   *  each contain one of them — and a side's two endpoints carry the same normal
+   *  and therefore the same colour, so a tie between them is not a choice. */
+  const near = (stops, bearing) =>
+    stops.reduce(
+      (best, stop) => {
+        const apart = Math.abs(((stop.at - bearing + 540) % 360) - 180);
+        return apart < best.apart ? { apart, rgb: stop.rgb } : best;
+      },
+      { apart: Number.POSITIVE_INFINITY, rgb: null },
+    ).rgb;
+
+  // ---- one report per extruded SURFACE ------------------------------------
+  // THE SLAB AND EVERY GLASS SURFACE OF EVERY CARD, which since #190 all come out
+  // of `edge.ts` and are therefore all lit by the one light `stage.ts` holds. That
+  // is the claim #197 makes and it is only checkable per surface: a build that lit
+  // the Slab and left the Cards flat would pass any assertion about the Slab alone.
+  const surfaces = {};
+  for (const slice of slices) {
+    const name = slice.dataset.eaterMapEdge ?? '(unnamed)';
+    surfaces[name] ??= { slices: 0, walls: 0, blank: 0, unnamed: 0, flat: 0, ring: [], sides: null };
+    const seen = surfaces[name];
+    seen.slices += 1;
+    const authored = slice.style.background;
+    if (!authored.startsWith('conic-gradient(')) seen.flat += 1;
+    if (!authored.includes('var(--eater-map-')) seen.unnamed += 1;
+    const computed = getComputedStyle(slice).backgroundImage;
+    if (computed === 'none') seen.blank += 1;
+    // THE DEEPEST WALL, and named rather than counted: the wall is where the whole
+    // normal is lateral, so its gradient carries the four sides at their full
+    // difference. `edge.ts` writes which part each slice is.
+    if (slice.dataset.eaterMapSlice === 'wall') {
+      seen.walls += 1;
+      const stops = stopsIn(computed);
+      if (stops.length > 0) {
+        // THE ANGLES ARE KEPT WITH THE COLOURS, and that is not for the report. Two
+        // stops at the SAME angle are a hard stop, which is what a SQUARE corner
+        // draws and is correct — the details sheet's plan corner really is
+        // `28px 28px 0 0`, so two of its four corners have no arc to ramp along.
+        // Without the angle a Check cannot tell that from a shading that steps.
+        seen.ring = stops.map((stop) => ({ at: stop.at, rgb: stop.rgb }));
+        seen.sides = {
+          head: near(stops, 0),
+          right: near(stops, 90),
+          foot: near(stops, 180),
+          left: near(stops, 270),
+        };
+      }
+    }
+  }
+
+  // ---- the four corners of the Slab ---------------------------------------
+  // WHERE THE NOTCH WOULD BE. Four hinged walls have to be inset by the corner
+  // radius at both ends, so they leave an empty quarter-disc at each corner —
+  // between the picture, which is clipped back to a RECTANGLE inset by the radius,
+  // and the Slab's own rounded outline. Along the outward diagonal from the
+  // corner's centre that region runs from nothing out to a full radius, so half a
+  // radius is its middle and the most margin there is to have.
+  //
+  // A ZERO-SIZED PROBE ON THE PLANE IS WHAT PROJECTS IT, which is the same device
+  // the parallel-projection assertion above uses and for the same reason: the Check
+  // states the point in the drawing's own plan and lets the composition's rotation
+  // say where that lands, rather than doing the projection itself.
+  //
+  // AND THE RADIUS COMES FROM THE TOKENS, NOT FROM A SLICE'S OWN BORDER-RADIUS.
+  // That looks like the thing NOTES.md warns against — recomputing what the page
+  // could be asked for — and here it is the opposite. The point being sampled is
+  // where the composition SAYS its corner is; taking it off the element instead
+  // would let a slice drawn to the wrong outline move the sample onto itself and
+  // pass. Measured: with every slice's radius multiplied by 4, reading the Tokens
+  // fails three corners and reading the element fails none.
+  const outline = Math.max(
+    0,
+    Math.min(token('--eater-map-slab-edge-radius'), token('--eater-map-slab-thickness')),
+  );
+  const box = slab.getBoundingClientRect();
+  // A percentage `left` resolves against the containing block's width and a
+  // percentage `top` against its height, and the radius is a share of the WIDTH —
+  // so the two are not the same number on a box 2.17 times as tall as it is wide.
+  const across = outline * 100;
+  const down = box.height > 0 ? ((outline * box.width) / box.height) * 100 : 0;
+  const offAcross = (spec.corner / Math.SQRT2) * across;
+  const offDown = (spec.corner / Math.SQRT2) * down;
+  const held = slices.map((slice) => slice.style.pointerEvents);
+  // LIFTED FOR THE LENGTH OF THE READ AND PUT STRAIGHT BACK. A slice is
+  // `pointer-events: none` so that the drawing is not a hit target, and an element
+  // with it is not in `elementsFromPoint`'s answer at all — so without this every
+  // corner reads as open and the assertion is inverted rather than merely wrong.
+  for (const slice of slices) slice.style.pointerEvents = 'auto';
+  const corners = {};
+  for (const [name, at] of Object.entries({
+    head_left: [across - offAcross, down - offDown],
+    head_right: [100 - across + offAcross, down - offDown],
+    foot_right: [100 - across + offAcross, 100 - down + offDown],
+    foot_left: [across - offAcross, 100 - down + offDown],
+  })) {
+    const probe = document.createElement('div');
+    probe.style.cssText = `position:absolute;left:${at[0]}%;top:${at[1]}%;width:0;height:0`;
+    cards.append(probe);
+    const point = probe.getBoundingClientRect();
+    probe.remove();
+    const under = document.elementsFromPoint(point.left, point.top);
+    corners[name] = {
+      onScreen:
+        point.left >= 0 &&
+        point.top >= 0 &&
+        point.left < window.innerWidth &&
+        point.top < window.innerHeight,
+      // ANYWHERE IN THE STACK AND NOT THE TOPMOST. A Card is allowed to stand in
+      // front of a corner of the Slab — the search bar does, at 1440x900 — and the
+      // question is whether the SOLID is closed there, which a slice under the
+      // point answers whatever else is over it.
+      covered: under.some((element) => element.classList?.contains('eater-map__slice')),
+      top: under[0] ? String(under[0].className || under[0].tagName).split(' ')[0] : '(nothing)',
+    };
+  }
+  for (const [index, slice] of slices.entries()) {
+    const was = held[index];
+    if (was) slice.style.pointerEvents = was;
+    else slice.style.removeProperty('pointer-events');
+  }
+
+  // ---- is the Token still live inside the gradient? -----------------------
+  // ASKED OF THE RESOLVED VALUE, because the authored string naming the Token is
+  // only half the claim: a `var()` that resolves to nothing leaves a stop the parser
+  // drops, and "the string mentions it" would still pass.
+  const wall = slices.find(
+    (slice) => slice.dataset.eaterMapEdge === 'slab' && slice.dataset.eaterMapSlice === 'wall',
+  );
+  const wasEdge = section.style.getPropertyValue('--eater-map-slab-edge');
+  const before = wall ? getComputedStyle(wall).backgroundImage : '';
+  section.style.setProperty('--eater-map-slab-edge', spec.mutant);
+  const after = wall ? getComputedStyle(wall).backgroundImage : '';
+  if (wasEdge) section.style.setProperty('--eater-map-slab-edge', wasEdge);
+  else section.style.removeProperty('--eater-map-slab-edge');
+
+  kernel?.snapping?.(true);
+  return {
+    stage,
+    count: slices.length,
+    /** The strings `edge.ts` WROTE, which is what a second mount must reproduce. */
+    authored: slices.map((slice) => slice.style.background),
+    surfaces,
+    moved: before !== '' && after !== '' && before !== after,
+    // The three light Tokens, so a Token deleted while `stage.ts`'s fallbacks
+    // quietly hold the drawing together is a failure rather than a silence.
+    light: {
+      azimuth: style.getPropertyValue('--eater-map-light-azimuth').trim(),
+      elevation: style.getPropertyValue('--eater-map-light-elevation').trim(),
+      ambient: style.getPropertyValue('--eater-map-light-ambient').trim(),
+    },
+    corners,
+  };
+}
+
+/**
+ * TWELVE. THE EDGE HAS A DIRECTION, AND ONE LIGHT GIVES IT (#197).
+ *
+ * Every slice of every extrusion was one flat colour, and `stage-dom.ts` said why
+ * in its own comment: a slice is one element with one background, so it cannot be
+ * brighter on the side facing the light. A `conic-gradient` VARIES a background
+ * around a box, so each slice now carries one stop per point of its own perimeter —
+ * and what this asserts is the five things that go wrong with that.
+ *
+ * READ AS WCAG LUMINANCE AND NEVER AS A CHANNEL MEAN, which is `lib/colour.mjs`'s
+ * own rule: the browser half hands back three channels and the node half weighs
+ * them, the same split the `ground` Check has.
+ *
+ * ONE. THE SIDES DIFFER, ON EVERY SURFACE. `edge.ts` is the Slab's extrusion and
+ * every glass surface of every Card since #190, so this is asked per surface rather
+ * than of the Slab: a build that lit the Slab and left the Cards flat passes any
+ * assertion about the Slab alone. What a build that dropped the lateral normal
+ * fails — the shipped code before #197, exactly — is all of them at once, and it
+ * measures zero rather than something small.
+ *
+ * TWO. THE LIGHT SAYS WHICH WAY ROUND, and this is the one opinion here about the
+ * light's own Tokens. It is #187's: the light stands above and to the LEFT of the
+ * page, which at the plane's attitude makes the Slab's FOOT the brighter of the two
+ * flanks facing the reader. Rotate the azimuth by 180deg and the two swap, which is
+ * the whole point of a light that is page-fixed rather than object-fixed. Asked of
+ * the Slab alone, because the Cards are turned by the same plane and a second
+ * statement of the same fact is not a second assertion.
+ *
+ * **ONLY TWO OF THE FOUR SIDES CAN BE LIT AT ONCE, and that is geometry rather than
+ * a weakness here.** Opposite sides of a rectangle carry exactly opposite normals,
+ * so one of each pair always faces away and sits at the ambient — the Slab's head
+ * and right flank both measure 0.0488 against its foot's 0.1243. "Every side a
+ * different brightness" is therefore read as the sides DIFFERING.
+ *
+ * THREE. THE BRIGHTNESS RUNS CONTINUOUSLY ROUND EACH ROUND CORNER. A corner is
+ * where a shading that is really four flat sides gives itself away, so what is
+ * asserted is that no single step between two consecutive stops is a large share of
+ * the whole gradient's spread. Measured: 22.3% on the Slab, and 100% with the corner
+ * sweeps taken out, because then the largest step IS the whole spread.
+ *
+ * **A STEP BETWEEN TWO STOPS AT THE SAME ANGLE IS SKIPPED, and leaving that out
+ * made this fail a surface that is drawn correctly.** A SQUARE corner is two
+ * coincident points carrying two different normals — a hard transition, and the
+ * right drawing, because there is no arc to run a ramp along. The details sheet's
+ * plan corner is `28px 28px 0 0` in the vendored stylesheet's own words, so two of
+ * its four corners are exactly that and it measured 100% while looking perfect. The
+ * angle is what tells a hard CORNER from a shading that steps, which is why the
+ * stops are carried with theirs.
+ *
+ * FOUR. NO CORNER OF THE SLAB IS OPEN. The page is sampled at each of its four
+ * corners, half a radius out along the diagonal — see `edgeAsBuilt` for why that is
+ * the point with the most margin — and a corner with no slice under it is a corner
+ * showing the page behind the Slab. This is the assertion #189's abandoned
+ * prescription would have failed: four hinged walls leave a 17.1 x 11.4px notch at
+ * each corner.
+ *
+ * FIVE. THE TOKEN IS STILL INSIDE THE GRADIENT. `--eater-map-slab-edge` has to
+ * survive into every stop, or the Editor's drag of it moves nothing — which is
+ * exactly what resolving the colour in JavaScript would cost, and it is the cheapest
+ * thing to do by accident. Asked twice: the authored string has to name a Token, and
+ * MUTATING it has to move the colour the browser resolved it to. The first alone
+ * passes for a `var()` that resolves to nothing, and a gradient the parser rejected
+ * computes to `none` — a slice that is present, named, full-perimeter and
+ * TRANSPARENT, which is the half of "the page's ground rather than the edge's
+ * colour" that element identity cannot answer.
+ *
+ * AND THE GRADIENT DOES NOT DEPEND ON THE WINDOW, which is two questions and not
+ * one — and the obvious way of asking them asks neither.
+ *
+ * **"Resize the page and compare the strings" CANNOT FAIL, and it reads exactly as
+ * though it can.** The gradient is computed once at mount, so a resize does not
+ * touch it and the two strings are the same string; a build that DID recompute would
+ * produce the same string anyway, because the gradient is exactly scale-invariant
+ * (`edge.ts`). Measured, with the outline taken off `getBoundingClientRect` and
+ * rounded to whole pixels: it passes. So the two halves are asked separately. The
+ * SAME page is resized across the band and every assertion above is run again on it
+ * — a build whose edge is wrong once the Slab has changed size fails there, whatever
+ * its string says. And a SECOND page is opened at the short end, so its own mount's
+ * strings can be compared with the first mount's: that is the scale invariance, and
+ * it is what an outline measured off a box rather than stated as a proportion fails.
+ *
+ * UNDER `--stage webgl` THERE IS NOTHING HERE TO ASK ABOUT THE SLAB, and the skip is
+ * printed rather than silent. That stage draws the Slab's edge into a canvas with a
+ * real normal per vertex and no slices at all, so the Slab's assertions are about an
+ * implementation it does not have — while a stage that never mounted at all looks
+ * identical from here and is a failure. It reads the same light off the same
+ * boundary, which is what putting the light there was for.
+ */
+async function theEdgeHasADirection(browser, origin) {
+  const { context, page } = await open(browser, origin, { viewport: WIDE });
+  /** What the edge actually measured, so a passing run says what it saw. Every
+   *  tolerance in this group was chosen off these. */
+  const notes = [];
+  try {
+    const failures = await settle(page);
+    const spec = { corner: AT_THE_CORNER, mutant: MUTANT_EDGE };
+    const wide = await page.evaluate(edgeAsBuilt, spec);
+    if (wide.missing) {
+      failures.push(`${WIDE.width}x${WIDE.height}: ${wide.missing}`);
+      return { failures, notes };
+    }
+    // A STAGE THAT NEVER MOUNTED IS A FAILURE AND NOT A SKIP, and the two look
+    // identical from here — both are "the stage is not dom".
+    if (wide.stage !== 'dom') {
+      if (STAGES.includes(wide.stage)) {
+        notes.push(`the edge: skipped — the ${wide.stage} stage draws the Slab's in a canvas`);
+      } else {
+        failures.push(
+          `${WIDE.width}x${WIDE.height}: the Section reports its stage as ${wide.stage}, so the Exploded ` +
+            'View never came up and nothing about the edge was checked',
+        );
+      }
+      return { failures, notes };
+    }
+
+    // THE SAME PAGE, CARRIED ACROSS THE BAND. Not a second page: what is asked here
+    // is whether THIS mount's edge is still right once the Slab has changed size
+    // under it, and a second page would answer with a second mount.
+    await page.setViewportSize(SHORT);
+    const short = await page.evaluate(edgeAsBuilt, spec);
+    if (short.missing) failures.push(`${SHORT.width}x${SHORT.height} resized: ${short.missing}`);
+
+    for (const [at, now] of [
+      [WIDE, wide],
+      [SHORT, short],
+    ]) {
+      if (now.missing) continue;
+      const where = `${at.width}x${at.height}`;
+      if (now.count === 0) {
+        failures.push(
+          `${where}: nothing on the page is a slice, so no object has an edge — the whole of this was ` +
+            'checked against nothing',
+        );
+        continue;
+      }
+      if (!now.moved) {
+        failures.push(
+          `${where}: setting --eater-map-slab-edge to ${MUTANT_EDGE} left the Slab wall's resolved ` +
+            'gradient unchanged, so the Token is not live inside it however the string reads',
+        );
+      }
+      for (const [name, value] of Object.entries(now.light)) {
+        if (value === '') {
+          failures.push(
+            `${where}: --eater-map-light-${name} is not declared, so the light is whatever stage.ts ` +
+              'falls back to and the author has no control to drag — the fallbacks are a guard against ' +
+              'an unreadable Token, not a home for the value',
+          );
+        }
+      }
+
+      // EVERY EXTRUDED SURFACE, which is the Slab and every glass surface of every
+      // Card. Named in the failure, because "the edge is flat" is a different bug
+      // from "the search bar's edge is flat".
+      const lit = {};
+      for (const [name, seen] of Object.entries(now.surfaces)) {
+        if (seen.flat > 0) {
+          failures.push(
+            `${where}: ${seen.flat} of the ${name} edge's ${seen.slices} slices are painted with one flat ` +
+              'colour rather than a conic-gradient, so that much of it has no direction',
+          );
+        }
+        if (seen.unnamed > 0) {
+          failures.push(
+            `${where}: ${seen.unnamed} of the ${name} edge's ${seen.slices} slices name no Token in the ` +
+              'gradient they were written with — the colour has been resolved in JavaScript, and the ' +
+              "Editor's drag of that Token now moves nothing",
+          );
+        }
+        if (seen.blank > 0) {
+          failures.push(
+            `${where}: ${seen.blank} of the ${name} edge's ${seen.slices} slices resolved to no background ` +
+              'image at all, so that much of it is a transparent element standing where the solid should ' +
+              'be — a gradient the parser rejected computes to none, and one bad stop rejects the whole ' +
+              'declaration',
+          );
+        }
+        if (!seen.sides || Object.values(seen.sides).some((one) => one === null)) {
+          failures.push(
+            `${where}: the ${name} edge has ${seen.walls} wall slice(s) and no readable gradient on them, ` +
+              'so which colour each of its four sides is drawn in could not be read — nothing about its ' +
+              'direction was checked',
+          );
+          continue;
+        }
+        // WEIGHED HERE AND NOT IN THE PAGE, because `lib/colour.mjs` owns the one
+        // number three bytes become and forbids the obvious wrong answer.
+        const sides = {
+          head: luminance(seen.sides.head),
+          right: luminance(seen.sides.right),
+          foot: luminance(seen.sides.foot),
+          left: luminance(seen.sides.left),
+        };
+        lit[name] = sides;
+        const ring = seen.ring.map((stop) => ({ at: stop.at, lit: luminance(stop.rgb) }));
+        const brightnesses = ring.map((stop) => stop.lit);
+        const spread = ring.length ? Math.max(...brightnesses) - Math.min(...brightnesses) : 0;
+        // THE LARGEST STEP ACROSS AN ARC, and a step BETWEEN TWO STOPS AT THE SAME
+        // ANGLE is skipped rather than measured. That is a square corner, where a
+        // hard transition is the right drawing because there is no arc to run a
+        // ramp along — the details sheet has two of them, and measuring them made
+        // this read 100% on a surface that is drawn correctly. What is left is the
+        // failure the assertion is for: a large jump ACROSS an angular range, which
+        // is a shading stepping between four flat sides.
+        let step = 0;
+        for (let index = 1; index < ring.length; index += 1) {
+          const from = ring[index - 1];
+          const to = ring[index];
+          if (Math.abs(to.at - from.at) < SAME_ANGLE) continue;
+          step = Math.max(step, Math.abs(to.lit - from.lit));
+        }
+        const four = Object.values(sides);
+        const brightest = Math.max(...four);
+        const darkest = Math.min(...four);
+        if (brightest <= 0 || (brightest - darkest) / brightest < DIRECTED) {
+          failures.push(
+            `${where}: the ${name} edge's four sides are drawn at ${four
+              .map((one) => one.toFixed(4))
+              .join(' / ')} — ${(((brightest - darkest) / (brightest || 1)) * 100).toFixed(1)}% apart ` +
+              `against ${(DIRECTED * 100).toFixed(0)}% required, so it is one colour all the way round ` +
+              'and the lateral normal has been dropped',
+          );
+        }
+        if (spread > 0 && step / spread > CONTINUOUS) {
+          failures.push(
+            `${where}: the largest step between two consecutive stops of the ${name} edge is ${(
+              (step / spread) *
+              100
+            ).toFixed(1)}% of its whole spread against ${(CONTINUOUS * 100).toFixed(0)}% allowed — the ` +
+              'brightness is stepping between four flat sides rather than running round the corners',
+          );
+        }
+        notes.push(
+          `${where}: the ${name} edge's four sides at ${four.map((one) => one.toFixed(4)).join(' / ')} ` +
+            `(head/right/foot/left), ${(((brightest - darkest) / (brightest || 1)) * 100).toFixed(
+              1,
+            )}% apart` + (spread > 0 ? `, largest step ${((step / spread) * 100).toFixed(1)}%` : ''),
+        );
+      }
+
+      // WHICH WAY ROUND, asked of the Slab alone: the Cards are turned by the same
+      // plane, so a second statement of it would not be a second assertion.
+      const slab = lit.slab;
+      if (!slab) {
+        failures.push(
+          `${where}: no edge on the page is named "slab", so which way round the light points was not ` +
+            'checked — edge.ts writes that name and stage-dom.ts asks for it',
+        );
+      } else if (slab.foot <= slab.right * (1 + DIRECTED)) {
+        failures.push(
+          `${where}: the Slab's foot is drawn at ${slab.foot.toFixed(4)} against its right flank's ` +
+            `${slab.right.toFixed(4)} — those two are the flanks that face the reader, and the light ` +
+            '#187 signed off stands above and to the LEFT, which makes the foot the brighter of them. ' +
+            'This is what an azimuth pointed the other way looks like',
+        );
+      }
+
+      for (const [name, corner] of Object.entries(now.corners)) {
+        if (!corner.onScreen) {
+          failures.push(
+            `${where}: the Slab's ${name.replace('_', ' ')} corner projects off the window, so whether ` +
+              'it is closed could not be sampled',
+          );
+        } else if (!corner.covered) {
+          failures.push(
+            `${where}: nothing under the Slab's ${name.replace('_', ' ')} corner is a slice — the ` +
+              `topmost element there is ${corner.top}, so half a radius in from that corner the reader ` +
+              'is looking at the page behind the drawing rather than at the edge. This is the notch four ' +
+              'hinged walls leave',
+          );
+        }
+      }
+    }
+
+    // ---- and the gradient is a proportion, not a measurement ---------------
+    // A SECOND MOUNT, AT THE OTHER END OF THE BAND. The Slab is drawn 282px wide at
+    // DESK and 220px at the short corner, and every gradient has to come out byte
+    // for byte the same both times — which it does because every stop's angle is
+    // `atan2` of a point whose coordinates all scale together. An outline measured
+    // off `getBoundingClientRect` instead of stated as a proportion drifts here by a
+    // hundredth of a degree per stop, which `toFixed(2)` is fine enough to see.
+    const { context: second, page: other } = await open(browser, origin, { viewport: SHORT });
+    try {
+      failures.push(...(await settle(other)).map((why) => `${SHORT.width}x${SHORT.height}: ${why}`));
+      const fresh = await other.evaluate(edgeAsBuilt, spec);
+      if (fresh.missing) {
+        failures.push(`${SHORT.width}x${SHORT.height} mounted: ${fresh.missing}`);
+      } else if (fresh.count !== wide.count) {
+        failures.push(
+          `${SHORT.width}x${SHORT.height} mounted: the page is made of ${fresh.count} slices against ` +
+            `${wide.count} at ${WIDE.width}x${WIDE.height} — how finely a solid is chopped is a count in ` +
+            'edge.ts and not a function of the window',
+        );
+      } else {
+        const drifted = fresh.authored.filter((one, index) => one !== wide.authored[index]).length;
+        if (drifted > 0) {
+          failures.push(
+            `${SHORT.width}x${SHORT.height} mounted: ${drifted} of ${fresh.count} slices came out with a ` +
+              `different gradient than the same slices at ${WIDE.width}x${WIDE.height} — the gradient is ` +
+              'exactly scale-invariant, so one that moved with the window was computed from a measurement ' +
+              'of a box rather than from an outline stated as a proportion',
+          );
+        } else {
+          notes.push(
+            `a second mount at ${SHORT.width}x${SHORT.height} wrote all ${fresh.count} gradients byte ` +
+              `for byte as ${WIDE.width}x${WIDE.height} did`,
+          );
+        }
+      }
+    } finally {
+      await second.close();
+    }
+    return { failures, notes };
+  } finally {
+    await context.close();
+  }
+}
+
 export const check = {
   name: 'eater-map',
   title:
@@ -2214,6 +2812,11 @@ export const check = {
       found.push(...(await atWindow(browser, origin, viewport)));
     }
     found.push(...(await reversesOnTheWayOut(browser, origin)));
+    // THE ONE GROUP THAT REPORTS WHAT IT SAW, because every tolerance in it was
+    // chosen off a measurement and a reader of a passing log should be able to tell
+    // a comfortable pass from one sitting on a threshold.
+    const edge = await theEdgeHasADirection(browser, origin);
+    found.push(...edge.failures);
 
     const collapse = await collapsedBelowTheBand(browser, origin);
     found.push(...collapse.failures);
@@ -2223,6 +2826,6 @@ export const check = {
     if (collapse.composition) {
       found.push(...(await everyReaderGetsIt(browser, origin, collapse.composition)));
     }
-    return found;
+    return { failures: found, notes: edge.notes };
   },
 };

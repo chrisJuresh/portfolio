@@ -1,4 +1,5 @@
 import { extrude, SOLID } from './edge';
+import { SLAB } from './slab';
 import { type Stage, type StageParts } from './stage';
 
 /**
@@ -66,9 +67,25 @@ const ROUND =
   `${SOLID} * min(var(--eater-map-slab-edge-radius), var(--eater-map-slab-thickness)) * 100cqw`;
 
 const mountDomStage = (parts: StageParts): Stage => {
-  const { plane, still, edge } = parts;
+  const { root, plane, still, edge } = parts;
 
   if (edge === 'thick') {
+    /** The edge's radius as a length on the PLAN, held to the thickness the way
+     *  `ROUND` holds it in CSS — one constraint, stated twice because one of the two
+     *  has to be an expression the browser re-evaluates and the other has to be a
+     *  number the gradient can be built from. */
+    const style = getComputedStyle(root);
+    const token = (name: string) => {
+      const value = Number.parseFloat(style.getPropertyValue(name));
+      return Number.isFinite(value) ? value : 0;
+    };
+    const SLAB_ROUND =
+      SLAB.viewport.width *
+      Math.max(
+        0,
+        Math.min(token('--eater-map-slab-edge-radius'), token('--eater-map-slab-thickness')),
+      );
+
     // The picture is CLIPPED back to the flat face rather than scaled into it.
     // Scaling would draw the map at a size the Cards are not drawn at, which is
     // the one thing this Section is built against — NOTES.md's one piece of
@@ -84,6 +101,23 @@ const mountDomStage = (parts: StageParts): Stage => {
     extrude(plane, still, {
       box: { x: '0px', y: '0px', w: '100%', h: '100%' },
       radii: [ROUND, ROUND, ROUND, ROUND],
+      // THE SAME OUTLINE AS ARITHMETIC, for the shading, in the PHONE'S OWN PIXELS
+      // — the coordinate system the app drew in, which is what `slab.ts` says
+      // `viewport` is for. Any unit would do, because the gradient is exactly
+      // scale-invariant (`edge.ts`); this is the one the shape was verified in, and
+      // `--eater-map-slab-ratio` is written from `pixels`, which is `viewport` times
+      // the capture's scale factor and therefore the same ratio. So the outline the
+      // gradient walks and the box the browser lays out cannot disagree.
+      //
+      // `--eater-map-solid` IS NOT A TERM OF IT. Below the band the slices close up
+      // to nothing and the picture covers every one of them, so the gradient they
+      // were given is not on screen to be wrong.
+      plan: {
+        w: SLAB.viewport.width,
+        h: SLAB.viewport.height,
+        radii: [SLAB_ROUND, SLAB_ROUND, SLAB_ROUND, SLAB_ROUND],
+        fillet: SLAB_ROUND,
+      },
       fillet: ROUND,
       filletBack: ROUND,
       depth: DEPTH,
