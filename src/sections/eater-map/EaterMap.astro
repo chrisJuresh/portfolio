@@ -26,6 +26,12 @@ import { SLAB } from './slab';
 // file, so Astro does not scope it — every selector in it begins with the
 // `.eater-cards` host, and that host is the containment. NOTES.md.
 import './assets/cards/cards.css';
+// The one thing this Section says to the app's own markup that the dark theme's
+// inherited custom properties cannot carry: a corner. Plain CSS and not the
+// scoped block below, because a `border-radius` needs a SELECTOR and a scoped
+// selector cannot reach markup that arrived through `set:html`. After the export
+// on purpose, though it does not depend on the order — the file says why.
+import './cards-shape.css';
 import './tokens.css';
 // variants.css is deliberately NOT imported: an unselected Variant has to cost
 // the shipped page nothing, so the sheet is not part of the build at all and the

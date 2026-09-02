@@ -689,6 +689,29 @@ async function atWindow(browser, origin, viewport) {
       const glass = () =>
         [...document.querySelectorAll('.eater-map__card')].map((card) => {
           const name = card.getAttribute('data-eater-map-card') ?? '(unnamed)';
+          /**
+           * THE OUTLINE EACH EDGE WAS ACTUALLY DRAWN TO, per surface — the widest
+           * corner anywhere in that surface's slice stack.
+           *
+           * A slice taken `i` in from the outline is rounded by `r - i`
+           * (`edge.ts`), so the LARGEST corner in a stack is the one at inset 0 —
+           * the wall, which is the solid's own outline. Taking the maximum per
+           * corner asks the slices themselves rather than working out which of the
+           * twenty-four is the wall, and it is the same answer.
+           *
+           * READ HERE RATHER THAN INFERRED FROM THE BACKDROP, because they are two
+           * different elements built from two different expressions out of one
+           * measurement, and a build that rounds the glass and leaves the drawn
+           * edge square is the failure #195 names — it looks almost right.
+           */
+          const outline = {};
+          for (const one of card.querySelectorAll(':scope > .eater-map__slice')) {
+            const of = one.getAttribute('data-eater-map-edge');
+            if (of === null) continue;
+            const r = corners(getComputedStyle(one));
+            const held = outline[of];
+            outline[of] = held ? held.map((v, i) => Math.max(v, r[i])) : r;
+          }
           const surfaces = [...card.querySelectorAll('[data-eater-map-glass]')].map((box) => {
             const drawn = box.getAttribute('data-eater-map-glass') ?? '(unnamed)';
             // `<card> <selector>` — the Section says which element each backdrop
@@ -710,6 +733,11 @@ async function atWindow(browser, origin, viewport) {
               stated: skin
                 ? clamped(surface.offsetWidth, surface.offsetHeight, corners(skin))
                 : null,
+              // Keyed by the same string the backdrop is named by, which is what
+              // `glass.ts` writes on both. `undefined` means this surface has no
+              // slices at all — a different failure, and one `edged` below already
+              // reports, so this is left null rather than defaulted to zeroes.
+              edge: outline[drawn] ?? null,
               fill: skin ? colour(skin.backgroundColor) : null,
               ink: skin ? colour(skin.color) : null,
               blurred: map ? /blur\(\s*(?!0\w*\s*\))/.test(getComputedStyle(map).filter) : null,
@@ -1422,6 +1450,50 @@ async function atWindow(browser, origin, viewport) {
               `cards.css states ${surface.stated.join('/')} — a radius written in this repository is a ` +
               'second opinion about a number the vendored export already holds',
           );
+        }
+        // EVERY CORNER IN THE DRAWING TURNS THE SAME WAY (#195). On the app's own
+        // screen the details sheet rests on the bottom edge and its foot is square
+        // — `border-radius: var(--r-sheet) var(--r-sheet) 0 0`, where the zeroes
+        // are the RULE's and not the variable's, so overriding `--r-sheet` sets
+        // 28px to 28px and changes nothing. Off the map the sheet is a floating
+        // object with four visible corners, and this is the regression back to two
+        // of them: it is the export's own default, one line of cards-shape.css
+        // stands between the page and it, and it looks merely slightly off rather
+        // than broken.
+        //
+        // ASKED OF EVERY GLASS SURFACE and not of the details sheet alone, because
+        // that IS the composition's rule — the Slab, the search pill, the offline
+        // button and the rail popup all turn, and a surface that stops turning is a
+        // decision rather than a detail.
+        if (surface.stated.some((r) => !(r > 0))) {
+          failures.push(
+            `${where}: the ${surface.name} is drawn with corners ${surface.stated.join('/')} — a zero ` +
+              'is a right angle in a drawing where the Slab, the pills and the popup all curve. The ' +
+              'sheet\'s square foot is the export\'s own, and overriding --r-sheet does NOT undo it: ' +
+              'the zeroes are in the border-radius rule, so the override has to be of the rule',
+          );
+        }
+        // AND THE DRAWN EDGE FOLLOWS THAT CORNER, asked at the corner itself. The
+        // backdrop above and the slice stack here are two elements built from two
+        // expressions out of one measurement, so rounding the glass while leaving
+        // the edge square is a build that looks almost right.
+        if (surface.edge === null) {
+          failures.push(
+            `${where}: the ${surface.name} has no slices to read an outline off — nothing about the ` +
+              'shape of its drawn edge was asserted',
+          );
+        } else {
+          const bent = Math.max(
+            ...surface.edge.map((r, index) => Math.abs(r - surface.stated[index])),
+          );
+          if (!Number.isFinite(bent) || bent > RADIUS) {
+            failures.push(
+              `${where}: the ${surface.name}'s edge is drawn to an outline of ` +
+                `${surface.edge.join('/')} where the surface itself is ${surface.stated.join('/')} — ` +
+                'the extrusion is cut to the corners the served stylesheet states, so an edge that ' +
+                'disagrees with its own face is a radius that came from somewhere else',
+            );
+          }
         }
       }
       // EVERY GLASS SURFACE CARRIES AN EDGE, AND NOT MERELY SOME. The rebuild #197

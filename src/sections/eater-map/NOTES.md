@@ -217,6 +217,9 @@ Every mutation below has been made on purpose and every one was caught.
 | the edge's colour resolved in JavaScript instead of `color-mix(… var(…) …)` | every slice naming no Token, AND the mutated Token not moving the resolved gradient — two failures, because a string that names it and a `var()` that resolves are two claims |
 | the slice outline measured off `getBoundingClientRect` and rounded to whole pixels | every gradient different at 1100x700 from 1440x900. **Only the SECOND MOUNT catches this** — resizing one page and comparing the strings passes, because nothing recomputes on a resize, and that version of the assertion read as checking something and checked nothing |
 | the mounted stage reporting itself as something neither stage answers to | the Section reporting its stage as `chrome`, at 1440x900 — the twelfth group SKIPS under `--stage webgl` and had to be able to tell a skip from an Exploded View that never came up |
+| the details sheet's foot reverted to the export's `28px 28px 0 0` | the details `.details-panel` drawn `28/28/0/0`, at both windows |
+| the foot's override written as `--r-sheet: 28px` instead of as the rule | the same failure, at both windows — which is the point: the VARIABLE is already a single value, so the broken toggle that made the first comparison read "indistinguishable" now fails rather than passing quietly |
+| `cards-shape.css`'s selector anchored on `.eater-map__card` | the sheet rounded and its backdrop and its edge still cut `28/28/0/0`, at both windows — the ruler is `.eater-cards` and a clone of `.eater-map__surface`, and a rule that cannot reach it is measured as though it were not there |
 
 **The `arrived()` mutation passed three times in a row before the Check was
 written the right way**, and it is the shape `scripts/checks/NOTES.md` warns about twice: *a
@@ -409,6 +412,17 @@ edges were drawn to the wrong outline and the third agreed by accident. `999px` 
 what a pill *states*; `fitRadii` in `edge.ts` is the clamp a browser applies to get
 the 24 it draws, and there is no property that hands it over.
 
+**THE RULER IS `.eater-cards` AND A CLONE OF `.eater-map__surface`, AND THAT IS THE
+ONE THING A SHAPE RULE MAY SELECT THROUGH (#195).** Those two elements are every
+ancestor the measurement has. A rule in `cards-shape.css` anchored on
+`.eater-map__card` or `.eater-map__face` therefore applies to the page and **not**
+to the ruler, so the surface is drawn to one outline while its backdrop and its
+edge are cut to another — the sheet rounds and the drawn edge stays square, which
+is a build that looks almost right. It was written that way once and the Check
+caught it at both windows. Deepening the ruler is not the fix: `.eater-map__card`
+carries the plane's scale, so a clone measured inside one comes back scaled and
+every offset with it.
+
 **Measured ONCE, and that is a fact about what is measured rather than an
 optimisation.** The Cards are frozen to the viewport they were exported at, so a
 surface's offset and radii are the same numbers at every window. Everything that
@@ -473,6 +487,44 @@ copy behind it, which is the same trade the Slab's edge and the leader lines mak
 It is affordable HERE only because the Cards are dark: a light translucent surface
 over a light map was the illegible case that made the plate necessary, and dark ink
 on a dark map is not.
+
+### A shape is the one thing a variable cannot carry
+
+The paragraph above says the Section names vendored variables and never selects
+into the app's markup. **That held until #195 and holds for the palette still**: a
+custom property inherits, so setting one on `.eater-map__card` reaches every surface
+under it without a selector at all. A `border-radius` does not inherit, and there is
+nowhere in `EaterMap.astro`'s scoped block to write a selector for one — Astro
+narrows every compound of a scoped rule with the component's scoping class, and the
+Cards arrive through `set:html` carrying none, so a rule written there matches
+nothing. `:global()` is the escape hatch and `check-source.mjs` fails the build on
+it.
+
+So `cards-shape.css` is a plain, unscoped stylesheet — the same kind of file
+`cards.css` is — and it holds everything this Section says about the SHAPE of a
+vendored surface. Today that is one declaration. Three rules keep it as narrow as
+the palette:
+
+* **Never inside `assets/cards/`.** A re-vendoring rewrites that folder and not
+  this file, so no rule in the export is edited and the override survives.
+* **Never name the export's build fingerprint.** `cards.css` states its own rules
+  at `.eater-cards .details-panel.svelte-1ccclju`, which is (0,3,0) with a hash as
+  its third class. Matching that weight leaves the winner to whichever stylesheet
+  the bundler emitted second, and naming the hash builds a selector out of a number
+  this repository does not own. (0,4,0) out of real handles wins outright.
+* **Select only through `.eater-cards` and `.eater-map__surface`**, for the reason
+  the ruler paragraph above gives. This is the rule that is silent when it is
+  broken.
+
+**The details sheet's foot is the first of them, and the trap is that the
+squareness is in the RULE.** `--r-sheet` is already a single `28px`; the two zeroes
+are in `border-radius: var(--r-sheet) var(--r-sheet) 0 0`. So overriding the
+variable sets 28px to 28px, and that is a no-op — it is what was done the first time
+the corner was compared, which is why the before and the after were the same picture
+and why the comparison was written up as "the two are indistinguishable". They are
+not; the toggle was broken. The `eater-map` Check asks every glass surface for four
+non-zero corners now, so the export's own default fails rather than looking slightly
+off.
 
 ## What drives the Lift, and the two pixels that decide whether it ever fires
 
