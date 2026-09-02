@@ -18,6 +18,14 @@
   //                       reason this is narrow. Widening it is this `include`
   //                       line and their own residue; there is nothing else to
   //                       undo.
+  //   `design/`           is NOT here either, and nothing else claims it — its
+  //                       generators are run by hand rather than by the build,
+  //                       so a type error in one costs a run and not a deploy.
+  //                       That holds even for `design/eater-slab/retheme.mjs`,
+  //                       which the Agent Contract names as a seam: its
+  //                       `@typedef`s are documentation, and `pnpm test` is what
+  //                       actually covers it. Said here because #183's rule is
+  //                       that a file is in a project or in none, honestly.
   //   `scripts/static-tree.mjs` is here because `scripts/feature/` imports it,
   //                       so a program built from that `include` checks it
   //                       whether it is named or not. Named anyway, WITH its

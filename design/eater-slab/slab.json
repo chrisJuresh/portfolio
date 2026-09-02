@@ -66,7 +66,7 @@
   },
 
   "retheme": {
-    "note": "The Slab is a DARK map, and this is how it is made one without editing the Eater checkout: the modules its own dev server serves are rewritten in flight, on their way to the browser. Set flavor back to \"light\", drop to [] and markerOpacity to null and NOTHING is rewritten — no module is even intercepted — which is the capture that shipped before #188. Every rewrite says how many times it must match, and a count that does not agree stops the run: a light Slab on disk looks exactly like a right one until somebody opens it. design/eater-slab/README.md says why this lives here rather than in the Eater checkout.",
+    "note": "What makes the Slab a DARK map, applied to the modules Eater's dev server serves rather than to the Eater checkout. design/eater-slab/README.md, under \"The re-theme\", says how it works, why it lives here, and how to reverse it.",
 
     "flavor": "dark",
     "drop": ["pois", "address_label"],

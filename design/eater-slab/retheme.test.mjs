@@ -3,10 +3,57 @@ import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
 import { auditRetheme, planRetheme, renderValue, rethemeHeld, rethemeReport, rewriteModule } from './retheme.mjs';
 
-const SHIPPED = JSON.parse(readFileSync(new URL('./slab.json', import.meta.url), 'utf8')).retheme;
+/**
+ * A dark declaration, written HERE rather than read out of `slab.json`.
+ *
+ * The tests below are about plan, rewrite, audit and report, and none of them is
+ * about what `slab.json` happens to hold today. Reading the real file as their
+ * fixture made the reversal README.md prescribes — `"light"`, `[]`, `null` —
+ * fail thirteen of them, so a legitimate author action broke the only gate this
+ * repository has (#199). Drift between the two is not the risk it looks like: a
+ * `find` that stops matching Eater's source is caught by `auditRetheme` on the
+ * next capture, loudly and by name, which is what #188 built.
+ */
+const DARK = {
+  flavor: 'dark',
+  drop: ['pois', 'address_label'],
+  markerOpacity: 0.82,
+  rewrites: [
+    {
+      id: 'flavor',
+      parameter: 'flavor',
+      is: "protomaps' flavour, stated at both of Eater's style call sites",
+      default: 'light',
+      module: '/src/lib/map/style\\.js(?:$|\\?)',
+      find: "namedFlavor\\(\\s*'light'\\s*\\)",
+      replace: "namedFlavor('{value}')",
+      expect: 2,
+    },
+    {
+      id: 'drop',
+      parameter: 'drop',
+      is: 'the seam every basemap layer passes through, where these ids are filtered out',
+      default: [],
+      module: '/src/lib/map/style\\.js(?:$|\\?)',
+      find: 'function composeTransit\\(baseLayers\\) \\{',
+      replace: 'function composeTransit(baseLayers) { baseLayers = baseLayers.filter((l) => !/(^|_)({value})$/.test(l.id));',
+      expect: 1,
+    },
+    {
+      id: 'markerOpacity',
+      parameter: 'markerOpacity',
+      is: 'the flat opacity the restaurant markers composite at; 0.42 reads maroon on dark',
+      default: null,
+      module: '/src/lib/constants\\.js(?:$|\\?)',
+      find: 'MARKER_LAYER_OPACITY\\s*=\\s*0\\.42',
+      replace: 'MARKER_LAYER_OPACITY = {value}',
+      expect: 1,
+    },
+  ],
+};
 
 /** The declaration, with some of its parameters moved. */
-const declared = (moved = {}) => ({ ...SHIPPED, ...moved });
+const declared = (moved = {}) => ({ ...DARK, ...moved });
 
 /** Eater's style module, reduced to the two things the rewrites reach for. */
 const STYLE = [
@@ -42,11 +89,31 @@ const serve = (url, source, plan) => {
 };
 
 // ---------------------------------------------------------------------------
+// The one thing worth asking of the REAL file — and only what holds either way
+// ---------------------------------------------------------------------------
+
+test("slab.json's own retheme block is well-formed, whichever way its parameters are set", () => {
+  const shipped = JSON.parse(readFileSync(new URL('./slab.json', import.meta.url), 'utf8')).retheme;
+  // Value-agnostic on purpose. Pinning the dark values here would reintroduce
+  // through a second door exactly what taking them out of the fixture removed:
+  // the reversal is a legitimate author action and must not turn `pnpm test`
+  // red. What is worth asserting is what a light block and a dark one both owe.
+  assert.ok(shipped.rewrites?.length > 0, 'slab.json declares no rewrites at all');
+  assert.doesNotThrow(() => planRetheme(shipped));
+  // Entry by entry as well as whole, so a malformed one is named by the refusal
+  // rather than found by reading. planRetheme reads a rewrite BEFORE it skips
+  // one whose parameter is turned off, so this reaches all three either way.
+  for (const entry of shipped.rewrites) {
+    assert.doesNotThrow(() => planRetheme({ ...shipped, rewrites: [entry] }));
+  }
+});
+
+// ---------------------------------------------------------------------------
 // The plan
 // ---------------------------------------------------------------------------
 
-test('the shipped declaration plans all three rewrites, with its own values in them', () => {
-  const plan = planRetheme(SHIPPED);
+test('a dark declaration plans all three rewrites, with its values in them', () => {
+  const plan = planRetheme(DARK);
   assert.deepEqual(
     plan.map((one) => one.id),
     ['flavor', 'drop', 'markerOpacity'],
@@ -112,7 +179,7 @@ test('a value that would not survive being inlined is refused rather than inline
 });
 
 test('a rewrite naming a parameter the block does not declare is refused', () => {
-  const bent = declared({ rewrites: [{ ...SHIPPED.rewrites[0], parameter: 'flavour' }] });
+  const bent = declared({ rewrites: [{ ...DARK.rewrites[0], parameter: 'flavour' }] });
   assert.throws(() => planRetheme(bent), /flavour/);
 });
 
@@ -120,9 +187,9 @@ test('a rewrite naming a parameter the block does not declare is refused', () =>
 // The declaration is checked WHOLE, and here rather than three minutes in
 // ---------------------------------------------------------------------------
 
-/** The shipped block with one field of the `flavor` rewrite bent. */
+/** The dark block above, with one field of the `flavor` rewrite bent. */
 const bend = (field, to) => {
-  const [first, ...rest] = SHIPPED.rewrites;
+  const [first, ...rest] = DARK.rewrites;
   const bent = { ...first };
   if (to === undefined) delete bent[field];
   else bent[field] = to;
@@ -180,7 +247,7 @@ test('a rewrite is checked even when its own parameter is turned off', () => {
 // ---------------------------------------------------------------------------
 
 test('the flavour rewrite reaches both of Eater style call sites, and says it made two', () => {
-  const plan = planRetheme(SHIPPED);
+  const plan = planRetheme(DARK);
   const { source, found } = rewriteModule(STYLE_URL, STYLE, plan);
   assert.equal((source.match(/namedFlavor\('dark'\)/g) ?? []).length, 2);
   assert.ok(!source.includes("namedFlavor('light')"));
@@ -188,7 +255,7 @@ test('the flavour rewrite reaches both of Eater style call sites, and says it ma
 });
 
 test('the drop rewrite puts one filter on the seam every basemap layer passes through', () => {
-  const plan = planRetheme(SHIPPED);
+  const plan = planRetheme(DARK);
   const { source, found } = rewriteModule(STYLE_URL, STYLE, plan);
   assert.equal(found.find((one) => one.id === 'drop').count, 1);
   // The filter is real code, not a comment: run the module's own predicate over
@@ -203,7 +270,7 @@ test('the drop rewrite puts one filter on the seam every basemap layer passes th
 });
 
 test('the marker opacity rewrite moves the one constant, and no other', () => {
-  const plan = planRetheme(SHIPPED);
+  const plan = planRetheme(DARK);
   const { source, found } = rewriteModule(CONSTANTS_URL, CONSTANTS, plan);
   assert.match(source, /^export const MARKER_LAYER_OPACITY = 0\.82;$/m);
   assert.match(source, /^export const PRICED_MARKER_LAYER_OPACITY = 1;$/m);
@@ -211,7 +278,7 @@ test('the marker opacity rewrite moves the one constant, and no other', () => {
 });
 
 test('only the rewrites that claim a module are offered it', () => {
-  const plan = planRetheme(SHIPPED);
+  const plan = planRetheme(DARK);
   assert.deepEqual(
     rewriteModule(STYLE_URL, STYLE, plan).found.map((one) => one.id),
     ['flavor', 'drop'],
@@ -223,7 +290,7 @@ test('only the rewrites that claim a module are offered it', () => {
 });
 
 test('a module nothing claims comes back byte for byte, with nothing to report', () => {
-  const plan = planRetheme(SHIPPED);
+  const plan = planRetheme(DARK);
   const other = 'http://127.0.0.1:5173/src/lib/map/markers.js';
   const { source, found } = rewriteModule(other, STYLE, plan);
   assert.equal(source, STYLE);
@@ -231,7 +298,7 @@ test('a module nothing claims comes back byte for byte, with nothing to report',
 });
 
 test('a module regex is anchored past the path, so a sourcemap beside it is not claimed', () => {
-  const plan = planRetheme(SHIPPED);
+  const plan = planRetheme(DARK);
   assert.deepEqual(rewriteModule(`${STYLE_URL}.map`, STYLE, plan).found, []);
 });
 
@@ -240,7 +307,7 @@ test('the replacement is pasted literally — a $ in it is text and not a captur
   // reads `$&`, `$'` and `$1` in a replacement string. If it ever went in as a
   // string rather than through a function, the filter would silently become
   // some other regex — which is a light Slab with a dark declaration.
-  const plan = planRetheme(SHIPPED);
+  const plan = planRetheme(DARK);
   const { source } = rewriteModule(STYLE_URL, STYLE, plan);
   assert.ok(source.includes('!/(^|_)(pois|address_label)$/.test(l.id)'));
 });
@@ -254,13 +321,13 @@ test('nothing is rewritten when the plan is empty', () => {
 // ---------------------------------------------------------------------------
 
 test('every count agreeing is no refusal at all', () => {
-  const plan = planRetheme(SHIPPED);
+  const plan = planRetheme(DARK);
   const served = [serve(STYLE_URL, STYLE, plan), serve(CONSTANTS_URL, CONSTANTS, plan)];
   assert.deepEqual(auditRetheme(plan, served), []);
 });
 
 test('a count that does not agree names the rewrite, what it wanted and what it found', () => {
-  const plan = planRetheme(SHIPPED);
+  const plan = planRetheme(DARK);
   // Eater renames one of its two call sites: the flavour rewrite now makes one.
   const moved = STYLE.replace("const flavor = namedFlavor('light');\n  return { layers: composeTransit(layers(\"world\"", 'const flavor = namedFlavor(FLAVOUR);\n  return { layers: composeTransit(layers("world"');
   assert.notEqual(moved, STYLE);
@@ -273,7 +340,7 @@ test('a count that does not agree names the rewrite, what it wanted and what it 
 });
 
 test('a source with nothing to match is reported rather than silently passed', () => {
-  const plan = planRetheme(SHIPPED);
+  const plan = planRetheme(DARK);
   const nothing = '// Eater moved its basemap style somewhere else entirely.\n';
   const refusals = auditRetheme(plan, [serve(STYLE_URL, nothing, plan), serve(CONSTANTS_URL, CONSTANTS, plan)]);
   assert.equal(refusals.length, 2);
@@ -282,7 +349,7 @@ test('a source with nothing to match is reported rather than silently passed', (
 });
 
 test('a module that was never served at all is a refusal, not a silent pass', () => {
-  const plan = planRetheme(SHIPPED);
+  const plan = planRetheme(DARK);
   const [refusal, ...rest] = auditRetheme(plan, [serve(STYLE_URL, STYLE, plan)]);
   assert.deepEqual(rest, []);
   assert.match(refusal, /markerOpacity/);
@@ -290,7 +357,7 @@ test('a module that was never served at all is a refusal, not a silent pass', ()
 });
 
 test('nothing served at all refuses once per rewrite rather than passing vacuously', () => {
-  const plan = planRetheme(SHIPPED);
+  const plan = planRetheme(DARK);
   assert.equal(auditRetheme(plan, []).length, plan.length);
 });
 
@@ -303,9 +370,9 @@ test('an empty plan audits clean over an empty run — the reversal does not ref
 // ---------------------------------------------------------------------------
 
 test('the report names every rewrite, its value and its count, and says the checkout is untouched', () => {
-  const said = rethemeReport(planRetheme(SHIPPED), 'D:/somewhere/eater').join('\n');
+  const said = rethemeReport(planRetheme(DARK), 'D:/somewhere/eater').join('\n');
   assert.match(said, /nothing in D:\/somewhere\/eater is edited/);
-  for (const rewrite of planRetheme(SHIPPED)) {
+  for (const rewrite of planRetheme(DARK)) {
     assert.ok(said.includes(rewrite.id), `${rewrite.id} is not in the report`);
     assert.ok(said.includes(rewrite.value), `${rewrite.id}'s value is not in the report`);
     assert.ok(said.includes(rewrite.is), `${rewrite.id} does not say what it does`);
@@ -320,7 +387,7 @@ test('an empty plan says so, and does not claim to have edited anything', () => 
 });
 
 test('the tally counts substitutions and fetches, and is nothing over an empty run', () => {
-  const plan = planRetheme(SHIPPED);
+  const plan = planRetheme(DARK);
   const served = [serve(STYLE_URL, STYLE, plan), serve(CONSTANTS_URL, CONSTANTS, plan)];
   assert.match(rethemeHeld(served), /4 substitution\(s\) over 2 module fetch\(es\)/);
   assert.equal(rethemeHeld([]), null);
@@ -329,7 +396,7 @@ test('the tally counts substitutions and fetches, and is nothing over an empty r
 test('a module served twice has to agree BOTH times', () => {
   // vite re-serves a module on an HMR round trip, and a total that only had to
   // reach its count would let one good fetch cover for a bad one.
-  const plan = planRetheme(SHIPPED);
+  const plan = planRetheme(DARK);
   const refusals = auditRetheme(plan, [
     serve(STYLE_URL, STYLE, plan),
     serve(STYLE_URL, '// gone\n', plan),

@@ -1,31 +1,22 @@
 /* ============================================================================
    retheme.mjs — the re-theme's decisions, as pure functions.
 
-   WHAT a re-theme is, WHY it lives in this repository rather than in the Eater
-   checkout, and what each field of slab.json's `retheme` means are all in
-   README.md beside this, under "The re-theme", and are not repeated here.
-
-   What a reader of THIS FILE needs is two things.
+   WHAT a re-theme is, WHY it lives here rather than in the Eater checkout, what
+   each field of slab.json's `retheme` means, and the argument behind every
+   refusal below are in README.md beside this, under "The re-theme". One home
+   each: the comments below point at it rather than restating it, and carry only
+   what is about this code.
 
    NOTHING HERE TOUCHES A FILE, A SOCKET OR A BROWSER, which is what makes it
-   testable — `capture-slab.mjs` owns all three. Read in the order a run uses
-   them: `planRetheme` turns the declaration into the rewrites it means and
-   refuses one it cannot trust; `rewriteModule` applies the ones that claim a
-   module to that module's text, counting each; `auditRetheme` reads every fetch
-   back and says which rewrites did not get what they declared. `rethemeReport`
-   and `rethemeHeld` are what the run says about all of it.
-
-   AND THE COUNTS ARE PER FETCH RATHER THAN TOTALLED. vite re-serves a module on
-   an HMR round trip, so a run can be handed the same file twice, and a total
-   that only had to be reached would let one good fetch cover for a bad one.
+   testable — `capture-slab.mjs` owns all three. In the order a run uses them:
+   `planRetheme`, `rewriteModule`, `auditRetheme`, then `rethemeReport` and
+   `rethemeHeld` for what the run says about it.
    ========================================================================== */
 
 /**
- * A parameter, rendered for the JavaScript source it is pasted into.
- *
- * One rule, because there is one substitution: a string is itself, a number is
- * itself, and a list is an ALTERNATION — the `drop` ids go into a regex in
- * Eater's own layer filter, and `pois|address_label` is what that regex wants.
+ * A parameter, rendered for the JavaScript source it is pasted into — a list as
+ * an ALTERNATION, because `drop` lands inside a regex in Eater's own layer
+ * filter (README, "How each rewrite is declared").
  *
  * @param {string | number | readonly string[]} value
  * @returns {string}
@@ -35,14 +26,8 @@ export function renderValue(value) {
 }
 
 /**
- * Is this value safe to paste into a module?
- *
- * Not a guard against hostile input — the declaration is the author's own file.
- * It is a guard against a TYPO, which would otherwise produce a module that
- * throws somewhere inside vite, minutes into a run, with nothing in the message
- * pointing back at the field that caused it. A stray quote in `flavor` closes
- * the call it lands in; a `.` in a `drop` id is a regex that matches more than
- * it says.
+ * Is this value safe to paste into a module? A guard against a TYPO and not
+ * against hostile input — README, "How each rewrite is declared".
  *
  * @param {unknown} value
  * @returns {boolean}
@@ -61,9 +46,7 @@ const SLOT = '{value}';
 
 /**
  * Everything a rewrite has to say before it is worth planning, and what says it.
- *
- * The order matters only in the message: a reader is told the first thing wrong
- * with the rewrite, and told it by name.
+ * The order matters only in the message: the first thing wrong is the one named.
  *
  * @type {Array<[string, (given: any) => boolean, string]>}
  */
@@ -79,19 +62,8 @@ const FIELDS = [
 
 /**
  * Read a rewrite's whole entry, or refuse naming the rewrite and the field.
- *
- * WHY HERE AND NOT IN auditRetheme. This runs before Eater's dev server is
- * started; the audit runs three minutes later, behind a boot, a page load and a
- * settle. A `rewrites` entry with no `expect` used to plan perfectly well and
- * fail down there, which is the exact cost `capture-slab.mjs` says planning
- * early avoids.
- *
- * THE `replace` CHECK IS THE ONE THAT EARNS ITS KEEP, and it is not a shape
- * check. A replacement with no `{value}` in it still fires, still makes its
- * declared number of substitutions and still passes the audit — while the
- * parameter reaches nothing. Moving `flavor` to `"dark"` would leave the map
- * light and the run would report success, which is the failure this whole file
- * exists to prevent, arriving through the file itself.
+ * Here rather than in `auditRetheme`, and the `replace` check is not a shape
+ * check — README, "How each rewrite is declared", says why for both.
  *
  * @param {any} rule
  * @returns {void}
@@ -129,14 +101,9 @@ function readRewrite(rule) {
  */
 
 /**
- * The rewrites a declaration means.
- *
- * A rewrite whose parameter still holds Eater's own value — `flavor` at
- * `"light"`, `drop` empty, `markerOpacity` unset — is NOT PLANNED, so nothing
- * matching its module is intercepted at all and the browser is handed the bytes
- * Eater served. That is what makes the whole device reversible by editing the
- * declaration: not "the rewrites happen to be no-ops" but "there are no
- * rewrites".
+ * The rewrites a declaration means. One whose parameter still holds Eater's own
+ * value is NOT PLANNED at all, which is what makes the device reversible by
+ * editing the declaration — README, "Reversing it".
  *
  * @param {any} declared  slab.json's `retheme`, or nothing
  * @returns {Rewrite[]}
@@ -146,9 +113,8 @@ export function planRetheme(declared) {
   /** @type {Rewrite[]} */
   const plan = [];
   for (const rule of declared.rewrites ?? []) {
-    // Read whole, and read BEFORE the skip: a rewrite whose parameter is turned
-    // off today is still part of the declaration, and a broken entry in it is
-    // broken whichever way the parameters happen to be set.
+    // Read whole, and read BEFORE the skip: a broken entry is broken whichever
+    // way the parameters happen to be set today.
     readRewrite(rule);
     if (!(rule.parameter in declared)) {
       throw new Error(
@@ -187,13 +153,10 @@ export function planRetheme(declared) {
 
 /**
  * One module's text, with every rewrite that claims it applied, and a count each.
- *
- * The replacement goes in through a FUNCTION rather than as a string, so it is
- * pasted literally: `String.replace` reads `$&`, `$'` and `$1` in a replacement
- * string, and the drop rewrite's replacement ends `$/.test(l.id))`. A `$` read
- * as a capture group would silently make the filter some other regex — which is
- * a light Slab under a dark declaration, which is the failure this file exists
- * to prevent.
+ * The replacement goes in through a FUNCTION so it is pasted literally:
+ * `String.replace` reads `$&`, `$'` and `$1`, and the drop rewrite's replacement
+ * ends `$/.test(l.id))`, which read as a capture group would silently become
+ * some other regex.
  *
  * @param {string} url
  * @param {string} source
@@ -219,13 +182,10 @@ export function rewriteModule(url, source, plan) {
 }
 
 /**
- * Which rewrites did not get what they declared, one sentence each.
- *
- * Two kinds of disagreement, and the second is the one a total would hide: a
- * module that was SERVED and did not match, and a module that was never served
- * at all. Eater moving `style.js` somewhere else produces the second, and
- * without it the run would sail past with a rewrite that was never offered
- * anything to rewrite.
+ * Which rewrites did not get what they declared, one sentence each. Two kinds of
+ * disagreement: a module SERVED that did not match, and one never served at all.
+ * README, "The three things it refuses on rather than getting wrong", says why
+ * the second is a refusal rather than a vacuous pass.
  *
  * @param {readonly Rewrite[]} plan
  * @param {readonly Served[]} served  every fetch the run intercepted, in order
@@ -256,11 +216,9 @@ export function auditRetheme(plan, served) {
 }
 
 /**
- * What the run says it is about to do, before a browser is started.
- *
- * The plan is printed rather than summarised because the claim being made is
- * "the Slab you are about to get is this one", and a run that says only
- * "re-themed" leaves its reader to open slab.json to find out what they got.
+ * What the run says it is about to do, before a browser is started. Printed
+ * rather than summarised: the claim is "the Slab you are about to get is this
+ * one", and "re-themed" alone sends its reader to slab.json.
  *
  * @param {readonly Rewrite[]} plan
  * @param {string} checkout
@@ -276,10 +234,9 @@ export function rethemeReport(plan, checkout) {
 }
 
 /**
- * And what it actually did, once the audit has passed.
- *
- * `null` for a run that planned nothing, so the caller has nothing to print
- * rather than a sentence claiming a re-theme held that was never attempted.
+ * And what it actually did, once the audit has passed. `null` for a run that
+ * planned nothing, so the caller has nothing to print rather than a sentence
+ * claiming a re-theme that was never attempted.
  *
  * @param {readonly Served[]} served
  * @returns {string | null}

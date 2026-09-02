@@ -126,6 +126,15 @@ and Playwright never stands between vite and the page. Turning one off is writin
 `null`, not deleting the line; a deleted line is indistinguishable from a
 misspelled `parameter`, and one of the two has to be a refusal.
 
+**`pnpm test` stays green across the reversal**, which is the half of the claim a
+reader most needs to trust, and it did not to begin with (#199). The mechanism
+tests carry a dark declaration of their own rather than reading `slab.json`, so
+the only thing they ask of the real file is that its block is **well-formed** —
+it plans without throwing and every rewrite entry is whole — which is true
+whichever way its parameters are set. Drift between the fixture and the real
+declaration is not the risk it looks like: a `find` that stops matching Eater's
+source is caught by the audit on the next capture, loudly and by name.
+
 ### How each rewrite is declared
 
 Each entry in `retheme.rewrites` says which `parameter` it carries, what it `is`,
@@ -143,6 +152,14 @@ it is refused**, because it would fire, make its declared number of substitution
 and pass the audit while the parameter reached nothing. That is a light Slab
 under a dark declaration with every count agreeing, arriving through the
 declaration itself.
+
+The **value** a parameter holds is read the same way and for the same reason, and
+that check is against a typo rather than against hostile input — the declaration
+is the author's own file. Words, numbers and lists of words only: a stray quote
+in `flavor` closes the call it lands in, and a `.` in a `drop` id is a regex that
+matches more than it says. Either would otherwise land as a module that throws
+somewhere inside vite, minutes into a run, with nothing pointing back at the
+field that caused it.
 
 `retheme.mjs` holds the decisions — plan, rewrite, audit, and the two sentences
 the run says about them — as pure functions, and `retheme.test.mjs` beside it is
@@ -224,7 +241,9 @@ about whether a rewrite landed is a pure function with a text fixture, and the
 test drives every way it can go wrong on purpose: a rewrite applied, a count that
 does not agree, a source with nothing in it to match, a module never served, a
 module served twice where only one fetch is bad, and each field a rewrite can
-declare wrongly.
+declare wrongly. All of it against a **declaration written in the test**, with
+one test over the real `slab.json` asserting only what a light block and a dark
+one both owe — **Reversing it** above says why that boundary is where it is.
 
 The Agent Contract names it as the second of `design/`'s two seams, beside
 `design/eater-cards/compare.mjs`, and says what they have in common — both decide
