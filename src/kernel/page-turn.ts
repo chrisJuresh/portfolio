@@ -1,8 +1,12 @@
-import { pageOwnsWheel } from './wheel';
+import { pageOwnsWheel, wheelGesture } from './wheel';
 
 /**
- * The page turn: one wheel notch carries the reader from one Section's resting
- * place to the next, and one notch the other way brings them back.
+ * The page turn: one wheel GESTURE carries the reader from one Section's resting
+ * place to the next, and one gesture the other way brings them back.
+ *
+ * IT IS A GESTURE AND NOT AN EVENT, and that distinction is the difference
+ * between a trackpad turning one page and running the whole document — see the
+ * decision the wheel handler holds at the foot of this file.
  *
  * WHY THIS IS A SCRIPT AND NOT THE BROWSER'S OWN SNAP FLING. Inside the landing
  * band the document is ports and nothing between (src/kernel/landing.css),
@@ -186,18 +190,68 @@ function turnTo(to: number): boolean {
   return true;
 }
 
+/**
+ * The gesture this handler has already answered, and how it answered.
+ *
+ * ONE GESTURE IS ONE DECISION, and a trackpad is the whole reason it has to be
+ * said. A mouse notch is a single `wheel` event of about a hundred pixels, so
+ * deciding per event and deciding per gesture were the same thing while a mouse
+ * was the only device. A light two-finger flick arrives as thirty or more events
+ * of five or six pixels, and the momentum tail keeps them coming for over a
+ * second after the fingers have left the glass.
+ *
+ * Answered per event, those tails are catastrophic rather than merely untidy. The
+ * events that land WHILE a turn is in flight are harmless — they resolve to the
+ * port it is already heading for and `turnTo` does nothing — but the first one to
+ * arrive after it lands picks the port AFTER it and turns again, and the gesture
+ * chains through every port and then falls out of the bottom into the browser's
+ * own scroll. Measured before this existed, at 1440x820, one light flick carried
+ * the page 0 -> 1551 through ports at 0, 731 and 1551: the Projects Panel, which
+ * is the landing this whole device is built to arrive at, was unreachable by
+ * trackpad in either direction.
+ *
+ * So the decision is taken on a gesture's first vertical notch and held until the
+ * wheel stops. `turned` is which way it went, and both halves are load-bearing: a
+ * gesture that turned SWALLOWS the rest of its own events, so the tail cannot
+ * scroll natively past the port the turn just landed on; a gesture that found
+ * nothing to turn is the browser's for the whole of its length, which is what the
+ * note below about coming back up a tall Section always claimed and could not
+ * deliver — the tail that reached the port carried on into a turn.
+ *
+ * WHY HERE AND NOT IN THE ARBITRATION. The strip wants the opposite: it is a roll
+ * with many resting places, where a held gesture SHOULD keep spinning, and it
+ * reads the same stream as a spin (src/sections/front-screen/timeline.ts). Only
+ * the boundary is shared, which is why `wheelGesture()` is imported and
+ * `GESTURE_GAP` is not copied.
+ */
+let settled = 0;
+let turned = false;
+
 function onWheel(event: WheelEvent): void {
   if (!pageOwnsWheel()) return; // a roll has this gesture
   const delta = event.deltaY; // the turn is vertical only: a sideways swipe is a roll's
   if (!delta) return;
+
+  const gesture = wheelGesture();
+  if (gesture === settled) {
+    if (turned) event.preventDefault();
+    return;
+  }
+  // Settled from here, and native until something below actually turns: every
+  // route out of this function is a decision the rest of the gesture inherits.
+  settled = gesture;
+  turned = false;
+
   const list = ports();
   if (list.length < 2) return;
 
   // Past the last port, inside a Section taller than the window, the wheel is the
   // browser's again: there is a composition to read down there and the turn has
   // already done its job. CSS agrees — a snap area larger than the scrollport
-  // relaxes snapping inside itself. Coming back up, the reader scrolls natively
-  // to the port and the next notch turns the page.
+  // relaxes snapping inside itself. Coming back up, the whole gesture is the
+  // browser's — it scrolls natively to the port and stops there, and the NEXT
+  // gesture turns the page. That is what the decision above buys: a tail long
+  // enough to reach the port used to carry straight on through it.
   const last = list[list.length - 1] as number;
   if (window.scrollY > last + SLACK) return;
 
@@ -208,6 +262,7 @@ function onWheel(event: WheelEvent): void {
       : ([...list].reverse().find((port) => port < y - SLACK) ?? 0);
   if (raf === null && Math.abs(y - to) < SLACK) return; // nothing to turn
   event.preventDefault();
+  turned = true;
   turnTo(to);
 }
 

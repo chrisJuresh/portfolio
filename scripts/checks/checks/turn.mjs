@@ -1,5 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 import { open, settle } from '../lib/page.mjs';
 
@@ -37,6 +38,15 @@ import { open, settle } from '../lib/page.mjs';
  *     not the face it claims to be — and "is it a polygon" cannot be asked of the
  *     shape itself, because a sans E is one either way.
  *   * One wheel notch turns the page, and one notch back brings it home.
+ *   * AND ONE TRACKPAD FLICK TURNS ONE PAGE, which is the same claim about the
+ *     device most readers actually have and was false for as long as it was only
+ *     asserted about a notch. A mouse notch is a single event of about a hundred
+ *     pixels; a light two-finger flick is thirty or more events of five or six,
+ *     and its momentum tail is still arriving after the turn has landed. Decided
+ *     per event, that tail took the port after the one it had just reached and
+ *     ran the document to its end — so the Panel, which is what this whole file
+ *     is about, could not be stopped on from a trackpad in either direction
+ *     (#205). Every other assertion in this Check passed throughout.
  *   * A notch begun on the photographs belongs to the photographs. Without the
  *     arbitration the page turns out from under a reader who is spinning the
  *     strip, which is the loudest of these and still easy to reintroduce.
@@ -53,11 +63,55 @@ import { open, settle } from '../lib/page.mjs';
  * author's, and so is the stagger; what is asserted is that a notch arrives.
  */
 
-/** How long to leave a gesture alone so the next notch starts a fresh one. */
-const GESTURE_GAP = 260;
+/**
+ * The pause the KERNEL ends a gesture at, lifted out of its source rather than
+ * written down here.
+ *
+ * Both of this Check's wheel claims are bounded by it and from opposite sides —
+ * two notches have to be FURTHER apart than this to be two gestures, and a
+ * flick's events have to be CLOSER than it to be one — so a copy going stale on
+ * a change to the Kernel is a Check that quietly asserts the opposite of what it
+ * reads as asserting: two gestures merging into one, or a flick splitting into
+ * dozens. `page.mjs` lifts `THEME_KEY` the same way and for the same reason;
+ * failing here instead names the file.
+ */
+const KERNEL_GAP = (() => {
+  const file = fileURLToPath(new URL('../../../src/kernel/wheel.ts', import.meta.url));
+  const found = /GESTURE_GAP\s*=\s*(\d+)/.exec(readFileSync(file, 'utf8'));
+  if (!found) throw new Error(`turn.mjs: no GESTURE_GAP in ${file} — the Kernel renamed it`);
+  return Number(found[1]);
+})();
+
+/** How long to leave a gesture alone so the next notch starts a fresh one: the
+ *  Kernel's own boundary and a margin over it, never a number of its own. */
+const GESTURE_GAP = KERNEL_GAP + 60;
 
 /** How many frames a turn is given to land before it is called stuck. */
 const FRAMES = 90;
+
+/**
+ * How many frames a flick keeps delivering events for, one per frame.
+ *
+ * PACED ON THE FRAME AND NOT ON A TIMER, so the stream is bounded by the browser's
+ * own rendering rather than by a clock: a page with a turn in flight is running
+ * `requestAnimationFrame`, so consecutive events are a frame apart. It is long
+ * enough to outlast a turn ON PURPOSE — the tail still arriving AFTER the turn has
+ * landed is the whole failure, and a flick that stopped when the turn did would
+ * assert nothing about it.
+ *
+ * SIXTY AND NOT NINETY, because every gap is a chance for the machine to stall
+ * past the boundary and split the stream. At a frame apiece this is about a
+ * second against a turn that eases for under six hundred milliseconds, so a third
+ * of the events arrive after the landing — the failure needs one — and there are
+ * thirty fewer gaps to get through than the first version had.
+ */
+const FLICK = 60;
+
+/** The delta one event of a flick carries, in px: a real trackpad's, not a notch's. */
+const FLICK_DELTA = 6;
+
+/** How many flicks to spend looking for one the machine delivered without a stall. */
+const FLICK_TRIES = 3;
 
 /** Two px of scroll is "there". */
 const SLACK = 2;
@@ -517,6 +571,138 @@ export const check = {
       notes.push(
         `one notch: 0 → ${wheeled.down.toFixed(0)}px and back to ${wheeled.up.toFixed(0)}px; a notch on the ` +
           `photographs left the page at ${wheeled.held.toFixed(0)}px`,
+      );
+
+      // ---- and one flick turns one page ----------------------------------
+      // A stream rather than an event, in both directions, from the two ends of
+      // the document. The Panel's port is the answer BOTH times, which is what
+      // makes this a pair: the failure it exists for overshoots the Panel going
+      // down and overshoots it coming up, and either half alone still reads as a
+      // page that turns.
+      //
+      // WHAT MAKES THE STREAM ONE GESTURE IS THIS FILE'S OWN MEASUREMENT, and
+      // that is the second version of this Check rather than a flourish. The
+      // first asked the Kernel how many gestures it had counted and asserted
+      // "no more turns than gestures" — which the per-event mutation walked
+      // straight through, because a Kernel that has stopped grouping events
+      // reports ninety gestures for one flick and the invariant goes slack. The
+      // count was part of what was under test. So the gap between events is
+      // timed HERE, against the Kernel's own boundary lifted out of its source,
+      // and a stream with no gap over that boundary is one gesture whatever the
+      // Kernel thinks it is.
+      const flicked = await page.evaluate(
+        async ({ frames: budget, events, delta, gap, tries: allowed, boundary }) => {
+          const frame = () => new Promise((next) => requestAnimationFrame(next));
+          const rest = () => new Promise((next) => setTimeout(next, gap));
+          const notch = (deltaY) =>
+            document.documentElement.dispatchEvent(
+              new WheelEvent('wheel', { deltaY, bubbles: true, cancelable: true }),
+            );
+
+          /** Put the page on a port and wait until it is actually standing there. */
+          const put = async (y) => {
+            window.scrollTo(0, y);
+            for (let waited = 0; Math.abs(window.scrollY - y) > 1 && waited < budget; waited += 1) {
+              await frame();
+            }
+            await frame();
+          };
+
+          const flick = async (from, deltaY) => {
+            await put(from);
+            await rest(); // whatever gesture came before this one is over
+            let widest = 0;
+            // HOW MANY GESTURES THIS STREAM IS, BY THIS FILE'S OWN CLOCK: one,
+            // plus every gap wide enough for the Kernel to have ended a gesture
+            // at. Counted here rather than asked of the page because the grouping
+            // is the thing under test, and a Kernel that has stopped grouping
+            // would be handed the excuse for its own failure.
+            let gestures = 1;
+            let last = performance.now();
+            for (let event = 0; event < events; event += 1) {
+              const now = performance.now();
+              if (event > 0 && now - last > boundary) gestures += 1;
+              if (event > 0) widest = Math.max(widest, now - last);
+              last = now;
+              notch(deltaY);
+              await frame();
+            }
+            // The stream has stopped; give the turn it asked for time to arrive.
+            for (let held = 0; held < budget; held += 1) await frame();
+            return { from, landed: window.scrollY, widest, gestures, tries: 1 };
+          };
+
+          /**
+           * The same flick until the machine delivers one as a single gesture, or
+           * `allowed` tries.
+           *
+           * A frame long enough to be a pause splits the stream, and two turns
+           * are then CORRECT rather than a failure — so this is not a retry until
+           * the answer is liked. It is a retry for the STRONG claim, which is
+           * "one gesture lands on the Panel's port"; a stream that stayed split
+           * for every try is still asserted against the weak one, "no more turns
+           * than gestures", and the note says which claim the run got.
+           */
+          const attempt = async (from, deltaY) => {
+            let read = await flick(from, deltaY);
+            for (let tries = 2; tries <= allowed && read.gestures > 1; tries += 1) {
+              read = { ...(await flick(from, deltaY)), tries };
+            }
+            return read;
+          };
+
+          const ports = window.portfolio?.ports?.() ?? [];
+          const down = await attempt(0, delta);
+          const up = await attempt(ports[ports.length - 1] ?? 0, -delta);
+          window.scrollTo(0, 0);
+          return { ports, down, up };
+        },
+        {
+          frames: FRAMES,
+          events: FLICK,
+          delta: FLICK_DELTA,
+          gap: GESTURE_GAP,
+          tries: FLICK_TRIES,
+          boundary: KERNEL_GAP,
+        },
+      );
+
+      /** Which port a scroll position is standing on, or -1 if it is between two. */
+      const standing = (y) => flicked.ports.findIndex((port) => Math.abs(port - y) <= SLACK);
+      for (const [label, read, wants] of [
+        ['down from the top', flicked.down, 1],
+        ['up from the foot', flicked.up, flicked.ports.length - 2],
+      ]) {
+        const at = standing(read.landed);
+        const moved = Math.abs(at - standing(read.from));
+        const where =
+          at < 0
+            ? `${read.landed.toFixed(1)}px, which is not a port at all`
+            : `port ${at} at ${read.landed.toFixed(1)}px`;
+        if (read.gestures === 1 && at !== wants) {
+          failures.push(
+            `a flick ${label} — ${FLICK} events of ${FLICK_DELTA}px, no two more than ` +
+              `${read.widest.toFixed(0)}ms apart against the Kernel's ${KERNEL_GAP}ms boundary, so one ` +
+              `gesture — left the page on ${where} rather than on port ${wants} at ` +
+              `${(flicked.ports[wants] ?? 0).toFixed(1)}px. ONE GESTURE TURNS ONE PAGE: a trackpad delivers a ` +
+              'flick as a stream whose tail is still arriving after the turn has landed, so a turn decided ' +
+              'per EVENT chains through every port and runs the document to its end. #205, and the decision ' +
+              'the wheel handler holds in src/kernel/page-turn.ts.',
+          );
+        } else if (read.gestures > 1 && moved > read.gestures) {
+          failures.push(
+            `a flick ${label} stalled into ${read.gestures} gestures — its widest gap was ` +
+              `${read.widest.toFixed(0)}ms against a ${KERNEL_GAP}ms boundary — and moved the page ${moved} ` +
+              `ports, to ${where}. A gesture may turn at most one page. src/kernel/page-turn.ts, and #205.`,
+          );
+        }
+      }
+      notes.push(
+        `a ${FLICK}-event flick: down ${flicked.down.from.toFixed(0)} → ${flicked.down.landed.toFixed(0)}px ` +
+          `as ${flicked.down.gestures} gesture(s) in ${flicked.down.tries}, up ` +
+          `${flicked.up.from.toFixed(0)} → ${flicked.up.landed.toFixed(0)}px as ${flicked.up.gestures} ` +
+          `gesture(s) in ${flicked.up.tries}; widest gaps ${flicked.down.widest.toFixed(0)}ms and ` +
+          `${flicked.up.widest.toFixed(0)}ms against a ${KERNEL_GAP}ms boundary`,
       );
 
       return { failures, notes };

@@ -21,7 +21,7 @@ than a convenience.
 | `theme.ts`                  | which paper, where it is stored, and who is told when it changes |
 | `turn.ts`                   | the Turn, as one named seekable Timeline, how far it runs in each regime, and `onTurn()` for anything drawn against it that CSS cannot draw |
 | `landing.css` / `tokens/landing.css` | the landing band, the measure two Sections share across it, and the resting places — one per Section, stated as a relationship so a new one costs nothing |
-| `page-turn.ts`              | one wheel notch between two resting places, and a link into a Section going the same way |
+| `page-turn.ts`              | one wheel GESTURE between two resting places, and a link into a Section going the same way |
 | `wheel.ts`                  | who owns a wheel gesture — the page, or a roll inside it     |
 | `loader.ts`                 | mounting a Section as it approaches the viewport             |
 | `motion.ts`                 | `hold()` / `release()` — see below                            |
@@ -536,7 +536,7 @@ nothing here counts them, which is the property worth keeping.
 `page-turn.ts` is why the turn is a script and not the browser's own snap fling:
 that fling owns the scroller for as long as it flies, and a notch the other way
 taken while it is in the air is filtered out, so the turn back cannot be taken
-until it has landed. Here one notch picks the port its direction is heading for
+until it has landed. Here one gesture picks the port its direction is heading for
 and eases the window onto it, and a notch the other way retargets the ease
 mid-flight. Three things in that file are easy to get wrong and are written out in
 it: the ports are read off `scroll-snap-align` and never off `scroll-snap-type`,
@@ -550,6 +550,32 @@ for the snapping to be lifted** — `window.portfolio.snapping(false)`, and `tru
 to put it back. Without it a scroll sweep reads a document that jumps rather than
 one that crosses, and the `front-screen` Check's crossing sweep found the Turn at
 0 in forty of its forty-one samples.
+
+**ONE GESTURE IS ONE TURN, and a trackpad is why that had to be said out loud.**
+A mouse notch is a single `wheel` event of about a hundred pixels, so deciding per
+event and deciding per gesture were the same thing while a mouse was the only
+device in the room. A light two-finger flick is thirty or more events of five or
+six pixels, and its momentum tail keeps arriving for over a second after the
+fingers have left the glass. Decided per event, the events that land while a turn
+is in flight are harmless — they resolve to the port it is already heading for and
+nothing happens — but the first one to arrive AFTER it lands picks the port after
+it, and the gesture chains through every port and falls out of the bottom of the
+document into the browser's own scroll. Measured at 1440x820 before #205: one
+light flick carried the page 0 → 1551 through ports at 0, 731 and 1551, in both
+directions, which is the Projects Panel — the landing this whole device exists to
+arrive at — being unreachable from a trackpad. So the wheel handler settles a
+gesture's first vertical notch and holds that answer until the wheel stops: a
+gesture that turned swallows the rest of its own events, and one that found nothing
+to turn is the browser's for the whole of its length. The `turn` Check asserts it
+from both ends of the document, and `scripts/checks/NOTES.md` carries the reason
+its precondition is timed rather than asked for.
+
+**The strip wants the opposite, which is why the rule is the page turn's and not
+the arbitration's.** It is a roll with many resting places, where one held gesture
+SHOULD keep spinning, and it already reads a stream as a spin. Only the boundary is
+shared — `GESTURE_GAP` stays in `wheel.ts`, and `page-turn.ts` asks
+`wheelGesture()` rather than timing a second copy of it, because two copies
+drifting means an event belonging to one gesture and acted on as another.
 
 `wheel.ts` settles which of two claimants a gesture belongs to, because there are
 two: the Front Screen's photograph strip and the page turn. A gesture belongs to

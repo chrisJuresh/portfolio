@@ -240,8 +240,10 @@ requires a working link for each — so a Section added without its rewrite fail
 the build rather than shipping a URL that 404s.
 
 **Above 1100x700 the document is a PAGE TURN and not a scroll.** One resting
-place per Section and nothing between them: one wheel notch carries the reader
-from one to the next, and on the FIRST notch the Front Screen's cut PROJECTS
+place per Section and nothing between them: one wheel GESTURE carries the reader
+from one to the next — and a gesture, not an event, because a trackpad delivers
+one flick as dozens of events and its tail is still arriving after the turn has
+landed (#205) — and on the FIRST notch the Front Screen's cut PROJECTS
 stands in the Projects Panel masthead's slot and morphs out of Friz Quadrata into
 the sans as the page crosses — the word never moves and never resizes, the
 document moves past it. **The crossing is that first notch and not the document's

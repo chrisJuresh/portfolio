@@ -104,7 +104,7 @@ cannot be verified there even by hand.
 | `eater-map`      | PROJECTS stops standing where the Gallery's own masthead stands or stops being the same word, the serif title's cap height or its drop below the masthead's baseline stops matching the two ratios the Section declares — which a font size proportional to the masthead does, by 4% — the copy leaves the foot of the column PROJECTS heads or the Points leave the right of the drawing, the three Cards on the Slab stop being drawn at the Slab's own scale at the Lift's flat end, one of them stops moving between the Lift's two ends, one of the Section's own boxes is invisible at either end, a reader who leaves part way up is left with a Lift that ran on without them, a leader line comes off the corner it names part way up the Lift or stops ending in a lit dot on it, a point and a part stop being one to one, the picture of the app puts a focusable control or a heading into the page, an extruded edge stops having a direction or stops taking it from the one page-fixed light, a corner of the Slab shows the page behind it, `--eater-map-slab-edge` stops being live inside the gradient, the rebuild that makes a dragged light visible starts running for a reader with no Editor on the page, or below the band the drawing stops collapsing — a perspective left standing on a column, a Slab that misses the window's edges, a Lift still running where there is no page turn, the four features no longer a list under the picture, or one of the three readers down there handed a composition of their own |
 | `rail`           | the page carries more than one Rail or none, at any of four windows; the Rail moves when the page turns; it stops standing in the page's own left margin, or stops sharing the composition's left edge below the band; the current entry stops naming the Section at rest, in either direction; an entry stops being reachable at a resting place because a Section is hit-tested over it; the Rail stays reachable on the first screen, where it is drawn transparent; the entry with no Section of its own stops saying so to a screen reader; or a reader who runs no script gets no Rail or no current entry |
 | `ground`         | paper is not light, or the Turn does not arrive dark, in either theme         |
-| `turn`           | the Kernel's published landing measure — cap, drop or the stone the width branch leaves room for — disagrees with the Panel's own arithmetic, the Panel's masthead is visible or has lost its box, the Cut Title is not standing in that masthead's slot, the word moves or resizes across the crossing, either end of the morph is not the outline the Bake wrote, a wheel notch does not turn the page or bring it back, a notch begun on the photographs turns it, or the paragraph that arrives with the crossing is painted at the top of the document, is still arriving at the landing, moves to get there, or is left on its own compositing layer once it has |
+| `turn`           | the Kernel's published landing measure — cap, drop or the stone the width branch leaves room for — disagrees with the Panel's own arithmetic, the Panel's masthead is visible or has lost its box, the Cut Title is not standing in that masthead's slot, the word moves or resizes across the crossing, either end of the morph is not the outline the Bake wrote, a wheel notch does not turn the page or bring it back, a trackpad flick turns more than one page or lands anywhere but the Panel's port from either end of the document, a notch begun on the photographs turns it, or the paragraph that arrives with the crossing is painted at the top of the document, is still arriving at the landing, moves to get there, or is left on its own compositing layer once it has |
 | `crossing`       | outside the landing band the Panel's ground parts company with the document's anywhere across the crossing, the page has not finished turning by the time the Panel owns the screen, the crossing is a flip or never finishes, the reader meets the whole of the Cut Title on the first screen, the Cut Title is cut by a box rather than by the fold — so it is still cut in the Section it heads — or stops being one drawing, or the Panel's masthead draws a second PROJECTS under it — or loses the `display` the Section's accessible name comes from |
 | `moments`        | a Timeline cannot be seeked, does not survive a scroll, moves nothing, or will not release |
 | `deep-links`     | a Section on the page carries no id, or its `/portfolio/<id>` does not answer, or answers with something that is not the document, or opens it somewhere other than where that Section asks to be put |
@@ -576,7 +576,7 @@ Every failure string names the thing that broke: the URL, the family, the
 selector, the measured number and the wanted one. "something is wrong" costs a
 diagnosis session; "404 for /_astro/vollkorn-regular.Dnyk-4Dy.woff2" costs nothing.
 
-## Ten traps, each of which cost a wrong answer here
+## Eleven traps, each of which cost a wrong answer here
 
 **`hold()` before you seek, and it is not enough to seek twice.** A scrubbed
 Timeline is recomputed from the scroll position, so a bare seek survives about a
@@ -682,6 +682,28 @@ arrived computes `backgroundColor` to `rgba(0,0,0,0)`, and a 1x1 canvas reads th
 back as `#000000` — so "the ground is dark" was satisfied, three times over, by a
 ground that was not painted at all. `ground` reads the alpha as well, and an
 unpainted ground is its own named failure.
+
+**Never ask the system under test how it grouped its own input.** The `turn`
+Check's flick has to know whether the stream it delivered was one gesture or two,
+because two gestures turning two pages is correct and one gesture turning two is
+the bug. The first version asked the Kernel — a handle published for the purpose —
+and asserted "no more turns than gestures". A Kernel that has stopped grouping
+events reports **ninety** gestures for one flick, the invariant goes slack, and
+the mutation walks through a Check whose failure message was already written. The
+grouping was the thing under test, and the Check handed the bug its own alibi. It
+times the gap between its own dispatches now, against `GESTURE_GAP` lifted out of
+`src/kernel/wheel.ts` the way `page.mjs` lifts `THEME_KEY` — so a stream with no
+gap over that boundary is one gesture whatever the page thinks — and the handle
+that was added for it was taken back out. **A precondition has to be established
+from outside the thing it is a precondition for**, and it generalises past this
+Check: a Check reading a state machine's own idea of its state can only ever
+assert that it is self-consistent.
+
+The same flick carries the smaller lesson too. **A pair of directions is worth
+more than one direction twice as hard**: a stall splits the stream, which leaves
+only the weak claim, and both ends of the document stalling in the same run is the
+square of one end doing it. The mutation is caught by whichever direction came
+through clean.
 
 Two more names that are taken and should not be reused: `Check`, which CONTEXT.md
 defines and every module in `checks/` exports, and `Record`, which is TypeScript's
