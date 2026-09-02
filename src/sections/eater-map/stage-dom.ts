@@ -156,6 +156,21 @@ const mountDomStage = (parts: StageParts): Stage => {
       fillet: FILLET,
       filletBack: FILLET,
       depth: DEPTH,
+      // AND THE DEPTH IS DRAWN FLAT, AT A SCALE OF ONE (#207). The plane is drawn
+      // in parallel projection, so a slice `d` behind it lands exactly where one
+      // ON it, `d * tan(tilt)` further along, would — and this plane carries no
+      // `scale()`, which is the same fact that lets `fillet` and `filletBack`
+      // above be one expression. So the divisor is 1 and it is written as 1
+      // rather than left out, because leaving it out is what asks for the third
+      // dimension.
+      //
+      // WHY THE SLAB ASKS FOR THE SAME THING THE CARDS DO, having no text on it
+      // to keep sharp: `preserve-3d` is not a property of a slice, it is a
+      // property of the plane they hang under, and the Cards ride that plane.
+      // One `translateZ` left here would keep the whole Section a 3D scene and
+      // put every Card back in its own render surface — which is the blur #207
+      // is about. `edge.ts`'s `flatten` carries the derivation.
+      flatten: '1',
       colour: 'var(--eater-map-slab-edge)',
       // THE PICTURE THE FILLET IS PAINTED FROM, on `wrapped` and on nothing else.
       // `currentSrc` and not `src`, because that is the URL the browser actually

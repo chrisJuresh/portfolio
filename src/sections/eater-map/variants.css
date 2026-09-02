@@ -94,6 +94,35 @@
     rotateZ(var(--eater-map-swing));
 }
 
+/* AND THE THIRD DIMENSION HAS TO BE PUT BACK FOR THIS ONE TO ARGUE ANYTHING
+   (#207). The composition spends a Card's depth as a place on the plane, which is
+   exact where nothing converges and meaningless where something does: a Card
+   translated along a flat surface cannot grow as it climbs towards a lens, and
+   growing as they climb is the entire claim under test here. So the chain and the
+   rise are restated together — three declarations, all of them the composition's
+   own from before #207, and none of them a new opinion about the drawing.
+
+   WHAT A VARIANT CANNOT PUT BACK IS THE EDGE'S DEPTH, and it never could: a
+   slice's transform is an inline style `edge.ts` writes, and no stylesheet
+   outranks one. So each Card's edge is drawn at the place a PARALLEL projection
+   puts it whatever this block says. It is a 1.2px hairline and the claim under
+   test is about where the Cards are, so the sheet still shows the argument —
+   worth knowing before reading a corner of it as evidence. */
+:root[data-variant='projection-perspective'] .eater-map__plane,
+:root[data-variant='projection-perspective'] .eater-map__cards,
+:root[data-variant='projection-perspective'] .eater-map__card {
+  transform-style: preserve-3d;
+}
+
+:root[data-variant='projection-perspective'] .eater-map__card {
+  transform: translate3d(
+      calc(var(--eater-map-card-drift-x) * 100cqw),
+      calc(var(--eater-map-card-drift-y) * 100cqw),
+      calc(var(--eater-map-card-rise) * 100cqw)
+    )
+    scale(var(--eater-map-card-total));
+}
+
 /* The collage: the shared camera stays, and then each surface is turned its own
    way on top of it. This is the reference render and the direction #177
    rejected — the claim being tested is that a per-element rotation stops the
@@ -103,7 +132,20 @@
    rotation has to go INSIDE it, between the translate and the scale: right to
    left, the scale is the Card's own, the rotation is in the plane's units, and
    the translate is the depth. The two distances are the composition's own
-   custom properties, read off the element the composition set them on. */
+   custom properties, read off the element the composition set them on.
+
+   AND THE CHAIN COMES BACK WITH IT (#207). A per-element rotation is exactly the
+   thing a place on the plane cannot stand in for — the composition can spend a
+   Card's depth as a translation because every Card lies in one surface, and this
+   direction's whole claim is that they do not. So this one asks for the third
+   dimension and pays for it — with the same caveat about the edge the
+   perspective Variant above carries. */
+:root[data-variant='projection-collage'] .eater-map__plane,
+:root[data-variant='projection-collage'] .eater-map__cards,
+:root[data-variant='projection-collage'] .eater-map__card {
+  transform-style: preserve-3d;
+}
+
 :root[data-variant='projection-collage'] .eater-map__card {
   transform: translate3d(
       calc(var(--eater-map-card-drift-x) * 100cqw),
@@ -112,7 +154,7 @@
     )
     rotateX(calc(var(--eater-map-card-lift) * var(--eater-map-card-cant, 0deg)))
     rotateZ(calc(var(--eater-map-card-lift) * var(--eater-map-card-veer, 0deg)))
-    scale(calc(var(--eater-map-app-scale) * var(--eater-map-card-scale)));
+    scale(var(--eater-map-card-total));
 }
 
 /* One pair per Card, and no two alike — the point of the direction is that each

@@ -361,6 +361,14 @@ export default function mountGlass(root: HTMLElement): void {
           // The two are the same distance said twice.
           filletBack: `(${CARD_ROUND}) * 100cqw`,
           depth: `(${CARD_DEPTH}) * 100cqw`,
+          // AND THE DEPTH IS DRAWN FLAT, which is what keeps the app's own text
+          // sharp (#207): a `preserve-3d` Card is rasterised square and resampled
+          // onto the tilted plane, and the drawing is a picture of an INTERFACE.
+          // The two depths above are in the plane's units and a `translate` on a
+          // child of this Card is scaled by the Card, so the projection divides by
+          // exactly that scale — read off the Card rather than rebuilt here, so
+          // the boost and the app's own scale are one name and not three.
+          flatten: 'var(--eater-map-card-total)',
           colour: 'var(--eater-map-card-edge)',
           surface: surface.name,
         });

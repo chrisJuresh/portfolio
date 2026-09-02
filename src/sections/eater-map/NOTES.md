@@ -283,8 +283,8 @@ and are both silent when broken.
     .eater-map__plane  the PROJECTION and the one rotation — rotateX, rotateZ, and no perspective()
       .eater-map__slice x24  the Slab's thickness, built by the stage through edge.ts
       .eater-map__still    the picture
-      .eater-map__cards    the app's stylesheet host, preserve-3d
-        .eater-map__card   one depth off the plane's surface, preserve-3d
+      .eater-map__cards    the app's stylesheet host
+        .eater-map__card   one depth off the plane's surface
           .eater-map__slice x24 per glass surface  that surface's own thickness
           .eater-map__face      FLAT, so z-index decides inside it
             .eater-map__glass x1 per glass surface  the blurred copy of the map
@@ -297,6 +297,14 @@ and are both silent when broken.
 that is not `display: contents`: the gap it carries has to be a length, and the
 collector writes `margin: 0 !important` on every vendored root. The fourth
 surface, above, has the rest of it.
+
+**NOTHING IN THAT TREE IS `preserve-3d` ANY MORE, WHICH IS #207, and the section
+below on the Lift has the whole of it.** Every depth on the plane is written as
+the place it PROJECTS to, which under a parallel projection is exact rather than
+an approximation, so the drawing is one 2D affine composition. The rules that
+follow are still true of anything that asks for a 3D rendering context — the two
+Variants arguing about a converging camera do — and they are the reason the tree
+has four boxes rather than three, which has not changed.
 
 **Rule one: a GROUPING element cannot preserve 3D.** `transform-style: preserve-3d`
 is forced back to `flat` on any element with `overflow` other than `visible`,
@@ -526,28 +534,105 @@ and a window carried across the breakpoint both move the drawing with nothing
 re-mounted and no observer.
 
 **`preserve-3d` ON A CARD Z-FIGHTS ITS OWN CHILDREN**, which is the mechanism that
-cost a render. The copy and the Card's own content are both at `z: 0` under it, so
+cost a render. It is not a live hazard since #207 — no Card is `preserve-3d` — but
+it is what `.eater-map__face` is FOR, so it is what has to be understood before
+that box is taken out. The copy and the Card's own content are both at `z: 0` under it, so
 `z-index` stops deciding between them and the two interleave — in the prototype
 that made the details Card read as two smeared panels. `.eater-map__face` is a
 `flat` box holding both, and the Card's edge slices are that face's **siblings**,
 because a depth inside a flat face is nothing at all.
 
-**AND THE CARD ITSELF HAS TO BE `preserve-3d`, WHICH IS THE HALF #190 LEFT OUT
-(#203).** Moving the slices out of the flat face is only worth doing if what they
-land in has a third dimension, and for three tickets it did not: `.eater-map__card`
-declared no `transform-style` at all, so it was `flat`, and every slice's
-`translateZ` was discarded. Measured on the shipped page: all twenty-four of the
-details Card's slices sat at `translateZ(-3.6px)` with a screen rect **identical to
-the face's**, painting underneath it. The Cards read as decals lying on the map.
+**AND THE SLICES HAVE TO LAND SOMEWHERE THEIR DEPTH IS REAL, WHICH IS THE HALF
+#190 LEFT OUT (#203).** Moving them out of the flat face is only worth doing if
+what they land in can carry a depth, and for three tickets it could not:
+`.eater-map__card` declared no `transform-style` at all, so it was `flat`, and
+every slice's `translateZ` was discarded. Measured on the shipped page: all
+twenty-four of the details Card's slices sat at `translateZ(-3.6px)` with a screen
+rect **identical to the face's**, painting underneath it. The Cards read as decals
+lying on the map.
+
+**#203 ANSWERED THAT WITH `preserve-3d` AND #207 ANSWERED IT WITH ARITHMETIC.**
+The slices carry no `translateZ` now — they are translated to the place their
+depth projects to, in the Card's own units — so there is nothing left for a flat
+parent to discard, and the Card is flat. Both answers put the edge on screen at
+the same 1.247px off the face; the difference is what the Card costs to draw, and
+that is the section below.
 
 **This is why "the Cards have no 3D effect" survived a diagnosis that blamed the
 thickness.** `--eater-map-card-thickness` moves nothing but that `translateZ`, so
 four times the depth was four times nothing — a ladder at 0.01 / 0.02 / 0.04 came
 back as three identical pictures. The Token was never wrong; 0.01 is #187's own 1%
 against the Slab's 3% and it reads correctly now that there is a depth for it to be
-a depth in. The Slab never had the fault, because ITS slices are children of
-`.eater-map__plane`, which is `preserve-3d` — which is exactly why the Slab had a
+a depth in. The Slab never had the fault, because ITS slices were children of
+`.eater-map__plane`, which was `preserve-3d` — which is exactly why the Slab had a
 visible edge throughout and the Cards did not.
+
+## The drawing is flat, and a parallel projection is why it can be (#207)
+
+**THE COMPLAINT WAS THAT THE CARDS WERE NOT AS SHARP AS THE REST OF THE PAGE, and
+the cause was `preserve-3d` rather than anything about the type.** An element in a
+3D rendering context is given its own render surface: the browser rasterises it
+SQUARE, in its own plane, and the GPU then resamples that texture onto the tilted
+one. So every glyph of the vendored Eater app arrived through a bilinear filter,
+while the Points beside it — ordinary text in the page's own plane — were drawn by
+Skia at full resolution. Two kinds of rendering on one screen, which is exactly
+what "not as sharp as the rest of the text" describes.
+
+**AND A PARALLEL PROJECTION DOES NOT NEED THE THIRD DIMENSION AT ALL.** With
+`transform: rotateX(t) rotateZ(s)` and no `perspective()`, a point a distance `d`
+BEHIND the plane projects to exactly the same screen point as one lying ON the
+plane, `d · tan(t)` further along it — `sin(s)` of that across and `cos(s)` of it
+down, in the plane's own axes. Solve `M · (a, b, 0) = M · (0, 0, −d)`:
+
+```
+a = −d · tan(t) · sin(s)
+b = −d · tan(t) · cos(s)
+```
+
+There is no third term. Nothing converges, so nothing about the answer depends on
+where the point is — which is what makes this an identity rather than an
+approximation, and it is the same fact #189 relied on when it took the camera out.
+`--eater-map-depth-x` and `--eater-map-depth-y` on `.eater-map__plane` are that
+pair per unit of depth, and every depth in the Section is spent through them: a
+Card's rise in `EaterMap.astro`, every slice of every solid in `edge.ts`.
+
+**IT IS THE WHOLE CHAIN OR IT IS NOTHING, and that cost a wrong fix on the way.**
+Flattening `.eater-map__cards` and `.eater-map__card` while one `translateZ`
+remained on the Slab's slices changed the measured sharpness by **less than 1%**:
+the plane was still a 3D scene, and a 3D scene composites all of its children, so
+the Cards went straight back into their own surfaces. The Slab has no text on it
+and does not care how it is rasterised — it flattens because the Cards ride the
+plane it hangs under. Measured at 1600x900 at DPR 2, on the built page, over a
+crop of the details Card's paragraph, as mean |Laplacian| over the crop's own
+standard deviation:
+
+| | before | after |
+| --- | --- | --- |
+| cards flat, plane 3D | 0.869 | 0.862 |
+| whole chain flat | 0.869 | **1.043** |
+
+**AND THE DRAWING DID NOT MOVE.** Every Card's screen rect is identical to three
+decimal places before and after — `details` at `516.254, 341.340, 484.665,
+294.390` either way — and so is every wall stack's separation, 1.247px on each of
+the five Card surfaces and 5.988px on the Slab. That is the identity above doing
+what it says.
+
+**WHAT A FLAT PARENT TAKES AWAY IS THE DEPTH SORT**, and `edge.ts` puts it back by
+hand. A `preserve-3d` parent paints its children nearest-last whatever the document
+says; a flat one paints them in document order. The slices are BUILT shallowest
+first — the fillet rolls back from the face, then the wall goes on behind it — so
+`extrude` inserts each one BEFORE the last, and the stack comes out deepest-first,
+which is the order a sort would have painted it in. The Slab's edge is
+pixel-identical with the two orders; the reversal is what keeps it that way.
+
+**THE TWO PROJECTION VARIANTS PUT `preserve-3d` BACK, and they have to.** A place
+on the plane stands in for a depth only where nothing converges:
+`projection-perspective` restores a camera and `projection-collage` rotates every
+Card on its own, and neither claim survives being flattened. Both restate the
+chain and the rise in `variants.css`. What no Variant can restore is a slice's
+depth — `edge.ts` writes those as inline styles and no stylesheet outranks one — so
+each Card's edge is drawn at its parallel place on those sheets, which is a 1.2px
+hairline under an argument about where the Cards are.
 
 **The Check did not catch it, and could not have.** It reads each surface's
 gradient STRINGS and measures the four sides against each other, so an edge that is
@@ -931,9 +1016,11 @@ edge. Measured with the mutation in: 390px wide at x=27.64 in a 375px document.
 While every angle was a term of `--eater-map-lift`, the 0 above already flattened
 the plane and this said it outright for the things that READ the drawing rather
 than look at it: `perspective()` with nothing to project still computes to a
-matrix3d, and the Cards still stand in a `preserve-3d` rendering context, so the
+matrix3d, and the Cards stood in a `preserve-3d` rendering context, so the
 leader lines, a Variant and a Check would each have been interrogating a
-projection that happened to be flat. Since #189 the attitude is a constant the
+projection that happened to be flat. The rendering context is gone since #207 and
+the point is not: a rotation of 0 is still a rotation, and `none` is what makes
+the drawing say so. Since #189 the attitude is a constant the
 playhead does not touch, so **without these two declarations a column below the
 band would carry a Slab tilted 52 degrees**. The playhead is still set to 0 beside
 them, because it is spent on the Cards' glass as well as on their geometry.
@@ -1782,9 +1869,10 @@ argue about two things.
 camera pushed far away** — a large camera only flattens *towards* it and never
 reaches it. That was the reason `projection-isometric` had to restate the plane's
 whole transform when the composition converged, and it is why it is two Tokens
-now: the projection it wanted is the one the composition has. `preserve-3d` still
-carries each Card's depth, which with no convergence reads as an offset along the
-plane's normal — which is how an exploded view is drawn on paper.
+now: the projection it wanted is the one the composition has. With no convergence
+a Card's depth reads as an offset along the plane's normal — which is how an
+exploded view is drawn on paper, and since #207 is how the composition draws one:
+the offset is written out and there is no third dimension left to carry.
 
 **`projection-collage` restates the Card's whole transform because a rotation has
 to go INSIDE the list**, between the translate and the scale, for the same

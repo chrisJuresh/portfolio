@@ -382,15 +382,20 @@ const DIRECTED = 0.05;
  * The Cards read as decals and the whole group here went on passing (#203).
  *
  * TWO SLICES OF THE SAME BOX AT TWO DEPTHS, which is what makes this a measurement
- * of the rendering context and of nothing else: both wall slices are at inset 0, so
- * they differ by their `translateZ` and by nothing at all besides. Under a
- * `preserve-3d` chain they project apart; under a flat one they are pixel-identical.
+ * of the RENDERED RESULT and of nothing else: both wall slices are at inset 0, so
+ * they differ by their depth and by nothing at all besides. Whether they end up
+ * apart on screen is the question; HOW the composition spends a depth is not, and
+ * that is why this assertion survived #207 unchanged while the mechanism under it
+ * was replaced. Nothing carries a `translateZ` any more — a depth is written as the
+ * place it projects to, which under a parallel projection is the same place — and
+ * these numbers did not move by a hundredth of a pixel.
  *
- * Measured 1.11px on every Card surface and 5.34px on the Slab; the mutation this
- * floor exists for — the Card forced back to `flat` — measures EXACTLY 0 on the
- * Cards and leaves the Slab untouched at 5.34, which is the Slab's slices being the
- * `preserve-3d` plane's own children and never having had the fault. So the number
- * only has to be off zero rather than tuned.
+ * Measured 1.11px on every Card surface and 5.34px on the Slab at the window this
+ * runs at; the mutation this floor exists for — a Card's depth discarded, however —
+ * measures EXACTLY 0 on the Cards. Before #207 it left the Slab untouched, because
+ * the Slab's slices were the `preserve-3d` plane's own children and never had the
+ * fault; a mutation that reaches the projection now takes both. So the number only
+ * has to be off zero rather than tuned.
  */
 const OFF_THE_FACE = 0.25;
 
@@ -3143,9 +3148,10 @@ async function theEdgeHasADirection(browser, origin) {
               `${where}: the ${name} edge's ${seen.walls} wall slices all land within ${off.toFixed(
                 2,
               )}px of each other against ${OFF_THE_FACE}px required, so its thickness is not reaching the ` +
-                'screen — the slices are built at a depth and then flattened onto their own face, which ' +
-                'is what a parent that is not `transform-style: preserve-3d` does to them. The edge is ' +
-                'drawn correctly and cannot be seen',
+                'screen — the slices are built at a depth and then land on their own face anyway. Since ' +
+                '#207 that depth is a `translate` to the place it projects to, so the suspects are ' +
+                '`--eater-map-depth-x` / `-y` on the plane and `Solid.flatten`; before it, a parent ' +
+                'that was not `transform-style: preserve-3d`. The edge is drawn correctly and cannot be seen',
             );
           }
         }

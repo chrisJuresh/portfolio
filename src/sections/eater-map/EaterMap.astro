@@ -772,20 +772,75 @@ import './tokens.css';
      reaches it, which is why #180's isometric Variant had to restate this whole
      list. So there is no `perspective()`, no `--eater-map-camera` and no dolly:
      nothing converges, so nothing grows as it climbs and there is nothing for a
-     camera pulling back to pay for. `preserve-3d` still carries each Card's
-     depth, and with no convergence that reads as an offset along the plane's own
-     normal — which is how an exploded view is drawn on paper.
+     camera pulling back to pay for. With no convergence, a depth reads as an
+     offset along the plane's own normal — which is how an exploded view is drawn
+     on paper.
 
-     `preserve-3d` HERE AND NOT ON THE SLAB. The Slab is `container-type`, which
-     is `contain: layout`, which is grouping, and a grouping element's
-     `preserve-3d` is forced back to `flat` with no error and no warning — the
-     Cards would lie flat on the map for ever, at the right scale, looking like a
-     screenshot. NOTES.md carries that rule and the one under it. */
+     AND SINCE #207 THAT IS TAKEN LITERALLY: THERE IS NO THIRD DIMENSION HERE AT
+     ALL. Every depth on this plane — each Card's rise off it, each slice of every
+     solid's thickness — is written as the place that depth PROJECTS to, which
+     under a parallel projection is exact rather than an approximation. So this
+     element is `flat`, the whole Section composes into one 2D affine matrix, and
+     the browser rasterises the Eater app's own text THROUGH that matrix instead
+     of rasterising each Card square and resampling the texture onto a tilted
+     plane. `--eater-map-depth-x` below is the projection; `edge.ts`'s `flatten`
+     is the other half; NOTES.md has the before and after.
+
+     WHICH RETIRES A TRAP RATHER THAN RENAMING IT. `preserve-3d` used to have to
+     be HERE AND NOT ON THE SLAB, because the Slab is `container-type`, which is
+     `contain: layout`, which is grouping, and a grouping element's `preserve-3d`
+     is forced back to `flat` with no error and no warning. Nothing on this plane
+     asks for a 3D rendering context now, so nothing can be silently denied one —
+     but the rule is still true of any element that asks, and the two Variants
+     that ask are in `variants.css`. NOTES.md carries it and the one under it. */
   .eater-map__plane {
     position: absolute;
     inset: 0;
-    transform-style: preserve-3d;
+    transform-style: flat;
     transform: rotateX(var(--eater-map-tilt)) rotateZ(var(--eater-map-swing));
+
+    /* WHERE A UNIT OF DEPTH GOES, WHICH IN A PARALLEL PROJECTION IS A PLACE AND
+       NOT A DIRECTION (#207). Under `rotateX(t) rotateZ(s)` and with no
+       `perspective()`, a point a distance `d` BEHIND the plane projects to
+       exactly the same screen point as one lying ON the plane, `d * tan(t)`
+       further along it — `sin(s)` of that across and `cos(s)` of it down, in the
+       plane's own axes. Solve `M * (a, b, 0) = M * (0, 0, -d)` for `a` and `b`
+       and these two numbers are what comes out; there is no third term, because
+       nothing converges and so nothing about the answer depends on where the
+       point is.
+
+       WHICH IS WHY THE DRAWING CAN BE FLAT AND STILL BE AN EXPLODED VIEW, and
+       that is the whole of #207. A `preserve-3d` chain forces every descendant
+       into its own render surface: the browser rasterises the Card SQUARE, in its
+       own plane, and then the GPU resamples that texture onto the tilted one — so
+       every glyph in the Eater app's markup arrives through a bilinear filter and
+       the interface reads soft against the Points beside it, which is the whole
+       complaint. Flattened, the accumulated transform is an ordinary 2D affine
+       one, Skia draws the text THROUGH it, and the same words come out at the
+       same angle with clean stems. Measured on the built page before and after;
+       NOTES.md carries the comparison and the rects that show the drawing did not
+       move by so much as a hundredth of a pixel.
+
+       IT IS THE WHOLE CHAIN OR IT IS NOTHING, which cost a wrong fix. Flattening
+       the Cards and leaving one `translateZ` on the Slab's slices leaves this
+       plane a 3D scene, and a 3D scene composites ALL of its children — so the
+       Cards go back into their own surfaces and the text is exactly as soft as it
+       was. Measured: no change at all until the last depth on the plane was gone.
+       `edge.ts`'s `flatten` is what takes the Slab's. */
+    --eater-map-depth-x: calc(tan(var(--eater-map-tilt)) * sin(var(--eater-map-swing)));
+    --eater-map-depth-y: calc(tan(var(--eater-map-tilt)) * cos(var(--eater-map-swing)));
+  }
+
+  /* The shipped attitude's own answer, for an engine without the trigonometric
+     functions — the same bargain `--eater-map-app-scale` strikes below, and the
+     same reason: an invalid `calc()` here is a Card with no rise and an edge with
+     no thickness, which reads as a broken build rather than as a missing feature.
+     52deg and 33deg give 0.6971 and 1.0734. */
+  @supports not (scale: tan(atan2(1px, 1px))) {
+    .eater-map__plane {
+      --eater-map-depth-x: 0.6971;
+      --eater-map-depth-y: 1.0734;
+    }
   }
 
   .eater-map__still {
@@ -805,13 +860,25 @@ import './tokens.css';
      another: `calc()` requires the right-hand side of a `/` to be a number, and
      that is the spec rather than an engine's gap. NOTES.md.
 
-     `preserve-3d` here is not decoration either: without it this box flattens its
-     children into itself and every Card's depth is discarded silently — the Cards
-     would still be there, at the right scale, lying on the map for ever. */
+     FLAT, AND THE CARDS' DEPTH IS SPENT ON THE PLANE INSTEAD (#207). This box was
+     `preserve-3d` for three tickets, and it had to be while a Card's rise was a
+     `translateZ`: without it the box flattens its children into itself and every
+     Card's depth is discarded silently — the Cards still there, at the right
+     scale, lying on the map for ever. What changed is not the rule but the rise.
+     A depth in a parallel projection IS a place on the plane
+     (`--eater-map-depth-x` on `.eater-map__plane`), so each Card is translated to
+     that place and the third dimension is not asked for at all.
+
+     AND THE POINT OF ASKING FOR LESS IS THE TEXT. `preserve-3d` is what puts each
+     Card in its own render surface, rasterised square and then resampled onto the
+     tilted plane by the GPU — which is what made the Eater app's own markup read
+     soft against the Points beside it. Flat, the Card's transform composes into
+     one 2D affine matrix that Skia draws the glyphs through. The drawing is the
+     same drawing, to the pixel; only the raster is different. */
   .eater-map__cards {
     position: absolute;
     inset: 0;
-    transform-style: preserve-3d;
+    transform-style: flat;
     --eater-map-app-scale: tan(atan2(100cqw, var(--eater-map-app-w)));
   }
 
@@ -847,6 +914,15 @@ import './tokens.css';
      resolves against the containing block's HEIGHT, which put the placement and
      the slide in two different units while they read as a pair.
 
+     AND THE RISE IS THE THIRD TERM OF THAT SAME TRANSLATE, not a `translateZ`
+     (#207). In a parallel projection a Card `r` off the plane lands exactly where
+     one lying ON the plane `r * tan(tilt)` further UP it would — so it is drawn
+     there, and the whole Section stays a 2D affine drawing that the browser can
+     rasterise text through. Read `--eater-map-depth-x` on `.eater-map__plane` for
+     the derivation and for what the third dimension was costing. The MINUS is the
+     direction: `--eater-map-depth-*` says where a unit of depth BEHIND the plane
+     goes, and a Card rises in front of it.
+
      GLASS CANNOT BE CARRIED OFF A SURFACE, and this is the one thing the Lift
      costs that no Token can put back. A `backdrop-filter` samples what is painted
      behind an element IN ITS OWN PLANE, and there is no such thing once the plane
@@ -867,6 +943,16 @@ import './tokens.css';
     --eater-map-card-lift: var(--eater-map-lift);
     --eater-map-card-rise: calc(
       var(--eater-map-card-lift) * var(--eater-map-rise) * var(--eater-map-card-depth)
+    );
+    /* THE WHOLE OF THE SCALE THIS CARD IS DRAWN AT, as one name, because two
+       things need it and one of them is not in this file. The `scale()` below is
+       the obvious reader; the other is `edge.ts`, which draws the Card's edge
+       slices as offsets in the CARD's own units and has to divide the plane's
+       depth by exactly this to get there. Written twice it would be one number
+       with two spellings, and the failure — an edge at the right thickness on one
+       window and the wrong one on the next — is silent. */
+    --eater-map-card-total: calc(
+      var(--eater-map-app-scale) * var(--eater-map-card-scale)
     );
     /* WHERE THE CARD SLIDES TO as it climbs, along the plane, in both of the
        plane's own directions and as a share of the Slab's width. Two Tokens per
@@ -891,12 +977,21 @@ import './tokens.css';
     left: calc(var(--eater-map-card-x) * 100cqw);
     top: calc(var(--eater-map-card-y) * 100cqw);
     transform-origin: 0 0;
-    transform: translate3d(
-        calc(var(--eater-map-card-drift-x) * 100cqw),
-        calc(var(--eater-map-card-drift-y) * 100cqw),
-        calc(var(--eater-map-card-rise) * 100cqw)
+    transform: translate(
+        calc(
+          (
+              var(--eater-map-card-drift-x) - var(--eater-map-card-rise) *
+                var(--eater-map-depth-x)
+            ) * 100cqw
+        ),
+        calc(
+          (
+              var(--eater-map-card-drift-y) - var(--eater-map-card-rise) *
+                var(--eater-map-depth-y)
+            ) * 100cqw
+        )
       )
-      scale(calc(var(--eater-map-app-scale) * var(--eater-map-card-scale)));
+      scale(var(--eater-map-card-total));
   }
 
   /* ---- THE CARDS ARE DARK, AND IT IS AN OVERRIDE RATHER THAN A FORK ---------
@@ -978,32 +1073,44 @@ import './tokens.css';
     transform-style: flat;
   }
 
-  /* AND THE CARD IS THE 3D SPACE THE FACE IS FLAT INSIDE OF, which is the other
-     half of the rule above and shipped without it. #190 moved the edge slices OUT
-     of the flat face, on the grounds that "a depth inside a flat face is nothing
-     at all" — and that is true, but the slices landed in the CARD, which was
+  /* AND THE CARD IS FLAT TOO, WHICH IS A DIFFERENT ANSWER TO THE SAME QUESTION
+     #190 AND #203 EACH ANSWERED WITH `preserve-3d` (#207).
+
+     The question is why a Card's edge slices have to be somewhere other than the
+     flat face. #190 moved them OUT of it, on the grounds that "a depth inside a
+     flat face is nothing at all" — true, but they landed in the CARD, which was
      `flat` too, so their depth went on being nothing. Measured: every one of the
      details Card's wall slices sat at `translateZ(-3.6px)` with a screen rect
      IDENTICAL to the face's, so all twenty-four painted underneath it and the
-     Cards read as decals lying on the map.
+     Cards read as decals lying on the map. #203 fixed that by making the Card
+     `preserve-3d`, which worked and cost the text its sharpness — a
+     `preserve-3d` descendant is rasterised in its own plane and resampled onto
+     this one, so every glyph of the vendored app came through a bilinear filter.
 
-     THIS IS WHY DRAGGING THE THICKNESS DID NOTHING, and why that read as "the
-     edge is too thin" rather than as a bug: `--eater-map-card-thickness` only
-     ever moved a `translateZ` inside a flat parent, so four times the depth was
-     four times nothing. The Slab never had the fault because ITS slices are the
-     `preserve-3d` plane's own children.
+     WHAT IS HERE NOW KEEPS BOTH. There is no `translateZ` left under this element
+     to be discarded: `edge.ts` draws each slice at the place its depth projects
+     to (`--eater-map-depth-x` on `.eater-map__plane`), in this Card's own units,
+     which is why `--eater-map-card-total` is declared above. So the edge stands
+     off the face by exactly what it stood off by before, the drawing is the same
+     drawing, and the Card is one flat affine layer that text can be drawn
+     through.
 
-     AND IT IS SAFE HERE IN A WAY IT WAS NOT IN THE PROTOTYPE. What #190 saw when
-     it put `preserve-3d` on the Card was the backdrop and the copy interleaving,
-     because both were direct children at z: 0 and depth sorting replaced
-     `z-index`. They are not children any more — the flat face above holds both
-     and composites them into one plane by paint order — so what sorts against
-     that plane here is the edge, which is the one thing that HAS a depth.
+     DRAGGING THE THICKNESS STILL MOVES IT, which is the thing #203 was really
+     about: `--eater-map-card-thickness` is a term of the depth those offsets are
+     computed from, so four times the depth is four times the offset. The
+     `eater-map` Check measures the screen distance between a surface's
+     shallowest and deepest wall slices and requires it off zero, and that
+     assertion is unchanged by any of this — it was written against the RENDERED
+     result rather than against the mechanism, so it still catches the failure it
+     was written for.
 
-     The `eater-map` Check asserts a Card's edge stands off its face, so the pair
-     cannot come apart again silently. */
+     WHAT THE FLAT CARD GIVES BACK is `z-index`: a flat parent composites its
+     children by paint order, so the slices are ordered by the DOM rather than
+     sorted by depth. `edge.ts` puts them in the order a depth sort would have
+     painted them — deepest first — which is why it inserts each slice before the
+     last one rather than after it. */
   .eater-map__card {
-    transform-style: preserve-3d;
+    transform-style: flat;
   }
 
   /* WHERE A HUNG SURFACE STANDS, AND THE CLEARANCE IS DERIVED RATHER THAN TYPED

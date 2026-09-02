@@ -114,6 +114,36 @@ export interface Solid {
   readonly filletBack: string;
   /** the whole depth, along Z, in the same units as `filletBack` */
   readonly depth: string;
+  /**
+   * DRAW THE DEPTH FLAT, and what to divide it by to get into the host's units.
+   *
+   * Absent, a slice is put at its depth with `translateZ` and the host has to be
+   * in a `preserve-3d` chain for that to mean anything. **Nothing in this Section
+   * takes that branch any more** — it is kept because the two Variants that
+   * restate the chain are arguing about a CONVERGING camera, and a projection is
+   * only exact where nothing converges.
+   *
+   * Present, the slice is TRANSLATED to the place that depth projects to instead.
+   * The plane is drawn in parallel projection, so a point `d` behind it lands
+   * exactly where one on it, `d * tan(tilt)` further along, would —
+   * `--eater-map-depth-x` and `-y` on the plane are that offset per unit of
+   * depth, and this field is the scale between the plane's units and the host's,
+   * because a `translate` on a child of a scaled element IS scaled where a
+   * `translateZ` is not. The Slab's host carries no scale and passes `'1'`; a
+   * Card passes its own, which is `--eater-map-card-total`.
+   *
+   * WHY EVERY CALLER WANTS THE SECOND (#207). A `preserve-3d` chain forces each
+   * descendant into its own render surface — rasterised square, then resampled
+   * onto the tilted plane by the GPU — so a Card drawn under one carries the
+   * Eater app's own text through a bilinear filter and reads soft against the
+   * Points beside it. Flat, the whole drawing is one 2D affine layer and the
+   * glyphs are drawn through the matrix rather than smeared by it. AND IT IS THE
+   * WHOLE CHAIN OR IT IS NOTHING: one `translateZ` left on the Slab keeps the
+   * plane a 3D scene, a 3D scene composites all of its children, and the Cards go
+   * straight back into their own surfaces. So the Slab flattens too, though it
+   * has no text to keep sharp and no scale to divide by.
+   */
+  readonly flatten?: string;
   /** what the edge is painted from: any CSS colour */
   readonly colour: string;
   /**
@@ -359,9 +389,31 @@ export function fitRadii(w: number, h: number, radii: Corners): Corners {
  * stands within a fraction of a pixel of the face's own depth — appended, it paints
  * a solid rectangle over the picture. Ordered this way the face wins every tie,
  * which is the right answer for all of them.
+ *
+ * AND WITHIN THE STACK, ORDER IS THE DEPTH SORT OR IT REPLACES IT. A `flatten`ed
+ * solid has no depth for the compositor to sort by, so the slices go down in the
+ * order a sort would have painted them — see `place` below.
  */
 export function extrude(host: HTMLElement, before: Node | null, solid: Solid): void {
-  const { box, radii, plan, colour, surface } = solid;
+  const { box, radii, plan, colour, surface, flatten } = solid;
+
+  /** Where the next slice goes.
+   *
+   *  IN 3D, always immediately before the face: depth sorting decides what covers
+   *  what, and document order only settles the ties — which the note above is
+   *  about.
+   *
+   *  FLAT, there is no depth sort, so document order is the whole answer and the
+   *  slices have to be laid down in the order a depth sort would have painted
+   *  them: deepest first. They are BUILT shallowest first — the fillet rolls back
+   *  from the face and the wall goes on behind it — so each one is inserted
+   *  before the one built before it, and the stack comes out reversed. The face
+   *  still wins, because it is behind every one of them in the document. */
+  let next = before;
+  const place = (sheet: HTMLElement) => {
+    host.insertBefore(sheet, next);
+    if (flatten !== undefined) next = sheet;
+  };
 
   // ONE LIGHT, READ OFF THE HOST ITSELF (#197). Not a field of `Solid` and not a
   // parameter: every caller is inside `.eater-map`, the light and the attitude are
@@ -479,9 +531,14 @@ export function extrude(host: HTMLElement, before: Node | null, solid: Solid): v
         colour,
         shade,
       )}`,
-      `transform:translateZ(calc(-1 * (${back})))`,
+      // AT ITS DEPTH, one way or the other — `flatten` says which and why.
+      flatten === undefined
+        ? `transform:translateZ(calc(-1 * (${back})))`
+        : `transform:translate(` +
+          `calc((${back}) * var(--eater-map-depth-x) / (${flatten})),` +
+          `calc((${back}) * var(--eater-map-depth-y) / (${flatten})))`,
     ].join(';');
-    host.insertBefore(sheet, before);
+    place(sheet);
   };
 
   // THE FILLET, as the sections of a quarter-round. At angle 0 the section is the
