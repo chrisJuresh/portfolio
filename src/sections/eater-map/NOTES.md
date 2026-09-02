@@ -1029,6 +1029,16 @@ Rendered at four values against the reference before choosing. Copying the
 mockup's clip instead would draw map pixels outside the solid's own cross-section
 at z = 0, which is the overhang #200 said to reproduce honestly rather than copy.
 
+**And a Check keeps the split split.** `CORNER_SURVIVES` reads the widest and the
+narrowest corner anywhere in the Slab's slice stack — the plan corner off a wall
+slice, and what is left of it on the fillet's innermost ring — and requires the
+second to be at least a quarter of the first. It measures 67% drawn and 10% with
+the two Tokens set equal, which is the state this Section shipped in, so dragging
+either onto the other in the Editor fails the build rather than quietly putting
+the strap back. It reads the SLICES and not the Tokens, which is the opposite
+source from the corner probe and for the opposite reason: that one asks where the
+composition says its corner is, this one asks what the stack actually drew.
+
 **The `eater-map` Check's corner probe reads the plan corner and no longer
 clamps it.** The share is unchanged and so is the point it names — half a radius
 out from the corner's arc centre. Measured while it moved: every corner finds a

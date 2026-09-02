@@ -395,6 +395,34 @@ const DIRECTED = 0.05;
 const OFF_THE_FACE = 0.25;
 
 /**
+ * How much of the Slab's plan corner has to survive into the INNERMOST ring of its
+ * fillet, as a share of the corner itself.
+ *
+ * THIS IS THE ASSERTION THAT KEEPS #200's SPLIT SPLIT. Every slice is cut to
+ * `plan corner - its own inset` and the fillet's insets run out to the fillet, so
+ * the two Tokens collapsing back onto one number — a plan corner dragged down to
+ * the fillet, or a fillet dragged up to the corner — takes the innermost ring's
+ * radius to nothing. The roll then goes square exactly AT THE CORNERS, where the
+ * normal turns through ninety degrees in one step, and the hard light/dark break
+ * that produces runs round the object like a strap. That shipped, and it was
+ * reported as the Slab looking "strongly wrapped around" rather than as a corner.
+ *
+ * A QUARTER, against 0.67 drawn and 0.098 for the collapse. The Slab is 16.3px of
+ * plan corner and 5.4px of the fillet's deepest inset, so the innermost ring keeps
+ * 10.9px; with the two Tokens equal it keeps 0.7px of 7.2px, which is the state
+ * this Section shipped in. There is a lot of room between those, so the floor only
+ * has to sit in it rather than be tuned.
+ *
+ * AND IT READS THE SLICES AND NOT THE TOKENS, which is the opposite source from the
+ * corner probe below and for the opposite reason. That probe asks WHERE the
+ * composition says its corner is, so reading an element would let a slice drawn to
+ * the wrong outline move the sample onto itself and pass. This asks what the stack
+ * actually drew, and the two radii it compares are two elements of the same stack —
+ * so the Tokens are exactly what it must not be told.
+ */
+const CORNER_SURVIVES = 0.25;
+
+/**
  * The largest step between two consecutive stops, as a share of the whole
  * gradient's spread.
  *
@@ -2697,9 +2725,21 @@ async function edgeAsBuilt(spec) {
       sides: null,
       shallow: null,
       deep: null,
+      roundest: 0,
+      squarest: Infinity,
     };
     const seen = surfaces[name];
     seen.slices += 1;
+    // THE WIDEST AND THE NARROWEST CORNER ANYWHERE IN THIS STACK, for
+    // `CORNER_SURVIVES`. The wall slices stand at inset 0 and carry the whole plan
+    // corner, and the fillet's first ring stands at its deepest inset and carries
+    // the least of it — so the two extremes are the plan corner and what is left of
+    // it, without this having to know which slice is which.
+    const corner = Number.parseFloat(getComputedStyle(slice).borderTopLeftRadius);
+    if (Number.isFinite(corner)) {
+      seen.roundest = Math.max(seen.roundest, corner);
+      seen.squarest = Math.min(seen.squarest, corner);
+    }
     const authored = slice.style.background;
     if (!authored.startsWith('conic-gradient(')) seen.flat += 1;
     if (!authored.includes('var(--eater-map-')) seen.unnamed += 1;
@@ -3017,6 +3057,24 @@ async function theEdgeHasADirection(browser, origin) {
               'be — a gradient the parser rejected computes to none, and one bad stop rejects the whole ' +
               'declaration',
           );
+        }
+        // DOES THE CORNER SURVIVE THE ROLL — the Slab's alone, because it is the
+        // only surface whose plan corner this repository states. A Card's comes from
+        // `cards.css`, and a pill's 24px against a 1.8px fillet cannot collapse the
+        // way two Tokens dragged together can (#200).
+        if (name === 'slab' && seen.roundest > 0 && Number.isFinite(seen.squarest)) {
+          const kept = seen.squarest / seen.roundest;
+          if (kept < CORNER_SURVIVES) {
+            failures.push(
+              `${where}: the Slab's plan corner is ${seen.roundest.toFixed(1)}px and its fillet's ` +
+                `innermost ring keeps only ${seen.squarest.toFixed(1)}px of it — ${(kept * 100).toFixed(
+                  0,
+                )}% against ${(CORNER_SURVIVES * 100).toFixed(0)}% required, so the roll goes square at ` +
+                'the corners and the shading breaks there in one step. The plan corner and the fillet ' +
+                'have collapsed back onto one number, which is what --eater-map-slab-fillet was split ' +
+                'out of --eater-map-slab-edge-radius to stop',
+            );
+          }
         }
         // AND IS IT ON SCREEN AT ALL — asked before anything about its colour,
         // because a surface whose depth never reaches the screen has an edge that
