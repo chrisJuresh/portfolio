@@ -117,6 +117,7 @@ interface Look {
   swing: number;
   thickness: number;
   radius: number;
+  fillet: number;
   light: Lighting;
 }
 
@@ -163,21 +164,29 @@ function extent(look: Look): { width: number; height: number } {
  * function of the two counts above and of nothing the composition can change — so
  * it is built once and the three float arrays are refilled.
  *
- * HOW A POINT ON THE OUTLINE IS FOUND. The Slab is a rectangle inset by the edge
- * radius, offset outwards by a distance: at offset 0 that is the inner rectangle,
- * at offset r it is the Slab's own outline, and in between it is the same shape
- * with rounder corners. One angle walks all the way round it, and the outward
- * direction there is just (cos, sin) — which is what makes both the fillet's shape
- * and its shading fall out of one parameter.
+ * HOW A POINT ON THE OUTLINE IS FOUND. The Slab is a rectangle inset by the PLAN
+ * CORNER, offset outwards by a distance: at offset 0 that is the inner rectangle,
+ * at offset `plan` it is the Slab's own outline, and in between it is the same
+ * shape with rounder corners. One angle walks all the way round it, and the
+ * outward direction there is just (cos, sin) — which is what makes both the
+ * fillet's shape and its shading fall out of one parameter.
+ *
+ * THE ROLL IS A SECOND NUMBER AND SWEEPS ONLY THE LAST PART OF THAT (#200). It
+ * runs from `plan - roll` at the face's own depth out to `plan` a roll back, so
+ * the corner stays as round as the composition asked for however shallow the
+ * chamfer is. The two used to be one Token, which made `plan - roll` zero and the
+ * sweep `plan sin(phi)`; that is this same arithmetic at one value of the pair,
+ * and it is why the DOM stage's corners went square exactly where they showed.
  *
  * AND HOW THE PIXELS WRAP. The fillet's SHAPE puts the ring at plan distance
- * r sin(phi) and depth -r(1 - cos phi); its TEXTURE reads the picture at plan
- * distance r (2 phi / pi), which is the same band of pixels spread evenly along
- * the arc. Both ends meet the rest of the drawing exactly: at phi = 0 the ring is
- * the edge of the flat face and reads the same pixels it does, and at phi = pi/2
- * the ring is the Slab's silhouette and reads the picture's own last row. So the
- * captured pixels run off the front, round the corner, and stop precisely where
- * the object does. That is the cell the DOM stage has no way to fill.
+ * `plan - roll(1 - sin phi)` and depth `-roll(1 - cos phi)`; its TEXTURE reads the
+ * picture at plan distance `plan - roll + roll(2 phi / pi)`, which is the same band
+ * of pixels spread evenly along the arc. Both ends meet the rest of the drawing
+ * exactly: at phi = 0 the ring is the edge of the flat face and reads the same
+ * pixels it does, and at phi = pi/2 the ring is the Slab's silhouette and reads the
+ * picture's own last row. So the captured pixels run off the front, round the
+ * corner, and stop precisely where the object does. That is the cell the DOM stage
+ * has no way to fill.
  */
 class Slab {
   readonly geometry = new BufferGeometry();
@@ -264,12 +273,21 @@ class Slab {
     height: number,
     depth: number,
     round: number,
+    fillet: number,
     edge: Color,
     lit: Shade,
   ): void {
-    const radius = Math.max(0, Math.min(round, depth, width / 2, height / 2));
-    const ax = width / 2 - radius;
-    const ay = height / 2 - radius;
+    // THE PLAN CORNER IS HELD BY THE BOX AND NOT BY THE DEPTH (#200). `depth` used
+    // to be in this `min()` and that was the same fault the DOM stage had: it made
+    // the outline no rounder than the shell was deep. What a plan corner is
+    // actually bounded by is the box — half the shorter side — and nothing else.
+    const plan = Math.max(0, Math.min(round, width / 2, height / 2));
+    // ...and the ROLL is what the depth bounds, together with the corner it has to
+    // stay inside of: a fillet deeper than the wall turns it inside out, and one
+    // wider than the plan corner would sweep past the outline it is rolling to.
+    const roll = Math.max(0, Math.min(fillet, depth, plan));
+    const ax = width / 2 - plan;
+    const ay = height / 2 - plan;
     const { position, uv, colour } = this;
     const step = Math.PI / 2 / ARC;
 
@@ -285,8 +303,9 @@ class Slab {
       colour[3 * vertex + 2] = edge.b * shade;
       vertex += 1;
     };
-    /** The plan point on the outline at ring index k, offset outwards by `out`. */
-    const plan = (k: number, out: number): [number, number] => {
+    /** The plan point on the outline at ring index k, offset outwards by `out`.
+     *  Named `outline` and not `plan`, which is the corner radius now. */
+    const outline = (k: number, out: number): [number, number] => {
       const angle = k * step;
       const quadrant = Math.floor(k / ARC);
       const sx = quadrant === 0 || quadrant === 3 ? ax : -ax;
@@ -299,13 +318,18 @@ class Slab {
     put(0, 0, 0, 0.5, 0.5, lit(0, 0, 1));
     for (let j = 0; j <= RINGS; j += 1) {
       const phi = (Math.PI / 2) * (j / RINGS);
-      const out = radius * Math.sin(phi);
-      const outTexture = radius * ((2 * phi) / Math.PI);
-      const z = -radius * (1 - Math.cos(phi));
+      // THE ROLL RUNS TO THE OUTLINE RATHER THAN FROM THE INNER RECTANGLE. At
+      // phi 0 the ring stands a roll inside the Slab's own outline, at the face's
+      // depth; at a right angle it IS the outline, a roll back. While the two were
+      // one number `plan - roll` was zero and this was `plan sin(phi)`, which is
+      // the same sweep and only for that one value of the pair.
+      const out = plan - roll * (1 - Math.sin(phi));
+      const outTexture = plan - roll + roll * ((2 * phi) / Math.PI);
+      const z = -roll * (1 - Math.cos(phi));
       for (let k = 0; k < RING; k += 1) {
         const angle = k * step;
-        const [x, y] = plan(k, out);
-        const [tx, ty] = plan(k, outTexture);
+        const [x, y] = outline(k, out);
+        const [tx, ty] = outline(k, outTexture);
         put(
           x,
           y,
@@ -316,10 +340,10 @@ class Slab {
         );
       }
     }
-    for (const z of [-radius, -depth]) {
+    for (const z of [-roll, -depth]) {
       for (let k = 0; k < RING; k += 1) {
         const angle = k * step;
-        const [x, y] = plan(k, radius);
+        const [x, y] = outline(k, plan);
         put(x, y, z, u(x), v(y), lit(Math.cos(angle), Math.sin(angle), 0));
       }
     }
@@ -346,6 +370,7 @@ function signature(look: Look, edge: string, colour: string): string {
     look.swing,
     look.thickness,
     look.radius,
+    look.fillet,
     look.light.azimuth,
     look.light.elevation,
     look.light.ambient,
@@ -446,7 +471,12 @@ const mountWebglStage = async (parts: StageParts): Promise<Stage> => {
       // honest answer when the Token is missing: this stage's job is to draw the
       // composition, and adding a depth nobody asked for would not be it.
       thickness: depth * token('--eater-map-slab-thickness'),
+      // THE PLAN CORNER AND THE ROLL, and two Tokens since #200. Both are spent
+      // by `depth` — the collapse below the band — so a flattened Slab has no
+      // corner to sweep and no fillet to sweep it with, which is what the DOM
+      // stage's `--eater-map-solid` does to its own pair.
       radius: depth * token('--eater-map-slab-edge-radius'),
+      fillet: depth * token('--eater-map-slab-fillet'),
       // NOT `token()`: a missing ambient reads as a BLACK edge, which is a
       // decision nobody made, so the light's three fallbacks are `stage.ts`'s and
       // are the values `tokens.css` states. In the signature above as well, so a
@@ -514,6 +544,7 @@ const mountWebglStage = async (parts: StageParts): Promise<Stage> => {
       look.height,
       look.thickness * look.width,
       look.radius * look.width,
+      look.fillet * look.width,
       colour,
       // Every vertex has a real normal here, which is what this stage can put
       // into the boundary's own formula. Since #197 the DOM slices can put a

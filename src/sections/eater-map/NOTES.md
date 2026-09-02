@@ -532,6 +532,32 @@ that made the details Card read as two smeared panels. `.eater-map__face` is a
 `flat` box holding both, and the Card's edge slices are that face's **siblings**,
 because a depth inside a flat face is nothing at all.
 
+**AND THE CARD ITSELF HAS TO BE `preserve-3d`, WHICH IS THE HALF #190 LEFT OUT
+(#203).** Moving the slices out of the flat face is only worth doing if what they
+land in has a third dimension, and for three tickets it did not: `.eater-map__card`
+declared no `transform-style` at all, so it was `flat`, and every slice's
+`translateZ` was discarded. Measured on the shipped page: all twenty-four of the
+details Card's slices sat at `translateZ(-3.6px)` with a screen rect **identical to
+the face's**, painting underneath it. The Cards read as decals lying on the map.
+
+**This is why "the Cards have no 3D effect" survived a diagnosis that blamed the
+thickness.** `--eater-map-card-thickness` moves nothing but that `translateZ`, so
+four times the depth was four times nothing — a ladder at 0.01 / 0.02 / 0.04 came
+back as three identical pictures. The Token was never wrong; 0.01 is #187's own 1%
+against the Slab's 3% and it reads correctly now that there is a depth for it to be
+a depth in. The Slab never had the fault, because ITS slices are children of
+`.eater-map__plane`, which is `preserve-3d` — which is exactly why the Slab had a
+visible edge throughout and the Cards did not.
+
+**The Check did not catch it, and could not have.** It reads each surface's
+gradient STRINGS and measures the four sides against each other, so an edge that is
+built correctly and then painted flat underneath its own face passes every
+assertion in the group. `scripts/checks/NOTES.md`'s warning about a Check that
+reads as asserting something while asserting nothing is this, from the other end:
+the Check asserted what it said it did, and what it said it did was not "the edge
+is on screen". The assertion that a Card's edge stands off its face is what closes
+that, and it is why the pair cannot come apart again silently.
+
 **A BOOSTED CARD'S BACKDROP IS COUNTER-SCALED, AND IT IS NOT OPTIONAL.** A Card is
 drawn at `app-scale × --eater-map-card-scale`, and scaling the Card scales the copy
 inside it — so a boosted Card would show a map through itself larger than the map
@@ -967,8 +993,47 @@ nothing. It defaults to `thick`, and `flat` is what the collapse reaches through
 `--eater-map-solid` rather than through this name. **#182 IS NOT ANSWERED BY THAT
 AND WAS NOT MEANT TO BE**: what changed is that the page asks for an edge, not
 which renderer draws it. `--eater-map-slab-thickness` is 0.03 — it was 0.1, which
-is a tenth of a phone's width and a paving slab — and the radius is 0.02, both
-chosen by looking on the sheet.
+is a tenth of a phone's width and a paving slab — chosen by looking on the sheet.
+
+### The plan corner and the fillet are two Tokens (#200)
+
+They were one, `--eater-map-slab-edge-radius`, clamped to the thickness by both
+stages — and the clamp was on the wrong number. An edge cannot be rounder than it
+is *deep*, which is true of the **fillet** and says nothing at all about the plan
+corner: a phone has a 17px corner on an 11px shell. Held together at 0.02 the
+outline could never be rounder than 0.03, and the object read as a bar of soap.
+
+**The squareness was the smaller half of it.** Every slice is cut to
+`plan corner − its own inset` and the fillet's insets run out to the fillet, so
+with the two EQUAL the innermost ring's corner came out at `0.02 − 0.02 = 0`. The
+roll went square exactly *at the corners*, the normal turned through ninety
+degrees in one step there, and the hard light/dark break that produced ran round
+the object like a strap. That is what "strongly wrapped around" named, and it is
+why raising the one Token could not fix it — at any value the innermost ring is
+still square, because the two are still the same number.
+
+So: `--eater-map-slab-edge-radius` is the **plan corner**, 0.045, which is the
+mockup's own `.045`; `--eater-map-slab-fillet` is the **roll**, 0.006, and it is
+what the thickness now clamps. Both stages carry both — `min()` in `stage-dom.ts`,
+`Math.min` in `stage-webgl.ts`'s `Slab.write`, whose sweep generalises from
+`plan sin φ` to `plan − roll(1 − sin φ)` and is the old arithmetic at `roll = plan`.
+
+**The fillet is a third of the mockup's, and that is not a disagreement with the
+reference.** The mockup's face carries the full plan corner with NO inset, so its
+picture runs to the outline and hides all but the last sliver of its own 6.3px
+roll. This stage gives that band up honestly — `stage-dom.ts` clips the picture
+back by exactly the fillet, and rounds the clip to `plan − fillet` so the map does
+not hang square corners off a rounded solid — so the whole roll is on screen and
+the number that *looks* like the reference is a third of the one that made it.
+Rendered at four values against the reference before choosing. Copying the
+mockup's clip instead would draw map pixels outside the solid's own cross-section
+at z = 0, which is the overhang #200 said to reproduce honestly rather than copy.
+
+**The `eater-map` Check's corner probe reads the plan corner and no longer
+clamps it.** The share is unchanged and so is the point it names — half a radius
+out from the corner's arc centre. Measured while it moved: every corner finds a
+slice at 0.3 through 1.0, and 1.6 puts the probe outside the outline and reads
+three of the four as open, which is what says the assertion can still fail.
 
 **"Stage" means two things in this Section, and both are the tickets' own word.**
 `.eater-map__stage` is the grid area the drawing stands in — the middle six of

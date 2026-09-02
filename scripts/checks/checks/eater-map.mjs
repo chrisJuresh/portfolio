@@ -327,15 +327,31 @@ const TOGETHER = 0.2;
 const RISEN = 1;
 
 /**
- * How far along a corner's own radius the page is sampled for an open corner, as
- * a share of it.
+ * How far along a corner's own PLAN radius the page is sampled for an open corner,
+ * as a share of it, measured outwards from the corner's arc centre.
  *
  * HALF, BECAUSE THAT IS THE MIDDLE OF THE NOTCH. The region a hinged wall would
  * leave empty runs from the corner's centre out to a full radius along the
  * diagonal, so half a radius is as far from both boundaries as it is possible to
- * stand — about 2.8px at DESK and 2.2px at the short end. Measured at three
- * windows: every corner finds a slice at 0.3 through 0.7 and the head corners
- * start missing at 0.85, which is the fillet running out rather than a hole.
+ * stand — about 5.8px at DESK. Measured at both windows: every corner finds a
+ * slice at 0.3 through 1.0, and 1.6 — which puts the probe outside the Slab's own
+ * outline — reads three of the four as open at each. Three and not four because a
+ * Card stands over the fourth, which is the same reason `covered` asks the whole
+ * stack rather than the topmost. That failure is what says this assertion can
+ * still fail, and it was run rather than assumed.
+ *
+ * THE PLAN RADIUS, AND SINCE #200 THAT IS NOT `min(radius, thickness)`. The share
+ * is unchanged and so is the point it names; what changed is which Token it is a
+ * share OF. While one Token was the plan corner and the fillet at once the clamp
+ * was invisible here, because the two were the same number; split, clamping would
+ * stand the probe half a WALL out from a corner that is half as round again as the
+ * wall is deep, which is a point chosen against a solid neither stage draws.
+ *
+ * AND IT IS THE FULL PERIMETER THIS ASKS ABOUT, NOT THE FILLET. Every wall slice
+ * is a whole rounded rect at the outline, so the stack covers the corner from the
+ * arc centre right out to the plan radius and a probe anywhere inside that is
+ * covered. That is the assertion: four hinged walls, each inset by the radius,
+ * leave the quarter-disc empty and fail at every one of these positions.
  */
 const AT_THE_CORNER = 0.5;
 
@@ -345,17 +361,44 @@ const AT_THE_CORNER = 0.5;
  * right flank by. In WCAG luminance, which is what `lib/colour.mjs` turns three
  * channels into.
  *
- * Measured 60.7% on the Slab. The mutation this floor exists for — the lateral
- * normal dropped, which is what the code did before #197 — measures exactly 0, so
- * the number only has to be off the floor rather than tuned.
+ * Measured 56.6% on the Slab, which is 60.7% before #200 split the plan corner
+ * from the fillet: a shallower roll spends less of the perimeter facing the
+ * reader, so the four sides sit further apart in the wall and closer together
+ * across the sweep. The mutation this floor exists for — the lateral normal
+ * dropped, which is what the code did before #197 — measures exactly 0, so the
+ * number only has to be off the floor rather than tuned.
  */
 const DIRECTED = 0.05;
+
+/**
+ * How far apart on SCREEN a surface's shallowest and deepest wall slices have to
+ * land, in CSS px, for its thickness to be a thickness at all.
+ *
+ * THE ONE THING THE GROUP ABOVE CANNOT SEE. Every assertion beside this one reads
+ * the gradients a slice was BUILT with, and an edge can be built perfectly and then
+ * painted flat underneath its own face: that is what shipped for three tickets,
+ * because `.eater-map__card` was `transform-style: flat`, so every slice's
+ * `translateZ` was discarded and all twenty-four of a Card's landed on one rect.
+ * The Cards read as decals and the whole group here went on passing (#203).
+ *
+ * TWO SLICES OF THE SAME BOX AT TWO DEPTHS, which is what makes this a measurement
+ * of the rendering context and of nothing else: both wall slices are at inset 0, so
+ * they differ by their `translateZ` and by nothing at all besides. Under a
+ * `preserve-3d` chain they project apart; under a flat one they are pixel-identical.
+ *
+ * Measured 1.11px on every Card surface and 5.34px on the Slab; the mutation this
+ * floor exists for — the Card forced back to `flat` — measures EXACTLY 0 on the
+ * Cards and leaves the Slab untouched at 5.34, which is the Slab's slices being the
+ * `preserve-3d` plane's own children and never having had the fault. So the number
+ * only has to be off zero rather than tuned.
+ */
+const OFF_THE_FACE = 0.25;
 
 /**
  * The largest step between two consecutive stops, as a share of the whole
  * gradient's spread.
  *
- * Measured 22.3% on the Slab. With the corner sweeps taken out the largest step IS
+ * Measured 22.4% on the Slab. With the corner sweeps taken out the largest step IS
  * the whole spread and it measures 100%, so half is well clear of both.
  */
 const CONTINUOUS = 0.5;
@@ -2644,7 +2687,17 @@ async function edgeAsBuilt(spec) {
   const surfaces = {};
   for (const slice of slices) {
     const name = slice.dataset.eaterMapEdge ?? '(unnamed)';
-    surfaces[name] ??= { slices: 0, walls: 0, blank: 0, unnamed: 0, flat: 0, ring: [], sides: null };
+    surfaces[name] ??= {
+      slices: 0,
+      walls: 0,
+      blank: 0,
+      unnamed: 0,
+      flat: 0,
+      ring: [],
+      sides: null,
+      shallow: null,
+      deep: null,
+    };
     const seen = surfaces[name];
     seen.slices += 1;
     const authored = slice.style.background;
@@ -2657,6 +2710,12 @@ async function edgeAsBuilt(spec) {
     // difference. `edge.ts` writes which part each slice is.
     if (slice.dataset.eaterMapSlice === 'wall') {
       seen.walls += 1;
+      // WHERE THE FIRST AND THE LAST WALL SLICE LAND, for `OFF_THE_FACE`. Both are
+      // at inset 0 and differ only in depth, so the distance between them on screen
+      // is the projection of this surface's own thickness and nothing else.
+      const at = slice.getBoundingClientRect();
+      seen.shallow ??= { left: at.left, top: at.top };
+      seen.deep = { left: at.left, top: at.top };
       const stops = stopsIn(computed);
       if (stops.length > 0) {
         // THE ANGLES ARE KEPT WITH THE COLOURS, and that is not for the report. Two
@@ -2678,33 +2737,36 @@ async function edgeAsBuilt(spec) {
   // ---- the four corners of the Slab ---------------------------------------
   // WHERE THE NOTCH WOULD BE. Four hinged walls have to be inset by the corner
   // radius at both ends, so they leave an empty quarter-disc at each corner —
-  // between the picture, which is clipped back to a RECTANGLE inset by the radius,
-  // and the Slab's own rounded outline. Along the outward diagonal from the
-  // corner's centre that region runs from nothing out to a full radius, so half a
-  // radius is its middle and the most margin there is to have.
+  // between the picture, which is clipped back to a rounded rect inset by the
+  // FILLET and cut to `plan corner - fillet`, and the Slab's own rounded outline.
+  // Along the outward diagonal from the corner's arc centre that region runs from
+  // nothing out to a full PLAN radius, so half a radius is its middle and the most
+  // margin there is to have.
   //
   // A ZERO-SIZED PROBE ON THE PLANE IS WHAT PROJECTS IT, which is the same device
   // the parallel-projection assertion above uses and for the same reason: the Check
   // states the point in the drawing's own plan and lets the composition's rotation
   // say where that lands, rather than doing the projection itself.
   //
-  // AND THE RADIUS COMES FROM THE TOKENS, NOT FROM A SLICE'S OWN BORDER-RADIUS.
+  // AND THE TWO RADII COME FROM THE TOKENS, NOT FROM A SLICE'S OWN BORDER-RADIUS.
   // That looks like the thing NOTES.md warns against — recomputing what the page
   // could be asked for — and here it is the opposite. The point being sampled is
   // where the composition SAYS its corner is; taking it off the element instead
   // would let a slice drawn to the wrong outline move the sample onto itself and
   // pass. Measured: with every slice's radius multiplied by 4, reading the Tokens
   // fails three corners and reading the element fails none.
-  const outline = Math.max(
-    0,
-    Math.min(token('--eater-map-slab-edge-radius'), token('--eater-map-slab-thickness')),
-  );
+  //
+  // AND IT IS THE PLAN CORNER ALONE SINCE #200 — no `min()` against the thickness.
+  // That clamp belongs to the fillet, which is a different Token now and is not
+  // what draws this outline: every wall slice is a whole rounded rect cut to the
+  // plan corner, so the corner the probe is looking for is the plan corner's.
+  const plan = Math.max(0, token('--eater-map-slab-edge-radius'));
   const box = slab.getBoundingClientRect();
   // A percentage `left` resolves against the containing block's width and a
   // percentage `top` against its height, and the radius is a share of the WIDTH —
   // so the two are not the same number on a box 2.17 times as tall as it is wide.
-  const across = outline * 100;
-  const down = box.height > 0 ? ((outline * box.width) / box.height) * 100 : 0;
+  const across = plan * 100;
+  const down = box.height > 0 ? ((plan * box.width) / box.height) * 100 : 0;
   const offAcross = (spec.corner / Math.SQRT2) * across;
   const offDown = (spec.corner / Math.SQRT2) * down;
   const held = slices.map((slice) => slice.style.pointerEvents);
@@ -2955,6 +3017,25 @@ async function theEdgeHasADirection(browser, origin) {
               'be — a gradient the parser rejected computes to none, and one bad stop rejects the whole ' +
               'declaration',
           );
+        }
+        // AND IS IT ON SCREEN AT ALL — asked before anything about its colour,
+        // because a surface whose depth never reaches the screen has an edge that
+        // is drawn and not one that is seen (#203).
+        if (seen.shallow && seen.deep) {
+          const off = Math.max(
+            Math.abs(seen.shallow.left - seen.deep.left),
+            Math.abs(seen.shallow.top - seen.deep.top),
+          );
+          if (off < OFF_THE_FACE) {
+            failures.push(
+              `${where}: the ${name} edge's ${seen.walls} wall slices all land within ${off.toFixed(
+                2,
+              )}px of each other against ${OFF_THE_FACE}px required, so its thickness is not reaching the ` +
+                'screen — the slices are built at a depth and then flattened onto their own face, which ' +
+                'is what a parent that is not `transform-style: preserve-3d` does to them. The edge is ' +
+                'drawn correctly and cannot be seen',
+            );
+          }
         }
         if (!seen.sides || Object.values(seen.sides).some((one) => one === null)) {
           failures.push(

@@ -140,13 +140,19 @@ import './tokens.css';
             {CARDS.map((card) => (
               <div class="eater-map__card" data-eater-map-card={card.name}>
                 {/* THE FLAT FACE, AND IT IS FORCED RATHER THAN TIDY (#190).
-                    `transform-style: preserve-3d` on the Card puts its blurred
-                    copy of the map and its own content BOTH at z: 0, so `z-index`
-                    stops deciding between them and the two interleave — in the
-                    prototype that made the details Card read as two smeared
+                    The Card is `preserve-3d`, so its blurred copy of the map and
+                    its own content would both be at z: 0 under it, `z-index` would
+                    stop deciding between them and the two would interleave — in
+                    the prototype that made the details Card read as two smeared
                     panels. A `flat` face holds both, and the Card's edge slices
                     are that face's SIBLINGS, because a depth inside a flat face is
                     nothing at all. glass.ts.
+
+                    THIS IS HALF A RULE ON ITS OWN, and it shipped as half for
+                    three tickets (#203): the slices are siblings of the face so
+                    that they can have a depth, and until the CARD was made a 3D
+                    context there was no depth for them to have. Both halves are in
+                    the stylesheet, next to each other, with the measurement.
 
                     It is in the template rather than built by the script so that
                     the box structure is the same for every reader, and it does not
@@ -970,6 +976,34 @@ import './tokens.css';
   .eater-map__face {
     position: relative;
     transform-style: flat;
+  }
+
+  /* AND THE CARD IS THE 3D SPACE THE FACE IS FLAT INSIDE OF, which is the other
+     half of the rule above and shipped without it. #190 moved the edge slices OUT
+     of the flat face, on the grounds that "a depth inside a flat face is nothing
+     at all" — and that is true, but the slices landed in the CARD, which was
+     `flat` too, so their depth went on being nothing. Measured: every one of the
+     details Card's wall slices sat at `translateZ(-3.6px)` with a screen rect
+     IDENTICAL to the face's, so all twenty-four painted underneath it and the
+     Cards read as decals lying on the map.
+
+     THIS IS WHY DRAGGING THE THICKNESS DID NOTHING, and why that read as "the
+     edge is too thin" rather than as a bug: `--eater-map-card-thickness` only
+     ever moved a `translateZ` inside a flat parent, so four times the depth was
+     four times nothing. The Slab never had the fault because ITS slices are the
+     `preserve-3d` plane's own children.
+
+     AND IT IS SAFE HERE IN A WAY IT WAS NOT IN THE PROTOTYPE. What #190 saw when
+     it put `preserve-3d` on the Card was the backdrop and the copy interleaving,
+     because both were direct children at z: 0 and depth sorting replaced
+     `z-index`. They are not children any more — the flat face above holds both
+     and composites them into one plane by paint order — so what sorts against
+     that plane here is the edge, which is the one thing that HAS a depth.
+
+     The `eater-map` Check asserts a Card's edge stands off its face, so the pair
+     cannot come apart again silently. */
+  .eater-map__card {
+    transform-style: preserve-3d;
   }
 
   /* WHERE A HUNG SURFACE STANDS, AND THE CLEARANCE IS DERIVED RATHER THAN TYPED

@@ -52,19 +52,27 @@ import { type Stage, type StageParts } from './stage';
  *  which is what lets a Token dragged in the Editor and a window carried across
  *  the breakpoint both move the drawing.
  *
- *  `min()` IS THE CONSTRAINT tokens.css STATES, MADE REAL. An edge cannot be
- *  rounder than it is deep, and without this the wall's depth —
- *  `ROUND + (DEPTH - ROUND) * along` — goes NEGATIVE for a radius dragged past
- *  the thickness, so the eight wall slices stand in FRONT of the fillet's
- *  deepest ring and paint a solid ring of edge colour over the map. `stage-webgl.ts`
- *  clamps the same pair in `Slab.write`, and one boundary answering a Token two
- *  ways is the confound #182's sheet exists to remove.
+ *  `min()` IS THE CONSTRAINT tokens.css STATES, MADE REAL — AND IT IS ON THE
+ *  FILLET, which is #200. An edge cannot be rounder than it is deep, and without
+ *  this the wall's depth — `FILLET + (DEPTH - FILLET) * along` — goes NEGATIVE for
+ *  a fillet dragged past the thickness, so the eight wall slices stand in FRONT of
+ *  the fillet's deepest ring and paint a solid ring of edge colour over the map.
+ *  `stage-webgl.ts` clamps the same pair in `Slab.write`, and one boundary
+ *  answering a Token two ways is the confound #182's sheet exists to remove.
+ *
+ *  THE PLAN CORNER IS NOT CLAMPED AND MUST NOT BE. It was, and the two were one
+ *  Token, and the consequence was not merely a square-looking object: the slices
+ *  are cut to `PLAN - inset` and the fillet's insets reach the fillet, so with the
+ *  two equal the innermost ring's corner came out at zero. The roll went square
+ *  precisely at the corners and the shading broke there in one step — the "wrapped
+ *  around" bead. tokens.css carries the arithmetic.
  *
  *  `SOLID` is `edge.ts`'s, because both callers of the slice stack close up the
  *  same way below the band and one spelling is the point of it being there. */
 const DEPTH = `${SOLID} * var(--eater-map-slab-thickness) * 100cqw`;
-const ROUND =
-  `${SOLID} * min(var(--eater-map-slab-edge-radius), var(--eater-map-slab-thickness)) * 100cqw`;
+const PLAN = `${SOLID} * var(--eater-map-slab-edge-radius) * 100cqw`;
+const FILLET =
+  `${SOLID} * min(var(--eater-map-slab-fillet), var(--eater-map-slab-thickness)) * 100cqw`;
 
 const mountDomStage = (parts: StageParts): Stage => {
   const { root, plane, still, edge } = parts;
@@ -89,11 +97,12 @@ const mountDomStage = (parts: StageParts): Stage => {
       const value = Number.parseFloat(style.getPropertyValue(name));
       return Number.isFinite(value) ? value : 0;
     };
-    const SLAB_ROUND =
+    const SLAB_PLAN = SLAB.viewport.width * Math.max(0, token('--eater-map-slab-edge-radius'));
+    const SLAB_FILLET =
       SLAB.viewport.width *
       Math.max(
         0,
-        Math.min(token('--eater-map-slab-edge-radius'), token('--eater-map-slab-thickness')),
+        Math.min(token('--eater-map-slab-fillet'), token('--eater-map-slab-thickness')),
       );
 
     clearEdge(plane);
@@ -104,15 +113,25 @@ const mountDomStage = (parts: StageParts): Stage => {
     // arithmetic. Clipped, every pixel stays where it was and the band the fillet
     // occupies is simply given up, which is exactly what the extrusion does with
     // it.
-    still.style.clipPath = `inset(calc(${ROUND}))`;
+    //
+    // AND THE CLIP IS ROUNDED, which it did not have to be while one Token was
+    // both numbers. It is inset by the FILLET — that is the band given up — and
+    // cut to `PLAN - FILLET`, which is exactly the innermost fillet ring's own
+    // corner, so the picture meets the roll along its whole length. Inset by the
+    // fillet and left SQUARE, the picture's corners would stand outside the
+    // Slab's rounded outline and the object would have four square corners of map
+    // hanging off a rounded solid. At FILLET == PLAN the radius is zero and this
+    // is the plain `inset()` it used to be.
+    still.style.clipPath = `inset(calc(${FILLET}) round calc(${PLAN} - (${FILLET})))`;
 
-    // THE SLAB'S PLAN CORNER IS THE FILLET RADIUS, and one `border-radius` per
-    // slice is why: the DOM stage has one number for both, held to the thickness
-    // by the `min()` above. A Card's two are separate, because a pill's plan
-    // corner is 24px and its edge is 4px deep.
+    // TWO NUMBERS NOW, AND THE `radii` ARE THE PLAN ONE (#200). Every slice is cut
+    // to `PLAN - its own inset` by `edge.ts`, and the fillet's insets run out to
+    // FILLET — so the plan corner is what the outline is and the fillet is only
+    // how far the face rolls into it. A Card's pair has always been separate, for
+    // the same reason: a pill's plan corner is 24px and its edge is 4px deep.
     extrude(plane, still, {
       box: { x: '0px', y: '0px', w: '100%', h: '100%' },
-      radii: [ROUND, ROUND, ROUND, ROUND],
+      radii: [PLAN, PLAN, PLAN, PLAN],
       // THE SAME OUTLINE AS ARITHMETIC, for the shading, in the PHONE'S OWN PIXELS
       // — the coordinate system the app drew in, which is what `slab.ts` says
       // `viewport` is for. Any unit would do, because the gradient is exactly
@@ -127,11 +146,11 @@ const mountDomStage = (parts: StageParts): Stage => {
       plan: {
         w: SLAB.viewport.width,
         h: SLAB.viewport.height,
-        radii: [SLAB_ROUND, SLAB_ROUND, SLAB_ROUND, SLAB_ROUND],
-        fillet: SLAB_ROUND,
+        radii: [SLAB_PLAN, SLAB_PLAN, SLAB_PLAN, SLAB_PLAN],
+        fillet: SLAB_FILLET,
       },
-      fillet: ROUND,
-      filletBack: ROUND,
+      fillet: FILLET,
+      filletBack: FILLET,
       depth: DEPTH,
       colour: 'var(--eater-map-slab-edge)',
       surface: 'slab',

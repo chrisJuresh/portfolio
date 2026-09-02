@@ -165,13 +165,17 @@
 
      THREE PER CENT DEEP, WHICH IS A PHONE. It was 0.1 while the edge was a
      comparison nothing shipped and a tenth of a phone's width is a paving slab;
-     0.03 is what the reference is and what #187 states. The radius is the plan
-     corner AND the fillet in the DOM stage — one `border-radius` per slice — so
-     it is held to the thickness: an edge cannot be rounder than it is deep.
-     **HELD BY BOTH STAGES AND NOT BY THIS COMMENT** — `min()` in `stage-dom.ts`
-     and `Math.min` in `stage-webgl.ts`'s `Slab.write` — so dragging the radius
-     past the thickness stops at the thickness rather than turning the wall inside
-     out. Chosen by looking, on the sheet `pnpm stages` renders.
+     0.03 is what the reference is and what #187 states.
+
+     THE THICKNESS BOUNDS THE FILLET AND NOT THE PLAN CORNER, which is the
+     correction #200 asked for and the whole of why this object used to read as a
+     bar of soap. A fillet cannot be deeper than the wall it rolls into; a plan
+     corner has nothing to do with the wall's depth, and a phone proves it — 17px
+     of corner on an 11px shell. **HELD BY BOTH STAGES AND NOT BY THIS COMMENT** —
+     `min()` in `stage-dom.ts` and `Math.min` in `stage-webgl.ts`'s `Slab.write` —
+     so dragging the FILLET past the thickness stops at the thickness rather than
+     turning the wall inside out. Chosen by looking, on the sheet `pnpm stages`
+     renders.
 
      READ BY THE STAGE AND NOT BY THE COMPOSITION, which is why nothing in
      `EaterMap.astro` mentions them: `stage.ts` is the boundary, the DOM stage
@@ -181,22 +185,57 @@
      shipped page now asks for an edge at all, so these are ordinary Tokens that
      move the drawing rather than three that wait for a decision. */
   --eater-map-slab-thickness: 0.03;
-  /* LEFT AT 0.02, AND THE OBJECT READS SQUARER THAN THE REFERENCE BECAUSE OF IT.
-     Not a choice: this ONE number is the plan corner AND the fillet at once, and
-     the `min()` above holds it to the thickness, because a solid cannot have a
-     fillet deeper than its wall. A phone has a big plan corner and a SMALL
-     fillet, so the two want to be two Tokens. Until they are, the plan corner is
-     capped at the wall's depth — 0.03, or 10.9px at the 362px the Slab is drawn
-     at — and even that is not free: raising it to the cap moves the corner probe
-     in the `eater-map` Check half a radius further out along the diagonal, where
-     the head-left corner stops finding a slice. That is the fillet running out,
-     which the Check's own comment predicts at 0.85 of the radius, not a hole; but
-     the right answer is to split the Token and recalibrate, not to widen the
-     probe until it passes.
+  /* THE PLAN CORNER, and NOTHING about the wall — which is what #200 split it
+     into. It was one number doing this job and the fillet's at once, capped at
+     the thickness, so the outline could never be rounder than the shell was deep:
+     0.02, 7.2px, and the object read as a bar of soap.
 
-     The mockup this composition was signed off against drew a 17px corner on an
-     11px wall, which is why it looked right and is also why it was not a solid. */
-  --eater-map-slab-edge-radius: 0.02;
+     WHAT THE ONE NUMBER ACTUALLY DID TO THE DRAWING was worse than squareness,
+     and it is the "strongly wrapped" look the author reported. Every slice is cut
+     to `plan corner - its own inset`, and the fillet's insets run out to the
+     fillet — so with the two EQUAL the innermost ring's corner is
+     `0.02 - 0.02 = 0`. The roll flattened into a square exactly at the corners,
+     where the normal then turned through ninety degrees in one step, and a hard
+     light/dark break ran round the object like a strap. Split, that ring is
+     `0.045 - 0.006` and stays round the whole way in.
+
+     0.045 IS THE MOCKUP'S OWN `.045`, which is where this composition was signed
+     off — 16.3px at the 362px the Slab is drawn at, against an 10.9px shell. The
+     mockup got there by drawing a 17px corner on an 11px wall with no clamp at
+     all; two Tokens is that picture reproduced honestly rather than by removing a
+     constraint that is real about the fillet. */
+  --eater-map-slab-edge-radius: 0.045;
+
+  /* HOW FAR THE FACE ROLLS INTO THE WALL — the fillet, and the number the
+     thickness above is the bound on. A share of the Slab's WIDTH, like every
+     other length on the plane, so the object keeps its proportions at every
+     window.
+
+     A FIFTH OF THE SHELL, AND CHOSEN OFF A LADDER RATHER THAN OFF THE MOCKUP.
+     2.2px of roll on a 10.9px wall: the face is eased into the edge rather than
+     meeting it at a right angle, and there is a soft light line along the top of
+     the wall rather than a bead wrapped round it. 0 is a chamferless box; 0.010
+     is a visible pale lip; 0.0165 — the mockup's own `min(t * 0.55, ...)` at
+     t = 0.03 — is the bead the author reported as "strongly wrapped".
+
+     THE MOCKUP'S NUMBER DOES NOT TRANSFER, AND THIS IS WHY. Its face carries the
+     full plan corner with NO inset, so its picture runs to the outline and covers
+     all but the last sliver of its own roll — a 6.3px fillet reads there as the
+     thin lip 2.2px reads as here. This stage gives the fillet's band up honestly
+     (`stage-dom.ts` clips the picture back by exactly this number), so the whole
+     roll is on screen and the number that LOOKS like the reference is a third of
+     the one that made it. Rendered both ways at four values against
+     `out/TARGET.png` before choosing: matching the mockup's clip instead would
+     draw map pixels outside the solid's own cross-section at z = 0, which is the
+     overhang #200 said to reproduce honestly rather than copy.
+
+     A SHARE OF THE WIDTH AND NOT OF THE THICKNESS, which is a choice and not an
+     oversight: this file's own rule is that every length on the plane is one
+     unit — "the rise, the slides, the thickness" — and a Token in a second unit
+     is the confound #189 collapsed a pair onto one unit to remove. The cost is
+     that dragging the thickness alone does not carry the fillet with it; the
+     `min()` in both stages is what keeps that honest rather than inverted. */
+  --eater-map-slab-fillet: 0.006;
 
   /* What the Slab is made of where the picture is not. A fact about the object
      rather than about the page, so it does not turn with the theme — the same
@@ -428,7 +467,20 @@
      Card is two pills with a gap between them, and one extrusion round the pair
      is a component the app does not have. Its plan corners are `cards.css`'s own
      and are never stated here — a radius written in this repository is a second
-     opinion about a number the vendored export already holds. */
+     opinion about a number the vendored export already holds.
+
+     WHICH IS WHY THERE IS NO `card-edge-radius` AND `card-fillet` PAIR to match
+     the Slab's above: a Card's plan corner is not this repository's to hold, so
+     the one Token here is the FILLET already and `-edge-radius` is its name for
+     historical reasons only. The `min()` against the thickness below is therefore
+     the right clamp on it and always was — the Slab's was the one on the wrong
+     number.
+
+     AND THE THICKNESS ONLY STARTED MEANING ANYTHING AT #203. Until
+     `.eater-map__card` became a `preserve-3d` parent, every slice's depth was
+     flattened onto the face and this Token moved nothing at all; the comment
+     below about a third of the Slab's is the proportion #187 asked for, and it is
+     now the proportion the page actually draws. */
   --eater-map-card-thickness: 0.01;
   --eater-map-card-edge-radius: 0.005;
 
