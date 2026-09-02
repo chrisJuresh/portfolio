@@ -34,6 +34,19 @@
    the reader about connectivity, so it is interface, and slab.json's `strip`
    takes it off with the rest.
 
+   WHY THE MAP IS RE-THEMED IN FLIGHT AND NOT IN THE EATER CHECKOUT
+   ----------------------------------------------------------------
+   The Slab is a dark map and Eater draws a light one, so the modules its dev
+   server serves are rewritten on their way to the browser. Nothing in that
+   checkout is edited: it is another repository, the app is not dark, and a
+   local edit there would be either a diff nobody asked for or a stash somebody
+   loses.
+
+   The rewrites are declared in slab.json's `retheme` and the decisions are in
+   retheme.mjs, which is pure and has a test beside it. Each one says how many
+   times it must match, and a count that does not agree stops the run — which is
+   the same argument `strip` and `keep` make below, for the same reason.
+
    WHY THE INTERFACE IS STRIPPED AND THEN CHECKED
    ----------------------------------------------
    `strip` hides everything that is not the map; `keep` names what is left. They
@@ -86,6 +99,7 @@ import { mkdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 import { dirname, isAbsolute, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { chromium } from 'playwright';
+import { auditRetheme, planRetheme, rewriteModule } from './retheme.mjs';
 
 const HERE = fileURLToPath(new URL('.', import.meta.url));
 const REPO = resolve(HERE, '..', '..');
@@ -480,7 +494,27 @@ export function stamp(bytes) {
   return createHash('sha256').update(bytes).digest('hex').slice(0, 8);
 }
 
-async function capture({ origin, asked, output }) {
+/**
+ * The re-theme, as the report says it before a browser is started.
+ *
+ * The plan is printed rather than summarised because the whole claim being made
+ * is "the Slab you are about to get is this one" — a run that says only "re-themed"
+ * is a run whose reader still has to open slab.json to know what they got.
+ *
+ * @param {ReturnType<typeof planRetheme>} plan
+ * @param {string} checkout
+ * @returns {string[]}
+ */
+function rethemeReport(plan, checkout) {
+  if (plan.length === 0) return ['slab: no re-theme declared — Eater\'s own modules, unmodified'];
+  const width = Math.max(...plan.map((one) => one.id.length));
+  return [
+    `slab: re-themed in flight; nothing in ${checkout} is edited`,
+    ...plan.map((one) => `slab:   ${one.id.padEnd(width)}  ${one.value}  (x${one.expect}, ${one.is})`),
+  ];
+}
+
+async function capture({ origin, asked, output, plan }) {
   let browser;
   try {
     browser = await chromium.launch();
@@ -505,6 +539,34 @@ async function capture({ origin, asked, output }) {
       Object.defineProperty(window.navigator, 'onLine', { get: () => false, configurable: true });
     });
 
+    // ---- the re-theme, on the way to the browser ---------------------------
+    // One route per module the plan claims, rather than one over everything:
+    // an empty plan then routes NOTHING, so the reversal in slab.json is a run
+    // in which Playwright never stands between vite and the page at all.
+    /** @type {import('./retheme.mjs').Served[]} */
+    const served = [];
+    /** @type {string[]} */
+    const unfetchable = [];
+    for (const source of new Set(plan.map((one) => one.module.source))) {
+      await context.route(new RegExp(source), async (route) => {
+        const url = route.request().url();
+        let response;
+        try {
+          response = await route.fetch();
+        } catch (error) {
+          // Recorded rather than thrown: this runs on Playwright's own thread,
+          // and a throw here is swallowed into a hung request. What it becomes
+          // downstream is the audit's "never served", which is the truth but
+          // not the cause, so the cause is carried out alongside it.
+          unfetchable.push(`could not fetch ${url} — ${String(error?.message ?? error).split('\n')[0]}`);
+          return route.abort();
+        }
+        const { source: rewritten, found } = rewriteModule(url, await response.text(), plan);
+        served.push({ url, found });
+        await route.fulfill({ response, body: rewritten });
+      });
+    }
+
     const page = await context.newPage();
     const thrown = [];
     page.on('pageerror', (error) => thrown.push(String(error).split('\n')[0]));
@@ -513,8 +575,30 @@ async function capture({ origin, asked, output }) {
     await page.waitForLoadState('networkidle').catch(() => {});
     await page.waitForTimeout(SLAB.capture.settleMs);
 
+    // A module the re-theme could not fetch is ABORTED above, so the app then
+    // throws about a module it could not import — which is true, and is the
+    // symptom rather than the cause. Reported first for that reason.
+    if (unfetchable.length > 0) {
+      throw new Refusal(
+        `the re-theme could not read a module it had claimed, so Eater was served nothing for it:\n      ${unfetchable.join('\n      ')}`,
+      );
+    }
+
     if (thrown.length > 0) {
       throw new Refusal(`Eater threw while loading, so this would be a still of a broken app:\n      ${thrown.join('\n      ')}`);
+    }
+
+    // ---- did the re-theme actually happen? ---------------------------------
+    // Before the interface, the camera and the stability, because every one of
+    // those would PASS: a rewrite that missed leaves a perfectly clean,
+    // perfectly aimed, perfectly still LIGHT map, and that is indistinguishable
+    // from the right one until somebody opens the file.
+    const missed = auditRetheme(plan, served);
+    if (missed.length > 0) {
+      throw new Refusal(
+        `the re-theme did not take, so this would be the un-re-themed Slab:\n      ${missed.join('\n      ')}\n` +
+          "\n      retheme in slab.json no longer matches Eater's source.",
+      );
     }
 
     // The stylesheet goes in AFTER the app has mounted. Svelte's dev server
@@ -620,6 +704,7 @@ async function capture({ origin, asked, output }) {
       bytes: written.length,
       shot: previous.length,
       stamp: stamp(written),
+      retheme: served,
       width: Math.round(box.width * SLAB.viewport.deviceScaleFactor),
       height: Math.round(box.height * SLAB.viewport.deviceScaleFactor),
     };
@@ -688,10 +773,20 @@ async function main() {
   }
   const output = isAbsolute(wanted) ? wanted : join(REPO, wanted);
 
+  // Planned before the dev server is started, so a declaration that cannot be
+  // pasted into a module refuses in a second rather than three minutes in.
+  let plan;
+  try {
+    plan = planRetheme(SLAB.retheme);
+  } catch (error) {
+    return die(error.message);
+  }
+
   console.log(`slab: ${centredOn}`);
   console.log(`slab: ${asked.lat.toFixed(5)}, ${asked.lon.toFixed(5)} at zoom ${asked.zoom}`);
   console.log(`slab: ${SLAB.viewport.width}x${SLAB.viewport.height} at ${SLAB.viewport.deviceScaleFactor}x`);
   console.log(`slab: driving ${checkout}`);
+  for (const line of rethemeReport(plan, checkout)) console.log(line);
 
   // die() exits the process, and an exit does not run a finally - so a refusal
   // is carried OUT of the block that owns the dev server rather than announced
@@ -701,11 +796,25 @@ async function main() {
   try {
     eater = await startEater(checkout, SLAB.eater.readyTimeoutMs);
     console.log(`slab: Eater on ${eater.origin}\n`);
-    const written = await capture({ origin: eater.origin, asked, output });
+    const written = await capture({ origin: eater.origin, asked, output, plan });
     console.log(`slab: ${output}`);
     console.log(
       `slab: ${written.width}x${written.height} px, ${(written.bytes / 1024).toFixed(0)} KB webp ` +
         `(from ${(written.shot / 1024).toFixed(0)} KB png)`,
+    );
+    if (plan.length > 0) {
+      const made = written.retheme.reduce((sum, one) => sum + one.found.reduce((n, got) => n + got.count, 0), 0);
+      console.log(
+        `slab: re-theme held — ${made} substitution(s) over ${written.retheme.length} module fetch(es), ` +
+          'every count as declared',
+      );
+    }
+    // The size is the OTHER number slab.ts carries, and the size line above is
+    // easy to read as information rather than as an instruction. It rarely
+    // moves, which is exactly why it is the one that gets left behind when it
+    // does — and a wrong `pixels` is an intrinsic ratio that fights the layout.
+    console.log(
+      `slab: pixels ${written.width}x${written.height} — the other number in src/sections/eater-map/slab.ts`,
     );
     // The last line is the one that has to be acted on, so it says what to do
     // with it rather than printing a digest and leaving the reader to work it

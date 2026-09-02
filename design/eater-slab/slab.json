@@ -65,6 +65,47 @@
     "cameraTolerance": { "zoom": 0.01, "degrees": 0.0001 }
   },
 
+  "retheme": {
+    "note": "The Slab is a DARK map, and this is how it is made one without editing the Eater checkout: the modules its own dev server serves are rewritten in flight, on their way to the browser. Set flavor back to \"light\", drop to [] and markerOpacity to null and NOTHING is rewritten — no module is even intercepted — which is the capture that shipped before #188. Every rewrite says how many times it must match, and a count that does not agree stops the run: a light Slab on disk looks exactly like a right one until somebody opens it. design/eater-slab/README.md says why this lives here rather than in the Eater checkout.",
+
+    "flavor": "dark",
+    "drop": ["pois", "address_label"],
+    "markerOpacity": 0.82,
+
+    "rewrites": [
+      {
+        "id": "flavor",
+        "parameter": "flavor",
+        "is": "protomaps' flavour, stated at both of Eater's style call sites",
+        "default": "light",
+        "module": "/src/lib/map/style\\.js(?:$|\\?)",
+        "find": "namedFlavor\\(\\s*'light'\\s*\\)",
+        "replace": "namedFlavor('{value}')",
+        "expect": 2
+      },
+      {
+        "id": "drop",
+        "parameter": "drop",
+        "is": "the seam every basemap layer passes through, where these ids are filtered out",
+        "default": [],
+        "module": "/src/lib/map/style\\.js(?:$|\\?)",
+        "find": "function composeTransit\\(baseLayers\\) \\{",
+        "replace": "function composeTransit(baseLayers) { baseLayers = baseLayers.filter((l) => !/(^|_)({value})$/.test(l.id));",
+        "expect": 1
+      },
+      {
+        "id": "markerOpacity",
+        "parameter": "markerOpacity",
+        "is": "the flat opacity the restaurant markers composite at; 0.42 reads maroon on dark",
+        "default": null,
+        "module": "/src/lib/constants\\.js(?:$|\\?)",
+        "find": "MARKER_LAYER_OPACITY\\s*=\\s*0\\.42",
+        "replace": "MARKER_LAYER_OPACITY = {value}",
+        "expect": 1
+      }
+    ]
+  },
+
   "encode": { "quality": 0.9 },
 
   "output": "portfolio/img/eater/slab.webp"

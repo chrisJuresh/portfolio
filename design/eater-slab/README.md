@@ -1,9 +1,13 @@
 # design/eater-slab/ — the Eater Map Showcase's Slab
 
-One still of the Eater map over central London, with the rail network drawn on it
-and **none of the app's interface on top**, at a phone viewport. That is a
-**Slab**: the captured plane an Exploded View is built on (`CONTEXT.md`), and the
-Eater Map Section's three **Cards** are raised off it.
+One still of the Eater map over central London, **dark**, with the rail network
+drawn on it in its own line colours, the restaurants reading as red across it, and
+**none of the app's interface on top**, at a phone viewport. That is a **Slab**:
+the captured plane an Exploded View is built on (`CONTEXT.md`), and the Eater Map
+Section's three **Cards** are raised off it.
+
+Eater's own map is light. **The dark one is made here, in flight, and nothing in
+the Eater checkout is edited** — see **The re-theme** below.
 
 ```bash
 node design/eater-slab/capture-slab.mjs
@@ -45,6 +49,7 @@ again.
 | `capture.strip` | the CSS that hides everything else |
 | `capture.settleMs`, `stableProbes`, `stableGapMs` | how long the map gets to arrive, and how the run decides it has stopped moving |
 | `capture.cameraTolerance` | how far the camera Eater settled on may be from the one it was asked for. The precision the deep link is written at, and nothing finer |
+| `retheme` | what makes the map dark, and how each rewrite proves it landed. **The re-theme** below |
 | `encode.quality` | the WebP quality the still is re-encoded at, 0..1. **The format** below |
 | `output` | where the still is written, relative to the repository root |
 
@@ -82,6 +87,57 @@ container, which shows through tiles the bundled basemap does not cover. It is t
 app telling the reader about connectivity, so it is interface, and `capture.strip`
 takes it off with the rest.
 
+## The re-theme
+
+The Slab is a **dark** map. Eater's own is light, and it is not going dark to suit
+a portfolio, so the three things that make it dark are done to the modules Eater's
+dev server serves, **on their way to the browser**, from a declaration in
+`slab.json`:
+
+| parameter | what it is | shipped at | matches |
+| --- | --- | --- | --- |
+| `retheme.flavor` | protomaps' flavour, stated at both of Eater's style call sites | `"dark"` | 2 |
+| `retheme.drop` | basemap layer ids filtered out at the seam every layer passes through — the shops, the theatres, the door numbers | `["pois", "address_label"]` | 1 |
+| `retheme.markerOpacity` | the flat opacity the restaurant markers composite at. Eater's own `0.42` reads maroon on a dark ground | `0.82` | 1 |
+
+### Why it lives here and not in the Eater checkout
+
+Because the dark map is **this page's** requirement and not Eater's. That checkout
+is another repository, its app is light, and it has no reason to grow a theme
+nobody there asked for. The three ways of doing it there are all worse: a commit
+is a change to somebody else's product to suit a screenshot, an uncommitted edit is
+a working tree that quietly stops matching its own origin, and a stash is a thing
+somebody loses. A rewrite declared in *this* repository, applied by *this* script,
+for the length of *one* capture, leaves the checkout exactly as it found it —
+and the declaration is then a thing a reader of this folder can see, which an edit
+over there would not be.
+
+It also keeps the pair's promise: **every number is in `slab.json` and none is in
+the script.** Making the map dark is editing a field here, as changing the
+restaurant already was.
+
+### Reversing it
+
+Set `flavor` back to `"light"`, `drop` to `[]` and `markerOpacity` to `null`, and
+the run reproduces the Slab that shipped before #188. That is stronger than the
+rewrites happening to be no-ops: a parameter still holding Eater's own value —
+each rewrite's `default` — is **not planned at all**, so no route is registered
+and Playwright never stands between vite and the page. Turning one off is writing
+`null`, not deleting the line; a deleted line is indistinguishable from a
+misspelled `parameter`, and one of the two has to be a refusal.
+
+### How each rewrite is declared
+
+Each entry in `retheme.rewrites` says which `parameter` it carries, which
+`module` URLs it claims, what to `find` there (always global), what to `replace`
+it with — `{value}` is where the parameter goes — and **`expect`, how many times
+it must match**. A value is rendered for the JavaScript it is pasted into: a word
+as itself, a number as itself, a list as an alternation, so `drop` arrives as
+`pois|address_label` inside Eater's own layer filter.
+
+`retheme.mjs` holds the three decisions — plan, rewrite, audit — as pure
+functions, and `retheme.test.mjs` beside it is what `pnpm test` runs.
+
 ## What is stripped, and what is not
 
 `capture.strip` hides the search bar, the zoom and location controls, the price
@@ -91,14 +147,32 @@ the canvas its restaurant markers are drawn on.
 
 **The markers stay.** They are Eater's data drawn into the map rather than
 interface laid over it, and a transit map with no restaurants on it is not the
-Eater map. The Section's three Cards are the interface, and they are drawn by the
-page rather than captured (#171).
+Eater map. They composite a good deal more opaquely than Eater draws them, because
+Eater's `0.42` is tuned against a light ground and reads maroon on this one —
+`retheme.markerOpacity` above. The Section's three Cards are the interface, and
+they are drawn by the page rather than captured (#171).
 
-## The two things it refuses on rather than getting wrong
+**The shops, the theatres and the door numbers go**, and they go through the
+basemap rather than through `strip`: they are layers in the map, not elements over
+it, so `retheme.drop` takes them out at the seam every basemap layer passes
+through. What is left is the thing the project is about — the restaurants and the
+rail network.
+
+## The three things it refuses on rather than getting wrong
 
 A generator that quietly produces the wrong thing looks exactly like one that
-succeeded, so both of the ways this could do that are checked before a file is
-written, and both have been made to fire on purpose.
+succeeded, so every way this could do that is checked before a file is written,
+and each has been made to fire on purpose.
+
+**The re-theme might not have taken.** Eater renames a function, protomaps moves a
+call site, Svelte's compiler stops emitting the constant the way it does today —
+and the run then writes a perfectly clean, perfectly aimed, perfectly still
+**light** Slab, which is indistinguishable from the right one until somebody opens
+it. So each rewrite declares its `expect`, every fetch of a module it claims has
+to make exactly that many substitutions, and a rewrite that was **never served a
+module at all** is its own refusal rather than a vacuous pass. The count is
+per-fetch and not a total: vite re-serves a module on an HMR round trip, and a
+total would let one good fetch cover for a bad one.
 
 **The interface might not actually be gone.** `strip` and `keep` have to agree,
 and a selector that quietly stops matching — Eater renames a class, Svelte moves a
@@ -120,21 +194,30 @@ first-past-the-post would silently pick one), a missing or uninstalled checkout,
 zoom outside the range Eater would clamp to, and an unrecognised flag are all
 refusals with a non-zero exit.
 
-## No test, and why
+## One test, and why only one
 
 The Agent Contract's rule is that where there is no seam there is no test, and the
-spec says so. This has none worth building: its failures are immediate and loud,
-and a fixture for a headless browser driving another repository's dev server costs
-more than the failures do (#171). The decisions in it are exported — `parseArgs`,
-`findRestaurant`, `viewHash`, `parseViewHash`, `cameraMatches`, `resolveCheckout` —
-so that stops being true the day this moves under `scripts/`, where `pnpm test`'s
-glob would reach it.
+spec says so. **`retheme.mjs` is a seam and `retheme.test.mjs` is its test**, run
+by `pnpm test` like every other pure function here — the glob already reaches
+`design/**/*.test.mjs`, which is what `design/eater-cards/compare.test.mjs` is
+under too.
 
-**That absence is self-imposed rather than structural, and worth knowing as such**
-— a review of this folder said so, and it is right. The glob is not widened to
-`design/**` here for a reason that is not principle: `design/tools/` carries its
-own `node_modules`, and `node --test "design/**/*.test.mjs"` would walk into it
-and run a dependency's suite. Widening it means excluding that first.
+It earns one where the rest of this folder does not, and the difference is worth
+stating rather than being read as inconsistency. **Every other failure in here is
+immediate and loud**: a missing checkout, a dev server that will not start, a
+camera the app dropped on the floor, a search bar still on the map. The re-theme's
+is neither. It writes a file that opens, is the right size, is of the right place,
+and is the wrong colour — and it fails that way not when this repository changes
+but when *another one* does, on a run nobody is watching for it. So the decision
+about whether a rewrite landed is a pure function with a text fixture, and the
+test drives the three failures on purpose: a rewrite applied, a count that does
+not agree, and a source with nothing in it to match.
+
+**The capture around it still has no test**, and that is still deliberate: a
+fixture for a headless browser driving another repository's dev server costs more
+than the failures do (#171). The decisions in it are exported — `parseArgs`,
+`findRestaurant`, `viewHash`, `parseViewHash`, `cameraMatches`, `resolveCheckout` —
+so a session that wants them covered has somewhere to stand.
 
 ## Not a Bake, and what promoting it would cost
 
@@ -158,9 +241,9 @@ it, and `git restore` it when the answer is "the labels moved".**
 
 **WebP, re-encoded from the PNG the browser handed over.** A browser screenshot is
 a PNG and a PNG of a labelled map is about a megabyte; the Slab is on the page now
-(#176), so this is a file a reader is sent rather than one an agent opens. 1054 KB
-became 251 KB at `encode.quality` 0.9, for a picture nobody can tell apart at the
-size it is drawn.
+(#176), so this is a file a reader is sent rather than one an agent opens. The dark
+Slab's 754 KB became 198 KB at `encode.quality` 0.9, for a picture nobody can tell
+apart at the size it is drawn.
 
 **The encode is a canvas in the same Chromium that took the shot**, rather than
 Pillow or sharp. Nothing new has to be installed for a script that already drives
