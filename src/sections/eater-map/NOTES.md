@@ -22,8 +22,9 @@ now.
 
 Here: the Rail, a plain masthead, the two authored subheading lines, the copy,
 the four numbered points, the Exploded View, the four leader lines that join the
-one to the other, the **Lift** that assembles it, and the collapse that puts all
-of it away below the band.
+one to the other, the **Lift** that assembles it, the **glass** every Card's
+surfaces are made of (#190), and the collapse that puts all of it away below the
+band.
 
 Not here: which of the two stages draws the Slab. #181 built the alternative —
 the same Exploded View in WebGL, with a Slab that has thickness — and **#182 is
@@ -45,14 +46,16 @@ flat screenshot is not a frame the drawing has any more. The `eater-map` Check
 reads the scale with the projection lifted off the plane for one read instead,
 which is the only honest way to ask a rotated Card how wide it is drawn.
 
-**THE ONE THING A SCRIPT IS STILL NEEDED FOR IS THE SLAB'S EDGE**, and it is
-named here rather than buried in the stage. The thickness is twenty-four elements
-a stylesheet cannot conjure, and which of the two renderers builds them is #182 —
-so a reader whose scripts never arrived gets the Exploded View at its full
-attitude with the Cards raised, and a Slab with no depth. That is the same trade
-the leader lines make (#178) and it is affordable for the same reason: what is
-lost is a drawing convention rather than a claim. It is also the one part of this
-Section a template could not hold on behalf of both stages.
+**WHAT A SCRIPT IS STILL NEEDED FOR IS EVERY SOLID ON THE PLANE, AND THE CARDS'
+GLASS**, and it is named here rather than buried in the stage. A thickness is
+twenty-four elements a stylesheet cannot conjure — for the Slab, and since #190 for
+every glass surface on every Card — and the Cards' backdrops are a measurement of
+another repository's stylesheet that no selector can stand in for. So a reader
+whose scripts never arrived gets the Exploded View at its full attitude with the
+Cards raised, no depth on anything, and the app's own translucency where the
+smeared map would be. That is the same trade the leader lines make (#178) and it is
+affordable for the same reason: what is lost is a drawing convention rather than a
+claim.
 
 `timeline.ts` therefore exports the Lift, and the file used to say why it exported
 nothing. Two things it recorded are worth keeping, because both are still true of
@@ -158,6 +161,13 @@ Every mutation below has been made on purpose and every one was caught.
 | an anchor moved out of the plane and onto the Slab | that anchor not inside `.eater-map__plane`, at both windows. **This used to be geometry and had to stop being** — it was caught by the anchor standing in one place at both ends of the Lift, and the Slab's own anchor stands still legitimately now, because the Slab does. The movement half is kept for the three Cards, which are what the Lift carries |
 | `display: none` dropped from the overlay's collapse rule | the rules still drawn at 390x844 |
 | a second point given `part: 'search'` | the BUILD, on both refinements at once — no point names the slab, and two name the search |
+| the plate mix put back on the three glass colours | the offline button opaque at the raised end, at both windows — and NOT at the flat end, which is the frame it was always honest at |
+| one backdrop round the search Card's pair | the search Card drawing 1 glass surface where the app gives it 2, at both windows |
+| one corner radius typed here instead of read off `cards.css` | the offline button drawn `0.43/24/24/24` against the `24/24/24/24` the export states |
+| #197's rebuild — the clear per box and the host per Card | `search .search` with no edge while `search .offline-button` has one, which is exactly the silent half of it |
+| the backdrop's `/ boost` dropped | with every Card boosted to 1.1, the map behind the details sheet drawn 310.6px against the Slab's 282.36px, 10% apart — and nothing at all at boost 1 |
+| `--label` dropped from the dark block | the search pill painted lighter than the text on it, at both windows |
+| a vendored variable overridden that `cards.css` does not publish | the Section naming `--glass-super`, which a re-vendoring could not carry |
 
 **The `arrived()` mutation passed three times in a row before the Check was
 written the right way**, and it is the shape `scripts/checks/NOTES.md` warns about twice: *a
@@ -187,9 +197,12 @@ anyway — see the grouping rule below.
 The Exploded View is one projection, one rotation, and three depths off the plane
 it rotates. `--eater-map-lift` runs 0 with the Cards down on the map to 1 at the
 finished drawing, and **what it multiplies is the Cards and nothing else** — each
-Card's depth, each Card's slide along the plane, and the glass. The plane's own
-attitude is a constant it does not touch (#189), so progress 0 is three Cards
-lying on a Slab that is already standing where it will stand.
+Card's depth and each Card's slide along the plane. The plane's own attitude is a
+constant it does not touch (#189), so progress 0 is three Cards lying on a Slab
+that is already standing where it will stand. **The glass left the playhead in
+#190** — it used to fill towards a plate as a Card climbed, and it is now a copy of
+the map the Card carries, the same at every moment — so what the Lift does to it is
+move it, which is the parallax rather than a state.
 
 **WHAT #189 TOOK OUT OF THE PLAYHEAD, and why each thing left rather than being
 set to a constant.** The tilt and the swing stopped being terms of it because the
@@ -212,10 +225,15 @@ and are both silent when broken.
 .eater-map__stage      the grid area, centring what is in it
   .eater-map__slab     the SIZE, and the container every length on the plane is a share of
     .eater-map__plane  the PROJECTION and the one rotation — rotateX, rotateZ, and no perspective()
-      .eater-map__slice x24  the Slab's thickness, built by the stage
+      .eater-map__slice x24  the Slab's thickness, built by the stage through edge.ts
       .eater-map__still    the picture
       .eater-map__cards    the app's stylesheet host, preserve-3d
-        .eater-map__card   one depth off the plane's surface
+        .eater-map__card   one depth off the plane's surface, preserve-3d
+          .eater-map__slice x24 per glass surface  that surface's own thickness
+          .eater-map__face      FLAT, so z-index decides inside it
+            .eater-map__glass x1 per glass surface  the blurred copy of the map
+            .eater-map__surface   display: contents, and the app's own markup
+          .eater-map__anchor    where a leader line ends
 ```
 
 **Rule one: a GROUPING element cannot preserve 3D.** `transform-style: preserve-3d`
@@ -289,10 +307,7 @@ scale is the Card's own and the translate is in the PLANE's units. Written the o
 round the app's own scale would multiply the depth and each Card would rise by a
 different amount for the same Token.
 
-## Glass cannot be carried off a surface
-
-The one thing the Lift costs that no Token puts back, and the reason a Token had
-to be spent putting something else in its place.
+## Glass cannot be carried off a surface, so the map is carried instead
 
 A `backdrop-filter` samples what is painted behind an element **in its own plane**,
 and there is no such thing once the plane is turned under a camera: Chromium hands
@@ -303,22 +318,112 @@ already a sheet of clear glass with a sharp map behind its text. And measured th
 other way too, because it was the obvious suspect: `transform-style: preserve-3d`
 alone, with every angle at 0, is pixel-identical to `flat`. It is the rotation.
 
-So the composition gives each Card the plate its glass was standing in for, in step
-with that Card's own climb. `.eater-map__cards` captures the app's three glass
-colours off its own host — `--glass`, `--glass-sheet`, `--glass-sheet-float` — and
-`.eater-map__card` mixes each of them towards `--eater-map-plate` by
-`--eater-map-card-lift`. On the Slab the app's own translucency is what a
-screenshot has; off it the same surfaces are filled.
+**WHAT THIS SECTION DID ABOUT IT UNTIL #190 WAS THE OPPOSITE OF THE REFERENCE.**
+The composition gave each Card the plate its glass was standing in for, in step
+with that Card's own climb — `--glass`, `--glass-sheet` and `--glass-sheet-float`
+mixed towards `--eater-map-plate` by `--eater-map-card-lift` — so a raised Card was
+opaque WHITE. Legible, and the reverse of glass. The plate, the mix and the capture
+of the app's three colours are all gone.
 
-**The capture and the mix are on two different elements and that is not tidiness.**
-A custom property whose value refers to its own name is a cycle and computes to
-nothing, so `--glass: color-mix(…, var(--glass), …)` on one element is not a
-darker glass, it is no glass at all.
+**What stands in its place is `glass.ts`: each glass SURFACE carries a blurred copy
+of the Slab**, offset by that surface's own place on it, brightened — because a
+dark map behind a dark surface reads as a hole rather than as glass — and cut to
+that surface's own outline. Three Tokens make the copy (`--eater-map-glass-blur`,
+`-brighten`, `-saturate`) and three more are what the surfaces are painted
+(`--eater-map-glass`, `-sheet`, `-float`).
 
-**This Section never says what colour Eater's glass is** — only which way it fills
-as it leaves the map. The app's own values are the other end of every mix, which is
-the same rule the rest of the vendoring follows: the Showcase may not drift into
-showing an interface the app does not have.
+**The offset does not follow the climb, and that is the parallax.** The copy is a
+child of the Card, so it travels with it: a raised Card shows the piece of map it
+was *lying on* rather than the piece it is now over, which is what a sheet of glass
+lifted off a table does. Below the band, where the playhead is 0 and nothing has
+drifted, every copy lines up exactly with the map beneath it — so the collapsed
+drawing is an honestly frosted screenshot by the same mechanism, with no rule of
+its own. That is also the second reason `--eater-map-lift: 0` is declared in the
+collapse.
+
+**A CARD IS ITS GLASS SURFACES AND NOT ITS BOUNDING BOX.** The vendored search Card
+is a `.topbar` holding **two** separate pills — `.search` and `.offline-button`,
+with an 8px gap — and one backdrop and one extrusion round the pair weld them into
+a single long component with two buttons stuck on the end, which is not an
+interface the app has. `cards.ts` names the surfaces per Card; the rail popup and
+the details sheet are one each, and theirs is the vendored root itself.
+
+**AND EVERY NUMBER IS MEASURED RATHER THAN TYPED.** The markup is rendered into an
+offscreen ruler at its natural size and each surface's offset and its four computed
+corner radii are read there. Two things make that the only way:
+`getBoundingClientRect` on a turned element is the axis-aligned bounding box of the
+projected quad, so a measurement taken on the plane comes back projected; and a
+radius stated in this repository is a second opinion about a number the vendored
+export already holds — the mockup typed `24 / 18 / 22` against the stylesheet's own
+`--r-full`, `--r-menu: 14px` and `--r-sheet: 28px 28px 0 0`, so two of the three
+edges were drawn to the wrong outline and the third agreed by accident. `999px` is
+what a pill *states*; `fitRadii` in `edge.ts` is the clamp a browser applies to get
+the 24 it draws, and there is no property that hands it over.
+
+**Measured ONCE, and that is a fact about what is measured rather than an
+optimisation.** The Cards are frozen to the viewport they were exported at, so a
+surface's offset and radii are the same numbers at every window. Everything that
+does change — where the Card sits, how thick its edge is, how far the map is
+smeared — is a CSS expression `glass.ts` writes, so a Token dragged in the Editor
+and a window carried across the breakpoint both move the drawing with nothing
+re-mounted and no observer.
+
+**`preserve-3d` ON A CARD Z-FIGHTS ITS OWN CHILDREN**, which is the mechanism that
+cost a render. The copy and the Card's own content are both at `z: 0` under it, so
+`z-index` stops deciding between them and the two interleave — in the prototype
+that made the details Card read as two smeared panels. `.eater-map__face` is a
+`flat` box holding both, and the Card's edge slices are that face's **siblings**,
+because a depth inside a flat face is nothing at all.
+
+**A BOOSTED CARD'S BACKDROP IS COUNTER-SCALED, AND IT IS NOT OPTIONAL.** A Card is
+drawn at `app-scale × --eater-map-card-scale`, and scaling the Card scales the copy
+inside it — so a boosted Card would show a map through itself larger than the map
+it is lying on. One capture pixel is therefore `1 / boost` of that Card's own
+units, and the copy's size, both its offsets and the blur all divide by it. That is
+the whole mechanical cost of the 1.10 #187 adopts for the rail popup, and the
+`eater-map` Check puts a boost on for the length of one read so that a missing
+division fails rather than waiting for somebody to spend one.
+
+**AND `scale()` IS `scale3d(s, s, 1)`**, which is the same division for a second
+reason and the one that is easy to miss. A Card's face is scaled and its DEPTH is
+not, so a Card's edge is handed two expressions for one distance: across the face
+in the Card's own units, and along Z in the plane's. `Solid.filletBack` in `edge.ts`
+is where that is written down. The Slab needs no such thing — `.eater-map__plane`
+carries no scale — which is exactly why it was invisible until a Card had an edge.
+
+### The dark Cards are variable overrides, not a fork
+
+The vendored `cards.css` already routes every surface through `--glass`,
+`--glass-sheet`, `--glass-sheet-float`, `--label`, `--separator` and their
+neighbours. `EaterMap.astro` sets **those names and nothing else**, so no rule
+inside the export is edited, nothing here selects into another repository's markup,
+and a re-vendoring — which rewrites that file and not this one — leaves the theme
+standing. The `eater-map` Check asserts the boundary rather than the colours: every
+vendored variable the Section sets on a Card has to be a name the export actually
+publishes.
+
+**On `.eater-map__card` and never on `.eater-map__cards`**, which is the vendored
+host itself. A declaration on the host would be `.eater-cards` against
+`.eater-cards` — the same weight, settled by whichever stylesheet the bundler
+emitted second — and `cards.css` is an ordinary import while the Section's block is
+Astro's own. One element in it is not a contest, and the values inherit down to
+every surface, which is how the plate mix reached them too.
+
+**`--glass-sheet-float` is the details sheet's own background** at the export's
+viewport, and it drops to near-nothing. That is #190's "the floating actions bar no
+longer veils the paragraph under it": the `.actions` row is `background:
+transparent` down there, so the only thing that could fog the paragraph is the
+sheet, and the paragraph now sits on the blurred map instead.
+
+**The app's own `backdrop-filter`s are left alone.** In the band they sample an
+empty backdrop and are no-ops, so overriding them would buy nothing; below the band
+the plane is flat and they are exactly the frost a screenshot has.
+
+**A reader with no scripts gets the app's own translucency over the map** and no
+copy behind it, which is the same trade the Slab's edge and the leader lines make.
+It is affordable HERE only because the Cards are dark: a light translucent surface
+over a light map was the illegible case that made the plate necessary, and dark ink
+on a dark map is not.
 
 ## What drives the Lift, and the two pixels that decide whether it ever fires
 
@@ -636,6 +741,17 @@ markup and have to stay selectable, screen-readable text (#171, #176), so they
 ride the same CSS plane under either stage and are placed by the same three rules
 in `EaterMap.astro`. A stage that drew them would be drawing a *picture* of them,
 and the Section would have traded the whole point of the vendoring for a renderer.
+
+**AND THAT IS WHY THE SLICE STACK IS `edge.ts` AND NOT `stage-dom.ts`'s (#190).**
+The Cards are given thickness by exactly the same arithmetic as the Slab, and they
+are given it under BOTH stages — because they are always DOM. Left in the DOM stage
+it would have been either a second copy of the geometry or an import out of one of
+two implementations, and a second copy is one boundary answering a Token two ways,
+which is the confound the sheet exists to remove. So `stage-dom.ts` is a thin
+caller: it says which Tokens the Slab's solid is made of and that the picture is
+clipped back to the flat face, and `edge.ts` builds the slices for it and for
+`glass.ts` alike. Giving each slice a DIRECTION is #197, and is one line inside
+`edge.ts` rather than two lines in two files.
 So the WebGL stage replaces exactly one element — the `<img>` — with exactly one
 `<canvas>`, and everything else about the composition is untouched. That is also
 why every Check passes either way: there is nothing in a Check's reach that

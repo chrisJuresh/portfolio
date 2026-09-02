@@ -8,8 +8,11 @@ import { DESK, open, settle } from '../lib/page.mjs';
  * to anything without failing most of what is here: the Slab may take any share of
  * the stage, the Cards may sit anywhere on it, and the plane may be tilted to any
  * attitude. What is asserted is a RELATIONSHIP that has to hold whatever those are
- * set to, and facts about the markup. **FOUR TOKENS THIS CHECK HAS AN OPINION
- * ABOUT**, each named where its opinion is: the rise, and the three depths.
+ * set to, and facts about the markup. **FIVE TOKENS THIS CHECK HAS AN OPINION
+ * ABOUT**, each named where its opinion is: the rise, the three depths, and
+ * `--eater-map-glass-blur`, which may be dragged anywhere except to zero — a copy
+ * of the map that is not smeared is a window rather than a surface, and the whole
+ * of #190 is that the Cards read as glass.
  *
  * EVERY GEOMETRY IS READ AT A MOMENT OF THE LIFT AND NOT WHEREVER THE PAGE LEFT
  * IT. The Timeline runs from flat to raised, the markup rests at raised, and what
@@ -83,6 +86,32 @@ import { DESK, open, settle } from '../lib/page.mjs';
  * makes a dead drawing fail**: a depth under a parallel projection reaches the
  * screen only through the attitude, so a plane at zero attitude has three Cards
  * that climb and never move — which SEVEN's two assertions both pass.
+ *
+ * NINE. THE CARDS ARE GLASS, AND THEY ARE DARK (#190). Four failures in one
+ * sentence, and every one of them reads as a composition rather than as a break.
+ * A raised Card that is OPAQUE — which is what this Section shipped until #190,
+ * because it mixed every surface towards a white plate in step with the climb, so
+ * the mutation that puts the mix back fails at the raised end and passes at the
+ * flat one. A search Card drawn as ONE box round two pills, which welds a component
+ * the app does not have; asked in the Card's own layout units, because "is there a
+ * gap between them" is a question a projected rect cannot answer. A backdrop cut to
+ * a radius somebody TYPED here — the mockup's `24 / 18 / 22` against the export's
+ * own 24 / 14 / 28 — asked by reading `cards.css`'s stated number and clamping it
+ * the way a browser clamps it. And a glass surface with NO EDGE, which is #197's
+ * rebuild bug: the clear is per box and the host is per Card, so the second
+ * surface's clear deletes the first surface's slices and the survivor looks
+ * perfect.
+ *
+ * Beside them, two claims about the mechanism rather than about the look. The dark
+ * theme has to be an OVERRIDE of names `cards.css` already publishes, or a
+ * re-vendoring undoes it silently — asked of the cascade, not of the colour. And a
+ * BOOSTED Card's backdrop has to be counter-scaled, asked by putting a boost on for
+ * the length of one read and requiring one capture pixel to be the same size inside
+ * the glass as it is on the map beside it.
+ *
+ * WHAT IS DELIBERATELY NOT HERE is whether any of it looks good — whether the map
+ * reads through the glass, whether the smear is the right smear, whether the
+ * details paragraph is comfortable on it. Those are the author's, looking.
  *
  * FOUR. NOTHING IS HIDDEN AND UNCOVERED. A reveal written the obvious way puts
  * `opacity: 0` in the stylesheet and lets the Timeline take it off — and then a
@@ -238,14 +267,47 @@ const PARALLEL = 0.01;
 const TOGETHER = 0.2;
 const RISEN = 1;
 
+/**
+ * How many glass surfaces each Card draws — `cards.ts`'s own list written a second
+ * time, for the same reason the stack order below it is: this file cannot import
+ * that one, and a MISSED NAME HAS TO BE A FAILURE rather than a skip.
+ *
+ * TWO FOR THE SEARCH CARD IS THE WHOLE OF IT. Its `.topbar` holds two separate
+ * pills with an 8px gap between them, and one backdrop and one extrusion round the
+ * pair weld them into a single long component with two buttons stuck on the end,
+ * which is not an interface the app has. A build that draws one box round both
+ * fails this, and fails the gap below it as well.
+ */
+const SURFACES = { search: 2, lines: 1, details: 1 };
+
+/** How far a drawn backdrop's corner may sit from the corner `cards.css` states
+ *  for the surface it is drawn round, in px. The two are the same number read two
+ *  ways — the stylesheet's own, clamped the way a browser clamps it — so this is
+ *  the integer rounding `offsetWidth` does and nothing else. A radius TYPED in this
+ *  repository is out by tens of pixels: the mockup's `24 / 18 / 22` against the
+ *  export's 24 / 14 / 28. */
+const RADIUS = 0.5;
+
+/** How far the map seen THROUGH a Card's glass may differ in size from the map
+ *  beside it, as a share of the Slab's own drawn width. A Card's backdrop is one
+ *  division away from being the wrong size, and this is that division asserted. */
+const SAME_MAP = 0.005;
+
+/** A boost to put on the Cards for the length of one read, so that the
+ *  counter-scale is exercised rather than merely present. #187 adopts 1.10 for the
+ *  rail popup; any number that is not 1 asks the same question. */
+const BOOSTED = 1.1;
+
 async function atWindow(browser, origin, viewport) {
   const { context, page } = await open(browser, origin, { viewport });
   try {
     const failures = (await settle(page)).map((why) => `${viewport.width}x${viewport.height}: ${why}`);
 
-    const seen = await page.evaluate(async ({ focusable, onThePart, halfWay, probe }) => {
+    const seen = await page.evaluate(async ({ focusable, onThePart, halfWay, probe, boosted }) => {
       const slab = document.querySelector('.eater-map__slab');
       if (!slab) return { missing: 'no .eater-map__slab on the page' };
+      const section = document.querySelector('.eater-map');
+      if (!section) return { missing: 'no .eater-map on the page' };
       const kernel = window.portfolio;
       const lift = kernel?.timelines.get('eater-map');
       if (!lift) {
@@ -411,6 +473,163 @@ async function atWindow(browser, origin, viewport) {
           return { name, rise: round(Math.hypot(up.x - down.x, up.y - down.y)) };
         });
 
+      /**
+       * A serialised colour, as how much light it puts on this page and how much of
+       * what is behind it it lets through.
+       *
+       * COMPOSITED OVER BLACK, and the alpha is what makes that the right question
+       * rather than a convenience. The details sheet is `rgba(255, 255, 255, 0.045)`
+       * — a WHITE wash at four per cent, which is the darkest of the three surfaces
+       * and the lightest of them read as a bare hex. What a surface contributes to
+       * this page is its colour times its alpha, because the page under it is a
+       * near-black map; ignoring the alpha reports the float sheet as a white panel
+       * and it is very nearly a hole.
+       */
+      const colour = (serialised) => {
+        const parts = (serialised.match(/[\d.]+/g) ?? []).map(Number);
+        if (parts.length < 3) return null;
+        const alpha = parts.length > 3 ? parts[3] : 1;
+        const channel = (v) => {
+          const s = (v / 255) * alpha;
+          return s <= 0.04045 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4;
+        };
+        return {
+          lit: 0.2126 * channel(parts[0]) + 0.7152 * channel(parts[1]) + 0.0722 * channel(parts[2]),
+          alpha,
+        };
+      };
+
+      /** Four radii clamped the way a browser clamps them — CSS Backgrounds 3
+       *  §5.5, one factor over all eight. `border-radius: 999px` on a pill is what
+       *  the stylesheet STATES and what the computed value hands back; the used
+       *  value is arithmetic no property exposes, so this is that arithmetic done a
+       *  second time, from the stated number, to ask whether the drawn backdrop was
+       *  drawn to it. */
+      const clamped = (w, h, r) => {
+        let k = 1;
+        const pair = (a, b, span) => {
+          if (a + b > span && a + b > 0) k = Math.min(k, span / (a + b));
+        };
+        pair(r[0], r[1], w);
+        pair(r[3], r[2], w);
+        pair(r[0], r[3], h);
+        pair(r[1], r[2], h);
+        return r.map((v) => Math.max(0, v * k));
+      };
+
+      const corners = (style) =>
+        ['TopLeft', 'TopRight', 'BottomRight', 'BottomLeft'].map(
+          (side) => Number.parseFloat(style[`border${side}Radius`]) || 0,
+        );
+
+      /**
+       * Every Card's glass, READ IN THE CARD'S OWN UNITS.
+       *
+       * `offsetLeft` and `offsetWidth` and not a rect, and that is the whole reason
+       * these are answerable at all: a rect on this plane is the axis-aligned
+       * bounding box of a projected quad, so "is there a gap between the two search
+       * pills" is a question a rect cannot be asked. The offsets are layout, taken
+       * before the projection touches anything.
+       */
+      const glass = () =>
+        [...document.querySelectorAll('.eater-map__card')].map((card) => {
+          const name = card.getAttribute('data-eater-map-card') ?? '(unnamed)';
+          const surfaces = [...card.querySelectorAll('[data-eater-map-glass]')].map((box) => {
+            const drawn = box.getAttribute('data-eater-map-glass') ?? '(unnamed)';
+            // `<card> <selector>` — the Section says which element each backdrop
+            // was cut to, so this reads the claim back rather than knowing it.
+            const selector = drawn.slice(drawn.indexOf(' ') + 1);
+            let surface = null;
+            try {
+              surface = card.querySelector(selector);
+            } catch {
+              surface = null;
+            }
+            const skin = surface ? getComputedStyle(surface) : null;
+            const map = box.querySelector('img');
+            return {
+              name: drawn,
+              left: box.offsetLeft,
+              width: box.offsetWidth,
+              radii: corners(getComputedStyle(box)),
+              stated: skin
+                ? clamped(surface.offsetWidth, surface.offsetHeight, corners(skin))
+                : null,
+              fill: skin ? colour(skin.backgroundColor) : null,
+              ink: skin ? colour(skin.color) : null,
+              blurred: map ? /blur\(\s*(?!0\w*\s*\))/.test(getComputedStyle(map).filter) : null,
+              // The Slab's own bytes and not a second picture: `currentSrc` is what
+              // the browser actually fetched, so a copy pointed somewhere else is a
+              // different map behind the glass.
+              theMap: map ? map.currentSrc : null,
+            };
+          });
+          return {
+            name,
+            width: card.offsetWidth,
+            surfaces,
+            // WHICH SURFACES CARRY AN EDGE, as a set. A Card with two glass
+            // surfaces has two slice stacks under one host, and #197 carries the
+            // rebuild that deletes the first when it builds the second — silently,
+            // because the surviving surface looks perfect.
+            edged: [
+              ...new Set(
+                [...card.querySelectorAll(':scope > .eater-map__slice')].map((one) =>
+                  one.getAttribute('data-eater-map-edge'),
+                ),
+              ),
+            ],
+          };
+        });
+
+      /**
+       * Which vendored variables this Section re-themes, and whether the export
+       * publishes each one.
+       *
+       * THE DARK CARDS ARE AN OVERRIDE AND NOT A FORK, and this is that stated
+       * mechanically: every custom property the Section sets on a Card that is not
+       * one of its own has to be a name `cards.css` already declares on its host.
+       * A theme built out of names the export does not have is a theme a
+       * re-vendoring cannot carry, and it would look perfectly right until the day
+       * somebody regenerated the Cards.
+       */
+      const rethemed = () => {
+        const names = new Set();
+        const owned = /\.eater-map__card(?![\w-])/;
+        const walk = (rules) => {
+          for (const rule of rules ?? []) {
+            if (rule.cssRules) walk(rule.cssRules);
+            if (!rule.selectorText || !owned.test(rule.selectorText)) continue;
+            for (const property of rule.style) {
+              if (property.startsWith('--') && !property.startsWith('--eater-map-')) {
+                names.add(property);
+              }
+            }
+          }
+        };
+        for (const sheet of document.styleSheets) {
+          try {
+            walk(sheet.cssRules);
+          } catch {
+            // A stylesheet from another origin. There are none here, and a throw
+            // that stopped the walk would report "no re-theme" rather than "could
+            // not look".
+          }
+        }
+        return [...names].map((name) => ({
+          name,
+          published: getComputedStyle(cardHost).getPropertyValue(name).trim().length > 0,
+        }));
+      };
+
+      /** How wide the map behind each Card's glass is DRAWN, which only means
+       *  anything with the projection lifted — see below. */
+      const mapWidths = () =>
+        [...document.querySelectorAll('[data-eater-map-glass] img')].map((map) => ({
+          name: map.parentElement?.getAttribute('data-eater-map-glass') ?? '(unnamed)',
+          drawn: round(map.getBoundingClientRect().width),
+        }));
+
       const was = { progress: lift.progress(), scroll: window.scrollY };
       kernel.hold?.();
       try {
@@ -428,6 +647,11 @@ async function atWindow(browser, origin, viewport) {
         const rulesRaised = rules();
         const probed = probes();
         const risen = rises();
+        // THE GLASS IS READ AT THE RAISED END, which is where "a raised Card is not
+        // opaque" is a claim at all: the plate mix this replaced was spent BY the
+        // playhead, so it was the app's own translucency at the flat end and solid
+        // white here. A read taken at progress 0 would have passed it.
+        const glassed = glass();
 
         // THE CAMERA IS LIFTED FOR ONE READ, AND ONLY FOR THE SCALE. A Card's
         // `getBoundingClientRect` is the axis-aligned bounding box of a quad
@@ -441,12 +665,27 @@ async function atWindow(browser, origin, viewport) {
         // turns and the topmost Card would be measured a per cent large.
         const heldTransform = plane.style.transform;
         const heldStyle = plane.style.transformStyle;
+        const heldBoost = section.style.getPropertyValue('--eater-map-card-scale');
         let square;
+        // AND THE MAP INSIDE THE GLASS IS MEASURED IN THE SAME BREATH, for the same
+        // reason and against the same read. The Slab's own box is never projected —
+        // `.eater-map__slab` is the plane's PARENT — so the two are comparable only
+        // while the plane's transform is off, and what is being asked is whether one
+        // capture pixel is the same size inside a Card's glass as it is on the map
+        // beside it. Read twice: once as the composition stands, and once with a
+        // BOOST on, because a counter-scale that is missing is invisible at 1.
+        let plainMap;
+        let boostedMap;
         try {
           plane.style.transform = 'none';
           plane.style.transformStyle = 'flat';
           square = cardBoxes();
+          plainMap = mapWidths();
+          section.style.setProperty('--eater-map-card-scale', String(boosted));
+          boostedMap = mapWidths();
         } finally {
+          if (heldBoost) section.style.setProperty('--eater-map-card-scale', heldBoost);
+          else section.style.removeProperty('--eater-map-card-scale');
           // Restored the way the playhead and the scroll are, and for the same
           // reason: an inline `transform: none` left standing on the plane would
           // outlive the failure that caused it, so a screenshot taken to work out
@@ -473,6 +712,10 @@ async function atWindow(browser, origin, viewport) {
           app: Number.parseFloat(getComputedStyle(slab).getPropertyValue('--eater-map-app-w')),
           slabWidth: round(slab.getBoundingClientRect().width),
           square,
+          glassed,
+          rethemed: rethemed(),
+          plainMap,
+          boostedMap,
           down,
           raised,
           flatPlane,
@@ -507,7 +750,13 @@ async function atWindow(browser, origin, viewport) {
         lift.progress(was.progress);
         kernel.release?.();
       }
-    }, { focusable: FOCUSABLE, onThePart: ON_THE_PART, halfWay: HALF_WAY, probe: PROBE });
+    }, {
+      focusable: FOCUSABLE,
+      onThePart: ON_THE_PART,
+      halfWay: HALF_WAY,
+      probe: PROBE,
+      boosted: BOOSTED,
+    });
 
     const where = `${viewport.width}x${viewport.height}`;
     if (seen.missing) {
@@ -671,6 +920,183 @@ async function atWindow(browser, origin, viewport) {
             `${where}: the ${order[index - 1]} Card rises ${above.rise}px and the ${order[index]} Card ` +
               `${below.rise}px — the stack has lost its order, and three Cards at one depth are a raised ` +
               'plate rather than an exploded assembly',
+          );
+        }
+      }
+    }
+
+    // ---- the Cards are glass, and they are dark ------------------------------
+    // NINE. #190's whole claim, and it is four separate failures wearing one
+    // sentence: a Card that is opaque, a Card drawn as one box round two pills, a
+    // backdrop cut to a radius somebody typed here, and a surface with no edge.
+    // Each is a thing a still of the raised drawing would not settle.
+    for (const [name, wanted] of Object.entries(SURFACES)) {
+      const card = seen.glassed.find((one) => one.name === name);
+      // A MISSED NAME IS A FAILURE AND NOT A SKIP. `SURFACES` is cards.ts's own
+      // list written a second time — this file cannot import it — so a renamed
+      // Card would otherwise make the lookup miss and this loop assert nothing.
+      if (!card) {
+        failures.push(
+          `${where}: no Card is named ${name} — this Check knows the drawing as ` +
+            `${Object.keys(SURFACES).join(', ')}, which is cards.ts's own list written a second ` +
+            'time. Nothing about its glass was asserted',
+        );
+        continue;
+      }
+      if (card.surfaces.length !== wanted) {
+        failures.push(
+          `${where}: the ${name} Card draws ${card.surfaces.length} glass surface(s) and the app gives it ` +
+            `${wanted} — a Card is its GLASS SURFACES and not its bounding box, and one backdrop round ` +
+            'the search bar and the offline button welds them into a component the app does not have',
+        );
+      }
+      // AND THEY DO NOT TOUCH. Two boxes is satisfied by two boxes lying on each
+      // other; the app's own 8px gap is what makes the pair read as two controls,
+      // and it is where the map has to show through.
+      const across = [...card.surfaces].sort((a, b) => a.left - b.left);
+      for (let index = 1; index < across.length; index += 1) {
+        const left = across[index - 1];
+        const right = across[index];
+        if (!(right.left > left.left + left.width)) {
+          failures.push(
+            `${where}: the ${name} Card's ${left.name} runs to ${left.left + left.width} and its ` +
+              `${right.name} starts at ${right.left} — the two glass surfaces meet, so there is no map ` +
+              'visible between them and the pair is drawn as one component',
+          );
+        }
+      }
+      const covered = card.surfaces.reduce((sum, one) => sum + one.width, 0);
+      if (card.surfaces.length > 1 && !(covered < card.width)) {
+        failures.push(
+          `${where}: the ${name} Card's glass covers ${covered} of its own ${card.width}px — its surfaces ` +
+            'have grown into the box round them, which is the one thing drawing them separately was for',
+        );
+      }
+      for (const surface of card.surfaces) {
+        if (surface.fill === null || surface.ink === null || surface.stated === null) {
+          failures.push(
+            `${where}: the ${surface.name} backdrop names a surface that is not on the Card — nothing ` +
+              'about its colour, its outline or its edge was asserted',
+          );
+          continue;
+        }
+        // NOT OPAQUE, WHICH IS THE MUTATION THIS EXISTS FOR. The Section used to
+        // mix every surface towards a white plate in step with the Card's climb,
+        // so a raised Card was solid; #190 is that reversed, and putting the mix
+        // back fails here at the raised end and nowhere else.
+        if (!(surface.fill.alpha < 1)) {
+          failures.push(
+            `${where}: the ${surface.name} is opaque at the raised end of the Lift — the map has to be ` +
+              'visibly present THROUGH the Cards, and a surface filled to a plate is a panel lying on a ' +
+              'photograph rather than glass',
+          );
+        }
+        // AND DARK, WITH ITS OWN INK LIGHT ON IT. No hex and no threshold: what is
+        // asserted is the RELATIONSHIP a dark theme is, so deleting the override
+        // block puts the export's own black label on its own white glass and fails.
+        if (!(surface.ink.lit > surface.fill.lit)) {
+          failures.push(
+            `${where}: the ${surface.name} is painted lighter than the text on it — the Cards read as ` +
+              'DARK surfaces on this page, and a light interface floating over a dark map is what the ' +
+              'variable overrides exist to stop',
+          );
+        }
+        if (surface.blurred !== true) {
+          failures.push(
+            `${where}: the ${surface.name}'s copy of the map is not blurred — the map is meant to be ` +
+              'SMEARED behind the glass, and a sharp map behind text is a window rather than a surface',
+          );
+        }
+        if (surface.theMap === null || !surface.theMap.includes('slab')) {
+          failures.push(
+            `${where}: the ${surface.name} has no copy of the Slab behind it — it is showing ` +
+              `${surface.theMap ?? 'nothing'}, and glass shows the thing it is lying on`,
+          );
+        }
+        // EVERY RADIUS IS THE EXPORT'S OWN. `cards.css` states `--r-full`,
+        // `--r-menu: 14px` and `--r-sheet: 28px 28px 0 0`; the mockup typed
+        // `24 / 18 / 22` and two of the three were wrong. This reads the
+        // stylesheet's own number, clamps it the way a browser clamps it, and
+        // requires the drawn backdrop to have been cut to that.
+        const off = Math.max(
+          ...surface.radii.map((r, index) => Math.abs(r - surface.stated[index])),
+        );
+        if (!Number.isFinite(off)) {
+          failures.push(
+            `${where}: the ${surface.name}'s corners cannot be measured — drawn ` +
+              `${surface.radii.join('/')} against ${surface.stated.join('/')} stated. Nothing about the ` +
+              'outline was asserted',
+          );
+        } else if (off > RADIUS) {
+          failures.push(
+            `${where}: the ${surface.name} is drawn with corners ${surface.radii.join('/')} where ` +
+              `cards.css states ${surface.stated.join('/')} — a radius written in this repository is a ` +
+              'second opinion about a number the vendored export already holds',
+          );
+        }
+      }
+      // EVERY GLASS SURFACE CARRIES AN EDGE, AND NOT MERELY SOME. The rebuild #197
+      // carries clears per box and builds per host, so the second surface's clear
+      // deletes the first surface's slices — and the surviving one looks perfect,
+      // which is why this counts sets rather than slices.
+      for (const surface of card.surfaces) {
+        if (!card.edged.includes(surface.name)) {
+          failures.push(
+            `${where}: the ${surface.name} has no edge — ${
+              card.edged.length ? `only ${card.edged.join(', ')} does` : 'nothing on this Card does'
+            }. A Card with two glass surfaces has two slice stacks under one host, and a clear written ` +
+              'per surface deletes the one built before it',
+          );
+        }
+      }
+    }
+
+    // THE DARK THEME IS AN OVERRIDE AND NOT A FORK, asked of the cascade rather
+    // than of the look: every vendored variable the Section sets on a Card has to
+    // be a name `cards.css` already publishes, or a re-vendoring cannot carry it.
+    if (seen.rethemed.length === 0) {
+      failures.push(
+        `${where}: the Section sets no vendored variable on a Card at all — the dark theme IS those ` +
+          'overrides, so there is nothing here re-theming another repository\'s interface',
+      );
+    }
+    for (const { name, published } of seen.rethemed) {
+      if (!published) {
+        failures.push(
+          `${where}: the Section overrides ${name} on a Card and the vendored export does not publish ` +
+            'it — a theme built out of names cards.css does not have is one a re-vendoring silently ' +
+            'undoes',
+        );
+      }
+    }
+
+    // A BOOSTED CARD'S BACKDROP IS COUNTER-SCALED. Scaling a Card scales the copy
+    // of the map inside it, so without the division a boosted surface shows a map
+    // through itself larger than the map it is lying on — which is the mechanical
+    // cost #187 pays for the rail popup's 1.10, and the whole of it.
+    for (const [what, drawn] of [
+      ['as the composition stands', seen.plainMap],
+      [`with every Card boosted to ${BOOSTED}`, seen.boostedMap],
+    ]) {
+      if (drawn.length === 0) {
+        failures.push(
+          `${where}: no Card has a copy of the map behind it, ${what} — nothing about the size of the ` +
+            'map inside the glass was asserted',
+        );
+        continue;
+      }
+      for (const one of drawn) {
+        const apart = Math.abs(one.drawn - seen.slabWidth) / seen.slabWidth;
+        if (!Number.isFinite(apart)) {
+          failures.push(
+            `${where}: the ${one.name}'s map cannot be measured — ${one.drawn}px against the Slab's ` +
+              `${seen.slabWidth}px. Nothing about it was asserted`,
+          );
+        } else if (apart > SAME_MAP) {
+          failures.push(
+            `${where}, ${what}: the map behind the ${one.name} is drawn ${one.drawn}px wide and the map ` +
+              `beside it ${seen.slabWidth}px — ${(apart * 100).toFixed(1)}% apart. One capture pixel is ` +
+              "the same size inside a Card's glass as it is on the Slab, or the Card is a lens",
           );
         }
       }
@@ -997,10 +1423,11 @@ function composition(page) {
     }
     // THE PLAYHEAD TRAVELS WITH THE BOXES, because it is spent on more than them.
     // Collapsed, the geometry is pinned by `transform: none` whatever the playhead
-    // holds — so a reader left at the raised end gets an IDENTICALLY SHAPED
-    // drawing whose Cards' glass is filled to the plate, which is a Card that has
-    // left a map it is still lying on. A comparison of rects alone reports that as
-    // one composition; this is what makes it a difference.
+    // holds — so a reader left at the raised end gets an IDENTICALLY SHAPED drawing
+    // whose Cards show a piece of map through their glass that is not the piece
+    // underneath them, because each backdrop is offset by that Card's RESTING place
+    // and the drift is what the playhead spends. A comparison of rects alone
+    // reports that as one composition; this is what makes it a difference.
     return { lift: getComputedStyle(section).getPropertyValue('--eater-map-lift').trim(), boxes };
   });
 }
@@ -1152,9 +1579,10 @@ async function collapsedBelowTheBand(browser, origin) {
     }
     if (Number.parseFloat(seen.lift) !== 0) {
       failures.push(
-        `${where}: --eater-map-lift computes to ${seen.lift} on a collapsed composition — the playhead is ` +
-          "spent on the Cards' glass as well as on the geometry, and glass filled to the plate is a Card " +
-          'that has left a map it is still lying on',
+        `${where}: --eater-map-lift computes to ${seen.lift} on a collapsed composition — the geometry is ` +
+          "pinned by `transform: none` down here whatever the playhead holds, but each Card's glass " +
+          'carries a copy of the map offset by that Card\'s RESTING place, so a drifted Card shows a map ' +
+          'behind its glass that is not the map underneath it',
       );
     }
 

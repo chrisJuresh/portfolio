@@ -2,6 +2,7 @@ import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { mountStage } from './stage';
 
+import mountGlass from './glass';
 import { mountLeaders } from './leaders';
 
 /**
@@ -133,6 +134,18 @@ export default function mountLift(root: HTMLElement): gsap.core.Timeline | void 
   void mountStage(root).catch((error: unknown) => {
     console.error('eater-map: the stage did not mount', error);
   });
+
+  // THE CARDS' GLASS, AND IT IS NOT PART OF THE TIMELINE EITHER (#190). A blurred
+  // copy of the Slab behind every glass surface and an edge round every one of
+  // them, measured off the vendored stylesheet in an offscreen ruler. Here for the
+  // same mechanical reason the stage is — this module is the Section's only mount
+  // point — and, like the stage, nothing waits for it: a Card with no copy behind
+  // it is the app's own translucency over the map, which is what a reader whose
+  // scripts never arrived gets. Synchronous and measured once, because what it
+  // measures is frozen to the viewport the Cards were exported at; everything that
+  // moves with the window is a CSS expression it writes rather than a number it
+  // computed.
+  mountGlass(root);
 
   gsap.registerPlugin(ScrollTrigger);
 

@@ -91,6 +91,27 @@ export interface Card {
   readonly name: CardPart;
   /** the Eater surface, as a picture of one: no tab stop, no click, no heading */
   readonly html: string;
+  /**
+   * Which elements of this Card are actually GLASS — the surfaces `glass.ts`
+   * gives a blurred copy of the map and an edge (#190).
+   *
+   * A CARD IS ITS GLASS SURFACES AND NOT ITS BOUNDING BOX, and the search Card
+   * is why this is a list. Its `.topbar` is a flex row holding TWO separate
+   * pills — `.search` and `.offline-button`, with an 8px gap between them — and
+   * one backdrop round the pair welds them into a single long component with two
+   * buttons stuck on the end, which is not an interface the app has. The other
+   * two Cards are one surface each, and their surface is the vendored root
+   * itself.
+   *
+   * SELECTORS AND NEVER SIZES OR RADII. This says which elements to measure; it
+   * says nothing about what the measurement will be. Every number `glass.ts`
+   * draws with is read off the served `cards.css` at runtime, because a radius
+   * stated in this repository is a second opinion about a number the vendored
+   * export already holds — the mockup typed `24 / 18 / 22` against the
+   * stylesheet's own `--r-full`, `--r-menu: 14px` and `--r-sheet: 28px 28px 0 0`,
+   * and two of the three were wrong.
+   */
+  readonly surfaces: readonly string[];
 }
 
 /**
@@ -99,7 +120,7 @@ export interface Card {
  * is the one thing always on top.
  */
 export const CARDS: readonly Card[] = [
-  { name: 'details', html: asPicture(details) },
-  { name: 'lines', html: asPicture(lines) },
-  { name: 'search', html: asPicture(search) },
+  { name: 'details', html: asPicture(details), surfaces: ['.details-panel'] },
+  { name: 'lines', html: asPicture(lines), surfaces: ['.lines-popup'] },
+  { name: 'search', html: asPicture(search), surfaces: ['.search', '.offline-button'] },
 ];

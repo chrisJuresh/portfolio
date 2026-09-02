@@ -274,7 +274,13 @@ async function moment(page, progress) {
         edge: root.dataset.eaterMapEdge ?? '(none)',
         canvas: root.querySelectorAll('canvas').length,
         image: root.querySelectorAll('.eater-map__still').length,
-        slices: root.querySelectorAll('.eater-map__slice').length,
+        // THE PLANE'S OWN, and the child combinator is why it is right (#190).
+        // Every glass surface on every Card carries a slice stack of its own now,
+        // built by the same `edge.ts` — so a bare `.eater-map__slice` counts the
+        // Cards' hundred-odd along with the Slab's twenty-four and captions this
+        // sheet, which is a comparison of two SLAB renderers, with a number about
+        // something else.
+        slices: root.querySelectorAll('.eater-map__plane > .eater-map__slice').length,
         slab: `${Math.round(box.width)}×${Math.round(box.height)}`,
         thickness: value('--eater-map-slab-thickness'),
         radius: value('--eater-map-slab-edge-radius'),

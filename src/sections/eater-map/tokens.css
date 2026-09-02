@@ -115,7 +115,7 @@
 
   /* What the Slab is made of where the picture is not. A fact about the object
      rather than about the page, so it does not turn with the theme — the same
-     decision, for the same reason, as --eater-map-plate above.
+     decision, for the same reason, as the Cards' own edge below.
 
      A PLAIN sRGB COLOUR, and that is load-bearing rather than a habit. The WebGL
      stage reads this off the page as a computed `color`, and Chromium serialises
@@ -236,12 +236,60 @@
   --eater-map-card-details-slide-x: -0.1;
   --eater-map-card-details-slide-y: 0.075;
 
-  /* WHAT THE GLASS FILLS TO once it comes off the map. A backdrop filter has
-     nothing to sample the moment the plane is tilted, so the app's translucent
-     surfaces are mixed towards this in step with each Card's own climb — 0% of it
-     flat, the whole of it raised. The Section says which way they fill and never
-     what colour they are; the app's own values are the other end of the mix. */
-  --eater-map-plate: #fff;
+  /* ---- the Cards' glass, which is what they are made of (#190) --------------
+     A backdrop filter has nothing to sample the moment the plane is tilted, so
+     each glass SURFACE carries a blurred copy of the Slab instead, offset by that
+     surface's own place on it. These are the three numbers that copy is made with.
+
+     BRIGHTENED, AND THAT IS THE ONE THAT IS NOT OBVIOUS: a dark map behind a dark
+     surface reads as a HOLE rather than as glass, so the copy is lifted before it
+     is put behind anything. The blur is in the CAPTURE's own pixels rather than in
+     rem or in a share of the Slab, because it is a distance across the map and the
+     map is the thing being smeared — so the smear is the same number of map pixels
+     at every window, and `glass.ts` divides it by a boosted Card's own scale with
+     everything else. */
+  --eater-map-glass-blur: 26px;
+  --eater-map-glass-brighten: 1.32;
+  --eater-map-glass-saturate: 1.05;
+
+  /* WHAT THE APP'S THREE SURFACES ARE PAINTED, in this Section's dark theme.
+     `--glass` is the search pill and the offline button, `--glass-sheet` the
+     details panel where the app draws it as a side panel, and
+     `--glass-sheet-float` the same panel as the floating sheet it is at the
+     viewport the Cards were exported at.
+
+     THE SECTION USED TO SAY ONLY WHICH WAY THEY FILLED AND NOW SAYS WHAT THEY
+     ARE, which is a reversal worth stating. The app is light and this page is
+     dark, and there is no mix of a light glass that is a dark one — so the three
+     are restated, as an override of the names the vendored export already
+     publishes rather than as an edit to it (EaterMap.astro says why that boundary
+     holds). The alphas are the composition: they are how much map comes through,
+     and the float is near-nothing on purpose so the details paragraph sits on the
+     map rather than on a fogged panel. */
+  --eater-map-glass: rgba(78, 78, 88, 0.46);
+  --eater-map-glass-sheet: rgba(62, 62, 72, 0.6);
+  --eater-map-glass-float: rgba(255, 255, 255, 0.045);
+
+  /* ---- and a Card is a solid too -------------------------------------------
+     The same pair the Slab has above, in the same unit — shares of the SLAB's
+     width, so one object is one material and the Cards' edges are the Slab's edge
+     seen closer. About a third of the Slab's own thickness, which is #187's 1%
+     against its 3%. Held to each other the same way: an edge cannot be rounder
+     than it is deep, and `glass.ts` writes the `min()` that says so.
+
+     A CARD'S EDGE IS ROUND EVERY GLASS SURFACE AND NOT ROUND THE CARD. The search
+     Card is two pills with a gap between them, and one extrusion round the pair
+     is a component the app does not have. Its plan corners are `cards.css`'s own
+     and are never stated here — a radius written in this repository is a second
+     opinion about a number the vendored export already holds. */
+  --eater-map-card-thickness: 0.01;
+  --eater-map-card-edge-radius: 0.005;
+
+  /* What a Card's edge is made of. Lighter than the Slab's, because a pane of
+     glass on a map is not the same material as the map's own body, and it is a
+     fact about the object rather than about the page — so it does not turn with
+     the theme, exactly as --eater-map-slab-edge does not. */
+  --eater-map-card-edge: rgba(198, 196, 192, 0.92);
 
   /* How long the Lift takes end to end, and therefore how long a turn back
      part-way through takes to undo: `timeline.ts` spends this in proportion to

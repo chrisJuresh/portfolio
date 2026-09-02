@@ -128,11 +128,27 @@ import './tokens.css';
           <div class="eater-map__cards eater-cards">
             {CARDS.map((card) => (
               <div class="eater-map__card" data-eater-map-card={card.name}>
-                {/* `display: contents`, so the wrapper this Card's own markup has
-                    to arrive in — set:html replaces an element's children, and
-                    the anchor beside it would be one — generates no box at all
-                    and the Card is laid out exactly as it was without it. */}
-                <div class="eater-map__surface" set:html={card.html} />
+                {/* THE FLAT FACE, AND IT IS FORCED RATHER THAN TIDY (#190).
+                    `transform-style: preserve-3d` on the Card puts its blurred
+                    copy of the map and its own content BOTH at z: 0, so `z-index`
+                    stops deciding between them and the two interleave — in the
+                    prototype that made the details Card read as two smeared
+                    panels. A `flat` face holds both, and the Card's edge slices
+                    are that face's SIBLINGS, because a depth inside a flat face is
+                    nothing at all. glass.ts.
+
+                    It is in the template rather than built by the script so that
+                    the box structure is the same for every reader, and it does not
+                    change the Card's own size: the vendored root inside it carries
+                    its frozen width and height, and this box is the only thing in
+                    flow either way. */}
+                <div class="eater-map__face">
+                  {/* `display: contents`, so the wrapper this Card's own markup has
+                      to arrive in — set:html replaces an element's children, and
+                      the backdrop beside it would be one — generates no box at all
+                      and the Card is laid out exactly as it was without it. */}
+                  <div class="eater-map__surface" set:html={card.html} />
+                </div>
                 <span class="eater-map__anchor" data-eater-map-anchor={card.name} />
               </div>
             ))}
@@ -577,13 +593,6 @@ import './tokens.css';
     inset: 0;
     transform-style: preserve-3d;
     --eater-map-app-scale: tan(atan2(100cqw, var(--eater-map-app-w)));
-    /* The app's own three glass colours, taken off its host so the Cards can be
-       given something to stand on once the Lift takes their backdrop away. Read
-       here and spent one element down, because a custom property that refers to
-       its own name is a cycle and computes to nothing. See below. */
-    --eater-map-glass: var(--glass);
-    --eater-map-glass-sheet: var(--glass-sheet);
-    --eater-map-glass-float: var(--glass-sheet-float);
   }
 
   /* An engine without the trigonometric functions gets a plausible screenshot
@@ -627,12 +636,13 @@ import './tokens.css';
      detail panel is already a sheet of clear glass with a sharp map behind its
      text, which is a composition a reader cannot read. NOTES.md.
 
-     So the composition gives each Card the plate its glass was standing in for,
-     in step with the Card's own climb: on the Slab the app's own translucency is
-     what a screenshot has, and off it the same surfaces are filled to
-     --eater-map-plate. The three values are the APP'S OWN, mixed rather than
-     restated — this Section never says what colour Eater's glass is, only which
-     way it fills as it leaves the map. */
+     WHAT THIS USED TO DO ABOUT IT WAS THE OPPOSITE OF THE REFERENCE (#190). The
+     composition mixed each of the app's three glass colours towards
+     `--eater-map-plate` in step with the Card's climb, so a raised Card went
+     opaque WHITE — legible, and the reverse of glass. The plate is gone and so is
+     the mix; `glass.ts` gives each glass SURFACE a blurred copy of the Slab
+     instead, offset by that surface's own place on it, and the palette below is
+     what makes the Card dark enough to lie over a dark map. */
   .eater-map__card {
     --eater-map-card-lift: var(--eater-map-lift);
     --eater-map-card-rise: calc(
@@ -657,18 +667,6 @@ import './tokens.css';
     --eater-map-card-drift-y: calc(
       var(--eater-map-card-lift) * var(--eater-map-card-slide-y, 0)
     );
-    --eater-map-card-fill: calc(var(--eater-map-card-lift) * 100%);
-    --glass: color-mix(in srgb, var(--eater-map-glass), var(--eater-map-plate) var(--eater-map-card-fill));
-    --glass-sheet: color-mix(
-      in srgb,
-      var(--eater-map-glass-sheet),
-      var(--eater-map-plate) var(--eater-map-card-fill)
-    );
-    --glass-sheet-float: color-mix(
-      in srgb,
-      var(--eater-map-glass-float),
-      var(--eater-map-plate) var(--eater-map-card-fill)
-    );
     position: absolute;
     left: calc(var(--eater-map-card-x) * 100cqw);
     top: calc(var(--eater-map-card-y) * 100cqw);
@@ -679,6 +677,79 @@ import './tokens.css';
         calc(var(--eater-map-card-rise) * 100cqw)
       )
       scale(calc(var(--eater-map-app-scale) * var(--eater-map-card-scale)));
+  }
+
+  /* ---- THE CARDS ARE DARK, AND IT IS AN OVERRIDE RATHER THAN A FORK ---------
+     A light interface floating over a dark map is what #187 complained about, and
+     the vendored export already publishes every colour its surfaces are made of.
+     So this block sets THOSE NAMES and nothing else: no rule in `cards.css` is
+     edited, nothing here selects into another repository's markup, and a
+     re-vendoring — which rewrites that file and not this one — leaves the dark
+     theme standing.
+
+     ON THE CARD AND NOT ON `.eater-map__cards`, which is the vendored host itself.
+     A declaration on the host would be `.eater-cards` against `.eater-cards` — the
+     same weight, settled by whichever stylesheet the bundler emitted second, and
+     `cards.css` is an ordinary import while this block is Astro's own. One element
+     in and it is not a contest at all: the values inherit down to every surface,
+     which is exactly how the plate mix reached them before.
+
+     THE THREE GLASS COLOURS ARE TOKENS AND THE REST ARE NOT, and the split is
+     which of them the author has an opinion about. How dark and how transparent a
+     Card's surface is IS the composition #190 is about — it is what "the map is
+     visibly present through the Cards" comes down to — and the labels, separators
+     and rims are that palette's consequences rather than choices.
+
+     `--glass-sheet-float` IS THE DETAILS SHEET'S OWN BACKGROUND at the viewport
+     the Cards were exported at, which is #190's "floating actions bar": the
+     `.actions` row is `background: transparent` down there, so the only thing that
+     could veil the paragraph under it is the sheet, and it drops to near-nothing.
+     The paragraph then sits on the blurred map rather than on a fogged panel.
+
+     THE APP'S OWN `backdrop-filter`s ARE LEFT ALONE, and that is deliberate. In
+     the band they sample an empty backdrop and are no-ops, so overriding them
+     would buy nothing; below the band the plane is flat and they are exactly the
+     frost a screenshot has. */
+  .eater-map__card {
+    --label: #f3f3f5;
+    --label-secondary: rgba(235, 235, 245, 0.66);
+    --label-tertiary: rgba(235, 235, 245, 0.38);
+    --separator: rgba(255, 255, 255, 0.1);
+    --separator-strong: rgba(255, 255, 255, 0.17);
+    --fill-secondary: rgba(255, 255, 255, 0.13);
+    --blue: #4c9dff;
+    --blue-tint: rgba(76, 157, 255, 0.18);
+    --green: #40d867;
+    --glass: var(--eater-map-glass);
+    --glass-sheet: var(--eater-map-glass-sheet);
+    --glass-sheet-float: var(--eater-map-glass-float);
+    --glass-rim: inset 0 0.5px 0 rgba(255, 255, 255, 0.26),
+      inset 0 0 0 0.5px rgba(255, 255, 255, 0.13);
+    --glass-rim-strong: inset 0 1px 0 rgba(255, 255, 255, 0.3),
+      inset 0 0 0 0.5px rgba(255, 255, 255, 0.16);
+    /* The host paints `color: rgb(0, 0, 0)` on itself, so the ink has to be said
+       as well as the palette — read back off the name above rather than repeated,
+       which is a property reading a custom property and not a cycle. */
+    color: var(--label);
+    /* So the text field's caret and any UA-drawn part of a control are dark-theme
+       too. The app's own dark mode is out of scope (#187) and this is not it: it
+       is one declaration about how a picture of it is painted here. */
+    color-scheme: dark;
+  }
+
+  /* THE FLAT FACE THE BACKDROP AND THE CONTENT BOTH LIVE IN. A `preserve-3d`
+     parent puts every child in one 3D space, so a copy of the map at z: 0 and the
+     Card's own markup at z: 0 are sorted by depth rather than by `z-index` and
+     they interleave — the details Card read as two smeared panels in the
+     prototype. Flat, the face composites its children into one plane and paint
+     order decides, which is what a stack of glass and ink wants.
+
+     `relative`, because the backdrops are absolutely positioned against it, and it
+     is the Card's only in-flow child so the Card is still exactly the size of the
+     vendored surface inside it. */
+  .eater-map__face {
+    position: relative;
+    transform-style: flat;
   }
 
   /* The wrapper `set:html` needs and the layout does not: `contents` generates
@@ -803,10 +874,16 @@ import './tokens.css';
     .eater-map {
       --eater-map-collapsed: 1;
       /* FLAT, AND SAID HERE AS WELL AS ON THE PLANE BELOW. `transform: none`
-         answers for the geometry; this answers for everything else the playhead
-         is spent on — the Cards' glass, which fills towards --eater-map-plate as
-         a Card leaves the map and must not be filled for a Card that never left
-         it. A screenshot has the app's own translucency. */
+         answers for the geometry the plane carries; this answers for the Cards,
+         which are placed by the playhead rather than by the plane.
+
+         AND IT IS WHAT MAKES THE GLASS TRUE DOWN HERE (#190). Each surface's copy
+         of the map is offset by that Card's RESTING place on the Slab, so at
+         playhead 0 — no drift, no rise — every copy lines up exactly with the map
+         beneath it and the collapsed drawing is an honestly frosted screenshot.
+         A Card left at the raised end would be the same shape with a map behind
+         its glass that is not the map under it, which is the difference a
+         comparison of rects alone cannot see. */
       --eater-map-lift: 0;
       /* AND NO THICKNESS, for the same reason and by the same route. The Slab's
          depth stopped being a term of the playhead in #189, so `--eater-map-lift:
