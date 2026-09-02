@@ -181,6 +181,21 @@
      shipped page now asks for an edge at all, so these are ordinary Tokens that
      move the drawing rather than three that wait for a decision. */
   --eater-map-slab-thickness: 0.03;
+  /* LEFT AT 0.02, AND THE OBJECT READS SQUARER THAN THE REFERENCE BECAUSE OF IT.
+     Not a choice: this ONE number is the plan corner AND the fillet at once, and
+     the `min()` above holds it to the thickness, because a solid cannot have a
+     fillet deeper than its wall. A phone has a big plan corner and a SMALL
+     fillet, so the two want to be two Tokens. Until they are, the plan corner is
+     capped at the wall's depth — 0.03, or 10.9px at the 362px the Slab is drawn
+     at — and even that is not free: raising it to the cap moves the corner probe
+     in the `eater-map` Check half a radius further out along the diagonal, where
+     the head-left corner stops finding a slice. That is the fillet running out,
+     which the Check's own comment predicts at 0.85 of the radius, not a hole; but
+     the right answer is to split the Token and recalibrate, not to widen the
+     probe until it passes.
+
+     The mockup this composition was signed off against drew a 17px corner on an
+     11px wall, which is why it looked right and is also why it was not a solid. */
   --eater-map-slab-edge-radius: 0.02;
 
   /* What the Slab is made of where the picture is not. A fact about the object
@@ -193,8 +208,15 @@
      is not; the stage refuses what it cannot read rather than warning about it,
      so a `color-mix()` here is an edge drawn in the stage's own MID GREY. Stated
      there rather than defaulted, because three.js's own default colour is white
-     and a white edge against this page's dark ground reads as a decision. */
-  --eater-map-slab-edge: #9a948a;
+     and a white edge against this page's dark ground reads as a decision.
+
+     AND IT IS DARK, WHICH IS THE WHOLE OF THE CONTRAST THIS DRAWING RUNS ON. The
+     Slab is a dark shell; the Cards' own edge below is LIGHT. `#9a948a` shipped
+     here, and being within a shade of the Cards' `#c6c4c0` it drowned them — the
+     Cards' edges were drawn correctly, at the right thickness, and could not be
+     seen, so "the Cards have no 3D effect" and "the Slab's edge is too light"
+     were one bug and not two. Darkening this is what makes both read. */
+  --eater-map-slab-edge: #57534c;
 
   /* ---- the three Cards, and where they stand on the Slab ------------------
      Each Card's own corner, as a share of the Slab's WIDTH — both coordinates,
@@ -236,8 +258,15 @@
      at both ends of the band and at both ends of the Lift, which the `eater-map`
      Check asserts — the drift the Lift spends is different for the two Cards, so
      the flat arrangement is the tighter of the two and is also what a reader
-     below the band is looking at. */
-  --eater-map-card-lines-x: 0.304;
+     below the band is looking at.
+
+     AND IT IS LEFT-ALIGNED WITH THE SEARCH BAR, which the `y` above moved for and
+     the `x` did not. `0.304` shipped here — the value from before the Section was
+     recomposed — so the popup sat out in the middle of the Slab while the two
+     surfaces above it shared a left margin. `0.055` puts its left edge on theirs,
+     and the head of the Slab reads down one near-side stack rather than as three
+     things at three indents. #187 named this value; only the `y` was taken. */
+  --eater-map-card-lines-x: 0.055;
   --eater-map-card-lines-y: 0.61;
 
   --eater-map-card-details-x: 0.004;
