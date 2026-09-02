@@ -10,6 +10,16 @@ real text (#176, #177, #178, #189) — and, below the band, the same drawing lyi
 flat and full-bleed with the four features as a list under it (#179). #187 is the
 rebuild to the reference and several tickets under it are still open.
 
+**#191 RECOMPOSED IT, AND THE SHAPE OF THE SCREEN IS ITS SHAPE NOW.** Three
+standing blocks rather than a band of writing over a picture: the word PROJECTS at
+the head of the left column with a serif project title under it and the copy at its
+foot, the drawing down the middle, and the four numbered Points down the right edge
+in a warm accent, each joined to its part by a rule that ends in a lit dot. The
+masthead is the Gallery's own — the same word, in the same box, at the same place
+on the screen — so turning onto this Section does not move it. It is still this
+Section's element; **#193 is what makes the page's PROJECTS one persistent thing**,
+and this slot is what that ticket takes over.
+
 **THE SLAB DOES NOT MOVE, AND THAT IS THE INVARIANT TO KNOW FIRST (#189).** Its
 attitude, its projection and its thickness are constants: the same solid, at the
 same size, with the same projected corners at both ends of the Lift and at both
@@ -20,10 +30,12 @@ now.
 
 ## What is here and what is not
 
-Here: the Rail, a plain masthead, the two authored subheading lines, the copy,
-the four numbered points, the Exploded View, the four leader lines that join the
-one to the other, the **Lift** that assembles it, the **glass** every Card's
-surfaces are made of (#190), and the collapse that puts all of it away below the
+Here: the Rail, the masthead PROJECTS, the four authored lines of the serif
+project title under it, the copy at the foot of that column, the four numbered
+points down the right edge with a number and an icon each, the Exploded View, the
+four leader lines that join the one to the other and the two dots on each, the
+**Lift** that assembles it, the **glass** every Card's surfaces are made of
+(#190), and the collapse that puts all of it away below the
 band.
 
 Not here: which of the two stages draws the Slab. #181 built the alternative —
@@ -88,16 +100,39 @@ not on the page, rather than registering one that would scrub over an empty stag
 ## The plane, and the one piece of arithmetic it turns on
 
 The stage is one box — `.eater-map__slab` — and everything in it is a share of
-it. Its **height** is what row two of the composition has left, times
-`--eater-map-slab-fill`; its **width** follows from the capture's own
-proportion. So the phone is as big as the screen allows at every window in the
-band and nothing has to be told a size: 220x476 at 1100x700, 283x612 at
-1440x900, 478x1037 at 2560x1440.
+it. Its **height** is what the composition's one row has left, times
+`--eater-map-slab-fill`; its **width** follows from the capture's own proportion.
+So the phone is as big as the screen allows at every window in the band and nothing
+has to be told a size.
+
+**AND IT IS CAPPED BY WHAT THE STAGE IS WIDE ENOUGH TO CARRY, which is a different
+question and was not asked before #191.** The drawing used to be a row's remainder
+with the four points beside the writing above it; it stands in a COLUMN between two
+things now — the writing on the left and the four Points on the right — and a Slab
+sized only by the height runs its projected corners under both of them at the
+band's short corner. Measured: 599px of outline in 528px of room at 1100x700, which
+is the rail overlay's paragraph with a phone drawn over it.
+
+**What is capped is the PROJECTED width and not the Slab's.** A `w x h` rectangle
+turned by the swing spans `w·cos(s) + h·sin(s)` across the screen — the tilt takes
+nothing off it, because `rotateX` moves the y axis and leaves x alone — so with
+`h = tall·w` the outline is `w·(cos s + tall·sin s)`, and the height that fits a
+stage `W` wide is `tall·W` over that. Both terms are the composition's own: the
+swing is the Token the plane is turned by, and `tall` is the capture's proportion,
+written on the element beside the ratio it comes from. It is a `max-height` and not
+a `height`, so the aspect ratio survives it — the width is `auto` and derived from
+the ratio, so clamping the definite axis re-derives the other one. Below the band
+it is taken off entirely: nothing is projected down there, and full-bleed is a
+picture with no ceiling by definition (#179).
 
 The box is `container-type: inline-size`, which is the Frame's arrangement in the
 Projects Panel, and it carries the Frame's trap with it: **an element is not its
 own container**, so a `cqw` written on the Slab's own rule silently resolves
-against the viewport. Every one in the component is on a descendant.
+against the nearest container ABOVE it. Every one inside the plane is on a
+descendant — and the cap above is the one place the trap is used DELIBERATELY:
+`.eater-map__stage` is `container-type: inline-size` too, so `100cqw` on the Slab's
+own rule is the stage's width, which is the only way for the Slab to say "a share
+of the box I stand in" while being a container for everything on the plane.
 
 **The one piece of arithmetic:** the scale everything on the plane is drawn at is
 
@@ -168,6 +203,12 @@ Every mutation below has been made on purpose and every one was caught.
 | the backdrop's `/ boost` dropped | with every Card boosted to 1.1, the map behind the details sheet drawn 310.6px against the Slab's 282.36px, 10% apart — and nothing at all at boost 1 |
 | `--label` dropped from the dark block | the search pill painted lighter than the text on it, at both windows |
 | a vendored variable overridden that `cards.css` does not publish | the Section naming `--glass-super`, which a re-vendoring could not carry |
+| the Section taken back off the landing measure — the band's own `--eater-map-mast`, its zero column gap and its top padding reverted | PROJECTS 190.92px from where the Gallery's masthead stands at 1440x900 and 139.50px at 1100x700 |
+| `content.masthead` back to `Eater Map` | the two mastheads reading different words, and 202.50px of box between them, at both windows |
+| `title.ts`'s size write deleted, so the stylesheet's proportional fallback stands | **both** ratios, at both windows — the cap 4.4% low and the drop 2.0% out. This is the "a typed font size must fail it" mutation |
+| the copy given `align-self: start` in the right-hand columns, and the Points put back on the left | four failures at each window: the copy in another column, off the foot, printed over the head, and the Points left of the drawing |
+| the lit dot written at the shoulder instead of at the terminus | all four dots, at all three moments and both windows — 322.5px to 625.2px from the rule's own last point |
+| `--eater-map-leader-tip` dragged to 0 | all four lit dots in the document painting nothing, at all three moments and both windows |
 
 **The `arrived()` mutation passed three times in a row before the Check was
 written the right way**, and it is the shape `scripts/checks/NOTES.md` warns about twice: *a
@@ -564,8 +605,31 @@ Token — **a custom property's computed value is its token stream**, and
 `getPropertyValue` hands back `0.9rem` rather than pixels, so a length Token a
 script needs in pixels has to be spent by the stylesheet on a real property
 first. Which of the hook's two edges the rule starts at is decided by which side
-of it the part is on, so the `points-right` Variant needs one declaration from
-this and no arithmetic.
+of it the part is on, so **#191 moving the Points from the near side to the far
+side cost `leaders.ts` nothing**: the shoulder turned round on its own, and the one
+declaration it needed — which edge of the ROW the hook stands on — is a composition
+decision and is in the stylesheet. The `points-left` Variant, which argues the
+direction back, needs the same one declaration and no arithmetic.
+
+### And each rule ends in two dots
+
+A **lit** one on the part, and a smaller one at the shoulder where the rule turns
+(#191). The reference's own lines begin in empty space and one of them ends
+nowhere; the dot is what says *this, here, is the thing the number is about*.
+
+**They are VERTICES OF THE RULE and not a second opinion about where it goes.** The
+lit dot is written from the polyline's own last point and the shoulder dot from its
+middle one, so "the rule ends in a dot ON the part" is true by construction rather
+than by two calculations agreeing — which is what the `eater-map` Check asserts, at
+all three moments of the Lift, beside the rule itself.
+
+**Each radius is a Token spent by the stylesheet and GATED ON THE CENTRE the script
+writes.** An SVG circle with no `cx` sits at the overlay's own origin, so a radius
+written unconditionally would paint four dots stacked in the composition's top-left
+corner for a reader whose scripts never arrived. `r`'s initial value is 0 and a
+circle of radius 0 renders nothing, so `[cx]` in the selector is the same promise
+the polylines already make — they carry no `points` until a script comes, and paint
+nothing until then.
 
 Three Tokens and no more, which are the three the composition can have an opinion
 about: `--eater-map-leader-weight`, `--eater-map-leader-veil` and that reach. The
@@ -728,8 +792,9 @@ is a tenth of a phone's width and a paving slab — and the radius is 0.02, both
 chosen by looking on the sheet.
 
 **"Stage" means two things in this Section, and both are the tickets' own word.**
-`.eater-map__stage` is the grid area the drawing stands in — row two's remainder,
-#176's — and `stage.ts` is the renderer boundary #177 asked for and #181 put a
+`.eater-map__stage` is the grid area the drawing stands in — the middle six of
+twelve columns since #191, and row two's remainder before it — and `stage.ts` is
+the renderer boundary #177 asked for and #181 put a
 second implementation behind. Nothing in `CONTEXT.md` claims the word, and nothing
 should until #182 has chosen: if the alternative loses, the boundary goes with it
 and the collision goes with the boundary. Read as: the lower-case one in a
@@ -1037,34 +1102,104 @@ recording can be script-served because its poster is what a scriptless reader
 gets, and there is no poster behind the Slab. The `assets` Check covers the half
 that is this page's business: that what is fetched arrives.
 
-## The masthead is a plain word, and that was measured
+## The masthead is PROJECTS, in the Gallery's own box
 
-#172 asked what a second **Cut Title** would cost — PROJECTS is cut off the Front
-Screen's foot into the Projects Panel masthead's slot, and a second one would be
-cut off the Panel's foot into this Section's. The answer was about 9% of the
-Panel's composition at every window a browser actually has, and the whole of the
-marble's corner at every window in the band, including the one where the width
-costs nothing. `src/kernel/NOTES.md` carries the four windows it was measured at
-and the three things that would have to change for it to be worth revisiting.
+**The same word, at the same size, at the same place on the screen** (#191). The
+Panel's masthead and this one are read at their own Section's resting place and
+compared by the `eater-map` Check — position, line height and the word's own ink —
+so nothing about the agreement is typed and the day the landing measure moves both
+move together.
 
-So this masthead paints. The Panel's does not — it is `visibility: hidden`
-because the cut word is already that Section's head — and the difference between
-the two rules is the whole of that decision showing up in the source.
+**How the box is hit, and it is two declarations.** Inside the band the size is
+`--landing-mast-size`, which is what the Panel's own masthead is a function of; and
+the Section's top padding is `--landing-top` less `--landing-mast-top`, which is
+where the masthead's BOX goes given that `--landing-top` is where the word's CAP
+TOP comes to rest. That is exactly what the Panel spends `--projects-panel-lift` on
+— its port sits that far above its Section's top edge and its masthead's box sits
+on that edge — and this Section's port IS its top edge, so the same distance is its
+padding. The Rail's column gap goes to nothing for the other half of it: the
+composition beside the Rail starts at `--landing-side`, where the Panel's inner
+starts and where the word stands on both screens.
+
+**Three numbers are still Tokens and agree by VALUE**: the leading, the weight and
+the tracking. A Section may read the Kernel and nothing else, and the Kernel
+carries the landing's size, cap and drop but not those three — so they are the
+Panel's own values written a second time, and the box comparison is what fails a
+drag out of agreement. #193 makes the page's PROJECTS one element and takes the
+restatement out with it.
+
+**It is a second DRAWING and not a second Cut Title, and that distinction is #172's
+answer still standing.** #172 asked what a second Cut Title would cost — PROJECTS
+is cut off the Front Screen's foot into the Projects Panel masthead's slot, and a
+second one would be cut off the Panel's foot into this Section's — and the answer
+was about 9% of the Panel's composition at every window a browser actually has, and
+the whole of the marble's corner at every window in the band. `src/kernel/NOTES.md`
+carries the four windows it was measured at. Nothing is cut into this slot; the
+word is simply drawn here as well, and the Panel's own masthead is still
+`visibility: hidden` because the CUT word is already that Section's head.
+
+## The serif title, and why two ratios need a script
+
+Under PROJECTS stands the project title: four authored lines, near-white, in
+`--face-year` — Source Serif 4, which is the reference's own register and which the
+`sub-source-serif` Variant was arguing for before #191 adopted it.
+
+**Its two numbers are RATIOS AGAINST THE MASTHEAD'S INK and not lengths.** The cap
+height is `--eater-map-title-cap` of PROJECTS' cap; the first cap top sits
+`--eater-map-title-drop` PROJECTS cap-heights below the masthead's BASELINE. Both
+are the reference's, measured off it, and both are Tokens.
+
+**A stylesheet cannot spend either of them, and the reason is the whole of why
+`title.ts` exists.** A ratio between two CAP HEIGHTS is not a ratio between two
+font sizes: the masthead's grotesque draws 0.7006 of its em as cap and this serif
+0.6702, so `font-size: calc(0.566 * <the masthead>)` lands the cap ratio at 0.5414
+— 4.3% low — and drifts further the day either face is replaced. And the drop is
+measured from a BASELINE, which is not an edge of any box on the page. So both are
+measured at runtime: the cap off a canvas set to the element's own computed font,
+the baseline off a zero-sized inline-block, which is the one thing on a line box
+whose bottom edge IS the baseline.
+
+**The ink is read at a REFERENCE SIZE and scaled, and that was not the first
+attempt.** `actualBoundingBoxAscent` is quantised to the rasteriser's grid, so read
+at the size it is drawn at the serif's cap came back 1.4% out at the band's short
+corner — a third of the whole difference the assertion exists to see, and enough
+that a Check tight enough to fail a typed size would have been failing the measured
+one. Cap height is linear in font size for a static face, so one reading at 1000px
+divided by 1000 is the face's ratio to five figures and every size follows exactly.
+Measured at four windows across the band afterwards, both ratios come back exact to
+three figures.
+
+**What a reader with no script gets is a whole title about four per cent small.**
+The stylesheet's fallbacks apply the cap ratio to the masthead's SIZE and put the
+first LINE BOX where the first CAP TOP belongs — honest, complete, and far enough
+from the measured answer that the Check tells them apart.
+
+**And below the band the script writes NOTHING**, which is not an omission. The
+collapse is one composition for three readers, one of whom runs no script (#179),
+and both of these lengths move the title's box — which in a one-column page moves
+every block under it. So down there the fallbacks are the answer for everybody, in
+a regime where there is no Gallery box for a share of a cap to be a share OF. The
+module removes both properties rather than leaving them standing, because a window
+dragged across the boundary would otherwise carry the band's two lengths into the
+collapse and hand the scriptless reader a different column from everybody else.
 
 ## Which of the Kernel's lengths this Section reads
 
-Two, and only in the band: `--landing-inset` for the page's top margin and
-`--landing-side` for its left one. That is so the third screen's white agrees
-with the second's and both Rails stand in one column — a reader turning the page
-should not see the margins move.
+**This Section JOINED the landing measure in #191, and that is a change of
+decision rather than a drift.** It used to read two of the Kernel's lengths and no
+more — `--landing-inset` for the page's top margin and `--landing-side` for its
+left one, so the third screen's white agreed with the second's and both Rails stood
+in one column — and this heading used to say, at length, that reading those two was
+deliberately NOT joining the measure: the measure is `--landing-w`, `--landing-cap`
+and `--landing-mast-top`, the width two Sections have to agree about *because a cut
+word has to land in a masthead's slot*, and this Section had no cut word.
 
-**That is not joining the landing measure.** The measure is `--landing-w`,
-`--landing-cap` and `--landing-mast-top`: the width two Sections have to agree
-about *because a cut word has to land in a masthead's slot*, and the cap it is
-cut to. This Section has no cut word, so it is a function of none of them, and
-`--landing-w` gains no new reader. `src/kernel/NOTES.md` calls a third Section
-joining that list a decision rather than a convenience; this is deliberately not
-it.
+It has the Gallery's WORD now, in the Gallery's own box, so it is a function of all
+three: `--landing-mast-size` is the masthead's size in the band, and `--landing-top`
+less `--landing-mast-top` is its top padding. `src/kernel/NOTES.md` calls a third
+Section joining that list a decision rather than a convenience, and #191 is that
+decision — taken because the word standing still between two screens is the thing
+#187 asked for and #193 finishes.
 
 Everywhere else the Section has its own two margins, because the band's are flat
 vertical measures and a margin used across at a width they were never chosen for
@@ -1107,12 +1242,20 @@ every Section after the first one, as a relationship rather than a list; the
 page turn reads its ports off the cascade and has always generalised. Neither
 file learned this Section's name.
 
-## The Variants, and the group #189 moved the ground under
+## The Variants, and the two groups #189 and #191 moved the ground under
 
 Eight, in three groups, and `variants.css` carries the argument for each. Two are
 the text composition's own — where the four points stand, and how loud the ladder
 is. The other six are the two questions #180 asked to be judged by eye rather than
-described: the **projection**, and the **subheading's face**.
+described: the **projection**, and the **project title's face**.
+
+**TWO OF THE THREE GROUPS TURNED ROUND IN #191, and a Variant group holds the
+LOSERS.** The points ship on the far side now, so the direction kept as a Variant is
+`points-left` where it was `points-right`; and the title ships in Source Serif 4 —
+which is what `sub-source-serif` was arguing for — so the face group is
+`title-host-grotesk`, `title-vollkorn` and `title-spectral`. Renaming them to argue
+the other way is what keeps the record of the comparison readable rather than a
+list of things nobody would now propose.
 
 **The projection group used to be invisible at the sheet's default moment and is
 not any more.** `pnpm variants` shoots at `--progress 0`, and progress 0 was the
@@ -1162,15 +1305,21 @@ right-to-left reason the composition's own order is arithmetic rather than style
 It reads the two distances back off the custom properties the composition set on
 that element.
 
-**The face group is one declaration each, on purpose.** The reference sets the two
-authored lines in a Didone and this Portfolio has none: it has Vollkorn, Spectral,
-Source Serif 4 and Host Grotesk, and one of them has to take it. Host Grotesk is
-what the Section ships, so it is `unselected`; the three serifs are Variants. The
-size, the leading, the weight and the uppercase are held still, so the strip
-compares faces rather than four typesettings — a serif that reads small at this
-size is telling the author something about the pairing, not about the number. Each
-Variant names the **Kernel's role** — `--face-body`, `--face-label`, `--face-year`
-— rather than a family, because that is the level those four exist at.
+**The face group is one declaration each, on purpose.** The reference sets the
+project title in a Didone and this Portfolio has none: it has Vollkorn, Spectral,
+Source Serif 4 and Host Grotesk, and one of them has to take it. Source Serif 4 is
+what the Section ships since #191, so it is `unselected`; the other two serifs and
+the sans it replaced are the Variants. The leading, the weight and the uppercase
+are held still, and each Variant names the **Kernel's role** — `--face-panel`,
+`--face-body`, `--face-label` — rather than a family, because that is the level
+those four exist at.
+
+**And the SIZE follows the face without a declaration, which is what made the
+comparison fair.** `title.ts` solves the font size for a CAP HEIGHT rather than
+setting one, so a face with a smaller cap is drawn larger and every row on the
+strip has the same cap standing under the same masthead. It used to be confounded
+by whichever of the four happened to have the taller cap at the one size all of
+them were given.
 
 **Every one of the eight is kept whichever way the judgement goes.** The losers are
 the record of what was compared, which is the whole point of the mechanism.
@@ -1192,3 +1341,16 @@ each carries the `part` its leader line is drawn to. The fourth names the Slab
 itself. That field is Content and the words are Content, and the Editor offers
 the words and never the field — it matches an element against the text it DRAWS,
 and a part is drawn nowhere.
+
+**Two things a point draws are NOT Content (#191).** Its number is the ORDINAL,
+derived from the list's own order: an `<ol>` whose numbers are typed is two orders
+to keep in step, and the Editor would be offering a figure that means "which one
+this is". And its ICON follows from the `part` it names — `icons.ts` is keyed by
+the part, so the correspondence the schema already holds to one point per part
+picks the mark for nothing. Both are `aria-hidden`: the list is ordered, so a
+reader listening is already told which of four this is, and the mark says what the
+title beside it says.
+
+**The project title is four lines and used to be two.** At 0.566 of PROJECTS' cap
+the two authored lines do not fit the column, and four is the reference's own
+block.

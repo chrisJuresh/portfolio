@@ -9,8 +9,16 @@
    THREE QUESTIONS, IN THREE GROUPS. The composition's own — where the four
    points stand, and how loud the ladder is — and the two the drawing turns on,
    which #180 added once there was a drawing to turn: the PROJECTION and the
-   SUBHEADING'S FACE. Every one of them is kept whichever way the judgement
+   PROJECT TITLE'S FACE. Every one of them is kept whichever way the judgement
    goes; the losers are the record of what was compared.
+
+   TWO OF THEM HAVE TURNED ROUND SINCE #191, which recomposed the Section to the
+   reference: the points ship on the FAR side now and the title ships in a serif,
+   so `points-left` and `title-host-grotesk` are the alternatives where
+   `points-right` and the three `sub-*` faces used to be. A Variant is a direction
+   that was compared, so what a group holds after a judgement is the LOSERS —
+   renaming them to argue the other way is how the record of the comparison stays
+   readable rather than becoming a list of things nobody would now propose.
 
    THE PROJECTION GROUP IS VISIBLE AT THE SHEET'S DEFAULT MOMENT NOW, AND IT WAS
    NOT. `pnpm variants` shoots at `--progress 0`, and progress 0 used to be the
@@ -125,76 +133,114 @@
 }
 
 /* ==========================================================================
-   THE SUBHEADING'S FACE — which of the four takes it (#180)
+   THE TITLE'S FACE — which of the four takes it (#180, re-cut by #191)
    ==========================================================================
 
-   The design reference sets the two authored lines in a Didone and this
-   Portfolio has no Didone. It has four faces, and one of them has to take it:
-   Host Grotesk, which is what the Section ships and therefore what `unselected`
-   draws, and the three serifs below.
+   The design reference sets the project title in a Didone and this Portfolio has
+   no Didone. It has four faces, and one of them has to take it. THE GROUP HAS
+   TURNED ROUND SINCE #180: it used to argue about the SUBHEADING and the
+   composition shipped Host Grotesk, so the three serifs were the alternatives.
+   #191 adopted Source Serif 4 — the reference's own register, and what
+   `sub-source-serif` was arguing for — so what `unselected` draws is that, and
+   what is left to compare is the two other serifs and the sans it replaced.
 
    ONE DECLARATION EACH, ON PURPOSE. The size, the leading, the weight and the
-   uppercase are the composition's and are held still, so the strip compares
-   faces and not four typesettings — a serif that reads small at this size is
-   telling the author something about the pairing rather than about the number.
-   Each names the KERNEL'S ROLE rather than a family, because that is the level
-   these four exist at, and the masthead above them does not move: the pairing is
-   what is being judged. */
+   uppercase are the composition's and are held still, so the strip compares faces
+   and not four typesettings. Each names the KERNEL'S ROLE rather than a family,
+   because that is the level these four exist at.
 
-/* Vollkorn — the page's body face, which is the argument that the subheading
-   belongs to the writing rather than to the head. */
-:root[data-variant='sub-vollkorn'] .eater-map__sub {
+   AND THE SIZE FOLLOWS THE FACE WITHOUT A DECLARATION HERE, which is what makes
+   this a fair comparison since #191. `title.ts` solves the font size for a CAP
+   HEIGHT rather than setting one, so a face with a smaller cap is drawn larger
+   and every row on the strip has the same cap standing under the same masthead —
+   the pairing is what is being judged, and it used to be confounded by whichever
+   face happened to have the taller cap at the one size all four were given. */
+
+/* Host Grotesk — the sans the masthead is set in, which is what this Section
+   drew before #191 and is the argument that the title belongs to the head rather
+   than beside it. */
+:root[data-variant='title-host-grotesk'] .eater-map__title {
+  font-family: var(--face-panel);
+}
+
+/* Vollkorn — the page's body face, which is the argument that the title belongs
+   to the writing rather than to the head. */
+:root[data-variant='title-vollkorn'] .eater-map__title {
   font-family: var(--face-body);
 }
 
 /* Spectral — the label face, drawn for small sizes and set in caps elsewhere on
    the page, which is the closest this Portfolio comes to the reference's own
    register. */
-:root[data-variant='sub-spectral'] .eater-map__sub {
+:root[data-variant='title-spectral'] .eater-map__title {
   font-family: var(--face-label);
-}
-
-/* Source Serif 4 — the year face, the most upright and the least written of the
-   three, and the one whose caps sit squarest under a grotesque masthead. */
-:root[data-variant='sub-source-serif'] .eater-map__sub {
-  font-family: var(--face-year);
 }
 
 /* ==========================================================================
    THE COMPOSITION'S OWN
    ========================================================================== */
 
-/* LAYOUT: the points down the far side, which is how #171 describes them.
-   The composition ships with them on the near side, under the masthead they
-   belong to, and the two readings are genuinely different: near, the points are
-   the head's evidence; far, they are the picture's index and each is where its
-   own leader line starts (#178).
+/* LAYOUT: the points back on the near side, under the masthead they belong to,
+   which is where this Section drew them until #191 and what #171 argued for. The
+   composition ships them down the FAR side now, beside the drawing they annotate,
+   and the two readings are genuinely different: near, the points are the head's
+   evidence; far, they are the picture's index and each is where its own leader
+   line starts (#178).
+
+   IT IS THE WHOLE TWO-ROW COMPOSITION AND NOT ONE `grid-area`, which is what a
+   direction costs once the shipped composition is three standing blocks. The
+   points cannot simply move left: the left column is the writing's, top to
+   bottom, so a Variant that moved only the list would print it over the title.
+   So this restates the arrangement the near-side reading actually implies — a
+   band of writing across the top, the drawing and its index in the row under it —
+   and that is what a Variant is for. Everything else is held still: the masthead
+   is still the Gallery's word in the Gallery's box, and the title is still sized
+   off its ink.
 
    THE LEADER LINES FOLLOW IT AND NEED ONE DECLARATION TO DO SO. leaders.ts
    decides which edge of the hook a rule leaves by which side of it the part is
    on, so the shoulder turns round on its own; what it cannot work out is which
    edge of the ROW the hook should stand on, because that is a composition
    decision. This is that decision, and it is the whole cost of the direction. */
-:root[data-variant='points-right'] .eater-map__points {
-  grid-area: 2 / 10 / 3 / 13;
+:root[data-variant='points-left'] .eater-map__inner {
+  grid-template-rows: auto minmax(0, 1fr);
+  row-gap: var(--eater-map-act);
 }
 
-:root[data-variant='points-right'] .eater-map__stage {
-  grid-area: 2 / 1 / 3 / 10;
+:root[data-variant='points-left'] .eater-map__head {
+  grid-area: 1 / 1 / 2 / 7;
 }
 
-:root[data-variant='points-right'] .eater-map__hook {
-  left: auto;
-  right: 100%;
+:root[data-variant='points-left'] .eater-map__copy {
+  grid-area: 1 / 7 / 2 / 13;
+  align-self: end;
+}
+
+:root[data-variant='points-left'] .eater-map__points {
+  grid-area: 2 / 1 / 3 / 4;
+}
+
+:root[data-variant='points-left'] .eater-map__stage {
+  grid-area: 2 / 4 / 3 / 13;
+}
+
+:root[data-variant='points-left'] .eater-map__hook {
+  right: auto;
+  left: 100%;
 }
 
 /* TOKENS ONLY: the same composition on a quieter ladder — one step tighter
-   everywhere, the masthead smaller, and the rules further back. A direction
-   rather than a size, since one number moves every seam on the page. */
+   everywhere, the title smaller against the masthead, and the rules further back.
+   A direction rather than a size, since one number moves every seam on the page.
+
+   THE MASTHEAD IS NOT IN THIS LIST ANY MORE. Inside the band its size is the
+   landing's, so PROJECTS stands in the Gallery's own box (#191) — a Variant that
+   made it smaller would be arguing about the ladder AND about whether the word
+   moves between two screens, which is one thing too many. The title's cap ratio is
+   the knob that says the same thing about the head. */
 :root[data-variant='quiet'] .eater-map {
   --eater-map-step: clamp(0.85rem, 0.45rem + 1.9vw, 1.55rem);
-  --eater-map-masthead-size: clamp(1.9rem, 1.1rem + 3.3vw, 3.6rem);
-  --eater-map-sub-size: clamp(0.86rem, 0.62rem + 0.9vw, 1.3rem);
+  --eater-map-title-cap: 0.44;
   --eater-map-rule-veil: 88%;
   --eater-map-muted-veil: 44%;
 }

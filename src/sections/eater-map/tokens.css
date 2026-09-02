@@ -46,38 +46,108 @@
   /* ---- the type ladder ---------------------------------------------------- */
   --eater-map-leading: 1.5;
 
+  /* THE MASTHEAD IS THE GALLERY'S, AND ONLY THREE OF ITS FOUR NUMBERS ARE HERE
+     (#191). The word is PROJECTS and it stands in the Projects Panel masthead's
+     own box — so inside the band its SIZE is the landing's `--landing-mast-size`
+     and is not a Token at all, because a size the author could drag would be the
+     one number that takes the word out of the box it is meant to occupy. The
+     `eater-map` Check compares the two boxes rather than a typed number, which is
+     what fails a drag of the three below out of agreement with the Panel's.
+
+     THESE THREE ARE THE PANEL'S OWN VALUES, WRITTEN A SECOND TIME. A Section may
+     read the Kernel and nothing else, and the Kernel carries the landing's size,
+     cap and drop but not its leading, weight or tracking — so agreement here is by
+     value and held by the Check. #193 is what makes the page's PROJECTS ONE
+     element and takes this restatement out with it.
+
+     The size below is the masthead OUT of the band, where there is no landing to
+     read and no page turn for the word to stand still across. */
   --eater-map-masthead-size: clamp(2.5rem, 1.4rem + 4.4vw, 5rem);
   --eater-map-masthead-weight: 500;
   --eater-map-masthead-leading: 0.86;
-  --eater-map-masthead-tracking: -0.015em;
+  --eater-map-masthead-tracking: -0.005em;
 
-  --eater-map-sub-size: clamp(1rem, 0.72rem + 1.1vw, 1.7rem);
-  --eater-map-sub-leading: 1;
+  /* ---- the serif project title, in two RATIOS and no length ----------------
+     What stands under PROJECTS and says which project the screen is about. Set in
+     a serif against the sans masthead so the two read as a title and its project
+     rather than as one block of type, and near-white rather than the ink so the
+     masthead is still the loudest thing on the screen.
 
+     BOTH OF THESE ARE RATIOS AGAINST THE MASTHEAD'S OWN INK, and that is what
+     makes them Tokens rather than the sizes they replace. `cap` is the title's cap
+     height as a share of PROJECTS' cap; `drop` is where its first cap top sits
+     below the masthead's BASELINE, in PROJECTS cap-heights. Both are the
+     reference's, measured off it rather than chosen, and `title.ts` turns them
+     into a font size and a lead by measuring the ink of both faces at runtime —
+     because a cap ratio is not a font-size ratio between a grotesque and a serif,
+     and the difference is about four per cent. Drag either and the title follows
+     the masthead at every window; type a font size instead and the `eater-map`
+     Check fails.
+
+     THERE IS NO `--eater-map-title-size`. The value `title.ts` writes is a derived
+     length and lives on the element, not in this file: a second handle on a number
+     the ratios already decide is two controls on one thing (ADR 0004). */
+  --eater-map-title-cap: 0.566;
+  --eater-map-title-drop: 1.245;
+  --eater-map-title-leading: 0.859;
+  --eater-map-title-tracking: 0.012em;
+  --eater-map-title-veil: 7%;
+
+  /* The copy stands at the foot of the column PROJECTS heads since #191, with the
+     rule across its top rather than down its left edge — so
+     `--eater-map-copy-inset`, which was the room between that left rule and the
+     first word, went with the composition it belonged to. The air above it now is
+     `--eater-map-close`, which is the seam INSIDE one thing and is what a rule
+     over a paragraph is. A Token nothing spends is one the Editor offers and
+     nothing moves. */
   --eater-map-copy-size: clamp(0.9rem, 0.8rem + 0.35vw, 1.05rem);
   --eater-map-copy-leading: 1.5;
-  --eater-map-copy-inset: clamp(0.9rem, 0.6rem + 1.1vw, 1.6rem);
 
-  --eater-map-point-size: clamp(0.78rem, 0.7rem + 0.28vw, 0.95rem);
+  /* ---- the four numbered Points, down the right edge -----------------------
+     THE ACCENT IS A FACT ABOUT THE DRAWING AND NOT ABOUT THE PAGE, which is why
+     it is a plain colour rather than a mix on `--ink`: it was sampled off the
+     reference's own `01.`, and this Section stands at the far end of the Turn in
+     both themes, so there is no crossing for it to ride. The rule above each Point
+     is the same colour at 36% of it, which is the veil below.
+
+     The number and the icon are one row and are set at the same weight, so a Point
+     reads as an annotation on a drawing rather than as an entry in a list. Which
+     icon a Point carries follows from the PART it names — `icons.ts`, keyed by the
+     part — so there is nothing here to choose. */
+  --eater-map-accent: #bc9870;
+  --eater-map-accent-veil: 64%;
+
+  --eater-map-number-size: clamp(1.4rem, 1.1rem + 1vw, 2.1rem);
+  --eater-map-number-leading: 0.9;
+  --eater-map-icon-size: clamp(1.15rem, 0.95rem + 0.85vw, 1.8rem);
+  --eater-map-icon-weight: 1.3;
+  --eater-map-point-air: 0.7em;
+
+  --eater-map-point-size: clamp(0.95rem, 0.85rem + 0.35vw, 1.2rem);
   --eater-map-point-weight: 500;
-  --eater-map-point-leading: 1.25;
-  --eater-map-point-tracking: 0.06em;
+  --eater-map-point-leading: 1.14;
+  --eater-map-point-tracking: 0.045em;
 
   --eater-map-figure-size: clamp(0.72rem, 0.66rem + 0.2vw, 0.86rem);
   --eater-map-figure-leading: 1.45;
-  --eater-map-figure-air: 0.35em;
+  --eater-map-figure-air: 0.5em;
 
   /* ---- the Slab, and where it stands in the stage -------------------------
      The picture's SHAPE is not here: it is the capture's own, and the component
      takes it from slab.ts, which is where the numbers a re-capture changes all
      live together. These two are what a composition may decide about it.
 
-     `fill` is the share of the stage's height the Slab takes — the stage is row
-     two's remainder, so this is how big the phone is at every window in the
-     band at once, and 1 is "as tall as there is room for". `shift` slides it
-     across, as a share of ITS OWN width, from centred: a percentage translate
-     resolves against the element, so 0.5 is half a phone to the right whatever
-     the window is doing.
+     `fill` is the share of the stage the Slab takes, and since #191 it is spent
+     on BOTH of the stage's axes: on the stage's height, which is the Section's,
+     and on the height that stage's WIDTH will carry once the outline is projected.
+     Whichever binds is what the drawing gets, so this is still "how big the phone
+     is at every window in the band at once" and 1 is still "as big as there is
+     room for" — it is just that there are now two ways to run out of room, because
+     the drawing stands in a column between the writing and the four Points rather
+     than in a row's remainder under both. NOTES.md carries the projected-width
+     arithmetic. `shift` slides it across, as a share of ITS OWN width, from
+     centred: a percentage translate resolves against the element, so 0.5 is half a
+     phone to the right whatever the window is doing.
 
      BOTH ARE THE BAND'S ONLY. Below it the Slab is full-bleed — the window's
      width, and the capture's proportion for the height — so there is no stage
@@ -309,7 +379,19 @@
      leaves. */
   --eater-map-leader-weight: 1px;
   --eater-map-leader-veil: 62%;
-  --eater-map-leader-reach: clamp(0.7rem, 0.3rem + 1.1vw, 1.6rem);
+  --eater-map-leader-reach: clamp(1.6rem, 0.9rem + 2.4vw, 3.8rem);
+
+  /* THE TWO DOTS, and they are two different claims (#191). The one at the PART
+     is lit — full ink, larger — and is what says "this, here, is the thing the
+     number is about"; the one at the shoulder is the leader's own colour and
+     smaller, and says only that the rule turned. A rule that reaches a corner and
+     stops is the reference's own fault, which the reference itself has: its lines
+     begin in empty space and one ends nowhere.
+
+     Radii, in px, because an SVG `r` is a length in the overlay's own user units
+     and the overlay is laid out in CSS pixels. */
+  --eater-map-leader-tip: 2.8px;
+  --eater-map-leader-knee: 2px;
 
   /* WHICH CORNER EACH RULE ENDS ON, as a share of the part's own width and
      height — so it is a corner at every window and at every size the Slab is

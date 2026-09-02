@@ -33,8 +33,18 @@
  * value is its token stream — `getPropertyValue` hands back `0.9rem`, not pixels
  * — so a length Token read from script has to be spent by the stylesheet on a
  * real property first. Which of the hook's two edges the rule starts at is
- * decided by which side of it the part is on, so a Variant that moves the points
- * to the far side of the composition needs nothing from this file.
+ * decided by which side of it the part is on, so **#191 moving the Points across
+ * the page cost this file nothing**: the shoulder turned round on its own, and
+ * the one declaration it needed — which edge of the ROW the hook stands on — is a
+ * composition decision and is in the stylesheet.
+ *
+ * AND TWO DOTS, WHICH ARE VERTICES OF THE RULE ITSELF (#191). A lit one at the
+ * part, which is the polyline's own last point, and a smaller one at the shoulder
+ * where it turns, which is the polyline's middle point. Written from the same two
+ * numbers the rule is written from rather than computed again, so "the rule ends
+ * in a dot ON the part" is true by construction and not by two calculations
+ * agreeing. Both carry no centre until this runs, and a circle with no `cx` paints
+ * nothing — the same promise the polylines make.
  *
  * WHEN IT REDRAWS. On every tick of the Lift, which is what keeps the rules
  * attached through the whole of it — `timeline.ts` hands this module's redraw to
@@ -79,6 +89,10 @@ interface Leader {
   readonly hook: HTMLElement;
   /** the zero-sized point at the part's own corner, inside the transform */
   readonly anchor: HTMLElement;
+  /** the lit dot ON the part, at the rule's far end (#191) */
+  readonly tip: SVGCircleElement | null;
+  /** the smaller dot at the shoulder, where the rule turns */
+  readonly knee: SVGCircleElement | null;
 }
 
 /**
@@ -101,7 +115,13 @@ export function mountLeaders(root: HTMLElement): (() => void) | void {
     const hook = root.querySelector<HTMLElement>(`[data-eater-map-hook="${part}"]`);
     const anchor = root.querySelector<HTMLElement>(`[data-eater-map-anchor="${part}"]`);
     if (!hook || !anchor) continue;
-    leaders.push({ part, rule, hook, anchor });
+    // The two dots are OPTIONAL and the rule is not. A composition that draws no
+    // dots is a leader line that reaches its corner and stops, which is a drawing
+    // rather than a fault; a rule with no hook or no anchor has nowhere to be
+    // drawn between, which is the hole above.
+    const tip = overlay.querySelector<SVGCircleElement>(`[data-eater-map-tip="${part}"]`);
+    const knee = overlay.querySelector<SVGCircleElement>(`[data-eater-map-knee="${part}"]`);
+    leaders.push({ part, rule, hook, anchor, tip, knee });
   }
   if (leaders.length === 0) return;
 
@@ -113,11 +133,12 @@ export function mountLeaders(root: HTMLElement): (() => void) | void {
     // to it and NOTHING here depends on the scroll — which is what stops a
     // reader turning the page from dragging four rules across it.
     const frame = overlay.getBoundingClientRect();
-    for (const { rule, hook, anchor } of leaders) {
+    for (const { rule, hook, anchor, tip, knee } of leaders) {
       const from = hook.getBoundingClientRect();
       const to = anchor.getBoundingClientRect();
       const y = from.top - frame.top;
       const x = to.left - frame.left;
+      const at = to.top - frame.top;
       // Out of the near edge of the hook and across it: which edge is near is
       // which side the part is on.
       const towards = x >= (from.left + from.right) / 2 - frame.left;
@@ -126,8 +147,19 @@ export function mountLeaders(root: HTMLElement): (() => void) | void {
       rule.setAttribute(
         'points',
         `${start.toFixed(2)},${y.toFixed(2)} ${turn.toFixed(2)},${y.toFixed(2)} ` +
-          `${x.toFixed(2)},${(to.top - frame.top).toFixed(2)}`,
+          `${x.toFixed(2)},${at.toFixed(2)}`,
       );
+      // THE TWO DOTS SIT ON TWO OF THE THREE POINTS THE RULE IS ALREADY MADE OF,
+      // which is what stops them being a second opinion about where the rule goes:
+      // the lit one is the polyline's own last vertex, so "the rule ends in a dot
+      // on the part" is true by construction rather than by two calculations
+      // agreeing. Their radii are the stylesheet's, gated on the centre written
+      // here — a circle with no `cx` paints nothing, which is what a reader whose
+      // scripts never arrived gets (#191).
+      tip?.setAttribute('cx', x.toFixed(2));
+      tip?.setAttribute('cy', at.toFixed(2));
+      knee?.setAttribute('cx', turn.toFixed(2));
+      knee?.setAttribute('cy', y.toFixed(2));
     }
   };
 

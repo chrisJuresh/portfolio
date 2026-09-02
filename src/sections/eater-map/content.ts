@@ -9,16 +9,34 @@ import { PARTS } from './leaders';
  * where the copy came from and what was cut out of it.
  */
 const schema = z.object({
-  /** The Section's accessible name, and the masthead it prints. A plain word
-   *  rather than a Cut Title — #172 measured what a second one would cost. */
+  /**
+   * The Section's accessible name, and the masthead it prints — which is
+   * PROJECTS, the Gallery's own word in the Gallery's own box (#191).
+   *
+   * A plain word rather than a Cut Title: #172 measured what a second one would
+   * cost. It stands where the Panel's masthead stands so the two screens read as
+   * one place, and it is still THIS Section's element — #193 is what makes the
+   * page's PROJECTS one persistent thing, and this slot is what that ticket takes
+   * over.
+   */
   masthead: z.string().min(1),
   /**
-   * Two authored lines, not one string left to wrap. Where the break falls is
-   * part of the composition rather than a consequence of the column's width —
-   * the Projects Panel's rule, and this Section's for the same reason: the two
-   * lines are set solid under a masthead they have to sit square with.
+   * The serif project title, in four authored lines rather than one string left
+   * to wrap. Where the break falls is part of the composition rather than a
+   * consequence of the column's width — the Projects Panel's rule, and this
+   * Section's for the same reason: the lines are set solid under a masthead they
+   * have to sit square with.
+   *
+   * FOUR AND NOT TWO (#191). At the size the reference sets this — 0.566 of
+   * PROJECTS' cap — the two lines this Section shipped with do not fit the
+   * column, and four is the reference's own block.
    */
-  subheading: z.tuple([z.string().min(1), z.string().min(1)]),
+  title: z.tuple([
+    z.string().min(1),
+    z.string().min(1),
+    z.string().min(1),
+    z.string().min(1),
+  ]),
   rail: z.object({
     /** The landmark's name. Spoken, never drawn. */
     label: z.string().min(1),
@@ -99,8 +117,8 @@ const schema = z.object({
 export type EaterMapContent = z.output<typeof schema>;
 
 export const content = defineContent(schema, {
-  masthead: 'Eater Map',
-  subheading: ['Every Eater guide', 'on one map'],
+  masthead: 'Projects',
+  title: ['Every Eater', 'guide in', 'London on', 'one map'],
   rail: {
     label: 'Projects',
     unbuilt: ' — no page yet',

@@ -1,7 +1,7 @@
 import { DESK, open, settle } from '../lib/page.mjs';
 
 /**
- * The Eater Map Section's Exploded View — the eight things about it that break
+ * The Eater Map Section's Exploded View — the eleven things about it that break
  * without anybody noticing.
  *
  * None is aesthetic. Every Token in `src/sections/eater-map/tokens.css` may be set
@@ -162,6 +162,39 @@ import { DESK, open, settle } from '../lib/page.mjs';
  * rather than as three separate descriptions — which is what stops a fourth
  * arrangement growing under one of them.
  *
+ * TEN. PROJECTS STANDS IN THE GALLERY'S OWN BOX, AND THE TWO ARE COMPARED (#191).
+ * The Section's masthead is the word the reader met on the Panel, and the claim
+ * the recomposition makes is that turning the page does not move it. So both
+ * mastheads are read at their own Section's RESTING PLACE — the box within the
+ * Section plus that Section's `scroll-margin-top`, which is what a snap target's
+ * margin means and is what the Panel spends its whole lift on — and compared.
+ * NOTHING IS TYPED: the ticket quotes six measurements off the live page and this
+ * asserts the relationship they are measurements of, so the day the landing
+ * measure moves both move together and this still passes. The INK is compared as
+ * well as the box, because both mastheads are blocks filling their own grid areas
+ * and their rect widths are columns rather than words: a Range over the contents
+ * is the one number a font size, a weight and a tracking all reach.
+ *
+ * ELEVEN. THE TITLE'S TWO RATIOS ARE BETWEEN CAP HEIGHTS, AND A TYPED FONT SIZE FAILS
+ * THEM. The serif title's cap is a share of PROJECTS' cap and its first cap top a
+ * number of PROJECTS cap-heights below the masthead's baseline — both measured off
+ * the two faces' real ink at runtime, because a grotesque draws 0.70 of its em as
+ * cap and this serif 0.67, so the obvious stylesheet spelling lands 4.3% low. Both
+ * are read here the way `title.ts` writes them: the cap at a reference size and
+ * scaled, which is the ink without the rasteriser's grid, and the baseline off a
+ * zero-sized inline-block. **AND THE COMPOSITION AROUND THEM IS ASSERTED TOO** —
+ * the copy at the FOOT of the column PROJECTS heads, the four Points to the RIGHT
+ * of the drawing, and the writing to its left. Each of those is a `grid-area` that
+ * a Variant may move and the shipped page may not.
+ *
+ * AND EVERY RULE ENDS IN A LIT DOT ON ITS PART, checked at each of the three
+ * moments beside the rule it belongs to. Three ways for a dot to be wrong and each
+ * fails separately: not drawn at all — an SVG circle with no centre sits at the
+ * overlay's origin, and the radius is gated on the centre precisely so a
+ * scriptless reader gets nothing rather than four dots in the corner — drawn away
+ * from the terminus, or drawn with no radius or in a colour that rasterises to
+ * nothing, which is a dot that is there and invisible.
+ *
  * WHAT IS NOT HERE. That the Cards render at all, that the map is the right map,
  * that the tilt is a good tilt, and that any of it looks right: a person opening
  * the page sees all four. And the Slab's bytes — `assets` already asserts that
@@ -297,6 +330,36 @@ const SAME_MAP = 0.005;
  *  counter-scale is exercised rather than merely present. #187 adopts 1.10 for the
  *  rail popup; any number that is not 1 asks the same question. */
 const BOOSTED = 1.1;
+/** How far PROJECTS may stand from where the Gallery's own masthead stands, in
+ *  px, measured at each Section's resting place.
+ *
+ *  THE WHOLE POINT IS THAT NO NUMBER IS TYPED HERE (#191). The Eater Map's
+ *  masthead is the same word in the same face at the same size as the Projects
+ *  Panel's, standing at the same place on the screen — so this Check reads BOTH
+ *  and compares them, and the acceptance criterion is an equality rather than the
+ *  six measurements the ticket happens to quote. A pixel is the two Sections'
+ *  own sub-pixel rounding: measured, they differ by 0.02px at 1600x900, and the
+ *  mutation that takes the Section back off the landing measure misses by 33px
+ *  down and 33px across. */
+const GALLERY = 1;
+
+/** How far the title's two ratios may sit from the Tokens that state them, as a
+ *  share of each.
+ *
+ *  TIGHT ENOUGH THAT A TYPED FONT SIZE FAILS, which is what the acceptance
+ *  criterion asks for. The masthead's grotesque draws 0.7006 of its em as cap and
+ *  the title's serif 0.6702, so `font-size: calc(0.566 * <the masthead>)` — the
+ *  obvious stylesheet spelling, and the one the Section falls back to with no
+ *  script — lands the cap ratio at 0.5414, which is 4.3% low. Both faces' ink is
+ *  measured at a reference size and scaled, so what is left on this side is
+ *  arithmetic rather than the rasteriser's grid: measured at four windows across
+ *  the band, both ratios came back exact to three figures. */
+const RATIO = 0.02;
+
+/** How far the copy's foot may sit from the foot of the column it is at the
+ *  foot OF, in px. The two are the same grid area, one end-aligned; this is
+ *  rounding. */
+const FOOT = 1;
 
 async function atWindow(browser, origin, viewport) {
   const { context, page } = await open(browser, origin, { viewport });
@@ -345,6 +408,41 @@ async function atWindow(browser, origin, viewport) {
           ? document.querySelector('.eater-map__plane')
           : document.querySelector(`[data-eater-map-card="${part}"]`);
 
+      // A COLOUR, RASTERISED RATHER THAN COMPARED AS A SPELLING, and read for its
+      // ALPHA rather than for its channels: what is asserted about a dot is that
+      // it PAINTS, and a `fill` that computes to a fully transparent colour is a
+      // dot that is drawn and invisible. `ground` reads the page's ground the same
+      // way and says why a spelling is not a colour.
+      const paint = (() => {
+        const canvas = document.createElement('canvas');
+        canvas.width = canvas.height = 1;
+        const ink = canvas.getContext('2d');
+        return (colour) => {
+          if (!ink || !colour || colour === 'none') return null;
+          ink.clearRect(0, 0, 1, 1);
+          ink.fillStyle = colour;
+          ink.fillRect(0, 0, 1, 1);
+          return ink.getImageData(0, 0, 1, 1).data[3];
+        };
+      })();
+
+      /** One of the two dots on a rule: where it is, how big, and whether it
+       *  paints. `r` is read computed, because the radius is a Token spent by the
+       *  stylesheet and the attribute is never set. */
+      const dot = (element, frame) => {
+        if (!element) return null;
+        const style = getComputedStyle(element);
+        const has = element.hasAttribute('cx');
+        const box = element.getBoundingClientRect();
+        return {
+          drawn: has,
+          x: has ? round(box.left + box.width / 2 - frame.left) : null,
+          y: has ? round(box.top + box.height / 2 - frame.top) : null,
+          r: Number.parseFloat(style.r),
+          alpha: paint(style.fill),
+        };
+      };
+
       const overlay = document.querySelector('[data-eater-map-leaders]');
       const rules = () => {
         if (!overlay) return [];
@@ -354,6 +452,8 @@ async function atWindow(browser, origin, viewport) {
           const anchor = document.querySelector(`[data-eater-map-anchor="${part}"]`);
           const hook = document.querySelector(`[data-eater-map-hook="${part}"]`);
           const on = partNamed(part);
+          const tip = dot(overlay.querySelector(`[data-eater-map-tip="${part}"]`), frame);
+          const knee = dot(overlay.querySelector(`[data-eater-map-knee="${part}"]`), frame);
           // The drawn geometry, exactly as the overlay carries it.
           const drawn = (line.getAttribute('points') ?? '')
             .trim()
@@ -368,6 +468,8 @@ async function atWindow(browser, origin, viewport) {
           return {
             part,
             drawn,
+            tip,
+            knee,
             anchor: at ? { x: round(at.left - frame.left), y: round(at.top - frame.top) } : null,
             hookY: hook ? round(hook.getBoundingClientRect().top - frame.top) : null,
             named: Boolean(on),
@@ -630,6 +732,111 @@ async function atWindow(browser, origin, viewport) {
           drawn: round(map.getBoundingClientRect().width),
         }));
 
+      // ---- PROJECTS, AND THE GALLERY'S OWN BOX (#191) -----------------------
+      // WHERE A MASTHEAD STANDS AT ITS SECTION'S RESTING PLACE, which is the only
+      // frame in which the two are comparable: they are one screen apart in the
+      // document, so a comparison in document coordinates says only that the
+      // Sections are in different places. A Section comes to rest with its top
+      // edge `scroll-margin-top` below the scrollport's — that is what the margin
+      // MEANS on a snap target, and the Panel spends its whole lift on it so the
+      // word's cap top lands where the landing measure says. So the box a reader
+      // sees at rest is the box within the Section plus that margin, and it is
+      // arithmetic on two rects rather than a scroll this Check would then have to
+      // undo.
+      //
+      // AND THE INK IS COMPARED AS WELL AS THE BOX. Both mastheads are block
+      // elements filling their own grid areas — four twelfths here against six
+      // there — so their `getBoundingClientRect().width` is the COLUMN and says
+      // nothing about the word. A Range over the element's contents is the word's
+      // own advance, which is what a font size, a weight and a tracking add up to:
+      // it is the one number that fails if any of the three drifts out of
+      // agreement with the Panel's.
+      const restBox = (element, host) => {
+        if (!element || !host) return null;
+        const box = element.getBoundingClientRect();
+        const at = host.getBoundingClientRect();
+        const port = Number.parseFloat(getComputedStyle(host).scrollMarginTop) || 0;
+        const range = document.createRange();
+        range.selectNodeContents(element);
+        return {
+          x: round(box.x),
+          y: round(box.y - at.y + port),
+          h: round(box.height),
+          ink: round(range.getBoundingClientRect().width),
+        };
+      };
+      const eaterMast = document.querySelector('[data-eater-map-masthead]');
+      const galleryMast = document.querySelector('.projects-panel__masthead');
+      const masthead = {
+        here: restBox(eaterMast, document.querySelector('.eater-map')),
+        gallery: restBox(galleryMast, document.querySelector('.projects-panel')),
+        says: (eaterMast?.textContent ?? '').trim().toUpperCase(),
+        gallerySays: (galleryMast?.textContent ?? '').trim().toUpperCase(),
+      };
+
+      // ---- the serif title, against the two ratios that state it ------------
+      // MEASURED THE WAY `title.ts` WRITES IT — a face's cap read at a reference
+      // size and scaled, rather than read at the size it is drawn at. Both are the
+      // ink; only one of them is free of the rasteriser's grid, which is 1.4% at
+      // the short corner of the band and a third of the whole difference this
+      // assertion exists to see.
+      const titleEl = document.querySelector('[data-eater-map-title]');
+      const capRatio = (element) => {
+        const canvas = document.createElement('canvas');
+        const pen = canvas.getContext('2d');
+        if (!pen) return Number.NaN;
+        const style = getComputedStyle(element);
+        pen.font = `${style.fontStyle} ${style.fontWeight} 1000px ${style.fontFamily}`;
+        return pen.measureText('H').actualBoundingBoxAscent / 1000;
+      };
+      /** The baseline of an element's FIRST line, which is the bottom edge of a
+       *  zero-sized inline-block sitting on it. */
+      const baselineOf = (element) => {
+        const probe = document.createElement('span');
+        probe.style.cssText = 'display:inline-block;width:0;height:0';
+        element.prepend(probe);
+        const on = probe.getBoundingClientRect().bottom;
+        probe.remove();
+        return on;
+      };
+      const title =
+        eaterMast && titleEl
+          ? (() => {
+              const mastCap =
+                capRatio(eaterMast) * Number.parseFloat(getComputedStyle(eaterMast).fontSize);
+              const ownCap =
+                capRatio(titleEl) * Number.parseFloat(getComputedStyle(titleEl).fontSize);
+              const style = getComputedStyle(document.querySelector('.eater-map'));
+              return {
+                cap: ownCap / mastCap,
+                drop: (baselineOf(titleEl) - ownCap - baselineOf(eaterMast)) / mastCap,
+                wantCap: Number.parseFloat(style.getPropertyValue('--eater-map-title-cap')),
+                wantDrop: Number.parseFloat(style.getPropertyValue('--eater-map-title-drop')),
+                lines: titleEl.querySelectorAll('span').length,
+              };
+            })()
+          : null;
+
+      // ---- and where the three standing blocks stand ------------------------
+      const block = (selector) => {
+        const element = document.querySelector(selector);
+        if (!element) return null;
+        const box = element.getBoundingClientRect();
+        return {
+          left: round(box.left),
+          right: round(box.right),
+          top: round(box.top),
+          bottom: round(box.bottom),
+        };
+      };
+      const columns = {
+        inner: block('.eater-map__inner'),
+        head: block('.eater-map__head'),
+        copy: block('.eater-map__copy'),
+        stage: block('.eater-map__stage'),
+        points: block('.eater-map__points'),
+      };
+
       const was = { progress: lift.progress(), scroll: window.scrollY };
       kernel.hold?.();
       try {
@@ -726,6 +933,9 @@ async function atWindow(browser, origin, viewport) {
           raisedHidden,
           reachable,
           announced,
+          masthead,
+          title,
+          columns,
           overlay: overlay
             ? {
                 spoken: overlay.getAttribute('aria-hidden') !== 'true',
@@ -815,6 +1025,132 @@ async function atWindow(browser, origin, viewport) {
           `${where}: the ${card.name} Card is in the same place at both ends of the Lift — ` +
             `${card.drawn}x${card.height} at ${card.x},${card.y} down and ${up.drawn}x${up.height} at ` +
             `${up.x},${up.y} raised. The Exploded View is not exploding this one`,
+        );
+      }
+    }
+
+    // ---- PROJECTS stands in the Gallery's own box (#191) ---------------------
+    // The first thing the reader sees is the word they were already looking at,
+    // and the claim is that it has not moved. Both mastheads are read at their own
+    // Section's resting place and compared, so there is no typed number here to go
+    // stale — the ticket quotes six measurements off the live page at 1600x900 and
+    // this asserts the relationship they are measurements OF.
+    const { here, gallery } = seen.masthead;
+    if (!here || !gallery) {
+      failures.push(
+        `${where}: there is no ${here ? 'Projects Panel' : 'Eater Map'} masthead to compare — the word ` +
+          'this Section prints is the Gallery\'s own, and nothing about it standing in the Gallery\'s box ' +
+          'was asserted',
+      );
+    } else {
+      if (seen.masthead.says !== seen.masthead.gallerySays) {
+        failures.push(
+          `${where}: this Section's masthead reads "${seen.masthead.says}" and the Gallery's reads ` +
+            `"${seen.masthead.gallerySays}" — the reader turning onto this screen is meant to be looking ` +
+            'at the word they were already looking at',
+        );
+      }
+      const apart = Math.max(
+        Math.abs(here.x - gallery.x),
+        Math.abs(here.y - gallery.y),
+        Math.abs(here.h - gallery.h),
+        Math.abs(here.ink - gallery.ink),
+      );
+      if (!Number.isFinite(apart)) {
+        failures.push(
+          `${where}: the two mastheads cannot be compared — ${JSON.stringify(here)} here against ` +
+            `${JSON.stringify(gallery)} on the Gallery. Nothing about the word standing still was asserted`,
+        );
+      } else if (apart > GALLERY) {
+        failures.push(
+          `${where}: PROJECTS stands at ${here.x},${here.y} — ${here.ink}px of ink in a ${here.h}px line — ` +
+            `where the Gallery's masthead stands at ${gallery.x},${gallery.y} with ${gallery.ink}px in ` +
+            `${gallery.h}px, ${apart.toFixed(2)}px apart at the two resting places. It is the same word in ` +
+            'the same box on both screens, so turning the page does not move it',
+        );
+      }
+    }
+
+    // ---- and the serif title is sized and placed off its ink -----------------
+    if (!seen.title) {
+      failures.push(
+        `${where}: the Section has no serif title under PROJECTS, so neither ratio could be read`,
+      );
+    } else {
+      for (const [what, got, want] of [
+        ["the title's cap height, as a share of PROJECTS' cap", seen.title.cap, seen.title.wantCap],
+        [
+          "the title's first cap top below the masthead's baseline, in PROJECTS cap-heights",
+          seen.title.drop,
+          seen.title.wantDrop,
+        ],
+      ]) {
+        if (!Number.isFinite(got) || !Number.isFinite(want) || want === 0) {
+          failures.push(
+            `${where}: ${what} is ${got} against a declared ${want} — nothing about it was asserted`,
+          );
+          continue;
+        }
+        const off = Math.abs(got - want) / Math.abs(want);
+        if (off > RATIO) {
+          failures.push(
+            `${where}: ${what} is ${got.toFixed(4)} against the ${want} this Section declares — ` +
+              `${(off * 100).toFixed(1)}% out. Both ratios are derived from the masthead's real INK at ` +
+              'runtime, and a font size proportional to the masthead instead lands 4% low because a ' +
+              "grotesque's cap is not a serif's",
+          );
+        }
+      }
+    }
+
+    // ---- the copy at the foot of the left column, the Points to the right ----
+    const { inner, head: writing, copy, stage, points } = seen.columns;
+    if (!inner || !writing || !copy || !stage || !points) {
+      failures.push(
+        `${where}: the composition is missing its ${
+          [
+            [inner, 'inner'],
+            [writing, 'head'],
+            [copy, 'copy'],
+            [stage, 'stage'],
+            [points, 'points'],
+          ]
+            .filter(([box]) => !box)
+            .map(([, name]) => name)
+            .join(', ')
+        } — nothing about where the three blocks stand was asserted`,
+      );
+    } else {
+      if (Math.abs(copy.left - writing.left) > FOOT) {
+        failures.push(
+          `${where}: the copy's left edge is at ${copy.left} and the head's at ${writing.left} — the copy is ` +
+            'at the foot of the column PROJECTS heads, which is the same column',
+        );
+      }
+      if (Math.abs(copy.bottom - inner.bottom) > FOOT) {
+        failures.push(
+          `${where}: the copy ends at y=${copy.bottom} in a composition that ends at y=${inner.bottom} — ` +
+            'it stands at the FOOT of its column, and a copy that floats above it is the top-right band ' +
+            'this Section shipped with by another route',
+        );
+      }
+      if (!(copy.top >= writing.bottom - FOOT)) {
+        failures.push(
+          `${where}: the copy starts at y=${copy.top} and the title ends at y=${writing.bottom} — the head and ` +
+            'the copy are the two ENDS of one column and are printed over each other',
+        );
+      }
+      if (!(points.left >= stage.right - FOOT)) {
+        failures.push(
+          `${where}: the four Points start at x=${points.left} and the stage ends at x=${stage.right} — they ` +
+            'stand to the RIGHT of the drawing they annotate, which is what moving them across the page ' +
+            'was for',
+        );
+      }
+      if (!(writing.right <= stage.left + FOOT)) {
+        failures.push(
+          `${where}: the writing ends at x=${writing.right} and the stage starts at x=${stage.left} — the ` +
+            'drawing has the middle of the screen and the writing the left of it',
         );
       }
     }
@@ -1216,6 +1552,59 @@ async function atWindow(browser, origin, viewport) {
             `${where}, ${when}: the ${rule.part} rule's anchor is not on the part it names — it is drawn ` +
               'from a corner of something else, so the correspondence is wrong wherever it looks right',
           );
+        }
+
+        // ---- AND THE RULE ENDS IN A LIT DOT ON THE PART (#191) --------------
+        // Three things about it, and each fails a different way. It is DRAWN —
+        // an SVG circle with no centre sits at the overlay's origin, and the
+        // stylesheet gates its radius on the centre precisely so that a
+        // scriptless reader gets nothing rather than four dots in the corner, so
+        // "not drawn" and "drawn in the wrong place" are two different faults. It
+        // is ON the terminus, read off the circle's own painted box rather than
+        // off the attribute the script wrote, which is what makes this a claim
+        // about the drawing instead of about the write. And it PAINTS: a radius
+        // of nothing and a fill that computes transparent are both a dot that is
+        // there and invisible, and both would leave every assertion above passing.
+        const [turnX, turnY] = rule.drawn[1] ?? rule.drawn[0];
+        for (const [name, mark, on] of [
+          ['lit dot', rule.tip, { x: tipX, y: tipY }],
+          ['shoulder dot', rule.knee, { x: turnX, y: turnY }],
+        ]) {
+          if (!mark) {
+            failures.push(
+              `${where}, ${when}: the ${rule.part} rule has no ${name} — a leader line that reaches its ` +
+                'part and stops is the fault the design reference has, and the dot is what says "this, ' +
+                'here, is the thing the number is about"',
+            );
+            continue;
+          }
+          if (!mark.drawn) {
+            failures.push(
+              `${where}, ${when}: the ${rule.part} rule's ${name} carries no centre, so it is not drawn ` +
+                'at all',
+            );
+            continue;
+          }
+          const off = Math.hypot(mark.x - on.x, mark.y - on.y);
+          if (!Number.isFinite(off) || off > ATTACHED) {
+            failures.push(
+              `${where}, ${when}: the ${rule.part} rule's ${name} is painted at ${mark.x},${mark.y} and ` +
+                `the rule's own point is at ${on.x},${on.y} — ${Number.isFinite(off) ? `${off.toFixed(1)}px` : 'no distance'} ` +
+                'apart. The dot is a vertex of the rule and not a second opinion about where it goes',
+            );
+          }
+          if (!(mark.r > 0)) {
+            failures.push(
+              `${where}, ${when}: the ${rule.part} rule's ${name} has a radius of ${mark.r} — it is in the ` +
+                'document and paints nothing',
+            );
+          }
+          if (!(mark.alpha > 0)) {
+            failures.push(
+              `${where}, ${when}: the ${rule.part} rule's ${name} is filled with something that rasterises ` +
+                `to alpha ${mark.alpha} — a dot drawn in a transparent colour is a dot nobody can see`,
+            );
+          }
         }
       }
     }
@@ -1813,8 +2202,10 @@ async function everyReaderGetsIt(browser, origin, ordinary) {
 export const check = {
   name: 'eater-map',
   title:
-    'the Cards lie on the Slab at its own scale, come off it and go back, are joined to their numbers, ' +
-    'are only a picture, and lie flat and full-bleed below the band',
+    'PROJECTS stands in the Gallery’s own box with the serif title sized off its ink, the copy at the ' +
+    'foot and the Points to the right; the Cards lie on the Slab at its own scale, come off it and go ' +
+    'back, are joined to their numbers by rules that end in a lit dot, are only a picture, and lie flat ' +
+    'and full-bleed below the band',
 
   /** @param {{ browser: import('playwright').Browser, origin: string }} ctx */
   async run({ browser, origin }) {

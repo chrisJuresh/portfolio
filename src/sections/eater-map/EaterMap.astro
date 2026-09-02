@@ -1,11 +1,16 @@
 ---
-// The Eater Map Section: the Rail, a plain masthead and its two authored lines,
-// the copy, the four numbered points, and the Exploded View — the captured Slab
-// tilted under one camera with the app's own three surfaces raised off it.
-// NOTES.md carries the reasoning: why the masthead is a plain word rather than a
-// Cut Title, which of the Kernel's lengths this Section reads and why that is
-// not joining the landing measure, and the two pieces of arithmetic the stage
-// turns on.
+// The Eater Map Section, recomposed to the reference by #191: three standing
+// blocks rather than a band of writing over a picture. The Rail; then the word
+// PROJECTS at the head of the left column — the Gallery's own masthead, in the
+// Gallery's own box — with the serif project title under it and the copy at that
+// column's foot; the Exploded View down the middle, the captured Slab standing
+// still under one parallel projection with the app's own three surfaces raised off
+// it; and the four numbered points down the right edge, each joined to the part it
+// names by a rule that ends in a lit dot.
+//
+// NOTES.md carries the reasoning: how the masthead hits the Gallery's box and why
+// that means this Section HAS joined the landing measure, why the title's two
+// ratios need a script, and the two pieces of arithmetic the stage turns on.
 //
 // THE MARKUP RESTS IN THE RAISED STATE, and that inverts the obvious build
 // (#177). The Lift animates FROM flat TOWARDS raised, so the finished Exploded
@@ -14,6 +19,7 @@
 // script. Flat is `--eater-map-lift: 0` and it is where the motion begins.
 import { CARDS } from './cards';
 import { content } from './content';
+import { markFor } from './icons';
 import { SLAB_PART } from './leaders';
 import { SLAB } from './slab';
 // The Eater app's own stylesheet, vendored with the Cards (#174). A plain CSS
@@ -68,10 +74,24 @@ import './tokens.css';
     </ul>
   </nav>
   <div class="eater-map__inner">
+    {/* PROJECTS, IN THE GALLERY'S OWN BOX (#191). The word the reader met on the
+        Panel, drawn again here at the landing's own size and standing at the
+        landing's own margin — so turning onto this screen does not move it. It is
+        still THIS Section's element and this Section's accessible name: making the
+        page's PROJECTS one persistent thing is #193, and the slot it takes over is
+        this one.
+
+        THE SERIF TITLE UNDER IT IS SIZED AND PLACED BY `title.ts`, off the
+        masthead's real ink, because the two ratios the reference states are
+        between CAP HEIGHTS and a stylesheet can only divide font sizes. The
+        stylesheet's fallbacks are a whole title about four per cent small rather
+        than a hole, which is what a reader whose scripts never arrived gets. */}
     <header class="eater-map__head">
-      <h2 class="eater-map__masthead" id="eater-map-masthead">{content.masthead}</h2>
-      <p class="eater-map__sub">
-        {content.subheading.map((line) => (
+      <h2 class="eater-map__masthead" id="eater-map-masthead" data-eater-map-masthead>
+        {content.masthead}
+      </h2>
+      <p class="eater-map__title" data-eater-map-title>
+        {content.title.map((line) => (
           <span>{line}</span>
         ))}
       </p>
@@ -104,7 +124,7 @@ import './tokens.css';
         class="eater-map__slab"
         data-eater-map-watch
         data-eater-map-slab
-        style={`--eater-map-app-w: ${SLAB.viewport.width}px; --eater-map-slab-ratio: ${SLAB.pixels.width} / ${SLAB.pixels.height}`}
+        style={`--eater-map-app-w: ${SLAB.viewport.width}px; --eater-map-slab-ratio: ${SLAB.pixels.width} / ${SLAB.pixels.height}; --eater-map-slab-tall: ${SLAB.pixels.height / SLAB.pixels.width}`}
       >
         <div class="eater-map__plane" data-eater-map-plane>
           {/* `lazy`, so the Slab's quarter of a megabyte arrives as the reader
@@ -185,8 +205,29 @@ import './tokens.css';
         parsing a length out of a custom property, which computes to its own
         token stream rather than to pixels. leaders.ts. */}
     <ol class="eater-map__points" data-eater-map-watch>
-      {content.points.map((point) => (
+      {content.points.map((point, at) => (
         <li>
+          {/* THE NUMBER IS THE ORDINAL AND NOT A WORD, so it is derived from the
+              list's own order rather than authored beside each point: an <ol>
+              whose numbers are typed is two orders to keep in step, and the
+              Editor would be offering a figure that means "which one this is".
+              Drawn rather than left to a marker because a `list-style` number is
+              not a thing a composition can set in the accent at its own size.
+
+              `aria-hidden` on both marks in this row. The list is an <ol>, so a
+              reader listening is already told which of four this is, and the icon
+              says what the title beside it says. */}
+          <div class="eater-map__mark" aria-hidden="true">
+            <span class="eater-map__number">{`0${at + 1}.`}</span>
+            <svg
+              class="eater-map__icon"
+              viewBox="0 0 24 24"
+              focusable="false"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              set:html={markFor(point.part)}
+            />
+          </div>
           <h3>{point.title}</h3>
           <p>{point.figure}</p>
           <span class="eater-map__hook" data-eater-map-hook={point.part} aria-hidden="true" />
@@ -212,7 +253,18 @@ import './tokens.css';
         is not also in the text. NOTES.md. */}
     <svg class="eater-map__leaders" data-eater-map-leaders aria-hidden="true" focusable="false">
       {content.points.map((point) => (
-        <polyline data-eater-map-leader={point.part} />
+        <Fragment>
+          <polyline data-eater-map-leader={point.part} />
+          {/* THE SHOULDER'S DOT AND THE PART'S. Two marks per rule, drawn by the
+              same module that draws the rule and for the same reason: where a
+              projected corner landed is a fact only the compositor has. Both
+              carry no `cx` until a script arrives, and an SVG circle with no
+              centre and no radius paints nothing — so a reader whose scripts
+              never came gets the Exploded View with no rules and no dots over
+              it, which is the state the markup already reads as. */}
+          <circle data-eater-map-knee={point.part} />
+          <circle data-eater-map-tip={point.part} />
+        </Fragment>
       ))}
     </svg>
   </div>
@@ -260,6 +312,33 @@ import './tokens.css';
        two above it and is read by the stage rather than by this stylesheet. 1 in
        the band, 0 in the collapse — see there. */
     --eater-map-solid: 1;
+
+    /* ---- THE MASTHEAD'S SIZE, WHICH IS ONE NUMBER WITH TWO ANSWERS ----------
+       Inside the band it is the LANDING's, so PROJECTS occupies the Projects
+       Panel masthead's own box to the pixel and the word does not move when the
+       reader turns onto this screen (#191); out of the band there is no landing
+       to read and no page turn to stand still across, so it is the Section's own
+       clamp. Declared here as one name rather than as two `font-size` rules,
+       because three other lengths on this composition are shares of it and would
+       each need the same pair.
+
+       NOT A TOKEN, and that is the point of the split: a size the author could
+       drag is exactly the number that takes the word out of the box it is meant
+       to be occupying. The three the author still has — the leading, the weight
+       and the tracking — are in tokens.css, set to the Panel's own values, and
+       the `eater-map` Check compares the two BOXES rather than any of them.
+
+       THE TWO LITERALS BELOW ARE FACE METRICS AND NOT CHOICES, which is why they
+       are not Tokens either: Host Grotesk's cap is 0.700 of its em and its cap
+       top sits 0.080 below its line box's top edge at this leading. The Kernel
+       writes the same two for the landing and the Panel writes them for itself;
+       these are the third copy, and they exist so the title's FALLBACK — the one
+       a reader with no script gets — can be stated at all. `title.ts` measures
+       the real ink and overrides both. */
+    --eater-map-mast: var(--eater-map-masthead-size);
+    --eater-map-mast-cap: calc(0.7 * var(--eater-map-mast));
+    --eater-map-mast-top: calc(0.08 * var(--eater-map-mast));
+
     box-sizing: border-box;
     display: grid;
     /* The Rail's column IS the page's left margin, the way it is in the Projects
@@ -269,10 +348,11 @@ import './tokens.css';
     column-gap: var(--eater-map-gap);
     /* STRETCH AND NOT CENTRE, and it is the difference between a composition
        that fits the screen and one that is taller than it. The Rail is spread
-       `space-between` down its whole column and the stage is row two's
-       remainder, so both need the Section's own height handed to them — centring
-       would size the box to its content instead, and the content would then be
-       whatever the four points and a picture-shaped box happen to add up to. */
+       `space-between` down its whole column, the stage is the one row's whole
+       height, and the four Points spread themselves down theirs — so all three
+       need the Section's own height handed to them. Centring would size the box to
+       its content instead, and the content would then be whatever the four points
+       and a picture-shaped box happen to add up to. */
     align-items: stretch;
     min-height: var(--fold);
     padding-block: var(--eater-map-inset);
@@ -345,7 +425,22 @@ import './tokens.css';
     white-space: nowrap;
   }
 
-  /* ---- the composition: twelve columns, two rows ------------------------- */
+  /* ---- the composition: twelve columns and ONE row ------------------------
+     THREE STANDING BLOCKS AND NOT TWO STACKED ONES (#191). The writing takes the
+     left four columns, the drawing the middle six, and the four numbered Points
+     the right two — each of them the whole height of the Section, and the two
+     things in the left column pinned to its two ends: PROJECTS and the title at
+     the head, the copy at the foot. That is the reference's own arrangement and it
+     replaces the two-row grid the Section shipped with, where the writing was a
+     band across the top and the picture everything under it.
+
+     WHY THE MIDDLE SIX ARE WHERE THEY ARE. The drawing is centred in its column
+     and its projected outline is WIDER than the column — a Slab as tall as the row
+     projects to about 770px across at 1600x900 against a 731px column — so what
+     the six columns actually buy is the CENTRE of the free space between the
+     writing and the Points, which is where the outline hangs symmetrically. Give
+     the stage a column count that is not centred between the other two and the
+     drawing leans into one of them. */
   .eater-map__inner {
     /* The leader lines' overlay is absolute against THIS box, which is what
        makes every coordinate in leaders.ts independent of the scroll — a rule
@@ -355,20 +450,22 @@ import './tokens.css';
     position: relative;
     display: grid;
     grid-template-columns: repeat(12, minmax(0, 1fr));
-    /* THE HEAD IS ITS OWN SIZE AND THE PICTURE IS EVERYTHING LEFT. `minmax(0,
-       1fr)` and not `1fr`: a bare `1fr` floors at the row's min-content, so the
-       four points and the box would push the Section past the fold rather than
-       being given what the screen has. NOTES.md. */
-    grid-template-rows: auto minmax(0, 1fr);
+    /* ONE ROW, AND `minmax(0, 1fr)` RATHER THAN `1fr`: a bare `1fr` floors at the
+       row's min-content, so the four points and the box would push the Section
+       past the fold rather than being given what the screen has. NOTES.md. */
+    grid-template-rows: minmax(0, 1fr);
     column-gap: var(--eater-map-gutter);
-    /* The one seam this box owns is the break between the writing and the
-       picture, which is the biggest step on the ladder. */
-    row-gap: var(--eater-map-act);
   }
 
+  /* THE TWO ENDS OF THE LEFT COLUMN, and they are one grid area used twice
+     rather than two rows. The head is start-aligned and the copy end-aligned in
+     the SAME cell, which is what "the copy at the foot of the left column" is —
+     the drawing beside it is the whole height of the Section, so a row boundary
+     between the two would be a line across the composition that nothing else
+     answers to. */
   .eater-map__head {
-    grid-area: 1 / 1 / 2 / 7;
-    align-self: end;
+    grid-area: 1 / 1 / 2 / 5;
+    align-self: start;
   }
 
   /* ---- how the capitalised things are set --------------------------------
@@ -376,10 +473,10 @@ import './tokens.css';
      the hyphen in "offline-first" off its own baseline, and the figures are
      sentences rather than labels. */
   .eater-map__masthead,
-  .eater-map__sub,
+  .eater-map__title,
   .eater-map__rail-item,
-  /* Each row is the containing block for its own hook, so `left: 100%` is this
-     column's right edge rather than the page's. */
+  /* Each row is the containing block for its own hook, so `right: 100%` is this
+     column's left edge rather than the page's. */
   .eater-map__points li {
     position: relative;
   }
@@ -390,14 +487,19 @@ import './tokens.css';
      of parsing `0.9rem` out of a custom property, which is all a custom
      property's computed value ever is.
 
-     Half a line of the title down from the row's top, so a rule leaves the
-     TITLE rather than the middle of a row whose height is however long its
-     figure ran. Derived and not a Token: it is a coordinate in the composition
-     rather than a number the author chooses (ADR 0004). */
+     ON THE ROW'S LEFT EDGE AND AT ITS TOP, which is the whole of what moving the
+     Points across the page cost the leader lines (#191). `leaders.ts` decides
+     which EDGE of this box a rule leaves from by which side of it the part is on,
+     so the shoulder turned round on its own; which edge of the ROW the box stands
+     on is a composition decision and this is it. And `top: 0` rather than half a
+     line down, because the row's own rule is drawn across its top edge now — so
+     the leader continues that line out of the Point rather than leaving from the
+     middle of it. Derived and not a Token: a coordinate in the composition rather
+     than a number the author chooses (ADR 0004). */
   .eater-map__hook {
     position: absolute;
-    left: 100%;
-    top: calc(var(--eater-map-point-size) * var(--eater-map-point-leading) / 2);
+    right: 100%;
+    top: 0;
     width: var(--eater-map-leader-reach);
     height: 0;
     pointer-events: none;
@@ -408,39 +510,100 @@ import './tokens.css';
     font-feature-settings: 'case' 1;
   }
 
-  /* A PLAIN MASTHEAD, AND IT PAINTS. The Projects Panel's is hidden because the
-     Front Screen's Cut Title is already that Section's head; nothing is cut into
-     this one's slot, because #172 measured what a second landing solve would
-     cost and the answer was the Panel's whole marble corner. NOTES.md. */
+  /* A PLAIN MASTHEAD, AND IT PAINTS — and since #191 the word it paints is
+     PROJECTS, in the Gallery's own box. The Projects Panel's own masthead is
+     hidden because the Front Screen's Cut Title is already that Section's head;
+     nothing is cut into this one's slot, because #172 measured what a second
+     landing solve would cost and the answer was the Panel's whole marble corner.
+     So this element is a second DRAWING of the word rather than a second Cut
+     Title, standing where the first one stands at rest — and #193 is what makes
+     the two one element. NOTES.md.
+
+     `text-transform` rather than an authored capital, which is the Panel's rule
+     too: the word is `Projects` in the Content and the composition is what shouts
+     it. `case` so the tracking is the caps' own. */
   .eater-map__masthead {
     margin: 0;
-    font-size: var(--eater-map-masthead-size);
+    font-size: var(--eater-map-mast);
     font-weight: var(--eater-map-masthead-weight);
     line-height: var(--eater-map-masthead-leading);
     letter-spacing: var(--eater-map-masthead-tracking);
+    text-transform: uppercase;
+    font-feature-settings: 'case' 1;
     color: var(--ink);
   }
 
-  .eater-map__sub {
-    margin: var(--eater-map-close) 0 0;
-    font-size: var(--eater-map-sub-size);
+  /* THE SERIF PROJECT TITLE, AND BOTH ITS LENGTHS ARE FALLBACKS.
+     `title.ts` writes `--eater-map-title-size` and `--eater-map-title-lead` off
+     the two faces' real ink, which is the only way to hold a ratio between CAP
+     HEIGHTS — the two Tokens the fallbacks below spend are ratios, and a
+     grotesque's cap is about 0.70 of its em against this serif's 0.67.
+
+     WHAT THE FALLBACKS ARE, so the four per cent is a known quantity rather than
+     a surprise. The size applies the cap ratio to the masthead's SIZE instead of
+     to its cap, which draws the title about 4% short. The lead puts the first
+     LINE BOX where the first CAP TOP belongs — the masthead's baseline stands
+     `leading − top − cap` above its own box bottom, and that difference is what
+     the drop is measured from — so it ignores the title's own half-leading, which
+     is a few pixels at this size. Both are a whole composition rather than a hole,
+     which is the thing a reader with no script is owed.
+
+     `--face-year` is the Kernel's role for Source Serif 4: the most upright and
+     least written of the page's three serifs, and the one whose caps sit squarest
+     under a grotesque masthead — which is what the `sub-source-serif` Variant
+     argued for and what #191 adopted. */
+  .eater-map__title {
+    margin: var(
+        --eater-map-title-lead,
+        calc(
+          var(--eater-map-title-drop) * var(--eater-map-mast-cap) -
+            (
+              var(--eater-map-masthead-leading) * var(--eater-map-mast) -
+                var(--eater-map-mast-top) - var(--eater-map-mast-cap)
+            )
+        )
+      )
+      0 0;
+    font-family: var(--face-year);
+    font-size: var(
+      --eater-map-title-size,
+      calc(var(--eater-map-title-cap) * var(--eater-map-mast))
+    );
     font-weight: 400;
-    line-height: var(--eater-map-sub-leading);
-    color: color-mix(in oklab, var(--ink), transparent var(--eater-map-muted-veil));
+    line-height: var(--eater-map-title-leading);
+    letter-spacing: var(--eater-map-title-tracking);
+    text-transform: uppercase;
+    font-feature-settings: 'case' 1;
+    /* Near-white rather than the ink, so the masthead above it is still the
+       loudest thing on the screen and the two read as a title and its project. */
+    color: color-mix(in oklab, var(--ink), transparent var(--eater-map-title-veil));
   }
 
   /* `block` on the spans rather than a <br>, so the break is a property of the
-     composition and not a character a screen reader has to read around. */
-  .eater-map__sub span {
+     composition and not a character a screen reader has to read around. And
+     `nowrap`, because the four lines are AUTHORED: a line re-broken by the column
+     is a fifth line the composition never asked for, and the block is set to fit
+     the column at the size the ratios give it. */
+  .eater-map__title span {
     display: block;
+    white-space: nowrap;
   }
 
+  /* AT THE FOOT OF THE LEFT COLUMN (#191), which is the same grid area the head
+     is in, end-aligned instead of start-aligned. It used to be a band across the
+     top right, opposite the masthead; the reference reads down the left edge — the
+     title at the top, the description at the bottom — and the drawing has the
+     middle of the screen.
+
+     THE RULE GOES WITH IT. A border on the left edge divided the copy from the
+     masthead beside it; there is nothing beside it now, and the seam worth drawing
+     is the one between the writing and the air above it. */
   .eater-map__copy {
-    grid-area: 1 / 7 / 2 / 13;
+    grid-area: 1 / 1 / 2 / 5;
     align-self: end;
-    border-left: 1px solid
+    border-top: 1px solid
       color-mix(in oklab, var(--ink), transparent var(--eater-map-rule-veil));
-    padding-left: var(--eater-map-copy-inset);
+    padding-top: var(--eater-map-close);
     font-size: var(--eater-map-copy-size);
     line-height: var(--eater-map-copy-leading);
     color: var(--ink-soft);
@@ -454,11 +617,18 @@ import './tokens.css';
     margin-top: 1em;
   }
 
-  /* The four points take the whole of their column and spread themselves down
-     it, the way the Panel's do: the air is what a point growing a paragraph
-     spends, down to the step and no further. */
+  /* THE FOUR POINTS, DOWN THE RIGHT EDGE (#191). They stood on the left, under
+     the masthead they belonged to; the reference puts them beside the drawing they
+     annotate, and each one is where its own leader line starts. Two columns rather
+     than three, and that is not a taste: the drawing between them and the writing
+     is centred in what those two leave, so a wider index moves the picture as well
+     as itself.
+
+     They take the whole of their column and spread themselves down it, the way the
+     Panel's do: the air is what a point growing a paragraph spends, down to the
+     step and no further. */
   .eater-map__points {
-    grid-area: 2 / 1 / 3 / 4;
+    grid-area: 1 / 11 / 2 / 13;
     align-self: stretch;
     margin: 0;
     list-style: none;
@@ -469,8 +639,50 @@ import './tokens.css';
     row-gap: var(--eater-map-step);
   }
 
+  /* THE RULE ABOVE EACH POINT, and it is the leader line's own first inch. The
+     accent at 36%, across the row and no further — the rule continues out of the
+     row's left edge as the leader's shoulder, in the leader's own colour, so what
+     the reader follows from a number to a part is one line that changes weight
+     once. Drawn as a border on the row rather than as a box, so a point growing a
+     second line of title does not move it. */
+  .eater-map__points li {
+    border-top: 1px solid
+      color-mix(in oklab, var(--eater-map-accent), transparent var(--eater-map-accent-veil));
+    padding-top: var(--eater-map-point-air);
+  }
+
+  /* The number and the icon on one line, the number on the baseline and the icon
+     against the column's far edge: the pair reads as an annotation's label rather
+     than as two things that happen to be near each other. */
+  .eater-map__mark {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: var(--eater-map-gutter);
+  }
+
+  .eater-map__number {
+    font-size: var(--eater-map-number-size);
+    font-weight: 400;
+    line-height: var(--eater-map-number-leading);
+    color: var(--eater-map-accent);
+  }
+
+  /* `stroke` and no `fill`, at a weight that does not scale with the box: the
+     marks are line drawings at 24 units, so a stroke stated in user units gets
+     lighter as the icon grows and this one is stated to stay put. */
+  .eater-map__icon {
+    display: block;
+    flex: none;
+    width: var(--eater-map-icon-size);
+    height: var(--eater-map-icon-size);
+    fill: none;
+    stroke: var(--eater-map-accent);
+    stroke-width: var(--eater-map-icon-weight);
+  }
+
   .eater-map__points h3 {
-    margin: 0;
+    margin: var(--eater-map-point-air) 0 0;
     font-size: var(--eater-map-point-size);
     font-weight: var(--eater-map-point-weight);
     line-height: var(--eater-map-point-leading);
@@ -496,23 +708,38 @@ import './tokens.css';
      everything on it is a share of that. What keeps that true once it comes
      apart is that there is ONE camera and ONE rotation, both on the plane, and
      every part of the drawing is inside it. NOTES.md. */
+  /* `container-type: inline-size` HERE AS WELL AS ON THE SLAB, and it is what the
+     cap below is measured against. An element is not its own container, so a
+     `cqw` written on `.eater-map__slab` resolves against the nearest container
+     ABOVE it — which is this box. That is the Frame's trap used deliberately: it
+     is the only way for the Slab's own rule to say "a share of the stage's width"
+     while the Slab is a container for everything on the plane.
+
+     `inline-size` and NOT `size`, which would contain the height too: below the
+     band this box's height is its contents' and `contain: size` would collapse it
+     to nothing. */
   .eater-map__stage {
-    grid-area: 2 / 4 / 3 / 13;
+    grid-area: 1 / 5 / 2 / 11;
     align-self: stretch;
     display: flex;
     align-items: center;
     justify-content: center;
+    container-type: inline-size;
   }
 
-  /* THE PLANE. Its height is what row two has left, times the one Token that
-     says how much of that to take, and its width follows from the capture's own
-     proportion — so the phone is as big as the screen allows at every window in
-     the band and the composition never has to be told a size.
+  /* THE PLANE. Its height is the stage's, times the one Token that says how much
+     of that to take, capped by what the stage's WIDTH will carry once the outline
+     is projected; its width follows from the capture's own proportion — so the
+     phone is as big as the screen allows at every window in the band and the
+     composition never has to be told a size. The cap is the rule below and #191's:
+     the drawing stands in a column between the writing and the four Points now,
+     so there are two ways to run out of room and the height alone is not one.
 
      `container-type: inline-size` is what lets everything on the plane be a
      share of the plane. It is the Frame's arrangement in the Projects Panel and
      it carries the Frame's trap with it: AN ELEMENT IS NOT ITS OWN CONTAINER, so
-     a `cqw` written on this rule would silently resolve against the viewport.
+     a `cqw` written on this rule resolves against the STAGE — which the cap below
+     uses on purpose, and which every other one has to avoid.
      Every one of them below is on a descendant.
 
      NOT CLIPPED, AND IT USED TO BE. While the Cards lay flat on the picture a
@@ -526,6 +753,38 @@ import './tokens.css';
   .eater-map__slab {
     position: relative;
     height: calc(var(--eater-map-slab-fill) * 100%);
+    /* AND CAPPED BY WHAT THE STAGE IS WIDE ENOUGH TO CARRY, which is a different
+       question from how tall it is and was not asked before #191. The drawing used
+       to be a row's remainder with the four points beside the writing above it;
+       the Points stand down the right edge now and the writing down the left, so
+       the stage is a COLUMN between two things that have to stay legible — and a
+       Slab sized only by the height runs its projected corners under both of them
+       at the band's short corner. Measured: 599px of outline in 528px of room at
+       1100x700, which is the rail overlay's paragraph with a phone drawn over it.
+
+       THE PROJECTED WIDTH IS THE THING TO CAP, and it is not the Slab's width. A
+       `w x h` rectangle turned by the swing spans `w·cos(s) + h·sin(s)` across the
+       screen — the tilt takes nothing off it, because `rotateX` moves the y axis
+       and leaves x alone — so with `h = tall·w` the outline is `w·(cos s + tall·sin
+       s)` and the height that fits a stage `W` wide is `tall·W` over that. Both
+       terms are the composition's own: the swing is the Token the plane is turned
+       by, and `tall` is the capture's own proportion, written on the element beside
+       the ratio it comes from. Drag either and this follows.
+
+       ON `max-height` AND NOT ON `height`, so the aspect ratio survives it: the
+       width is `auto` and derived from the ratio, so clamping the definite axis
+       re-derives the other one. Clamping the width instead would hold the height
+       and break the proportion.
+
+       `100cqw` IS THE STAGE'S WIDTH AND NOT THIS BOX'S — an element is not its own
+       container, and this box is one. See the stage's own rule. */
+    max-height: calc(
+      var(--eater-map-slab-fill) * 100cqw * var(--eater-map-slab-tall) /
+        (
+          cos(var(--eater-map-swing)) + var(--eater-map-slab-tall) *
+            sin(var(--eater-map-swing))
+        )
+    );
     aspect-ratio: var(--eater-map-slab-ratio);
     /* A percentage translate resolves against the element's own box, so this is
        a share of the phone rather than of whatever the stage happens to be. */
@@ -827,6 +1086,41 @@ import './tokens.css';
     stroke-linejoin: round;
   }
 
+  /* THE TWO DOTS, and they are filled where the rules are stroked — so `fill:
+     none` on the overlay has to be undone per circle rather than left to be
+     inherited into nothing. The one on the PART is lit: the ink straight, at the
+     larger radius, which is what makes it read as the thing the number points at.
+     The one at the shoulder is the rule's own colour and smaller, and says only
+     that the line turned.
+
+     `stroke: none` on both. A circle inherits the overlay's stroke, and a filled
+     dot with a half-pixel ring round it in another colour is a dot drawn twice. */
+  .eater-map__leaders circle {
+    stroke: none;
+  }
+
+  /* AND EACH RADIUS IS GATED ON THE CENTRE THE SCRIPT SETS. An SVG circle with no
+     `cx` sits at the overlay's own origin, so a radius written unconditionally
+     here would paint four dots stacked in the composition's top-left corner for a
+     reader whose scripts never arrived. `r`'s initial value is 0 and a circle of
+     radius 0 renders nothing, so gating on `[cx]` is the same shape the polylines
+     above already have — they carry no `points` until a script comes, and paint
+     nothing until then.
+
+     The radius is a Token spent on a real property rather than parsed out of a
+     custom property by the script, which is the rule the shoulder's reach is
+     under: a custom property's computed value is its own token stream, so
+     `0.2rem` read from script is the string `0.2rem`. */
+  .eater-map__leaders [data-eater-map-tip][cx] {
+    r: var(--eater-map-leader-tip);
+    fill: var(--ink);
+  }
+
+  .eater-map__leaders [data-eater-map-knee][cx] {
+    r: var(--eater-map-leader-knee);
+    fill: color-mix(in oklab, var(--ink), transparent var(--eater-map-leader-veil));
+  }
+
   .eater-map__card[data-eater-map-card='search'] {
     --eater-map-card-x: var(--eater-map-card-search-x);
     --eater-map-card-y: var(--eater-map-card-search-y);
@@ -928,6 +1222,16 @@ import './tokens.css';
       row-gap: 0;
     }
 
+    /* THE FOUR AUTHORED LINES MAY RE-BREAK OUT HERE, and that is the one thing
+       the collapse takes off the title. In the band they are set to fit a column
+       four twelfths wide at a size the two ratios give them; down here the column
+       is the window, which is 390px on the phone this collapse exists for, and
+       `nowrap` would run the longest of them off the screen. The break is still
+       the composition's wherever the line fits. */
+    .eater-map__title span {
+      white-space: normal;
+    }
+
     /* `grid-row: auto` AND NOT ONLY `grid-column: 1`, which is the trap this
        reset has: the four areas above are `grid-area` shorthands, so each pins a
        ROW as well as a column. Taking the columns back and leaving the rows
@@ -943,14 +1247,11 @@ import './tokens.css';
       align-self: auto;
     }
 
-    /* The rule moves from the paragraph's left edge to its top, which is where a
-       divider goes when the thing it divides is above rather than beside. */
+    /* The rule is already across the copy's top edge in both regimes since #191,
+       so what the collapse still owes it is the seam above it: in the band the
+       copy stands at the foot of a column and the air above it is whatever the
+       column has left, and down here it is one block after another. */
     .eater-map__copy {
-      border-left: 0;
-      border-top: 1px solid
-        color-mix(in oklab, var(--ink), transparent var(--eater-map-rule-veil));
-      padding-left: 0;
-      padding-top: var(--eater-map-close);
       margin-top: var(--eater-map-move);
     }
 
@@ -996,6 +1297,13 @@ import './tokens.css';
       height: auto;
       width: 100%;
       translate: none;
+      /* AND NO CAP ON THE HEIGHT. The cap in the band is a bound on the drawing's
+         PROJECTED outline, and nothing is projected down here — the plane carries
+         no transform at all — so the same expression would be clamping a flat
+         picture to the width its outline WOULD have had if it were turned, which
+         is 0.5 of the picture. Full-bleed is a picture with no ceiling by
+         definition (#179), and this is the second thing that had to say so. */
+      max-height: none;
     }
 
     /* NO PART OF THE PROJECTION SURVIVES, AND THIS IS NOW THE ONLY THING SAYING
@@ -1019,15 +1327,41 @@ import './tokens.css';
   }
 
   /* ---- the landing band --------------------------------------------------
-     Two of the Kernel's lengths and no more: the page's top margin and its left
-     one, so this screen's white agrees with the Panel's and both Rails stand in
-     one column. NOT the landing MEASURE — --landing-w, --landing-cap and the
-     masthead's drop are the Cut Title's, and #172 settled that this Section does
-     not carry one. src/kernel/NOTES.md has the numbers that settled it. */
+     THIS SECTION JOINS THE LANDING MEASURE HERE, AND #191 IS THE DECISION THAT
+     PUT IT ON THAT LIST. It used to read two of the Kernel's lengths and no more
+     — the page's top margin and its left one — and say in NOTES.md that reading
+     them was deliberately not joining the measure, because this Section had no cut
+     word and was a function of none of `--landing-w`, `--landing-cap` or
+     `--landing-mast-top`. It has the Gallery's WORD now, in the Gallery's own box,
+     so it is a function of all three. That is a change of decision rather than a
+     drift, and #193 — one persistent PROJECTS for the page — is what it is on the
+     way to.
+
+     THE TOP MARGIN IS THE PANEL'S OWN LIFT, and this is the whole of "to the
+     pixel". `--landing-top` is where the word's CAP TOP comes to rest and
+     `--landing-mast-top` is how far the cap top sits below its line box's own top
+     edge — so the difference is where the masthead's BOX goes, which is exactly
+     what the Panel spends its `--projects-panel-lift` on. The Panel's port sits
+     that far above its Section's top edge and its masthead's box sits on that
+     edge; this Section's port IS its top edge, so the same distance is its top
+     padding. Both mastheads then stand at the same place on the screen at rest,
+     which is what the `eater-map` Check compares.
+
+     AND NO COLUMN GAP, for the same reason and it is the second half of it. The
+     Rail's column IS the page's left margin, so the composition beside it starts
+     at `--landing-side` — where the Panel's own inner starts and where PROJECTS
+     stands on both screens. A gap here would push the word one gap right of the
+     word it is meant not to have moved from.
+
+     The foot keeps the page's own bottom margin: the drawing does not stand on
+     the page's bottom edge the way the Panel's Plinth does. */
   @media (min-width: 1100px) and (min-height: 700px) {
     .eater-map {
+      --eater-map-mast: var(--landing-mast-size);
       grid-template-columns: var(--landing-side) minmax(0, 1fr);
-      padding-block: var(--landing-inset);
+      column-gap: 0;
+      padding-block: calc(var(--landing-top) - var(--landing-mast-top))
+        var(--landing-inset);
       padding-inline-end: var(--landing-side);
     }
   }

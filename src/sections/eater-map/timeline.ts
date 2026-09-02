@@ -4,6 +4,7 @@ import { mountStage } from './stage';
 
 import mountGlass from './glass';
 import { mountLeaders } from './leaders';
+import { mountTitle } from './title';
 
 /**
  * The **Lift**: the Exploded View going from the flat screenshot to the Slab
@@ -115,6 +116,19 @@ function seconds(raw: string, fallback: number): number {
 }
 
 export default function mountLift(root: HTMLElement): gsap.core.Timeline | void {
+  // THE SERIF TITLE, AND IT IS NOT PART OF THE TIMELINE EITHER — nor of the
+  // drawing. It is here for the same mechanical reason `mountStage` is:
+  // `src/kernel/loader.ts` calls this module and no other, so this is the
+  // Section's only mount point (src/kernel/NOTES.md).
+  //
+  // BEFORE THE GUARD BELOW AND NOT AFTER IT. That guard is about there being
+  // nothing to LIFT, and a Section with no Cards on its Slab still has a masthead
+  // with a title under it — returning first would leave the title on the
+  // stylesheet's fallback for a reason that has nothing to do with it. And before
+  // the leader lines are first drawn, because sizing the title changes the head's
+  // height and every rule leaves a row whose place that moves.
+  mountTitle(root);
+
   const plane = root.querySelector<HTMLElement>('[data-eater-map-plane]');
   const cards = [...root.querySelectorAll<HTMLElement>('[data-eater-map-card]')];
   // Nothing to lift. Registering a Timeline anyway would give the `moments` Check
