@@ -2,7 +2,7 @@ import { luminance } from '../lib/colour.mjs';
 import { DESK, open, settle } from '../lib/page.mjs';
 
 /**
- * The Eater Map Section's Exploded View — the twelve things about it that break
+ * The Eater Map Section's Exploded View — the thirteen things about it that break
  * without anybody noticing.
  *
  * None is aesthetic. Every Token in `src/sections/eater-map/tokens.css` may be set
@@ -369,6 +369,17 @@ const SAME_ANGLE = 0.005;
  *  inside the gradient. Any colour would do; a saturated one is unmistakable in a
  *  screenshot if the restore ever fails. */
 const MUTANT_EDGE = '#ff0000';
+
+/**
+ * A light pointed somewhere the composition's is not, for asking whether a page
+ * with no Editor rebuilds its edge (#196).
+ *
+ * The azimuth turned half a turn, which is the one mutation the group above
+ * already measures the effect of: it swaps which of the two flanks facing the
+ * reader is the brighter, so a rebuild that DID happen changes every gradient on
+ * the page rather than a stop or two.
+ */
+const MUTANT_LIGHT = '135deg';
 
 /** The two renderers `src/sections/eater-map/stage.ts` will admit to being, so a
  *  stage that never mounted can be told from the one this suite was asked to
@@ -3086,6 +3097,115 @@ async function theEdgeHasADirection(browser, origin) {
   }
 }
 
+/**
+ * THIRTEEN. THE REDRAW IS THE EDITOR'S, AND THIS PAGE HAS NO EDITOR (#196).
+ *
+ * `redraw.ts` draws the generated geometry again when the Editor previews one of
+ * this Section's Tokens, and it is GATED on the Editor being on the page. This is
+ * that gate from the shipped side; the `editor` Check is the other half, and
+ * `src/sections/eater-map/NOTES.md` says why one half alone asserts nothing.
+ *
+ * THE MUTATION IS THE EDITOR'S OWN GESTURE AND NOT THE TOKEN — a `<style
+ * data-editor>` appended to the body, which is what `client/tokens.js` does on
+ * every frame of a drag. An inline Token on the root is not something the observer
+ * watches, so that version passes whether the gate is there or not: it reads as
+ * though it asks something and asks nothing.
+ *
+ * AND IT ASKS WHETHER THE MUTATION LANDED, or the two readings either side of it
+ * agree for a reason that has nothing to do with the gate.
+ */
+async function nothingWatchesTheTokens(browser, origin) {
+  const { context, page } = await open(browser, origin, { viewport: WIDE });
+  try {
+    const failures = await settle(page);
+    const seen = await page.evaluate(async (mutant) => {
+      const section = document.querySelector('.eater-map');
+      if (!section) return { missing: 'the Section is not on the page' };
+      // EVERY ELEMENT A REDRAW BUILDS, which is the slices AND the blurred copy of
+      // the map behind each glass surface. `mountGlass` clears the two on
+      // consecutive lines, so counting only the slices leaves a regression in the
+      // second clear doubling elements per drag with nothing to fail.
+      const drawn = () =>
+        [...document.querySelectorAll('.eater-map__slice, .eater-map__glass')].map(
+          (one) => `${one.className} ${one.style.background}`,
+        );
+      const azimuth = () => getComputedStyle(section).getPropertyValue('--eater-map-light-azimuth').trim();
+
+      const before = drawn();
+      const was = azimuth();
+
+      // The Editor's own preview: one declaration, under the selector the
+      // composition declared it on, in a sheet at the end of the body so it wins
+      // the specificity tie.
+      const sheet = document.createElement('style');
+      sheet.dataset.editor = '';
+      sheet.dataset.editorPreview = '';
+      sheet.textContent = `.eater-map { --eater-map-light-azimuth: ${mutant}; }`;
+      document.body.append(sheet);
+      // Two frames: one for a rebuild coalesced onto the next frame to happen, and
+      // one for it to be on the page to read.
+      await new Promise((frame) => requestAnimationFrame(frame));
+      await new Promise((frame) => requestAnimationFrame(frame));
+
+      const now = azimuth();
+      const after = drawn();
+      sheet.remove();
+      return {
+        redraw: section.dataset.eaterMapRedraw ?? '',
+        was,
+        now,
+        before: before.length,
+        after: after.length,
+        rebuilt: after.filter((one, index) => one !== before[index]).length,
+      };
+    }, MUTANT_LIGHT);
+
+    if (seen.missing) {
+      failures.push(`${WIDE.width}x${WIDE.height}: ${seen.missing}`);
+      return failures;
+    }
+    if (seen.before === 0) {
+      failures.push(
+        `${WIDE.width}x${WIDE.height}: nothing on the page is a slice or a glass backdrop, so there was no ` +
+          'generated geometry to draw again and nothing about the gate was checked — the Cards carry both ' +
+          'under either stage, so this is the Exploded View never having come up',
+      );
+      return failures;
+    }
+    if (seen.was === seen.now) {
+      failures.push(
+        `${WIDE.width}x${WIDE.height}: an Editor preview sheet left --eater-map-light-azimuth at ` +
+          `"${seen.now}", so the mutation this group is built on never landed and it asserted nothing`,
+      );
+      return failures;
+    }
+    if (seen.redraw !== '') {
+      failures.push(
+        `${WIDE.width}x${WIDE.height}: the Section reports data-eater-map-redraw="${seen.redraw}" on a page ` +
+          'with no Editor attached — the observer is wired for every reader, and redraw.ts’s gate is what ' +
+          'makes it free',
+      );
+    }
+    if (seen.after !== seen.before) {
+      failures.push(
+        `${WIDE.width}x${WIDE.height}: the page went from ${seen.before} generated element(s) to ${seen.after} ` +
+          'when an Editor preview sheet was put on it — something drew again, and it did not land on the DOM ' +
+          'it started from',
+      );
+    }
+    if (seen.rebuilt > 0) {
+      failures.push(
+        `${WIDE.width}x${WIDE.height}: ${seen.rebuilt} of ${seen.before} generated element(s) were built again ` +
+          'when an Editor preview sheet was put on a page with no Editor — the redraw is ungated, so every ' +
+          'reader carries an observer and a redraw for a Token nobody is dragging',
+      );
+    }
+    return failures;
+  } finally {
+    await context.close();
+  }
+}
+
 export const check = {
   name: 'eater-map',
   title:
@@ -3106,6 +3226,7 @@ export const check = {
     // a comfortable pass from one sitting on a threshold.
     const edge = await theEdgeHasADirection(browser, origin);
     found.push(...edge.failures);
+    found.push(...(await nothingWatchesTheTokens(browser, origin)));
 
     const collapse = await collapsedBelowTheBand(browser, origin);
     found.push(...collapse.failures);

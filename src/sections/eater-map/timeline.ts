@@ -1,10 +1,11 @@
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
-import { mountStage } from './stage';
+import { mountStage, type Stage } from './stage';
 
 import mountGlass from './glass';
 import { mountLeaders } from './leaders';
 import { mountTitle } from './title';
+import mountRedraw from './redraw';
 
 /**
  * The **Lift**: the Exploded View going from the flat screenshot to the Slab
@@ -145,9 +146,14 @@ export default function mountLift(root: HTMLElement): gsap.core.Timeline | void 
   // same promise this whole file keeps. A failure is reported rather than
   // swallowed: a reader who ASKED for the other stage and got neither should not
   // have to guess.
-  void mountStage(root).catch((error: unknown) => {
-    console.error('eater-map: the stage did not mount', error);
-  });
+  let stage: Stage | null = null;
+  void mountStage(root)
+    .then((mounted) => {
+      stage = mounted;
+    })
+    .catch((error: unknown) => {
+      console.error('eater-map: the stage did not mount', error);
+    });
 
   // THE CARDS' GLASS, AND IT IS NOT PART OF THE TIMELINE EITHER (#190). A blurred
   // copy of the Slab behind every glass surface and an edge round every one of
@@ -160,6 +166,17 @@ export default function mountLift(root: HTMLElement): gsap.core.Timeline | void 
   // moves with the window is a CSS expression it writes rather than a number it
   // computed.
   mountGlass(root);
+
+  // AND THE TWO OF THEM AGAIN WHENEVER THE EDITOR MOVES A TOKEN (#196), which
+  // costs a reader nothing: `redraw.ts` looks for the Editor's own footprint and
+  // observes nothing if there is none. What it draws again is exactly the two calls
+  // above, in the order they were first made. `stage` is still null while its
+  // dynamic import is in flight, so a drag in that first moment redraws the Cards
+  // and finds the Slab a beat later — a beat and not a state.
+  mountRedraw(root, () => {
+    stage?.redraw?.();
+    mountGlass(root);
+  });
 
   gsap.registerPlugin(ScrollTrigger);
 

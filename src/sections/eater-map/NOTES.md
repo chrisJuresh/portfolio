@@ -1214,8 +1214,105 @@ stop, each a `color-mix()` naming a Token, is about 2 KB of inline style per sli
 so 47 KB for the Slab and about 240 KB across the page's 120 slices. That is runtime
 DOM rather than shipped bytes and costs the page nothing to load, but it is a
 quarter of a megabyte of CSS to re-parse per frame for anything that rebuilds an
-edge while a Token is being dragged, which is #196's problem to price rather than
-this one's.
+edge while a Token is being dragged. #196 is what does that, and how it is priced is
+the next section.
+
+### The shading follows a dragged Token, under the Editor and nowhere else (#196)
+
+`redraw.ts`, and it is forty lines because almost nothing was missing. **Every Token
+a STYLESHEET consumes has been draggable since #144**: the Editor previews by
+putting one declaration into a sheet of its own, and every `calc()` naming that
+Token is re-evaluated by the browser — which is why `edge.ts` states every length as
+an expression rather than as a number, and why the thickness, the radii, the colour
+and the whole collapse below the band already moved under a drag.
+
+**The shading is the one exception and it is the only one.** A slice's
+`conic-gradient` is arithmetic on the light, on the plane's attitude and on the
+outline, and arithmetic done at mount does not move — so `--eater-map-light-azimuth`
+was a real Token that wrote its file and left the drawing alone until a reload,
+which reads exactly like a broken Token and is not one.
+
+**The seam is the Editor's own preview sheet, so nothing was added to the Editor.**
+It is how a drag reaches the page at all; a `MutationObserver` on it needs no
+cooperation and opens no route by which anything can be written (ADR 0004). A
+release still writes the Token to its file the way every other Token's does.
+
+**What the two Checks compare is not one set but two, and the split is the
+criterion.** The SLICES have to change when the light moves, asked per surface,
+because the Cards are not a stage's and a redraw wired to one side leaves the other
+lit by the light the page loaded with while every whole-page count agrees with
+itself. EVERY GENERATED ELEMENT has to be unchanged after a drag out and back — the
+slices and the blurred copies of the map both, because `mountGlass` clears the two
+on consecutive lines and a comparison counting only slices would let a regression in
+the second clear double the copies per drag with nothing to fail. A copy of the map
+is not lit by the light, so requiring it to MOVE would fail a correct drawing:
+that is why it is in the second set and not the first.
+
+**The thickness needs no assertion of its own, and that is a judgement.** It reaches
+the drawing two ways, and neither is specific to it: every slice's depth is a CSS
+expression naming it, which the browser re-evaluates with nothing observed at all,
+and the gradient's outline goes through the same signature and the same redraw the
+light's assertion already covers. What is left that is only the thickness's is the
+`min(radius, thickness)` clamp — and a Slab dragged THICKER leaves that clamp
+exactly where it was, so an assertion built on it would have to drag the row to zero
+and would then fail the day the author chose a square-edged Slab, which is a
+legitimate value. A blocking Check that fires on a Token nobody set wrongly is the
+one thing the suite may not do.
+
+**The gate is what makes it free, and it is asserted from both sides.** A page with
+no Editor attached installs no observer, reads no Token and never calls the rebuild
+— `[data-editor]` is the Editor's own footprint, and the `editor` Check already
+fails a built tree that carries it. The `eater-map` Check performs the Editor's own
+preview gesture on a page with no Editor and requires that not one gradient moves;
+the `editor` Check drags the real control on a real page and requires that every
+extruded surface follows it, out and back, with the same number of elements and the
+same strings the mount wrote. **Either half alone passes for a mechanism that never
+runs at all**, which is why there are two.
+
+**The signature is every `--eater-map-` declaration the Editor is previewing, and
+deliberately not the eight the drawing is generated from.** Those eight are spread
+over four files — `stage.ts` reads the light, `edge.ts` the attitude, `stage-dom.ts`
+the Slab's thickness and radius, `glass.ts` the Cards' — so a list in `redraw.ts`
+would be a fifth copy of them, and a list gone stale fails as a Token that drags and
+moves nothing, which is the exact bug this removes. What the broader signature costs
+is a wasted rebuild when a Token the geometry does not read is dragged, and a wasted
+rebuild is only a rebuild: both callers clear before they build.
+
+**One frame, and never one per mutation**, which is how the quarter of a megabyte
+above is priced. The Editor rewrites its sheet on every move of a slider; the
+rebuild is coalesced onto the next frame and skipped when the declarations have not
+actually moved. **And what is observed is the Editor's sheets and nothing else**, so
+the rebuild's own mutations — a hundred and twenty slices, and `glass.ts`'s offscreen
+ruler going onto the body and off it again — are not records this ever acts on. That
+is what makes the loop impossible by construction rather than broken by the
+signature.
+
+**`clearEdge` is per HOST and that is #197's inherited bug, now spelled once.** A
+Card with two glass surfaces has two stacks under one host, so a clear written
+per box deletes the first surface's slices as the second is built and the survivor
+looks perfect. The Slab is rebuilt too now, so there were two callers and two
+spellings of a clear is how one of them ends up per box again.
+
+**Five mutations, all caught**, and the last two are the ones worth knowing, because
+each fails as something other than itself:
+
+| mutation                                        | wanted | got |
+| ----------------------------------------------- | ------ | --- |
+| the gate lifted — the observer for every reader | fail   | fail: 120 of 120 slices repainted on a page with no Editor, and the marker on the Section |
+| `redraw.ts` never mounting                      | fail   | fail: `data-eater-map-redraw="(not wired)"` under the Editor |
+| `clearEdge` taken out of the Slab's draw        | fail   | fail: the slab edge 24 → 48 slices on one drag, and 172 generated elements out and back against 124 |
+| the DOM stage returning no `redraw`             | fail   | fail: all 24 slab slices painted as they were, and the four Card surfaces still following |
+| the GLASS clear disabled, the slices' left in   | fail   | fail: 132 generated elements out and back against 124 |
+
+The fourth is why the Check asks **per surface**: the Cards are not a stage's, so a
+redraw wired to the stage alone — or to the Cards alone — leaves half the drawing lit
+by the light the page loaded with, and every whole-page count agrees with itself.
+
+**The fifth passed until the comparison was widened, and it is the shape worth
+remembering.** `mountGlass` clears the slices and the blurred copies on consecutive
+lines; the Check compared only slices, so a regression in the second clear doubled
+the copies of the map per drag and read as a clean redraw. The criterion is the same
+number of ELEMENTS, and one line of the clear was outside what was being counted.
 
 ### Three things about the WebGL stage that are decisions
 

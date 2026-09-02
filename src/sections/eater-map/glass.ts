@@ -1,5 +1,5 @@
 import { CARDS } from './cards';
-import { type Corners, extrude, fitRadii, SOLID } from './edge';
+import { clearEdge, type Corners, extrude, fitRadii, SOLID } from './edge';
 import { SLAB } from './slab';
 
 /**
@@ -45,7 +45,7 @@ import { SLAB } from './slab';
  * stylesheet's own `--r-full`, `--r-menu: 14px` and `--r-sheet: 28px 28px 0 0`, and
  * two of the three were drawn to the wrong outline.
  *
- * MEASURED ONCE AND NEVER AGAIN, which is not an optimisation but a fact about what
+ * MEASURED ONCE FOR THE READER, which is not an optimisation but a fact about what
  * is being measured: the Cards are frozen to the viewport they were exported at
  * (NOTES.md), so a surface's offset and radii are the same numbers at every window
  * the Portfolio is ever drawn at. Everything that DOES change with the window — the
@@ -62,6 +62,10 @@ import { SLAB } from './slab';
  * clearance of ZERO and a hung surface's top comes back as `<measured>px +
  * var(…)`, so the measurement stays the constant it claims to be and the offset
  * stays live.
+ *
+ * THE SHADING IS THE ONE THING THAT IS NOT A CSS EXPRESSION AT ALL, so this
+ * function is called again under the Editor and only there — `redraw.ts` is the
+ * caller, and it is idempotent for it. NOTES.md.
  *
  * A READER WITH NO SCRIPTS GETS THE APP'S OWN TRANSLUCENCY OVER THE MAP, which is
  * the same trade the Slab's edge and the leader lines make and is affordable for
@@ -274,6 +278,7 @@ function backdrop(surface: Surface): HTMLElement {
  * second is built — and only the last surface keeps an edge. The surviving surface
  * looks perfect, so the failure reads as "the search bar has no edge" rather than
  * as a broken rebuild. #197 carries it as a bug to inherit rather than rediscover,
+ * `clearEdge` is where that distinction now lives so both callers spell it once,
  * and the `eater-map` Check asserts that EVERY surface carries slices.
  */
 export default function mountGlass(root: HTMLElement): void {
@@ -312,7 +317,7 @@ export default function mountGlass(root: HTMLElement): void {
       const face = card.querySelector<HTMLElement>('.eater-map__face');
       if (!named || !face) continue;
 
-      for (const stale of card.querySelectorAll(':scope > .eater-map__slice')) stale.remove();
+      clearEdge(card);
       for (const stale of face.querySelectorAll(`:scope > .${GLASS}`)) stale.remove();
 
       for (const surface of measure(ruler, card, named.surfaces)) {

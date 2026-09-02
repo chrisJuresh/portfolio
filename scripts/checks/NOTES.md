@@ -101,7 +101,7 @@ cannot be verified there even by hand.
 | `faces`          | a declared `@font-face` will not load, or no face Token names a declared family |
 | `front-screen`   | the Front Screen's rhyme, its one-screen budget, the Cut Title's cut or its accessible name, the crossing's span, the switch's ARIA, or the type's place in the Effect Stack breaks |
 | `projects-panel` | a control in the Frame leaves the centre its own Token names, the window and its titlebar are cut to two radii, the recording's box stops being inset on three sides, the occlusion of the subheading's second line moves or stops being painted, the titlebar reports a rung it is not made of, the chrome grows a control, the small-Frame reduction starts asking about the window instead of the Frame, the Plinth's depths stop being shares of the Frame, its slab stops being symmetric about it, its bottom-right corner comes off the page's on either branch of the fit, or the Frame moves towards the engineering points instead of away from them, the reflection stops being a life-size fold of the window, the marble stops being drawn without script, a reader who asked for reduced motion is charged for the recording, a reader who runs no script at all loses the copy that arrives with the page turn, the titlebar grows past the clearance the clip on disk was cut with, or that clip stops opening on that many rows of flat, light ground |
-| `eater-map`      | PROJECTS stops standing where the Gallery's own masthead stands or stops being the same word, the serif title's cap height or its drop below the masthead's baseline stops matching the two ratios the Section declares — which a font size proportional to the masthead does, by 4% — the copy leaves the foot of the column PROJECTS heads or the Points leave the right of the drawing, the three Cards on the Slab stop being drawn at the Slab's own scale at the Lift's flat end, one of them stops moving between the Lift's two ends, one of the Section's own boxes is invisible at either end, a reader who leaves part way up is left with a Lift that ran on without them, a leader line comes off the corner it names part way up the Lift or stops ending in a lit dot on it, a point and a part stop being one to one, the picture of the app puts a focusable control or a heading into the page, an extruded edge stops having a direction or stops taking it from the one page-fixed light, a corner of the Slab shows the page behind it, `--eater-map-slab-edge` stops being live inside the gradient, or below the band the drawing stops collapsing — a perspective left standing on a column, a Slab that misses the window's edges, a Lift still running where there is no page turn, the four features no longer a list under the picture, or one of the three readers down there handed a composition of their own |
+| `eater-map`      | PROJECTS stops standing where the Gallery's own masthead stands or stops being the same word, the serif title's cap height or its drop below the masthead's baseline stops matching the two ratios the Section declares — which a font size proportional to the masthead does, by 4% — the copy leaves the foot of the column PROJECTS heads or the Points leave the right of the drawing, the three Cards on the Slab stop being drawn at the Slab's own scale at the Lift's flat end, one of them stops moving between the Lift's two ends, one of the Section's own boxes is invisible at either end, a reader who leaves part way up is left with a Lift that ran on without them, a leader line comes off the corner it names part way up the Lift or stops ending in a lit dot on it, a point and a part stop being one to one, the picture of the app puts a focusable control or a heading into the page, an extruded edge stops having a direction or stops taking it from the one page-fixed light, a corner of the Slab shows the page behind it, `--eater-map-slab-edge` stops being live inside the gradient, the rebuild that makes a dragged light visible starts running for a reader with no Editor on the page, or below the band the drawing stops collapsing — a perspective left standing on a column, a Slab that misses the window's edges, a Lift still running where there is no page turn, the four features no longer a list under the picture, or one of the three readers down there handed a composition of their own |
 | `rail`           | the page carries more than one Rail or none, at any of four windows; the Rail moves when the page turns; it stops standing in the page's own left margin, or stops sharing the composition's left edge below the band; the current entry stops naming the Section at rest, in either direction; an entry stops being reachable at a resting place because a Section is hit-tested over it; the Rail stays reachable on the first screen, where it is drawn transparent; the entry with no Section of its own stops saying so to a screen reader; or a reader who runs no script gets no Rail or no current entry |
 | `ground`         | paper is not light, or the Turn does not arrive dark, in either theme         |
 | `turn`           | the Kernel's published landing measure — cap, drop or the stone the width branch leaves room for — disagrees with the Panel's own arithmetic, the Panel's masthead is visible or has lost its box, the Cut Title is not standing in that masthead's slot, the word moves or resizes across the crossing, either end of the morph is not the outline the Bake wrote, a wheel notch does not turn the page or bring it back, a notch begun on the photographs turns it, or the paragraph that arrives with the crossing is painted at the top of the document, is still arriving at the landing, moves to get there, or is left on its own compositing layer once it has |
@@ -109,7 +109,7 @@ cannot be verified there even by hand.
 | `moments`        | a Timeline cannot be seeked, does not survive a scroll, moves nothing, or will not release |
 | `deep-links`     | a Section on the page carries no id, or its `/portfolio/<id>` does not answer, or answers with something that is not the document, or opens it somewhere other than where that Section asks to be put |
 | `unpublishable`  | a Section's words or its spoken attributes match the denylist                 |
-| `editor`         | the Editor cannot change a word or drag a Token on the real page, or the change does not reach the file, or a refusal does, or a drag writes on every frame, or a Timeline cannot be scrubbed and held, or measuring writes to a source file, or an Override does not reach the file or does not reach the page, or one cannot be discarded, or a corner does not resize from the corner opposite it, or a box the composition caps with `max-width: var(--a-token)` cannot be dragged wider at all or does not report the Token behind the cap, or a corner drag with `scale everything` on does not move the page's zoom or does not write it, or a measured border box is written back as a content box, or an anchor the layout would not let go of is not reported — or is reported on every drag — or the marquee and its handles are not drawn at all, or Ctrl-Z takes a committed row off the page and leaves the Token it wrote in the file, or Ctrl-Shift-Z does not put it back, or the Editor is in the built tree |
+| `editor`         | the Editor cannot change a word or drag a Token on the real page, or the change does not reach the file, or a refusal does, or a drag writes on every frame, or a Token the drawing is GENERATED from rather than one a stylesheet reads stops moving the page — the Eater Map's extruded edge, out and back, per surface and with the same elements it started with — or a Timeline cannot be scrubbed and held, or measuring writes to a source file, or an Override does not reach the file or does not reach the page, or one cannot be discarded, or a corner does not resize from the corner opposite it, or a box the composition caps with `max-width: var(--a-token)` cannot be dragged wider at all or does not report the Token behind the cap, or a corner drag with `scale everything` on does not move the page's zoom or does not write it, or a measured border box is written back as a content box, or an anchor the layout would not let go of is not reported — or is reported on every drag — or the marquee and its handles are not drawn at all, or Ctrl-Z takes a committed row off the page and leaves the Token it wrote in the file, or Ctrl-Shift-Z does not put it back, or the Editor is in the built tree |
 
 `front-screen` is the first Section-specific Check, and the pattern it sets is
 worth copying: it asserts only relationships between two things that have to stay
@@ -205,6 +205,15 @@ there because it is the only thing that fails when a page-fixed light is pointed
 wrong way, and a light nobody can point wrongly is not page-fixed. The same
 discipline as the rise: an opinion about a Token is allowed if it is named where it
 is held.
+
+**Its thirteenth is one half of an agreement, and `editor` holds the other** (#196):
+this one requires that a page with no Editor redraws nothing, that one that a page
+with the Editor over it follows a drag. **Either half alone is satisfied by a
+mechanism that never runs at all** — the same shape as reading a number out of the
+repo, where a Check asserting one end of an agreement needs something asserting the
+other. **And the mutation is the Editor's GESTURE rather than the Token**: an inline
+Token on the Section's root is not what the observer watches, so that version passes
+whether the gate is there or not. `src/sections/eater-map/NOTES.md` carries the rest.
 
 **It is also the only group in that Check that REPORTS**, and both reasons are the
 ones this file already gives. Every tolerance in it was chosen off a measurement, so
@@ -516,10 +525,11 @@ holding every Section's Content and Tokens and a copy of the Overrides file, and
 compares the real files before and after: it runs from the pre-commit hook, and a
 Check that edited the tree it was gating would put a file it wrote into the commit
 it was checking. `scripts/editor/NOTES.md` is the authority, and it is where this
-Check's mutation record lives — twenty-seven of them, four for Content, five for the
+Check's mutation record lives — thirty of them, four for Content, five for the
 Tokens and Timeline halves #144 added, nine for the measuring half of #145, three
-for the corner handles of #162, three for the undo stack, and three for a press
-inside what is already picked.
+for the corner handles of #162, three for the undo stack, three for a press
+inside what is already picked, and three for the redraw a Token the drawing is
+GENERATED from needs (#196).
 
 One thing it asserts in two halves rather than one, because they are two claims: a
 Token's value is baked into the served build's stylesheet, so a drag has to move
@@ -543,11 +553,16 @@ gets `{ browser, origin, repoRoot, dist }` and returns either an array of failur
 strings or `{ failures, notes }`. Register it in the `CHECKS` array in `run.mjs`.
 
 `editor` opens the Editor's own origin rather than the suite's — `open()` takes an
-origin, so that needs no exception — and it is the one Check that does not settle.
+origin, so that needs no exception — and the page it clicks is the one page in this
+suite that is not settled.
 That reason is worth knowing before copying it: `settle()` exists because a Section's TIMELINE mounts on
 approach, but the markup and every word in it are prerendered and present at load,
 and the Editor binds to words. Anything asserting about a Section's motion, its
-mount state or its geometry still has to settle.
+mount state or its geometry still has to settle — so the group that drags a Token
+the Exploded View is GENERATED from opens a second page and settles that one (#196).
+**Two pages rather than a compromise**, because the two requirements are opposite:
+one assertion needs the words where the markup left them and the other needs a
+Section that has actually mounted.
 
 Open the page through `lib/page.mjs` — it records every response, console message
 and uncaught throw for you, and `settle()` scrolls the document so every Section

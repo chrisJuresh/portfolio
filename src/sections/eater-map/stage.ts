@@ -210,6 +210,15 @@ export interface StageParts {
 export interface Stage {
   readonly name: StageName;
   readonly edge: EdgeName;
+  /**
+   * Draw the Slab again from the Tokens as they stand now (#196).
+   *
+   * NOT A TEARDOWN'S TWIN, and it is here for the opposite reason there is no
+   * `destroy()`: this one has a caller — `redraw.ts`, under the Editor and nowhere
+   * else. OPTIONAL because the WebGL stage already reads every Token on every
+   * frame; NOTES.md.
+   */
+  readonly redraw?: () => void;
 }
 
 /** One of the names, or null for anything else — including nothing at all. */

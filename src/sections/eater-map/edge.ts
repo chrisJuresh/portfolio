@@ -54,7 +54,8 @@ import { edgeShade, lightingIn, type Shade } from './stage';
  * drawing without anything being re-mounted. **The SHADING is the one thing that
  * is computed once**, and it can afford to be: the gradient is exactly
  * scale-invariant, so a window that changes an object's size cannot make it wrong.
- * What a mount does not survive is a dragged Token, which is #196.
+ * What a mount does not survive is a dragged Token, and `redraw.ts` is the answer
+ * to that — NOTES.md.
  */
 
 /** Four corner radii, top-left clockwise, as bare CSS length expressions. */
@@ -144,6 +145,17 @@ const WALL = 8;
 /** The class the slices carry, so a reader of the DOM can see what they are. Not a
  *  Token-bearing name: nothing styles it. */
 const SLICE = 'eater-map__slice';
+
+/**
+ * Take one host's slices back off, which is what makes a redraw land on the DOM it
+ * started from.
+ *
+ * PER HOST AND NEVER PER BOX — a Card with two glass surfaces has two stacks under
+ * one host, and NOTES.md carries what a clear written per box costs.
+ */
+export function clearEdge(host: HTMLElement): void {
+  for (const stale of host.querySelectorAll(`:scope > .${SLICE}`)) stale.remove();
+}
 
 /** Degrees to radians. */
 const RAD = Math.PI / 180;

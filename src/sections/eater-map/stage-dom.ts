@@ -1,4 +1,4 @@
-import { extrude, SOLID } from './edge';
+import { clearEdge, extrude, SOLID } from './edge';
 import { SLAB } from './slab';
 import { type Stage, type StageParts } from './stage';
 
@@ -69,7 +69,17 @@ const ROUND =
 const mountDomStage = (parts: StageParts): Stage => {
   const { root, plane, still, edge } = parts;
 
-  if (edge === 'thick') {
+  if (edge !== 'thick') return { name: 'dom', edge };
+
+  /**
+   * The whole of the Slab's solidity, as something that can be run TWICE — a mount
+   * and a redraw are the same call (#196, `redraw.ts`).
+   *
+   * EVERYTHING IT READS IS READ HERE rather than closed over: a `SLAB_ROUND`
+   * computed once outside would draw the gradient from the radius the page loaded
+   * with, whatever the Token now holds.
+   */
+  const draw = (): void => {
     /** The edge's radius as a length on the PLAN, held to the thickness the way
      *  `ROUND` holds it in CSS — one constraint, stated twice because one of the two
      *  has to be an expression the browser re-evaluates and the other has to be a
@@ -85,6 +95,8 @@ const mountDomStage = (parts: StageParts): Stage => {
         0,
         Math.min(token('--eater-map-slab-edge-radius'), token('--eater-map-slab-thickness')),
       );
+
+    clearEdge(plane);
 
     // The picture is CLIPPED back to the flat face rather than scaled into it.
     // Scaling would draw the map at a size the Cards are not drawn at, which is
@@ -124,9 +136,10 @@ const mountDomStage = (parts: StageParts): Stage => {
       colour: 'var(--eater-map-slab-edge)',
       surface: 'slab',
     });
-  }
+  };
 
-  return { name: 'dom', edge };
+  draw();
+  return { name: 'dom', edge, redraw: draw };
 };
 
 export default mountDomStage;
