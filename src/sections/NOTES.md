@@ -47,6 +47,13 @@ an omission.
 Three separate mechanisms, and it is worth being clear which does what, because
 only one of them is the compiler.
 
+Three, because these are the three files every Section holds. A Section that
+vendors another repository's interface has a fourth — a plain stylesheet whose
+containment is neither the compiler nor a grammar but the export's own host class
+— and the Eater Map is the only one. `src/sections/eater-map/NOTES.md` is the
+authority on it and on what this repository is allowed to say back to it; nothing
+below is a convention that case follows.
+
 **The rules** are in the component's `<style>`, which Astro scopes: every
 selector is rewritten with this component's own attribute, so it cannot match an
 element in another Section even by accident. This is the mechanism ADR 0002 buys

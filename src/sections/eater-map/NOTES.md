@@ -220,6 +220,7 @@ Every mutation below has been made on purpose and every one was caught.
 | the details sheet's foot reverted to the export's `28px 28px 0 0` | the details `.details-panel` drawn `28/28/0/0`, at both windows |
 | the foot's override written as `--r-sheet: 28px` instead of as the rule | the same failure, at both windows — which is the point: the VARIABLE is already a single value, so the broken toggle that made the first comparison read "indistinguishable" now fails rather than passing quietly |
 | `cards-shape.css`'s selector anchored on `.eater-map__card` | the sheet rounded and its backdrop and its edge still cut `28/28/0/0`, at both windows — the ruler is `.eater-cards` and a clone of `.eater-map__surface`, and a rule that cannot reach it is measured as though it were not there |
+| the `radii` handed to `extrude` squared while the backdrop keeps its own | all four glass surfaces' edges drawn to `0/0/0/0` against `24/24/24/24`, `14/14/14/14` and `28/28/28/28`, at both windows — and **nothing else failed**, which is the point: the edge is asserted at its own corner rather than inferred from the backdrop beside it |
 
 **The `arrived()` mutation passed three times in a row before the Check was
 written the right way**, and it is the shape `scripts/checks/NOTES.md` warns about twice: *a
@@ -513,18 +514,39 @@ the palette:
   the bundler emitted second, and naming the hash builds a selector out of a number
   this repository does not own. (0,4,0) out of real handles wins outright.
 * **Select only through `.eater-cards` and `.eater-map__surface`**, for the reason
-  the ruler paragraph above gives. This is the rule that is silent when it is
-  broken.
+  the ruler paragraph above gives. This is the one that is silent in the source —
+  the page looks right and the drawing does not — and it is a Check rather than a
+  wish: anchored deeper, the `eater-map` Check fails at both windows on the
+  backdrop and on the edge.
 
-**The details sheet's foot is the first of them, and the trap is that the
-squareness is in the RULE.** `--r-sheet` is already a single `28px`; the two zeroes
-are in `border-radius: var(--r-sheet) var(--r-sheet) 0 0`. So overriding the
-variable sets 28px to 28px, and that is a no-op — it is what was done the first time
-the corner was compared, which is why the before and the after were the same picture
-and why the comparison was written up as "the two are indistinguishable". They are
-not; the toggle was broken. The `eater-map` Check asks every glass surface for four
-non-zero corners now, so the export's own default fails rather than looking slightly
-off.
+The first two are not Checks and do not need to be. Writing in `assets/cards/` is
+denied by the vendoring's own README and undone by the next regeneration, and a
+selector naming the `svelte-…` hash announces itself at the next re-vendoring by
+ceasing to match — at which point the third rule's Check catches it too.
+
+**The details sheet's foot is the first of them.** In the app it is a bottom sheet
+resting on the screen's edge, where a rounded foot would show a sliver of map
+beneath it; off the map it is a floating object with four visible corners, and one
+of them turned a right angle while the Slab's, the pills' and its own head all
+curved. **The trap is that the squareness is in the RULE.** `--r-sheet` is already a
+single `28px`; the two zeroes are in `border-radius: var(--r-sheet) var(--r-sheet) 0
+0`. So overriding the variable sets 28px to 28px, and that is a no-op — it is what
+was done the first time the corner was compared, which is why the before and the
+after were the same picture and why the comparison was written up as "the two are
+indistinguishable". They are not; the toggle was broken.
+
+**The value is `var(--r-sheet)` and never `28px`**, by the same rule the rest of
+this Section holds: the radius is the export's number and the override only says
+which corners get it. Nothing then follows by hand — `glass.ts` reads each
+surface's four COMPUTED corners off the served stylesheet, so the backdrop and all
+twenty-four slices turn with that one line.
+
+**The Check asks EVERY glass surface for four non-zero corners**, and that is
+broader than the ticket asked for on purpose: every corner turning the same way is
+the composition's rule rather than this sheet's detail. The cost is stated rather
+than hidden — a re-vendoring that ships a legitimately square-cornered surface fails
+the build, and the answer to that is a decision about the drawing, which is what a
+Check is for.
 
 ## What drives the Lift, and the two pixels that decide whether it ever fires
 

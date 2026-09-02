@@ -124,16 +124,9 @@ function measure(ruler: HTMLElement, card: HTMLElement, selectors: readonly stri
   // `cards.css` begins with this class, so the clone is laid out exactly as the
   // Card is and nothing on the page reaches into it.
   //
-  // THIS HOST AND THIS CLONE ARE THE ONLY ANCESTORS THE MEASUREMENT HAS, and that
-  // is load-bearing rather than incidental (#195). `cards-shape.css` is where this
-  // Section says anything about a surface's SHAPE, and a rule there is answered
-  // here as well as on the page — so it may select through `.eater-cards` and
-  // `.eater-map__surface` and through nothing else. Anchored on `.eater-map__card`
-  // or `.eater-map__face` a rule applies to the page and not to the ruler, and the
-  // surface is drawn to one outline with its backdrop and its edge cut to another.
-  // Deepening the ruler is not the fix: `.eater-map__card` carries the plane's
-  // scale, so a clone measured inside one comes back scaled and every offset with
-  // it. cards-shape.css says the same thing from its own side.
+  // THIS HOST AND THIS CLONE ARE EVERY ANCESTOR THE MEASUREMENT HAS, which is
+  // load-bearing rather than incidental: it is the whole of what a rule in
+  // `cards-shape.css` may select through (#195). NOTES.md.
   host.className = 'eater-cards';
   host.append(surface.cloneNode(true));
   ruler.append(host);

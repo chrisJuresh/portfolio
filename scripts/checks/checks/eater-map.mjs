@@ -374,6 +374,15 @@ const SURFACES = { search: 2, lines: 1, details: 1 };
  *  export's 24 / 14 / 28. */
 const RADIUS = 0.5;
 
+/** The widest disagreement between two sets of four corners, in px — the shape
+ *  both radius questions below take. `-Infinity` on an empty pair rather than 0,
+ *  so "there was nothing to compare" reaches its own branch instead of reading as
+ *  a match; both callers ask `Number.isFinite` first for that reason.
+ *
+ *  @param {number[]} drawn @param {number[]} against */
+const furthest = (drawn, against) =>
+  Math.max(...drawn.map((r, index) => Math.abs(r - against[index])));
+
 /** How far the map seen THROUGH a Card's glass may differ in size from the map
  *  beside it, as a share of the Slab's own drawn width. A Card's backdrop is one
  *  division away from being the wrong size, and this is that division asserted. */
@@ -1435,9 +1444,7 @@ async function atWindow(browser, origin, viewport) {
         // `24 / 18 / 22` and two of the three were wrong. This reads the
         // stylesheet's own number, clamps it the way a browser clamps it, and
         // requires the drawn backdrop to have been cut to that.
-        const off = Math.max(
-          ...surface.radii.map((r, index) => Math.abs(r - surface.stated[index])),
-        );
+        const off = furthest(surface.radii, surface.stated);
         if (!Number.isFinite(off)) {
           failures.push(
             `${where}: the ${surface.name}'s corners cannot be measured — drawn ` +
@@ -1451,42 +1458,46 @@ async function atWindow(browser, origin, viewport) {
               'second opinion about a number the vendored export already holds',
           );
         }
-        // EVERY CORNER IN THE DRAWING TURNS THE SAME WAY (#195). On the app's own
-        // screen the details sheet rests on the bottom edge and its foot is square
-        // — `border-radius: var(--r-sheet) var(--r-sheet) 0 0`, where the zeroes
-        // are the RULE's and not the variable's, so overriding `--r-sheet` sets
-        // 28px to 28px and changes nothing. Off the map the sheet is a floating
-        // object with four visible corners, and this is the regression back to two
-        // of them: it is the export's own default, one line of cards-shape.css
-        // stands between the page and it, and it looks merely slightly off rather
-        // than broken.
-        //
-        // ASKED OF EVERY GLASS SURFACE and not of the details sheet alone, because
-        // that IS the composition's rule — the Slab, the search pill, the offline
-        // button and the rail popup all turn, and a surface that stops turning is a
-        // decision rather than a detail.
+        // EVERY CORNER IN THE DRAWING TURNS THE SAME WAY (#195), asked of EVERY
+        // glass surface and not of the details sheet alone — that is the
+        // composition's rule rather than one surface's detail. NOTES.md, "A shape
+        // is the one thing a variable cannot carry", carries the trap that makes
+        // this worth a Check: the sheet's square foot is the export's own default,
+        // and the obvious undo — overriding `--r-sheet` — is a no-op.
         if (surface.stated.some((r) => !(r > 0))) {
           failures.push(
             `${where}: the ${surface.name} is drawn with corners ${surface.stated.join('/')} — a zero ` +
-              'is a right angle in a drawing where the Slab, the pills and the popup all curve. The ' +
-              'sheet\'s square foot is the export\'s own, and overriding --r-sheet does NOT undo it: ' +
-              'the zeroes are in the border-radius rule, so the override has to be of the rule',
+              'is a right angle in a drawing where the Slab, the pills and the popup all curve. If ' +
+              'this is the details sheet, the square foot is the export\'s own and overriding ' +
+              '--r-sheet does NOT undo it: the zeroes are in the border-radius rule, so the override ' +
+              'has to be of the rule',
           );
         }
         // AND THE DRAWN EDGE FOLLOWS THAT CORNER, asked at the corner itself. The
         // backdrop above and the slice stack here are two elements built from two
         // expressions out of one measurement, so rounding the glass while leaving
         // the edge square is a build that looks almost right.
+        //
+        // WHAT THE OUTLINE PROVES AND WHAT IT DOES NOT. It is the widest corner in
+        // the stack, so it is the wall's — the solid's own outline — and that is
+        // the corner this compares. It says nothing about the slices INSIDE it,
+        // which `edge.ts` derives from the same four numbers by subtracting each
+        // slice's own inset; a fillet drawn to some other outline under a correct
+        // wall would pass here.
         if (surface.edge === null) {
           failures.push(
             `${where}: the ${surface.name} has no slices to read an outline off — nothing about the ` +
               'shape of its drawn edge was asserted',
           );
         } else {
-          const bent = Math.max(
-            ...surface.edge.map((r, index) => Math.abs(r - surface.stated[index])),
-          );
-          if (!Number.isFinite(bent) || bent > RADIUS) {
+          const bent = furthest(surface.edge, surface.stated);
+          if (!Number.isFinite(bent)) {
+            failures.push(
+              `${where}: the ${surface.name}'s edge cannot be measured — drawn ` +
+                `${surface.edge.join('/')} against ${surface.stated.join('/')} stated. Nothing about ` +
+                'the shape of its drawn edge was asserted',
+            );
+          } else if (bent > RADIUS) {
             failures.push(
               `${where}: the ${surface.name}'s edge is drawn to an outline of ` +
                 `${surface.edge.join('/')} where the surface itself is ${surface.stated.join('/')} — ` +

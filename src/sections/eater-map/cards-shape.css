@@ -1,81 +1,23 @@
 /*
- * What this Section says about the SHAPE of the vendored Cards' surfaces, and it
- * is one declaration (#195).
+ * What this Section says about the SHAPE of a vendored Card surface. A plain,
+ * unscoped stylesheet, because a shape needs a SELECTOR and a scoped one cannot
+ * reach markup that arrived through `set:html`. NOTES.md, "A shape is the one
+ * thing a variable cannot carry", is the authority — including the three rules a
+ * rule added here has to keep. Two of them are worth having at the line:
  *
- * WHY THERE IS A SECOND FILE AT ALL. The dark theme #190 established says
- * everything it says in custom properties, on `.eater-map__card`, inside
- * `EaterMap.astro`'s own scoped block — and it reaches the app's markup because a
- * custom property INHERITS. `border-radius` does not. So a corner is the first
- * thing this Section has had to say to the Eater app's own elements that needs a
- * SELECTOR, and there is nowhere in that scoped block to write one: Astro narrows
- * every compound of a scoped rule with the component's scoping class, and the
- * Cards arrive through `set:html` carrying none, so a rule written there matches
- * nothing. `:global()` is the escape hatch and `check-source.mjs` fails the build
- * on it. A plain stylesheet is not scoped, which is exactly what `cards.css`
- * itself is and why the vendored export works at all.
+ *   * SELECT ONLY THROUGH `.eater-cards` AND `.eater-map__surface`. Those are
+ *     every ancestor `glass.ts`'s offscreen ruler gives the clone it measures, so
+ *     a rule anchored any deeper applies to the page and not to the measurement —
+ *     the surface rounds, and its backdrop and its edge stay cut square.
+ *   * NEVER NAME THE EXPORT'S `svelte-…` CLASS. It is a build fingerprint, and the
+ *     weight has to come from real handles instead: (0,4,0) against the (0,3,0)
+ *     `cards.css` states its own rules at.
  *
- * THE BOUNDARY IS STILL THE ONE #174 DREW. Nothing here is written INSIDE
- * `assets/cards/`, so a re-vendoring — which rewrites that folder and not this
- * file — leaves this standing, and no rule in the export is edited. What has moved
- * is only that this Section now selects into the app's markup rather than only
- * inheriting into it; NOTES.md carries that as the exception it is, with the one
- * rule that keeps it safe: never name the export's build fingerprint.
- *
- * ---- the details sheet's FOOT --------------------------------------------
- *
- * In the app the details panel is a bottom sheet resting on the screen's edge,
- * where a rounded foot would show a sliver of map underneath it. Off the map it is
- * a floating object with four visible corners, and one of them turned a right
- * angle while the Slab's, the search pill's, the rail popup's and its own head all
- * curved.
- *
- * THE SQUARENESS IS IN THE RULE AND NOT IN THE VARIABLE, which is the whole trap
- * and it hid this for a round. `cards.css` declares `--r-sheet: 28px` — a single
- * value, already — and then writes
- *
- *     border-radius: var(--r-sheet) var(--r-sheet) 0 0;
- *
- * so the two zeroes are the rule's and overriding `--r-sheet` sets 28px to 28px.
- * That is a no-op, it is what was done the first time the two were compared, and
- * it is why the before and the after were the same picture and why this was
- * written up as "the two are indistinguishable". They are not; the toggle was
- * broken.
- *
- * `var(--r-sheet)` AND NEVER `28px`. The radius is the export's number and this
- * only says which corners get it — the same rule `glass.ts` and the `eater-map`
- * Check hold the drawn backdrop and the drawn edge to, and the reason the mockup's
- * typed `24 / 18 / 22` was wrong on two of three surfaces.
- *
- * AND NOTHING ELSE HAS TO FOLLOW BY HAND. `glass.ts` reads each surface's four
- * COMPUTED corners off the served stylesheet and cuts the backdrop and the slice
- * stack to them, so the map behind this sheet and the edge round it turn with this
- * line. That is the failure mode worth naming: a build that rounds the glass and
- * leaves the drawn edge square looks almost right, so the Check asks the slices'
- * own corners rather than inferring them from the surface.
- *
- * ---- what a rule in this file may select THROUGH ---------------------------
- *
- * ONLY `.eater-cards` AND `.eater-map__surface`, and this is the whole of why the
- * selector below is shaped the way it is rather than written down the Section's
- * own boxes. `glass.ts` does not measure the Card on the page — it clones
- * `.eater-map__surface` into a bare `.eater-cards` host in an offscreen ruler and
- * reads the corners THERE, because a rect taken on the turned plane comes back
- * projected. Those two elements are the only ancestors the clone has. A rule
- * anchored on `.eater-map__card` or `.eater-map__face` therefore applies to the
- * page and NOT to the ruler, so the sheet is rounded and its backdrop and its edge
- * are still cut square — which is exactly the "rounds the glass, leaves the edge
- * square" build above, arrived at from the other direction. It was written that
- * way once and the Check caught it at both windows.
- *
- * FOUR COMPOUNDS, AND THE COUNT IS LOAD-BEARING. The rule this overrides is
- * `.eater-cards .details-panel.svelte-1ccclju`, which is (0,3,0) — and the third
- * of those classes is the EXPORT'S OWN BUILD FINGERPRINT, a hash the next
- * re-vendoring changes. Matching its weight would leave the winner to whichever
- * stylesheet the bundler emitted second, and naming the hash would be a selector
- * built out of a number this repository does not own. (0,4,0) wins outright
- * however the two files are ordered, and every compound of it is a real handle:
- * the vendored host, the box this Section puts the vendored markup in, and the
- * export's own two names for the sheet.
+ * THE DETAILS SHEET'S FOOT, and the trap is that the squareness is in the RULE.
+ * `--r-sheet` is already a single `28px`; the two zeroes are in `border-radius:
+ * var(--r-sheet) var(--r-sheet) 0 0`. Overriding the VARIABLE sets 28px to 28px
+ * and is a no-op — it is what was done the first time this corner was compared,
+ * and why the before and the after were the same picture.
  */
 .eater-cards .eater-map__surface .details-panel[data-eater-card='details'] {
   border-radius: var(--r-sheet);
