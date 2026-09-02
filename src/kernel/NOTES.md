@@ -14,7 +14,7 @@ than a convenience.
 | file                        | owns                                                        |
 | --------------------------- | ----------------------------------------------------------- |
 | `faces.css` / `tokens/faces.css` | the five families, six files, the face Tokens, and the page's own type size — the zoom, the ceiling and the give-way |
-| `ground.css`                | the theme's two papers, the Turn across them, and that the document never scrolls sideways |
+| `ground.css` / `tokens/ground.css` | the theme's two papers, the Turn across them, the shade over the first screen's background, and that the document never scrolls sideways |
 | `corners.css` / `corners.ts`| the plate, the car and the eye — geometry, and which rung    |
 | `rail/` / `tokens/rail.css` | the Rail — the one index on the page, its words, its two regimes, and which entry is current |
 | `effect-stack/`             | the nine layers, and the grain tile                          |
@@ -706,6 +706,57 @@ replaces the first one's Timeline in the register — silently, and the symptom
 turns up later as a Timeline that will not seek. A Check that wants a mount point
 of its own should give it a name of its own; `observeSection` is exposed for
 exactly that.
+
+## The shade: one Token that darkens the first screen's background
+
+`--shade` is one number in `tokens/ground.css`, and `.kernel-shade` in
+`ground.css` is the layer it draws. At 0 — what ships — the page is exactly what
+it was, and the Editor draws it a 0-to-1 slider because a Token whose value is a
+bare `0` gets a range that wide (`scripts/editor/lib/tokens.mjs`).
+
+**"The background" is not a judgement here, it is a z-index.** The Effect Stack's
+layers take even z-indexes so that content excluded from them has an odd one to
+stand on between any two, and the Front Screen's `--front-screen-type-z` is 5 —
+above `paper` (2) and `halftone` (4), below everything else. That already sorts
+the first screen into two halves, and the shade is a layer at 5 that covers the
+lower one: the ground on the canvas, the corner pictures at −1, the Rail at 1,
+and the two lit layers **with their filters**. Everything the Front Screen draws
+is lifted to that same 5 — the four type blocks, the strip, the bar, the Cut
+Title — so the type, the photographs and the theme switch are all above it.
+
+**A layer and not a correction, and this is the part that was actually asked
+for.** Darkening `--paper` would have moved the ground and left the treatment
+printed at its old brightness over it, because `paper` and `halftone` blend
+`multiply` and `soft-light` against whatever is beneath — the textures would have
+gone *lighter* relative to the ground rather than darker with it. Scaling each of
+the stack's strengths instead would be a second set of numbers to keep in step
+with the first, and the ask was one slider. One layer over the whole lower half
+is the only shape that is genuinely one number.
+
+**It ends on `--turn` and never on a length.** `opacity` is
+`calc(var(--shade) * (1 - var(--turn)))`: whole while the page is on paper, gone
+by the time it has arrived at `--dark`, where there is nothing left to darken.
+So there is no band to find the bottom of — a shade the height of the fold would
+have put a hard edge across the page for the reader to scroll past, which is what
+"banding" has meant both times it was reported here. `position: fixed` is safe on
+*this* element for the reason it is not safe on `.fx`: the shade has no blending
+children, so the stacking context it makes isolates nothing that matters.
+
+**`pointer-events: none` is load-bearing.** A full-viewport layer that answered
+`document.elementFromPoint` would kill every link on the page — the failure the
+`rail` Check was written for, three links wide, made general.
+
+**What the author will see going up, and it is not a bug.** The shade moves what
+is *painted*; it does not move `--ground`, the token. So the Front Screen's three
+soft colours — `--front-screen-muted` on the location line, `--front-screen-rule`
+under the contact links, `--front-screen-soft` — are still mixed towards a paper
+that is nominally white, and on the light theme they wash out as the background
+comes up to meet them: at 0.35 the underlines have gone. On dark they do the
+opposite and gain contrast. That is the shape of the ask — darken the background,
+leave the type — and the greys are type. Making them track would mean publishing
+the *shaded* ground as a second colour for the things standing above the layer to
+mix against, which is a change to the theme's own API and a decision rather than a
+number; it is not what one slider buys.
 
 ## The Effect Stack covers the document, and leaves with the Turn
 
