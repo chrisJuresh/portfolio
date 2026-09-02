@@ -338,10 +338,10 @@ pnpm stages
 That renders the Eater Map Section's Exploded View twice into
 `design/stages/index.html`: the shipped DOM stage and the WebGL one #181 built
 beside it, crossed with what each can make the Slab's edge out of, in both themes
-and at both ends of the band. **There is no empty cell any more** — #204 taught
+and at both ends of the band. **There is no empty cell any more** — #206 taught
 the DOM stage `wrapped`, so both stages draw all three edges. The cell that used
 to be empty never decided #182 anyway, and #189 corrected a spec that read it as
-deciding; #204 removed the premise under it as well.
+deciding; #206 removed the premise under it as well.
 
 **The Slab's edge is `wrapped` on the shipped page**, which is the map running off
 the front and round the roll rather than edge material wrapping the map — a phone

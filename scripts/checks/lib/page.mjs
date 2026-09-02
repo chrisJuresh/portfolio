@@ -63,7 +63,7 @@ const stageAsked = () => process.env.PORTFOLIO_STAGE;
  * What the Slab's edge is made of, for every Check in this run — `flat`, `thick`
  * or `wrapped`.
  *
- * THE SECOND AXIS OF THE SAME SHEET, and it earned a flag when #204 taught the DOM
+ * THE SECOND AXIS OF THE SAME SHEET, and it earned a flag when #206 taught the DOM
  * stage the third edge: both stages reach all three now, so "every Check passes
  * whatever the Slab is made of" is a claim the suite can actually be asked to
  * make. The shipped default is `wrapped` and leaving the flag off changes nothing.

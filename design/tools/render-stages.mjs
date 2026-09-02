@@ -364,7 +364,7 @@ async function sheet(rows) {
   <p class="meta">${rows.filter((row) => !row.unreachable).length} render(s) of ${ROUTE} by
      <code>design/tools/render-stages.mjs</code> (#181). Two stages behind one boundary —
      <code>src/sections/eater-map/stage.ts</code> — crossed with what each can make the
-     Slab's edge out of. <b>There is no empty cell any more</b> (#204): DOM ran out of
+     Slab's edge out of. <b>There is no empty cell any more</b> (#206): DOM ran out of
      reach at <code>wrapped</code> until a slice was given the picture instead of a
      gradient, and both stages draw all three edges now. What is left to judge is the
      one thing this sheet was always for — whether a faceted 24-slice fillet is

@@ -2749,7 +2749,7 @@ async function edgeAsBuilt(spec) {
     }
     const authored = slice.style.background;
     // A WRAPPED FILLET RING IS THE PICTURE AND NOT A GRADIENT, and that is the
-    // whole of `wrapped` (#204) rather than an exemption. It is COUNTED here and
+    // whole of `wrapped` (#206) rather than an exemption. It is COUNTED here and
     // asserted below, so the two questions the group already asks about a gradient
     // — is it directional, does it still name its Token — are asked of the slices
     // that are supposed to have one, and a ring that quietly lost its picture is a
@@ -3089,7 +3089,7 @@ async function theEdgeHasADirection(browser, origin) {
           );
         }
         // IS THE SLAB'S ROLL THE MAP, OR THE EDGE — asked both ways round, so
-        // neither `wrapped` nor `thick` can quietly become the other (#204). The
+        // neither `wrapped` nor `thick` can quietly become the other (#206). The
         // Slab's fillet rings carry the picture under `wrapped` and a gradient
         // under `thick`; a Card's glass is never wrapped, whatever the Slab is.
         if (name === 'slab' && seen.fillets > 0) {

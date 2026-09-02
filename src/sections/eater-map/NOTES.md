@@ -1029,7 +1029,7 @@ Rendered at four values against the reference before choosing. Copying the
 mockup's clip instead would draw map pixels outside the solid's own cross-section
 at z = 0, which is the overhang #200 said to reproduce honestly rather than copy.
 
-### The map wraps the edge, and DOM reaches it (#204)
+### The map wraps the edge, and DOM reaches it (#206)
 
 The author's correction to #200: what was wanted was **the map wrapping slightly
 round the edge, not the edge wrapping round the map** — a phone with a curved

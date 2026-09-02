@@ -120,7 +120,7 @@ if (stageArg !== -1) {
  *   pnpm check -- --edge thick
  *
  * The same device as `--stage` and for the same reason, and it became worth having
- * when #204 taught the DOM stage `wrapped`: both stages reach all three edges now,
+ * when #206 taught the DOM stage `wrapped`: both stages reach all three edges now,
  * so this is the axis the sheet's empty cell used to sit on. The default is the
  * shipped edge and the default path is untouched.
  */
