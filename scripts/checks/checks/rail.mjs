@@ -53,7 +53,11 @@ import { DESK, open, settle } from '../lib/page.mjs';
 /** The band's short corner: the smallest window that is still a page turn. */
 const CORNER = { width: 1100, height: 700 };
 
-/** Below the band, where the page is a scroll and the Rail is a row. */
+/** Below the band, where the page is a scroll and the Rail is a row. The same
+ *  window `crossing.mjs` calls PORTRAIT, deliberately and not by accident: it is
+ *  the reader's own case — taller than it is wide — and reading the two Checks'
+ *  failures side by side is worth more than sharing the constant, which every
+ *  Check in this suite declares for itself. */
 const STACKED = { width: 820, height: 1180 };
 
 /** Two lengths that are meant to be the same length, in px. Chromium lays boxes
@@ -96,13 +100,15 @@ export const check = {
             const rect = rail.getBoundingClientRect();
             return { x: rect.x, y: rect.y, w: rect.width, h: rect.height };
           };
-          /** Which entry is current, by the Section it names. */
+          /** Which entry is current, by the Section it names. One name and not a
+           *  list: `count` is what says whether more than one was marked, and it
+           *  is asserted separately. */
           const current = () => {
             const marked = [...rail.querySelectorAll('[aria-current]')];
             const item = marked[0]?.closest('[data-rail-item]');
             return {
               count: marked.length,
-              names: item instanceof HTMLElement ? (item.dataset.railFor ?? null) : null,
+              named: item instanceof HTMLElement ? (item.dataset.railFor ?? null) : null,
             };
           };
 
@@ -115,16 +121,37 @@ export const check = {
           // Snapping stays ON: every position below is a port, which is exactly
           // where a reader is allowed to rest, so there is nothing for the snap
           // to pull back — and asserting from the ports is the point.
+          //
+          // THE ARRIVAL IS WAITED FOR AND THEN REPORTED, rather than assumed
+          // after a frame or two. `scrollTo` sets the position synchronously but
+          // the `scroll` event — which is what moves the highlight — is dispatched
+          // at the next rendering opportunity, so a fixed number of frames is a
+          // sampling window to miss. This waits until the page is actually
+          // standing on the port and hands `landed` back, so a Check that read
+          // the highlight before it moved fails on the scroll rather than on the
+          // Rail. NOTES.md: no clock in a Check.
+          // EACH STOP CARRIES WHAT IT EXPECTS, which is not tidiness: the first
+          // draft had the three stops here and their three expected names in a
+          // second list next to the assertion, in an order that had to agree
+          // silently — so reordering either one would have compared the Gallery's
+          // stop against the Eater Map's answer and passed. The port index and the
+          // Section it names travel together.
           const stops = [];
-          for (const [label, y] of [
-            ['the Gallery', ports[1]],
-            ['the Eater Map', ports[2]],
-            ['the Gallery again', ports[1]],
+          for (const [label, y, wants] of [
+            ['the Gallery', ports[1], 'projects'],
+            ['the Eater Map', ports[2], 'eater-map'],
+            ['the Gallery again', ports[1], 'projects'],
           ]) {
             window.scrollTo(0, y);
+            let waited = 0;
+            while (Math.abs(window.scrollY - y) > 1 && waited < 60) {
+              await frame();
+              waited += 1;
+            }
+            // One further rendering opportunity once it has arrived: the scroll
+            // event for the last movement is delivered before it.
             await frame();
-            await frame();
-            stops.push({ label, y, box: box(), current: current() });
+            stops.push({ label, y, wants, landed: window.scrollY, box: box(), current: current() });
           }
           window.scrollTo(0, 0);
           await frame();
@@ -234,20 +261,27 @@ export const check = {
         }
 
         // ---- the highlight follows, in both directions -----------------------
-        for (const [stop, wanted] of [
-          [gallery, 'projects'],
-          [eaterMap, 'eater-map'],
-          [back, 'projects'],
-        ]) {
+        for (const stop of read.stops) {
+          // THE ARRIVAL FIRST, or the highlight is being read at a scroll
+          // position the page never reached and the failure names the wrong
+          // thing.
+          if (Math.abs(stop.landed - stop.y) > 1) {
+            failures.push(
+              `${name}: sent to ${Math.round(stop.y)}px for ${stop.label} and the page came to rest at ` +
+                `${Math.round(stop.landed)}px — the resting place is not where the Kernel says it is, so ` +
+                'the highlight below was read somewhere a reader could not be',
+            );
+            continue;
+          }
           if (stop.current.count !== 1) {
             failures.push(
               `${name}: at ${stop.label} ${stop.current.count} entries are aria-current, wanted 1 — ` +
                 'the Rail marks the Section the page is resting on, and exactly one Section is',
             );
-          } else if (stop.current.names !== wanted) {
+          } else if (stop.current.named !== stop.wants) {
             failures.push(
-              `${name}: at ${stop.label} the current entry names "${stop.current.names}", wanted ` +
-                `"${wanted}". The entry is derived from the Section at rest, so this is the highlight ` +
+              `${name}: at ${stop.label} the current entry names "${stop.current.named}", wanted ` +
+                `"${stop.wants}". The entry is derived from the Section at rest, so this is the highlight ` +
                 'not following the page turn' +
                 (stop.label.endsWith('again') ? ' BACK, which a one-way walk would pass.' : '.'),
             );
@@ -297,14 +331,26 @@ export const check = {
             const rect = element.getBoundingClientRect();
             return { top: rect.top + window.scrollY, bottom: rect.bottom + window.scrollY };
           };
+          // WHERE THE INK STARTS: the box's own left edge plus its left padding,
+          // which for both of these boxes is the page's side margin. Read off the
+          // ELEMENT and not off a rule — `padding: var(--rail-crown) var(--rail-side) 0`
+          // has no `padding-left` a stylesheet walk can see, and a computed style
+          // resolves the shorthand.
+          //
+          // NO FALLBACK, AND THE CALLER IS WHY. A `0` here would be a number the
+          // two boxes could AGREE about while neither had a padding, so it would
+          // hide the failure; a `NaN` cannot be agreed about — but `NaN > 0.5` is
+          // also false, so on its own it would hide the failure just as well. What
+          // makes returning it the right answer is the `Number.isFinite` pair the
+          // caller checks FIRST. Neither half works without the other.
           const inset = (element) => {
             const style = getComputedStyle(element);
-            return element.getBoundingClientRect().x + Number.parseFloat(style.paddingLeft || '0');
+            return element.getBoundingClientRect().x + Number.parseFloat(style.paddingLeft);
           };
 
           return {
             rails: 1,
-            snapping: getComputedStyle(rail).position,
+            position: getComputedStyle(rail).position,
             firstFoot: at(first).bottom,
             railTop: at(rail).top,
             railFoot: at(rail).bottom,
@@ -331,14 +377,25 @@ export const check = {
               `${where}: the Rail runs ${read.railTop.toFixed(0)}–${read.railFoot.toFixed(0)}px in the ` +
                 `document, and the first Section ends at ${read.firstFoot.toFixed(0)} with the Gallery ` +
                 `beginning at ${read.galleryTop.toFixed(0)} — out of the band the index is in flow at the ` +
-                `head of the thing it indexes (it is \`position: ${read.snapping}\`)`,
+                `head of the thing it indexes (it is \`position: ${read.position}\`)`,
             );
           }
           // TWO CLAMPS IN TWO FILES, HELD TO EACH OTHER ON THE PAGE. `--rail-side`
           // restates the Panel's `--projects-panel-stack-side` because the Kernel
           // may not read a Section, and a restatement that nothing compares is a
           // number waiting to drift.
-          if (Math.abs(read.railInk - read.galleryInk) > TOGETHER) {
+          //
+          // BOTH READINGS ARE CHECKED FOR BEING NUMBERS FIRST, and that is not
+          // ceremony: `Math.abs(NaN - x) > tolerance` is FALSE, so a padding that
+          // stopped resolving would make the comparison below pass rather than
+          // fail — which is NOTES.md's own trap, and the one the band's margin
+          // probe exists for a few lines up.
+          if (!Number.isFinite(read.railInk) || !Number.isFinite(read.galleryInk)) {
+            failures.push(
+              `${where}: the Rail's left inset read ${read.railInk} and the Gallery's ${read.galleryInk} ` +
+                '— one of the two paddings did not resolve, so the two left edges were not compared at all',
+            );
+          } else if (Math.abs(read.railInk - read.galleryInk) > TOGETHER) {
             failures.push(
               `${where}: the Rail's names start at x=${read.railInk.toFixed(1)} and the composition ` +
                 `under them at x=${read.galleryInk.toFixed(1)} — the index and the thing it indexes ` +

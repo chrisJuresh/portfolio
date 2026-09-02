@@ -466,6 +466,13 @@ document, not inside it — and this Section's top padding out here is the seam
 under it rather than the clearance the cut word needs, which went with the Rail
 as `--rail-crown`.
 
+**Wide and short is the one regime where this Section's own drawing moved**, and
+it is worth having the number: the Rail used to be a grid column in the centred
+two-column base rule, so dropping it takes the composition LEFT by half the
+column and the gap — about 14px at 1440×450 — and out there the index is the row
+above rather than a column beside. `src/kernel/NOTES.md` has why the split is the
+band rather than the width, and what a fixed index would have cost instead.
+
 Three Tokens went with it and one was deleted outright. `--projects-panel-rail-share`,
 `--projects-panel-rail-floor` and the Rail's rung of the stacked ladder are
 `--rail-share`, `--rail-floor` and `--rail-stacked`; `--projects-panel-side` was

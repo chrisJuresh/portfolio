@@ -395,6 +395,36 @@ project is simply not named, which is not a Rail. Both of its gaps are multiples
 of the names' own size, so the row shrinks as one drawing rather than opening up
 as the type closes.
 
+### The one place the Rail actually moved: wide and short
+
+**The split is the BAND, and the two Sections used to split on the width alone.**
+So above 1100px and under 700 — a maximised browser on a short laptop, and the
+window `projects-panel` opens for its container query — the Rail was a vertical
+grid column INSIDE each Section, and out here it is the row. That is the only
+regime in which anything about its placement changed, and it is a deliberate
+choice rather than a consequence:
+
+- **Two regimes to hold rather than three**, gated on the same query
+  `landing.css` uses for the landing and the page turn. A third would be a third
+  set of rules for a corner of the viewport space.
+- **Down there the page is a scroll**, like everything else outside the band —
+  there is no page turn for a pinned index to stand still across, and an index
+  printed once at the head of the thing it indexes is what the rest of that
+  regime already does.
+- **A fixed vertical index would not have been where it was either.** In that
+  regime the Panel's composition is capped by the screen's height and centred, so
+  the Rail's grid column stood wherever the centring put it — 359px in from the
+  page's edge at 1440×450 — and the Kernel cannot read that offset. Pinned to the
+  page's own margin it would be 300px away from where it used to be, which is a
+  bigger move than the row is.
+
+What it costs, measured at 1440×450: the composition moves LEFT by about 14px,
+which is half the column and the gap it no longer leaves, and the row of names
+stands at the page's own left margin rather than beside the drawing. The Rail's
+left edge and the composition's therefore do NOT agree out there, and the `rail`
+Check only compares them at the stacked window where they do — asserting it at a
+window where the composition is centred would be asserting a coincidence.
+
 ### An entry is a route if it holds a link
 
 That is the whole of the machinery — no attribute says which Section an entry

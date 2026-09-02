@@ -320,7 +320,16 @@ and reads its rect, which is `crossing`'s own idiom for `--front-screen-cut-slab
 **when an assertion needs a length the page states as a `calc()` or a `clamp()`,
 ask the page for it.**
 
-Five mutations, all caught:
+**The same `NaN` costs the same silence a second time in the same Check**, on a
+different axis, and that is why the `Number.isFinite` guards are not ceremony. The
+two left edges below the band are read as `rect.x + parseFloat(paddingLeft)` —
+which resolves, because a computed style resolves a shorthand a stylesheet walk
+cannot — but a padding that ever stopped resolving would hand the comparison a
+`NaN` and make it PASS. `Math.abs(NaN − x) > tolerance` is `false`. Any Check
+subtracting two measured numbers has to say what it does when one of them is not a
+number, and "nothing" is the wrong answer.
+
+Six mutations, all caught:
 
 | mutation                                                         | wanted | got |
 | ------------------------------------------------------------------ | ------ | --- |
