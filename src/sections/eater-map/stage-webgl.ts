@@ -489,10 +489,12 @@ const mountWebglStage = async (parts: StageParts): Promise<Stage> => {
   }
 
   // A LOOP AND NOT A SUBSCRIPTION, and it is the cheaper of the two here. The
-  // drawing turns on `--eater-map-lift`, on eight Tokens, on the Slab's box and on
-  // the page's theme, and a custom property is the one thing on that list nothing
-  // will tell you about — no event, no observer. So the frame reads them, and the
-  // signature above is what stops a page that is not moving from DRAWING at all.
+  // drawing turns on four Tokens, on `--eater-map-solid`, on the Slab's box and on
+  // the page's theme — and NOT on `--eater-map-lift` since #189, because the Slab
+  // does not move and the Cards were never this stage's. A custom property is the
+  // one thing on that list nothing will tell you about: no event, no observer. So
+  // the frame reads them, and the signature above is what stops a page that is not
+  // moving from DRAWING at all.
   //
   // IT RUNS FOR THE LIFE OF THE PAGE, and nothing stops it. A Section is mounted
   // as the reader approaches and is never unmounted, so there is no moment to

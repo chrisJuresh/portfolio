@@ -82,9 +82,24 @@ const SLICE = 'eater-map__slice';
  *  collapsed. Written out rather than held in a variable, because these are CSS
  *  expressions the browser re-evaluates — nothing here is computed once at mount,
  *  which is what lets a Token dragged in the Editor and a window carried across
- *  the breakpoint both move the drawing. */
-const DEPTH = 'var(--eater-map-solid) * var(--eater-map-slab-thickness) * 100cqw';
-const ROUND = 'var(--eater-map-solid) * var(--eater-map-slab-edge-radius) * 100cqw';
+ *  the breakpoint both move the drawing.
+ *
+ *  `min()` IS THE CONSTRAINT tokens.css STATES, MADE REAL. An edge cannot be
+ *  rounder than it is deep, and without this the wall's depth —
+ *  `ROUND + (DEPTH - ROUND) * along` — goes NEGATIVE for a radius dragged past
+ *  the thickness, so the eight wall slices stand in FRONT of the fillet's
+ *  deepest ring and paint a solid ring of edge colour over the map. `stage-webgl.ts`
+ *  clamps the same pair in `Slab.write`, and one boundary answering a Token two
+ *  ways is the confound #182's sheet exists to remove.
+ *
+ *  AND `--eater-map-solid` CARRIES A FALLBACK for the same reason: the WebGL stage
+ *  reads a value it cannot parse as 1, and a `var()` with no fallback here would
+ *  make every slice's `inset`, `border-radius` and `transform` invalid at
+ *  computed-value time — no edge at all, against the other stage's full depth. */
+const SOLID = 'var(--eater-map-solid, 1)';
+const DEPTH = `${SOLID} * var(--eater-map-slab-thickness) * 100cqw`;
+const ROUND =
+  `${SOLID} * min(var(--eater-map-slab-edge-radius), var(--eater-map-slab-thickness)) * 100cqw`;
 
 const mountDomStage = (parts: StageParts): Stage => {
   const { plane, still, edge } = parts;

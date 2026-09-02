@@ -98,7 +98,10 @@
      0.03 is what the reference is and what #187 states. The radius is the plan
      corner AND the fillet in the DOM stage — one `border-radius` per slice — so
      it is held to the thickness: an edge cannot be rounder than it is deep.
-     Chosen by looking, on the sheet `pnpm stages` renders.
+     **HELD BY BOTH STAGES AND NOT BY THIS COMMENT** — `min()` in `stage-dom.ts`
+     and `Math.min` in `stage-webgl.ts`'s `Slab.write` — so dragging the radius
+     past the thickness stops at the thickness rather than turning the wall inside
+     out. Chosen by looking, on the sheet `pnpm stages` renders.
 
      READ BY THE STAGE AND NOT BY THE COMPOSITION, which is why nothing in
      `EaterMap.astro` mentions them: `stage.ts` is the boundary, the DOM stage

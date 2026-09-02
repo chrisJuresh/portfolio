@@ -331,8 +331,21 @@ async function atWindow(browser, origin, viewport) {
           })
           .map((element) => element.className);
 
+      // NAMED RATHER THAN DEREFERENCED, for the reason the Slab and the Timeline
+      // are above and every box in `collapsedBelowTheBand` is: a renamed box
+      // otherwise makes this Check reject with `Cannot read properties of null`
+      // out of an `evaluate`, which fails the run and says nothing about why.
       const plane = document.querySelector('.eater-map__plane');
       const cardHost = document.querySelector('.eater-map__cards');
+      if (!plane || !cardHost) {
+        return {
+          missing:
+            'the Exploded View has no ' +
+            (plane ? '.eater-map__cards' : '.eater-map__plane') +
+            ', so nothing about the projection, the Slab standing still or the ' +
+            "Cards' rise could be read",
+        };
+      }
 
       /** The Slab's own projected box, which #189 asks to be the same at both ends
        *  of the Lift. The plane is the picture's box exactly — `inset: 0` on the
@@ -351,7 +364,10 @@ async function atWindow(browser, origin, viewport) {
        *  THE TILT IS WHAT MAKES THIS THE RIGHT PAIR: the head of the Slab leans
        *  away from the reader and the foot leans towards them, so under a camera at
        *  a finite distance these two are at different distances from the lens and
-       *  are drawn at different sizes. Under a parallel projection they are
+       *  are drawn at different sizes. `top: 100%` puts the second one just PAST
+       *  the foot rather than on it — its own height below the Slab's bottom edge —
+       *  which is further along the same axis and so a wider separation, not a
+       *  different question. Under a parallel projection they are
        *  congruent, and `getBoundingClientRect` on a rotated box is the projected
        *  quad's axis-aligned bounding box — which is the same box for two congruent
        *  quads wherever they stand. */
@@ -425,11 +441,19 @@ async function atWindow(browser, origin, viewport) {
         // turns and the topmost Card would be measured a per cent large.
         const heldTransform = plane.style.transform;
         const heldStyle = plane.style.transformStyle;
-        plane.style.transform = 'none';
-        plane.style.transformStyle = 'flat';
-        const square = cardBoxes();
-        plane.style.transform = heldTransform;
-        plane.style.transformStyle = heldStyle;
+        let square;
+        try {
+          plane.style.transform = 'none';
+          plane.style.transformStyle = 'flat';
+          square = cardBoxes();
+        } finally {
+          // Restored the way the playhead and the scroll are, and for the same
+          // reason: an inline `transform: none` left standing on the plane would
+          // outlive the failure that caused it, so a screenshot taken to work out
+          // why the run broke would show a drawing nobody composed.
+          plane.style.transform = heldTransform;
+          plane.style.transformStyle = heldStyle;
+        }
 
         const stage = document.querySelector('.eater-map__stage');
         const reachable = stage
@@ -628,7 +652,20 @@ async function atWindow(browser, origin, viewport) {
       for (let index = 1; index < order.length; index += 1) {
         const above = rises.find((one) => one.name === order[index - 1]);
         const below = rises.find((one) => one.name === order[index]);
-        if (!above || !below) continue;
+        // A MISSED NAME IS A FAILURE AND NOT A SKIP. `order` is the app's own
+        // stacking order written a second time — `cards.ts` owns the first copy
+        // and this file cannot import it — so a renamed Card would otherwise make
+        // both lookups miss, the loop skip, and this assertion pass while having
+        // read nothing. That is the shape scripts/checks/NOTES.md warns about
+        // three times, and it is worth the noisier branch.
+        if (!above || !below) {
+          failures.push(
+            `${where}: no Card is named ${above ? order[index] : order[index - 1]} — this Check knows the ` +
+              `stack as ${order.join(' over ')}, which is cards.ts's own order written a second time. ` +
+              'Nothing about the stack having an order was asserted',
+          );
+          continue;
+        }
         if (!(above.rise - below.rise > RISEN)) {
           failures.push(
             `${where}: the ${order[index - 1]} Card rises ${above.rise}px and the ${order[index]} Card ` +

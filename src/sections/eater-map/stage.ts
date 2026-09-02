@@ -3,19 +3,20 @@
  * the Slab. One boundary, two implementations behind it (#177, #181).
  *
  * WHAT IS ON EITHER SIDE OF IT, because the split is not the obvious one. The
- * stage owns the SLAB — its size, its camera and, if it has one, its thickness.
- * It does NOT own the Cards. The Cards are the Eater app's own markup and have to
+ * stage owns the SLAB — its size, its projection and its thickness. It does NOT
+ * own the Cards. The Cards are the Eater app's own markup and have to
  * stay real, selectable, screen-readable text (#171, #176), so they ride the same
  * CSS plane under either stage and are positioned by the same three lines of
  * `EaterMap.astro`. A stage that drew them would be drawing a picture of them, and
  * the Section would have traded the whole point of the vendoring for a renderer.
  *
- * WHAT A STAGE MAY ASSUME. `--eater-map-lift` is on the Section's root, 0 flat and
- * 1 raised, and it is the only thing that moves; every angle, depth and distance
- * it is spent on is a Token. A stage never animates: `timeline.ts` is the one
- * authority on where the drawing is, and a stage reflects it. That is what makes
- * reduced motion free — the Timeline rests the playhead at 1 and creates no
- * trigger, and both stages simply draw 1.
+ * WHAT A STAGE MAY ASSUME, AND #189 NARROWED IT. Every term of the Slab — its
+ * attitude, its depth, its radius — is a Token and a CONSTANT: `--eater-map-lift`
+ * is the Cards' and the Cards are not a stage's, so nothing a stage draws is a
+ * function of the playhead. What a stage does read beside the Tokens is
+ * `--eater-map-solid`, which is 1 in the band and 0 where the Section has
+ * collapsed. A stage never animates either way, which is what makes reduced motion
+ * free: there is nothing to redraw.
  *
  * SELECTED AT RUNTIME AND NEVER AT BUILD TIME, which is what #181 needs to render
  * the two side by side out of one `dist/`. `?stage=webgl` on the URL, or
@@ -169,11 +170,17 @@ export function chosenStage(): StageName {
 /**
  * Which edge this page is asking for, held to what the chosen stage can draw.
  *
- * `thick` IS THE DEFAULT AND THAT IS THE SHIPPED PAGE (#189). The fall-back for a
- * spelling nobody recognises is `flat` rather than the default, for the reason
- * `chosenStage` falls back to `dom`: a query string is something a reader can be
- * handed, and the honest answer to `?edge=chrome` is the plainest drawing rather
- * than a guess at which of the two the reader meant.
+ * `thick` IS THE DEFAULT AND THAT IS THE SHIPPED PAGE (#189), and a spelling
+ * nobody recognises gets it too — `named()` answers null, so `?edge=chrome` falls
+ * through to the default exactly as `?stage=nonsense` falls through to `dom`. A
+ * query string is something a reader can be handed, and the honest answer to one
+ * nobody can read is the composition rather than a guess.
+ *
+ * `flat` IS THE OTHER BRANCH AND IT IS A DIFFERENT QUESTION: an edge that IS
+ * recognised and that the chosen stage cannot draw — `?stage=dom&edge=wrapped`.
+ * That is the sheet's empty cell, and it is answered with the plainest drawing so
+ * that `design/tools/render-stages.mjs` can ask the page what it drew and get
+ * something other than the edge it asked for.
  */
 export function chosenEdge(stage: StageName = chosenStage()): EdgeName {
   const asked =

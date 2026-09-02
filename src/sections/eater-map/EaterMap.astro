@@ -643,12 +643,19 @@ import './tokens.css';
        Card rather than one gap spent by the depth (#189): the three depths are
        within 12% of each other now, so `(0.5 - depth)` would slide all three the
        same way by the same amount, which is a translation of the drawing rather
-       than a gap in it. */
+       than a gap in it.
+
+       BOTH FALL BACK TO 0, and that is not belt and braces. A `var()` with no
+       fallback makes the whole `transform` below invalid the moment a Card has no
+       per-name block — so a fourth Card added to cards.ts without one would be
+       drawn UNROTATED at the app's own frozen pixel size over a map at 0.72 of
+       it, which reads as a broken vendoring rather than as a missing Token. 0 is
+       a Card that does not slide, which is the honest reading. */
     --eater-map-card-drift-x: calc(
-      var(--eater-map-card-lift) * var(--eater-map-card-slide-x)
+      var(--eater-map-card-lift) * var(--eater-map-card-slide-x, 0)
     );
     --eater-map-card-drift-y: calc(
-      var(--eater-map-card-lift) * var(--eater-map-card-slide-y)
+      var(--eater-map-card-lift) * var(--eater-map-card-slide-y, 0)
     );
     --eater-map-card-fill: calc(var(--eater-map-card-lift) * 100%);
     --glass: color-mix(in srgb, var(--eater-map-glass), var(--eater-map-plate) var(--eater-map-card-fill));
