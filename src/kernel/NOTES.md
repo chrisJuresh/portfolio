@@ -14,7 +14,7 @@ than a convenience.
 | file                        | owns                                                        |
 | --------------------------- | ----------------------------------------------------------- |
 | `faces.css` / `tokens/faces.css` | the five families, six files, the face Tokens, and the page's own type size — the zoom, the ceiling and the give-way |
-| `ground.css` / `tokens/ground.css` | the theme's two papers, the Turn across them, the shade over the first screen's background, and that the document never scrolls sideways |
+| `ground.css` / `tokens/ground.css` | the theme's two papers, the Turn across them, the shade over the DARK theme's first screen, and that the document never scrolls sideways |
 | `corners.css` / `corners.ts`| the plate, the car and the eye — geometry, and which rung    |
 | `rail/` / `tokens/rail.css` | the Rail — the one index on the page, its words, its two regimes, and which entry is current |
 | `effect-stack/`             | the nine layers, and the grain tile                          |
@@ -761,12 +761,31 @@ turns up later as a Timeline that will not seek. A Check that wants a mount poin
 of its own should give it a name of its own; `observeSection` is exposed for
 exactly that.
 
-## The shade: one Token that darkens the first screen's background
+## The shade: one Token that darkens the DARK theme's first screen
 
 `--shade` is one number in `tokens/ground.css`, and `.kernel-shade` in
-`ground.css` is the layer it draws. At 0 — what ships — the page is exactly what
-it was, and the Editor draws it a 0-to-1 slider because a Token whose value is a
-bare `0` gets a range that wide (`scripts/editor/lib/tokens.mjs`).
+`ground.css` is the layer it draws. The Editor gives it a 0-to-1 slider, because
+that is the range a Token whose value is a bare fraction gets
+(`scripts/editor/lib/tokens.mjs`).
+
+**It is gated on `:root[data-theme='dark']`, and that gate is the fix for the one
+thing this got wrong.** It shipped ungated, the author dragged it to 0.5, and the
+light page went `#808080` — black over `#fff` is the largest change available on
+this page, while black over the dark theme's `#131211` is the small correction
+the layer was actually wanted for. The gate is a **rule** and not a second value
+per theme, because a value is something the next session at the panel drags
+straight back into grey; with the rule there is no setting of `--shade` that puts
+a wash over paper.
+
+**Nothing caught it, and that is worth knowing before trusting a Check here.**
+The `ground` Check reads `getComputedStyle(root).backgroundColor` — the ground
+*token*, painted into a 1×1 canvas — so it compares a colour rather than the
+spelling of one, and a paint layer over the top does not move it. It went on
+reporting `#ffffff` at the start of the Turn while the page was grey. That is not
+a hole in the Check so much as its subject: it asserts the theme's endpoints. The
+gate closes the light half by construction; anything that wants to assert what is
+actually *painted* on the first screen is a different Check, and would have to
+sample a screenshot.
 
 **"The background" is not a judgement here, it is a z-index.** The Effect Stack's
 layers take even z-indexes so that content excluded from them has an odd one to
@@ -800,17 +819,18 @@ children, so the stacking context it makes isolates nothing that matters.
 `document.elementFromPoint` would kill every link on the page — the failure the
 `rail` Check was written for, three links wide, made general.
 
-**What the author will see going up, and it is not a bug.** The shade moves what
-is *painted*; it does not move `--ground`, the token. So the Front Screen's three
-soft colours — `--front-screen-muted` on the location line, `--front-screen-rule`
-under the contact links, `--front-screen-soft` — are still mixed towards a paper
-that is nominally white, and on the light theme they wash out as the background
-comes up to meet them: at 0.35 the underlines have gone. On dark they do the
-opposite and gain contrast. That is the shape of the ask — darken the background,
-leave the type — and the greys are type. Making them track would mean publishing
-the *shaded* ground as a second colour for the things standing above the layer to
-mix against, which is a change to the theme's own API and a decision rather than a
-number; it is not what one slider buys.
+**What the author will see going up.** The shade moves what is *painted*; it does
+not move `--ground`, the token. So the Front Screen's three soft colours —
+`--front-screen-muted` on the location line, `--front-screen-rule` under the
+contact links, `--front-screen-soft` — are still mixed towards `#131211`, and as
+the background falls away from them they *gain* contrast rather than losing it.
+That asymmetry is the other half of why this belongs to the dark theme: run the
+same layer over white and those greys are mixed towards a paper the page no
+longer has, and they wash out — at 0.35 the contact underlines had gone. If a
+light-theme shade is ever wanted, that is the thing to solve first, and solving it
+means publishing the *shaded* ground as a second colour for everything standing
+above the layer to mix against — a change to the theme's own API and a decision
+rather than a number.
 
 ## A Section mounts when the browser is idle, and "approaching" is the deadline
 

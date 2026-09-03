@@ -1,8 +1,8 @@
 /* The page's ground, and the Turn across it.
    Three things share this file because they share their endpoints: the THEME
    picks which paper the page is printed on, the TURN carries that paper into
-   dark as the reader scrolls, and the SHADE takes the first screen part of the
-   way there ahead of the Turn. None of them belongs to a Section.
+   dark as the reader scrolls, and the SHADE takes the DARK theme's first screen
+   part of the way there ahead of the Turn. None of them belongs to a Section.
 
    The shade's own number is in tokens/ground.css, imported first so the Editor's
    file stands before the rule that spends it. */
@@ -184,13 +184,33 @@ body {
 
    `pointer-events: none` is load-bearing rather than tidy: the `rail` Check asks
    document.elementFromPoint at each of the Rail's entries, and a full-viewport
-   layer that answered would kill every link on the page instead of three. */
+   layer that answered would kill every link on the page instead of three.
+
+   AND IT IS THE DARK THEME'S ALONE. That is the rule below and not the Token's
+   value, because the two are not the same promise: a value can be dragged back
+   to grey by the next session at the panel, and the ask was that the light page
+   never takes this at all. Black over #fff is the most visible change on the
+   page — at 0.5 the paper is #808080 and the column's soft greys have gone with
+   it — while black over the dark theme's #131211 is the small correction the
+   layer was actually wanted for. So the light theme takes 0 whatever --shade
+   holds, and the one slider means one thing.
+
+   NOTHING SAW IT GO GREY, which is why this is written down rather than left to
+   the build. The `ground` Check reads `getComputedStyle(root).backgroundColor` —
+   the ground TOKEN — and a paint layer over the top does not move it, so the
+   Check went on reporting #ffffff at the start of the Turn while the page was
+   grey. The gate is what closes that hole for the light theme by construction:
+   there is no value of --shade that can put a wash over paper any more. */
 .kernel-shade {
   position: fixed;
   inset: 0;
   z-index: 5;
   pointer-events: none;
   background: var(--dark);
+  opacity: 0;
+}
+
+:root[data-theme='dark'] .kernel-shade {
   opacity: calc(var(--shade) * (1 - var(--turn)));
 }
 

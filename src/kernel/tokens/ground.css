@@ -5,33 +5,40 @@
 
    One file per part of the Kernel, so the Editor reaches this the way it reaches
    the Effect Stack's hundred numbers and the three corner pictures' placement:
-   it is `kernel-ground` on the Tokens surface, and at 0 the slider it draws runs
-   0 to 1. */
+   it is `kernel-ground` on the Tokens surface, and the slider it draws runs 0
+   to 1. */
 
 :root {
-  /* ---- the shade ---------------------------------------------------------
-     How far the FIRST SCREEN's background is carried towards --dark, ahead of
-     the Turn. 0 is the paper as printed, and is what ships; 1 is the far end
-     arriving early.
+  /* ---- the shade, on the DARK theme and on nothing else -------------------
+     How far the dark theme's FIRST SCREEN is carried from its own paper towards
+     --dark, ahead of the Turn. 0 is #131211 as printed; 1 is black arriving
+     early.
 
-     ONE NUMBER FOR THE WHOLE BACKGROUND, which is the entire point of it. The
-     layer stands directly under the type and over everything this page already
-     treats as background — the ground itself, the three corner pictures, and
-     the Effect Stack's lit layers WITH their filters — so the textures go dark
-     with the paper they are printed on instead of staying bright over a darker
-     one. Darkening the paper alone would have left the filters behind, which is
-     the thing the author asked for and the reason this is a layer.
+     THE LIGHT PAGE NEVER TAKES THIS, whatever this number holds. It shipped
+     ungated for one afternoon and 0.5 turned the paper #808080 — the single
+     most visible change available on this page, and not the small correction to
+     the dark screen the layer was wanted for. The gate is a rule in ground.css
+     and not a second value here, because a value is something the next session
+     at this panel can drag straight back into grey.
+
+     ONE NUMBER FOR THE WHOLE BACKGROUND, which is the point of it. The layer
+     stands directly under the type and over everything this page already treats
+     as background — the ground itself, the three corner pictures, and the
+     Effect Stack's lit layers WITH their filters — so the textures go dark with
+     the paper they are printed on instead of staying bright over a darker one.
+     Darkening --paper alone would have left the filters behind, which is why
+     this is a layer.
 
      AND IT GOES OUT WITH THE PAPER, because ground.css scales it by 1 - --turn:
-     whole while the page is on paper, gone by the time the page has arrived at
-     --dark, where there is nothing left to darken. That is what makes it
-     edgeless — there is no band for the reader to find the bottom of.
+     whole while the page is on its own paper, gone by the time the page has
+     arrived at --dark, where there is nothing left to darken. That is what
+     makes it edgeless — there is no band for the reader to find the bottom of.
 
-     ONE THING TO EXPECT ON THE WAY UP. This moves what is painted and not
-     --ground itself, so the column's soft greys — the location line, the grade,
-     the rule under a contact link — are still mixed towards a paper that is
-     nominally white and wash out on the light theme as the background comes up
-     to meet them. NOTES.md says why that is the shape of the ask rather than a
-     fault, and what making them track would cost. */
+     WHAT TO WATCH GOING UP. This moves what is painted and not --ground itself,
+     so the column's soft greys — the location line, the grade, the rule under a
+     contact link — are still mixed towards #131211 and hold their ink as the
+     background falls away from them. On dark that gains contrast rather than
+     losing it, which is the other half of why this is the theme it belongs
+     to. */
   --shade: 0.5;
 }
