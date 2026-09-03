@@ -65,6 +65,10 @@ export class Bakes {
     /** The name of every Bake whose report is currently open, so a re-render
      *  does not shut a log the author is reading. */
     this.open = new Set();
+    /** `${bake} ${group}` for every group of parameters currently open, for the
+     *  same reason against a worse version of the same problem: one picture is
+     *  six controls in ONE group, and every one of them redraws on release. */
+    this.groups = new Set();
     this.polling = null;
   }
 
@@ -110,15 +114,48 @@ export class Bakes {
 
   draw() {
     if (!this.surface) return;
+    const restore = this.holding();
     this.surface.textContent = '';
     if (this.bakes.length === 0) {
       const none = document.createElement('p');
       none.dataset.editorNote = '';
       none.textContent = 'no Bakes — a Bake is a folder under design/bake/ holding a recipe.json';
       this.surface.append(none);
-      return;
+    } else {
+      for (const bake of this.bakes) this.surface.append(this.one(bake));
     }
-    for (const bake of this.bakes) this.surface.append(this.one(bake));
+    restore();
+  }
+
+  /**
+   * Remember which control has the keyboard, and hand it back after the redraw.
+   *
+   * A REDRAW REPLACES EVERY CONTROL, so whatever the author was using stops
+   * existing — and this surface redraws twice for reasons of its own: once per
+   * write, because the tuned count and the revert's label both move with it, and
+   * once per `POLL` for as long as a generator is running. Without this a slider
+   * cannot be nudged twice with the arrow keys, and a bake in progress takes the
+   * keyboard away every 1.2 seconds.
+   *
+   * Matched on whichever `data-editor-…` attribute the focused element carries,
+   * because that is already what identifies one, and COMPARED rather than put in
+   * a selector so that a value with a space in it needs no escaping.
+   */
+  holding() {
+    const focused = document.activeElement;
+    const named =
+      focused instanceof HTMLElement && this.surface?.contains(focused)
+        ? [...focused.attributes].find((one) => one.name.startsWith('data-editor-'))
+        : undefined;
+    return () => {
+      if (!named || !this.surface) return;
+      const again = [...this.surface.querySelectorAll(`[${named.name}]`)].find(
+        (one) => one.getAttribute(named.name) === named.value,
+      );
+      // `preventScroll`, or handing the keyboard back scrolls the panel to it and
+      // the surface jumps under the author once a poll.
+      if (again instanceof HTMLElement) again.focus({ preventScroll: true });
+    };
   }
 
   /** One Bake: what it is, what it needs, its parameters, and its last run. */
@@ -171,13 +208,25 @@ export class Bakes {
     for (const param of bake.params) {
       if (param.group !== group) {
         group = param.group;
-        holder = document.createElement('details');
-        holder.dataset.editorGroup = '';
+        const id = `${bake.name} ${group}`;
+        // A `const` of its own rather than the loop's `holder`, which is
+        // reassigned at every group: a listener closing over THAT would record
+        // whichever group came last, whatever the author actually clicked.
+        const box = document.createElement('details');
+        box.dataset.editorGroup = '';
+        // Per Bake and not per name, because two recipes may head a group the
+        // same way and opening one of them is not opening the other.
+        box.open = this.groups.has(id);
+        box.addEventListener('toggle', () => {
+          if (box.open) this.groups.add(id);
+          else this.groups.delete(id);
+        });
         const summary = document.createElement('summary');
         summary.textContent = group;
-        holder.append(summary);
-        if (param.groupNote) holder.append(this.note(param.groupNote));
-        into.append(holder);
+        box.append(summary);
+        if (param.groupNote) box.append(this.note(param.groupNote));
+        into.append(box);
+        holder = box;
       }
       holder.append(this.row(bake, param));
     }
@@ -232,6 +281,10 @@ export class Bakes {
       const step = param.step ?? 0.01;
       const slider = document.createElement('input');
       slider.type = 'range';
+      // Named, and it is the one control here that was not: a drag leaves the
+      // keyboard on the SLIDER rather than on the box beside it, so without a
+      // name of its own it is the one control a redraw cannot hand back.
+      slider.dataset.editorDrag = `${bake.name} ${param.key}`;
       slider.min = String(param.min);
       slider.max = String(param.max);
       slider.step = String(step);
