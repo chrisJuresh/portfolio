@@ -17,6 +17,15 @@
  * IN THE CAPTURE PHASE, because the owner has to be settled before either
  * claimant's own handler runs — including for events a roll never sees.
  *
+ * AND THE GESTURE IS COUNTABLE, because "until the wheel stops" is a boundary a
+ * claimant needs for its own reasons and not only for this one. A mouse notch is
+ * one event, so a claimant deciding per event and one deciding per gesture were
+ * the same thing while a mouse was the only device; a trackpad delivers one light
+ * flick as dozens of events and its momentum tail as dozens more. A claimant
+ * that has to act ONCE per gesture — the page turn does — asks `wheelGesture()`
+ * rather than timing the gap a second time, because the two copies drifting means
+ * an event that belongs to one gesture being acted on as another.
+ *
  * `passive: false` ON A LISTENER THAT NEVER PREVENTS ANYTHING, and it is the
  * whole reason the arbitration works. A passive wheel listener lets Chromium
  * scroll on the compositor and deliver the event to the main thread AFTERWARDS,
@@ -49,6 +58,7 @@ interface Roll {
 const rolls: Roll[] = [];
 let owner: HTMLElement | 'page' | null = null;
 let lastWheel = -Infinity;
+let gesture = 0;
 
 /** The axis a notch is on: whichever of the two deltas is larger. */
 export function wheelDelta(event: WheelEvent): number {
@@ -72,8 +82,22 @@ export function pageOwnsWheel(): boolean {
   return owner === 'page';
 }
 
+/**
+ * Which gesture is in flight, as a number that only ever goes up.
+ *
+ * A claimant that must act once per gesture holds the number it last acted on
+ * and compares. The count lives here because `GESTURE_GAP` does: the boundary a
+ * claimant counts by has to be the same one the ownership is settled by.
+ */
+export function wheelGesture(): number {
+  return gesture;
+}
+
 function arbitrate(event: WheelEvent): void {
-  if (event.timeStamp - lastWheel > GESTURE_GAP) owner = null;
+  if (event.timeStamp - lastWheel > GESTURE_GAP) {
+    owner = null;
+    gesture += 1;
+  }
   lastWheel = event.timeStamp;
   if (owner) return;
   const delta = wheelDelta(event);

@@ -44,15 +44,21 @@ export type StageName = 'dom' | 'webgl';
  * name. `wrapped` is the captured pixels continuing over the rounded edge, and it
  * is #181's third column.
  *
- * **`wrapped` IS THE ONE CELL DOM CANNOT REACH, AND THE ARGUMENT THAT USED TO GO
- * WITH IT IS SPENT.** It was read as "DOM cannot run captured pixels round a
- * fillet, so the renderer is decided" — and the second half never followed from
- * the first. The DOM stage's slice stack closes the corner with the same element
- * that draws the side, so its silhouette and its outline are right; what it
- * cannot do is put the photograph on the roll. #182 is the narrower question that
- * is left — whether a faceted 24-slice fillet is distinguishable from a swept one
- * at the size the Slab is actually drawn — and it is judged on the sheet, not
- * here.
+ * **`wrapped` IS THE SHIPPED COMPOSITION SINCE #206**, which is what this default
+ * now says. The author asked for the map to wrap slightly round the edge rather
+ * than the edge wrapping round the map — a phone with a curved screen, all the way
+ * round — and that is this name. `thick` is still what the sheet compares against
+ * and still what a Card's glass is drawn as; only the Slab's fillet changed.
+ *
+ * **AND DOM REACHES IT NOW, WHICH RETIRES THE LAST OF AN ARGUMENT #189 ALREADY
+ * HALVED.** The empty cell was read as "DOM cannot run captured pixels round a
+ * fillet, so the renderer is decided"; #189 pointed out the second half never
+ * followed from the first, and #206 removed the first. A slice's box and the face
+ * are CONCENTRIC rectangles, so running the picture onto a ring is a scale about
+ * their shared centre — two `background-size` percentages and `center` — and
+ * `edge.ts`'s `wrapped()` is the whole of it. What is left of #182 is the narrow
+ * question it was always meant to be: whether a faceted 24-slice fillet is
+ * distinguishable from a swept one at the size the Slab is actually drawn.
  */
 export type EdgeName = 'flat' | 'thick' | 'wrapped';
 
@@ -171,9 +177,12 @@ export function edgeShade(attitude: Attitude, light: Lighting): Shade {
   };
 }
 
-/** Which edges each stage can actually draw. The empty cell is a result. */
+/** Which edges each stage can actually draw. **THERE IS NO EMPTY CELL NOW** — #206
+ *  filled the one DOM could not reach, so `pnpm stages` is six cells of the same
+ *  three edges and the comparison is purely faceted-against-swept, which is the
+ *  narrow question #182 was left with. */
 const REACHES: Record<StageName, readonly EdgeName[]> = {
-  dom: ['flat', 'thick'],
+  dom: ['flat', 'thick', 'wrapped'],
   webgl: ['flat', 'thick', 'wrapped'],
 };
 
@@ -267,7 +276,9 @@ export function chosenStage(): StageName {
  */
 export function chosenEdge(stage: StageName = chosenStage()): EdgeName {
   const asked =
-    named(document.documentElement.dataset.eaterMapEdge, EDGES) ?? named(param('edge'), EDGES) ?? 'thick';
+    named(document.documentElement.dataset.eaterMapEdge, EDGES) ??
+    named(param('edge'), EDGES) ??
+    'wrapped';
   return reaches(stage, asked) ? asked : 'flat';
 }
 

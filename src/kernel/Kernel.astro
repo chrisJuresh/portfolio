@@ -22,6 +22,13 @@ import './landing.css';
   <div class="eye"></div>
 </div>
 
+{/* The shade: one Token's worth of dark over everything below the type, the
+    corner pictures above and the Effect Stack's lit layers alike. It stands HERE
+    rather than beside the stack at the foot of the body because the tie at
+    z-index 5 is settled by tree order, and the type it has to stay under is in
+    the Sections that follow. ground.css is the rule and carries the reasoning. */}
+<div class="kernel-shade" aria-hidden="true"></div>
+
 <script>
   import './kernel';
 </script>

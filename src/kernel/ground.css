@@ -1,7 +1,12 @@
 /* The page's ground, and the Turn across it.
-   Two independent things share this file because they share their endpoints:
-   the THEME picks which paper the page is printed on, and the TURN carries that
-   paper into dark as the reader scrolls. Neither belongs to a Section. */
+   Three things share this file because they share their endpoints: the THEME
+   picks which paper the page is printed on, the TURN carries that paper into
+   dark as the reader scrolls, and the SHADE takes the first screen part of the
+   way there ahead of the Turn. None of them belongs to a Section.
+
+   The shade's own number is in tokens/ground.css, imported first so the Editor's
+   file stands before the rule that spends it. */
+@import './tokens/ground.css';
 
 /* --turn is registered so it is a number rather than a token, which is what
    lets GSAP interpolate it and what makes the calc() below legal. Without this
@@ -146,6 +151,47 @@ body {
   body {
     --page-across: 100cqw;
   }
+}
+
+/* THE SHADE — one number that darkens everything the first screen calls its
+   background, the Effect Stack's filtered layers included. tokens/ground.css is
+   the number and says what it is for; this is where the layer stands, and the
+   standing is the whole of the trick.
+
+   z-index 5, AND IT IS THE SAME 5 THE TYPE STANDS ON. The stack's layers carry
+   EVEN z-indexes so content excluded from them has an odd one to stand on
+   between any two (effect-stack.css), and the Front Screen's
+   --front-screen-type-z is 5 — above `paper` (2) and `halftone` (4), the pair
+   the Shell lights, and below everything else. So "the background of the first
+   screen" already has a definition on this page and it is exactly *everything
+   below 5*: the ground on the canvas, the corner pictures at -1, the Rail at 1,
+   and the two lit layers with their filters. A layer at 5 covers all of that and
+   nothing else — which is why this darkens the treatment rather than leaving it
+   bright over a darker paper, and why it is a layer instead of a correction
+   applied to --paper and to each of the stack's strengths in turn.
+
+   THE KERNEL RENDERS IT AND THE SECTIONS COME AFTER, which is what settles the
+   tie at 5: equal z-indexes paint in tree order, the Shell puts <Kernel /> first
+   in the body, and the Front Screen's four type blocks, its strip, its bar and
+   its Cut Title all carry that same 5. The type is over the shade and the
+   background is under it, with nothing renumbered to make it so.
+
+   `fixed`, AND NO BAND. What ends the layer is --turn and not a length: it is
+   whole on paper and gone by --dark, where the ground is already black and there
+   is nothing left to take down. A band the height of the fold would have ended
+   in a hard edge the reader scrolls past, which is what "banding" has meant both
+   times it was reported on this page.
+
+   `pointer-events: none` is load-bearing rather than tidy: the `rail` Check asks
+   document.elementFromPoint at each of the Rail's entries, and a full-viewport
+   layer that answered would kill every link on the page instead of three. */
+.kernel-shade {
+  position: fixed;
+  inset: 0;
+  z-index: 5;
+  pointer-events: none;
+  background: var(--dark);
+  opacity: calc(var(--shade) * (1 - var(--turn)));
 }
 
 /* A reader who has asked for less motion gets the Turn as a state rather than a

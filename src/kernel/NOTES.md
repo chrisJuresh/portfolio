@@ -14,14 +14,14 @@ than a convenience.
 | file                        | owns                                                        |
 | --------------------------- | ----------------------------------------------------------- |
 | `faces.css` / `tokens/faces.css` | the five families, six files, the face Tokens, and the page's own type size — the zoom, the ceiling and the give-way |
-| `ground.css`                | the theme's two papers, the Turn across them, and that the document never scrolls sideways |
+| `ground.css` / `tokens/ground.css` | the theme's two papers, the Turn across them, the shade over the first screen's background, and that the document never scrolls sideways |
 | `corners.css` / `corners.ts`| the plate, the car and the eye — geometry, and which rung    |
 | `rail/` / `tokens/rail.css` | the Rail — the one index on the page, its words, its two regimes, and which entry is current |
 | `effect-stack/`             | the nine layers, and the grain tile                          |
 | `theme.ts`                  | which paper, where it is stored, and who is told when it changes |
 | `turn.ts`                   | the Turn, as one named seekable Timeline, how far it runs in each regime, and `onTurn()` for anything drawn against it that CSS cannot draw |
 | `landing.css` / `tokens/landing.css` | the landing band, the measure two Sections share across it, and the resting places — one per Section, stated as a relationship so a new one costs nothing |
-| `page-turn.ts`              | one wheel notch between two resting places, and a link into a Section going the same way |
+| `page-turn.ts`              | one wheel GESTURE between two resting places, and a link into a Section going the same way |
 | `wheel.ts`                  | who owns a wheel gesture — the page, or a roll inside it     |
 | `loader.ts`                 | mounting a Section as it approaches the viewport             |
 | `motion.ts`                 | `hold()` / `release()` — see below                            |
@@ -536,7 +536,7 @@ nothing here counts them, which is the property worth keeping.
 `page-turn.ts` is why the turn is a script and not the browser's own snap fling:
 that fling owns the scroller for as long as it flies, and a notch the other way
 taken while it is in the air is filtered out, so the turn back cannot be taken
-until it has landed. Here one notch picks the port its direction is heading for
+until it has landed. Here one gesture picks the port its direction is heading for
 and eases the window onto it, and a notch the other way retargets the ease
 mid-flight. Three things in that file are easy to get wrong and are written out in
 it: the ports are read off `scroll-snap-align` and never off `scroll-snap-type`,
@@ -550,6 +550,32 @@ for the snapping to be lifted** — `window.portfolio.snapping(false)`, and `tru
 to put it back. Without it a scroll sweep reads a document that jumps rather than
 one that crosses, and the `front-screen` Check's crossing sweep found the Turn at
 0 in forty of its forty-one samples.
+
+**ONE GESTURE IS ONE TURN, and a trackpad is why that had to be said out loud.**
+A mouse notch is a single `wheel` event of about a hundred pixels, so deciding per
+event and deciding per gesture were the same thing while a mouse was the only
+device in the room. A light two-finger flick is thirty or more events of five or
+six pixels, and its momentum tail keeps arriving for over a second after the
+fingers have left the glass. Decided per event, the events that land while a turn
+is in flight are harmless — they resolve to the port it is already heading for and
+nothing happens — but the first one to arrive AFTER it lands picks the port after
+it, and the gesture chains through every port and falls out of the bottom of the
+document into the browser's own scroll. Measured at 1440x820 before #205: one
+light flick carried the page 0 → 1551 through ports at 0, 731 and 1551, in both
+directions, which is the Projects Panel — the landing this whole device exists to
+arrive at — being unreachable from a trackpad. So the wheel handler settles a
+gesture's first vertical notch and holds that answer until the wheel stops: a
+gesture that turned swallows the rest of its own events, and one that found nothing
+to turn is the browser's for the whole of its length. The `turn` Check asserts it
+from both ends of the document, and `scripts/checks/NOTES.md` carries the reason
+its precondition is timed rather than asked for.
+
+**The strip wants the opposite, which is why the rule is the page turn's and not
+the arbitration's.** It is a roll with many resting places, where one held gesture
+SHOULD keep spinning, and it already reads a stream as a spin. Only the boundary is
+shared — `GESTURE_GAP` stays in `wheel.ts`, and `page-turn.ts` asks
+`wheelGesture()` rather than timing a second copy of it, because two copies
+drifting means an event belonging to one gesture and acted on as another.
 
 `wheel.ts` settles which of two claimants a gesture belongs to, because there are
 two: the Front Screen's photograph strip and the page turn. A gesture belongs to
@@ -706,6 +732,57 @@ replaces the first one's Timeline in the register — silently, and the symptom
 turns up later as a Timeline that will not seek. A Check that wants a mount point
 of its own should give it a name of its own; `observeSection` is exposed for
 exactly that.
+
+## The shade: one Token that darkens the first screen's background
+
+`--shade` is one number in `tokens/ground.css`, and `.kernel-shade` in
+`ground.css` is the layer it draws. At 0 — what ships — the page is exactly what
+it was, and the Editor draws it a 0-to-1 slider because a Token whose value is a
+bare `0` gets a range that wide (`scripts/editor/lib/tokens.mjs`).
+
+**"The background" is not a judgement here, it is a z-index.** The Effect Stack's
+layers take even z-indexes so that content excluded from them has an odd one to
+stand on between any two, and the Front Screen's `--front-screen-type-z` is 5 —
+above `paper` (2) and `halftone` (4), below everything else. That already sorts
+the first screen into two halves, and the shade is a layer at 5 that covers the
+lower one: the ground on the canvas, the corner pictures at −1, the Rail at 1,
+and the two lit layers **with their filters**. Everything the Front Screen draws
+is lifted to that same 5 — the four type blocks, the strip, the bar, the Cut
+Title — so the type, the photographs and the theme switch are all above it.
+
+**A layer and not a correction, and this is the part that was actually asked
+for.** Darkening `--paper` would have moved the ground and left the treatment
+printed at its old brightness over it, because `paper` and `halftone` blend
+`multiply` and `soft-light` against whatever is beneath — the textures would have
+gone *lighter* relative to the ground rather than darker with it. Scaling each of
+the stack's strengths instead would be a second set of numbers to keep in step
+with the first, and the ask was one slider. One layer over the whole lower half
+is the only shape that is genuinely one number.
+
+**It ends on `--turn` and never on a length.** `opacity` is
+`calc(var(--shade) * (1 - var(--turn)))`: whole while the page is on paper, gone
+by the time it has arrived at `--dark`, where there is nothing left to darken.
+So there is no band to find the bottom of — a shade the height of the fold would
+have put a hard edge across the page for the reader to scroll past, which is what
+"banding" has meant both times it was reported here. `position: fixed` is safe on
+*this* element for the reason it is not safe on `.fx`: the shade has no blending
+children, so the stacking context it makes isolates nothing that matters.
+
+**`pointer-events: none` is load-bearing.** A full-viewport layer that answered
+`document.elementFromPoint` would kill every link on the page — the failure the
+`rail` Check was written for, three links wide, made general.
+
+**What the author will see going up, and it is not a bug.** The shade moves what
+is *painted*; it does not move `--ground`, the token. So the Front Screen's three
+soft colours — `--front-screen-muted` on the location line, `--front-screen-rule`
+under the contact links, `--front-screen-soft` — are still mixed towards a paper
+that is nominally white, and on the light theme they wash out as the background
+comes up to meet them: at 0.35 the underlines have gone. On dark they do the
+opposite and gain contrast. That is the shape of the ask — darken the background,
+leave the type — and the greys are type. Making them track would mean publishing
+the *shaded* ground as a second colour for the things standing above the layer to
+mix against, which is a change to the theme's own API and a decision rather than a
+number; it is not what one slider buys.
 
 ## The Effect Stack covers the document, and leaves with the Turn
 

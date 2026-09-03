@@ -60,6 +60,22 @@ const THEME_KEY = (() => {
 const stageAsked = () => process.env.PORTFOLIO_STAGE;
 
 /**
+ * What the Slab's edge is made of, for every Check in this run — `flat`, `thick`
+ * or `wrapped`.
+ *
+ * THE SECOND AXIS OF THE SAME SHEET, and it earned a flag when #206 taught the DOM
+ * stage the third edge: both stages reach all three now, so "every Check passes
+ * whatever the Slab is made of" is a claim the suite can actually be asked to
+ * make. The shipped default is `wrapped` and leaving the flag off changes nothing.
+ *
+ * Everything `stageAsked` says above applies here word for word, including the
+ * one that cost a verification: read when a page is OPENED and never at module
+ * scope, or the suite prints that it selected an edge and opens every page with
+ * the shipped one.
+ */
+const edgeAsked = () => process.env.PORTFOLIO_EDGE;
+
+/**
  * An init script that puts one attribute on the document's root element.
  *
  * A MutationObserver because at document start there is no `documentElement` to
@@ -150,6 +166,8 @@ export async function open(browser, origin, options = {}) {
   // hence one helper rather than two spellings of it.
   const stage = stageAsked();
   if (stage !== undefined) await context.addInitScript(stamps('data-eater-map-stage', stage));
+  const edge = edgeAsked();
+  if (edge !== undefined) await context.addInitScript(stamps('data-eater-map-edge', edge));
   if (fx !== undefined) await context.addInitScript(stamps('data-fx', fx));
 
   /** @type {Recording} */

@@ -382,15 +382,20 @@ const DIRECTED = 0.05;
  * The Cards read as decals and the whole group here went on passing (#203).
  *
  * TWO SLICES OF THE SAME BOX AT TWO DEPTHS, which is what makes this a measurement
- * of the rendering context and of nothing else: both wall slices are at inset 0, so
- * they differ by their `translateZ` and by nothing at all besides. Under a
- * `preserve-3d` chain they project apart; under a flat one they are pixel-identical.
+ * of the RENDERED RESULT and of nothing else: both wall slices are at inset 0, so
+ * they differ by their depth and by nothing at all besides. Whether they end up
+ * apart on screen is the question; HOW the composition spends a depth is not, and
+ * that is why this assertion survived #207 unchanged while the mechanism under it
+ * was replaced. Nothing carries a `translateZ` any more — a depth is written as the
+ * place it projects to, which under a parallel projection is the same place — and
+ * these numbers did not move by a hundredth of a pixel.
  *
- * Measured 1.11px on every Card surface and 5.34px on the Slab; the mutation this
- * floor exists for — the Card forced back to `flat` — measures EXACTLY 0 on the
- * Cards and leaves the Slab untouched at 5.34, which is the Slab's slices being the
- * `preserve-3d` plane's own children and never having had the fault. So the number
- * only has to be off zero rather than tuned.
+ * Measured 1.11px on every Card surface and 5.34px on the Slab at the window this
+ * runs at; the mutation this floor exists for — a Card's depth discarded, however —
+ * measures EXACTLY 0 on the Cards. Before #207 it left the Slab untouched, because
+ * the Slab's slices were the `preserve-3d` plane's own children and never had the
+ * fault; a mutation that reaches the projection now takes both. So the number only
+ * has to be off zero rather than tuned.
  */
 const OFF_THE_FACE = 0.25;
 
@@ -2663,6 +2668,10 @@ async function edgeAsBuilt(spec) {
   await new Promise((frame) => requestAnimationFrame(frame));
 
   const stage = section.dataset.eaterMapStage ?? '(never mounted)';
+  // WHAT THE SLAB'S EDGE IS MADE OF, which the mounted stage writes beside its own
+  // name. It decides what the Slab's FILLET is allowed to be painted with, and
+  // nothing else in this group: a Card's glass is `thick` whatever the Slab is.
+  const edgeKind = section.dataset.eaterMapEdge ?? '(unset)';
   const slices = [...document.querySelectorAll('.eater-map__slice')];
   const style = getComputedStyle(section);
   const token = (name) => Number.parseFloat(style.getPropertyValue(name));
@@ -2727,9 +2736,12 @@ async function edgeAsBuilt(spec) {
       deep: null,
       roundest: 0,
       squarest: Infinity,
+      fillets: 0,
+      pictures: 0,
     };
     const seen = surfaces[name];
     seen.slices += 1;
+    if (slice.dataset.eaterMapSlice === 'fillet') seen.fillets += 1;
     // THE WIDEST AND THE NARROWEST CORNER ANYWHERE IN THIS STACK, for
     // `CORNER_SURVIVES`. The wall slices stand at inset 0 and carry the whole plan
     // corner, and the fillet's first ring stands at its deepest inset and carries
@@ -2741,8 +2753,16 @@ async function edgeAsBuilt(spec) {
       seen.squarest = Math.min(seen.squarest, corner);
     }
     const authored = slice.style.background;
-    if (!authored.startsWith('conic-gradient(')) seen.flat += 1;
-    if (!authored.includes('var(--eater-map-')) seen.unnamed += 1;
+    // A WRAPPED FILLET RING IS THE PICTURE AND NOT A GRADIENT, and that is the
+    // whole of `wrapped` (#206) rather than an exemption. It is COUNTED here and
+    // asserted below, so the two questions the group already asks about a gradient
+    // — is it directional, does it still name its Token — are asked of the slices
+    // that are supposed to have one, and a ring that quietly lost its picture is a
+    // failure rather than a slice nobody looks at.
+    const picture = authored.startsWith('url(');
+    if (picture) seen.pictures += 1;
+    else if (!authored.startsWith('conic-gradient(')) seen.flat += 1;
+    if (!picture && !authored.includes('var(--eater-map-')) seen.unnamed += 1;
     const computed = getComputedStyle(slice).backgroundImage;
     if (computed === 'none') seen.blank += 1;
     // THE DEEPEST WALL, and named rather than counted: the wall is where the whole
@@ -2865,6 +2885,7 @@ async function edgeAsBuilt(spec) {
   kernel?.snapping?.(true);
   return {
     stage,
+    edgeKind,
     count: slices.length,
     /** The strings `edge.ts` WROTE, which is what a second mount must reproduce. */
     authored: slices.map((slice) => slice.style.background),
@@ -2995,6 +3016,20 @@ async function theEdgeHasADirection(browser, origin) {
       }
       return { failures, notes };
     }
+    // AND AN EDGE THE COMPOSITION ASKED NOT TO HAVE IS A SKIP AND NOT A FAILURE.
+    // `flat` is a picture with no thickness — no slices, by design — so every
+    // assertion below is about a solid nobody asked to be drawn. It is only
+    // reachable through `--edge flat`, since the shipped default is `wrapped`; the
+    // collapse below the band goes through `--eater-map-solid` and keeps its
+    // slices, so this is not the way that regime is checked.
+    //
+    // SAFE FOR THE SAME REASON THE STAGE SKIP IS: only a stage that MOUNTED writes
+    // this attribute, so "the edge is flat" cannot be confused with "nothing came
+    // up" — that case was already caught above.
+    if (wide.edgeKind === 'flat') {
+      notes.push('the edge: skipped — the composition asked for a flat Slab, which has no edge to read');
+      return { failures, notes };
+    }
 
     // THE SAME PAGE, CARRIED ACROSS THE BAND. Not a second page: what is asked here
     // is whether THIS mount's edge is still right once the Slab has changed size
@@ -3058,6 +3093,30 @@ async function theEdgeHasADirection(browser, origin) {
               'declaration',
           );
         }
+        // IS THE SLAB'S ROLL THE MAP, OR THE EDGE — asked both ways round, so
+        // neither `wrapped` nor `thick` can quietly become the other (#206). The
+        // Slab's fillet rings carry the picture under `wrapped` and a gradient
+        // under `thick`; a Card's glass is never wrapped, whatever the Slab is.
+        if (name === 'slab' && seen.fillets > 0) {
+          const wanted = now.edgeKind === 'wrapped' ? seen.fillets : 0;
+          if (seen.pictures !== wanted) {
+            failures.push(
+              `${where}: the Slab's edge is '${now.edgeKind}' and ${seen.pictures} of its ${seen.fillets} ` +
+                `fillet rings are painted from the picture, against ${wanted} — ` +
+                (now.edgeKind === 'wrapped'
+                  ? 'a wrapped edge is the captured pixels running over the roll, and a ring drawn in ' +
+                    'edge colour instead is a band of the map missing from the object'
+                  : 'a plain edge is drawn in the edge colour, and a ring carrying the picture is the ' +
+                    'map hanging off the side of a solid it is not on'),
+            );
+          }
+        }
+        if (name !== 'slab' && seen.pictures > 0) {
+          failures.push(
+            `${where}: ${seen.pictures} of the ${name} edge's slices are painted from a picture — only ` +
+              'the Slab wraps, and a Card is glass with a lit edge rather than a screen',
+          );
+        }
         // DOES THE CORNER SURVIVE THE ROLL — the Slab's alone, because it is the
         // only surface whose plan corner this repository states. A Card's comes from
         // `cards.css`, and a pill's 24px against a 1.8px fillet cannot collapse the
@@ -3089,9 +3148,10 @@ async function theEdgeHasADirection(browser, origin) {
               `${where}: the ${name} edge's ${seen.walls} wall slices all land within ${off.toFixed(
                 2,
               )}px of each other against ${OFF_THE_FACE}px required, so its thickness is not reaching the ` +
-                'screen — the slices are built at a depth and then flattened onto their own face, which ' +
-                'is what a parent that is not `transform-style: preserve-3d` does to them. The edge is ' +
-                'drawn correctly and cannot be seen',
+                'screen — the slices are built at a depth and then land on their own face anyway. Since ' +
+                '#207 that depth is a `translate` to the place it projects to, so the suspects are ' +
+                '`--eater-map-depth-x` / `-y` on the plane and `Solid.flatten`; before it, a parent ' +
+                'that was not `transform-style: preserve-3d`. The edge is drawn correctly and cannot be seen',
             );
           }
         }

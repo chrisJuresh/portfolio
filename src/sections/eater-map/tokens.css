@@ -211,23 +211,35 @@
      other length on the plane, so the object keeps its proportions at every
      window.
 
-     A FIFTH OF THE SHELL, AND CHOSEN OFF A LADDER RATHER THAN OFF THE MOCKUP.
-     2.2px of roll on a 10.9px wall: the face is eased into the edge rather than
-     meeting it at a right angle, and there is a soft light line along the top of
-     the wall rather than a bead wrapped round it. 0 is a chamferless box; 0.010
-     is a visible pale lip; 0.0165 — the mockup's own `min(t * 0.55, ...)` at
-     t = 0.03 — is the bead the author reported as "strongly wrapped".
+     IT IS THE SCREEN'S OWN CURVE NOW, WHICH IS WHAT #206 CHANGED ABOUT IT. The
+     shipped edge is `wrapped`, so this band is not edge material at all — it is
+     the MAP, running off the front and round the roll, and this Token is how far
+     round it goes. The author asked for the map to wrap slightly round the edge
+     rather than the edge wrapping round the map, and this is that number.
 
-     THE MOCKUP'S NUMBER DOES NOT TRANSFER, AND THIS IS WHY. Its face carries the
-     full plan corner with NO inset, so its picture runs to the outline and covers
-     all but the last sliver of its own roll — a 6.3px fillet reads there as the
-     thin lip 2.2px reads as here. This stage gives the fillet's band up honestly
-     (`stage-dom.ts` clips the picture back by exactly this number), so the whole
-     roll is on screen and the number that LOOKS like the reference is a third of
-     the one that made it. Rendered both ways at four values against
-     `out/TARGET.png` before choosing: matching the mockup's clip instead would
-     draw map pixels outside the solid's own cross-section at z = 0, which is the
-     overhang #200 said to reproduce honestly rather than copy.
+     0.012 — 4.3px of roll on a 10.9px wall, so the screen turns over its shoulder
+     and there is still half a shell of straight aluminium behind it. Laddered at
+     0.006 / 0.009 / 0.012 / 0.020 against the WebGL stage's own `wrapped`, at
+     actual size and not only zoomed: 0.006 is barely distinguishable from a plain
+     edge and 0.020 reads as a fishbowl.
+
+     AND 0.020 IS WHERE THE DOM STAGE'S FACETING STARTS TO SHOW, which is a bound
+     on this Token and the measured answer to what was left of #182. The rings
+     carry the picture at a rigid scale each, while the geometry steps by `sin` and
+     the pixels are spread evenly along the arc — so consecutive rings do not quite
+     meet, and past about 0.015 that reads as a comb across anything with a hard
+     edge in it. A restaurant pin at the Slab's foot is where it shows first.
+     Invisible at 0.012 at actual size; obvious at 0.020, where WebGL's swept
+     fillet is still clean. **A drag past ~0.015 wants the WebGL stage or more
+     rings in `edge.ts`, and neither is free.**
+
+     THE OLD REASONING FOR 0.006 IS SPENT, and it is worth saying why rather than
+     deleting it. That value was chosen while this band was edge COLOUR, where the
+     whole argument was how much of a pale bead the roll put round a dark shell —
+     the mockup hid its own 6.3px roll under a picture that ran to the outline, so
+     the number that looked like the reference was a third of the one that made it.
+     None of that survives the band becoming map: a wrap is not a bead, and what
+     bounds it now is legibility at one end and faceting at the other.
 
      A SHARE OF THE WIDTH AND NOT OF THE THICKNESS, which is a choice and not an
      oversight: this file's own rule is that every length on the plane is one
@@ -235,7 +247,7 @@
      is the confound #189 collapsed a pair onto one unit to remove. The cost is
      that dragging the thickness alone does not carry the fillet with it; the
      `min()` in both stages is what keeps that honest rather than inverted. */
-  --eater-map-slab-fillet: 0.006;
+  --eater-map-slab-fillet: 0.012;
 
   /* What the Slab is made of where the picture is not. A fact about the object
      rather than about the page, so it does not turn with the theme — the same

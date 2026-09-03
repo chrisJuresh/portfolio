@@ -115,6 +115,29 @@ if (stageArg !== -1) {
 }
 
 /**
+ * What the Slab's edge is made of, for the whole run.
+ *
+ *   pnpm check -- --edge thick
+ *
+ * The same device as `--stage` and for the same reason, and it became worth having
+ * when #206 taught the DOM stage `wrapped`: both stages reach all three edges now,
+ * so this is the axis the sheet's empty cell used to sit on. The default is the
+ * shipped edge and the default path is untouched.
+ */
+const EDGES = ['flat', 'thick', 'wrapped'];
+const edgeArg = argv.indexOf('--edge');
+if (edgeArg !== -1) {
+  const edge = argv[edgeArg + 1] ?? '';
+  if (!EDGES.includes(edge)) {
+    console.error(`checks: --edge takes one of ${EDGES.join(', ')}, not "${edge}"`);
+    process.exit(2);
+  }
+  process.env.PORTFOLIO_EDGE = edge;
+  console.log(`checks: every page opens with the ${edge} edge selected.
+`);
+}
+
+/**
  * The pure logic under `scripts/`, before the browser is started.
  *
  * Not Checks — nothing here is an assertion about a Section — but they run from

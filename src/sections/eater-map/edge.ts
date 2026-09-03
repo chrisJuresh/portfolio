@@ -114,6 +114,36 @@ export interface Solid {
   readonly filletBack: string;
   /** the whole depth, along Z, in the same units as `filletBack` */
   readonly depth: string;
+  /**
+   * DRAW THE DEPTH FLAT, and what to divide it by to get into the host's units.
+   *
+   * Absent, a slice is put at its depth with `translateZ` and the host has to be
+   * in a `preserve-3d` chain for that to mean anything. **Nothing in this Section
+   * takes that branch any more** — it is kept because the two Variants that
+   * restate the chain are arguing about a CONVERGING camera, and a projection is
+   * only exact where nothing converges.
+   *
+   * Present, the slice is TRANSLATED to the place that depth projects to instead.
+   * The plane is drawn in parallel projection, so a point `d` behind it lands
+   * exactly where one on it, `d * tan(tilt)` further along, would —
+   * `--eater-map-depth-x` and `-y` on the plane are that offset per unit of
+   * depth, and this field is the scale between the plane's units and the host's,
+   * because a `translate` on a child of a scaled element IS scaled where a
+   * `translateZ` is not. The Slab's host carries no scale and passes `'1'`; a
+   * Card passes its own, which is `--eater-map-card-total`.
+   *
+   * WHY EVERY CALLER WANTS THE SECOND (#207). A `preserve-3d` chain forces each
+   * descendant into its own render surface — rasterised square, then resampled
+   * onto the tilted plane by the GPU — so a Card drawn under one carries the
+   * Eater app's own text through a bilinear filter and reads soft against the
+   * Points beside it. Flat, the whole drawing is one 2D affine layer and the
+   * glyphs are drawn through the matrix rather than smeared by it. AND IT IS THE
+   * WHOLE CHAIN OR IT IS NOTHING: one `translateZ` left on the Slab keeps the
+   * plane a 3D scene, a 3D scene composites all of its children, and the Cards go
+   * straight back into their own surfaces. So the Slab flattens too, though it
+   * has no text to keep sharp and no scale to divide by.
+   */
+  readonly flatten?: string;
   /** what the edge is painted from: any CSS colour */
   readonly colour: string;
   /**
@@ -128,6 +158,22 @@ export interface Solid {
    * than whether any do, and why it needs a name to ask about.
    */
   readonly surface?: string;
+  /**
+   * The picture the fillet's rings are drawn from instead of the edge colour, as a
+   * URL — the `wrapped` edge, and undefined for `thick`.
+   *
+   * THE ONLY DIFFERENCE BETWEEN THE TWO, exactly as it is in `stage-webgl.ts`'s
+   * `faces()`: the geometry is identical and the WALL is the edge colour either
+   * way. A phone's screen curls over its own shoulder and its SIDE is still
+   * aluminium, so what wraps is the fillet and nothing else.
+   *
+   * AND IT IS UNSHADED, which is a match rather than an omission. The WebGL stage
+   * draws its wrapped fillet with a `MeshBasicMaterial` carrying the texture and no
+   * vertex colours at all, so putting a shading overlay on this one would make the
+   * two stages draw different objects from the same Token — the confound #182's
+   * sheet exists to remove. A curved screen does not darken as it turns, either.
+   */
+  readonly wrap?: string;
 }
 
 /**
@@ -343,9 +389,31 @@ export function fitRadii(w: number, h: number, radii: Corners): Corners {
  * stands within a fraction of a pixel of the face's own depth — appended, it paints
  * a solid rectangle over the picture. Ordered this way the face wins every tie,
  * which is the right answer for all of them.
+ *
+ * AND WITHIN THE STACK, ORDER IS THE DEPTH SORT OR IT REPLACES IT. A `flatten`ed
+ * solid has no depth for the compositor to sort by, so the slices go down in the
+ * order a sort would have painted them — see `place` below.
  */
 export function extrude(host: HTMLElement, before: Node | null, solid: Solid): void {
-  const { box, radii, plan, colour, surface } = solid;
+  const { box, radii, plan, colour, surface, flatten } = solid;
+
+  /** Where the next slice goes.
+   *
+   *  IN 3D, always immediately before the face: depth sorting decides what covers
+   *  what, and document order only settles the ties — which the note above is
+   *  about.
+   *
+   *  FLAT, there is no depth sort, so document order is the whole answer and the
+   *  slices have to be laid down in the order a depth sort would have painted
+   *  them: deepest first. They are BUILT shallowest first — the fillet rolls back
+   *  from the face and the wall goes on behind it — so each one is inserted
+   *  before the one built before it, and the stack comes out reversed. The face
+   *  still wins, because it is behind every one of them in the document. */
+  let next = before;
+  const place = (sheet: HTMLElement) => {
+    host.insertBefore(sheet, next);
+    if (flatten !== undefined) next = sheet;
+  };
 
   // ONE LIGHT, READ OFF THE HOST ITSELF (#197). Not a field of `Solid` and not a
   // parameter: every caller is inside `.eater-map`, the light and the attitude are
@@ -373,7 +441,53 @@ export function extrude(host: HTMLElement, before: Node | null, solid: Solid): v
    *  `inset` ARRIVES TWICE, as the CSS expression the box is built from and as the
    *  same distance in the plan's own unit. The first draws the slice and follows
    *  every Token; the second is what the gradient's angles are arithmetic on. */
-  const slice = (part: 'fillet' | 'wall', inset: string, apart: number, back: string, nz: number) => {
+  /**
+   * The picture, scaled so that ITS contour at plan inset `u` lands on the edge of a
+   * slice standing at plan inset `a` — which is what makes the captured pixels run
+   * off the front, round the roll, and stop where the object does.
+   *
+   * TWO PERCENTAGES AND `center`, AND THE CENTRING IS THE WHOLE TRICK. A slice's box
+   * is the face's box inset by `a` on all four sides and the picture covers the
+   * face, so the two rectangles are CONCENTRIC — the mapping is therefore a pure
+   * scale about their shared centre, and the offset `background-position` would
+   * otherwise have to carry works out to exactly 50%. Only the size is left, and a
+   * `background-size` percentage resolves against the slice's own box, so both
+   * factors are pure numbers: `1 / (1 - 2u/W)` across and `1 / (1 - 2u/H)` down.
+   *
+   * `u` is the same texture inset `stage-webgl.ts` walks — `roll(1 - 2phi/pi)`, the
+   * band of pixels spread evenly along the arc — so the two stages read the same
+   * pixels onto the same ring. At the last ring `u` is 0 and this is the picture at
+   * its own size, meeting the object's silhouette; at the first it is the fillet,
+   * meeting the face where `stage-dom.ts` clipped it back to.
+   *
+   * NO SHADING, AND NO `--eater-map-solid` EITHER. Both are `Solid.wrap`'s comment.
+   * The collapse closes every box to the face's own and puts the picture over all of
+   * them, so a ring given a size it is not on screen to use cannot be wrong.
+   */
+  const wrapped = (u: number): string => {
+    const across = 1 - (2 * u) / plan.w;
+    const down = 1 - (2 * u) / plan.h;
+    // A ring cannot be given a picture scaled through infinity, which is what a
+    // fillet at half the plan would ask for. Unreachable while the thickness clamps
+    // it — 0.03 of the width against 0.5 — so this is the honest degenerate answer
+    // rather than a case with a look of its own.
+    const size =
+      across > 0 && down > 0 ? `${figure(100 / across)}% ${figure(100 / down)}%` : '100% 100%';
+    return `url("${solid.wrap}") center / ${size} no-repeat`;
+  };
+
+  const slice = (
+    part: 'fillet' | 'wall',
+    inset: string,
+    apart: number,
+    back: string,
+    nz: number,
+    /** the TEXTURE inset for a wrapped fillet ring, in the plan's own unit. Not the
+     *  same number as `apart`, which is where the ring physically stands: the
+     *  geometry follows `sin` and the pixels are spread evenly along the arc, and
+     *  the two only agree at the ends. */
+    texture?: number,
+  ) => {
     const sheet = document.createElement('div');
     sheet.className = SLICE;
     sheet.setAttribute('aria-hidden', 'true');
@@ -396,7 +510,12 @@ export function extrude(host: HTMLElement, before: Node | null, solid: Solid): v
       // in its own rendering context inside a `preserve-3d` parent, and one
       // grouping property on the wrong element is how this whole Section loses its
       // third dimension without an error (NOTES.md).
-      `background:${conicEdge(
+      //
+      // ...OR THE PICTURE, on a wrapped fillet ring and on nothing else. The wall
+      // keeps its gradient either way, which is `Solid.wrap`'s own comment.
+      part === 'fillet' && solid.wrap !== undefined && texture !== undefined
+        ? `background:${wrapped(texture)}`
+        : `background:${conicEdge(
         plan.w - 2 * apart,
         plan.h - 2 * apart,
         // The same rule the `corner` above writes, in the plan's own unit — so the
@@ -412,9 +531,14 @@ export function extrude(host: HTMLElement, before: Node | null, solid: Solid): v
         colour,
         shade,
       )}`,
-      `transform:translateZ(calc(-1 * (${back})))`,
+      // AT ITS DEPTH, one way or the other — `flatten` says which and why.
+      flatten === undefined
+        ? `transform:translateZ(calc(-1 * (${back})))`
+        : `transform:translate(` +
+          `calc((${back}) * var(--eater-map-depth-x) / (${flatten})),` +
+          `calc((${back}) * var(--eater-map-depth-y) / (${flatten})))`,
     ].join(';');
-    host.insertBefore(sheet, before);
+    place(sheet);
   };
 
   // THE FILLET, as the sections of a quarter-round. At angle 0 the section is the
@@ -438,6 +562,11 @@ export function extrude(host: HTMLElement, before: Node | null, solid: Solid): v
       // the last it is the object's silhouette and its edge is lit entirely from
       // the side.
       Math.cos(turn),
+      // WHERE THIS RING READS THE PICTURE, which is `stage-webgl.ts`'s
+      // `roll(1 - 2phi/pi)` said in this loop's own counter — the band of pixels
+      // spread EVENLY along the arc, against a geometry that follows `sin`. Ignored
+      // unless the caller asked for a wrapped edge.
+      plan.fillet * (1 - step / FILLET),
     );
   }
   // THE WALL: straight from the fillet's foot to the back of the solid, at the
