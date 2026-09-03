@@ -1378,9 +1378,20 @@ import './tokens.css';
          not a thing a full-bleed picture at the top of a column has. The stage
          multiplies its depth and its radius by this, so the whole solid closes up
          to the flat picture down here and opens again on a resize back into the
-         band without anything being re-mounted. Declared beside the playhead and
+         band. Declared beside the playhead and
          not in tokens.css for the reason --eater-map-collapsed is: it is a regime
-         and not a number the author chooses. */
+         and not a number the author chooses.
+
+         AND IT IS THE ONE INPUT TO THE EDGE THAT A WINDOW CAN MOVE, which is what
+         makes it worth reading twice. `edge.ts` substitutes every Token into the
+         generated lengths at mount — a `var()` in a declaration is re-parsed on
+         every style recalc, and the page turn recalculates the document every
+         frame — and leaves the container units alone, so an ordinary resize still
+         moves the whole stack for nothing. This value going 1 -> 0 is the
+         exception, and `redraw.ts` watches THIS DECLARATION to draw the stack
+         again when it does. Give the edge a second window-driven input and that
+         watch is wrong; the `eater-map` Check carries the assertion that would
+         fail. */
       --eater-map-solid: 0;
       /* The columns and the side padding are the base rule's out here too, since
          the Rail left the grid (#192) — they are restated because this block used

@@ -2,7 +2,7 @@ import { luminance } from '../lib/colour.mjs';
 import { DESK, open, settle } from '../lib/page.mjs';
 
 /**
- * The Eater Map Section's Exploded View — the thirteen things about it that break
+ * The Eater Map Section's Exploded View — the fourteen things about it that break
  * without anybody noticing.
  *
  * None is aesthetic. Every Token in `src/sections/eater-map/tokens.css` may be set
@@ -3412,6 +3412,262 @@ async function nothingWatchesTheTokens(browser, origin) {
   }
 }
 
+/**
+ * Every slice's resolved geometry, its identity, and whether anything is left in
+ * what was written on it for the browser to substitute again.
+ *
+ * FOUR FRAMES BEFORE IT READS ANYTHING. A crossing out of the band rebuilds the
+ * stack, and `redraw.ts` coalesces that onto a frame — so a reading taken in the
+ * same task as the resize is a reading of the drawing the window used to have, and
+ * it agrees with the previous reading for a reason that has nothing to do with the
+ * build.
+ *
+ * AND IDENTITY IS KEPT IN A `WeakMap` RATHER THAN WRITTEN ON THE ELEMENT, so
+ * "were these rebuilt or merely re-laid-out" is answerable across two readings
+ * without this Check leaving a mark on the page it is asking about.
+ */
+async function edgeGeometry() {
+  const section = document.querySelector('.eater-map');
+  if (!section) return { missing: 'the Section is not on the page' };
+  for (let frame = 0; frame < 4; frame += 1) {
+    await new Promise((next) => requestAnimationFrame(next));
+  }
+  /** What `edge.ts` writes on a slice and the page turn would have to re-parse. */
+  const WRITTEN = ['left', 'top', 'width', 'height', 'border-radius', 'transform'];
+  /** The same, as the browser resolved it — the four corners separately, because
+   *  `border-radius` is written as one value where the four are one value. */
+  const RESOLVED = [
+    'left',
+    'top',
+    'width',
+    'height',
+    'border-top-left-radius',
+    'border-top-right-radius',
+    'border-bottom-right-radius',
+    'border-bottom-left-radius',
+    'transform',
+  ];
+  const slices = [...document.querySelectorAll('.eater-map__slice')];
+  const held = window;
+  held.__edgeIds ??= new WeakMap();
+  held.__edgeNext ??= 0;
+  const identity = (el) => {
+    if (!held.__edgeIds.has(el)) held.__edgeIds.set(el, (held.__edgeNext += 1));
+    return held.__edgeIds.get(el);
+  };
+  return {
+    stage: section.dataset.eaterMapStage ?? '(never mounted)',
+    edgeKind: section.dataset.eaterMapEdge ?? '(unset)',
+    count: slices.length,
+    solid: getComputedStyle(section).getPropertyValue('--eater-map-solid').trim(),
+    ids: slices.map(identity).join(','),
+    named: slices.map(
+      (el) => `${el.dataset.eaterMapEdge ?? '(unnamed)'}/${el.dataset.eaterMapSlice ?? '(unnamed)'}`,
+    ),
+    geometry: slices.map((el) => {
+      const cs = getComputedStyle(el);
+      return RESOLVED.map((prop) => cs.getPropertyValue(prop)).join(' ');
+    }),
+    pending: slices.reduce(
+      (n, el) =>
+        n + WRITTEN.filter((prop) => (el.style.getPropertyValue(prop) || '').includes('var(')).length,
+      0,
+    ),
+    tokened: slices.filter((el) => (el.style.color || '').includes('var(--eater-map-')).length,
+  };
+}
+
+/**
+ * FOURTEEN. THE DRAWING FOLLOWS THE WINDOW, AND THE BAND'S EDGE IS THE ONE
+ * RE-MOUNT.
+ *
+ * `edge.ts` substitutes every Token into a slice's six geometry declarations at
+ * mount, because a declaration carrying a `var()` is re-substituted and re-parsed
+ * on every style recalc and the page turn recalculates the document every frame —
+ * two thirds of the crossing's style recalc, measured. What it does NOT substitute
+ * is `100cqw` and `100%`, and the whole affordability of the change is in that
+ * distinction. So there are two opposite things to assert, and each of them passes
+ * on its own for the wrong build:
+ *
+ * **A RESIZE INSIDE THE BAND MOVES THE DRAWING AND REBUILDS NOTHING.** A build
+ * that resolved the container units too would pass every other assertion here and
+ * draw an edge that came off its object the moment a reader dragged a window.
+ *
+ * **A CROSSING OUT OF THE BAND LANDS WHERE A FRESH MOUNT AT THAT WINDOW LANDS.**
+ * `--eater-map-solid` is the one input to this arithmetic that a media query
+ * answers, and it is baked into the numbers now, so it has to be watched and drawn
+ * again. **This is the assertion that fails if the edge is given a SECOND
+ * window-driven Token** — `redraw.ts` watches one declaration, and this compares
+ * OUTCOMES rather than mechanisms precisely so that a new input nobody wired up
+ * shows here rather than in a reader's window.
+ *
+ * AND BOTH WAYS ROUND, which is `reversesOnTheWayOut`'s lesson applied to a
+ * resize: a rebuild wired to fire on the way out and not on the way back leaves a
+ * flat picture wearing a raised edge, and a reader who narrows their window and
+ * widens it again is the one who finds it.
+ *
+ * A SECOND PAGE FOR THE COMPARISON AND NOT A SECOND READING. What is asked is
+ * whether THIS mount, carried across the band, agrees with a mount that was never
+ * anywhere else — so the two have to be two pages.
+ */
+async function theEdgeFollowsTheWindow(browser, origin) {
+  const { context, page } = await open(browser, origin, { viewport: WIDE });
+  const notes = [];
+  try {
+    const failures = await settle(page);
+    const wide = await page.evaluate(edgeGeometry);
+    if (wide.missing) {
+      failures.push(`${WIDE.width}x${WIDE.height}: ${wide.missing}`);
+      return { failures, notes };
+    }
+    // THE SAME TWO SKIPS `theEdgeHasADirection` MAKES, and for the same reasons: a
+    // canvas has no slices to ask about, a `flat` Slab has no edge by design, and a
+    // stage that never mounted looks like the first from here and is a failure.
+    if (wide.stage !== 'dom') {
+      if (STAGES.includes(wide.stage)) {
+        notes.push(
+          `the edge across the band: skipped — the ${wide.stage} stage draws the Slab's in a canvas`,
+        );
+      } else {
+        failures.push(
+          `${WIDE.width}x${WIDE.height}: the Section reports its stage as ${wide.stage}, so the Exploded ` +
+            'View never came up and nothing about how its edge follows the window was checked',
+        );
+      }
+      return { failures, notes };
+    }
+    if (wide.edgeKind === 'flat') {
+      notes.push('the edge across the band: skipped — the composition asked for a flat Slab');
+      return { failures, notes };
+    }
+    if (wide.count === 0) {
+      failures.push(
+        `${WIDE.width}x${WIDE.height}: nothing on the page is a slice, so the whole of this was checked ` +
+          'against nothing',
+      );
+      return { failures, notes };
+    }
+
+    // ---- what is written on a slice, and what is left for the turn to re-parse
+    if (wide.pending > 0) {
+      failures.push(
+        `${WIDE.width}x${WIDE.height}: ${wide.pending} of the ${wide.count * 6} geometry declarations on ` +
+          "the page's slices still name a Token, so each is a pending-substitution value the browser " +
+          're-parses on every style recalc — and the page turn writes --turn on the root every frame. ' +
+          'edge.ts resolves these at mount, so something is composing an expression after it does',
+      );
+    }
+    if (wide.tokened !== wide.count) {
+      failures.push(
+        `${WIDE.width}x${WIDE.height}: ${wide.tokened} of ${wide.count} slices carry an --eater-map- Token ` +
+          'on their own `color`, so the edge colour is no longer live in CSS on the rest — the gradient ' +
+          'mixes from `currentColor` precisely so that one short declaration is the whole of what the ' +
+          "Editor's drag has to reach",
+      );
+    }
+
+    // ---- inside the band: it follows the window, and rebuilds nothing --------
+    await page.setViewportSize(SHORT);
+    const short = await page.evaluate(edgeGeometry);
+    if (short.missing) {
+      failures.push(`${SHORT.width}x${SHORT.height} resized: ${short.missing}`);
+    } else {
+      const moved = short.geometry.filter((one, index) => one !== wide.geometry[index]).length;
+      if (moved === 0) {
+        failures.push(
+          `${WIDE.width}x${WIDE.height} -> ${SHORT.width}x${SHORT.height}: the Slab is drawn a different ` +
+            `width at those two windows and not one of the ${short.count} slices moved — so the lengths ` +
+            "were resolved to px rather than left in the container's own units, and the edge comes off " +
+            'the object on any resize inside the band',
+        );
+      }
+      if (short.ids !== wide.ids) {
+        failures.push(
+          `${SHORT.width}x${SHORT.height} resized: the stack was rebuilt by an ordinary resize inside the ` +
+            'band. Nothing needs to be — the container units carry the drawing — and a rebuild is a ' +
+            'hundred and forty-four elements on a gesture a reader makes by dragging a window edge',
+        );
+      }
+      notes.push(
+        `the edge across the band: ${moved} of ${short.count} slices moved between ` +
+          `${WIDE.width}x${WIDE.height} and ${SHORT.width}x${SHORT.height} with nothing rebuilt`,
+      );
+    }
+
+    // ---- out of the band: rebuilt, and where a fresh mount would be ----------
+    await page.setViewportSize(NARROW);
+    const carried = await page.evaluate(edgeGeometry);
+    if (carried.missing) {
+      failures.push(`${NARROW.width}x${NARROW.height} resized: ${carried.missing}`);
+    } else if (carried.solid === wide.solid) {
+      failures.push(
+        `${NARROW.width}x${NARROW.height}: --eater-map-solid is still ${carried.solid}, the same as at ` +
+          `${WIDE.width}x${WIDE.height} — so this window is not the collapse, and the crossing this group ` +
+          'is about was never made. Either NARROW or the collapse own media query has moved',
+      );
+    } else {
+      const { context: second, page: other } = await open(browser, origin, { viewport: NARROW });
+      try {
+        failures.push(
+          ...(await settle(other)).map((why) => `${NARROW.width}x${NARROW.height} mounted: ${why}`),
+        );
+        const fresh = await other.evaluate(edgeGeometry);
+        if (fresh.missing) {
+          failures.push(`${NARROW.width}x${NARROW.height} mounted: ${fresh.missing}`);
+        } else if (fresh.count !== carried.count) {
+          failures.push(
+            `${NARROW.width}x${NARROW.height}: a page carried across the band has ${carried.count} slices ` +
+              `against ${fresh.count} on one mounted there — the rebuild on the crossing built a ` +
+              'different number of elements than a mount does',
+          );
+        } else {
+          const apart = carried.geometry.filter((one, index) => one !== fresh.geometry[index]).length;
+          if (apart > 0) {
+            const first = carried.geometry.findIndex((one, index) => one !== fresh.geometry[index]);
+            failures.push(
+              `${NARROW.width}x${NARROW.height}: ${apart} of ${carried.count} slices on a page carried ` +
+                'out of the band are drawn differently from the same slices on a page mounted there. The ' +
+                `${carried.named[first]} slice is at\n        carried: ${carried.geometry[first]}\n` +
+                `        mounted: ${fresh.geometry[first]}\n      Every Token is resolved into these ` +
+                'numbers at mount, so any that a media query answers has to be watched — redraw.ts ' +
+                'watches --eater-map-solid and nothing else',
+            );
+          } else {
+            notes.push(
+              `the edge across the band: all ${carried.count} slices carried to ` +
+                `${NARROW.width}x${NARROW.height} agree with a mount taken there`,
+            );
+          }
+        }
+      } finally {
+        await second.close();
+      }
+    }
+
+    // ---- and back in --------------------------------------------------------
+    await page.setViewportSize(WIDE);
+    const back = await page.evaluate(edgeGeometry);
+    if (back.missing) {
+      failures.push(`${WIDE.width}x${WIDE.height} returned: ${back.missing}`);
+    } else {
+      const apart = back.geometry.filter((one, index) => one !== wide.geometry[index]).length;
+      if (apart > 0) {
+        const first = back.geometry.findIndex((one, index) => one !== wide.geometry[index]);
+        failures.push(
+          `${WIDE.width}x${WIDE.height} returned: ${apart} of ${back.count} slices did not come back to ` +
+            `where they were before the window left the band. The ${back.named[first]} slice was at\n` +
+            `        ${wide.geometry[first]}\n      and is now at\n        ${back.geometry[first]}\n` +
+            '      A rebuild wired to the way out and not to the way back leaves a raised edge on a flat ' +
+            'picture, or a flat one on a raised drawing',
+        );
+      }
+    }
+    return { failures, notes };
+  } finally {
+    await context.close();
+  }
+}
+
 export const check = {
   name: 'eater-map',
   title:
@@ -3433,6 +3689,13 @@ export const check = {
     const edge = await theEdgeHasADirection(browser, origin);
     found.push(...edge.failures);
     found.push(...(await nothingWatchesTheTokens(browser, origin)));
+    // ITS OWN NOTES, for the same reason the group above reports what it saw: how
+    // many slices a resize moved and whether a carried page agreed with a mounted
+    // one is what tells a reader of a passing log that both halves were exercised
+    // rather than skipped.
+    const window_ = await theEdgeFollowsTheWindow(browser, origin);
+    found.push(...window_.failures);
+    edge.notes.push(...window_.notes);
 
     const collapse = await collapsedBelowTheBand(browser, origin);
     found.push(...collapse.failures);

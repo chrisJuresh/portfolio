@@ -998,9 +998,22 @@ playhead, so `--eater-map-lift: 0` no longer takes it away — and an edge is
 something an Exploded View has, not something a full-bleed picture at the top of a
 column has. The stage multiplies its depth and its radius by this, so the whole
 solid closes up to the flat picture down here and opens again on a resize back
-into the band without anything being re-mounted. It is declared in the component's
+into the band. It is declared in the component's
 `<style>` and never in `tokens.css`, because it is a regime and not a number the
 author chooses.
+
+**AND IT IS THE ONE INPUT TO THE EDGE THAT A WINDOW CAN MOVE, WHICH IS WHAT MAKES
+IT WORTH READING TWICE.** The crossing used to move nothing: every generated length
+named this Token, so the browser re-evaluated all of them on a resize with nothing
+re-mounted. It does not any more — the lengths carry the *number* now, for the page
+turn's sake, and "Where the gradient is expensive" below is why — so this
+declaration going 1 → 0 is a rebuild, and `redraw.ts` watches **this declaration**
+to make it one. Nothing else about a window is watched, because nothing else about
+a window reaches these expressions: the container units are still container units.
+**Give the edge a second window-driven input and that watch is wrong**, silently
+and only below the band; the `eater-map` Check's fourteenth group is what fails
+instead, because it compares a page carried across the band against a page mounted
+there rather than asking about the mechanism.
 
 **ONE COMPOSITION AND NOT THREE, AND THAT IS THE ASSERTION RATHER THAN THE
 DESCRIPTION.** Three readers meet it — the narrow window, the reader who asked for
@@ -1473,24 +1486,86 @@ runs each interleaved, worst style recalc of a turn and p90 frame time with it:
 `border-radius` is written once rather than four times where the four corners are
 one value, for the same reason and a smaller share of it.
 
-**What is left of it is the lengths**, which are still expressions naming Tokens
-(#196 is why) and are therefore still substituted per recalc — six declarations a
-slice now that #207 has given the depth one too. Resolving those to numbers as well
-is the other half of the win and it is a big half: 26ms → 16ms into the Gallery,
-20ms → 10ms coming back off this Section, measured the same way. **What it costs is
-a redraw on every resize**, which is the thing `stage-dom.ts` says these expressions
-exist to avoid — so it is a decision and not a tidy-up, and #182 may moot it by
-taking this stage out entirely. Not done, and stated here with its price so the next
-reader is choosing rather than discovering.
+**The other half was the lengths, and it turned out to cost almost nothing.** Six
+declarations a slice — `left`, `top`, `width`, `height`, `border-radius` and, since
+#207, the depth's `transform` — every one of them naming a Token and therefore
+substituted and re-parsed per recalc, on 144 elements. They carry the Tokens'
+*numbers* now. `edge.ts`'s `resolved` reads the host's computed style once per solid
+and substitutes every `var()` before the expressions are composed, and the `color`
+declaration is the one it deliberately leaves alone, because that is `currentColor`'s
+whole route and the Editor's drag arrives through it.
 
-### The shading follows a dragged Token, under the Editor and nowhere else (#196)
+Two builds of this tree, differing only in whether `resolved` returns its argument,
+five reps interleaved in one browser session at 1536x760 on a real GPU — p90 frame
+time and worst style recalc of the turn:
 
-`redraw.ts`, and it is forty lines because almost nothing was missing. **Every Token
-a STYLESHEET consumes has been draggable since #144**: the Editor previews by
-putting one declaration into a sheet of its own, and every `calc()` naming that
-Token is re-evaluated by the browser — which is why `edge.ts` states every length as
-an expression rather than as a number, and why the thickness, the radii, the colour
-and the whole collapse below the band already moved under a drag.
+| turn | before | after |
+| --- | --- | --- |
+| into the Gallery | 24.3ms / 21ms | **18.3ms / 16ms** |
+| into the Eater Map | 12.3ms / 15ms | **12.2ms / 10ms** |
+| back off it | 18.0ms / 17ms | **12.3ms / 10ms** |
+| back to the Front Screen | 18.3ms / 20ms | **18.3ms / 17ms** |
+
+Inline style across the 144 slices falls from 415,027 characters to 283,517 with it,
+and the launch moves the same way rather than the other way: FCP 216ms → 196ms, LCP
+unchanged at 348ms, the edge finished at 427ms instead of 509ms, CLS 0.0000 both
+sides. The floor, measured by deleting this Section from the document entirely, is
+about 10ms; 16ms is where the crossing now sits, and what is between them is DOM
+rather than declarations — which is #182's business.
+
+**WHAT IT WOULD HAVE COST, AND WHY IT DOES NOT.** The obvious version of this
+resolves the lengths to *pixels*, which is what the handoff for the work priced: a
+number is a number, so the drawing stops following the window and every resize needs
+the stack rebuilt. That was measured too, and a rebuild is **57ms** as a single
+main-thread task — 43ms of it the redraw call itself — so it would have had to be
+debounced to the end of a resize drag, leaving the edge visibly detached from the
+map while the reader dragged.
+
+**None of that is necessary, because it is only the `var()` that is expensive.**
+`100cqw` and `100%` are *relative units*, not variables: a declaration holding them
+is parsed once and merely evaluated per recalc, and it is invalidated when the
+container resizes — which is exactly the behaviour wanted. Measured as a third arm
+on the same page, keeping the container units landed on the fully-resolved arm to
+within a millisecond on all four turns (17/8/9/17 against 16/9/10/16). So the
+container units stayed, and a resize inside the band still moves the Slab's 24
+slices with nothing re-mounted.
+
+**What is given up is one thing and it is narrow: a Token moving under a mounted
+drawing.** Two things move one — the Editor's drag, which `redraw.ts` already
+covered, and the collapse's media query answering `--eater-map-solid` differently.
+So `redraw.ts` grew a second half that watches that one declaration on a resize and
+draws the stack again when it moves. The 57ms is still paid, once, on the crossing
+at 1100x700 — a regime change that re-lays out the whole page anyway — and never on
+an ordinary resize.
+
+**Verified identical, by the gate that let the `currentColor` change through.** A
+screenshot of the same page either side of the rewrite differs by at most **one
+level in one channel, on zero pixels above that**, at 1536x760 and 1440x900, in both
+themes; below the band, where the slices are closed up behind the picture, by
+nothing at all. And the substitution was checked to be exact rather than close
+before any of it was written: rewriting all 144 slices' six declarations on a live
+page and re-reading all nine resolved properties off every one of them gave **0 of
+144 differing**, at 1536, 1200 and 1000 wide.
+
+**One thing to know before reading these numbers as a ceiling.** #182 may take this
+stage out entirely, and with it these 144 elements and this whole cost.
+
+### The generated geometry follows a Token that moves — dragged, or answered by a media query (#196)
+
+`redraw.ts`, and it started at forty lines because almost nothing was missing.
+**Every Token a STYLESHEET consumes has been draggable since #144**: the Editor
+previews by putting one declaration into a sheet of its own, and every `calc()`
+naming that Token is re-evaluated by the browser — which is why the colour, reached
+through `currentColor`, still moves under a drag with nothing rebuilt at all.
+
+**THE LENGTHS USED TO BE IN THAT SENTENCE AND ARE NOT ANY MORE**, which is the one
+correction to make while reading the rest of this section. They were expressions
+naming Tokens, so the thickness, the radii and the whole collapse moved under a drag
+by the same route the colour does; they carry the numbers now, for the page turn's
+sake, and the paragraphs above are the measurement. So a dragged Token reaches them
+through this module's rebuild rather than through the browser — which is what the
+module was already for — and the collapse reaches them the same way, through the
+second half of it. **The mechanism did not change; what depends on it grew.**
 
 **The shading is the one exception and it is the only one.** A slice's
 `conic-gradient` is arithmetic on the light, on the plane's attitude and on the
@@ -1515,10 +1590,11 @@ is not lit by the light, so requiring it to MOVE would fail a correct drawing:
 that is why it is in the second set and not the first.
 
 **The thickness needs no assertion of its own, and that is a judgement.** It reaches
-the drawing two ways, and neither is specific to it: every slice's depth is a CSS
-expression naming it, which the browser re-evaluates with nothing observed at all,
-and the gradient's outline goes through the same signature and the same redraw the
-light's assertion already covers. What is left that is only the thickness's is the
+the drawing through the same signature and the same redraw the light's assertion
+already covers — one of its two routes has closed since this was written, because a
+slice's depth is a number now rather than an expression the browser re-evaluates,
+but the surviving one is the one the assertion was resting on.
+What is left that is only the thickness's is the
 `min(radius, thickness)` clamp — and a Slab dragged THICKER leaves that clamp
 exactly where it was, so an assertion built on it would have to drag the row to zero
 and would then fail the day the author chose a square-edged Slab, which is a

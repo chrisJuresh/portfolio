@@ -1,6 +1,23 @@
 /**
- * The generated geometry drawn again while the Editor drags a Token (#196).
- * NOTES.md — the seam, the gate, the signature, and what each cost to get wrong.
+ * The generated geometry drawn again when what it was generated FROM has moved.
+ *
+ * TWO THINGS MOVE IT AND THEY ARE NOT ALIKE, which is why this module has two
+ * halves and one `again`. The **Editor** previewing a Token is a drag — dozens of
+ * times a second, on a page no reader ever opens (#196), and it is observed
+ * through the Editor's own preview sheet. The **window leaving the band** is once,
+ * on every reader's page, and it is a media query answering `--eater-map-solid`
+ * differently. Both want exactly the same call: draw it again.
+ *
+ * WHY THE SECOND HALF EXISTS AT ALL, since it did not used to. `edge.ts`
+ * substitutes every Token into the lengths at mount now, because a declaration
+ * carrying a `var()` is re-parsed on every style recalc and the page turn
+ * recalculates the document every frame. What that gives up is a Token moving
+ * under a mounted drawing — and the band's collapse is a Token moving. The
+ * container units are NOT substituted, so an ordinary resize still needs nothing
+ * from here; it is the crossing and only the crossing.
+ *
+ * NOTES.md — the seam, the gate, the signature, the measurement, and what each
+ * cost to get wrong.
  */
 
 /** The Editor's own footprint: the two tags it injects into every HTML response,
@@ -29,10 +46,76 @@ function isSheet(node: Node | null): boolean {
 }
 
 /**
- * Draw `root`'s generated geometry again whenever the Editor previews one of this
- * Section's Tokens — and do nothing at all if there is no Editor.
+ * Whether the Slab is a solid here, as the string the root holds.
+ *
+ * `edge.ts`'s `SOLID` is the expression every generated length carried; this is
+ * the value it was substituted with. **The one term in that arithmetic that is not
+ * a Token** — `EaterMap.astro` declares it beside `--eater-map-collapsed` and says
+ * why: it is a regime and not a number the author chooses, so it is the one input
+ * a media query answers and the author never drags.
+ *
+ * READ OFF THE ROOT AND COMPARED AS A STRING. The root is where both regimes
+ * declare it, and a string comparison cannot be fooled by `0` and `0.0` being one
+ * number: what is being asked is whether the stylesheet's answer CHANGED, and any
+ * change at all means the drawing was generated from something that is no longer
+ * true.
+ */
+function solidity(root: HTMLElement): string {
+  return getComputedStyle(root).getPropertyValue('--eater-map-solid').trim();
+}
+
+/**
+ * The band half: draw it again when the window carries the Section out of the band
+ * or back into it.
+ *
+ * NOT GATED ON ANYTHING, unlike the Editor half below — every reader has a window
+ * they can resize. What it costs a reader who does is one `getComputedStyle` of
+ * one property per frame of the drag, because the read is coalesced onto a frame
+ * the same way the Editor's is; the rebuild itself happens on the crossing and
+ * nowhere else.
+ *
+ * AND IT IS THE CROSSING RATHER THAN THE RESIZE, which is the whole reason
+ * substituting the Tokens was affordable. `edge.ts` leaves `100cqw` and `100%`
+ * alone, so a window that changes the Slab's size moves every slice with it for
+ * free; only a Token answered differently needs the hundred and forty-four
+ * elements built again, and there is exactly one of those.
+ *
+ * NO LISTENER IS REMOVED, because this Section is mounted once and lives as long
+ * as the document — the same reason `timeline.ts`'s own resize listener is not.
+ */
+function mountBand(root: HTMLElement, again: () => void): void {
+  let held = solidity(root);
+  let frame = 0;
+  const look = (): void => {
+    frame = 0;
+    const now = solidity(root);
+    if (now === held) return;
+    // BEFORE the rebuild and not after it. `again()` is synchronous and long — a
+    // hundred and forty-four elements — and a resize keeps firing while it runs,
+    // so a hold written afterwards is a hold written from a value that has already
+    // been read again.
+    held = now;
+    again();
+  };
+  window.addEventListener(
+    'resize',
+    () => {
+      if (frame === 0) frame = requestAnimationFrame(look);
+    },
+    { passive: true },
+  );
+}
+
+/**
+ * Draw `root`'s generated geometry again whenever what it was generated from moves
+ * — the window leaving the band, always, and the Editor previewing one of this
+ * Section's Tokens where there is an Editor to do it.
  */
 export default function mountRedraw(root: HTMLElement, again: () => void): void {
+  // FIRST, AND OUTSIDE THE GATE. The band is every reader's; the observer below is
+  // the Editor's alone, and the early return is that gate.
+  mountBand(root, again);
+
   if (!document.querySelector(EDITOR)) return;
 
   let held = signature();

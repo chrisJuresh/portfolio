@@ -49,13 +49,25 @@ import { edgeShade, lightingIn, type Shade } from './stage';
  * with the vendored markup, and the same answer. `:global()` is the escape hatch
  * and `check-source.mjs` fails the build on it.
  *
- * EVERY LENGTH IS A CSS EXPRESSION AND NOT A NUMBER, which is what lets a Token
- * dragged in the Editor and a window carried across the breakpoint both move the
- * drawing without anything being re-mounted. **The SHADING is the one thing that
- * is computed once**, and it can afford to be: the gradient is exactly
- * scale-invariant, so a window that changes an object's size cannot make it wrong.
- * What a mount does not survive is a dragged Token, and `redraw.ts` is the answer
- * to that — NOTES.md.
+ * EVERY LENGTH IS A CSS EXPRESSION IN THE CONTAINER'S OWN UNITS, WITH THE TOKENS
+ * ALREADY SUBSTITUTED — and the split between those two halves is the one thing on
+ * this page that a reader can feel. A declaration holding a `var()` anywhere in it
+ * is a pending-substitution value, so the browser re-substitutes and re-parses the
+ * whole thing on every style recalc of the document — and the Kernel writes
+ * `--turn` on the root on every frame of a page turn, which recalculates all of
+ * it. Six of these declarations a slice, times a hundred and forty-four slices,
+ * was two thirds of the crossing's style recalc. `resolved` below is what takes
+ * the `var()`s out; `100cqw` and `100%` STAY, because a relative unit costs
+ * nothing to recalculate and is what keeps the drawing following the window.
+ * NOTES.md carries the measurement and the price.
+ *
+ * **The SHADING is computed once too**, and it can afford to be for a different
+ * reason: the gradient is exactly scale-invariant, so a window that changes an
+ * object's size cannot make it wrong.
+ *
+ * What a mount does not survive is a Token MOVING under it — dragged in the
+ * Editor, or answered differently by a media query when the window leaves the
+ * band. `redraw.ts` is the answer to both and NOTES.md is why they are one answer.
  */
 
 /** Four corner radii, top-left clockwise, as bare CSS length expressions. */
@@ -370,6 +382,42 @@ function figure(n: number): string {
   return String(Math.round(n * 1e6) / 1e6);
 }
 
+/** One `var()`, with an optional fallback that is a single term — which every
+ *  fallback in this Section is, and the only one is `SOLID`'s `1`. */
+const VARIABLE = /var\(\s*(--[a-z0-9-]+)\s*(?:,\s*([^,()]*))?\)/gi;
+
+/**
+ * One expression with every Token in it replaced by what the host holds, and every
+ * relative unit left exactly where it was.
+ *
+ * WHY THIS IS THE WHOLE OF THE PAGE TURN'S REMAINING COST. See the module comment:
+ * a declaration carrying a `var()` is re-substituted and re-parsed on every style
+ * recalc of the document, and the turn recalculates the document every frame. What
+ * comes back from here is a `calc()` over numbers and container units, which the
+ * browser parses once and then merely evaluates.
+ *
+ * A CUSTOM PROPERTY'S COMPUTED VALUE IS ALREADY SUBSTITUTED, so one pass is enough
+ * and the second is only there to be sure. **What matters is the third line**: an
+ * expression that still names something after that goes back UNCHANGED rather than
+ * half-substituted — a live expression is slow, and an invalid one is an edge that
+ * was never drawn.
+ *
+ * AND EVERY SUBSTITUTION IS PARENTHESISED, because these are composed into larger
+ * arithmetic before they are written. `--eater-map-card-total` resolves to
+ * `calc(tan(atan2(100cqw, 393px)) * 1)` — a whole math function, which is a term
+ * only if it is bracketed as one.
+ */
+function resolved(expr: string, style: CSSStyleDeclaration): string {
+  let out = expr;
+  for (let pass = 0; pass < 2 && out.includes('var('); pass += 1) {
+    out = out.replace(VARIABLE, (_whole, name: string, fallback: string | undefined) => {
+      const held = style.getPropertyValue(name).trim();
+      return `(${held || fallback?.trim() || '0'})`;
+    });
+  }
+  return out.includes('var(') ? expr : out;
+}
+
 /**
  * Four radii clamped so that no edge of the box is asked for more than it has.
  *
@@ -408,7 +456,50 @@ export function fitRadii(w: number, h: number, radii: Corners): Corners {
  * order a sort would have painted them — see `place` below.
  */
 export function extrude(host: HTMLElement, before: Node | null, solid: Solid): void {
-  const { box, radii, plan, colour, surface, flatten } = solid;
+  const { plan, colour, surface } = solid;
+
+  // ONE LIGHT, READ OFF THE HOST ITSELF (#197). Not a field of `Solid` and not a
+  // parameter: every caller is inside `.eater-map`, the light and the attitude are
+  // custom properties and custom properties inherit, so asking the host is asking
+  // the Section — and there is then no way for two callers to be handed two
+  // lights. The plane's attitude is read with it, because the light stands on the
+  // PAGE and a local normal has to be carried into screen space before it is
+  // dotted. Zero is the honest reading of a missing attitude; `stage.ts` says why
+  // the light's own fallbacks are not zero.
+  //
+  // AND IT IS THE SAME READING THE LENGTHS ARE SUBSTITUTED FROM, which is why it
+  // is taken before them rather than beside the shade below. One
+  // `getComputedStyle` for a whole solid: the light, the attitude, and every
+  // Token the geometry is generated from.
+  const style = getComputedStyle(host);
+
+  /** Every length this solid is stated in, with the Tokens taken out and the
+   *  container units left in — `resolved`, and the module comment is why. */
+  const box = {
+    x: resolved(solid.box.x, style),
+    y: resolved(solid.box.y, style),
+    w: resolved(solid.box.w, style),
+    h: resolved(solid.box.h, style),
+  };
+  // WRITTEN OUT RATHER THAN MAPPED, because `.map` over a readonly tuple hands
+  // back an array and the cast back to four would be the only unchecked thing in
+  // this function.
+  const radii: Radii = [
+    resolved(solid.radii[0], style),
+    resolved(solid.radii[1], style),
+    resolved(solid.radii[2], style),
+    resolved(solid.radii[3], style),
+  ];
+  const fillet = resolved(solid.fillet, style);
+  const filletBack = resolved(solid.filletBack, style);
+  const depth = resolved(solid.depth, style);
+  const flatten = solid.flatten === undefined ? undefined : resolved(solid.flatten, style);
+  /** How far a unit of depth projects along the plane, per axis — the two numbers
+   *  `Solid.flatten` is about, substituted here for the same reason as the rest.
+   *  Not a field of `Solid`: they are the PLANE's and every caller is on it, which
+   *  is the same argument the light above is read by. */
+  const alongX = resolved('var(--eater-map-depth-x)', style);
+  const alongY = resolved('var(--eater-map-depth-y)', style);
 
   /** Where the next slice goes.
    *
@@ -428,15 +519,6 @@ export function extrude(host: HTMLElement, before: Node | null, solid: Solid): v
     if (flatten !== undefined) next = sheet;
   };
 
-  // ONE LIGHT, READ OFF THE HOST ITSELF (#197). Not a field of `Solid` and not a
-  // parameter: every caller is inside `.eater-map`, the light and the attitude are
-  // custom properties and custom properties inherit, so asking the host is asking
-  // the Section — and there is then no way for two callers to be handed two
-  // lights. The plane's attitude is read with it, because the light stands on the
-  // PAGE and a local normal has to be carried into screen space before it is
-  // dotted. Zero is the honest reading of a missing attitude; `stage.ts` says why
-  // the light's own fallbacks are not zero.
-  const style = getComputedStyle(host);
   const angle = (name: string) => {
     const value = Number.parseFloat(style.getPropertyValue(name));
     return Number.isFinite(value) ? value : 0;
@@ -561,8 +643,8 @@ export function extrude(host: HTMLElement, before: Node | null, solid: Solid): v
       flatten === undefined
         ? `transform:translateZ(calc(-1 * (${back})))`
         : `transform:translate(` +
-          `calc((${back}) * var(--eater-map-depth-x) / (${flatten})),` +
-          `calc((${back}) * var(--eater-map-depth-y) / (${flatten})))`,
+          `calc((${back}) * ${alongX} / (${flatten})),` +
+          `calc((${back}) * ${alongY} / (${flatten})))`,
     ].join(';');
     place(sheet);
   };
@@ -590,9 +672,9 @@ export function extrude(host: HTMLElement, before: Node | null, solid: Solid): v
     const turn = (Math.PI / 2) * (step / rings);
     slice(
       'fillet',
-      `(${solid.fillet}) * ${figure(1 - Math.sin(turn))}`,
+      `(${fillet}) * ${figure(1 - Math.sin(turn))}`,
       plan.fillet * (1 - Math.sin(turn)),
-      `(${solid.filletBack}) * ${figure(1 - Math.cos(turn))}`,
+      `(${filletBack}) * ${figure(1 - Math.cos(turn))}`,
       // THE DEPTH COMPONENT OF THE SECTION'S TRUE NORMAL, and `conicEdge` supplies
       // the lateral part from whatever is left of a unit vector. At the first step
       // the section almost faces the reader and its edge is almost one colour; at
@@ -616,7 +698,7 @@ export function extrude(host: HTMLElement, before: Node | null, solid: Solid): v
       'wall',
       '0px',
       0,
-      `(${solid.filletBack}) + ((${solid.depth}) - (${solid.filletBack})) * ${figure(along)}`,
+      `(${filletBack}) + ((${depth}) - (${filletBack})) * ${figure(along)}`,
       0,
     );
   }

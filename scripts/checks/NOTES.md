@@ -101,7 +101,7 @@ cannot be verified there even by hand.
 | `faces`          | a declared `@font-face` will not load, or no face Token names a declared family |
 | `front-screen`   | the Front Screen's rhyme, its one-screen budget, the Cut Title's cut or its accessible name, the crossing's span, the switch's ARIA, or the type's place in the Effect Stack breaks |
 | `projects-panel` | a control in the Frame leaves the centre its own Token names, the window and its titlebar are cut to two radii, the recording's box stops being inset on three sides, the occlusion of the subheading's second line moves or stops being painted, the titlebar reports a rung it is not made of, the chrome grows a control, the small-Frame reduction starts asking about the window instead of the Frame, the Plinth's depths stop being shares of the Frame, its slab stops being symmetric about it, its bottom-right corner comes off the page's on either branch of the fit, or the Frame moves towards the engineering points instead of away from them, the reflection stops being a life-size fold of the window, the marble stops being drawn without script, a reader who asked for reduced motion is charged for the recording, a reader who runs no script at all loses the copy that arrives with the page turn, the titlebar grows past the clearance the clip on disk was cut with, or that clip stops opening on that many rows of flat, light ground |
-| `eater-map`      | PROJECTS stops standing where the Gallery's own masthead stands or stops being the same word, the serif title's cap height or its drop below the masthead's baseline stops matching the two ratios the Section declares — which a font size proportional to the masthead does, by 4% — the copy leaves the foot of the column PROJECTS heads or the Points leave the right of the drawing, the three Cards on the Slab stop being drawn at the Slab's own scale at the Lift's flat end, one of them stops moving between the Lift's two ends, one of the Section's own boxes is invisible at either end, a reader who leaves part way up is left with a Lift that ran on without them, a leader line comes off the corner it names part way up the Lift or stops ending in a lit dot on it, a point and a part stop being one to one, the picture of the app puts a focusable control or a heading into the page, an extruded edge stops having a direction or stops taking it from the one page-fixed light, a corner of the Slab shows the page behind it, `--eater-map-slab-edge` stops being live inside the gradient, the rebuild that makes a dragged light visible starts running for a reader with no Editor on the page, or below the band the drawing stops collapsing — a perspective left standing on a column, a Slab that misses the window's edges, a Lift still running where there is no page turn, the four features no longer a list under the picture, or one of the three readers down there handed a composition of their own |
+| `eater-map`      | PROJECTS stops standing where the Gallery's own masthead stands or stops being the same word, the serif title's cap height or its drop below the masthead's baseline stops matching the two ratios the Section declares — which a font size proportional to the masthead does, by 4% — the copy leaves the foot of the column PROJECTS heads or the Points leave the right of the drawing, the three Cards on the Slab stop being drawn at the Slab's own scale at the Lift's flat end, one of them stops moving between the Lift's two ends, one of the Section's own boxes is invisible at either end, a reader who leaves part way up is left with a Lift that ran on without them, a leader line comes off the corner it names part way up the Lift or stops ending in a lit dot on it, a point and a part stop being one to one, the picture of the app puts a focusable control or a heading into the page, an extruded edge stops having a direction or stops taking it from the one page-fixed light, a corner of the Slab shows the page behind it, `--eater-map-slab-edge` stops being live inside the gradient, a slice's geometry starts naming a Token again so the page turn re-parses it a hundred and forty-four times a frame, or stops following the window inside the band, or a page carried out of the band stops agreeing with a page mounted there, the rebuild that makes a dragged light visible starts running for a reader with no Editor on the page, or below the band the drawing stops collapsing — a perspective left standing on a column, a Slab that misses the window's edges, a Lift still running where there is no page turn, the four features no longer a list under the picture, or one of the three readers down there handed a composition of their own |
 | `rail`           | the page carries more than one Rail or none, at any of four windows; the Rail moves when the page turns; it stops standing in the page's own left margin, or stops sharing the composition's left edge below the band; the current entry stops naming the Section at rest, in either direction; an entry stops being reachable at a resting place because a Section is hit-tested over it; the Rail stays reachable on the first screen, where it is drawn transparent; the entry with no Section of its own stops saying so to a screen reader; or a reader who runs no script gets no Rail or no current entry |
 | `ground`         | paper is not light, or the Turn does not arrive dark, in either theme         |
 | `effect-stack`   | the Effect Stack stops covering the window anywhere its veil is still open — the seam — or reaches further than the deepest pixel that veil is ever seen at, which on a phone is a `mix-blend-mode` layer with a `filter` on it too tall for the compositor to hand out in one piece, and content that vanishes leaving its own gap behind |
@@ -223,6 +223,30 @@ reader can tell a comfortable pass from one sitting on a threshold. And it is th
 one group that SKIPS — under `--stage webgl` the Slab's edge is a canvas with no
 slices to read — so the skip is printed rather than silent, and a stage that never
 mounted at all is a failure instead of looking like the same thing.
+
+**Its fourteenth asserts two OPPOSITE things about the same six declarations, and
+each of them passes on its own for the wrong build.** The Exploded View's slices
+carry the Tokens' resolved numbers, so that the page turn is not re-parsing a
+hundred and forty-four elements' worth of `var()` every frame, and they carry the
+container's own units unresolved, so that the drawing still follows the window.
+Resolve too little and the turn is slow, which nothing visible fails; resolve too
+much and the edge comes off its object the moment a reader drags a window edge,
+which nothing at DESK fails either. So one half requires that a resize inside the
+band MOVES slices and rebuilds none, and the other that a page carried OUT of the
+band is drawn exactly as a page mounted there is — both ways round, because a
+rebuild wired to the way out and not the way back is `reversesOnTheWayOut`'s bug
+at a different seam.
+
+**The second half is deliberately an assertion about an OUTCOME and not about the
+mechanism**, and that is the whole of its value. `redraw.ts` watches one
+declaration, `--eater-map-solid`, because that is the only input to those
+expressions a media query answers. A build that gives the edge a second
+window-driven Token is a build where that watch is quietly incomplete — and
+comparing a carried page against a mounted one fails without knowing what was
+added, where a Check that read the watch's own list would agree with itself.
+Both halves were broken on purpose to confirm they fail: with the watch removed,
+144 of 144 slices disagreed with a fresh mount; with the container units resolved
+too, 0 of 144 moved across a resize.
 
 **And it reads a THIRD window, below the band, because down there the composition
 is a different one** (#179): the Slab flat and full-bleed with the four features
