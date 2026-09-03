@@ -551,31 +551,59 @@ to put it back. Without it a scroll sweep reads a document that jumps rather tha
 one that crosses, and the `front-screen` Check's crossing sweep found the Turn at
 0 in forty of its forty-one samples.
 
-**ONE GESTURE IS ONE TURN, and a trackpad is why that had to be said out loud.**
+**ONE PUSH IS ONE TURN — not one event, and not one gesture either.** Both of the
+wrong answers shipped, a day apart, and the second is the more interesting one.
+
 A mouse notch is a single `wheel` event of about a hundred pixels, so deciding per
-event and deciding per gesture were the same thing while a mouse was the only
-device in the room. A light two-finger flick is thirty or more events of five or
-six pixels, and its momentum tail keeps arriving for over a second after the
-fingers have left the glass. Decided per event, the events that land while a turn
-is in flight are harmless — they resolve to the port it is already heading for and
-nothing happens — but the first one to arrive AFTER it lands picks the port after
-it, and the gesture chains through every port and falls out of the bottom of the
-document into the browser's own scroll. Measured at 1440x820 before #205: one
-light flick carried the page 0 → 1551 through ports at 0, 731 and 1551, in both
-directions, which is the Projects Panel — the landing this whole device exists to
-arrive at — being unreachable from a trackpad. So the wheel handler settles a
-gesture's first vertical notch and holds that answer until the wheel stops: a
-gesture that turned swallows the rest of its own events, and one that found nothing
-to turn is the browser's for the whole of its length. The `turn` Check asserts it
-from both ends of the document, and `scripts/checks/NOTES.md` carries the reason
-its precondition is timed rather than asked for.
+event and deciding per push were the same thing while a mouse was the only device
+in the room. A trackpad delivers a light flick as a RISE under the fingers and
+then a decaying momentum TAIL that keeps arriving for over a second after they
+have left the glass. Decided per event, the first tail notch to land after the
+turn had landed picked the port after it, and one flick chained through every port
+and fell out of the bottom into the browser's own scroll — measured at 1440x820,
+ports at 0, 731 and 1551, one flick carried the page 0 → 1551 in both directions,
+and the Projects Panel could not be stopped on from a trackpad at all (#205).
+
+**Per GESTURE, that failure goes away and a worse one takes its place, because a
+gesture does not end when the reader's fingers do.** `wheel.ts` ends one at a
+silence, and the tail is not silence — so a SECOND deliberate flick lands inside
+the first one's momentum and is swallowed whole. Measured on the shipped page:
+flick, then flick again once the page had arrived, and the document did not move.
+The reader waits out somebody else's animation to be allowed to scroll, which is
+worse than the bug it replaced, because the first one at least did what it was
+told (#210).
+
+**The wheel's own SHAPE is what separates them, and there is nothing else.**
+`WheelEvent` carries deltas and a unit; the phase that would answer this outright
+is a macOS AppKit property with no DOM counterpart, so every library that solves
+this infers it — fullPage.js compares a short rolling average of recent deltas
+against a longer one and acts only while the short one leads. `page-turn.ts` is
+that idea with the averages replaced by the two turning points they exist to find:
+a push is over once the wheel has **ebbed to half its peak**, and a new one has
+begun once it has **risen to twice its trough**, which only fingers can do — a
+decaying tail sets a new low every notch, so it can never be twice its own trough.
+A floor under both, because a dying tail flattens and a flat run of ones would
+otherwise read as a rise the moment it stopped falling; notches are normalised to
+px first, so a device reporting lines is measured in the same units.
+
+**No clock anywhere in it, and that is the point.** Momentum lasts as long as it
+lasts, and a reader is never made to wait out a number.
+
+The `turn` Check asserts the whole of it as one rule — **ports moved equals pushes
+delivered** — from both ends of the document, with a flick modelled as a real
+flick's shape. A constant stream of identical notches is not a trackpad; it is a
+finger held down at one speed, which the page is entitled to read as push after
+push, and the first version of that Check asserted against the wrong device.
+`scripts/checks/NOTES.md` carries why its precondition is timed rather than asked
+for.
 
 **The strip wants the opposite, which is why the rule is the page turn's and not
-the arbitration's.** It is a roll with many resting places, where one held gesture
-SHOULD keep spinning, and it already reads a stream as a spin. Only the boundary is
-shared — `GESTURE_GAP` stays in `wheel.ts`, and `page-turn.ts` asks
-`wheelGesture()` rather than timing a second copy of it, because two copies
-drifting means an event belonging to one gesture and acted on as another.
+the arbitration's.** It is a roll with many resting places, where one held push
+SHOULD keep spinning for as long as the momentum lasts, and it reads the same
+stream as a spin. Only the silence is shared — `GESTURE_GAP` stays in `wheel.ts`,
+and `page-turn.ts` asks `wheelGesture()` rather than timing a second copy of it,
+because two copies drifting means an event belonging to one gesture and acted on
+as another.
 
 `wheel.ts` settles which of two claimants a gesture belongs to, because there are
 two: the Front Screen's photograph strip and the page turn. A gesture belongs to

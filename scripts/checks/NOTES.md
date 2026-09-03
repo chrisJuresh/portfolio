@@ -104,7 +104,7 @@ cannot be verified there even by hand.
 | `eater-map`      | PROJECTS stops standing where the Gallery's own masthead stands or stops being the same word, the serif title's cap height or its drop below the masthead's baseline stops matching the two ratios the Section declares — which a font size proportional to the masthead does, by 4% — the copy leaves the foot of the column PROJECTS heads or the Points leave the right of the drawing, the three Cards on the Slab stop being drawn at the Slab's own scale at the Lift's flat end, one of them stops moving between the Lift's two ends, one of the Section's own boxes is invisible at either end, a reader who leaves part way up is left with a Lift that ran on without them, a leader line comes off the corner it names part way up the Lift or stops ending in a lit dot on it, a point and a part stop being one to one, the picture of the app puts a focusable control or a heading into the page, an extruded edge stops having a direction or stops taking it from the one page-fixed light, a corner of the Slab shows the page behind it, `--eater-map-slab-edge` stops being live inside the gradient, the rebuild that makes a dragged light visible starts running for a reader with no Editor on the page, or below the band the drawing stops collapsing — a perspective left standing on a column, a Slab that misses the window's edges, a Lift still running where there is no page turn, the four features no longer a list under the picture, or one of the three readers down there handed a composition of their own |
 | `rail`           | the page carries more than one Rail or none, at any of four windows; the Rail moves when the page turns; it stops standing in the page's own left margin, or stops sharing the composition's left edge below the band; the current entry stops naming the Section at rest, in either direction; an entry stops being reachable at a resting place because a Section is hit-tested over it; the Rail stays reachable on the first screen, where it is drawn transparent; the entry with no Section of its own stops saying so to a screen reader; or a reader who runs no script gets no Rail or no current entry |
 | `ground`         | paper is not light, or the Turn does not arrive dark, in either theme         |
-| `turn`           | the Kernel's published landing measure — cap, drop or the stone the width branch leaves room for — disagrees with the Panel's own arithmetic, the Panel's masthead is visible or has lost its box, the Cut Title is not standing in that masthead's slot, the word moves or resizes across the crossing, either end of the morph is not the outline the Bake wrote, a wheel notch does not turn the page or bring it back, a trackpad flick turns more than one page or lands anywhere but the Panel's port from either end of the document, a notch begun on the photographs turns it, or the paragraph that arrives with the crossing is painted at the top of the document, is still arriving at the landing, moves to get there, or is left on its own compositing layer once it has |
+| `turn`           | the Kernel's published landing measure — cap, drop or the stone the width branch leaves room for — disagrees with the Panel's own arithmetic, the Panel's masthead is visible or has lost its box, the Cut Title is not standing in that masthead's slot, the word moves or resizes across the crossing, either end of the morph is not the outline the Bake wrote, a wheel notch does not turn the page or bring it back, a trackpad flick moves the page by any number of ports other than the number of pushes it carried — chaining through every port on one flick, or refusing a second flick delivered into the first one's momentum — a notch begun on the photographs turns it, or the paragraph that arrives with the crossing is painted at the top of the document, is still arriving at the landing, moves to get there, or is left on its own compositing layer once it has |
 | `crossing`       | outside the landing band the Panel's ground parts company with the document's anywhere across the crossing, the page has not finished turning by the time the Panel owns the screen, the crossing is a flip or never finishes, the reader meets the whole of the Cut Title on the first screen, the Cut Title is cut by a box rather than by the fold — so it is still cut in the Section it heads — or stops being one drawing, or the Panel's masthead draws a second PROJECTS under it — or loses the `display` the Section's accessible name comes from |
 | `moments`        | a Timeline cannot be seeked, does not survive a scroll, moves nothing, or will not release |
 | `deep-links`     | a Section on the page carries no id, or its `/portfolio/<id>` does not answer, or answers with something that is not the document, or opens it somewhere other than where that Section asks to be put |
@@ -699,11 +699,20 @@ from outside the thing it is a precondition for**, and it generalises past this
 Check: a Check reading a state machine's own idea of its state can only ever
 assert that it is self-consistent.
 
-The same flick carries the smaller lesson too. **A pair of directions is worth
-more than one direction twice as hard**: a stall splits the stream, which leaves
-only the weak claim, and both ends of the document stalling in the same run is the
-square of one end doing it. The mutation is caught by whichever direction came
-through clean.
+**And a Check has to model the DEVICE, not a convenient stream.** The same flick
+delivered sixty identical notches, which is not a trackpad — it is a finger held
+down at one speed forever, and a page turn is entitled to read it as push after
+push. That version would have failed correct code and passed the fault it was
+written for, once the Kernel learned to tell a rise from a decay. It is a real
+flick's shape now: a rise under the fingers, then a tail losing seven per cent a
+notch.
+
+The last lesson is about which way a fallback can be weak. A stall splits the
+stream and adds a push nobody made, so it can only raise the CEILING on how many
+ports should have moved — the FLOOR is the reader's own pushes and holds however
+badly the machine behaved. Stating the rule as **ports moved equals pushes
+delivered** rather than as two separate claims is what makes the stalled run still
+assert the direction that matters most: the page refusing to move at all.
 
 Two more names that are taken and should not be reused: `Check`, which CONTEXT.md
 defines and every module in `checks/` exports, and `Record`, which is TypeScript's
