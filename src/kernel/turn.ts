@@ -108,19 +108,46 @@ export function createTurn(): gsap.core.Timeline {
     },
   });
 
+  /**
+   * The span, published as a length, because one thing outside this file has to
+   * know how far the crossing runs and cannot work it out for itself.
+   *
+   * That thing is the Effect Stack. Its veil is a function of `--turn`, so the
+   * whole stack is masked to nothing once the Turn has finished — and everything
+   * below the deepest pixel the reader can see while it is still open is a
+   * layer that is filtered, blended and masked for no one. CSS can measure
+   * neither the first Section's height nor a resting place, so it cannot know
+   * where that is; this is the one number it needs, and effect-stack.css does
+   * the rest of the arithmetic in the Tokens' own terms.
+   *
+   * A LENGTH AND NOT THE HEIGHT ITSELF. What is published is what this file
+   * knows — how far the reader scrolls to cross — and not a box for somebody
+   * else's element. Which is what keeps `--fx-veil-to` a Token that stays in
+   * CSS: a stack that gives up early because its author finished the veil early
+   * is that Token's business, not this file's.
+   */
+  const publish = () => root.style.setProperty('--turn-span', `${span()}px`);
+
   // Paper when the marked element's top reaches the top of the window, dark a
   // span later. `end` is a FUNCTION and `invalidateOnRefresh` is what makes that
   // worth writing: the span is measured, and a resize that crosses the band —
   // or one that only changes how tall the first Section's content is — has to
   // re-measure it. Without the flag the length is whatever it was at boot.
+  //
+  // `onRefresh` is where the published length is kept honest, and it is the same
+  // moment `end` is asked for: every re-measure that moves the crossing moves
+  // the stack's foot with it.
   const trigger = document.querySelector<HTMLElement>('[data-turn]') ?? root;
   ScrollTrigger.create({
     trigger,
     start: 'top top',
     end: () => `+=${span()}`,
     invalidateOnRefresh: true,
+    onRefresh: publish,
     onUpdate: (self) => timeline.progress(self.progress),
   });
+
+  publish();
 
   register(TURN, timeline);
   return timeline;

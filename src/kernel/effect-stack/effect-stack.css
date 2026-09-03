@@ -41,13 +41,74 @@
    is where that one line lives, and why). A band one screen tall ended at the
    fold, so the treatment stopped in the middle of the page turn — a seam the
    reader scrolls past, with the second Section untreated below it. What ends the
-   stack now is the veil below, not a length. */
+   stack now is the veil below, not a length.
+
+   AND THEN A LENGTH AGAIN, BUT THE RIGHT ONE, AND THIS IS THE PARAGRAPH TO READ
+   BEFORE TOUCHING IT. `bottom: 0` is still what the box falls back to and is
+   still what a page with no script gets. What the `height` does is stop the
+   stack where the VEIL has already closed — which is a different length from
+   the one that caused the seam, and the difference is the whole point.
+
+   The veil is a function of `--turn`, so it is 0 everywhere on the page once the
+   Turn has finished. Below the deepest pixel the reader can see while it is
+   still open, every layer here is masked to nothing: still filtered, still
+   blended, still masked, and contributing not one pixel to the page. On a phone
+   that was 57–61% of a stack over four thousand CSS pixels tall — which is the
+   halftone asking a phone's compositor for a texture around 17,000 DEVICE pixels
+   tall, against a `MAX_TEXTURE_SIZE` that is 4096 or 8192 on the hardware this
+   page is read on. A layer that cannot be handed out in one piece is a layer
+   whose tiles can come back missing, and that has now been reported twice on
+   this page as content that vanishes and leaves its own gap behind: the type
+   first, the photographs second. src/kernel/NOTES.md carries both, and
+   FrontScreen.astro carries the other lever — promoting what stands on the
+   stack, which is a different fix and not a substitute for this one.
+
+   THE ARITHMETIC. The deepest the reader can see while the veil is open is the
+   scroll at which it closes, plus a window. The scroll at which it closes is the
+   Turn's span times `--fx-veil-to`, because that is the Turn value the veil is
+   gone by. `--turn-span` is that span as a length, published by
+   src/kernel/turn.ts — CSS can measure neither the first Section's height nor a
+   resting place, so this is the one number it has to be given. `100lvh` and NOT
+   `--fold` for the window: `--fold` is `100svh`, which is a phone with its URL
+   bar SHOWN, and a stack that short comes up exactly one URL bar shy of the last
+   visible line the moment the bar hides.
+
+   IT FALLS BACK BY ITSELF, which is why there is no `@supports` and no second
+   declaration. A `var()` with no value makes the whole declaration invalid at
+   computed-value time, and `height`'s initial value is `auto` — so before
+   turn.ts has run, and on any page where it never does, `top`/`bottom` stretch
+   the box the full document exactly as before.
+
+   WHAT THIS CHANGES THE MEANING OF, and it is one thing: `--fx-fade` is a share
+   of THE LAYER, and the layer is now shorter. It is 0, so nothing moves today,
+   and the region it dissolves is still below the last pixel the veil is open
+   for — but an author who raises it is now dissolving a shorter box. The comment
+   on the veil's own mask says the same thing about the last time this length
+   changed. */
+/* The stack's height, named because TWO rules need it and only one of them is
+   the box: the halftone is sized against BOTH of the box's axes, and a
+   percentage only ever resolves against one.
+
+   Two of them, and the difference is the whole no-script story. `--fx-height`
+   carries `var(--turn-span)` bare, so with no script it is guaranteed-invalid,
+   `height` falls back to its initial `auto`, and `top`/`bottom` stretch the
+   stack over the document — which is what a reader with no `--turn` needs,
+   because the veil is then whole everywhere. `--fx-height-safe` names a
+   generous stand-in instead, because the halftone must have a SIZE either way
+   and a layer sized for a taller stack than the page has still covers it.
+   Bigger is always safe here; absent is not. */
+:root {
+  --fx-height: calc(var(--turn-span) * var(--fx-veil-to) + 100lvh - var(--fx-y));
+  --fx-height-safe: calc(var(--turn-span, 500vh) * var(--fx-veil-to) + 100lvh - var(--fx-y));
+}
+
 .fx {
   position: absolute;
   top: var(--fx-y);
   left: 0;
   right: 0;
   bottom: 0;
+  height: var(--fx-height);
   pointer-events: none;
   overflow: hidden;
 }
@@ -140,9 +201,32 @@
   opacity: var(--fx-paper-strength);
 }
 
-/* Rotated about the centre and oversized to 150% so the corners of the band stay
-   covered at any angle — sqrt(2) is 1.415, and 1.5 leaves a margin. */
+/* Rotated about the centre, and oversized by exactly what the rotation needs.
+   IT USED TO BE A FLAT 150% IN BOTH AXES, on the reasoning that sqrt(2) is 1.415
+   and 1.5 leaves a margin. That is the arithmetic for a SQUARE, and this box has
+   never been one: a rectangle W by H turned by t has to be W|cos t| + H|sin t|
+   across and W|sin t| + H|cos t| down to still contain what it covers, and for a
+   box far taller than it is wide those two numbers go opposite ways. At 11deg
+   over the document-tall stack, 150% left the width 317px SHORT of a corner
+   while spending 50% more height than the rotation asked for — an uncovered
+   corner and an oversized texture, from the same wrong constant, and the corner
+   was uncovered on the shipped page for as long as the constant was there. The
+   `effect-stack` Check measures the corners in the layer's own frame, because a
+   rotated rectangle's bounding box is not the rectangle and comparing bounding
+   boxes would have called this covered.
+
+   Stating it exactly is also most of what makes the stack affordable on a phone:
+   the height term drops from 150% of the box to about 102% of it. Measured on a
+   Pixel 7, the two changes together take the halftone from 16,921 device pixels
+   tall to 4,995, and the paper — the layer carrying the `filter` — from 11,280
+   to 4,880. Every layer is under 8192 on every phone measured; both were two to
+   three times over it.
+
+   `max(x, -1 * x)` and not `abs()`, which is the same thing everywhere it is
+   supported and one fewer thing to be the reason a texture is missing. */
 :root[data-fx~='halftone'] .fx-halftone {
+  --fx-halftone-cos: max(cos(var(--fx-halftone-angle)), -1 * cos(var(--fx-halftone-angle)));
+  --fx-halftone-sin: max(sin(var(--fx-halftone-angle)), -1 * sin(var(--fx-halftone-angle)));
   display: block;
   background-image: radial-gradient(
     circle at 50% 50%,
@@ -150,9 +234,14 @@
     #fff calc(var(--fx-halftone-dot) * var(--fx-halftone-pitch) + 0.5px)
   );
   background-size: var(--fx-halftone-pitch) var(--fx-halftone-pitch);
-  width: 150%;
-  height: 150%;
-  inset: -25%;
+  /* Each axis takes its OWN measure as a percentage and the other one as a
+     length, because that is the only axis a percentage can resolve against. */
+  width: calc(100% * var(--fx-halftone-cos) + var(--fx-height-safe) * var(--fx-halftone-sin));
+  height: calc(var(--page-across) * var(--fx-halftone-sin) + 100% * var(--fx-halftone-cos));
+  inset: auto;
+  left: 50%;
+  top: 50%;
+  translate: -50% -50%;
   rotate: var(--fx-halftone-angle);
   mix-blend-mode: var(--fx-halftone-blend);
   opacity: var(--fx-halftone-opacity);
