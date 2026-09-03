@@ -575,8 +575,19 @@ export function extrude(host: HTMLElement, before: Node | null, solid: Solid): v
   // FROM ONE AND NOT FROM ZERO. The slice at angle zero is the flat face's own edge
   // — a ring of no width, at the face's own depth — so it draws nothing and can
   // only get in the picture's way.
-  for (let step = 1; step <= FILLET; step += 1) {
-    const turn = (Math.PI / 2) * (step / FILLET);
+  //
+  // AND NOT AT ALL WHEN THERE IS NO ROLL (#207). At `plan.fillet` of zero every one
+  // of these is the SAME ring — inset nothing, back nothing, the face's own outline
+  // at the face's own depth — so the loop builds sixteen identical boxes, stacks
+  // them behind the picture and draws not one visible pixel. Sixteen elements per
+  // surface is not nothing, and a stack whose count does not follow its geometry is
+  // the kind of thing a later reader measures and mistrusts. The WALL is untouched:
+  // its rings stand at the outline from the face's depth to the back, so the solid
+  // is closed with or without a roll, and rendering the two confirmed there is no
+  // hairline where the picture meets it.
+  const rings = plan.fillet > 0 ? FILLET : 0;
+  for (let step = 1; step <= rings; step += 1) {
+    const turn = (Math.PI / 2) * (step / rings);
     slice(
       'fillet',
       `(${solid.fillet}) * ${figure(1 - Math.sin(turn))}`,
@@ -592,7 +603,7 @@ export function extrude(host: HTMLElement, before: Node | null, solid: Solid): v
       // `roll(1 - 2phi/pi)` said in this loop's own counter — the band of pixels
       // spread EVENLY along the arc, against a geometry that follows `sin`. Ignored
       // unless the caller asked for a wrapped edge.
-      plan.fillet * (1 - step / FILLET),
+      plan.fillet * (1 - step / rings),
     );
   }
   // THE WALL: straight from the fillet's foot to the back of the solid, at the
