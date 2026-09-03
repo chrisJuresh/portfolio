@@ -380,13 +380,20 @@ different amount for the same Token.
 ## Glass cannot be carried off a surface, so the map is carried instead
 
 A `backdrop-filter` samples what is painted behind an element **in its own plane**,
-and there is no such thing once the plane is turned under a camera: Chromium hands
-the filter an empty backdrop and it becomes a no-op. **At the first degree of
+and there was no such thing once the plane was turned under a camera: Chromium
+handed the filter an empty backdrop and it became a no-op. **At the first degree of
 tilt**, not at the first pixel of depth — measured, with the rise, the gap and the
-dolly all set to 0 and only the tilt standing, the app's frosted detail panel is
+dolly all set to 0 and only the tilt standing, the app's frosted detail panel was
 already a sheet of clear glass with a sharp map behind its text. And measured the
 other way too, because it was the obvious suspect: `transform-style: preserve-3d`
-alone, with every angle at 0, is pixel-identical to `flat`. It is the rotation.
+alone, with every angle at 0, is pixel-identical to `flat`. It was the rotation.
+
+**THE PAST TENSE IS #207's, AND #211 IS WHAT IT COST.** "In its own plane" means
+its own 3D RENDERING CONTEXT, and #207 took the rendering context away — so the
+filters woke up, silently, and started frosting a surface that already carried a
+frost of its own. Verified by putting a `hue-rotate(140deg)` in one and watching
+the panel go purple. They are turned off by name in `EaterMap.astro` now; the
+reasoning below is why the copy exists at all, and it is unchanged.
 
 **WHAT THIS SECTION DID ABOUT IT UNTIL #190 WAS THE OPPOSITE OF THE REFERENCE.**
 The composition gave each Card the plate its glass was standing in for, in step
@@ -683,9 +690,21 @@ longer veils the paragraph under it": the `.actions` row is `background:
 transparent` down there, so the only thing that could fog the paragraph is the
 sheet, and the paragraph now sits on the blurred map instead.
 
-**The app's own `backdrop-filter`s are left alone.** In the band they sample an
-empty backdrop and are no-ops, so overriding them would buy nothing; below the band
-the plane is flat and they are exactly the frost a screenshot has.
+**The app's own `backdrop-filter`s are turned off, and #211 is the correction.**
+This used to read "left alone", on the grounds that in the band they sampled an
+empty backdrop and were no-ops so overriding them would buy nothing. That was true
+of a `preserve-3d` plane and stopped being true with #207. What they do now is a
+SECOND frost over the copy — and, more expensively, a render surface per glass
+surface, which is #207's own mechanism one level further in: the surface's text is
+rasterised into a texture and composited rather than drawn through the matrix.
+Measured on the built page at 1600x900 at DPR 1, over the details Card's paragraph,
+they cost more sharpness than #207 bought.
+
+Off EVERYWHERE and not only in the band, which is the smaller rule: below the band
+every copy already lines up exactly with the map beneath it, so the copies are the
+whole frost there too, and the app's filters add a faint bloom and nothing else —
+compared side by side at 820x1180, the two are the same picture. One frost, under
+the three Tokens that name it.
 
 **A reader with no scripts gets the app's own translucency over the map** and no
 copy behind it, which is the same trade the Slab's edge and the leader lines make.

@@ -430,9 +430,12 @@
   --eater-map-card-details-slide-y: 0.075;
 
   /* ---- the Cards' glass, which is what they are made of (#190) --------------
-     A backdrop filter has nothing to sample the moment the plane is tilted, so
-     each glass SURFACE carries a blurred copy of the Slab instead, offset by that
-     surface's own place on it. These are the three numbers that copy is made with.
+     A backdrop filter had nothing to sample while the plane was a turned 3D
+     rendering context, so each glass SURFACE carries a blurred copy of the Slab
+     instead, offset by that surface's own place on it. These are the three numbers
+     that copy is made with — and since #211 they are the whole frost rather than
+     most of it, because the app's own filters woke up when #207 flattened the plane
+     and are turned off by name.
 
      BRIGHTENED, AND THAT IS THE ONE THAT IS NOT OBVIOUS: a dark map behind a dark
      surface reads as a HOLE rather than as glass, so the copy is lifted before it

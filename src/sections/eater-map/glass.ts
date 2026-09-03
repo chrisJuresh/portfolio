@@ -7,12 +7,18 @@ import { SLAB } from './slab';
  * an edge round every one of them (#190).
  *
  * WHY A COPY OF THE MAP AND NOT `backdrop-filter`. A backdrop filter samples what
- * is painted behind an element IN ITS OWN PLANE, and there is no such thing once
- * the plane is turned: Chromium hands the filter an empty backdrop and it becomes
- * a no-op, silently, at the FIRST DEGREE of tilt — measured, with the rise and the
- * slides all at 0 and only the tilt standing. So the app's own frosted surfaces are
- * clear glass with a sharp map behind their text, which is a composition a reader
- * cannot read.
+ * is painted behind an element IN ITS OWN 3D RENDERING CONTEXT, and while the plane
+ * was `preserve-3d` and turned there was no such thing: Chromium handed the filter
+ * an empty backdrop and it became a no-op, silently, at the FIRST DEGREE of tilt —
+ * measured, with the rise and the slides all at 0 and only the tilt standing. So
+ * the app's own frosted surfaces were clear glass with a sharp map behind their
+ * text, which is a composition a reader cannot read.
+ *
+ * #207 TOOK THE RENDERING CONTEXT AWAY AND THE FILTERS WOKE UP, which is what #211
+ * is. They are turned off by name on `.eater-map__card` now — a second frost over
+ * this one, and a render surface per glass surface, which is what made the Cards'
+ * text soft again. This module is unaffected and is still the whole of the frost;
+ * `EaterMap.astro` carries the measurement.
  *
  * WHAT THIS REPLACES, AND IT IS THE OPPOSITE OF IT. Until #190 the Section mixed
  * each Card's three glass colours towards `--eater-map-plate` in step with its
