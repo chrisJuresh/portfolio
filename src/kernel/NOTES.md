@@ -784,6 +784,34 @@ the *shaded* ground as a second colour for the things standing above the layer t
 mix against, which is a change to the theme's own API and a decision rather than a
 number; it is not what one slider buys.
 
+## A Section mounts when the browser is idle, and "approaching" is the deadline
+
+`IntersectionObserver` at half a screen's margin is what the loader had, and it is
+the right answer to a question about BYTES: a Section's chunk is not fetched until
+the reader is nearly at it. **It is the wrong answer on its own to the question of
+when the WORK lands**, and inside the landing band the two came apart badly. The
+second Section is one page turn away at the top of the document, so "approaching"
+*is* the middle of the reader's first turn — and that is where the Eater Map's
+144 slices, its glass measurements and its leader lines were built, on a frame the
+page was moving through. Measured at 1536x760: one task of 100–230ms in the middle
+of the first turn, which was the worst hitch on the page and the only one that was
+not a per-frame cost. It also moved the ground under the turn itself, because a
+Section that grows as it mounts moves the resting place the ease is already flying
+towards.
+
+So `mountSections` queues everything behind a `requestIdleCallback` as well, one
+Section per callback, and the observer stays as the answer for a reader who gets
+there before the browser goes idle. The chunks are still split and still fetched
+late; what changed is that they are fetched with a still page rather than a moving
+one. **The timeout is a deadline and not a delay** — a page that never goes idle
+must still mount.
+
+Two consequences worth knowing. A Check's `settle()` no longer needs the page
+scrolled through every Section before it will report them mounted. And the in-app
+browser pane, which never delivers an `IntersectionObserver` entry at all
+(CLAUDE.md), now mounts the page like anything else — which is a gain and not a
+reason to trust that pane for anything else about motion.
+
 ## The Effect Stack covers the document, and leaves with the Turn
 
 **The stack is over the whole page, not over the first screen.** It used to be a

@@ -1421,12 +1421,48 @@ apart. All of it is printed as notes on a passing run, so a reader of the log ca
 tell a comfortable pass from one sitting on a threshold.
 
 **Where the gradient is expensive.** Twenty-eight perimeter points and a closing
-stop, each a `color-mix()` naming a Token, is about 2 KB of inline style per slice —
-so 47 KB for the Slab and about 240 KB across the page's 120 slices. That is runtime
-DOM rather than shipped bytes and costs the page nothing to load, but it is a
-quarter of a megabyte of CSS to re-parse per frame for anything that rebuilds an
-edge while a Token is being dragged. #196 is what does that, and how it is priced is
-the next section.
+stop is about 2 KB of inline style per slice — so 47 KB for the Slab and about
+400 KB across the page's 144 slices. That is runtime DOM rather than shipped bytes
+and costs the page nothing to load.
+
+**It was not only priced against a rebuild, and that is what this paragraph used to
+say.** Every stop named the Token, and a declaration containing a `var()` anywhere
+in it is a *pending-substitution value*: the browser holds it as unresolved tokens
+and re-substitutes and re-parses the whole declaration on every style recalc of the
+element. So the price was not paid by whatever rebuilt an edge — it was paid by
+anything that recalculated the document, and the Kernel writes `--turn` on the root
+on every frame of a page turn, which recalculates all of it. Four thousand
+`color-mix()`es per frame, on a Section that is not even on screen while the reader
+crosses from the Front Screen to the Gallery.
+
+**The Token reaches the drawing through `currentColor` now**, which is not a
+variable: the slice carries `color: var(--eater-map-slab-edge)` — one short
+declaration to substitute — and every stop mixes towards black from there. The
+drawing is identical (a screenshot either side of the change differs by at most one
+level in one channel, on no pixel above that), the Token is still live in CSS, and
+the `eater-map` Check still asserts both — it reads the Token off the slice's own
+`color` rather than out of the gradient. Measured at 1536x760 on a real GPU, four
+runs each interleaved, worst style recalc of a turn and p90 frame time with it:
+
+| turn | before | after |
+| --- | --- | --- |
+| into the Gallery | 36ms / 36.6ms | 29ms / 30.5ms |
+| into the Eater Map | 28ms / 24.4ms | 19ms / 18.3ms |
+| back off it | 32ms / 36.6ms | 20ms / 24.4ms |
+| back to the Front Screen | 36ms / 30.5ms | 27ms / 24.4ms |
+
+`border-radius` is written once rather than four times where the four corners are
+one value, for the same reason and a smaller share of it.
+
+**What is left of it is the lengths**, which are still expressions naming Tokens
+(#196 is why) and are therefore still substituted per recalc — six declarations a
+slice now that #207 has given the depth one too. Resolving those to numbers as well
+is the other half of the win and it is a big half: 26ms → 16ms into the Gallery,
+20ms → 10ms coming back off this Section, measured the same way. **What it costs is
+a redraw on every resize**, which is the thing `stage-dom.ts` says these expressions
+exist to avoid — so it is a decision and not a tidy-up, and #182 may moot it by
+taking this stage out entirely. Not done, and stated here with its price so the next
+reader is choosing rather than discovering.
 
 ### The shading follows a dragged Token, under the Editor and nowhere else (#196)
 
