@@ -2762,7 +2762,14 @@ async function edgeAsBuilt(spec) {
     const picture = authored.startsWith('url(');
     if (picture) seen.pictures += 1;
     else if (!authored.startsWith('conic-gradient(')) seen.flat += 1;
-    if (!picture && !authored.includes('var(--eater-map-')) seen.unnamed += 1;
+    // THE TOKEN IS ON `color` AND NOT IN THE GRADIENT, and asking the slice's own
+    // `color` is what keeps this the same question it always was. Every stop mixes
+    // from `currentColor`, so the Token reaches the drawing through that one short
+    // declaration instead of through all twenty-nine — one substitution per style
+    // recalc rather than twenty-nine, which is the whole of why `edge.ts` writes it
+    // there. What this asks is whether the colour was resolved in JavaScript, and
+    // that is a question about the slice rather than about one of its properties.
+    if (!picture && !slice.style.color.includes('var(--eater-map-')) seen.unnamed += 1;
     const computed = getComputedStyle(slice).backgroundImage;
     if (computed === 'none') seen.blank += 1;
     // THE DEEPEST WALL, and named rather than counted: the wall is where the whole
@@ -3080,9 +3087,9 @@ async function theEdgeHasADirection(browser, origin) {
         }
         if (seen.unnamed > 0) {
           failures.push(
-            `${where}: ${seen.unnamed} of the ${name} edge's ${seen.slices} slices name no Token in the ` +
-              'gradient they were written with — the colour has been resolved in JavaScript, and the ' +
-              "Editor's drag of that Token now moves nothing",
+            `${where}: ${seen.unnamed} of the ${name} edge's ${seen.slices} slices name no Token on their ` +
+              'own `color`, which is what every stop of their gradient mixes from — the colour has been ' +
+              "resolved in JavaScript, and the Editor's drag of that Token now moves nothing",
           );
         }
         if (seen.blank > 0) {

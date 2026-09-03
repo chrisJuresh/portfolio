@@ -14,7 +14,7 @@ than a convenience.
 | file                        | owns                                                        |
 | --------------------------- | ----------------------------------------------------------- |
 | `faces.css` / `tokens/faces.css` | the five families, six files, the face Tokens, and the page's own type size — the zoom, the ceiling and the give-way |
-| `ground.css` / `tokens/ground.css` | the theme's two papers, the Turn across them, the shade over the first screen's background, and that the document never scrolls sideways |
+| `ground.css` / `tokens/ground.css` | the theme's two papers, the Turn across them, the shade over the DARK theme's first screen, and that the document never scrolls sideways |
 | `corners.css` / `corners.ts`| the plate, the car and the eye — geometry, and which rung    |
 | `rail/` / `tokens/rail.css` | the Rail — the one index on the page, its words, its two regimes, and which entry is current |
 | `effect-stack/`             | the nine layers, and the grain tile                          |
@@ -551,31 +551,59 @@ to put it back. Without it a scroll sweep reads a document that jumps rather tha
 one that crosses, and the `front-screen` Check's crossing sweep found the Turn at
 0 in forty of its forty-one samples.
 
-**ONE GESTURE IS ONE TURN, and a trackpad is why that had to be said out loud.**
+**ONE PUSH IS ONE TURN — not one event, and not one gesture either.** Both of the
+wrong answers shipped, a day apart, and the second is the more interesting one.
+
 A mouse notch is a single `wheel` event of about a hundred pixels, so deciding per
-event and deciding per gesture were the same thing while a mouse was the only
-device in the room. A light two-finger flick is thirty or more events of five or
-six pixels, and its momentum tail keeps arriving for over a second after the
-fingers have left the glass. Decided per event, the events that land while a turn
-is in flight are harmless — they resolve to the port it is already heading for and
-nothing happens — but the first one to arrive AFTER it lands picks the port after
-it, and the gesture chains through every port and falls out of the bottom of the
-document into the browser's own scroll. Measured at 1440x820 before #205: one
-light flick carried the page 0 → 1551 through ports at 0, 731 and 1551, in both
-directions, which is the Projects Panel — the landing this whole device exists to
-arrive at — being unreachable from a trackpad. So the wheel handler settles a
-gesture's first vertical notch and holds that answer until the wheel stops: a
-gesture that turned swallows the rest of its own events, and one that found nothing
-to turn is the browser's for the whole of its length. The `turn` Check asserts it
-from both ends of the document, and `scripts/checks/NOTES.md` carries the reason
-its precondition is timed rather than asked for.
+event and deciding per push were the same thing while a mouse was the only device
+in the room. A trackpad delivers a light flick as a RISE under the fingers and
+then a decaying momentum TAIL that keeps arriving for over a second after they
+have left the glass. Decided per event, the first tail notch to land after the
+turn had landed picked the port after it, and one flick chained through every port
+and fell out of the bottom into the browser's own scroll — measured at 1440x820,
+ports at 0, 731 and 1551, one flick carried the page 0 → 1551 in both directions,
+and the Projects Panel could not be stopped on from a trackpad at all (#205).
+
+**Per GESTURE, that failure goes away and a worse one takes its place, because a
+gesture does not end when the reader's fingers do.** `wheel.ts` ends one at a
+silence, and the tail is not silence — so a SECOND deliberate flick lands inside
+the first one's momentum and is swallowed whole. Measured on the shipped page:
+flick, then flick again once the page had arrived, and the document did not move.
+The reader waits out somebody else's animation to be allowed to scroll, which is
+worse than the bug it replaced, because the first one at least did what it was
+told (#210).
+
+**The wheel's own SHAPE is what separates them, and there is nothing else.**
+`WheelEvent` carries deltas and a unit; the phase that would answer this outright
+is a macOS AppKit property with no DOM counterpart, so every library that solves
+this infers it — fullPage.js compares a short rolling average of recent deltas
+against a longer one and acts only while the short one leads. `page-turn.ts` is
+that idea with the averages replaced by the two turning points they exist to find:
+a push is over once the wheel has **ebbed to half its peak**, and a new one has
+begun once it has **risen to twice its trough**, which only fingers can do — a
+decaying tail sets a new low every notch, so it can never be twice its own trough.
+A floor under both, because a dying tail flattens and a flat run of ones would
+otherwise read as a rise the moment it stopped falling; notches are normalised to
+px first, so a device reporting lines is measured in the same units.
+
+**No clock anywhere in it, and that is the point.** Momentum lasts as long as it
+lasts, and a reader is never made to wait out a number.
+
+The `turn` Check asserts the whole of it as one rule — **ports moved equals pushes
+delivered** — from both ends of the document, with a flick modelled as a real
+flick's shape. A constant stream of identical notches is not a trackpad; it is a
+finger held down at one speed, which the page is entitled to read as push after
+push, and the first version of that Check asserted against the wrong device.
+`scripts/checks/NOTES.md` carries why its precondition is timed rather than asked
+for.
 
 **The strip wants the opposite, which is why the rule is the page turn's and not
-the arbitration's.** It is a roll with many resting places, where one held gesture
-SHOULD keep spinning, and it already reads a stream as a spin. Only the boundary is
-shared — `GESTURE_GAP` stays in `wheel.ts`, and `page-turn.ts` asks
-`wheelGesture()` rather than timing a second copy of it, because two copies
-drifting means an event belonging to one gesture and acted on as another.
+the arbitration's.** It is a roll with many resting places, where one held push
+SHOULD keep spinning for as long as the momentum lasts, and it reads the same
+stream as a spin. Only the silence is shared — `GESTURE_GAP` stays in `wheel.ts`,
+and `page-turn.ts` asks `wheelGesture()` rather than timing a second copy of it,
+because two copies drifting means an event belonging to one gesture and acted on
+as another.
 
 `wheel.ts` settles which of two claimants a gesture belongs to, because there are
 two: the Front Screen's photograph strip and the page turn. A gesture belongs to
@@ -733,12 +761,31 @@ turns up later as a Timeline that will not seek. A Check that wants a mount poin
 of its own should give it a name of its own; `observeSection` is exposed for
 exactly that.
 
-## The shade: one Token that darkens the first screen's background
+## The shade: one Token that darkens the DARK theme's first screen
 
 `--shade` is one number in `tokens/ground.css`, and `.kernel-shade` in
-`ground.css` is the layer it draws. At 0 — what ships — the page is exactly what
-it was, and the Editor draws it a 0-to-1 slider because a Token whose value is a
-bare `0` gets a range that wide (`scripts/editor/lib/tokens.mjs`).
+`ground.css` is the layer it draws. The Editor gives it a 0-to-1 slider, because
+that is the range a Token whose value is a bare fraction gets
+(`scripts/editor/lib/tokens.mjs`).
+
+**It is gated on `:root[data-theme='dark']`, and that gate is the fix for the one
+thing this got wrong.** It shipped ungated, the author dragged it to 0.5, and the
+light page went `#808080` — black over `#fff` is the largest change available on
+this page, while black over the dark theme's `#131211` is the small correction
+the layer was actually wanted for. The gate is a **rule** and not a second value
+per theme, because a value is something the next session at the panel drags
+straight back into grey; with the rule there is no setting of `--shade` that puts
+a wash over paper.
+
+**Nothing caught it, and that is worth knowing before trusting a Check here.**
+The `ground` Check reads `getComputedStyle(root).backgroundColor` — the ground
+*token*, painted into a 1×1 canvas — so it compares a colour rather than the
+spelling of one, and a paint layer over the top does not move it. It went on
+reporting `#ffffff` at the start of the Turn while the page was grey. That is not
+a hole in the Check so much as its subject: it asserts the theme's endpoints. The
+gate closes the light half by construction; anything that wants to assert what is
+actually *painted* on the first screen is a different Check, and would have to
+sample a screenshot.
 
 **"The background" is not a judgement here, it is a z-index.** The Effect Stack's
 layers take even z-indexes so that content excluded from them has an odd one to
@@ -772,17 +819,46 @@ children, so the stacking context it makes isolates nothing that matters.
 `document.elementFromPoint` would kill every link on the page — the failure the
 `rail` Check was written for, three links wide, made general.
 
-**What the author will see going up, and it is not a bug.** The shade moves what
-is *painted*; it does not move `--ground`, the token. So the Front Screen's three
-soft colours — `--front-screen-muted` on the location line, `--front-screen-rule`
-under the contact links, `--front-screen-soft` — are still mixed towards a paper
-that is nominally white, and on the light theme they wash out as the background
-comes up to meet them: at 0.35 the underlines have gone. On dark they do the
-opposite and gain contrast. That is the shape of the ask — darken the background,
-leave the type — and the greys are type. Making them track would mean publishing
-the *shaded* ground as a second colour for the things standing above the layer to
-mix against, which is a change to the theme's own API and a decision rather than a
-number; it is not what one slider buys.
+**What the author will see going up.** The shade moves what is *painted*; it does
+not move `--ground`, the token. So the Front Screen's three soft colours —
+`--front-screen-muted` on the location line, `--front-screen-rule` under the
+contact links, `--front-screen-soft` — are still mixed towards `#131211`, and as
+the background falls away from them they *gain* contrast rather than losing it.
+That asymmetry is the other half of why this belongs to the dark theme: run the
+same layer over white and those greys are mixed towards a paper the page no
+longer has, and they wash out — at 0.35 the contact underlines had gone. If a
+light-theme shade is ever wanted, that is the thing to solve first, and solving it
+means publishing the *shaded* ground as a second colour for everything standing
+above the layer to mix against — a change to the theme's own API and a decision
+rather than a number.
+
+## A Section mounts when the browser is idle, and "approaching" is the deadline
+
+`IntersectionObserver` at half a screen's margin is what the loader had, and it is
+the right answer to a question about BYTES: a Section's chunk is not fetched until
+the reader is nearly at it. **It is the wrong answer on its own to the question of
+when the WORK lands**, and inside the landing band the two came apart badly. The
+second Section is one page turn away at the top of the document, so "approaching"
+*is* the middle of the reader's first turn — and that is where the Eater Map's
+144 slices, its glass measurements and its leader lines were built, on a frame the
+page was moving through. Measured at 1536x760: one task of 100–230ms in the middle
+of the first turn, which was the worst hitch on the page and the only one that was
+not a per-frame cost. It also moved the ground under the turn itself, because a
+Section that grows as it mounts moves the resting place the ease is already flying
+towards.
+
+So `mountSections` queues everything behind a `requestIdleCallback` as well, one
+Section per callback, and the observer stays as the answer for a reader who gets
+there before the browser goes idle. The chunks are still split and still fetched
+late; what changed is that they are fetched with a still page rather than a moving
+one. **The timeout is a deadline and not a delay** — a page that never goes idle
+must still mount.
+
+Two consequences worth knowing. A Check's `settle()` no longer needs the page
+scrolled through every Section before it will report them mounted. And the in-app
+browser pane, which never delivers an `IntersectionObserver` entry at all
+(CLAUDE.md), now mounts the page like anything else — which is a gain and not a
+reason to trust that pane for anything else about motion.
 
 ## The Effect Stack covers the document, and leaves with the Turn
 
@@ -801,6 +877,110 @@ edge anywhere between. `--fx-veil-from` and `--fx-veil-to` are the two Turn valu
 it runs between and are the Tokens; the veil itself is derived in
 `effect-stack.css`, because it is a function of `--turn` and not a number the
 author sets.
+
+**And then it stopped a screen after the veil closes, which is a third length
+and not the first one back.** The stack still covers the whole page in the only
+sense that matters — there is no seam, and `bottom: 0` is still the fallback and
+still what a page running no script gets. What it no longer does is BUILD the
+part of itself that nothing can ever see. The veil is a function of `--turn`, so
+it is 0 everywhere once the Turn has finished; below the deepest pixel the reader
+reaches while it is still open, every layer is masked to nothing while remaining
+filtered, blended and masked. Measured on three phones that was **57-61% of a
+stack over four thousand CSS pixels tall**, and the number that matters is what
+it asks the compositor for: the halftone, oversized and rotated, wanted a texture
+**16,921 device pixels tall on a Pixel 7 and 18,924 on an iPhone 13**, and the
+paper — the layer carrying the `filter`, which forces a render surface of its own
+— 11,280 and 12,615, against a `MAX_TEXTURE_SIZE` of 4096 or 8192 on the hardware
+this page is read on. A layer that cannot be handed out in one piece is a layer whose tiles come
+back missing — which is what "the words are gone and the gap they filled is still
+the right size" was, twice, and the photographs cut across at one height with the
+bottom of every one of them missing, once. Those reports are in
+`src/sections/front-screen/FrontScreen.astro`, beside the OTHER lever: promoting
+what stands on the stack. **The two are not substitutes.** Promotion isolates a
+block from the blend group's raster; this shrinks the raster. The first was
+applied to the type, the type went missing again, and that is what sent the
+second one in.
+
+`height: calc(var(--turn-span) * var(--fx-veil-to) + 100lvh - var(--fx-y))`, and
+each term is load-bearing. `--turn-span` is published by `turn.ts` because CSS can
+measure neither the first Section's height nor a resting place, and those are the
+two things the span is in the two regimes. `--fx-veil-to` keeps the Token in CSS
+where the author drags it, so a veil finished early shortens the stack and one
+finished late lengthens it, with no second place to keep in step. `100lvh` and
+**not `--fold`**: `--fold` is `100svh`, a phone with its URL bar SHOWN, and a
+stack that short comes up exactly one URL bar shy of the last visible line the
+moment the bar hides. And there is no `@supports` because it falls back on its
+own — a `var()` with no value is invalid at computed-value time and `height`'s
+initial value is `auto`, so before `turn.ts` runs, `top`/`bottom` stretch the box
+the full document exactly as before.
+
+**The other half of the same number, and it was a bug on its own.** The halftone
+was `150%` in BOTH axes, on the reasoning written beside it: sqrt(2) is 1.415 and
+1.5 leaves a margin. That is the arithmetic for a SQUARE, and this box has never
+been one. A W by H rectangle turned by t needs `W|cos t| + H|sin t|` across and
+`W|sin t| + H|cos t|` down, and for a box far taller than it is wide those go
+opposite ways: at 11 degrees over the document-tall stack the width was **317px
+short of a corner** while the height was half as tall again as the rotation
+asked. So the layer both missed a corner of the page it was supposed to cover and
+paid for a texture it had no use for, from one wrong constant. It is stated
+exactly now, which is most of what makes the stack affordable:
+
+| on a Pixel 7 | before | after |
+| --- | --- | --- |
+| stack | 4297 css | 1859 css |
+| halftone | 16,921 device px tall | **4,995** |
+| paper (carries the `filter`) | 11,280 device px tall | **4,880** |
+
+Each axis takes its own measure as a percentage and the other one as a length,
+because a percentage only ever resolves against one axis — which is why
+`--fx-height` is named on `:root` rather than living in the `.fx` rule, and why
+there is a second `--fx-height-safe` beside it. `--fx-height` carries
+`var(--turn-span)` bare so that a page with no script gets the guaranteed-invalid
+value, `auto`, and the full document. The halftone cannot do that — it needs a
+size either way — so it reads the safe one, whose stand-in span is deliberately
+generous. **Bigger is always safe for coverage and absent is not.**
+
+**The one thing on the page that this DID move: the halftone's dot phase.** The
+layer is sized and centred against `.fx`, so a shorter `.fx` puts its centre
+somewhere else and the lattice comes down in a different place. Measured against
+the same build with both changes undone in the page — the box stretched back to
+the document and the layer put back to a flat 150% — with `data-fx=""` and with
+`paper` alone the two are **pixel-identical**, so neither `.fx` itself nor the
+paper tile moves; the paper is `inset: 0` and its origin never changed. With the
+halftone lit the picture differs by a mean of 0.42 to 6.6 of 255 and a **maximum
+of 31**, which is one dot screen at a different phase and not a different
+picture: same pitch, same angle, same density. It is left moved rather than compensated, because a tiled
+texture's phase is not a designed quantity and anchoring it would put the
+rotation's trigonometry into the Kernel to hold still something nobody can see
+the old position of. Anything larger than that in an A/B of this change is the
+page's own motion — the Panel's recording is a playing `<video>`, and a control
+pair of shots with nothing changed measures the same 255s.
+
+**`--fx-fade`'s share moved with it**, and it is the one meaning this changed.
+It is a share of THE LAYER, the layer is shorter, and it is 0 today so nothing on
+the page moved — but an author raising it is dissolving a shorter box than they
+would have been. That is the second time this length has changed under it; the
+comment on the veil's mask records the first.
+
+**`effect-stack` is the Check, and it pulls both ways on purpose.** It sweeps the
+document at three windows and asserts, wherever any veil is left, that the stack
+covers the whole window — the seam — and that its foot is no more than one window
+past the last place the veil is open — the waste. Either assertion alone is
+satisfied by a stack that is wrong in the other direction, which is exactly how
+this length has been got wrong twice. It reads the veil through a probe carrying
+`opacity: var(--fx-veil)` rather than reading `--turn-span` back, so it asserts
+the requirement and not the mechanism: a Check that read the published span could
+only ever say the stack agrees with itself. Both assertions were shown to fail —
+remove the `height` and the waste assertion names 2,542px on a phone; drop the
+`100lvh` and the seam assertion catches the band at scroll 0.
+
+**What this does NOT fix.** The halftone is still 150% of its box in both axes,
+and for a box far taller than it is wide at a small angle that is far more than
+the rotation needs — the height only needs about 105%. That is another 1.4x off
+the tallest texture on the page, and it is left alone because 150% is angle-
+agnostic by design and the angle is a Token the author drags. Whichever ticket
+wants it has to decide what happens at 45 degrees, where the current 150% does not
+cover either.
 
 **It is a mask and not an `opacity`,** and that is the invariant below rather than
 a preference: `opacity` on `.fx` would isolate the stack outright. It rides in the

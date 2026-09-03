@@ -83,9 +83,64 @@ export function observeSection(root: HTMLElement): void {
   sectionObserver().observe(root);
 }
 
+/**
+ * How long a page that never goes idle is allowed to put the rest off.
+ *
+ * A deadline and not a delay: `requestIdleCallback` runs the moment the main
+ * thread has nothing to do, which on this page is well under a second after
+ * load. This is only what happens if it never does.
+ */
+const IDLE_BY = 2000;
+
+/** Do this when the main thread has nothing better to do — or by IDLE_BY. */
+function whenIdle(run: () => void): void {
+  if (typeof window.requestIdleCallback === 'function') {
+    window.requestIdleCallback(() => run(), { timeout: IDLE_BY });
+    return;
+  }
+  window.setTimeout(run, IDLE_BY);
+}
+
+/**
+ * Everything the reader has not reached, one Section at a time, while nothing
+ * else is happening.
+ *
+ * THE OBSERVER ABOVE IS ABOUT BYTES AND NOT ABOUT WHEN THE WORK LANDS, and inside
+ * the landing band those two came apart badly. The second Section is one wheel
+ * notch away at the top of the document, so "approaching" IS the middle of the
+ * reader's first page turn — and that is where the Eater Map's hundred and
+ * forty-four slices, its glass measurements and its leader lines were built, on a
+ * frame the page was moving through. Measured at 1536x760: one task of 100-230ms
+ * in the middle of the first turn, which is the worst hitch on the page and the
+ * only one that is not a per-frame cost. It also moved the ground under the turn
+ * itself — a Section that grows as it mounts moves the resting place the ease is
+ * already flying towards.
+ *
+ * So the approach is the DEADLINE now and the idle time is the opportunity. The
+ * chunks are still split and still fetched late, which is what the glob above is
+ * for; what changes is that they are fetched with a still page rather than a
+ * moving one, and the observer stays as the answer for a reader who gets there
+ * before the browser is idle.
+ *
+ * ONE AT A TIME, AND ASKING FOR IDLE AGAIN BETWEEN THEM: mounting a Section is
+ * tens of milliseconds of work, so a queue drained in one callback is the same
+ * long task moved rather than broken up.
+ */
+function mountRest(queue: HTMLElement[]): void {
+  const next = queue.shift();
+  if (!next) return;
+  const again = () => whenIdle(() => mountRest(queue));
+  if (next.dataset.mounted) {
+    again();
+    return;
+  }
+  observer?.unobserve(next);
+  void mount(next).finally(again);
+}
+
 /** Every Section mount point the Shell laid down. */
 export function mountSections(): void {
-  for (const root of document.querySelectorAll<HTMLElement>('[data-section]')) {
-    observeSection(root);
-  }
+  const roots = [...document.querySelectorAll<HTMLElement>('[data-section]')];
+  for (const root of roots) observeSection(root);
+  whenIdle(() => mountRest(roots));
 }

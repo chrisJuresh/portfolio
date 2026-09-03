@@ -206,48 +206,51 @@
      constraint that is real about the fillet. */
   --eater-map-slab-edge-radius: 0.045;
 
-  /* HOW FAR THE FACE ROLLS INTO THE WALL — the fillet, and the number the
-     thickness above is the bound on. A share of the Slab's WIDTH, like every
-     other length on the plane, so the object keeps its proportions at every
-     window.
+  /* HOW FAR THE MAP RUNS ROUND THE EDGE — the fillet, and the number the thickness
+     above is the bound on. A share of the Slab's WIDTH, like every other length on
+     the plane, so the object keeps its proportions at every window.
 
-     IT IS THE SCREEN'S OWN CURVE NOW, WHICH IS WHAT #206 CHANGED ABOUT IT. The
-     shipped edge is `wrapped`, so this band is not edge material at all — it is
+     THE SHIPPED EDGE IS `wrapped`, so this band is not edge material at all: it is
      the MAP, running off the front and round the roll, and this Token is how far
-     round it goes. The author asked for the map to wrap slightly round the edge
-     rather than the edge wrapping round the map, and this is that number.
+     round it goes. A phone with a curved screen.
 
-     0.012 — 4.3px of roll on a 10.9px wall, so the screen turns over its shoulder
-     and there is still half a shell of straight aluminium behind it. Laddered at
-     0.006 / 0.009 / 0.012 / 0.020 against the WebGL stage's own `wrapped`, at
-     actual size and not only zoomed: 0.006 is barely distinguishable from a plain
-     edge and 0.020 reads as a fishbowl.
+     THIS TOKEN HAS BEEN ALL FOUR THINGS IT CAN BE, AND THE AUTHOR HAS SEEN EACH ONE
+     DRAWN. Worth keeping written down, because every one of them is one number away
+     from being back:
 
-     AND 0.020 IS WHERE THE DOM STAGE'S FACETING STARTS TO SHOW, which is a bound
-     on this Token and the measured answer to what was left of #182. The rings
-     carry the picture at a rigid scale each, while the geometry steps by `sin` and
-     the pixels are spread evenly along the arc — so consecutive rings do not quite
-     meet, and past about 0.015 that reads as a comb across anything with a hard
-     edge in it. A restaurant pin at the Slab's foot is where it shows first.
-     Invisible at 0.012 at actual size; obvious at 0.020, where WebGL's swept
-     fillet is still clean. **A drag past ~0.015 wants the WebGL stage or more
-     rings in `edge.ts`, and neither is free.**
+       * roll == plan corner (0.02, and both were one Token) — the shell rolling
+         round the picture, which #200 was opened for and which the author called
+         "strongly wrapped around";
+       * a small roll in the shell's own colour (0.006) — the bead made subtle;
+       * the map running over the roll (0.012, `edge: wrapped`) — #206, and the
+         direction the author wants;
+       * nothing at all (0) — a prism with a rounded plan corner.
 
-     THE OLD REASONING FOR 0.006 IS SPENT, and it is worth saying why rather than
-     deleting it. That value was chosen while this band was edge COLOUR, where the
-     whole argument was how much of a pale bead the roll put round a dark shell —
-     the mockup hid its own 6.3px roll under a picture that ran to the outline, so
-     the number that looked like the reference was a third of the one that made it.
-     None of that survives the band becoming map: a wrap is not a bead, and what
-     bounds it now is legibility at one end and faceting at the other.
+     0.012 WAS TOO STRONG AND THIS NUMBER IS BEING CHOSEN BY DRAGGING IT. Anything
+     in this file is the author's to move through `pnpm editor` (ADR 0004), and this
+     one redraws as it is dragged because `redraw.ts` rebuilds the generated
+     geometry while the Editor previews a Token (#196) — so the wrap follows the
+     slider rather than waiting for a reload.
 
-     A SHARE OF THE WIDTH AND NOT OF THE THICKNESS, which is a choice and not an
-     oversight: this file's own rule is that every length on the plane is one
-     unit — "the rise, the slides, the thickness" — and a Token in a second unit
-     is the confound #189 collapsed a pair onto one unit to remove. The cost is
-     that dragging the thickness alone does not carry the fillet with it; the
-     `min()` in both stages is what keeps that honest rather than inverted. */
-  --eater-map-slab-fillet: 0.012;
+     AND IT HAS A CEILING THAT IS NOT A GUESS: past about 0.015 the DOM stage's
+     faceting shows as a comb across anything with a hard edge in it — a restaurant
+     pin at the Slab's foot is where it shows first — because the rings carry the
+     picture at a rigid scale each while the geometry steps by `sin`. Measured at
+     actual size, not zoomed. Below that the faceted fillet and WebGL's swept one
+     are indistinguishable, which is the measured remainder of #182.
+
+     ZERO IS A REAL VALUE AND NOT A DEGENERATE ONE: `edge.ts` builds no rings at
+     all, `stage-dom.ts` clips the picture to the full outline, and the Slab is a
+     prism. It is the one value that also wants `edge: thick`, since a wrap with
+     nothing to wrap is a name doing nothing.
+
+     STILL A SHARE OF THE WIDTH AND NOT OF THE THICKNESS, which is a choice: this
+     file's own rule is that every length on the plane is one unit — "the rise, the
+     slides, the thickness" — and a Token in a second unit is the confound #189
+     collapsed a pair onto one unit to remove. The cost is that dragging the
+     thickness alone does not carry the fillet with it; the `min()` in both stages
+     is what keeps that honest rather than inverted. */
+  --eater-map-slab-fillet: 0.008;
 
   /* What the Slab is made of where the picture is not. A fact about the object
      rather than about the page, so it does not turn with the theme — the same
@@ -427,9 +430,12 @@
   --eater-map-card-details-slide-y: 0.075;
 
   /* ---- the Cards' glass, which is what they are made of (#190) --------------
-     A backdrop filter has nothing to sample the moment the plane is tilted, so
-     each glass SURFACE carries a blurred copy of the Slab instead, offset by that
-     surface's own place on it. These are the three numbers that copy is made with.
+     A backdrop filter had nothing to sample while the plane was a turned 3D
+     rendering context, so each glass SURFACE carries a blurred copy of the Slab
+     instead, offset by that surface's own place on it. These are the three numbers
+     that copy is made with — and since #211 they are the whole frost rather than
+     most of it, because the app's own filters woke up when #207 flattened the plane
+     and are turned off by name.
 
      BRIGHTENED, AND THAT IS THE ONE THAT IS NOT OBVIOUS: a dark map behind a dark
      surface reads as a HOLE rather than as glass, so the copy is lifted before it

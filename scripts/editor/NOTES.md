@@ -1081,6 +1081,22 @@ nothing. One run at a time PER BAKE and not overall: two generators writing two
 different sets of files is fine, and two runs of one generator race for the same
 output paths.
 
+**The whole surface is redrawn, so what the author was doing has to be put back
+by hand.** A write moves the tuned count, the moved mark and the revert's label,
+so this surface is redrawn from `/bakes` rather than patched — and the poll
+redraws it again every 1.2 seconds for as long as a generator is running. Two
+things therefore survive a redraw explicitly, and each is a `Set` on the surface
+rather than a state the DOM keeps: **which groups are open**, kept per Bake
+because two recipes may head a group the same way, and **which control has the
+keyboard**, matched on the element's own `data-editor-…` name and restored with
+`preventScroll` so the panel does not jump to it. Neither is a nicety, which #209
+is: tuning one picture is six controls in ONE group, so without the first, every
+one of the six shuts the group the next one is in — and without the second a
+slider cannot be nudged twice with the arrow keys. The slider carries
+`data-editor-drag` for exactly that reason: a drag leaves the keyboard on it
+rather than on the number box beside it, so it was the one control here with no
+name to be found again by.
+
 **A failure keeps the tail of what the generator printed**, because that is where
 the reason is. A Python traceback ends with the exception, Blender ends with what
 it could not open, and Pillow ends with the file it wanted; the first kilobyte of

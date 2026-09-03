@@ -1021,10 +1021,34 @@ import './tokens.css';
      could veil the paragraph under it is the sheet, and it drops to near-nothing.
      The paragraph then sits on the blurred map rather than on a fogged panel.
 
-     THE APP'S OWN `backdrop-filter`s ARE LEFT ALONE, and that is deliberate. In
-     the band they sample an empty backdrop and are no-ops, so overriding them
-     would buy nothing; below the band the plane is flat and they are exactly the
-     frost a screenshot has. */
+     THE APP'S OWN `backdrop-filter`s ARE TURNED OFF, AND THAT IS #211 CORRECTING
+     A CLAIM THIS COMMENT USED TO MAKE. It said they were left alone because in
+     the band they sampled an empty backdrop and were no-ops, so overriding them
+     would buy nothing. That was true only while the plane was `preserve-3d`: a
+     backdrop filter has nothing to sample once its element is in a turned 3D
+     rendering context, and #207 took the rendering context away. They came back
+     to life, silently — verified by putting a `hue-rotate(140deg)` in one and
+     watching the panel go purple — and what they came back to was a SECOND frost
+     over `glass.ts`'s, which is the one #190 built and the one three Tokens
+     control.
+
+     AND THE SECOND FROST WAS NOT THE EXPENSIVE HALF. A `backdrop-filter` forces
+     its element into its own render surface, which is the same mechanism #207 is
+     entirely about, one level further in: the surface's own text is rasterised
+     into a texture and composited rather than drawn through the matrix. Measured
+     on the built page at 1600x900 at DPR 1, over the details Card's paragraph:
+     1.357 with them, 2.142 without — a bigger step than #207's own.
+
+     TURNED OFF EVERYWHERE AND NOT ONLY IN THE BAND, which is a smaller rule and
+     the honest one. Below the band `glass.ts`'s copies line up exactly with the
+     map beneath them, so they are already the whole frost; the app's filters add
+     a faint bloom there and nothing else — compared side by side at 820x1180,
+     and the two are the same picture. One frost, under the Tokens that name it.
+
+     BY THE NAMES AND NEVER BY A RULE, like every line below it: `cards.css` and
+     `results.css` publish all four filters as custom properties on
+     `.eater-cards`, so setting them one element in is what the rest of this block
+     already does, and a re-vendoring leaves it standing. */
   .eater-map__card {
     --label: #f3f3f5;
     --label-secondary: rgba(235, 235, 245, 0.66);
@@ -1044,6 +1068,12 @@ import './tokens.css';
        than the pill it hangs from — it is the one surface with two rows of
        reading on it. #194. */
     --glass-thick: var(--eater-map-glass-thick);
+    /* The three the app frosts with, and the whole of the paragraph above. There
+       is no Token for them because there is no number to choose: the frost is
+       `glass.ts`'s copy of the map, and these are the second one. */
+    --glass-filter: none;
+    --glass-filter-heavy: none;
+    --glass-filter-fine: none;
     --glass-rim: inset 0 0.5px 0 rgba(255, 255, 255, 0.26),
       inset 0 0 0 0.5px rgba(255, 255, 255, 0.13);
     --glass-rim-strong: inset 0 1px 0 rgba(255, 255, 255, 0.3),

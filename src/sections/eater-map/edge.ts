@@ -317,27 +317,38 @@ function perimeter(w: number, h: number, radii: Corners): Facet[] {
  * left of a unit vector, which is what makes the fillet roll from facing the reader
  * to facing sideways rather than jumping.
  *
- * THE COLOUR IS NEVER RESOLVED HERE. `colour` arrives as a CSS expression and
- * leaves inside a `color-mix()`, so `var(--eater-map-slab-edge)` survives into every
- * stop and the Editor's drag of that Token still moves the drawing. `color-mix()` is
- * valid wherever a colour is, gradient stops included — and it stays a `color-mix`
- * rather than a `filter` for the reason `slice` gives below.
+ * THE COLOUR IS NEVER RESOLVED HERE, AND IT IS NAMED AS `currentColor` RATHER THAN
+ * AS THE TOKEN. `slice` puts the caller's colour expression on the element's own
+ * `color`, and every stop mixes towards black from there — so the Token still
+ * survives into the drawing, live, and the Editor's drag of it still moves every
+ * stop of every slice without anything being re-mounted. `color-mix()` is valid
+ * wherever a colour is, gradient stops included, and it stays a `color-mix` rather
+ * than a `filter` for the reason `slice` gives below.
+ *
+ * WHY THE INDIRECTION THROUGH `currentColor`, WHICH IS THE ONE THING HERE THAT IS
+ * ABOUT THE PAGE TURN. A declaration containing a `var()` ANYWHERE in it is a
+ * pending-substitution value: the browser keeps it as unresolved tokens and
+ * re-substitutes and re-parses the WHOLE declaration on every style recalc of the
+ * element. This gradient is about three kilobytes and there are 144 of these
+ * elements, and the Kernel writes `--turn` on the root on every frame of a page
+ * turn — which recalculates every element in the document. With the Token written
+ * into each of the twenty-nine stops, that was 4,000 `color-mix()`es re-parsed per
+ * frame, and it measured as the largest single cost of the crossing: the worst
+ * style recalc of a turn went from 36ms to 29ms when it came out, and the Eater
+ * Map's own turns from 32ms to 20ms. `currentColor` is not a variable, so the
+ * declaration is parsed ONCE and only the short `color` declaration beside it is
+ * substituted per recalc — while resolving at the same moment, against the same
+ * Token, to the same pixels. Verified: a screenshot either side of the change
+ * differs by at most one level in one channel, on no pixel at all above that.
  *
  * THE LOOP IS CLOSED AT 360deg with the first stop's own colour, because a conic
  * gradient does not wrap: without it the arc from the last stop round to the first
  * is interpolated against nothing and the top of the box is a seam.
  */
-function conicEdge(
-  w: number,
-  h: number,
-  radii: Corners,
-  nz: number,
-  colour: string,
-  shade: Shade,
-): string {
+function conicEdge(w: number, h: number, radii: Corners, nz: number, shade: Shade): string {
   const lateral = Math.sqrt(Math.max(0, 1 - nz * nz));
   const mix = (point: Facet) =>
-    `color-mix(in srgb, ${colour}, #000 ${
+    `color-mix(in srgb, currentColor, #000 ${
       Math.round((1 - shade(point.nx * lateral, point.ny * lateral, nz)) * 1000) / 10
     }%)`;
   const points = perimeter(w, h, radii);
@@ -345,7 +356,9 @@ function conicEdge(
   // A slice with no width or no height has no perimeter to walk, and a gradient
   // with no stops is an invalid declaration — which paints NOTHING and reads as an
   // edge that was never built. One flat colour is the honest answer.
-  if (!first) return `color-mix(in srgb, ${colour}, #000 ${Math.round((1 - shade(0, 0, nz)) * 1000) / 10}%)`;
+  if (!first) {
+    return `color-mix(in srgb, currentColor, #000 ${Math.round((1 - shade(0, 0, nz)) * 1000) / 10}%)`;
+  }
   const stops = points.map((point) => `${mix(point)} ${point.at.toFixed(2)}deg`);
   stops.push(`${mix(first)} 360deg`);
   return `conic-gradient(${stops.join(',')})`;
@@ -497,7 +510,14 @@ export function extrude(host: HTMLElement, before: Node | null, solid: Solid): v
     // it is the one slice worth reading to ask whether the edge has a direction.
     sheet.dataset.eaterMapSlice = part;
     if (surface !== undefined) sheet.dataset.eaterMapEdge = surface;
-    const corner = radii.map((r) => `max(0px, (${r}) - (${inset}))`).join(' ');
+    // ONE VALUE WHERE THE FOUR ARE THE SAME VALUE, which every uniform solid's are
+    // — the Slab's four corners are one Token, and only the details sheet's
+    // 28 / 28 / 0 / 0 needs all four written out. `border-radius: X` and
+    // `border-radius: X X X X` are the same declaration to the browser and a
+    // quarter of the length to substitute, and a substitution the length of these
+    // is paid for on every style recalc of the document (see `conicEdge`).
+    const corners = radii.map((r) => `max(0px, (${r}) - (${inset}))`);
+    const corner = corners.every((one) => one === corners[0]) ? corners[0] : corners.join(' ');
     sheet.style.cssText = [
       'position:absolute',
       `left:calc((${box.x}) + (${inset}))`,
@@ -506,6 +526,12 @@ export function extrude(host: HTMLElement, before: Node | null, solid: Solid): v
       `height:calc((${box.h}) - 2 * (${inset}))`,
       'pointer-events:none',
       `border-radius:${corner}`,
+      // WHAT THE EDGE IS MADE OF, in one place rather than in twenty-nine. The
+      // gradient below mixes towards black from `currentColor`, so this is the one
+      // declaration on the slice carrying the Token — and therefore the only one
+      // the browser has to substitute again when the page turn writes `--turn`.
+      // `conicEdge` carries the measurement.
+      `color:${colour}`,
       // Mixed towards black rather than filtered: a `filter` would put the element
       // in its own rendering context inside a `preserve-3d` parent, and one
       // grouping property on the wrong element is how this whole Section loses its
@@ -516,21 +542,21 @@ export function extrude(host: HTMLElement, before: Node | null, solid: Solid): v
       part === 'fillet' && solid.wrap !== undefined && texture !== undefined
         ? `background:${wrapped(texture)}`
         : `background:${conicEdge(
-        plan.w - 2 * apart,
-        plan.h - 2 * apart,
-        // The same rule the `corner` above writes, in the plan's own unit — so the
-        // outline the gradient walks and the outline `border-radius` draws are one
-        // shape, and the shading is not rotated against the edge it is shading.
-        [
-          Math.max(0, plan.radii[0] - apart),
-          Math.max(0, plan.radii[1] - apart),
-          Math.max(0, plan.radii[2] - apart),
-          Math.max(0, plan.radii[3] - apart),
-        ],
-        nz,
-        colour,
-        shade,
-      )}`,
+            plan.w - 2 * apart,
+            plan.h - 2 * apart,
+            // The same rule the `corner` above writes, in the plan's own unit — so
+            // the outline the gradient walks and the outline `border-radius` draws
+            // are one shape, and the shading is not rotated against the edge it is
+            // shading.
+            [
+              Math.max(0, plan.radii[0] - apart),
+              Math.max(0, plan.radii[1] - apart),
+              Math.max(0, plan.radii[2] - apart),
+              Math.max(0, plan.radii[3] - apart),
+            ],
+            nz,
+            shade,
+          )}`,
       // AT ITS DEPTH, one way or the other — `flatten` says which and why.
       flatten === undefined
         ? `transform:translateZ(calc(-1 * (${back})))`
@@ -549,8 +575,19 @@ export function extrude(host: HTMLElement, before: Node | null, solid: Solid): v
   // FROM ONE AND NOT FROM ZERO. The slice at angle zero is the flat face's own edge
   // — a ring of no width, at the face's own depth — so it draws nothing and can
   // only get in the picture's way.
-  for (let step = 1; step <= FILLET; step += 1) {
-    const turn = (Math.PI / 2) * (step / FILLET);
+  //
+  // AND NOT AT ALL WHEN THERE IS NO ROLL (#207). At `plan.fillet` of zero every one
+  // of these is the SAME ring — inset nothing, back nothing, the face's own outline
+  // at the face's own depth — so the loop builds sixteen identical boxes, stacks
+  // them behind the picture and draws not one visible pixel. Sixteen elements per
+  // surface is not nothing, and a stack whose count does not follow its geometry is
+  // the kind of thing a later reader measures and mistrusts. The WALL is untouched:
+  // its rings stand at the outline from the face's depth to the back, so the solid
+  // is closed with or without a roll, and rendering the two confirmed there is no
+  // hairline where the picture meets it.
+  const rings = plan.fillet > 0 ? FILLET : 0;
+  for (let step = 1; step <= rings; step += 1) {
+    const turn = (Math.PI / 2) * (step / rings);
     slice(
       'fillet',
       `(${solid.fillet}) * ${figure(1 - Math.sin(turn))}`,
@@ -566,7 +603,7 @@ export function extrude(host: HTMLElement, before: Node | null, solid: Solid): v
       // `roll(1 - 2phi/pi)` said in this loop's own counter — the band of pixels
       // spread EVENLY along the arc, against a geometry that follows `sin`. Ignored
       // unless the caller asked for a wrapped edge.
-      plan.fillet * (1 - step / FILLET),
+      plan.fillet * (1 - step / rings),
     );
   }
   // THE WALL: straight from the fillet's foot to the back of the solid, at the

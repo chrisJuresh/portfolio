@@ -4,9 +4,10 @@ import { pageOwnsWheel, wheelGesture } from './wheel';
  * The page turn: one wheel GESTURE carries the reader from one Section's resting
  * place to the next, and one gesture the other way brings them back.
  *
- * IT IS A GESTURE AND NOT AN EVENT, and that distinction is the difference
- * between a trackpad turning one page and running the whole document — see the
- * decision the wheel handler holds at the foot of this file.
+ * A GESTURE, AND WITHIN IT A PUSH — never an event, and never the whole gesture
+ * either. That is the difference between a trackpad turning one page, running the
+ * whole document, and refusing to turn again until its own momentum has died: see
+ * the shape the wheel handler follows at the foot of this file.
  *
  * WHY THIS IS A SCRIPT AND NOT THE BROWSER'S OWN SNAP FLING. Inside the landing
  * band the document is ports and nothing between (src/kernel/landing.css),
@@ -191,55 +192,142 @@ function turnTo(to: number): boolean {
 }
 
 /**
- * The gesture this handler has already answered, and how it answered.
+ * THE UNIT IS A PUSH, NOT AN EVENT AND NOT A GESTURE, and both of the wrong
+ * answers have shipped.
  *
- * ONE GESTURE IS ONE DECISION, and a trackpad is the whole reason it has to be
- * said. A mouse notch is a single `wheel` event of about a hundred pixels, so
- * deciding per event and deciding per gesture were the same thing while a mouse
- * was the only device. A light two-finger flick arrives as thirty or more events
- * of five or six pixels, and the momentum tail keeps them coming for over a
- * second after the fingers have left the glass.
+ * A mouse notch is a single `wheel` event of about a hundred pixels, so deciding
+ * per event was indistinguishable from deciding per push while a mouse was the
+ * only device in the room. A trackpad delivers one light flick as a RISE under
+ * the fingers and then a decaying momentum TAIL that keeps arriving for over a
+ * second after they have left the glass. Per event, the first tail notch to land
+ * after the turn had landed picked the port after it, and one flick chained
+ * through every port and fell out of the bottom into the browser's own scroll —
+ * measured at 1440x820, ports at 0, 731 and 1551: one flick carried the page
+ * 0 -> 1551, and the Projects Panel could not be stopped on from a trackpad at
+ * all (#205).
  *
- * Answered per event, those tails are catastrophic rather than merely untidy. The
- * events that land WHILE a turn is in flight are harmless — they resolve to the
- * port it is already heading for and `turnTo` does nothing — but the first one to
- * arrive after it lands picks the port AFTER it and turns again, and the gesture
- * chains through every port and then falls out of the bottom into the browser's
- * own scroll. Measured before this existed, at 1440x820, one light flick carried
- * the page 0 -> 1551 through ports at 0, 731 and 1551: the Projects Panel, which
- * is the landing this whole device is built to arrive at, was unreachable by
- * trackpad in either direction.
+ * Per GESTURE — one turn until the wheel falls silent for `GESTURE_GAP` — that
+ * failure goes away and a worse one takes its place, because a gesture does not
+ * end when the reader's fingers do. The tail is still a gesture, so a SECOND
+ * deliberate flick lands inside the first one's momentum and is swallowed whole:
+ * measured on the shipped page, flick, then flick again 400ms later, and the
+ * document does not move. The reader has to wait out somebody else's animation
+ * to be allowed to scroll (#210).
  *
- * So the decision is taken on a gesture's first vertical notch and held until the
- * wheel stops. `turned` is which way it went, and both halves are load-bearing: a
- * gesture that turned SWALLOWS the rest of its own events, so the tail cannot
- * scroll natively past the port the turn just landed on; a gesture that found
- * nothing to turn is the browser's for the whole of its length, which is what the
- * note below about coming back up a tall Section always claimed and could not
- * deliver — the tail that reached the port carried on into a turn.
+ * A push is the thing the reader actually does, and the wheel's own SHAPE is what
+ * says where one ends: a push RISES and a tail DECAYS. So the turn re-arms when
+ * the wheel has ebbed to half of what it peaked at — that push is over, whatever
+ * is still arriving is coasting — and then risen again to twice its trough, which
+ * only fingers can do. Nothing here is a clock, which is the point: momentum
+ * lasts as long as it lasts, and the reader is never made to wait out a number.
  *
- * WHY HERE AND NOT IN THE ARBITRATION. The strip wants the opposite: it is a roll
- * with many resting places, where a held gesture SHOULD keep spinning, and it
- * reads the same stream as a spin (src/sections/front-screen/timeline.ts). Only
- * the boundary is shared, which is why `wheelGesture()` is imported and
- * `GESTURE_GAP` is not copied.
+ * THE WEB EXPOSES NO MOMENTUM FLAG, which is why this is inferred rather than
+ * asked. `WheelEvent` carries deltas and a unit and nothing else; the phase that
+ * would answer this outright is a macOS AppKit property with no DOM counterpart.
+ * Every library that solves this solves it by shape — fullPage.js compares a
+ * short rolling average of recent deltas against a longer one and acts only while
+ * the short one leads. This is that idea with the averages replaced by the two
+ * turning points they exist to find, which is cheaper and, more usefully, exact
+ * at the moment the reader pushes again rather than a few frames after it.
+ *
+ * WHY HERE AND NOT IN THE ARBITRATION. The photograph strip wants the opposite —
+ * it is a roll with many resting places, where one held push SHOULD keep spinning
+ * for as long as the momentum lasts, and it reads the same stream as a spin
+ * (src/sections/front-screen/timeline.ts). Only the silence is shared, which is
+ * why `wheelGesture()` is imported and `GESTURE_GAP` is not copied.
  */
-let settled = 0;
+
+/** A push is over once the wheel has fallen to this share of what it peaked at. */
+const EBB = 0.5;
+
+/** And a new one has begun once it has risen to this multiple of its trough. */
+const RISE = 2;
+
+/** Under this many px a notch is the last of a tail rather than a push, whatever
+ *  its shape: a dying tail flattens, and a flat run of ones would otherwise read
+ *  as a rise the moment it stopped falling. */
+const FLOOR = 4;
+
+/** A line, in px, for a device that reports its wheel in lines rather than pixels
+ *  — Firefox does. The three numbers above are px, so this is what makes them
+ *  mean the same thing on every device. */
+const LINE = 16;
+
+/** Which gesture the push below belongs to; a silence starts both afresh. */
+let gesture = -1;
+/** The push in flight: what it peaked at, what it has fallen to, and whether it
+ *  is still under the fingers or coasting. */
+let peak = 0;
+let ebb = 0;
+let coasting = false;
+/** What this push decided, and whether it has decided at all. */
+let settled = false;
 let turned = false;
+
+/** One notch's travel in px, whatever unit the device chose to report it in. */
+function pixels(event: WheelEvent): number {
+  if (event.deltaMode === 1) return event.deltaY * LINE;
+  if (event.deltaMode === 2) return event.deltaY * window.innerHeight;
+  return event.deltaY;
+}
+
+/** Start a push at this notch: it is the peak and the trough of itself, and it has
+ *  decided nothing yet. */
+function begin(px: number): void {
+  peak = px;
+  ebb = px;
+  coasting = false;
+  settled = false;
+  turned = false;
+}
+
+/**
+ * Follow the wheel's shape, and start a new push wherever one begins.
+ *
+ * Two states and one turning point each. Under the fingers the peak keeps rising
+ * and nothing else happens; the moment a notch comes in at half of it the push is
+ * over and the tail is coasting. Coasting, the trough keeps falling — a decaying
+ * tail sets a new low every notch, so it can never be twice its own trough, which
+ * is exactly why the test costs nothing to be sure of. Only a push can raise the
+ * wheel against its own decay.
+ */
+function follow(px: number): void {
+  const now = wheelGesture();
+  if (now !== gesture) {
+    // A silence: the reader stopped. Whatever comes next is a push by definition,
+    // however gentle — which is what lets a slow, careful drag turn the page at
+    // all, since it never gets near FLOOR.
+    gesture = now;
+    begin(px);
+    return;
+  }
+  if (!coasting) {
+    peak = Math.max(peak, px);
+    if (px <= peak * EBB) {
+      coasting = true;
+      ebb = px;
+    }
+    return;
+  }
+  ebb = Math.min(ebb, px);
+  if (px >= ebb * RISE && px >= FLOOR) begin(px);
+}
 
 function onWheel(event: WheelEvent): void {
   if (!pageOwnsWheel()) return; // a roll has this gesture
   const delta = event.deltaY; // the turn is vertical only: a sideways swipe is a roll's
   if (!delta) return;
 
-  const gesture = wheelGesture();
-  if (gesture === settled) {
+  follow(Math.abs(pixels(event)));
+  if (settled) {
     if (turned) event.preventDefault();
     return;
   }
   // Settled from here, and native until something below actually turns: every
-  // route out of this function is a decision the rest of the gesture inherits.
-  settled = gesture;
+  // route out of this function is a decision the rest of the PUSH inherits — the
+  // tail of a push that gave the wheel to the browser must not turn the page when
+  // it coasts back onto a port, which is the same failure the other way up.
+  settled = true;
   turned = false;
 
   const list = ports();
@@ -248,10 +336,10 @@ function onWheel(event: WheelEvent): void {
   // Past the last port, inside a Section taller than the window, the wheel is the
   // browser's again: there is a composition to read down there and the turn has
   // already done its job. CSS agrees — a snap area larger than the scrollport
-  // relaxes snapping inside itself. Coming back up, the whole gesture is the
-  // browser's — it scrolls natively to the port and stops there, and the NEXT
-  // gesture turns the page. That is what the decision above buys: a tail long
-  // enough to reach the port used to carry straight on through it.
+  // relaxes snapping inside itself. Coming back up, the whole PUSH is the
+  // browser's — it scrolls natively to the port and stops there, and the next
+  // push turns the page. That is what the decision above buys: a tail long enough
+  // to coast back onto the port used to carry straight on through it.
   const last = list[list.length - 1] as number;
   if (window.scrollY > last + SLACK) return;
 
