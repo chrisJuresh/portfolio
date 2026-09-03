@@ -33,5 +33,5 @@
      nominally white and wash out on the light theme as the background comes up
      to meet them. NOTES.md says why that is the shape of the ask rather than a
      fault, and what making them track would cost. */
-  --shade: 0;
+  --shade: 0.5;
 }
