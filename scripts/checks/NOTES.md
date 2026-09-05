@@ -101,7 +101,7 @@ cannot be verified there even by hand.
 | `faces`          | a declared `@font-face` will not load, or no face Token names a declared family |
 | `front-screen`   | the Front Screen's rhyme, its one-screen budget, the Cut Title's cut or its accessible name, the crossing's span, the switch's ARIA, or the type's place in the Effect Stack breaks |
 | `projects-panel` | a control in the Frame leaves the centre its own Token names, the window and its titlebar are cut to two radii, the recording's box stops being inset on three sides, the occlusion of the subheading's second line moves or stops being painted, the titlebar reports a rung it is not made of, the chrome grows a control, the small-Frame reduction starts asking about the window instead of the Frame, the Plinth's depths stop being shares of the Frame, its slab stops being symmetric about it, its bottom-right corner comes off the page's on either branch of the fit, or the Frame moves towards the engineering points instead of away from them, the reflection stops being a life-size fold of the window, the marble stops being drawn without script, a reader who asked for reduced motion is charged for the recording, a reader who runs no script at all loses the copy that arrives with the page turn, the titlebar grows past the clearance the clip on disk was cut with, or that clip stops opening on that many rows of flat, light ground |
-| `eater-map`      | PROJECTS stops standing where the Gallery's own masthead stands or stops being the same word, the serif title's cap height or its drop below the masthead's baseline stops matching the two ratios the Section declares — which a font size proportional to the masthead does, by 4% — the copy leaves the foot of the column PROJECTS heads or the Points leave the right of the drawing, the three Cards on the Slab stop being drawn at the Slab's own scale at the Lift's flat end, one of them stops moving between the Lift's two ends, one of the Section's own boxes is invisible at either end, a reader who leaves part way up is left with a Lift that ran on without them, a leader line comes off the corner it names part way up the Lift or stops ending in a lit dot on it, a point and a part stop being one to one, the picture of the app puts a focusable control or a heading into the page, an extruded edge stops having a direction or stops taking it from the one page-fixed light, a corner of the Slab shows the page behind it, `--eater-map-slab-edge` stops being live inside the gradient, a slice's geometry starts naming a Token again so the page turn re-parses it a hundred and forty-four times a frame, or stops following the window inside the band, or a page carried out of the band stops agreeing with a page mounted there, the rebuild that makes a dragged light visible starts running for a reader with no Editor on the page, or below the band the drawing stops collapsing — a perspective left standing on a column, a Slab that misses the window's edges, a Lift still running where there is no page turn, the four features no longer a list under the picture, or one of the three readers down there handed a composition of their own |
+| `eater-map`      | PROJECTS stops standing where the Gallery's own masthead stands or stops being the same word, the serif title's cap height or its drop below the masthead's baseline stops matching the two ratios the Section declares — which a font size proportional to the masthead does, by 4% — the copy leaves the foot of the column PROJECTS heads or the Points leave the right of the drawing, the three Cards on the Slab stop being drawn at the Slab's own scale at the Lift's flat end, one of them stops moving between the Lift's two ends, one of the Section's own boxes is invisible at either end, a reader who leaves part way up is left with a Lift that ran on without them, hovering a piece or the Point that names it stops putting that ONE piece back where the Lift's near end puts it, or puts it back and then flickers under a reader's hand, or a piece takes a drop below the band where nothing is raised to put back, a leader line comes off the corner it names part way up the Lift or stops ending in a lit dot on it, a point and a part stop being one to one, the picture of the app puts a focusable control or a heading into the page, an extruded edge stops having a direction or stops taking it from the one page-fixed light, a corner of the Slab shows the page behind it, `--eater-map-slab-edge` stops being live inside the gradient, a slice's geometry starts naming a Token again so the page turn re-parses it a hundred and forty-four times a frame, or stops following the window inside the band, or a page carried out of the band stops agreeing with a page mounted there, the rebuild that makes a dragged light visible starts running for a reader with no Editor on the page, or below the band the drawing stops collapsing — a perspective left standing on a column, a Slab that misses the window's edges, a Lift still running where there is no page turn, the four features no longer a list under the picture, or one of the three readers down there handed a composition of their own |
 | `rail`           | the page carries more than one Rail or none, at any of four windows; the Rail moves when the page turns; it stops standing in the page's own left margin, or stops sharing the composition's left edge below the band; the current entry stops naming the Section at rest, in either direction; an entry stops being reachable at a resting place because a Section is hit-tested over it; the Rail stays reachable on the first screen, where it is drawn transparent; the entry with no Section of its own stops saying so to a screen reader; or a reader who runs no script gets no Rail or no current entry |
 | `ground`         | paper is not light, or the Turn does not arrive dark, in either theme         |
 | `effect-stack`   | the Effect Stack stops covering the window anywhere its veil is still open — the seam — or reaches further than the deepest pixel that veil is ever seen at, which on a phone is a `mix-blend-mode` layer with a `filter` on it too tall for the compositor to hand out in one piece, and content that vanishes leaving its own gap behind |
@@ -601,7 +601,7 @@ Every failure string names the thing that broke: the URL, the family, the
 selector, the measured number and the wanted one. "something is wrong" costs a
 diagnosis session; "404 for /_astro/vollkorn-regular.Dnyk-4Dy.woff2" costs nothing.
 
-## Twelve traps, each of which cost a wrong answer here
+## Fourteen traps, each of which cost a wrong answer here
 
 **`hold()` before you seek, and it is not enough to seek twice.** A scrubbed
 Timeline is recomputed from the scroll position, so a bare seek survives about a
@@ -750,6 +750,40 @@ ports should have moved — the FLOOR is the reader's own pushes and holds howev
 badly the machine behaved. Stating the rule as **ports moved equals pushes
 delivered** rather than as two separate claims is what makes the stalled run still
 assert the direction that matters most: the page refusing to move at all.
+
+**A vacuity guard can be the failure's own alibi, and that is worse than not having
+one.** A Check that skips itself when the case did not arise is right to; the
+mistake is asking whether it arose from a state the FAULT also produces. The
+Exploded View puts one piece back on the map when a reader hovers it, and the
+failure worth catching is the piece flickering — rising into the cursor, being
+hovered again, lowering. The watch guarded itself with "is the Card still under
+the pointer, in which case there was nothing to leave" — and a flickering piece is
+under the pointer half the time, which is what flickering IS. The mutation passed,
+and the note it wrote said the case had not been exercised, in a sentence nobody
+would query. Ask the precondition ONCE, at the moment it is a precondition, and
+read everything after that as the answer. It is the same rule as never asking the
+system under test how it grouped its own input, one layer along: a guard derived
+from the state under test can only ever confirm itself.
+
+**A still pointer is not a reader, and a Section that hears `pointermove` is never
+asked a second question by one.** Boundary events fire when the element under a
+stationary cursor moves away; `pointermove` does not. So a Check that parks the
+mouse at one coordinate and watches cannot see anything that depends on the reader
+moving — the same watch above passed with its whole mechanism inverted, because
+nothing ever asked. What a reader actually does is hold their hand roughly still
+while they read, and every one of those pixels is a fresh question. Jog it. This is
+the `turn` Check's lesson about modelling the DEVICE rather than a convenient
+stream, arriving a second time from the other end: there, a stream nobody's fingers
+could produce; here, a stillness nobody's hand can hold.
+
+And a smaller one from the same group, which generalises past pointers: **bringing
+the SECTION into view is not bringing the thing into view.** Below the band the
+Eater Map is one tall column, so a Section scrolled to its own top leaves the Card
+this Check wanted to hover at y=1219 in an 844px window — the pointer was moved off
+the bottom of the screen, no hover happened, and "nothing moved" was true because
+nothing was asked. Scroll to the ELEMENT, and then ask `elementFromPoint` whether
+the pointer actually landed on it: an assertion whose failure mode is "nothing
+happened" needs to establish that something was attempted.
 
 Two more names that are taken and should not be reused: `Check`, which CONTEXT.md
 defines and every module in `checks/` exports, and `Record`, which is TypeScript's

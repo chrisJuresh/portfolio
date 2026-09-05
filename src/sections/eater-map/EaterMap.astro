@@ -227,7 +227,13 @@ import './tokens.css';
         token stream rather than to pixels. leaders.ts. */}
     <ol class="eater-map__points" data-eater-map-watch>
       {content.points.map((point, at) => (
-        <li>
+        /* AND THE ROW SAYS WHICH PART IT NAMES, which is the Drop's half of the
+           correspondence (#213): hovering a Point lowers the piece that Point is
+           about, so the row has to carry the same word the rule leaving it does.
+           On the ROW rather than on the hook, because the hook is a zero-height
+           box a pointer can never be inside — what the reader points at is the
+           number, the title and the figure, which is this element. */
+        <li data-eater-map-point={point.part}>
           {/* THE NUMBER IS THE ORDINAL AND NOT A WORD, so it is derived from the
               list's own order rather than authored beside each point: an <ol>
               whose numbers are typed is two orders to keep in step, and the
@@ -941,8 +947,32 @@ import './tokens.css';
      what makes the Card dark enough to lie over a dark map. */
   .eater-map__card {
     --eater-map-card-lift: var(--eater-map-lift);
+    /* THE DROP, AND IT IS A SECOND PLAYHEAD RATHER THAN A SECOND OPINION ABOUT
+       THE FIRST (#213). `timeline.ts` writes the lift above and `drop.ts` writes
+       this, and the two are composed into the one coefficient below instead of
+       taking turns at one name — so a reader who hovers a piece while the Lift is
+       still running gets both. Written the other way, whichever module wrote last
+       would win, the drawing would still move, and the failure would be silent.
+
+       0 IS WHAT THE STYLESHEET RESTS AT, which is the finished Exploded View and
+       is the whole of what a reader whose scripts never arrived gets: the Drop is
+       a way of ASKING and carries no claim the four Points do not already carry
+       in words.
+
+       HELD IS WHAT IS LEFT OF THE LIFT once the Drop has taken its share, and
+       every length below is a term of it rather than of the lift — which is what
+       makes the piece come to rest exactly where the Lift's near end puts it,
+       by arithmetic rather than by a second set of numbers agreeing with the
+       first. `--eater-map-card-rise` and the two drifts keep their names because
+       they are read from outside this block: the `eater-map` Check sets the rise
+       to 0 to measure how far a Card came off the map, and two Variants argue
+       about the camera by rewriting the transform out of all three. */
+    --eater-map-card-drop: 0;
+    --eater-map-card-held: calc(
+      var(--eater-map-card-lift) * (1 - var(--eater-map-card-drop))
+    );
     --eater-map-card-rise: calc(
-      var(--eater-map-card-lift) * var(--eater-map-rise) * var(--eater-map-card-depth)
+      var(--eater-map-card-held) * var(--eater-map-rise) * var(--eater-map-card-depth)
     );
     /* THE WHOLE OF THE SCALE THIS CARD IS DRAWN AT, as one name, because two
        things need it and one of them is not in this file. The `scale()` below is
@@ -968,10 +998,10 @@ import './tokens.css';
        it, which reads as a broken vendoring rather than as a missing Token. 0 is
        a Card that does not slide, which is the honest reading. */
     --eater-map-card-drift-x: calc(
-      var(--eater-map-card-lift) * var(--eater-map-card-slide-x, 0)
+      var(--eater-map-card-held) * var(--eater-map-card-slide-x, 0)
     );
     --eater-map-card-drift-y: calc(
-      var(--eater-map-card-lift) * var(--eater-map-card-slide-y, 0)
+      var(--eater-map-card-held) * var(--eater-map-card-slide-y, 0)
     );
     position: absolute;
     left: calc(var(--eater-map-card-x) * 100cqw);

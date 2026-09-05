@@ -516,6 +516,18 @@
      (src/sections/NOTES.md). */
   --eater-map-lift-time: 1.15s;
 
+  /* And how long one piece takes to go back down when the reader hovers it or the
+     Point that names it, and to come back up when they leave (#213). Spent in
+     proportion to the distance still to travel, exactly as the Lift's is, so a
+     piece caught half way down and sent back takes half of this.
+
+     SHORTER THAN THE LIFT, and it is a different kind of motion rather than a
+     faster one: the Lift is the drawing assembling itself when the page comes to
+     rest, and this is an answer to a question a pointer just asked. Read per
+     gesture, so dragging it in the Editor changes the next hover without a
+     reload. */
+  --eater-map-drop-time: 0.45s;
+
   /* ---- the leader lines ---------------------------------------------------
      Four thin rules joining each numbered point to the part of the Exploded View
      it names (#178). Three Tokens, and they are the three the composition can

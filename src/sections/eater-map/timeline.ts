@@ -2,6 +2,8 @@ import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { mountStage, type Stage } from './stage';
 
+import mountDrop from './drop';
+import { seconds } from './duration';
 import mountGlass from './glass';
 import { mountLeaders } from './leaders';
 import { mountTitle } from './title';
@@ -109,13 +111,6 @@ function collapsed(root: HTMLElement): boolean {
   return Number(getComputedStyle(root).getPropertyValue('--eater-map-collapsed')) === 1;
 }
 
-/** A duration Token, in seconds, written in either `s` or `ms`. */
-function seconds(raw: string, fallback: number): number {
-  const value = Number.parseFloat(raw);
-  if (!Number.isFinite(value)) return fallback;
-  return raw.trim().endsWith('ms') ? value / 1000 : value;
-}
-
 export default function mountLift(root: HTMLElement): gsap.core.Timeline | void {
   // THE SERIF TITLE, AND IT IS NOT PART OF THE TIMELINE EITHER — nor of the
   // drawing. It is here for the same mechanical reason `mountStage` is:
@@ -212,6 +207,23 @@ export default function mountLift(root: HTMLElement): gsap.core.Timeline | void 
   // reading, which is the frame the rules are first drawn on.
   const redraw = mountLeaders(root);
   if (redraw) lift.eventCallback('onUpdate', redraw);
+
+  // THE DROP, AND IT IS NOT PART OF THE TIMELINE — it is the Lift's antonym rather
+  // than a second one of it (#213). Hovering a Card or the Point that names it
+  // lowers that one piece back onto the Slab, through `--eater-map-card-drop`,
+  // which this Timeline never writes and that module never reads: the stylesheet
+  // composes the two into the one coefficient a Card's rise and slides are terms
+  // of, so a reader who hovers a piece part way up gets both rather than whichever
+  // wrote last. Here for the mechanical reason the stage and the glass are — this
+  // module is the Section's only mount point — and given the leader lines' redraw
+  // for the reason the Timeline is given it: a rule has to stay attached to a
+  // piece that is moving, whatever is moving it.
+  //
+  // ABOVE THE REDUCED-MOTION BRANCH, because that branch returns. A reader who
+  // asked for stillness is asking about a Lift that runs at them unbidden, not
+  // about an answer they asked a question to get — so the Drop is still wired up
+  // down there, and puts the piece where the pointer says with nothing to watch.
+  mountDrop(root, redraw);
 
   const lessMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)');
   // A reader who asked for stillness gets the finished composition and NOTHING

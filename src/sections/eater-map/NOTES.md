@@ -35,7 +35,8 @@ Here: the masthead PROJECTS, the four authored lines of the serif
 project title under it, the copy at the foot of that column, the four numbered
 points down the right edge with a number and an icon each, the Exploded View, the
 four leader lines that join the one to the other and the two dots on each, the
-**Lift** that assembles it, the **glass** every Card's surfaces are made of
+**Lift** that assembles it, the **Drop** that puts one piece back on the map under
+a reader's pointer (#213), the **glass** every Card's surfaces are made of
 (#190), and the collapse that puts all of it away below the
 band.
 
@@ -198,6 +199,12 @@ Every mutation below has been made on purpose and every one was caught.
 | `display: none` dropped from the overlay's collapse rule | the rules still drawn at 390x844 |
 | a second point given `part: 'search'` | the BUILD, on both refinements at once — no point names the slab, and two name the search |
 | the plate mix put back on the three glass colours | the offline button opaque at the raised end, at both windows — and NOT at the flat end, which is the frame it was always honest at |
+| `--eater-map-card-held` back to `--eater-map-card-lift` in the rise and both drifts | every piece 76 to 97px from the map at every gesture — the Drop wired to a name nothing reads |
+| the Point rows stop naming their part | four gestures with nothing on the page to point at |
+| `redraw` not called as a piece moves | all four rules 76 to 97px off their anchors, at every gesture |
+| the whole stack lowered rather than the piece | all three down at every gesture, and one still holding a drop below the band |
+| the footprint test inverted | the details Card back to a drop of 0.041 over 600ms of a jogged pointer. **It passed twice before it failed**, and both were the Check's fault: the watch held the pointer at ONE COORDINATE, and this module hears `pointermove` and nothing else, so a parked pointer is never asked a second question — then, jogged, the vacuity guard read "the Card is under the pointer" as a reason to SKIP, which is precisely what a flickering piece looks like half the time |
+| `collapsed()` dropped from `choose()` | the details Card holding a drop of 1 below the band. **It passed first**, because the collapse is one tall column: with the Section's own top on the fold the Card's middle is at y=1219 in an 844px window, the pointer was moved off the bottom of the screen, and "nothing moved" was true because nothing was asked |
 | one backdrop round the search Card's pair | the search Card drawing 1 glass surface where the app gives it 2, at both windows |
 | one corner radius typed here instead of read off `cards.css` | the offline button drawn `0.43/24/24/24` against the `24/24/24/24` the export states |
 | #197's rebuild — the clear per box and the host per Card | `search .search` with no edge while `search .offline-button` has one, which is exactly the silent half of it |
@@ -846,6 +853,102 @@ trigger is created. **The turn back is a retarget and not a rewind**: the transp
 is re-aimed from wherever the drawing has got to, and it spends the time the
 DISTANCE LEFT is worth rather than the whole Lift's, so a turn taken a third of the
 way up undoes a third of a Lift.
+
+## The Drop, and why leaving a piece is not what puts it back
+
+The Exploded View's whole claim is the correspondence — *this number names that
+piece* — and the leader lines say it as far as a drawn rule can. What they cannot
+say is WHERE ON THE MAP the piece came from: a reader who wants to know where the
+search bar actually sits has to imagine it back down. So #213 lets them ask.
+**Hovering a Card, or hovering the numbered Point that names it, lowers that one
+piece back onto the Slab**, and leaves the other two and the Slab exactly where
+they are.
+
+It is the **Drop**, which is the Lift's antonym and is what it is.
+`src/sections/eater-map/drop.ts` is the module and `--eater-map-drop-time` the
+only Token it has.
+
+**IT IS A SECOND PLAYHEAD AND NOT A SECOND OPINION ABOUT THE FIRST.**
+`timeline.ts` owns `--eater-map-card-lift` and `drop.ts` owns
+`--eater-map-card-drop`; neither module reads the other's, and the STYLESHEET
+composes them:
+
+```css
+--eater-map-card-held: calc(var(--eater-map-card-lift) * (1 - var(--eater-map-card-drop)));
+```
+
+Every length the Card is placed by — its rise and both of its slides — is a term
+of `held` rather than of the lift, which is what makes a lowered piece come to
+rest **exactly** where the Lift's near end puts it, by arithmetic rather than by
+two sets of numbers agreeing. Written the other way, with both modules driving one
+name, whichever wrote last would win: a reader who hovers a piece while the Lift
+is still running would get one of the two, the drawing would still move, and the
+failure would be silent. `--eater-map-card-rise` and the two drifts keep their
+names because they are read from OUTSIDE that block — the `eater-map` Check sets
+the rise to 0 to measure how far a Card came off the map, and two Variants argue
+about the camera by rewriting the transform out of all three.
+
+**WHAT PUTS A PIECE BACK UP IS NOT LEAVING IT, AND THAT IS THE ONE THING IN THIS
+DEVICE THAT LOOKS LIKE A MISTAKE.** A Card that lowers moves out from under the
+cursor. Put back on `pointerleave` it would rise, arrive back under the cursor, be
+hovered again, and lower — for as long as the pointer is HELD STILL, which is not
+a gesture anybody makes on purpose and is exactly what a reader reading the Point
+beside it does. So the piece stays down while the pointer is anywhere it covered
+**when it was raised**, and `standing()` is what records that footprint: the
+Card's rect with the drop temporarily taken off, read at the moment the piece is
+chosen. The footprint always contains the pointer that chose the piece, so a still
+pointer can never fall out of it, whatever the drawing does in between.
+
+It is read fresh on every choice rather than remembered, because a reader who
+re-enters a piece half way back up has never seen it raised in this gesture and
+there is nothing to have remembered.
+
+**AND THE FOOTPRINT IS AN AXIS-ALIGNED BOX, which is right here and is the trap
+next door.** A Card is turned under the plane, so `getBoundingClientRect()` gives
+the bounding box of the projected quad and not the quad — bigger than the Card.
+For a footprint that is the safe direction: the error is a piece that stays down a
+moment longer than it might have, never one that flickers. The leader lines want
+the corner ITSELF and cannot use a rect at all, which is why every part carries a
+zero-sized anchor.
+
+**THE POINTER IS THE MOUSE'S, and it is asked of the EVENT.** A tap is not a
+hover: a touch pointer is destroyed on release, so a finger would lower a piece
+and leave nothing to raise it, and a finger dragging the page across the drawing
+would lower every piece it crossed. `pointerType !== 'mouse'` is the whole gate —
+a `(hover: hover)` media query would answer once at mount and get a laptop with a
+touchscreen wrong in both directions.
+
+**THREE ANSWERS AND NOT TWO** to "what is the pointer over". A Card or a Point
+NAMES a piece. The Slab's own Point is a trigger that names NONE — the fourth
+number is about the picture the reader is already looking at, and there is nothing
+standing off it to put back — so hovering it puts everything back, which is the
+honest reading of pointing at the map. Anything else is not a trigger at all, and
+the footprint decides.
+
+**THE ROW CARRIES THE PART AND THE HOOK DOES NOT.** `data-eater-map-point` is on
+the `<li>`, because the hook is a zero-height box a pointer can never be inside —
+what the reader points at is the number, the title and the figure.
+
+**BELOW THE BAND THE GATE IS FOR THE WINDOW GOING BACK THE OTHER WAY.** Down there
+the Lift is at 0, so a drop multiplies to nothing and the drawing cannot tell a
+Drop that refused from one that ran. What `collapsed()` in `choose()` actually
+buys is that no piece is left HOLDING a drop: one that was would still be lying on
+the map when the Exploded View came back, until the reader happened to move the
+pointer. The `eater-map` Check reads the drop as well as the drawing down there
+for exactly that reason — the drawing half of it would pass with the gate deleted.
+
+**A READER WHO ASKED FOR STILLNESS STILL GETS THE ANSWER**, with nothing to watch:
+the travel is put on in one write rather than tweened. That is a different call
+from the Lift's, and the difference is who started it. The Lift runs AT a reader
+who has just come to rest from a turn, so a reader who asked for stillness is
+given the finished drawing and no motion at all; the Drop is an answer to a
+question a pointer just asked, and refusing to answer it would take the
+correspondence away rather than the animation. That is also why `mountDrop` is
+called ABOVE the reduced-motion branch in `timeline.ts`, which returns.
+
+A reader whose scripts never arrived loses the asking and no claim:
+`--eater-map-card-drop` rests at 0, which is the finished Exploded View, and the
+four Points still say in words what the four pieces are.
 
 ## The leader lines, and why a stylesheet cannot draw one
 

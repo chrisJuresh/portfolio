@@ -290,6 +290,25 @@ const ON_THE_PART = 1;
  *  wrong and a still of either end would not say so. */
 const HALF_WAY = 0.5;
 
+/** How far a piece the reader hovered may sit from where the Lift's NEAR END puts
+ *  it, in px (#213). The two are the same place by arithmetic — the Drop takes
+ *  lift away from one Card and nothing else — so this is rounding across two
+ *  layouts of the same drawing, and it is nowhere near the distance a piece
+ *  travels. */
+const BACK_ON_THE_MAP = 1;
+
+/** How far a piece nobody hovered, and the Slab, may move while another piece
+ *  goes back, in px. Rounding again: the answer is that they do not. */
+const UNTOUCHED = 0.5;
+
+/** How long a piece that has lowered away from a still pointer is watched, in ms,
+ *  and how often it is read. A flicker is a value that comes BACK — the piece
+ *  rises into the cursor, is hovered again and lowers — so one reading cannot tell
+ *  it from a piece at rest, and the window has to outlast a round trip of the Drop
+ *  rather than a frame. */
+const WATCHED = 600;
+const SAMPLE = 50;
+
 /** How far the Slab's projected box may move between the two ends of the Lift, in
  *  px. Rounding and nothing else: it is one element under one constant transform
  *  read twice out of the same layout, so the two answers are the same number or
@@ -2206,6 +2225,610 @@ async function reversesOnTheWayOut(browser, origin) {
 }
 
 /**
+ * Hovering a piece, or the Point that names it, puts that ONE piece back on the
+ * map — and it stays there while the pointer does (#213).
+ *
+ * WHAT IS ASSERTED IS THE CORRESPONDENCE AND NOT A DISTANCE. A lowered piece has
+ * to arrive exactly where the Lift's NEAR END puts it, which is a relationship
+ * between two things the page already draws rather than a number anybody chose:
+ * the Drop takes lift away from one Card, so `drop: 1` and `lift: 0` are the same
+ * place by arithmetic. Read at both ends of a held Lift first, and every
+ * assertion below is against those two readings — so every Token in this Section
+ * may be dragged anywhere without failing any of it.
+ *
+ * AND THAT NOTHING ELSE MOVES. Three Cards and a Slab, one hover: two Cards and
+ * the Slab are read at every gesture, because "lower that specific component" is
+ * a claim about the other three as much as about the one, and a Drop wired to the
+ * Cards' box rather than to a Card would move the whole stack and still look like
+ * a piece going down.
+ *
+ * THE FLICKER IS THE FAILURE THIS GROUP EXISTS FOR, and it is the one that could
+ * not be found by looking at a still. A Card that lowers moves out from under the
+ * cursor; put back the moment the cursor is not on it, it would rise into the
+ * cursor, be hovered, and lower again — for as long as the reader holds their hand
+ * roughly still, which is exactly what somebody reading the Point beside it does.
+ * So the pointer is aimed at a spot that is ON the raised Card and OUTSIDE the box
+ * the lowered one covers, JOGGED BY A PIXEL between reads, and the drop is WATCHED:
+ * an oscillation is a value that comes back down, and one reading cannot tell it
+ * from a piece at rest.
+ *
+ * THE JOG IS THE HALF THAT WAS MISSING, and it cost a passing mutation. The Drop
+ * hears `pointermove` and nothing else, so a pointer parked at one coordinate is
+ * never asked a second question — the first version of this watch held it there and
+ * passed with the footprint test inverted. A Check that models a still hand models
+ * nobody.
+ *
+ * IT IS AIMED RATHER THAN CENTRED, and both halves of that are load-bearing. A
+ * Card is turned under the plane, so its rect is the axis-aligned box of a
+ * rotated quad and a third of that box is map — a Check that hovered the centre
+ * of the rect would hover the picture on some Tokens and the Card on others.
+ * Every candidate is put to `elementFromPoint` and only the ones that land on the
+ * Card itself are used.
+ *
+ * WHERE THE PIECE DOES NOT TRAVEL FAR ENOUGH TO LEAVE THE POINTER there is no
+ * flicker to have, and this says so in a note rather than failing: how far a piece
+ * comes off the Slab is `--eater-map-rise`, which is the author's.
+ *
+ * AND BELOW THE BAND NOTHING IS RAISED, so hovering a piece moves nothing.
+ * Asserted of the DRAWING and not of the flag — every Card's anchor is read before
+ * and after the hover — because the mechanism could be gated correctly and the
+ * arithmetic still put a collapsed Card somewhere the hover took it.
+ */
+async function hoveringPutsOnePieceBack(browser, origin) {
+  const { context, page } = await open(browser, origin, { viewport: WIDE });
+  const where = `${WIDE.width}x${WIDE.height}`;
+  /** @type {string[]} */
+  const notes = [];
+  try {
+    const failures = await settle(page);
+
+    const ports = await page.evaluate(() => window.portfolio?.ports?.() ?? []);
+    if (ports.length === 0) {
+      failures.push(
+        `${where}: the Kernel reports no resting places, so the page could not be stood on this Section ` +
+          'and nothing about the Drop was checked',
+      );
+      return { failures, notes };
+    }
+    const here = ports[ports.length - 1];
+
+    /** Stand on the Section and wait for the drawing to be all the way up. */
+    const raised = async () => {
+      await page.evaluate((to) => window.scrollTo(0, to), here);
+      return page
+        .waitForFunction(
+          () => (window.portfolio?.timelines.get('eater-map')?.progress() ?? 0) > 0.999,
+          undefined,
+          { timeout: 5000 },
+        )
+        .then(() => true)
+        .catch(() => false);
+    };
+
+    if (!(await raised())) {
+      const at = await page.evaluate(
+        () => window.portfolio?.timelines.get('eater-map')?.progress() ?? null,
+      );
+      failures.push(
+        `${where}: standing on the Section left the Lift at ${at} rather than raised, so there was nothing ` +
+          'off the Slab to put back and nothing about the Drop was checked',
+      );
+      return { failures, notes };
+    }
+
+    // BOTH ENDS OF A HELD LIFT, and the spot on each Card the pointer will be
+    // aimed at. One evaluate, because the aim is a question about the two ends
+    // TOGETHER — on the raised Card and off the lowered one — and asking it in a
+    // second call would ask it of whatever the transport had done in between.
+    const ends = await page.evaluate(() => {
+      const kernel = window.portfolio;
+      const lift = kernel?.timelines.get('eater-map');
+      const section = document.querySelector('.eater-map');
+      if (!section) return { missing: 'no .eater-map on the page' };
+      if (!lift) return { missing: 'no Timeline is registered as "eater-map"' };
+      const round = (n) => Math.round(n * 100) / 100;
+      const cards = [...document.querySelectorAll('[data-eater-map-card]')];
+      const named = cards.map((card) => card.getAttribute('data-eater-map-card') ?? '(unnamed)');
+
+      // OFF THE ANCHORS, for the reason the leader lines are drawn to them: a
+      // zero-sized box inside the plane projects to a POINT, and the bounding box
+      // of a rotated quad moves by a different amount from the quad.
+      const read = () => {
+        const at = section.getBoundingClientRect();
+        /** @type {Record<string, { anchor: { x: number, y: number } | null, box: DOMRect | null }>} */
+        const found = {};
+        for (const card of cards) {
+          const part = card.getAttribute('data-eater-map-card') ?? '(unnamed)';
+          const point = card.querySelector('.eater-map__anchor')?.getBoundingClientRect();
+          found[part] = {
+            anchor: point ? { x: round(point.left - at.left), y: round(point.top - at.top) } : null,
+            box: card.getBoundingClientRect(),
+          };
+        }
+        const slab = document
+          .querySelector('[data-eater-map-anchor="slab"]')
+          ?.getBoundingClientRect();
+        found.slab = {
+          anchor: slab ? { x: round(slab.left - at.left), y: round(slab.top - at.top) } : null,
+          box: null,
+        };
+        return found;
+      };
+
+      kernel?.hold?.();
+      lift.progress(0);
+      const down = read();
+      lift.progress(1);
+      const up = read();
+
+      /** @type {Record<string, { clear: { x: number, y: number } | null, anywhere: { x: number, y: number } | null }>} */
+      const aim = {};
+      for (const card of cards) {
+        const part = card.getAttribute('data-eater-map-card') ?? '(unnamed)';
+        const box = up[part]?.box;
+        const lying = down[part]?.box;
+        if (!box) continue;
+        let anywhere = null;
+        let clear = null;
+        for (let across = 1; across <= 9 && !clear; across += 1) {
+          for (let downwards = 1; downwards <= 9 && !clear; downwards += 1) {
+            const x = box.left + (box.width * across) / 10;
+            const y = box.top + (box.height * downwards) / 10;
+            if (!card.contains(document.elementFromPoint(x, y))) continue;
+            if (!anywhere) anywhere = { x: round(x), y: round(y) };
+            const off =
+              !lying || x < lying.left || x > lying.right || y < lying.top || y > lying.bottom;
+            if (off) clear = { x: round(x), y: round(y) };
+          }
+        }
+        aim[part] = { clear, anywhere };
+      }
+
+      kernel?.release?.();
+      /** @type {Record<string, { x: number, y: number } | null>} */
+      const flat = {};
+      /** @type {Record<string, { x: number, y: number } | null>} */
+      const high = {};
+      for (const part of Object.keys(up)) {
+        flat[part] = down[part]?.anchor ?? null;
+        high[part] = up[part]?.anchor ?? null;
+      }
+      return { down: flat, up: high, aim, named };
+    });
+
+    if (ends.missing) {
+      failures.push(`${where}: ${ends.missing}`);
+      return { failures, notes };
+    }
+
+    // `release()` refreshes every trigger, which drives the Lift back to where the
+    // scroll says — and the scroll is still on the port, so that is the raised end.
+    if (!(await raised())) {
+      failures.push(
+        `${where}: the Lift did not come back up after the two ends were read, so every gesture below ` +
+          'would have been made against a drawing that was already down',
+      );
+      return { failures, notes };
+    }
+
+    const parts = ends.named.filter((part) => ends.up[part] && ends.down[part]);
+    if (parts.length < 2) {
+      failures.push(
+        `${where}: ${parts.length} Card(s) carry an anchor at both ends of the Lift, so "this piece went ` +
+          'back and the others did not" is not a claim this page can be asked about',
+      );
+      return { failures, notes };
+    }
+    const still = parts.filter(
+      (part) =>
+        Math.hypot(ends.up[part].x - ends.down[part].x, ends.up[part].y - ends.down[part].y) <=
+        MOVED,
+    );
+    if (still.length > 0) {
+      failures.push(
+        `${where}: ${still.join(', ')} stand(s) in the same place at both ends of the Lift, so a piece ` +
+          'lowered onto the map is indistinguishable from one that never moved and this group asserts nothing',
+      );
+      return { failures, notes };
+    }
+
+    /** Put the pointer on the middle of something, without scrolling to it. */
+    const aimAt = async (selector) => {
+      const spot = await page.evaluate((one) => {
+        const element = document.querySelector(one);
+        if (!element) return null;
+        const box = element.getBoundingClientRect();
+        if (box.width === 0 || box.height === 0) return null;
+        return { x: box.left + box.width / 2, y: box.top + box.height / 2 };
+      }, selector);
+      if (!spot) return null;
+      await page.mouse.move(spot.x, spot.y);
+      return spot;
+    };
+
+    /**
+     * Wait for exactly one piece to be all the way down and every other one all
+     * the way up. `lowered` is null when the gesture puts everything back.
+     *
+     * THE WANTED STATE AND NEVER "EVERYTHING HAS STOPPED", which was the first
+     * version and asserted nothing: the pointer has only just arrived when this is
+     * asked, so every piece is still where it was, "nothing is moving" is true on
+     * the first poll, and every reading below would have been taken before the
+     * Drop had begun. A predicate that is satisfied by the state the gesture was
+     * supposed to change is the shape scripts/checks/NOTES.md warns about.
+     */
+    const settledDrop = (lowered) =>
+      page
+        .waitForFunction(
+          (wanted) =>
+            [...document.querySelectorAll('[data-eater-map-card]')].every((card) => {
+              const at = Number(getComputedStyle(card).getPropertyValue('--eater-map-card-drop'));
+              return card.getAttribute('data-eater-map-card') === wanted ? at > 0.999 : at < 0.001;
+            }),
+          lowered,
+          { timeout: 5000 },
+        )
+        .then(() => true)
+        .catch(() => false);
+
+    /** Where every anchor is, in the Section's own coordinates, and how far each
+     *  rule's own last vertex is from the anchor it is drawn to. */
+    const drawing = () =>
+      page.evaluate(() => {
+        const section = document.querySelector('.eater-map');
+        if (!section) return null;
+        const origin = section.getBoundingClientRect();
+        const round = (n) => Math.round(n * 100) / 100;
+        /** @type {Record<string, { x: number, y: number }>} */
+        const at = {};
+        for (const anchor of document.querySelectorAll('[data-eater-map-anchor]')) {
+          const box = anchor.getBoundingClientRect();
+          at[anchor.getAttribute('data-eater-map-anchor') ?? '(unnamed)'] = {
+            x: round(box.left - origin.left),
+            y: round(box.top - origin.top),
+          };
+        }
+        /** @type {Record<string, number|null>} */
+        const rules = {};
+        const overlay = document.querySelector('[data-eater-map-leaders]');
+        if (overlay) {
+          const frame = overlay.getBoundingClientRect();
+          for (const line of overlay.querySelectorAll('[data-eater-map-leader]')) {
+            const part = line.getAttribute('data-eater-map-leader') ?? '(unnamed)';
+            const drawn = (line.getAttribute('points') ?? '')
+              .trim()
+              .split(/\s+/)
+              .filter(Boolean)
+              .map((pair) => pair.split(',').map(Number));
+            const last = drawn[drawn.length - 1];
+            const anchor = document
+              .querySelector(`[data-eater-map-anchor="${part}"]`)
+              ?.getBoundingClientRect();
+            rules[part] =
+              last && anchor
+                ? round(
+                    Math.hypot(
+                      last[0] - (anchor.left - frame.left),
+                      last[1] - (anchor.top - frame.top),
+                    ),
+                  )
+                : null;
+          }
+        }
+        return { at, rules };
+      });
+
+    const apart = (a, b) => (a && b ? Math.hypot(a.x - b.x, a.y - b.y) : Number.NaN);
+
+    /**
+     * One gesture: put the pointer somewhere and say what the drawing did.
+     *
+     * `lowered` is the part that should have gone back on the map, or null when
+     * the gesture is one that puts everything up.
+     */
+    const gesture = async (what, selector, lowered) => {
+      const spot = await aimAt(selector);
+      if (!spot) {
+        failures.push(`${where}: ${what} — there is no ${selector} on the page to point at`);
+        return null;
+      }
+      if (!(await settledDrop(lowered))) {
+        const at = await page.evaluate(() =>
+          Object.fromEntries(
+            [...document.querySelectorAll('[data-eater-map-card]')].map((card) => [
+              card.getAttribute('data-eater-map-card'),
+              getComputedStyle(card).getPropertyValue('--eater-map-card-drop').trim(),
+            ]),
+          ),
+        );
+        failures.push(
+          `${where}: ${what} — five seconds later the pieces are at ${JSON.stringify(at)} rather than ` +
+            `${lowered ? `${lowered} down and the rest up` : 'all of them up'}`,
+        );
+        return null;
+      }
+      const now = await drawing();
+      if (!now) {
+        failures.push(`${where}: ${what} — the Section left the page`);
+        return null;
+      }
+      for (const part of parts) {
+        const wanted = part === lowered ? ends.down[part] : ends.up[part];
+        const missed = apart(now.at[part], wanted);
+        const asked = part === lowered ? 'onto the map' : 'where it was';
+        if (!(missed <= BACK_ON_THE_MAP)) {
+          failures.push(
+            `${where}: ${what} — ${part} is ${Number.isNaN(missed) ? 'nowhere readable' : `${missed.toFixed(2)}px`} from ${asked}: ` +
+              `it stands at ${JSON.stringify(now.at[part])} and the Lift's ${part === lowered ? 'near' : 'far'} end ` +
+              `puts it at ${JSON.stringify(wanted)}`,
+          );
+        }
+      }
+      // THE SLAB DOES NOT MOVE, which is #189's invariant and is what separates
+      // "that piece went back" from "the drawing shifted".
+      const slab = apart(now.at.slab, ends.up.slab);
+      if (!(slab <= UNTOUCHED)) {
+        failures.push(
+          `${where}: ${what} — the Slab's own anchor moved ${Number.isNaN(slab) ? 'somewhere unreadable' : `${slab.toFixed(2)}px`}, ` +
+            'so the hover moved the drawing rather than one piece of it',
+        );
+      }
+      // AND EVERY RULE IS STILL ON THE PIECE IT NAMES. A redraw that is not wired
+      // to the Drop leaves the lowered piece's rule pointing at the corner the
+      // piece used to occupy, which is a drawing that has come apart.
+      for (const [part, missed] of Object.entries(now.rules)) {
+        if (missed === null) continue;
+        if (!(missed <= ATTACHED)) {
+          failures.push(
+            `${where}: ${what} — ${part}'s leader line ends ${missed.toFixed(2)}px from its anchor, so the ` +
+              'rules do not follow a piece the reader put back',
+          );
+        }
+      }
+      return { spot, now };
+    };
+
+    for (const part of parts) {
+      await gesture(`hovering the Point that names ${part}`, `[data-eater-map-point="${part}"]`, part);
+    }
+
+    // THE FOURTH POINT NAMES THE SLAB, which does not stand off anything — so
+    // pointing at it puts every piece back, and that is the reading rather than a
+    // gesture with no effect.
+    await gesture('hovering the Point that names the Slab', '[data-eater-map-point="slab"]', null);
+
+    // ---- and now the Card itself, at a spot the piece will leave -------------
+    const travels = parts.find((part) => ends.aim[part]?.clear) ?? null;
+    const near = travels ?? parts.find((part) => ends.aim[part]?.anywhere) ?? null;
+    if (!near) {
+      failures.push(
+        `${where}: no point inside any Card's own box lands on that Card, so hovering a piece itself was ` +
+          'never exercised — every candidate resolved to something else on the plane',
+      );
+    } else {
+      const target = ends.aim[near].clear ?? ends.aim[near].anywhere;
+      await page.mouse.move(target.x, target.y);
+      if (!(await settledDrop(near))) {
+        failures.push(
+          `${where}: hovering the ${near} Card itself did not put it down within five seconds — a Point ` +
+            'lowers its piece and the piece itself does not',
+        );
+      } else {
+        const now = await drawing();
+        const missed = apart(now?.at[near], ends.down[near]);
+        if (!(missed <= BACK_ON_THE_MAP)) {
+          failures.push(
+            `${where}: hovering the ${near} Card itself left it ${Number.isNaN(missed) ? 'nowhere readable' : `${missed.toFixed(2)}px`} ` +
+              "from where the Lift's near end puts it — a Point lowers its piece and the piece itself does not",
+          );
+        }
+        for (const part of parts.filter((one) => one !== near)) {
+          const moved = apart(now?.at[part], ends.up[part]);
+          if (!(moved <= UNTOUCHED)) {
+            failures.push(
+              `${where}: hovering the ${near} Card moved ${part} ${Number.isNaN(moved) ? 'somewhere unreadable' : `${moved.toFixed(2)}px`} ` +
+                'as well, so a hover lowers the stack rather than the piece',
+            );
+          }
+        }
+        if (!travels) {
+          notes.push(
+            `${where}: no spot on a Card is left uncovered when that Card lowers, so there is no pointer ` +
+              'position a piece can move out from under and the flicker was not exercised — how far a piece ' +
+              'travels is --eater-map-rise, which is the author’s',
+          );
+        } else {
+          // A READER'S HAND IS NOT A CLAMP, AND A CHECK THAT HOLDS ONE STILL
+          // ASSERTS NOTHING. This module hears `pointermove` and nothing else, so
+          // a pointer that never moves again is never asked a second question and
+          // the piece stays down whatever the code says — the first version of
+          // this watch held the pointer at one coordinate and PASSED with the
+          // footprint test inverted. What a reader actually does is hold the
+          // pointer roughly still while they read the Point beside it, and every
+          // one of those pixels lands on the map once the piece has moved away.
+          // So the pointer is jogged by a pixel between reads, inside the ground
+          // the piece used to cover, which is the gesture the footprint exists for.
+          //
+          // WHETHER THE CASE ARISES IS ASKED ONCE, THE MOMENT THE PIECE SETTLES,
+          // and asking it again later is how this group passed its own mutation.
+          // A flickering piece IS under the pointer half the time — that is what
+          // flickering means — so "the Card is under the pointer, so the flicker
+          // was not exercised" read the fault as a reason to skip, and the note it
+          // wrote said so in a sentence nobody would query. The question is
+          // whether the piece left the pointer when it went down; everything after
+          // that is the answer, not the precondition.
+          const off = await page.evaluate(
+            ([part, x, y]) => {
+              const card = document.querySelector(`[data-eater-map-card="${part}"]`);
+              const on = document.elementFromPoint(x, y);
+              return Boolean(card) && !(on && card.contains(on));
+            },
+            [near, target.x, target.y],
+          );
+          if (!off) {
+            notes.push(
+              `${where}: the ${near} Card is still under the pointer once it has lowered, so there is no ` +
+                'ground for the pointer to be left standing on and the flicker was not exercised',
+            );
+          } else {
+            const seen = [];
+            for (let tick = 0; tick * SAMPLE < WATCHED; tick += 1) {
+              await page.mouse.move(target.x + (tick % 2 ? 1 : -1), target.y + (tick % 3 ? 1 : -1));
+              const at = await page.evaluate((part) => {
+                const card = document.querySelector(`[data-eater-map-card="${part}"]`);
+                return card
+                  ? Number(getComputedStyle(card).getPropertyValue('--eater-map-card-drop'))
+                  : null;
+              }, near);
+              if (at === null) break;
+              seen.push(at);
+              await page.waitForTimeout(SAMPLE);
+            }
+            const low = seen.length > 0 ? Math.min(...seen) : null;
+            if (seen.length < 2) {
+              failures.push(
+                `${where}: the ${near} Card could not be watched after it lowered, so nothing about a piece ` +
+                  'flickering under a reader’s hand was checked',
+              );
+            } else if (!(low > 0.999)) {
+              failures.push(
+                `${where}: the ${near} Card came back up to a drop of ${low.toFixed(3)} over ${WATCHED}ms of ` +
+                  'a pointer jogged by a pixel on ground the piece had left — it is rising into the cursor, ' +
+                  'being hovered again and lowering, which is a piece that flickers for as long as a reader reads',
+              );
+            } else {
+              notes.push(
+                `${where}: the ${near} Card stayed down through ${seen.length} reads with the pointer jogged ` +
+                  'on ground it had left',
+              );
+            }
+          }
+        }
+      }
+    }
+
+    // ---- and below the band there is nothing raised to put back --------------
+    await page.setViewportSize(NARROW);
+    // THE LIFT IS STILL COMING DOWN WHEN THE WINDOW CROSSES, and waiting it out is
+    // not tidiness. A resize refreshes every trigger, `arrived()` answers no below
+    // the band, and the transport then runs the whole drawing back to flat over
+    // `--eater-map-lift-time` — so a reading taken on the next frame is of a
+    // drawing in motion, a reading taken half a second later is of a different one,
+    // and the difference between them is the Lift rather than anything a pointer
+    // did. Measured: 13, 79 and 93px of "movement" with the Drop refusing
+    // correctly throughout.
+    const flat = await page
+      .waitForFunction(
+        () => (window.portfolio?.timelines.get('eater-map')?.progress() ?? 1) < 0.001,
+        undefined,
+        { timeout: 5000 },
+      )
+      .then(() => true)
+      .catch(() => false);
+    if (!flat) {
+      const at = await page.evaluate(
+        () => window.portfolio?.timelines.get('eater-map')?.progress() ?? null,
+      );
+      failures.push(
+        `${NARROW.width}x${NARROW.height}: the Lift is at ${at} below the band rather than flat, so what a ` +
+          'hover down here moves could not be told from what the Lift was still moving',
+      );
+      return { failures, notes };
+    }
+    // THE CARD AND NOT THE SECTION IS WHAT IS BROUGHT INTO VIEW, and that is the
+    // whole difference between this group asserting something and asserting
+    // nothing. Down here the composition is one tall column: with the Section's own
+    // top on the fold the details Card's middle is at y=1219 in an 844px window, so
+    // the pointer was moved off the bottom of the screen, no hover ever happened,
+    // and "nothing moved" was true because nothing was asked. Measured, and it
+    // passed with the gate deleted.
+    const collapsed = await page.evaluate(async () => {
+      const section = document.querySelector('.eater-map');
+      const card = document.querySelector('[data-eater-map-card]');
+      if (!section || !card) return null;
+      card.scrollIntoView({ block: 'center' });
+      await new Promise((frame) => requestAnimationFrame(frame));
+      await new Promise((frame) => requestAnimationFrame(frame));
+      return Number(getComputedStyle(section).getPropertyValue('--eater-map-collapsed')) === 1;
+    });
+    if (collapsed !== true) {
+      failures.push(
+        `${NARROW.width}x${NARROW.height}: the composition reports itself uncollapsed, so hovering a piece ` +
+          'down here was asked of the Exploded View and says nothing about the collapse',
+      );
+    } else {
+      const before = await drawing();
+      const spot = await aimAt(`[data-eater-map-card="${parts[0]}"]`);
+      if (!spot) {
+        failures.push(
+          `${NARROW.width}x${NARROW.height}: the ${parts[0]} Card has no box to point at, so nothing about ` +
+            'the Drop below the band was checked',
+        );
+      } else if (
+        !(await page.evaluate(
+          ([part, x, y]) => {
+            const card = document.querySelector(`[data-eater-map-card="${part}"]`);
+            const on = document.elementFromPoint(x, y);
+            return Boolean(card && on && card.contains(on));
+          },
+          [parts[0], spot.x, spot.y],
+        ))
+      ) {
+        // THE POINTER HAS TO BE ON THE CARD, asked rather than assumed. Every
+        // assertion under this branch is "nothing moved", which is what a pointer
+        // that landed on the map — or off the screen — gets whatever the Drop does.
+        failures.push(
+          `${NARROW.width}x${NARROW.height}: the pointer landed off the ${parts[0]} Card at ` +
+            `${spot.x.toFixed(0)},${spot.y.toFixed(0)}, so no hover was made down here and nothing about ` +
+            'the Drop below the band was checked',
+        );
+      } else {
+        await page.waitForTimeout(WATCHED);
+        const after = await drawing();
+        for (const part of parts) {
+          const moved = apart(after?.at[part], before?.at[part]);
+          if (!(moved <= UNTOUCHED)) {
+            failures.push(
+              `${NARROW.width}x${NARROW.height}: hovering the ${parts[0]} Card moved ${part} ` +
+                `${Number.isNaN(moved) ? 'somewhere unreadable' : `${moved.toFixed(2)}px`} — below the band ` +
+                'nothing stands off the Slab, so there is nothing for a hover to put back',
+            );
+          }
+        }
+        // AND NO PIECE IS HOLDING A DROP, which is a second claim rather than the
+        // same one twice. Down here the Lift is at 0, so a drop MULTIPLIES TO
+        // NOTHING and the drawing above cannot tell a Drop that refused from one
+        // that ran — the assertion would pass with the gate deleted. What the gate
+        // is actually for is the window going back the other way: a piece left
+        // holding a drop is a piece that stays on the map when the Exploded View
+        // comes back, until the reader happens to move the pointer. So the
+        // mechanism is read as well as the drawing.
+        const holding = await page.evaluate(() =>
+          [...document.querySelectorAll('[data-eater-map-card]')]
+            .map((card) => ({
+              part: card.getAttribute('data-eater-map-card'),
+              at: Number(getComputedStyle(card).getPropertyValue('--eater-map-card-drop')),
+            }))
+            .filter((one) => !(one.at < 0.001))
+            .map((one) => `${one.part} at ${one.at}`),
+        );
+        if (holding.length > 0) {
+          failures.push(
+            `${NARROW.width}x${NARROW.height}: ${holding.join(', ')} — a piece took a drop below the band, ` +
+              'where nothing is raised to put back, and a window carried back into the band would find it ' +
+              'lying on the map with the pointer nowhere near it',
+          );
+        }
+      }
+    }
+
+    return { failures, notes };
+  } finally {
+    await context.close();
+  }
+}
+
+/**
  * The Section's own boxes, in the SECTION'S OWN COORDINATES.
  *
  * Relative to `.eater-map`'s top-left rather than to the document's, and that is
@@ -3673,8 +4296,8 @@ export const check = {
   title:
     'PROJECTS stands in the Gallery’s own box with the serif title sized off its ink, the copy at the ' +
     'foot and the Points to the right; the Cards lie on the Slab at its own scale, come off it and go ' +
-    'back, are joined to their numbers by rules that end in a lit dot, are only a picture, and lie flat ' +
-    'and full-bleed below the band',
+    'back, go back one at a time under a reader’s pointer without flickering, are joined to their ' +
+    'numbers by rules that end in a lit dot, are only a picture, and lie flat and full-bleed below the band',
 
   /** @param {{ browser: import('playwright').Browser, origin: string }} ctx */
   async run({ browser, origin }) {
@@ -3683,11 +4306,18 @@ export const check = {
       found.push(...(await atWindow(browser, origin, viewport)));
     }
     found.push(...(await reversesOnTheWayOut(browser, origin)));
+    // ITS OWN NOTES, because two of the three things it can find are facts about
+    // the composition rather than faults in it: a piece that does not travel far
+    // enough to leave the pointer has no flicker to have, and how far a piece
+    // travels is a Token.
+    const drop = await hoveringPutsOnePieceBack(browser, origin);
+    found.push(...drop.failures);
     // THE ONE GROUP THAT REPORTS WHAT IT SAW, because every tolerance in it was
     // chosen off a measurement and a reader of a passing log should be able to tell
     // a comfortable pass from one sitting on a threshold.
     const edge = await theEdgeHasADirection(browser, origin);
     found.push(...edge.failures);
+    edge.notes.push(...drop.notes);
     found.push(...(await nothingWatchesTheTokens(browser, origin)));
     // ITS OWN NOTES, for the same reason the group above reports what it saw: how
     // many slices a resize moved and whether a carried page agreed with a mounted
