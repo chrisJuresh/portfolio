@@ -301,8 +301,42 @@
      than life; 1 is the screenshot. */
   --eater-map-card-scale: 1;
 
+  /* THE APP'S OWN TOP INSET, AND IT IS 12 AND NOT A NUMBER CHOSEN BY EYE (#213).
+     Eater's `.topbar` is `top: max(12px, env(safe-area-inset-top)); left: 12px`,
+     and the Slab is that app captured in a browser at 393x852 where the safe area
+     is 0 — so the bar sits 12 capture-pixels below the top of this very picture.
+     Measured on the running app rather than read off the stylesheet: at 393x852
+     its rect is 12, 12, 369 x 48.
+
+     `0.152` shipped here, which is 59.7 capture-pixels, and it was the one Card
+     whose flat place was not the app's. It read as harmless for as long as nobody
+     could see it: the Lift's near end is not a frame the drawing rests at, so the
+     only thing that ever put a piece back on the map was #213's Drop — and the
+     Drop's whole claim is *this is where the search bar actually sits*, made by
+     landing it somewhere it does not.
+
+     THE X IS THE APP'S TOO, AND IT IS 0.034 RATHER THAN 12/393 FOR A REASON. The
+     Cards were captured at 390 wide and the Slab at 393, so the vendored bar is
+     366 where the app's is 369; left-aligning it on 12 would put 12 down one side
+     and 15 down the other. 13.5 centres the difference, which is what the app's
+     own symmetry looks like. The details sheet's `x` is the same arithmetic.
+
+     AND THE SLIDE BELOW ABSORBS THE MOVE, so the drawing at rest is the drawing
+     the author composed: this Token and `--eater-map-card-search-slide-y` are the
+     flat place and the climb, and only their SUM is what a reader turning onto the
+     Section sees. Correcting one without the other would have been a composition
+     nobody chose, 47.7 capture-pixels up the plane.
+
+     ONE THING DOES MOVE AT REST, AND IT IS THE RIGHT THING. `glass.ts` offsets each
+     surface's blurred copy of the Slab by the Card's RESTING PLACE and never by its
+     drift — that is the parallax, a sheet of glass lifted off a table showing the
+     piece of table it was lying on. So this Token is which piece, and the search
+     Card now carries the map from under the app's own search bar rather than from
+     47.7 pixels below it. Measured at 1440x900, over the 730x610 crop that holds
+     the whole drawing: 25,662 of those pixels change and none by more than 95 of
+     255, which is a heavily blurred picture sliding under glass. */
   --eater-map-card-search-x: 0.034;
-  --eater-map-card-search-y: 0.152;
+  --eater-map-card-search-y: 0.0305;
 
   /* THE RAIL POPUP MOVED DOWN THE SLAB, AND THE SEARCH CARD'S ARRIVAL IS WHY
      (#194). At the search bar's own place the results dropdown now hangs 112
@@ -419,9 +453,19 @@
      it would slide all three the same way by the same amount, which is a
      translation of the drawing rather than a gap in it. Two numbers per Card say
      where that Card goes, which is what the reference actually shows, and none of
-     them is larger than 0.11. */
+     them is larger than 0.11.
+
+     THE SEARCH CARD'S `slide-y` IS POSITIVE, AND THAT IS THE COST OF ITS FLAT
+     PLACE BEING CORRECTED RATHER THAN A CHANGE OF MIND ABOUT THE CLIMB (#213).
+     The pair sums to where the Card stands at rest — `y + slide-y - rise x
+     depth-y` — so moving the flat place 0.1215 up the plane and the slide 0.1215
+     down it leaves every surface's rect on the plane identical to the digit, which
+     is what was wanted: the bar landed in the wrong place when a reader dropped
+     it, and stood in the right one. What the glass CARRIES does move, and the
+     block by `--eater-map-card-search-y` says why that is the point. The details
+     sheet already slides down as it climbs. */
   --eater-map-card-search-slide-x: -0.02;
-  --eater-map-card-search-slide-y: -0.11;
+  --eater-map-card-search-slide-y: 0.0115;
 
   --eater-map-card-lines-slide-x: -0.045;
   --eater-map-card-lines-slide-y: -0.02;

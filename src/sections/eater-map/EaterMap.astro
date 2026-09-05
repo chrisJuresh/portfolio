@@ -1022,6 +1022,42 @@ import './tokens.css';
         )
       )
       scale(var(--eater-map-card-total));
+    /* WHAT COVERS WHAT IS THE RISE, AND SINCE #207 NOTHING SAYS SO BUT THIS.
+       The plane is `flat`, so there is no depth sort left to do it: the browser
+       paints these three in document order, `cards.ts` writes them back to front
+       in the app's own order — the detail sheet, the lines popup, the search bar
+       always on top — and while every Card carried the same playhead that order
+       and the depth order were the same order. THE DROP BROKE THAT TIE (#213).
+       A piece put back on the map is at rise 0 under two pieces still standing off
+       it, and it went on being painted over both — the search bar lying flat with
+       the rail popup's corner disappearing underneath it, which is a drawing of
+       nothing.
+
+       IT IS AN EXACT SORT AND NOT AN APPROXIMATION, which is the one thing worth
+       knowing before touching it. Every Card lies in a plane PARALLEL to the map,
+       so no two of them intersect: under a parallel projection the whole of the
+       Card with the greater rise is in front of the whole of the other one,
+       wherever on the plane either of them has slid to. So one number per Card
+       decides every pair, and it is the number the Card is already placed by.
+
+       x10000 BECAUSE `z-index` IS AN INTEGER and the rise is a fraction of the
+       Slab's width — about 0.3 at the top of the Lift. That is finer than the
+       Drop's own slack (`SLACK` in drop.ts, a thousandth of the travel), so no
+       distinction either playhead can make is rounded away. A tie — every Card at
+       rise 0, which is the collapse below the band and a scriptless reader's flat
+       page — falls back to document order, which is the app's order, which is
+       what those readers should get.
+
+       AND IT COSTS THE TEXT NOTHING, which is the question #207 makes worth
+       asking of any new grouping property here. A `z-index` makes the Card a
+       stacking context; it does not make it a render surface, and it does not
+       make it a 3D one. Measured on the built page at 1440x900 with this
+       declaration as the only difference, over the 730x610 crop that holds the
+       whole drawing: 38 of those 445,300 pixels change and the largest by 17 of
+       255 — one antialiased edge, and nothing resampled. It has to be near enough
+       nothing, since at rest the rise order IS the document order and this only
+       says so. */
+    z-index: calc(var(--eater-map-card-rise) * 10000);
   }
 
   /* ---- THE CARDS ARE DARK, AND IT IS AN OVERRIDE RATHER THAN A FORK ---------

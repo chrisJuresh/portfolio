@@ -2242,6 +2242,15 @@ async function reversesOnTheWayOut(browser, origin) {
  * Cards' box rather than to a Card would move the whole stack and still look like
  * a piece going down.
  *
+ * AND THAT THE PIECE THAT WENT BACK IS PAINTED UNDER THE ONES THAT DID NOT, which
+ * every other assertion in this group passed while it was false. Until a piece
+ * could come down on its own, document order and depth order were the same order —
+ * `cards.ts` writes the three back to front in the app's own stacking and the
+ * three depths run the same way — so a `flat` plane (#207) painting in document
+ * order happened to be right. The Drop broke that tie and shipped broken: the
+ * search bar lying on the map with the rail popup's left half disappearing
+ * underneath it, and nothing about the geometry to say so.
+ *
  * THE FLICKER IS THE FAILURE THIS GROUP EXISTS FOR, and it is the one that could
  * not be found by looking at a still. A Card that lowers moves out from under the
  * cursor; put back the moment the cursor is not on it, it would rise into the
@@ -2518,6 +2527,28 @@ async function hoveringPutsOnePieceBack(browser, origin) {
         return { at, rules };
       });
 
+    /**
+     * What order the Cards are PAINTED in, as one number each.
+     *
+     * READ AS THE PAINT ORDER AND NOT AS THE PICTURE, which is a departure from
+     * everything else in this group and is the honest option rather than the lazy
+     * one. Which surfaces overlap on screen is a function of the placement Tokens
+     * — the author may drag the three pieces anywhere on the Slab — so a hit test
+     * at a point inside two of them would assert nothing at all on some settings,
+     * silently, which is the shape scripts/checks/NOTES.md warns about three
+     * times. The plane is `flat` (#207), so there is no depth sort: this number IS
+     * what covers what, at every setting of every Token.
+     */
+    const painted = () =>
+      page.evaluate(() =>
+        Object.fromEntries(
+          [...document.querySelectorAll('[data-eater-map-card]')].map((card) => [
+            card.getAttribute('data-eater-map-card') ?? '(unnamed)',
+            getComputedStyle(card).zIndex,
+          ]),
+        ),
+      );
+
     const apart = (a, b) => (a && b ? Math.hypot(a.x - b.x, a.y - b.y) : Number.NaN);
 
     /**
@@ -2572,6 +2603,40 @@ async function hoveringPutsOnePieceBack(browser, origin) {
           `${where}: ${what} — the Slab's own anchor moved ${Number.isNaN(slab) ? 'somewhere unreadable' : `${slab.toFixed(2)}px`}, ` +
             'so the hover moved the drawing rather than one piece of it',
         );
+      }
+      // AND THE PIECE THAT WENT BACK IS PAINTED UNDER THE ONES THAT DID NOT.
+      // Until a piece could come down on its own, document order and depth order
+      // were the same order — `cards.ts` writes the three back to front in the
+      // app's own stacking and the three depths run the same way — so a flat plane
+      // painting in document order happened to be right. The Drop is what broke
+      // that tie, and it shipped broken: the search bar lay on the map with the
+      // rail popup's left half disappearing underneath it. Nothing about the
+      // GEOMETRY says so, which is why every assertion above passed.
+      if (lowered) {
+        const order = await painted();
+        // `auto` IS ITS OWN FAILURE AND NOT A COMPARISON THAT LOST. It means the
+        // Cards carry no paint order of their own and document order decides —
+        // which is the app's stacking, and is the state this whole assertion was
+        // written for. Said once rather than once per pair.
+        const none = parts.filter((part) => order[part] === 'auto');
+        if (none.length > 0) {
+          failures.push(
+            `${where}: ${what} — ${none.join(', ')} ${none.length === 1 ? 'carries' : 'carry'} no z-index, so ` +
+              'the Cards are painted in document order. That is the app\'s own stacking, and it stops being ' +
+              'the drawing\'s the moment one piece is back on the map under two that are not',
+          );
+        } else {
+          for (const part of parts.filter((one) => one !== lowered)) {
+            if (!(Number(order[lowered]) < Number(order[part]))) {
+              failures.push(
+                `${where}: ${what} — ${lowered} is back on the map and is painted at ${order[lowered]} ` +
+                  `against ${part}'s ${order[part]}, so a piece lying on the Slab covers one still standing ` +
+                  'off it. What covers what on a flat plane is the paint order, and the rise is the only ' +
+                  'thing that may decide it',
+              );
+            }
+          }
+        }
       }
       // AND EVERY RULE IS STILL ON THE PIECE IT NAMES. A redraw that is not wired
       // to the Drop leaves the lowered piece's rule pointing at the corner the

@@ -950,6 +950,78 @@ A reader whose scripts never arrived loses the asking and no claim:
 `--eater-map-card-drop` rests at 0, which is the finished Exploded View, and the
 four Points still say in words what the four pieces are.
 
+### It broke the tie the paint order was resting on, and what covers what is the rise now
+
+**Until a piece could come down on its own, document order and depth order were
+the same order.** `cards.ts` writes the three back to front in the app's own
+stacking — the detail sheet, the lines popup, the search bar always on top — and
+the three depths run the same way, so a `flat` plane painting in document order
+(#207 took the depth sort away) happened to paint them correctly. Every Card
+carried one playhead and they climbed together.
+
+The Drop gives one Card a playhead of its own, and that is the whole of it: a
+piece put back on the map is at rise 0 under two pieces still standing off it, and
+it went on being painted over both. **Reproduced, and it is not subtle** — dropping
+the search bar swallowed the rail popup's whole left half, and dropping the rail
+popup put it over the detail sheet standing above it. Both read as the drawing
+losing its third dimension for as long as the pointer was there.
+
+`EaterMap.astro` gives `.eater-map__card` a `z-index` derived from
+`--eater-map-card-rise`, which is the number the Card is already placed by, and
+**that is an exact sort rather than a heuristic**: every Card lies in a plane
+PARALLEL to the map, parallel planes do not intersect, and under a parallel
+projection the whole of the Card with the greater rise is in front of the whole of
+the other one — wherever on the plane either of them has slid to. One number per
+Card decides every pair.
+
+Three things about it worth not rediscovering. It is multiplied by **10000**
+because `z-index` is an integer and a rise is a fraction of the Slab's width, about
+0.3 at the top of the Lift; that is finer than `drop.ts`'s own `SLACK`, so no
+distinction either playhead can make is rounded away. A **tie falls back to
+document order**, which is the app's order — which is what the collapse below the
+band and a scriptless reader both get, and is right for both. And it is contained:
+`.eater-map__plane` carries a `transform`, so it is a stacking context whatever its
+`z-index` says, and nothing here can outrank the leader lines' overlay outside it.
+
+**It costs the text nothing, and that is measured rather than assumed**, because
+#207 makes it the question to ask of any new grouping property here. A `z-index`
+makes the Card a stacking context; it does not make it a render surface and it does
+not make it a 3D one. With this declaration as the only difference, over the
+730x610 crop at 1440x900 that holds the whole drawing: 38 of those 445,300 pixels
+change, and the largest by 17 of 255.
+
+### And it found the one Card whose flat place was not the app's
+
+The Drop's claim is *this is where the search bar actually sits*, so the flat place
+each Card is put back to is load-bearing in a way it was not while the Lift's near
+end was a frame nobody ever rested on. `--eater-map-card-search-y` was `0.152`,
+which is 59.7 capture-pixels down the Slab; Eater's `.topbar` is
+`top: max(12px, env(safe-area-inset-top)); left: 12px`, and the Slab is that app
+captured in a browser at 393x852 where the safe area is 0. Measured on the running
+app: `12, 12, 369 x 48`. The other two were right — the detail sheet is
+bottom-aligned on the 852-tall capture to the pixel — so it was one Token and not a
+convention.
+
+**THE PAIR IS THE FLAT PLACE AND THE CLIMB, AND ONLY THEIR SUM IS ON SCREEN AT
+REST.** A Card stands at `y + slide-y - rise x depth-y`, so correcting `y` alone
+would have moved the composition 47.7 capture-pixels up the plane — a drawing
+nobody chose, to fix a landing nobody could see until #213. `slide-y` took the same
+0.1215 the other way and the drawing at rest is unchanged: every surface's rect on
+the plane is identical to the digit. That is what the two Tokens per Card are FOR
+(#189), and this is the first change that used them as a pair.
+
+**The `x` is left at `0.034` on purpose**, and it is not 12/393. The Cards were
+captured at 390 wide and the Slab at 393, so the vendored bar is 366 where the
+app's is 369; left-aligning on 12 would put 12 down one side and 15 down the other,
+and 13.5 centres the difference. The detail sheet's `x` is the same arithmetic.
+
+**One thing does move at rest, and it is the right thing.** `glass.ts` offsets each
+surface's blurred copy of the Slab by the Card's RESTING place and never by its
+drift — the parallax. So this Token is *which piece of map the glass carries*, and
+the search Card now carries the piece from under the app's own search bar. 25,662
+of the same 445,300 pixels change and none by more than 95 of 255, which is what a
+heavily blurred picture sliding under glass looks like.
+
 ## The leader lines, and why a stylesheet cannot draw one
 
 Four thin rules, each running from one numbered point to the part of the Exploded
