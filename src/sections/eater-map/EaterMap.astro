@@ -42,6 +42,11 @@ import './cards-shape.css';
 // is what this Section says about a surface's SHAPE, this is where the drawing's
 // own annotation attaches to it. cards-anchor.css says the rest.
 import './cards-anchor.css';
+// And where ONE COMPONENT of a Card travels to when the reader hovers the Point
+// that names it (#215), which is unscoped for the same reason again and is a
+// third claim: not a surface's shape, not where a rule attaches to it, but how
+// far it goes back down. cards-drop.css says the rest.
+import './cards-drop.css';
 import './tokens.css';
 // variants.css is deliberately NOT imported: an unselected Variant has to cost
 // the shipped page nothing, so the sheet is not part of the build at all and the
@@ -225,6 +230,7 @@ import './tokens.css';
                   {card.hung && (
                     <div
                       class="eater-map__hang"
+                      data-eater-map-part={card.hungFor}
                       style={`--mobile-search-visible-results: ${card.rows}`}
                       set:html={card.hung}
                     />
@@ -1156,6 +1162,27 @@ import './tokens.css';
     --eater-map-card-held: calc(
       var(--eater-map-card-lift) * (1 - var(--eater-map-card-drop))
     );
+    /* AND HOW FAR THE LOWEST COMPONENT ON THIS CARD HAS GONE (#215), which is a
+       claim about the PAINT ORDER and about nothing else. A Point lowers the
+       component it names rather than the Card that component is drawn on, so the
+       search Card can have one pill lying on the map while the other is still
+       standing off it — and the Card's own `held` above, which is what places it,
+       has not moved at all.
+
+       WHAT COVERS WHAT STILL HAS TO FOLLOW THE PIECE THAT WENT BACK. The plane is
+       `flat`, so the z-index at the foot of this block is the only thing deciding
+       it, and a Card is a stacking context: a lowered pill cannot be sorted
+       against another Card's on its own. So the CARD takes its lowest component's
+       height, and the pill still standing beside it is sorted as though it had
+       come down too. That is the lesser of the two errors and it is the one the
+       author asked for — the two pills are 8px apart in one topbar and are always
+       read together, where a piece lying on the Slab covering one standing off it
+       is the failure #213 shipped and the `eater-map` Check now asserts against.
+
+       `drop.ts` writes it, as the deepest drop among this Card's parts. It rests
+       at 0 like the drop above, so a reader whose scripts never arrived is given
+       the finished Exploded View and the app's own stacking. */
+    --eater-map-card-sunk: 0;
     --eater-map-card-rise: calc(
       var(--eater-map-card-held) * var(--eater-map-rise) * var(--eater-map-card-depth)
     );
@@ -1187,6 +1214,24 @@ import './tokens.css';
     );
     --eater-map-card-drift-y: calc(
       var(--eater-map-card-held) * var(--eater-map-card-slide-y, 0)
+    );
+    /* WHERE ONE UNIT OF `held` TAKES THIS CARD, per axis, as a share of the
+       Slab's width — which is the Drop of a single component read backwards
+       (#215) and is the reason the transform below is worth reading as one
+       vector. Every term of it is linear in `--eater-map-card-held`: the rise and
+       both slides. So the Card stands at `held` times this pair, a component at a
+       drop of `d` belongs at `held * (1 - d)` times it, and the difference — which
+       is what `cards-drop.css` translates that component by — is `-held * d` times
+       it and nothing else. Declared HERE rather than beside that rule because it
+       is the CARD's number: the two pills of one topbar share it, and a Token
+       moved under either of them moves both. */
+    --eater-map-part-reach-x: calc(
+      var(--eater-map-card-slide-x, 0) - var(--eater-map-rise) *
+        var(--eater-map-card-depth) * var(--eater-map-depth-x)
+    );
+    --eater-map-part-reach-y: calc(
+      var(--eater-map-card-slide-y, 0) - var(--eater-map-rise) *
+        var(--eater-map-card-depth) * var(--eater-map-depth-y)
     );
     position: absolute;
     left: calc(var(--eater-map-card-x) * 100cqw);
@@ -1241,9 +1286,22 @@ import './tokens.css';
        whole drawing: 38 of those 445,300 pixels change and the largest by 17 of
        255 — one antialiased edge, and nothing resampled. It has to be near enough
        nothing, since at rest the rise order IS the document order and this only
-       says so. */
-    z-index: calc(var(--eater-map-card-rise) * 10000);
+       says so.
+
+       AND IT IS THE LOWEST COMPONENT'S RISE AND NOT THE CARD'S SINCE #215, which
+       is `--eater-map-card-sunk` above and is the whole of what that name is for.
+       It cannot be `--eater-map-card-rise` itself: the rise is what PLACES the
+       Card, and a Point that lowers one pill of a two-pill topbar must not move
+       the other one. So the placement keeps the Card's own `held` and the paint
+       order takes the deeper of the two drops. They are the same number on every
+       Card that carries one component, which is two of the three. */
+    z-index: calc(
+      var(--eater-map-card-lift) *
+        (1 - max(var(--eater-map-card-drop), var(--eater-map-card-sunk))) *
+        var(--eater-map-rise) * var(--eater-map-card-depth) * 10000
+    );
   }
+
 
   /* ---- THE CARDS ARE DARK, AND IT IS AN OVERRIDE RATHER THAN A FORK ---------
      A light interface floating over a dark map is what #187 complained about, and

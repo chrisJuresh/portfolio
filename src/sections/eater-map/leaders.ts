@@ -109,23 +109,46 @@ export const PARTS = ['search', 'offline', 'lines', 'details'] as const;
 export type Part = (typeof PARTS)[number];
 
 /**
+ * The search bar's results dropdown, which is a SURFACE of the search part and
+ * not a part of its own (#194).
+ *
+ * Here rather than in `cards.ts` because `ANCHORED_AT` below is where a part's
+ * surfaces are declared, and `cards.ts` needs the same string for a second and
+ * unrelated claim — it is the one vendored element that SCROLLS and therefore has
+ * to be refused the pointer. One name, two claims, and neither is free to drift
+ * from the other.
+ */
+export const DROPDOWN = '.results-panel';
+
+/**
  * Where each part IS: the Card it is drawn on, and the surface inside that Card
  * it actually is.
  *
  * ONE PLACE, BECAUSE THREE THINGS ASK IT. A leader line ends on this surface, the
- * Drop lowers the Card underneath it when the reader hovers the point, and
- * `glass.ts` gives it a copy of the map and an edge — and a correspondence that
- * disagrees with itself between those three is a rule ending on one component
- * while the number beside it lowers another. `cards.ts` builds a Card's glass
- * surfaces out of this rather than restating them.
+ * Drop lowers exactly this part when the reader hovers the point, and `glass.ts`
+ * gives it a copy of the map and an edge — and a correspondence that disagrees
+ * with itself between those three is a rule ending on one component while the
+ * number beside it lowers another. `cards.ts` builds a Card's glass surfaces out
+ * of this rather than restating them.
  *
  * THE SELECTOR IS THE APP'S OWN CLASS and is the one thing here that answers to
  * another repository. A re-vendoring that renames a surface fails loudly:
  * `glass.ts` says so on the console and the `console` Check makes that a build
  * failure, and the leader line to it finds no anchor and is not drawn.
+ *
+ * AND A PART MAY BE MADE OF MORE THAN ONE SURFACE, which is `hangs` and is what
+ * the results dropdown is. It is a second surface of the search bar rather than a
+ * fifth part — there are four numbered points and the dropdown is what `01.` is
+ * already about — so it carries no anchor of its own, is drawn no rule of its
+ * own, and goes back on the map WITH the bar it hangs from. Written here rather
+ * than beside the Card, so "which surfaces is this part" has one answer for the
+ * glass, the edge and the Drop alike.
  */
-export const ANCHORED_AT: Record<Part, { readonly card: CardName; readonly surface: string }> = {
-  search: { card: 'search', surface: '.search' },
+export const ANCHORED_AT: Record<
+  Part,
+  { readonly card: CardName; readonly surface: string; readonly hangs?: readonly string[] }
+> = {
+  search: { card: 'search', surface: '.search', hangs: [DROPDOWN] },
   offline: { card: 'search', surface: '.offline-button' },
   lines: { card: 'lines', surface: '.lines-popup' },
   details: { card: 'details', surface: '.details-panel' },
@@ -135,6 +158,18 @@ export const ANCHORED_AT: Record<Part, { readonly card: CardName; readonly surfa
  *  `data-eater-map-point` reaches `drop.ts` as a plain string. */
 export function cardOf(part: string): CardName | null {
   return ANCHORED_AT[part as Part]?.card ?? null;
+}
+
+/** Which part a glass surface belongs to, for the Drop: `glass.ts` builds a
+ *  backdrop and an edge per SURFACE, and both have to travel with the part that
+ *  surface is. `null` for a surface no number names, which is nothing today. */
+export function partOfSurface(selector: string): Part | null {
+  return (
+    PARTS.find(
+      (part) =>
+        ANCHORED_AT[part].surface === selector || ANCHORED_AT[part].hangs?.includes(selector),
+    ) ?? null
+  );
 }
 
 /** One rule, and the two elements whose screen positions are its two ends. */

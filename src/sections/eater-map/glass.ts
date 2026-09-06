@@ -1,5 +1,6 @@
 import { CARDS } from './cards';
 import { clearEdge, type Corners, extrude, fitRadii, SOLID } from './edge';
+import { partOfSurface } from './leaders';
 import { SLAB } from './slab';
 
 /**
@@ -135,6 +136,17 @@ const HUNG = 'eater-map__hang';
 interface Surface {
   /** `<card> <selector>`, written on the backdrop and on every slice of its edge */
   readonly name: string;
+  /**
+   * Which part of the Exploded View this surface is, or `null` for one no number
+   * names.
+   *
+   * THE DROP IS WHAT ASKS, and it asks of the SURFACE rather than of the Card
+   * (#215). A backdrop and an edge stack are built from a surface's measurements
+   * and stand as absolutely-placed boxes in the Card's own coordinates — they are
+   * not children of the element they are drawn for — so a part put back on the map
+   * has to carry all three, and this is what says which three.
+   */
+  readonly part: string | null;
   readonly x: number;
   /**
    * Where its top edge is inside the Card, as a BARE CSS expression — the
@@ -206,6 +218,7 @@ function measure(ruler: HTMLElement, card: HTMLElement, selectors: readonly stri
     const y = box.top - origin.top;
     found.push({
       name: `${name} ${selector}`,
+      part: partOfSurface(selector),
       x: box.left - origin.left,
       top: element.closest(`.${HUNG}`) ? `${y}px + ${HANG}` : `${y}px`,
       w: box.width,
@@ -231,6 +244,7 @@ function backdrop(surface: Surface): HTMLElement {
   const box = document.createElement('div');
   box.className = GLASS;
   box.dataset.eaterMapGlass = surface.name;
+  if (surface.part) box.dataset.eaterMapPart = surface.part;
   box.setAttribute('aria-hidden', 'true');
   box.style.cssText = [
     'position:absolute',
@@ -386,6 +400,26 @@ export default function mountGlass(root: HTMLElement): void {
           alpha: 'var(--eater-map-card-edge-alpha)',
           surface: surface.name,
         });
+        // AND THE EDGE TRAVELS WITH THE PART, which is written here rather than
+        // asked of `edge.ts` (#215). A solid is a solid — that module extrudes the
+        // Slab as well, and the Slab is no part of anything — so what it is given
+        // is a surface's name, and which part that surface belongs to is a
+        // question only this file has to answer.
+        //
+        // `:scope >` IS WHAT PICKS THE STACK OUT rather than its class, and it is
+        // right either way the stack is built: `Solid.alpha` puts the slices in a
+        // box of their own, which is this Card's direct child, and without an alpha
+        // the slices themselves are. Tagged as a group the group moves once;
+        // tagged one by one each slice moves by the same amount, which is the same
+        // drawing. What must never happen is BOTH, and neither shape can produce
+        // both.
+        if (surface.part) {
+          for (const piece of card.querySelectorAll<HTMLElement>(
+            `:scope > [data-eater-map-edge="${CSS.escape(surface.name)}"]`,
+          )) {
+            piece.dataset.eaterMapPart = surface.part;
+          }
+        }
       }
     }
   } finally {

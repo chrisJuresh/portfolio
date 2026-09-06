@@ -1,0 +1,69 @@
+/*
+ * ONE COMPONENT PUT BACK ON THE MAP, AND NOT THE CARD IT IS DRAWN ON (#215).
+ *
+ * A Point names a COMPONENT of the app — the search bar, the Offline button —
+ * and two of the four are pills in one topbar, so lowering the CARD when the
+ * reader hovers `01.` put the Offline button back as well and said that `01.`
+ * named both of them. This is the rule that lets one of them travel on its own.
+ *
+ * HOVERING THE DRAWING IS STILL THE WHOLE CARD, and that is a decision rather
+ * than an omission: what the pointer is on out there is the topbar, which is one
+ * piece of the drawing, and taking half of it out from under the cursor would be
+ * a different claim from the one the reader made. `--eater-map-card-drop` is
+ * unchanged and this is a second, narrower playhead beside it — composed by
+ * multiplication, so a pointer moving from the Card to a Point crosses between
+ * them continuously instead of one of the two winning.
+ *
+ * A PLAIN, UNSCOPED STYLESHEET, for the reason `cards-anchor.css` and
+ * `cards-shape.css` are: Astro scopes a component's `<style>` by stamping an
+ * attribute on the elements ITS OWN TEMPLATE renders, and three of the four
+ * elements this reaches arrive through `set:html` or are built by `glass.ts`.
+ * `:global()` is the escape hatch and `scripts/check-source.mjs` fails the build
+ * on it.
+ *
+ * IT IS THE CARD'S OWN TRAVEL RUN BACKWARDS, IN THE CARD'S OWN UNITS, AND
+ * NOTHING NEW. `--eater-map-part-reach-x` and `-y` on `.eater-map__card` are
+ * where the Card goes per unit of `--eater-map-card-held`; a component at a drop
+ * of `d` belongs where `held * (1 - d)` puts it, so what it owes the Card is
+ * `-held * d * reach`. `100cqw` is the plane's unit and everything inside a Card
+ * is scaled by `--eater-map-card-total`, which is the divide. Written as its own
+ * set of distances instead, a lowered pill would land where a second set of
+ * numbers said rather than exactly where the Lift's near end puts it, and the
+ * two would drift the first time a placement Token moved.
+ *
+ * THREE ELEMENTS PER COMPONENT, AND THEY ARE NOT NESTED. A surface's blurred
+ * copy of the map and its edge stack are absolutely-placed boxes in the Card's
+ * own coordinates rather than children of the surface it is drawn for
+ * (`glass.ts`), so all three carry `data-eater-map-part` and all three are moved
+ * by this one rule. A component that hangs a second surface off itself — the
+ * search bar's results dropdown — carries it on the box that surface arrives in,
+ * so the dropdown goes back on the map with the bar it is typed into.
+ *
+ * `translate` AND NOT `transform`, because two of those elements have a
+ * `transform` of their own that this must not be a second opinion about: the
+ * collector writes `transform: none !important` on every vendored root, and the
+ * edge's slices are placed by one. An independent transform property composes
+ * with both rather than contesting either.
+ *
+ * AND IT IS INERT UNDER THE RULER. `glass.ts` measures a CLONE of the face in a
+ * host of its own, where `--eater-map-card-held` does not inherit — so
+ * `--eater-map-part-fall` is invalid there, `translate` falls back to `none`,
+ * and a surface measured while its component is half way down is measured
+ * exactly where it is drawn at rest.
+ *
+ * 0 IS WHERE IT RESTS, which is the finished Exploded View and the same promise
+ * `--eater-map-card-drop` makes: a reader whose scripts never arrived loses the
+ * asking and no claim.
+ */
+[data-eater-map-part] {
+  --eater-map-part-drop: 0;
+  --eater-map-part-fall: calc(var(--eater-map-card-held) * var(--eater-map-part-drop));
+  translate: calc(
+      -1 * var(--eater-map-part-fall) * var(--eater-map-part-reach-x) * 100cqw /
+        var(--eater-map-card-total)
+    )
+    calc(
+      -1 * var(--eater-map-part-fall) * var(--eater-map-part-reach-y) * 100cqw /
+        var(--eater-map-card-total)
+    );
+}
