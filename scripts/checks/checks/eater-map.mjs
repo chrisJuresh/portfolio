@@ -2,7 +2,7 @@ import { luminance } from '../lib/colour.mjs';
 import { DESK, open, settle } from '../lib/page.mjs';
 
 /**
- * The Eater Map Section's Exploded View — the thirteen things about it that break
+ * The Eater Map Section's Exploded View — the fifteen things about it that break
  * without anybody noticing.
  *
  * None is aesthetic. Every Token in `src/sections/eater-map/tokens.css` may be set
@@ -104,9 +104,10 @@ import { DESK, open, settle } from '../lib/page.mjs';
  *
  * TEN. THE FOURTH SURFACE, AND THE TWO THINGS ITS ARRIVAL COSTS (#194). The search
  * Card draws THREE glass surfaces now — its two pills and the results dropdown hung
- * off them — and the dropdown is a surface of the search PART rather than a fifth
- * part, so the drawing is four parts across five surfaces and the leader lines are
- * unchanged.
+ * off them — and the dropdown is a surface of the search PART rather than a part of
+ * its own, so the drawing is four parts across five surfaces. Its two pills ARE two
+ * of those four: a part is a component of the app rather than a Card, and the
+ * Offline button is what the point about the Tube names.
  *
  * NOTHING IS DRAWN ON TOP OF ANYTHING, asked ON THE PLANE with the projection
  * lifted. That is the only form of the question with an answer: two rotated quads
@@ -167,12 +168,13 @@ import { DESK, open, settle } from '../lib/page.mjs';
  * and how far its shoulder runs is another; what is asserted is that the end of
  * the rule is where the anchor is and that the anchor is somewhere on the part.
  *
- * AND WHETHER AN ANCHOR IS INSIDE THE CAMERA IS ASKED OF THE MARKUP NOW. It was
- * geometry — an anchor outside the projection stands still while its part turns, so
- * both ends of the Lift found it in one place — and the SLAB's anchor stands still
- * legitimately since #189, because the Slab does. Containment is what that
- * assertion was asking all along; the movement half is kept for the three Cards,
- * which are what the Lift carries.
+ * AND WHETHER AN ANCHOR IS INSIDE THE CAMERA IS ASKED OF THE MARKUP AS WELL AS OF
+ * THE GEOMETRY. Containment catches an anchor that was never in the projection; the
+ * movement catches one that is in it and is not riding the depth — a `position:
+ * fixed` in the vendored markup would do that, and containment would not notice.
+ * Every part is a component drawn on a Card, so all four move; while the Slab
+ * carried a number, its own anchor stood still legitimately (#189, because the Slab
+ * does) and had to be excused from the second half.
  *
  * SIX. BELOW THE BAND THE DRAWING HAS COLLAPSED, AND EVERY READER GETS THE SAME
  * ONE. An Exploded View is fitted to a wide window; a column has no width to
@@ -280,6 +282,22 @@ const FOCUSABLE = 'a[href], button, input, select, textarea, [tabindex], [conten
  *  pixels out at the first degree of tilt. */
 const ATTACHED = 1;
 
+/** How far a leader line's foot may sit off the centreline of the row rule it
+ *  continues, in px. A twentieth of what `ATTACHED` allows, and deliberately: the
+ *  two are ONE line, and the failure this names is HALF a rule-weight — which
+ *  `ATTACHED` swallows whole and which shipped for exactly that reason. The rule
+ *  was drawn to the hook's top EDGE while the row's border is centred half a
+ *  weight above it, so the line jogged by one device pixel where it left the row.
+ *  Both numbers come out of one layout and are rounded to two places on the way
+ *  here, so this is that rounding and a hair.
+ *
+ *  Named rather than folded into the two 0.5s this file already has — `COLLINEAR`
+ *  for the grid's own lines and `CONTINUOUS` for a gradient's largest step —
+ *  because it is a tighter claim than either and about a different thing, and
+ *  three constants that agree by coincidence is what `--eater-map-rule-weight`
+ *  exists to argue against. */
+const ONE_LINE = 0.05;
+
 /** How far outside its part's own box an anchor may sit, in px. A point inside
  *  the unit square of a rotated Card is inside that Card's bounding box by
  *  convexity, whatever the two placement Tokens are set to — so this is rounding
@@ -289,6 +307,25 @@ const ON_THE_PART = 1;
 /** The moment between the two ends, where a rule drawn once and never again is
  *  wrong and a still of either end would not say so. */
 const HALF_WAY = 0.5;
+
+/** How far a piece the reader hovered may sit from where the Lift's NEAR END puts
+ *  it, in px (#213). The two are the same place by arithmetic — the Drop takes
+ *  lift away from one Card and nothing else — so this is rounding across two
+ *  layouts of the same drawing, and it is nowhere near the distance a piece
+ *  travels. */
+const BACK_ON_THE_MAP = 1;
+
+/** How far a piece nobody hovered, and the Slab, may move while another piece
+ *  goes back, in px. Rounding again: the answer is that they do not. */
+const UNTOUCHED = 0.5;
+
+/** How long a piece that has lowered away from a still pointer is watched, in ms,
+ *  and how often it is read. A flicker is a value that comes BACK — the piece
+ *  rises into the cursor, is hovered again and lowers — so one reading cannot tell
+ *  it from a piece at rest, and the window has to outlast a round trip of the Drop
+ *  rather than a frame. */
+const WATCHED = 600;
+const SAMPLE = 50;
 
 /** How far the Slab's projected box may move between the two ends of the Lift, in
  *  px. Rounding and nothing else: it is one element under one constant transform
@@ -559,6 +596,14 @@ const RATIO = 0.02;
  *  rounding. */
 const FOOT = 1;
 
+/** How far a grid line may sit from the edge it IS, in px. Half a pixel: the
+ *  three verticals are grid lines of the same grid their blocks are placed in
+ *  and the four horizontals share a centreline with a border, so both are
+ *  equalities and this is the rounding a fractional layout leaves. Anything
+ *  looser and a restated twelve-column grid — the failure the subgrid exists to
+ *  make impossible — walks through at the window it was tuned at. */
+const COLLINEAR = 0.5;
+
 async function atWindow(browser, origin, viewport) {
   const { context, page } = await open(browser, origin, { viewport });
   try {
@@ -598,20 +643,26 @@ async function atWindow(browser, origin, viewport) {
           };
         });
 
-      // WHICH ELEMENT EACH POINT NAMES. Three of the four are Cards and the
-      // fourth is the picture itself, and knowing that here is the point: it is
-      // the claim being checked rather than something the drawing hands over.
+      // WHICH ELEMENT EACH POINT NAMES, WRITTEN OUT HERE. A part is a COMPONENT
+      // of the app rather than a Card — the search Card's topbar carries two of
+      // them — and knowing which is which is the point: it is the claim being
+      // checked rather than something the drawing hands over. Asked through the
+      // Card so `.search` cannot resolve to something else on the page.
+      const NAMES = {
+        search: '[data-eater-map-card="search"] .search',
+        offline: '[data-eater-map-card="search"] .offline-button',
+        lines: '[data-eater-map-card="lines"] .lines-popup',
+        details: '[data-eater-map-card="details"] .details-panel',
+      };
       const partNamed = (part) =>
-        part === 'slab'
-          ? document.querySelector('.eater-map__plane')
-          : document.querySelector(`[data-eater-map-card="${part}"]`);
+        Object.hasOwn(NAMES, part) ? document.querySelector(NAMES[part]) : null;
 
       // A COLOUR, RASTERISED RATHER THAN COMPARED AS A SPELLING, and read for its
       // ALPHA rather than for its channels: what is asserted about a dot is that
       // it PAINTS, and a `fill` that computes to a fully transparent colour is a
       // dot that is drawn and invisible. `ground` reads the page's ground the same
       // way and says why a spelling is not a colour.
-      const paint = (() => {
+      const rasterise = (() => {
         const canvas = document.createElement('canvas');
         canvas.width = canvas.height = 1;
         const ink = canvas.getContext('2d');
@@ -620,9 +671,15 @@ async function atWindow(browser, origin, viewport) {
           ink.clearRect(0, 0, 1, 1);
           ink.fillStyle = colour;
           ink.fillRect(0, 0, 1, 1);
-          return ink.getImageData(0, 0, 1, 1).data[3];
+          return [...ink.getImageData(0, 0, 1, 1).data];
         };
       })();
+      const paint = (colour) => rasterise(colour)?.[3] ?? null;
+      /** The same colour written two ways — `oklab(…)` here and a `color-mix`
+       *  there — is one colour, and the only place the two are comparable is
+       *  after they have been rasterised. Answers a string so the comparison is
+       *  an equality rather than four of them. */
+      const asPainted = (colour) => rasterise(colour)?.join(',') ?? null;
 
       /** One of the two dots on a rule: where it is, how big, and whether it
        *  paints. `r` is read computed, because the radius is a Token spent by the
@@ -638,6 +695,13 @@ async function atWindow(browser, origin, viewport) {
           y: has ? round(box.top + box.height / 2 - frame.top) : null,
           r: Number.parseFloat(style.r),
           alpha: paint(style.fill),
+          // The glow on the lit dot, and it is captured because a `drop-shadow`
+          // built out of Tokens is INVALID AT COMPUTED-VALUE TIME the moment one
+          // of them is misspelled or dragged away — and an invalid `filter`
+          // computes to `none` silently, leaving a dot that is drawn, on the
+          // right vertex, at the right radius, in the right colour, and unlit.
+          // Every other assertion here would pass.
+          glow: style.filter,
         };
       };
 
@@ -663,13 +727,39 @@ async function atWindow(browser, origin, viewport) {
           // between the anchor and the Card's own axis-aligned bounding box.
           const at = anchor?.getBoundingClientRect();
           const box = on?.getBoundingClientRect();
+          const shoulder = hook?.getBoundingClientRect();
+          // THE ROW'S OWN RULE, read off the ROW and not off the hook — which is
+          // what stops the two assertions below being one assertion twice. The
+          // hook is placed against this border by the stylesheet, so measuring
+          // the leader against the hook only says the script read the box it was
+          // given; measuring it against the border says the two lines are the
+          // same line. A border is painted inside the border box, so its
+          // centreline is that box's top plus half its width.
+          const row = hook?.closest('li');
+          const rowStyle = row ? getComputedStyle(row) : null;
+          const rowBox = row?.getBoundingClientRect();
           return {
             part,
             drawn,
             tip,
             knee,
             anchor: at ? { x: round(at.left - frame.left), y: round(at.top - frame.top) } : null,
-            hookY: hook ? round(hook.getBoundingClientRect().top - frame.top) : null,
+            // THE HOOK'S CENTRELINE, because the hook is the row rule's own box
+            // and the rule the reader follows is that line CONTINUED. Its top
+            // edge would be half a rule-weight out, and `ATTACHED` is a pixel —
+            // so a leader drawn to the edge instead of the centre would pass this
+            // while visibly jogging where it leaves the row, which is what it did.
+            hookY: shoulder ? round(shoulder.top + shoulder.height / 2 - frame.top) : null,
+            stroke: asPainted(getComputedStyle(line).stroke),
+            row:
+              rowBox && rowStyle
+                ? {
+                    centre: round(
+                      rowBox.top + Number.parseFloat(rowStyle.borderTopWidth) / 2 - frame.top,
+                    ),
+                    colour: asPainted(rowStyle.borderTopColor),
+                  }
+                : null,
             named: Boolean(on),
             sits:
               at && box
@@ -850,7 +940,13 @@ async function atWindow(browser, origin, viewport) {
            * edge square is the failure #195 names — it looks almost right.
            */
           const outline = {};
-          for (const one of card.querySelectorAll(':scope > .eater-map__slice')) {
+          // A CARD'S SLICES ARE A GRANDCHILD AND NOT A CHILD, because a Card's rim
+          // is glass: `edge.ts` puts each stack in a box of its own so that the
+          // whole of it composites at one alpha instead of once per slice. Asked
+          // as `:scope >` this read finds nothing, every outline comes back
+          // undefined, and the two assertions below pass on a Card with no edge at
+          // all.
+          for (const one of card.querySelectorAll('.eater-map__slice')) {
             const of = one.getAttribute('data-eater-map-edge');
             if (of === null) continue;
             const r = corners(getComputedStyle(one));
@@ -923,8 +1019,30 @@ async function atWindow(browser, origin, viewport) {
             // because the surviving surface looks perfect.
             edged: [
               ...new Set(
-                [...card.querySelectorAll(':scope > .eater-map__slice')].map((one) =>
+                [...card.querySelectorAll('.eater-map__slice')].map((one) =>
                   one.getAttribute('data-eater-map-edge'),
+                ),
+              ),
+            ],
+            // WHAT THE RIM IS DRAWN AT, per stack, and whether the paint carries a
+            // second opinion about it. A Card's edge is glass and the transparency
+            // belongs to the STACK: an alpha in the colour as well would be
+            // composited once per slice on top of it, which draws a rim fading
+            // from solid at the face to gone at the silhouette in as many steps as
+            // there are slices. The Token is the author's to drag; the invariant
+            // is that there is one of them.
+            stacked: [...card.querySelectorAll('.eater-map__stack')].map((one) => ({
+              of: one.getAttribute('data-eater-map-edge'),
+              alpha: Number.parseFloat(getComputedStyle(one).opacity),
+              slices: one.querySelectorAll('.eater-map__slice').length,
+            })),
+            // The alpha the PAINT carries, which has to be none of it. `color` is
+            // where `edge.ts` puts the Token and every stop of every gradient mixes
+            // from it, so one reading answers for the whole stack.
+            painted: [
+              ...new Set(
+                [...card.querySelectorAll('.eater-map__slice')].map(
+                  (one) => colour(getComputedStyle(one).color)?.alpha ?? null,
                 ),
               ),
             ],
@@ -1734,6 +1852,46 @@ async function atWindow(browser, origin, viewport) {
           );
         }
       }
+      // ---- and that edge is ONE MATERIAL AT ONE ALPHA -------------------------
+      // A Card's rim is glass, which is a pane seen end on, and the transparency
+      // belongs to the STACK: `edge.ts` puts every slice into a box of its own and
+      // gives that box the `opacity`, so the two dozen filled boxes under a pixel
+      // are rendered once and composited once. An alpha in the PAINT is composited
+      // once per slice instead — `1 - (1 - a)^n`, with `n` falling from most of the
+      // stack where the rim meets the face to one at the silhouette — so the rim
+      // fades from nearly solid to nearly gone across its own width, in as many
+      // steps as there are slices. That is a smear with a direction of its own laid
+      // over the direction the light gave the edge, and at four pixels wide it
+      // reads as a slightly wrong rim rather than as a broken one.
+      //
+      // NEITHER HALF ASSERTS A NUMBER. How see-through the rim is is the author's,
+      // through `--eater-map-card-edge-alpha`, and a rim dragged back to 1 passes
+      // both of these. What they assert is that there is ONE place that number
+      // lives: a stack per surface to carry it, and no second opinion in the
+      // colour every gradient stop is mixed from.
+      for (const surface of card.surfaces) {
+        const stack = card.stacked.find((one) => one.of === surface.name);
+        if (!stack) {
+          failures.push(
+            `${where}: the ${surface.name}'s edge is not in a stack of its own — the Cards' rim is ` +
+              'glass, and its alpha belongs to a box holding the whole stack. Loose slices composite ' +
+              "one film each and the rim fades across its own width instead of the map showing through it",
+          );
+        } else if (!(stack.slices > 0)) {
+          failures.push(
+            `${where}: the ${surface.name}'s stack holds no slices — the box that carries the rim's ` +
+              'alpha is there and empty, which draws no edge at all',
+          );
+        }
+      }
+      const painted = card.painted.filter((one) => one !== 1);
+      if (painted.length > 0) {
+        failures.push(
+          `${where}: a slice is painted from a colour at alpha ${painted.join(', ')} — the rim's ` +
+            'transparency is the stack\'s, and a second one in --eater-map-card-edge is composited ' +
+            'once per slice on top of it. Move it to --eater-map-card-edge-alpha',
+        );
+      }
     }
 
     // ---- and no surface is drawn on top of another ---------------------------
@@ -1976,6 +2134,40 @@ async function atWindow(browser, origin, viewport) {
               `own row is at ${rule.hookY} — the rule is not attached to the number it belongs to`,
           );
         }
+
+        // ---- AND IT IS THE ROW'S OWN RULE CONTINUED, NOT A SECOND LINE -------
+        // Two claims, and each of them shipped broken once. ONE_LINE: the row's
+        // accent rule is a border, painted inside its box, and the leader is a
+        // stroke, centred on its path — so a leader drawn to the row's top edge
+        // sits half a rule-weight below the line it continues, which is a whole
+        // device pixel of step at DPR 1 exactly where the reader's eye is. And
+        // ONE COLOUR: the leader used to be `--ink` at a veil of its own, so a
+        // line that left the row warm turned white a shoulder's width later.
+        // Rasterised on both sides, because `oklab(…)` and a `color-mix` are the
+        // same colour written two different ways and only the pixels are
+        // comparable.
+        if (rule.row === null) {
+          failures.push(
+            `${where}, ${when}: the ${rule.part} rule's point has no row, so nothing about whether it ` +
+              'continues that row\'s own rule was checked',
+          );
+        } else {
+          const step = Math.abs(footY - rule.row.centre);
+          if (!Number.isFinite(step) || step > ONE_LINE) {
+            failures.push(
+              `${where}, ${when}: the ${rule.part} rule leaves at y ${footY} and the row rule it continues ` +
+                `is centred on ${rule.row.centre} — ${Number.isFinite(step) ? `${step.toFixed(2)}px` : 'no distance'} ` +
+                'apart. One line that steps where it changes colour is two lines',
+            );
+          }
+          if (rule.stroke === null || rule.stroke !== rule.row.colour) {
+            failures.push(
+              `${where}, ${when}: the ${rule.part} rule is stroked ${rule.stroke ?? 'nothing'} and the row ` +
+                `rule it continues is painted ${rule.row.colour} — the reader follows one line from the ` +
+                'number to the part, and it does not change colour halfway along',
+            );
+          }
+        }
         if (rule.sits === false) {
           failures.push(
             `${where}, ${when}: the ${rule.part} rule's anchor is not on the part it names — it is drawn ` +
@@ -2035,6 +2227,21 @@ async function atWindow(browser, origin, viewport) {
             );
           }
         }
+
+        // AND THE LIT ONE IS LIT. The glow is what makes the arrival read at a
+        // hairline's weight, and it is built out of three Tokens inside a
+        // `drop-shadow` — so one of them renamed or dragged to nothing makes the
+        // whole `filter` invalid at computed-value time, which computes to `none`
+        // and fails NOTHING above. `none` is the value to look for and not a
+        // radius, because how bright the light is is a matter for the eye and a
+        // Check may not have an opinion about it (scripts/checks/NOTES.md).
+        if (rule.tip && rule.tip.drawn && rule.tip.glow === 'none') {
+          failures.push(
+            `${where}, ${when}: the ${rule.part} rule's lit dot carries no glow — its filter computed to ` +
+              '`none`, which is what a drop-shadow does when a Token inside it has gone. The dot is ' +
+              'drawn, in the right place, and unlit',
+          );
+        }
       }
     }
 
@@ -2055,13 +2262,12 @@ async function atWindow(browser, origin, viewport) {
       }
     }
 
-    // AND THE THREE CARDS' ANCHORS STILL MOVE, which is the geometry half and is
-    // the Cards' alone: they are what the Lift carries, so an anchor of theirs that
-    // stands still is one that is not riding the depth even though it is inside the
-    // projection — a `position: fixed` in the vendored markup would do it, and
-    // containment would not notice.
+    // AND EVERY ANCHOR STILL MOVES, which is the geometry half. All four parts are
+    // components drawn on a Card now, and the Cards are what the Lift carries — so
+    // an anchor that stands still is one that is not riding the depth even though
+    // it is inside the projection. A `position: fixed` in the vendored markup would
+    // do it, and containment would not notice.
     for (const rule of seen.rules.flat) {
-      if (rule.part === 'slab') continue;
       const up = seen.rules.raised.find((other) => other.part === rule.part);
       if (!rule.anchor || !up?.anchor) continue;
       if (Math.hypot(up.anchor.x - rule.anchor.x, up.anchor.y - rule.anchor.y) <= ATTACHED) {
@@ -2200,6 +2406,698 @@ async function reversesOnTheWayOut(browser, origin) {
 
     await page.evaluate(() => window.portfolio?.snapping?.(true));
     return failures;
+  } finally {
+    await context.close();
+  }
+}
+
+/**
+ * Hovering a piece, or the Point that names it, puts that ONE piece back on the
+ * map — and it stays there while the pointer does (#213).
+ *
+ * WHAT IS ASSERTED IS THE CORRESPONDENCE AND NOT A DISTANCE. A lowered piece has
+ * to arrive exactly where the Lift's NEAR END puts it, which is a relationship
+ * between two things the page already draws rather than a number anybody chose:
+ * the Drop takes lift away from one Card, so `drop: 1` and `lift: 0` are the same
+ * place by arithmetic. Read at both ends of a held Lift first, and every
+ * assertion below is against those two readings — so every Token in this Section
+ * may be dragged anywhere without failing any of it.
+ *
+ * AND THAT NOTHING ELSE MOVES. Three Cards and a Slab, one hover: two Cards and
+ * the Slab are read at every gesture, because "lower that specific component" is
+ * a claim about the other three as much as about the one, and a Drop wired to the
+ * Cards' box rather than to a Card would move the whole stack and still look like
+ * a piece going down.
+ *
+ * AND THAT THE PIECE THAT WENT BACK IS PAINTED UNDER THE ONES THAT DID NOT, which
+ * every other assertion in this group passed while it was false. Until a piece
+ * could come down on its own, document order and depth order were the same order —
+ * `cards.ts` writes the three back to front in the app's own stacking and the
+ * three depths run the same way — so a `flat` plane (#207) painting in document
+ * order happened to be right. The Drop broke that tie and shipped broken: the
+ * search bar lying on the map with the rail popup's left half disappearing
+ * underneath it, and nothing about the geometry to say so.
+ *
+ * THE FLICKER IS THE FAILURE THIS GROUP EXISTS FOR, and it is the one that could
+ * not be found by looking at a still. A Card that lowers moves out from under the
+ * cursor; put back the moment the cursor is not on it, it would rise into the
+ * cursor, be hovered, and lower again — for as long as the reader holds their hand
+ * roughly still, which is exactly what somebody reading the Point beside it does.
+ * So the pointer is aimed at a spot that is ON the raised Card and OUTSIDE the box
+ * the lowered one covers, JOGGED BY A PIXEL between reads, and the drop is WATCHED:
+ * an oscillation is a value that comes back down, and one reading cannot tell it
+ * from a piece at rest.
+ *
+ * THE JOG IS THE HALF THAT WAS MISSING, and it cost a passing mutation. The Drop
+ * hears `pointermove` and nothing else, so a pointer parked at one coordinate is
+ * never asked a second question — the first version of this watch held it there and
+ * passed with the footprint test inverted. A Check that models a still hand models
+ * nobody.
+ *
+ * IT IS AIMED RATHER THAN CENTRED, and both halves of that are load-bearing. A
+ * Card is turned under the plane, so its rect is the axis-aligned box of a
+ * rotated quad and a third of that box is map — a Check that hovered the centre
+ * of the rect would hover the picture on some Tokens and the Card on others.
+ * Every candidate is put to `elementFromPoint` and only the ones that land on the
+ * Card itself are used.
+ *
+ * WHERE THE PIECE DOES NOT TRAVEL FAR ENOUGH TO LEAVE THE POINTER there is no
+ * flicker to have, and this says so in a note rather than failing: how far a piece
+ * comes off the Slab is `--eater-map-rise`, which is the author's.
+ *
+ * AND BELOW THE BAND NOTHING IS RAISED, so hovering a piece moves nothing.
+ * Asserted of the DRAWING and not of the flag — every Card's anchor is read before
+ * and after the hover — because the mechanism could be gated correctly and the
+ * arithmetic still put a collapsed Card somewhere the hover took it.
+ */
+async function hoveringPutsOnePieceBack(browser, origin) {
+  const { context, page } = await open(browser, origin, { viewport: WIDE });
+  const where = `${WIDE.width}x${WIDE.height}`;
+  /** @type {string[]} */
+  const notes = [];
+  try {
+    const failures = await settle(page);
+
+    const ports = await page.evaluate(() => window.portfolio?.ports?.() ?? []);
+    if (ports.length === 0) {
+      failures.push(
+        `${where}: the Kernel reports no resting places, so the page could not be stood on this Section ` +
+          'and nothing about the Drop was checked',
+      );
+      return { failures, notes };
+    }
+    const here = ports[ports.length - 1];
+
+    /** Stand on the Section and wait for the drawing to be all the way up. */
+    const raised = async () => {
+      await page.evaluate((to) => window.scrollTo(0, to), here);
+      return page
+        .waitForFunction(
+          () => (window.portfolio?.timelines.get('eater-map')?.progress() ?? 0) > 0.999,
+          undefined,
+          { timeout: 5000 },
+        )
+        .then(() => true)
+        .catch(() => false);
+    };
+
+    if (!(await raised())) {
+      const at = await page.evaluate(
+        () => window.portfolio?.timelines.get('eater-map')?.progress() ?? null,
+      );
+      failures.push(
+        `${where}: standing on the Section left the Lift at ${at} rather than raised, so there was nothing ` +
+          'off the Slab to put back and nothing about the Drop was checked',
+      );
+      return { failures, notes };
+    }
+
+    // BOTH ENDS OF A HELD LIFT, and the spot on each Card the pointer will be
+    // aimed at. One evaluate, because the aim is a question about the two ends
+    // TOGETHER — on the raised Card and off the lowered one — and asking it in a
+    // second call would ask it of whatever the transport had done in between.
+    const ends = await page.evaluate(() => {
+      const kernel = window.portfolio;
+      const lift = kernel?.timelines.get('eater-map');
+      const section = document.querySelector('.eater-map');
+      if (!section) return { missing: 'no .eater-map on the page' };
+      if (!lift) return { missing: 'no Timeline is registered as "eater-map"' };
+      const round = (n) => Math.round(n * 100) / 100;
+      const cards = [...document.querySelectorAll('[data-eater-map-card]')];
+      const named = cards.map((card) => card.getAttribute('data-eater-map-card') ?? '(unnamed)');
+
+      // OFF THE ANCHORS, for the reason the leader lines are drawn to them: a
+      // zero-sized box inside the plane projects to a POINT, and the bounding box
+      // of a rotated quad moves by a different amount from the quad.
+      const read = () => {
+        const at = section.getBoundingClientRect();
+        /** @type {Record<string, { anchor: { x: number, y: number } | null, box: DOMRect | null }>} */
+        const found = {};
+        for (const card of cards) {
+          const part = card.getAttribute('data-eater-map-card') ?? '(unnamed)';
+          const point = card.querySelector('.eater-map__anchor')?.getBoundingClientRect();
+          found[part] = {
+            anchor: point ? { x: round(point.left - at.left), y: round(point.top - at.top) } : null,
+            box: card.getBoundingClientRect(),
+          };
+        }
+        // AND THE PICTURE ITSELF, off its own box rather than off an anchor: no
+        // number names the Slab since the fourth point moved to the Offline
+        // button, so there is no zero-sized box on it to read — and none is
+        // needed. The plane's parent is not turned, so its rect IS where the
+        // drawing stands, which is the only thing asked of it below.
+        const picture = document.querySelector('.eater-map__slab')?.getBoundingClientRect();
+        found.slab = {
+          anchor: picture
+            ? { x: round(picture.left - at.left), y: round(picture.top - at.top) }
+            : null,
+          box: null,
+        };
+        return found;
+      };
+
+      kernel?.hold?.();
+      lift.progress(0);
+      const down = read();
+      lift.progress(1);
+      const up = read();
+
+      /** @type {Record<string, { clear: { x: number, y: number } | null, anywhere: { x: number, y: number } | null }>} */
+      const aim = {};
+      for (const card of cards) {
+        const part = card.getAttribute('data-eater-map-card') ?? '(unnamed)';
+        const box = up[part]?.box;
+        const lying = down[part]?.box;
+        if (!box) continue;
+        let anywhere = null;
+        let clear = null;
+        for (let across = 1; across <= 9 && !clear; across += 1) {
+          for (let downwards = 1; downwards <= 9 && !clear; downwards += 1) {
+            const x = box.left + (box.width * across) / 10;
+            const y = box.top + (box.height * downwards) / 10;
+            if (!card.contains(document.elementFromPoint(x, y))) continue;
+            if (!anywhere) anywhere = { x: round(x), y: round(y) };
+            const off =
+              !lying || x < lying.left || x > lying.right || y < lying.top || y > lying.bottom;
+            if (off) clear = { x: round(x), y: round(y) };
+          }
+        }
+        aim[part] = { clear, anywhere };
+      }
+
+      kernel?.release?.();
+      /** @type {Record<string, { x: number, y: number } | null>} */
+      const flat = {};
+      /** @type {Record<string, { x: number, y: number } | null>} */
+      const high = {};
+      for (const part of Object.keys(up)) {
+        flat[part] = down[part]?.anchor ?? null;
+        high[part] = up[part]?.anchor ?? null;
+      }
+      return { down: flat, up: high, aim, named };
+    });
+
+    if (ends.missing) {
+      failures.push(`${where}: ${ends.missing}`);
+      return { failures, notes };
+    }
+
+    // `release()` refreshes every trigger, which drives the Lift back to where the
+    // scroll says — and the scroll is still on the port, so that is the raised end.
+    if (!(await raised())) {
+      failures.push(
+        `${where}: the Lift did not come back up after the two ends were read, so every gesture below ` +
+          'would have been made against a drawing that was already down',
+      );
+      return { failures, notes };
+    }
+
+    const parts = ends.named.filter((part) => ends.up[part] && ends.down[part]);
+    if (parts.length < 2) {
+      failures.push(
+        `${where}: ${parts.length} Card(s) carry an anchor at both ends of the Lift, so "this piece went ` +
+          'back and the others did not" is not a claim this page can be asked about',
+      );
+      return { failures, notes };
+    }
+    const still = parts.filter(
+      (part) =>
+        Math.hypot(ends.up[part].x - ends.down[part].x, ends.up[part].y - ends.down[part].y) <=
+        MOVED,
+    );
+    if (still.length > 0) {
+      failures.push(
+        `${where}: ${still.join(', ')} stand(s) in the same place at both ends of the Lift, so a piece ` +
+          'lowered onto the map is indistinguishable from one that never moved and this group asserts nothing',
+      );
+      return { failures, notes };
+    }
+
+    /** Put the pointer on the middle of something, without scrolling to it. */
+    const aimAt = async (selector) => {
+      const spot = await page.evaluate((one) => {
+        const element = document.querySelector(one);
+        if (!element) return null;
+        const box = element.getBoundingClientRect();
+        if (box.width === 0 || box.height === 0) return null;
+        return { x: box.left + box.width / 2, y: box.top + box.height / 2 };
+      }, selector);
+      if (!spot) return null;
+      await page.mouse.move(spot.x, spot.y);
+      return spot;
+    };
+
+    /**
+     * Wait for exactly one piece to be all the way down and every other one all
+     * the way up. `lowered` is null when the gesture puts everything back.
+     *
+     * THE WANTED STATE AND NEVER "EVERYTHING HAS STOPPED", which was the first
+     * version and asserted nothing: the pointer has only just arrived when this is
+     * asked, so every piece is still where it was, "nothing is moving" is true on
+     * the first poll, and every reading below would have been taken before the
+     * Drop had begun. A predicate that is satisfied by the state the gesture was
+     * supposed to change is the shape scripts/checks/NOTES.md warns about.
+     */
+    const settledDrop = (lowered) =>
+      page
+        .waitForFunction(
+          (wanted) =>
+            [...document.querySelectorAll('[data-eater-map-card]')].every((card) => {
+              const at = Number(getComputedStyle(card).getPropertyValue('--eater-map-card-drop'));
+              return card.getAttribute('data-eater-map-card') === wanted ? at > 0.999 : at < 0.001;
+            }),
+          lowered,
+          { timeout: 5000 },
+        )
+        .then(() => true)
+        .catch(() => false);
+
+    /** Where every anchor is, in the Section's own coordinates, and how far each
+     *  rule's own last vertex is from the anchor it is drawn to. */
+    const drawing = () =>
+      page.evaluate(() => {
+        const section = document.querySelector('.eater-map');
+        if (!section) return null;
+        const origin = section.getBoundingClientRect();
+        const round = (n) => Math.round(n * 100) / 100;
+        /** @type {Record<string, { x: number, y: number }>} */
+        const at = {};
+        for (const anchor of document.querySelectorAll('[data-eater-map-anchor]')) {
+          const box = anchor.getBoundingClientRect();
+          at[anchor.getAttribute('data-eater-map-anchor') ?? '(unnamed)'] = {
+            x: round(box.left - origin.left),
+            y: round(box.top - origin.top),
+          };
+        }
+        // The picture goes in beside them under a name no part uses, read off its
+        // own box: no number names the Slab, so it carries no anchor — and the one
+        // thing asked of it is that it did not move, which its rect answers.
+        const picture = document.querySelector('.eater-map__slab')?.getBoundingClientRect();
+        if (picture) {
+          at.slab = {
+            x: round(picture.left - origin.left),
+            y: round(picture.top - origin.top),
+          };
+        }
+        /** @type {Record<string, number|null>} */
+        const rules = {};
+        const overlay = document.querySelector('[data-eater-map-leaders]');
+        if (overlay) {
+          const frame = overlay.getBoundingClientRect();
+          for (const line of overlay.querySelectorAll('[data-eater-map-leader]')) {
+            const part = line.getAttribute('data-eater-map-leader') ?? '(unnamed)';
+            const drawn = (line.getAttribute('points') ?? '')
+              .trim()
+              .split(/\s+/)
+              .filter(Boolean)
+              .map((pair) => pair.split(',').map(Number));
+            const last = drawn[drawn.length - 1];
+            const anchor = document
+              .querySelector(`[data-eater-map-anchor="${part}"]`)
+              ?.getBoundingClientRect();
+            rules[part] =
+              last && anchor
+                ? round(
+                    Math.hypot(
+                      last[0] - (anchor.left - frame.left),
+                      last[1] - (anchor.top - frame.top),
+                    ),
+                  )
+                : null;
+          }
+        }
+        return { at, rules };
+      });
+
+    /**
+     * What order the Cards are PAINTED in, as one number each.
+     *
+     * READ AS THE PAINT ORDER AND NOT AS THE PICTURE, which is a departure from
+     * everything else in this group and is the honest option rather than the lazy
+     * one. Which surfaces overlap on screen is a function of the placement Tokens
+     * — the author may drag the three pieces anywhere on the Slab — so a hit test
+     * at a point inside two of them would assert nothing at all on some settings,
+     * silently, which is the shape scripts/checks/NOTES.md warns about three
+     * times. The plane is `flat` (#207), so there is no depth sort: this number IS
+     * what covers what, at every setting of every Token.
+     */
+    const painted = () =>
+      page.evaluate(() =>
+        Object.fromEntries(
+          [...document.querySelectorAll('[data-eater-map-card]')].map((card) => [
+            card.getAttribute('data-eater-map-card') ?? '(unnamed)',
+            getComputedStyle(card).zIndex,
+          ]),
+        ),
+      );
+
+    const apart = (a, b) => (a && b ? Math.hypot(a.x - b.x, a.y - b.y) : Number.NaN);
+
+    /**
+     * One gesture: put the pointer somewhere and say what the drawing did.
+     *
+     * `lowered` is the part that should have gone back on the map, or null when
+     * the gesture is one that puts everything up.
+     */
+    const gesture = async (what, selector, lowered) => {
+      const spot = await aimAt(selector);
+      if (!spot) {
+        failures.push(`${where}: ${what} — there is no ${selector} on the page to point at`);
+        return null;
+      }
+      if (!(await settledDrop(lowered))) {
+        const at = await page.evaluate(() =>
+          Object.fromEntries(
+            [...document.querySelectorAll('[data-eater-map-card]')].map((card) => [
+              card.getAttribute('data-eater-map-card'),
+              getComputedStyle(card).getPropertyValue('--eater-map-card-drop').trim(),
+            ]),
+          ),
+        );
+        failures.push(
+          `${where}: ${what} — five seconds later the pieces are at ${JSON.stringify(at)} rather than ` +
+            `${lowered ? `${lowered} down and the rest up` : 'all of them up'}`,
+        );
+        return null;
+      }
+      const now = await drawing();
+      if (!now) {
+        failures.push(`${where}: ${what} — the Section left the page`);
+        return null;
+      }
+      for (const part of parts) {
+        const wanted = part === lowered ? ends.down[part] : ends.up[part];
+        const missed = apart(now.at[part], wanted);
+        const asked = part === lowered ? 'onto the map' : 'where it was';
+        if (!(missed <= BACK_ON_THE_MAP)) {
+          failures.push(
+            `${where}: ${what} — ${part} is ${Number.isNaN(missed) ? 'nowhere readable' : `${missed.toFixed(2)}px`} from ${asked}: ` +
+              `it stands at ${JSON.stringify(now.at[part])} and the Lift's ${part === lowered ? 'near' : 'far'} end ` +
+              `puts it at ${JSON.stringify(wanted)}`,
+          );
+        }
+      }
+      // THE SLAB DOES NOT MOVE, which is #189's invariant and is what separates
+      // "that piece went back" from "the drawing shifted".
+      const slab = apart(now.at.slab, ends.up.slab);
+      if (!(slab <= UNTOUCHED)) {
+        failures.push(
+          `${where}: ${what} — the Slab's own anchor moved ${Number.isNaN(slab) ? 'somewhere unreadable' : `${slab.toFixed(2)}px`}, ` +
+            'so the hover moved the drawing rather than one piece of it',
+        );
+      }
+      // AND THE PIECE THAT WENT BACK IS PAINTED UNDER THE ONES THAT DID NOT.
+      // Until a piece could come down on its own, document order and depth order
+      // were the same order — `cards.ts` writes the three back to front in the
+      // app's own stacking and the three depths run the same way — so a flat plane
+      // painting in document order happened to be right. The Drop is what broke
+      // that tie, and it shipped broken: the search bar lay on the map with the
+      // rail popup's left half disappearing underneath it. Nothing about the
+      // GEOMETRY says so, which is why every assertion above passed.
+      if (lowered) {
+        const order = await painted();
+        // `auto` IS ITS OWN FAILURE AND NOT A COMPARISON THAT LOST. It means the
+        // Cards carry no paint order of their own and document order decides —
+        // which is the app's stacking, and is the state this whole assertion was
+        // written for. Said once rather than once per pair.
+        const none = parts.filter((part) => order[part] === 'auto');
+        if (none.length > 0) {
+          failures.push(
+            `${where}: ${what} — ${none.join(', ')} ${none.length === 1 ? 'carries' : 'carry'} no z-index, so ` +
+              'the Cards are painted in document order. That is the app\'s own stacking, and it stops being ' +
+              'the drawing\'s the moment one piece is back on the map under two that are not',
+          );
+        } else {
+          for (const part of parts.filter((one) => one !== lowered)) {
+            if (!(Number(order[lowered]) < Number(order[part]))) {
+              failures.push(
+                `${where}: ${what} — ${lowered} is back on the map and is painted at ${order[lowered]} ` +
+                  `against ${part}'s ${order[part]}, so a piece lying on the Slab covers one still standing ` +
+                  'off it. What covers what on a flat plane is the paint order, and the rise is the only ' +
+                  'thing that may decide it',
+              );
+            }
+          }
+        }
+      }
+      // AND EVERY RULE IS STILL ON THE PIECE IT NAMES. A redraw that is not wired
+      // to the Drop leaves the lowered piece's rule pointing at the corner the
+      // piece used to occupy, which is a drawing that has come apart.
+      for (const [part, missed] of Object.entries(now.rules)) {
+        if (missed === null) continue;
+        if (!(missed <= ATTACHED)) {
+          failures.push(
+            `${where}: ${what} — ${part}'s leader line ends ${missed.toFixed(2)}px from its anchor, so the ` +
+              'rules do not follow a piece the reader put back',
+          );
+        }
+      }
+      return { spot, now };
+    };
+
+    for (const part of parts) {
+      await gesture(`hovering the Point that names ${part}`, `[data-eater-map-point="${part}"]`, part);
+    }
+
+    // AND THE POINT THAT NAMES A COMPONENT RATHER THAN A CARD LOWERS THE CARD THAT
+    // COMPONENT IS ON. `02.` names the Offline button, which is a pill in the
+    // search Card's own topbar — so the piece that goes back on the map is the
+    // search Card, exactly as if the reader had hovered the bar's own number. The
+    // failure this names is a Point resolved by its own word: `offline` is not a
+    // Card, `pieces.get` finds nothing, and hovering the number puts EVERY piece
+    // back instead of one.
+    await gesture(
+      'hovering the Point that names the Offline button',
+      '[data-eater-map-point="offline"]',
+      'search',
+    );
+
+    // ---- and now the Card itself, at a spot the piece will leave -------------
+    const travels = parts.find((part) => ends.aim[part]?.clear) ?? null;
+    const near = travels ?? parts.find((part) => ends.aim[part]?.anywhere) ?? null;
+    if (!near) {
+      failures.push(
+        `${where}: no point inside any Card's own box lands on that Card, so hovering a piece itself was ` +
+          'never exercised — every candidate resolved to something else on the plane',
+      );
+    } else {
+      const target = ends.aim[near].clear ?? ends.aim[near].anywhere;
+      await page.mouse.move(target.x, target.y);
+      if (!(await settledDrop(near))) {
+        failures.push(
+          `${where}: hovering the ${near} Card itself did not put it down within five seconds — a Point ` +
+            'lowers its piece and the piece itself does not',
+        );
+      } else {
+        const now = await drawing();
+        const missed = apart(now?.at[near], ends.down[near]);
+        if (!(missed <= BACK_ON_THE_MAP)) {
+          failures.push(
+            `${where}: hovering the ${near} Card itself left it ${Number.isNaN(missed) ? 'nowhere readable' : `${missed.toFixed(2)}px`} ` +
+              "from where the Lift's near end puts it — a Point lowers its piece and the piece itself does not",
+          );
+        }
+        for (const part of parts.filter((one) => one !== near)) {
+          const moved = apart(now?.at[part], ends.up[part]);
+          if (!(moved <= UNTOUCHED)) {
+            failures.push(
+              `${where}: hovering the ${near} Card moved ${part} ${Number.isNaN(moved) ? 'somewhere unreadable' : `${moved.toFixed(2)}px`} ` +
+                'as well, so a hover lowers the stack rather than the piece',
+            );
+          }
+        }
+        if (!travels) {
+          notes.push(
+            `${where}: no spot on a Card is left uncovered when that Card lowers, so there is no pointer ` +
+              'position a piece can move out from under and the flicker was not exercised — how far a piece ' +
+              'travels is --eater-map-rise, which is the author’s',
+          );
+        } else {
+          // A READER'S HAND IS NOT A CLAMP, AND A CHECK THAT HOLDS ONE STILL
+          // ASSERTS NOTHING. This module hears `pointermove` and nothing else, so
+          // a pointer that never moves again is never asked a second question and
+          // the piece stays down whatever the code says — the first version of
+          // this watch held the pointer at one coordinate and PASSED with the
+          // footprint test inverted. What a reader actually does is hold the
+          // pointer roughly still while they read the Point beside it, and every
+          // one of those pixels lands on the map once the piece has moved away.
+          // So the pointer is jogged by a pixel between reads, inside the ground
+          // the piece used to cover, which is the gesture the footprint exists for.
+          //
+          // WHETHER THE CASE ARISES IS ASKED ONCE, THE MOMENT THE PIECE SETTLES,
+          // and asking it again later is how this group passed its own mutation.
+          // A flickering piece IS under the pointer half the time — that is what
+          // flickering means — so "the Card is under the pointer, so the flicker
+          // was not exercised" read the fault as a reason to skip, and the note it
+          // wrote said so in a sentence nobody would query. The question is
+          // whether the piece left the pointer when it went down; everything after
+          // that is the answer, not the precondition.
+          const off = await page.evaluate(
+            ([part, x, y]) => {
+              const card = document.querySelector(`[data-eater-map-card="${part}"]`);
+              const on = document.elementFromPoint(x, y);
+              return Boolean(card) && !(on && card.contains(on));
+            },
+            [near, target.x, target.y],
+          );
+          if (!off) {
+            notes.push(
+              `${where}: the ${near} Card is still under the pointer once it has lowered, so there is no ` +
+                'ground for the pointer to be left standing on and the flicker was not exercised',
+            );
+          } else {
+            const seen = [];
+            for (let tick = 0; tick * SAMPLE < WATCHED; tick += 1) {
+              await page.mouse.move(target.x + (tick % 2 ? 1 : -1), target.y + (tick % 3 ? 1 : -1));
+              const at = await page.evaluate((part) => {
+                const card = document.querySelector(`[data-eater-map-card="${part}"]`);
+                return card
+                  ? Number(getComputedStyle(card).getPropertyValue('--eater-map-card-drop'))
+                  : null;
+              }, near);
+              if (at === null) break;
+              seen.push(at);
+              await page.waitForTimeout(SAMPLE);
+            }
+            const low = seen.length > 0 ? Math.min(...seen) : null;
+            if (seen.length < 2) {
+              failures.push(
+                `${where}: the ${near} Card could not be watched after it lowered, so nothing about a piece ` +
+                  'flickering under a reader’s hand was checked',
+              );
+            } else if (!(low > 0.999)) {
+              failures.push(
+                `${where}: the ${near} Card came back up to a drop of ${low.toFixed(3)} over ${WATCHED}ms of ` +
+                  'a pointer jogged by a pixel on ground the piece had left — it is rising into the cursor, ' +
+                  'being hovered again and lowering, which is a piece that flickers for as long as a reader reads',
+              );
+            } else {
+              notes.push(
+                `${where}: the ${near} Card stayed down through ${seen.length} reads with the pointer jogged ` +
+                  'on ground it had left',
+              );
+            }
+          }
+        }
+      }
+    }
+
+    // ---- and below the band there is nothing raised to put back --------------
+    await page.setViewportSize(NARROW);
+    // THE LIFT IS STILL COMING DOWN WHEN THE WINDOW CROSSES, and waiting it out is
+    // not tidiness. A resize refreshes every trigger, `arrived()` answers no below
+    // the band, and the transport then runs the whole drawing back to flat over
+    // `--eater-map-lift-time` — so a reading taken on the next frame is of a
+    // drawing in motion, a reading taken half a second later is of a different one,
+    // and the difference between them is the Lift rather than anything a pointer
+    // did. Measured: 13, 79 and 93px of "movement" with the Drop refusing
+    // correctly throughout.
+    const flat = await page
+      .waitForFunction(
+        () => (window.portfolio?.timelines.get('eater-map')?.progress() ?? 1) < 0.001,
+        undefined,
+        { timeout: 5000 },
+      )
+      .then(() => true)
+      .catch(() => false);
+    if (!flat) {
+      const at = await page.evaluate(
+        () => window.portfolio?.timelines.get('eater-map')?.progress() ?? null,
+      );
+      failures.push(
+        `${NARROW.width}x${NARROW.height}: the Lift is at ${at} below the band rather than flat, so what a ` +
+          'hover down here moves could not be told from what the Lift was still moving',
+      );
+      return { failures, notes };
+    }
+    // THE CARD AND NOT THE SECTION IS WHAT IS BROUGHT INTO VIEW, and that is the
+    // whole difference between this group asserting something and asserting
+    // nothing. Down here the composition is one tall column: with the Section's own
+    // top on the fold the details Card's middle is at y=1219 in an 844px window, so
+    // the pointer was moved off the bottom of the screen, no hover ever happened,
+    // and "nothing moved" was true because nothing was asked. Measured, and it
+    // passed with the gate deleted.
+    const collapsed = await page.evaluate(async () => {
+      const section = document.querySelector('.eater-map');
+      const card = document.querySelector('[data-eater-map-card]');
+      if (!section || !card) return null;
+      card.scrollIntoView({ block: 'center' });
+      await new Promise((frame) => requestAnimationFrame(frame));
+      await new Promise((frame) => requestAnimationFrame(frame));
+      return Number(getComputedStyle(section).getPropertyValue('--eater-map-collapsed')) === 1;
+    });
+    if (collapsed !== true) {
+      failures.push(
+        `${NARROW.width}x${NARROW.height}: the composition reports itself uncollapsed, so hovering a piece ` +
+          'down here was asked of the Exploded View and says nothing about the collapse',
+      );
+    } else {
+      const before = await drawing();
+      const spot = await aimAt(`[data-eater-map-card="${parts[0]}"]`);
+      if (!spot) {
+        failures.push(
+          `${NARROW.width}x${NARROW.height}: the ${parts[0]} Card has no box to point at, so nothing about ` +
+            'the Drop below the band was checked',
+        );
+      } else if (
+        !(await page.evaluate(
+          ([part, x, y]) => {
+            const card = document.querySelector(`[data-eater-map-card="${part}"]`);
+            const on = document.elementFromPoint(x, y);
+            return Boolean(card && on && card.contains(on));
+          },
+          [parts[0], spot.x, spot.y],
+        ))
+      ) {
+        // THE POINTER HAS TO BE ON THE CARD, asked rather than assumed. Every
+        // assertion under this branch is "nothing moved", which is what a pointer
+        // that landed on the map — or off the screen — gets whatever the Drop does.
+        failures.push(
+          `${NARROW.width}x${NARROW.height}: the pointer landed off the ${parts[0]} Card at ` +
+            `${spot.x.toFixed(0)},${spot.y.toFixed(0)}, so no hover was made down here and nothing about ` +
+            'the Drop below the band was checked',
+        );
+      } else {
+        await page.waitForTimeout(WATCHED);
+        const after = await drawing();
+        for (const part of parts) {
+          const moved = apart(after?.at[part], before?.at[part]);
+          if (!(moved <= UNTOUCHED)) {
+            failures.push(
+              `${NARROW.width}x${NARROW.height}: hovering the ${parts[0]} Card moved ${part} ` +
+                `${Number.isNaN(moved) ? 'somewhere unreadable' : `${moved.toFixed(2)}px`} — below the band ` +
+                'nothing stands off the Slab, so there is nothing for a hover to put back',
+            );
+          }
+        }
+        // AND NO PIECE IS HOLDING A DROP, which is a second claim rather than the
+        // same one twice. Down here the Lift is at 0, so a drop MULTIPLIES TO
+        // NOTHING and the drawing above cannot tell a Drop that refused from one
+        // that ran — the assertion would pass with the gate deleted. What the gate
+        // is actually for is the window going back the other way: a piece left
+        // holding a drop is a piece that stays on the map when the Exploded View
+        // comes back, until the reader happens to move the pointer. So the
+        // mechanism is read as well as the drawing.
+        const holding = await page.evaluate(() =>
+          [...document.querySelectorAll('[data-eater-map-card]')]
+            .map((card) => ({
+              part: card.getAttribute('data-eater-map-card'),
+              at: Number(getComputedStyle(card).getPropertyValue('--eater-map-card-drop')),
+            }))
+            .filter((one) => !(one.at < 0.001))
+            .map((one) => `${one.part} at ${one.at}`),
+        );
+        if (holding.length > 0) {
+          failures.push(
+            `${NARROW.width}x${NARROW.height}: ${holding.join(', ')} — a piece took a drop below the band, ` +
+              'where nothing is raised to put back, and a window carried back into the band would find it ' +
+              'lying on the map with the pointer nowhere near it',
+          );
+        }
+      }
+    }
+
+    return { failures, notes };
   } finally {
     await context.close();
   }
@@ -3327,14 +4225,17 @@ async function nothingWatchesTheTokens(browser, origin) {
     const seen = await page.evaluate(async (mutant) => {
       const section = document.querySelector('.eater-map');
       if (!section) return { missing: 'the Section is not on the page' };
-      // EVERY ELEMENT A REDRAW BUILDS, which is the slices AND the blurred copy of
-      // the map behind each glass surface. `mountGlass` clears the two on
-      // consecutive lines, so counting only the slices leaves a regression in the
-      // second clear doubling elements per drag with nothing to fail.
+      // EVERY ELEMENT A REDRAW BUILDS, which is the slices, the box each stack of
+      // them is grouped into to carry the rim's alpha, and the blurred copy of the
+      // map behind each glass surface. `mountGlass` clears them on consecutive
+      // lines, so counting only the slices leaves a regression in either of the
+      // others doubling elements per drag with nothing to fail.
       const drawn = () =>
-        [...document.querySelectorAll('.eater-map__slice, .eater-map__glass')].map(
-          (one) => `${one.className} ${one.style.background}`,
-        );
+        [
+          ...document.querySelectorAll(
+            '.eater-map__slice, .eater-map__glass, .eater-map__stack',
+          ),
+        ].map((one) => `${one.className} ${one.style.background}`);
       const azimuth = () => getComputedStyle(section).getPropertyValue('--eater-map-light-azimuth').trim();
 
       const before = drawn();
@@ -3412,13 +4313,626 @@ async function nothingWatchesTheTokens(browser, origin) {
   }
 }
 
+/**
+ * Every slice's resolved geometry, its identity, and whether anything is left in
+ * what was written on it for the browser to substitute again.
+ *
+ * FOUR FRAMES BEFORE IT READS ANYTHING. A crossing out of the band rebuilds the
+ * stack, and `redraw.ts` coalesces that onto a frame — so a reading taken in the
+ * same task as the resize is a reading of the drawing the window used to have, and
+ * it agrees with the previous reading for a reason that has nothing to do with the
+ * build.
+ *
+ * AND IDENTITY IS KEPT IN A `WeakMap` RATHER THAN WRITTEN ON THE ELEMENT, so
+ * "were these rebuilt or merely re-laid-out" is answerable across two readings
+ * without this Check leaving a mark on the page it is asking about.
+ */
+async function edgeGeometry() {
+  const section = document.querySelector('.eater-map');
+  if (!section) return { missing: 'the Section is not on the page' };
+  for (let frame = 0; frame < 4; frame += 1) {
+    await new Promise((next) => requestAnimationFrame(next));
+  }
+  /** What `edge.ts` writes on a slice and the page turn would have to re-parse. */
+  const WRITTEN = ['left', 'top', 'width', 'height', 'border-radius', 'transform'];
+  /** The same, as the browser resolved it — the four corners separately, because
+   *  `border-radius` is written as one value where the four are one value. */
+  const RESOLVED = [
+    'left',
+    'top',
+    'width',
+    'height',
+    'border-top-left-radius',
+    'border-top-right-radius',
+    'border-bottom-right-radius',
+    'border-bottom-left-radius',
+    'transform',
+  ];
+  const slices = [...document.querySelectorAll('.eater-map__slice')];
+  const held = window;
+  held.__edgeIds ??= new WeakMap();
+  held.__edgeNext ??= 0;
+  const identity = (el) => {
+    if (!held.__edgeIds.has(el)) held.__edgeIds.set(el, (held.__edgeNext += 1));
+    return held.__edgeIds.get(el);
+  };
+  return {
+    stage: section.dataset.eaterMapStage ?? '(never mounted)',
+    edgeKind: section.dataset.eaterMapEdge ?? '(unset)',
+    count: slices.length,
+    solid: getComputedStyle(section).getPropertyValue('--eater-map-solid').trim(),
+    ids: slices.map(identity).join(','),
+    named: slices.map(
+      (el) => `${el.dataset.eaterMapEdge ?? '(unnamed)'}/${el.dataset.eaterMapSlice ?? '(unnamed)'}`,
+    ),
+    geometry: slices.map((el) => {
+      const cs = getComputedStyle(el);
+      return RESOLVED.map((prop) => cs.getPropertyValue(prop)).join(' ');
+    }),
+    pending: slices.reduce(
+      (n, el) =>
+        n + WRITTEN.filter((prop) => (el.style.getPropertyValue(prop) || '').includes('var(')).length,
+      0,
+    ),
+    tokened: slices.filter((el) => (el.style.color || '').includes('var(--eater-map-')).length,
+  };
+}
+
+/**
+ * FOURTEEN. THE DRAWING FOLLOWS THE WINDOW, AND THE BAND'S EDGE IS THE ONE
+ * RE-MOUNT.
+ *
+ * `edge.ts` substitutes every Token into a slice's six geometry declarations at
+ * mount, because a declaration carrying a `var()` is re-substituted and re-parsed
+ * on every style recalc and the page turn recalculates the document every frame —
+ * two thirds of the crossing's style recalc, measured. What it does NOT substitute
+ * is `100cqw` and `100%`, and the whole affordability of the change is in that
+ * distinction. So there are two opposite things to assert, and each of them passes
+ * on its own for the wrong build:
+ *
+ * **A RESIZE INSIDE THE BAND MOVES THE DRAWING AND REBUILDS NOTHING.** A build
+ * that resolved the container units too would pass every other assertion here and
+ * draw an edge that came off its object the moment a reader dragged a window.
+ *
+ * **A CROSSING OUT OF THE BAND LANDS WHERE A FRESH MOUNT AT THAT WINDOW LANDS.**
+ * `--eater-map-solid` is the one input to this arithmetic that a media query
+ * answers, and it is baked into the numbers now, so it has to be watched and drawn
+ * again. **This is the assertion that fails if the edge is given a SECOND
+ * window-driven Token** — `redraw.ts` watches one declaration, and this compares
+ * OUTCOMES rather than mechanisms precisely so that a new input nobody wired up
+ * shows here rather than in a reader's window.
+ *
+ * AND BOTH WAYS ROUND, which is `reversesOnTheWayOut`'s lesson applied to a
+ * resize: a rebuild wired to fire on the way out and not on the way back leaves a
+ * flat picture wearing a raised edge, and a reader who narrows their window and
+ * widens it again is the one who finds it.
+ *
+ * A SECOND PAGE FOR THE COMPARISON AND NOT A SECOND READING. What is asked is
+ * whether THIS mount, carried across the band, agrees with a mount that was never
+ * anywhere else — so the two have to be two pages.
+ */
+async function theEdgeFollowsTheWindow(browser, origin) {
+  const { context, page } = await open(browser, origin, { viewport: WIDE });
+  const notes = [];
+  try {
+    const failures = await settle(page);
+    const wide = await page.evaluate(edgeGeometry);
+    if (wide.missing) {
+      failures.push(`${WIDE.width}x${WIDE.height}: ${wide.missing}`);
+      return { failures, notes };
+    }
+    // THE SAME TWO SKIPS `theEdgeHasADirection` MAKES, and for the same reasons: a
+    // canvas has no slices to ask about, a `flat` Slab has no edge by design, and a
+    // stage that never mounted looks like the first from here and is a failure.
+    if (wide.stage !== 'dom') {
+      if (STAGES.includes(wide.stage)) {
+        notes.push(
+          `the edge across the band: skipped — the ${wide.stage} stage draws the Slab's in a canvas`,
+        );
+      } else {
+        failures.push(
+          `${WIDE.width}x${WIDE.height}: the Section reports its stage as ${wide.stage}, so the Exploded ` +
+            'View never came up and nothing about how its edge follows the window was checked',
+        );
+      }
+      return { failures, notes };
+    }
+    if (wide.edgeKind === 'flat') {
+      notes.push('the edge across the band: skipped — the composition asked for a flat Slab');
+      return { failures, notes };
+    }
+    if (wide.count === 0) {
+      failures.push(
+        `${WIDE.width}x${WIDE.height}: nothing on the page is a slice, so the whole of this was checked ` +
+          'against nothing',
+      );
+      return { failures, notes };
+    }
+
+    // ---- what is written on a slice, and what is left for the turn to re-parse
+    if (wide.pending > 0) {
+      failures.push(
+        `${WIDE.width}x${WIDE.height}: ${wide.pending} of the ${wide.count * 6} geometry declarations on ` +
+          "the page's slices still name a Token, so each is a pending-substitution value the browser " +
+          're-parses on every style recalc — and the page turn writes --turn on the root every frame. ' +
+          'edge.ts resolves these at mount, so something is composing an expression after it does',
+      );
+    }
+    if (wide.tokened !== wide.count) {
+      failures.push(
+        `${WIDE.width}x${WIDE.height}: ${wide.tokened} of ${wide.count} slices carry an --eater-map- Token ` +
+          'on their own `color`, so the edge colour is no longer live in CSS on the rest — the gradient ' +
+          'mixes from `currentColor` precisely so that one short declaration is the whole of what the ' +
+          "Editor's drag has to reach",
+      );
+    }
+
+    // ---- inside the band: it follows the window, and rebuilds nothing --------
+    await page.setViewportSize(SHORT);
+    const short = await page.evaluate(edgeGeometry);
+    if (short.missing) {
+      failures.push(`${SHORT.width}x${SHORT.height} resized: ${short.missing}`);
+    } else {
+      const moved = short.geometry.filter((one, index) => one !== wide.geometry[index]).length;
+      if (moved === 0) {
+        failures.push(
+          `${WIDE.width}x${WIDE.height} -> ${SHORT.width}x${SHORT.height}: the Slab is drawn a different ` +
+            `width at those two windows and not one of the ${short.count} slices moved — so the lengths ` +
+            "were resolved to px rather than left in the container's own units, and the edge comes off " +
+            'the object on any resize inside the band',
+        );
+      }
+      if (short.ids !== wide.ids) {
+        failures.push(
+          `${SHORT.width}x${SHORT.height} resized: the stack was rebuilt by an ordinary resize inside the ` +
+            'band. Nothing needs to be — the container units carry the drawing — and a rebuild is a ' +
+            'hundred and forty-four elements on a gesture a reader makes by dragging a window edge',
+        );
+      }
+      notes.push(
+        `the edge across the band: ${moved} of ${short.count} slices moved between ` +
+          `${WIDE.width}x${WIDE.height} and ${SHORT.width}x${SHORT.height} with nothing rebuilt`,
+      );
+    }
+
+    // ---- out of the band: rebuilt, and where a fresh mount would be ----------
+    await page.setViewportSize(NARROW);
+    const carried = await page.evaluate(edgeGeometry);
+    if (carried.missing) {
+      failures.push(`${NARROW.width}x${NARROW.height} resized: ${carried.missing}`);
+    } else if (carried.solid === wide.solid) {
+      failures.push(
+        `${NARROW.width}x${NARROW.height}: --eater-map-solid is still ${carried.solid}, the same as at ` +
+          `${WIDE.width}x${WIDE.height} — so this window is not the collapse, and the crossing this group ` +
+          'is about was never made. Either NARROW or the collapse own media query has moved',
+      );
+    } else {
+      const { context: second, page: other } = await open(browser, origin, { viewport: NARROW });
+      try {
+        failures.push(
+          ...(await settle(other)).map((why) => `${NARROW.width}x${NARROW.height} mounted: ${why}`),
+        );
+        const fresh = await other.evaluate(edgeGeometry);
+        if (fresh.missing) {
+          failures.push(`${NARROW.width}x${NARROW.height} mounted: ${fresh.missing}`);
+        } else if (fresh.count !== carried.count) {
+          failures.push(
+            `${NARROW.width}x${NARROW.height}: a page carried across the band has ${carried.count} slices ` +
+              `against ${fresh.count} on one mounted there — the rebuild on the crossing built a ` +
+              'different number of elements than a mount does',
+          );
+        } else {
+          const apart = carried.geometry.filter((one, index) => one !== fresh.geometry[index]).length;
+          if (apart > 0) {
+            const first = carried.geometry.findIndex((one, index) => one !== fresh.geometry[index]);
+            failures.push(
+              `${NARROW.width}x${NARROW.height}: ${apart} of ${carried.count} slices on a page carried ` +
+                'out of the band are drawn differently from the same slices on a page mounted there. The ' +
+                `${carried.named[first]} slice is at\n        carried: ${carried.geometry[first]}\n` +
+                `        mounted: ${fresh.geometry[first]}\n      Every Token is resolved into these ` +
+                'numbers at mount, so any that a media query answers has to be watched — redraw.ts ' +
+                'watches --eater-map-solid and nothing else',
+            );
+          } else {
+            notes.push(
+              `the edge across the band: all ${carried.count} slices carried to ` +
+                `${NARROW.width}x${NARROW.height} agree with a mount taken there`,
+            );
+          }
+        }
+      } finally {
+        await second.close();
+      }
+    }
+
+    // ---- and back in --------------------------------------------------------
+    await page.setViewportSize(WIDE);
+    const back = await page.evaluate(edgeGeometry);
+    if (back.missing) {
+      failures.push(`${WIDE.width}x${WIDE.height} returned: ${back.missing}`);
+    } else {
+      const apart = back.geometry.filter((one, index) => one !== wide.geometry[index]).length;
+      if (apart > 0) {
+        const first = back.geometry.findIndex((one, index) => one !== wide.geometry[index]);
+        failures.push(
+          `${WIDE.width}x${WIDE.height} returned: ${apart} of ${back.count} slices did not come back to ` +
+            `where they were before the window left the band. The ${back.named[first]} slice was at\n` +
+            `        ${wide.geometry[first]}\n      and is now at\n        ${back.geometry[first]}\n` +
+            '      A rebuild wired to the way out and not to the way back leaves a raised edge on a flat ' +
+            'picture, or a flat one on a raised drawing',
+        );
+      }
+    }
+    return { failures, notes };
+  } finally {
+    await context.close();
+  }
+}
+
+/**
+ * FIFTEEN. THE GRID IS THE COMPOSITION'S OWN EDGES AND NOT A SET OF FRACTIONS.
+ *
+ * #201 asked for faint hairlines through the whole frame and named the one real
+ * decision in it: whose they are, and what "a horizontal at 0.505 of the height"
+ * means once the page scrolls below the band. The answer taken is that NOTHING
+ * here is a fraction. Every line is an edge the composition already has — the
+ * four horizontals are the four Points' own rules continued, the three verticals
+ * are the three standing blocks' left edges — so there is no position stated
+ * anywhere and nothing that can drift from what it is drawn against.
+ *
+ * THAT ANSWER IS INVISIBLE ON SCREEN, which is the whole reason it is here. A
+ * grid at six typed fractions and a grid derived from four Points and three
+ * columns are the SAME PICTURE at the window they were typed at, and different
+ * pictures at every other. Nobody looking at one screenshot can tell them apart.
+ *
+ * ONE HORIZONTAL PER POINT, AND COLLINEAR WITH THAT POINT'S RULE. The two share a
+ * CENTRELINE, which is what makes them one line that changes colour and weight at
+ * the row's edge rather than two lines that happen to touch. BOTH ENDS OF THAT
+ * AGREEMENT ARE READ — the pseudo-element's `top` and its own border-width against
+ * the row's — which is what makes the assertion survive either
+ * `--eater-map-accent-weight` or `--eater-map-rule-weight` being dragged, and is
+ * why those Tokens exist at all. They were one Token until #214, and while they
+ * were, sharing a centreline and sharing a box were the same claim.
+ * The count is asserted too: a fifth Point brings a fifth line for nothing, and a
+ * Point that stopped drawing one is a hole nothing else on the page reports.
+ *
+ * ONE VERTICAL PER STANDING BLOCK, ON THAT BLOCK'S OWN LEFT EDGE. This is the
+ * assertion the implementation exists to earn: the lines say `grid-column: 1 / 5
+ * / 11` into a `subgrid`, so they inherit the twelve tracks rather than restating
+ * them. A restated `repeat(12, …)` clamps its own gutter and leaves three lines
+ * in plausible places that are no longer anybody's edge — a few pixels out at one
+ * window and a good deal more at another, and correct-looking in both.
+ *
+ * AND THE THIRD VERTICAL KEEPS THAT EDGE WHILE THE WORDS STAND OFF IT. A line
+ * that is a block's left edge lands on the first character of every line of that
+ * block, and against the Points it read as a rule drawn through the text. The air
+ * is `--eater-map-point-inset` and it is spent on the ROW, so three x's are read
+ * off each row rather than one: the row's border box, still on the line, because
+ * that is what the accent rule is drawn on; the mark's box, off it, because that
+ * is where the words start; and the hook's right edge, still on it, because a
+ * positioned child's containing block is the PADDING box and an inline padding is
+ * inside that rather than outside it. The obvious spelling — a padding on the
+ * `<ol>` — takes the rule and the shoulder off the line together while moving
+ * nothing the assertion above reads, which is why this is three assertions and
+ * not one. THE THIRD HAS ALREADY EARNED ITSELF: the hook was written with a
+ * `calc(100% + …)` compensating for a padding that never moved it, and this is
+ * what caught the shoulder stopping a gutter-half short of the line in the air.
+ * Below the band the inset is spent back, and that is read too.
+ *
+ * IT TAKES NO HITS, AND IT IS HEARD BY NOBODY. `elementFromPoint` along each
+ * vertical has to answer something other than the grid — the `rail` Check's idiom,
+ * and this is the half of "behind everything" that a Check can honestly assert.
+ * **It does not assert paint order**, and saying so is the point: what a reader
+ * loses when this breaks is not a line drawn over a picture, it is three vertical
+ * strips of the composition they can no longer point at, which on this Section
+ * takes the Drop with it. That is worth a failure; which of two hairlines is on
+ * top of the other is a look. Nothing in it is focusable, it holds no words, and
+ * the box is `aria-hidden` — the half a reader navigating by keyboard or by voice
+ * would meet and a reader looking at the page never would.
+ *
+ * AND BELOW THE BAND THE VERTICALS GO AND THE HORIZONTALS STAY. There are no
+ * three standing blocks out there — one column, everything at the same margin —
+ * so three lines would land on top of each other and draw one rule down the side
+ * of a phone. The Points are still four, so their four lines still mean exactly
+ * what they meant. That the two halves answer the regime DIFFERENTLY while
+ * NEITHER is told which regime it is in is the whole of the derivation, and the
+ * regime is read from `--eater-map-collapsed` — the stylesheet's own answer to
+ * its own breakpoint, which is what `leaders.ts` reads too — rather than from the
+ * viewport, so this asks the composition the question it asks itself.
+ */
+async function theGridIsTheCompositionsOwnEdges(browser, origin) {
+  const failures = [];
+  for (const viewport of [WIDE, SHORT, NARROW]) {
+    const { context, page } = await open(browser, origin, { viewport });
+    const where = `${viewport.width}x${viewport.height}`;
+    try {
+      failures.push(...(await settle(page)).map((why) => `${where}: ${why}`));
+
+      const seen = await page.evaluate(async () => {
+        const section = document.querySelector('.eater-map');
+        if (!section) return { missing: 'no .eater-map on the page' };
+        // ONTO THE SECTION FIRST. Every reading below is in viewport coordinates
+        // and one of them is a hit test, so a Section left off the screen answers
+        // about nothing at all — the shape scripts/checks/NOTES.md warns about.
+        // The snapping is lifted because in the band this is a port and a
+        // `scrollTo` between two of them is pulled back within a frame.
+        window.portfolio?.snapping?.(false);
+        window.scrollTo(0, section.getBoundingClientRect().top + window.scrollY);
+        await new Promise((frame) => requestAnimationFrame(frame));
+        await new Promise((frame) => requestAnimationFrame(frame));
+        window.portfolio?.snapping?.(true);
+
+        const grid = section.querySelector('.eater-map__grid');
+        if (!grid) return { missing: 'no .eater-map__grid — the Section draws no grid at all' };
+        const rows = [...section.querySelectorAll('.eater-map__points li')];
+        if (rows.length === 0) {
+          return { missing: 'no Points on the page, so there is nothing for a horizontal to be' };
+        }
+
+        const round = (n) => Math.round(n * 100) / 100;
+        const px = (value) => Number.parseFloat(value) || 0;
+        const bounds = section.getBoundingClientRect();
+        const collapsed =
+          Number(getComputedStyle(section).getPropertyValue('--eater-map-collapsed')) === 1;
+
+        // THE HORIZONTALS ARE NOT IN THE DOM — each is its row's own `::before` —
+        // so what is read is that pseudo's computed style against the ROW's.
+        const horizontals = rows.map((row, at) => {
+          const rule = getComputedStyle(row);
+          const line = getComputedStyle(row, '::before');
+          const box = row.getBoundingClientRect();
+          return {
+            at: at + 1,
+            drawn: px(line.borderTopWidth) > 0 && line.borderTopStyle !== 'none',
+            top: round(px(line.top)),
+            // BOTH WEIGHTS, because they are two Tokens since #214 — the accent
+            // line's and the composition's ink — and the claim is that the two
+            // lines share a CENTRELINE, which needs each one's own thickness.
+            hair: round(px(line.borderTopWidth)),
+            rule: round(px(rule.borderTopWidth)),
+            // `left` and `right` are the pseudo's own insets, negative, measured
+            // from the row. So the line's own edges are the row's plus those.
+            reachesLeft: box.left + px(line.left) <= bounds.left,
+            reachesRight: box.right - px(line.right) >= bounds.right,
+          };
+        });
+
+        // WHERE THE THIRD VERTICAL MEETS THE WORDS IT STANDS BESIDE. Three x's
+        // off the same row, all of them real rects rather than a stylesheet read
+        // back: the row's BORDER box, which is what the accent rule is drawn on
+        // and what the vertical has to be collinear with; the mark's box, which
+        // is a block filling the row's PADDING box and is therefore where the
+        // words start; and the hook's right edge, which is where the leader's
+        // shoulder ends. `--eater-map-point-inset` is spent between the first
+        // two and moves the third by nothing, so reading the padding property
+        // instead would only say the stylesheet contains what it contains.
+        const insets = rows.map((row, at) => {
+          const box = row.getBoundingClientRect();
+          const mark = row.querySelector('.eater-map__mark')?.getBoundingClientRect();
+          const hook = row.querySelector('.eater-map__hook')?.getBoundingClientRect();
+          return {
+            at: at + 1,
+            x: round(box.left - bounds.left),
+            ink: mark ? round(mark.left - bounds.left) : null,
+            shoulder: hook ? round(hook.right - bounds.left) : null,
+          };
+        });
+
+        const hidden = getComputedStyle(grid).display === 'none';
+        const lines = hidden
+          ? []
+          : [...grid.children].map((line) => {
+              const box = line.getBoundingClientRect();
+              return {
+                x: round(box.left - bounds.left),
+                top: round(box.top - bounds.top),
+                bottom: round(box.bottom - bounds.top),
+              };
+            });
+        const blocks = ['__head', '__stage', '__points'].map((part) => {
+          const element = section.querySelector('.eater-map' + part);
+          return {
+            part,
+            x: element ? round(element.getBoundingClientRect().left - bounds.left) : null,
+          };
+        });
+
+        // BEHIND EVERYTHING, ASKED OF THE PAGE. Three probes down each vertical
+        // rather than one, because a single one can land in the Section's own
+        // margin where the answer is the Section either way.
+        const covered = [];
+        for (const [at, line] of lines.entries()) {
+          for (const share of [0.25, 0.5, 0.75]) {
+            const y = Math.max(1, Math.min(window.innerHeight - 1, bounds.top + bounds.height * share));
+            const hit = document.elementFromPoint(bounds.left + line.x, y);
+            if (hit === grid || grid.contains(hit)) covered.push(at + 1);
+          }
+        }
+
+        return {
+          collapsed,
+          hidden,
+          horizontals,
+          lines,
+          blocks,
+          insets,
+          height: round(bounds.height),
+          covered: [...new Set(covered)],
+          focusable: grid.querySelectorAll('a, button, input, select, textarea, [tabindex], [contenteditable]')
+            .length,
+          spoken: grid.getAttribute('aria-hidden') !== 'true',
+          words: grid.textContent.trim().length,
+        };
+      });
+
+      if (seen.missing) {
+        failures.push(`${where}: ${seen.missing}`);
+        continue;
+      }
+
+      // ---- the horizontals, in both regimes --------------------------------
+      for (const line of seen.horizontals) {
+        if (!line.drawn) {
+          failures.push(
+            `${where}: Point ${line.at} draws no grid hairline. The grid's horizontals ARE the Points' ` +
+              'own rules continued across the frame (#201), so a Point without one is a line missing ' +
+              'from the grid and nothing else in the composition would say so',
+          );
+          continue;
+        }
+        // THE TWO CENTRELINES, AND NOT THE HAIRLINE'S TOP AGAINST THE ROW'S
+        // WEIGHT. Both borders are painted inside their own border boxes, so the
+        // row's rule is centred half its weight above the padding box and the
+        // hairline half of ITS weight below its `top`. Those two expressions are
+        // the same number while the weights are — which they were until #214 gave
+        // the accent line a weight of its own — and only the centrelines stay an
+        // equality once they are two Tokens the author drags apart. Reading both
+        // ends of the agreement is the point: an assertion that took either
+        // weight as read would pass a hairline drawn against a literal.
+        const hairline = line.top + line.hair / 2;
+        const accent = -line.rule / 2;
+        if (Math.abs(hairline - accent) > COLLINEAR) {
+          failures.push(
+            `${where}: Point ${line.at}'s hairline is ${line.hair}px thick and centred ${-hairline}px above ` +
+              `its padding box, while the row's own rule is ${line.rule}px thick and centred ${-accent}px ` +
+              'above it. The two have to be COLLINEAR — the grid line is that rule continued rather than a ' +
+              'second line beside it — which is what --eater-map-accent-weight and --eater-map-rule-weight ' +
+              'naming both ends of the arithmetic buys. Literals agreeing is what they replaced',
+          );
+        }
+        if (!line.reachesLeft || !line.reachesRight) {
+          failures.push(
+            `${where}: Point ${line.at}'s hairline does not reach the Section's ` +
+              `${line.reachesLeft ? 'right' : 'left'} edge. The grid is full-bleed and the Section's ` +
+              '`overflow-x: clip` is what ends it; a line that stops short has lost the over-reach',
+          );
+        }
+      }
+
+      // ---- the verticals, and where they go below the band ------------------
+      if (seen.collapsed) {
+        if (!seen.hidden) {
+          failures.push(
+            `${where}: the grid still draws its verticals below the band. Out here the Section is ONE ` +
+              'column and all three lines are the same left edge, so what ships is one rule down the ' +
+              'side of a phone. The horizontals stay because the Points do (#201)',
+          );
+        }
+      } else {
+        if (seen.hidden || seen.lines.length !== seen.blocks.length) {
+          failures.push(
+            `${where}: the grid draws ${seen.hidden ? 'no' : seen.lines.length} verticals for ` +
+              `${seen.blocks.length} standing blocks. There is one line per block and it is that ` +
+              "block's own left edge (#201)",
+          );
+        } else {
+          for (const [at, line] of seen.lines.entries()) {
+            const block = seen.blocks[at];
+            if (!block || block.x === null) continue;
+            if (Math.abs(line.x - block.x) > COLLINEAR) {
+              failures.push(
+                `${where}: the grid's vertical ${at + 1} stands at ${line.x}px while .eater-map${block.part} ` +
+                  `starts at ${block.x}px. The verticals are the three standing blocks' own left edges, ` +
+                  'and they say so by taking the twelve tracks through `grid-template-columns: subgrid` ' +
+                  'rather than restating them — a restated `repeat(12, …)` clamps its own gutter and ' +
+                  "puts every line a few pixels off somebody's edge, which is the failure this is for",
+              );
+            }
+            if (line.top > COLLINEAR || line.bottom < seen.height - COLLINEAR) {
+              failures.push(
+                `${where}: the grid's vertical ${at + 1} runs ${line.top}px to ${line.bottom}px of a ` +
+                  `${seen.height}px Section. It spends the Section's own inset back as a negative margin ` +
+                  'to reach both edges, which is how it lands on them whether or not the window reserves ' +
+                  'a scrollbar gutter',
+              );
+            }
+          }
+        }
+        for (const at of seen.covered) {
+          failures.push(
+            `${where}: the grid answers elementFromPoint along its vertical ${at}. It is furniture behind ` +
+              'the whole composition, so anything it is hit-tested over is something a reader cannot ' +
+              'point at any more',
+          );
+        }
+      }
+
+      // ---- and where that third vertical meets the words it stands beside ----
+      // THE LINE KEEPS THE ROW'S EDGE AND THE WORDS STAND OFF IT, which is one
+      // relationship read three ways because the wrong way to spend the air
+      // satisfies the assertion above. A padding on the `<ol>` never moves the
+      // `<ol>`'s own rect, so `line.x === block.x` still holds while the accent
+      // rule and the leader's shoulder have both come a gutter-half inside the
+      // line they are meant to leave from. Spent on the ROW instead, the border
+      // box does not move and only the ink does — so all three are asserted.
+      for (const row of seen.insets) {
+        if (row.ink === null || row.shoulder === null) continue;
+        if (seen.collapsed) {
+          // NO VERTICAL OUT HERE AND THEREFORE NO INSET. An indent on the four
+          // Points and on nothing else is a step in a column where the masthead,
+          // the copy and the Points' own rules all stand at one margin.
+          if (Math.abs(row.ink - row.x) > COLLINEAR) {
+            failures.push(
+              `${where}: Point ${row.at}'s words stand ${(row.ink - row.x).toFixed(2)}px inside its own row below ` +
+                'the band. --eater-map-point-inset is the air against the grid\'s third vertical and there ' +
+                'is no third vertical out here — the collapse spends it back, or the Points are indented ' +
+                'from a margin every other block in the column stands on (#201)',
+            );
+          }
+          continue;
+        }
+        if (row.ink - row.x <= COLLINEAR) {
+          failures.push(
+            `${where}: Point ${row.at}'s words start on its own left edge, which is the grid's third ` +
+              'vertical. The line then lands on the first character of the number, the title and every ' +
+              'line of the figure, and reads as a rule drawn THROUGH the text rather than behind it. ' +
+              '--eater-map-point-inset is the air, and it is spent inside the row',
+          );
+        }
+        if (Math.abs(row.shoulder - row.x) > COLLINEAR) {
+          failures.push(
+            `${where}: Point ${row.at}'s leader shoulder ends at ${row.shoulder}px while its row's own edge — ` +
+              `and so the grid's third vertical — is at ${row.x}px. The hook is \`right: 100%\` of the row's ` +
+              "PADDING box, which the row's inline padding is INSIDE rather than outside, so " +
+              '--eater-map-point-inset stands the words off the line and moves this box by nothing. ' +
+              'Compensated for anyway, the rule crosses the vertical and stops short of it in the air',
+          );
+        }
+      }
+
+      // ---- and nobody hears it ---------------------------------------------
+      if (seen.focusable > 0) {
+        failures.push(
+          `${where}: the grid puts ${seen.focusable} focusable element(s) into the tab order. It is a ` +
+            'drawing behind a composition and belongs in nobody\'s tab order',
+        );
+      }
+      if (seen.spoken) {
+        failures.push(
+          `${where}: the grid is not aria-hidden. It carries nothing the four Points' own words do not, ` +
+            'so a reader listening should be given none of it',
+        );
+      }
+      if (seen.words > 0) {
+        failures.push(`${where}: the grid holds ${seen.words} character(s) of text — it is a drawing`);
+      }
+    } finally {
+      await context.close();
+    }
+  }
+  return failures;
+}
+
 export const check = {
   name: 'eater-map',
   title:
     'PROJECTS stands in the Gallery’s own box with the serif title sized off its ink, the copy at the ' +
     'foot and the Points to the right; the Cards lie on the Slab at its own scale, come off it and go ' +
-    'back, are joined to their numbers by rules that end in a lit dot, are only a picture, and lie flat ' +
-    'and full-bleed below the band',
+    'back, go back one at a time under a reader’s pointer without flickering, are joined to their ' +
+    'numbers by rules that end in a lit dot, carry a rim that is one pane of glass rather than a stack of ' +
+    'films, are only a picture, and lie flat and full-bleed below the band; ' +
+    'and the grid behind all of it is the four Points’ own rules and the three blocks’ own left edges rather ' +
+    'than any set of fractions',
 
   /** @param {{ browser: import('playwright').Browser, origin: string }} ctx */
   async run({ browser, origin }) {
@@ -3427,12 +4941,31 @@ export const check = {
       found.push(...(await atWindow(browser, origin, viewport)));
     }
     found.push(...(await reversesOnTheWayOut(browser, origin)));
+    // ITS OWN NOTES, because two of the three things it can find are facts about
+    // the composition rather than faults in it: a piece that does not travel far
+    // enough to leave the pointer has no flicker to have, and how far a piece
+    // travels is a Token.
+    const drop = await hoveringPutsOnePieceBack(browser, origin);
+    found.push(...drop.failures);
     // THE ONE GROUP THAT REPORTS WHAT IT SAW, because every tolerance in it was
     // chosen off a measurement and a reader of a passing log should be able to tell
     // a comfortable pass from one sitting on a threshold.
     const edge = await theEdgeHasADirection(browser, origin);
     found.push(...edge.failures);
+    edge.notes.push(...drop.notes);
     found.push(...(await nothingWatchesTheTokens(browser, origin)));
+    // THREE WINDOWS OF ITS OWN, AND THE THIRD IS THE POINT. The grid's two halves
+    // answer the regime differently while neither is told which regime it is in,
+    // so a run that never leaves the band asserts only the half that is the same
+    // in both.
+    found.push(...(await theGridIsTheCompositionsOwnEdges(browser, origin)));
+    // ITS OWN NOTES, for the same reason the group above reports what it saw: how
+    // many slices a resize moved and whether a carried page agreed with a mounted
+    // one is what tells a reader of a passing log that both halves were exercised
+    // rather than skipped.
+    const window_ = await theEdgeFollowsTheWindow(browser, origin);
+    found.push(...window_.failures);
+    edge.notes.push(...window_.notes);
 
     const collapse = await collapsedBelowTheBand(browser, origin);
     found.push(...collapse.failures);

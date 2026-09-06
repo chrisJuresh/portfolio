@@ -36,7 +36,10 @@ import { type Stage, type StageParts } from './stage';
  * arrived would be the Slab changing under them, which is the one thing this
  * Section is built against — so what these are spent by is `--eater-map-solid`
  * instead: 1 in the band and 0 below it, which is the collapse taking the edge
- * away without anything being re-mounted on a resize.
+ * away. **That crossing IS a re-mount now**, and it is the only resize that is
+ * one: `redraw.ts` watches that one value and draws the stack again when it
+ * moves, because `edge.ts` substituted it into every length rather than leaving
+ * a `var()` for the page turn to re-parse a hundred and forty-four times a frame.
  *
  * Both are written in `cqw` for the reason everything else on the plane is — the
  * slices are children of `.eater-map__plane`, which is inside
@@ -47,10 +50,15 @@ import { type Stage, type StageParts } from './stage';
  */
 
 /** The Token, as a length on the plane, closed up to nothing where the Section has
- *  collapsed. Written out rather than held in a variable, because these are CSS
- *  expressions the browser re-evaluates — nothing here is computed once at mount,
- *  which is what lets a Token dragged in the Editor and a window carried across
- *  the breakpoint both move the drawing.
+ *  collapsed.
+ *
+ *  STILL EXPRESSIONS, AND THE `100cqw` IS WHY. `edge.ts` substitutes the Tokens
+ *  out of these before it writes them on a slice — a `var()` costs a re-parse on
+ *  every style recalc of the document, and the page turn recalculates it every
+ *  frame — but it leaves the container unit alone, so a share of the Slab still
+ *  holds at every window with nothing re-mounted. What a mount no longer survives
+ *  is a Token MOVING: dragged in the Editor, or answered differently by the media
+ *  query below the band. `redraw.ts` is the answer to both.
  *
  *  `min()` IS THE CONSTRAINT tokens.css STATES, MADE REAL — AND IT IS ON THE
  *  FILLET, which is #200. An edge cannot be rounder than it is deep, and without

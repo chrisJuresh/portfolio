@@ -108,20 +108,62 @@
      it is a plain colour rather than a mix on `--ink`: it was sampled off the
      reference's own `01.`, and this Section stands at the far end of the Turn in
      both themes, so there is no crossing for it to ride. The rule above each Point
-     is the same colour at 36% of it, which is the veil below.
+     is the same colour at the veil below, and that veil is NONE: the accent line
+     — the row rule, the leader out of it, and the dot where it turns — is the
+     accent straight. It stood at 36% until it was asked to stand at full, and the
+     Token is still here because the number is one the author may move (ADR 0004);
+     it is at 0% rather than gone so the whole line can be veiled again in one
+     drag rather than in three edits.
 
      The number and the icon are one row and are set at the same weight, so a Point
      reads as an annotation on a drawing rather than as an entry in a list. Which
      icon a Point carries follows from the PART it names — `icons.ts`, keyed by the
      part — so there is nothing here to choose. */
   --eater-map-accent: #bc9870;
-  --eater-map-accent-veil: 64%;
+  --eater-map-accent-veil: 0%;
+
+  /* AND ITS WEIGHT, WHICH IS THE THIRD NUMBER ABOUT ONE LINE AND USED TO BE TWO
+     NUMBERS ABOUT TWO (#214). The accent line is the rule across a Point's row
+     and the leader out of that row's left edge onto the part — one line, and the
+     Section's own NOTES.md say so at length. Its weight was
+     `--eater-map-rule-weight` for the row and the hook and
+     `--eater-map-leader-weight` for the polyline, so there was no drag that made
+     the orange line thicker: one of them thickened the diagonal and left the row
+     a hairline, and the other took the frame's neutral grid and the rule above
+     the copy with it, because the same Token is those rules' weight too.
+
+     So this is the accent line's, end to end — the Point's border, the hook's box
+     and the polyline's stroke — and `--eater-map-rule-weight` is left holding the
+     NEUTRAL rules, which is what it was always naming underneath. It is the same
+     argument the veil above is under, one seam further along: one number the
+     author drags, rather than two that have to agree.
+
+     THE GRID'S HAIRLINE IS STILL THIS RULE CONTINUED and stays collinear with it
+     by CENTRELINE — which is what sharing a box already meant while the two
+     weights were one, said so it survives either of them being dragged. The
+     leader needs nothing: `leaders.ts` has always taken the hook's centreline. */
+  --eater-map-accent-weight: 1px;
 
   --eater-map-number-size: clamp(1.4rem, 1.1rem + 1vw, 2.1rem);
   --eater-map-number-leading: 0.9;
   --eater-map-icon-size: clamp(1.15rem, 0.95rem + 0.85vw, 1.8rem);
   --eater-map-icon-weight: 1.3;
   --eater-map-point-air: 0.7em;
+
+  /* THE ROOM BETWEEN THE GRID'S THIRD VERTICAL AND THE FIRST WORD, which is the
+     same thing `--eater-map-copy-inset` was for the rule that used to run down
+     the copy's left edge — the composition that took it away is not this one.
+     The vertical IS this column's left edge (#201) and stays there, so the air
+     is spent INSIDE the row: the rule above each Point still starts on the line
+     and the leader's shoulder still lands on it, and only the words stand off.
+
+     Half the gutter is the default because that is the air the grid already puts
+     between two columns, so the words clear the line by the same measure the
+     columns clear each other. It is a Token and not that expression spent in
+     place, because how far ink stands off a rule is exactly the kind of number
+     an author looks at (ADR 0004). Below the band it is spent back: there are no
+     verticals out there and everything stands at one margin. */
+  --eater-map-point-inset: calc(var(--eater-map-gutter) / 2);
 
   --eater-map-point-size: clamp(0.95rem, 0.85rem + 0.35vw, 1.2rem);
   --eater-map-point-weight: 500;
@@ -301,8 +343,42 @@
      than life; 1 is the screenshot. */
   --eater-map-card-scale: 1;
 
+  /* THE APP'S OWN TOP INSET, AND IT IS 12 AND NOT A NUMBER CHOSEN BY EYE (#213).
+     Eater's `.topbar` is `top: max(12px, env(safe-area-inset-top)); left: 12px`,
+     and the Slab is that app captured in a browser at 393x852 where the safe area
+     is 0 — so the bar sits 12 capture-pixels below the top of this very picture.
+     Measured on the running app rather than read off the stylesheet: at 393x852
+     its rect is 12, 12, 369 x 48.
+
+     `0.152` shipped here, which is 59.7 capture-pixels, and it was the one Card
+     whose flat place was not the app's. It read as harmless for as long as nobody
+     could see it: the Lift's near end is not a frame the drawing rests at, so the
+     only thing that ever put a piece back on the map was #213's Drop — and the
+     Drop's whole claim is *this is where the search bar actually sits*, made by
+     landing it somewhere it does not.
+
+     THE X IS THE APP'S TOO, AND IT IS 0.034 RATHER THAN 12/393 FOR A REASON. The
+     Cards were captured at 390 wide and the Slab at 393, so the vendored bar is
+     366 where the app's is 369; left-aligning it on 12 would put 12 down one side
+     and 15 down the other. 13.5 centres the difference, which is what the app's
+     own symmetry looks like. The details sheet's `x` is the same arithmetic.
+
+     AND THE SLIDE BELOW ABSORBS THE MOVE, so the drawing at rest is the drawing
+     the author composed: this Token and `--eater-map-card-search-slide-y` are the
+     flat place and the climb, and only their SUM is what a reader turning onto the
+     Section sees. Correcting one without the other would have been a composition
+     nobody chose, 47.7 capture-pixels up the plane.
+
+     ONE THING DOES MOVE AT REST, AND IT IS THE RIGHT THING. `glass.ts` offsets each
+     surface's blurred copy of the Slab by the Card's RESTING PLACE and never by its
+     drift — that is the parallax, a sheet of glass lifted off a table showing the
+     piece of table it was lying on. So this Token is which piece, and the search
+     Card now carries the map from under the app's own search bar rather than from
+     47.7 pixels below it. Measured at 1440x900, over the 730x610 crop that holds
+     the whole drawing: 25,662 of those pixels change and none by more than 95 of
+     255, which is a heavily blurred picture sliding under glass. */
   --eater-map-card-search-x: 0.034;
-  --eater-map-card-search-y: 0.152;
+  --eater-map-card-search-y: 0.0305;
 
   /* THE RAIL POPUP MOVED DOWN THE SLAB, AND THE SEARCH CARD'S ARRIVAL IS WHY
      (#194). At the search bar's own place the results dropdown now hangs 112
@@ -419,9 +495,19 @@
      it would slide all three the same way by the same amount, which is a
      translation of the drawing rather than a gap in it. Two numbers per Card say
      where that Card goes, which is what the reference actually shows, and none of
-     them is larger than 0.11. */
+     them is larger than 0.11.
+
+     THE SEARCH CARD'S `slide-y` IS POSITIVE, AND THAT IS THE COST OF ITS FLAT
+     PLACE BEING CORRECTED RATHER THAN A CHANGE OF MIND ABOUT THE CLIMB (#213).
+     The pair sums to where the Card stands at rest — `y + slide-y - rise x
+     depth-y` — so moving the flat place 0.1215 up the plane and the slide 0.1215
+     down it leaves every surface's rect on the plane identical to the digit, which
+     is what was wanted: the bar landed in the wrong place when a reader dropped
+     it, and stood in the right one. What the glass CARRIES does move, and the
+     block by `--eater-map-card-search-y` says why that is the point. The details
+     sheet already slides down as it climbs. */
   --eater-map-card-search-slide-x: -0.02;
-  --eater-map-card-search-slide-y: -0.11;
+  --eater-map-card-search-slide-y: 0.0115;
 
   --eater-map-card-lines-slide-x: -0.045;
   --eater-map-card-lines-slide-y: -0.02;
@@ -505,8 +591,33 @@
   /* What a Card's edge is made of. Lighter than the Slab's, because a pane of
      glass on a map is not the same material as the map's own body, and it is a
      fact about the object rather than about the page — so it does not turn with
-     the theme, exactly as --eater-map-slab-edge does not. */
-  --eater-map-card-edge: rgba(198, 196, 192, 0.92);
+     the theme, exactly as --eater-map-slab-edge does not.
+
+     AND IT IS OPAQUE, WHICH IS A CONSTRAINT AND NOT A CHOICE. The alpha below is
+     the rim's transparency and this is only its colour; putting a second one here
+     would be composited once per slice on top of the one composited once for the
+     whole stack, which is the smear edge.ts's `Solid.alpha` exists to prevent. If
+     the rim wants to be more or less see-through, that is the number under this
+     one. */
+  --eater-map-card-edge: rgb(198, 196, 192);
+
+  /* HOW MUCH OF THE MAP COMES THROUGH THE RIM — the Cards' edge as glass rather
+     than as a bezel round glass.
+
+     A SURFACE IS A TRANSLUCENT PANE AND ITS EDGE IS THE SAME PANE SEEN END ON, so
+     an opaque rim is the one part of a Card made of something the rest of it is
+     not: it reads as a frame stuck round a window, and it hides the map at exactly
+     the place the drawing is showing a reader that the piece has been lifted off
+     it. At this the roads and the pins carry on through the shoulder and the piece
+     reads as one solid.
+
+     IT BELONGS TO THE STACK AND NOT TO THE COLOUR, which is the whole reason it is
+     its own Token — edge.ts's `Solid.alpha` carries the arithmetic. Dragging it to
+     1 gives back the solid rim and costs nothing but the render surface; below
+     about a fifth the pieces stop having thickness at all where they overhang the
+     Slab onto the page's own ground, which is the floor worth knowing about
+     rather than a rule. */
+  --eater-map-card-edge-alpha: 0.5;
 
   /* How long the Lift takes end to end, and therefore how long a turn back
      part-way through takes to undo: `timeline.ts` spends this in proportion to
@@ -516,52 +627,178 @@
      (src/sections/NOTES.md). */
   --eater-map-lift-time: 1.15s;
 
+  /* And how long one piece takes to go back down when the reader hovers it or the
+     Point that names it, and to come back up when they leave (#213). Spent in
+     proportion to the distance still to travel, exactly as the Lift's is, so a
+     piece caught half way down and sent back takes half of this.
+
+     SHORTER THAN THE LIFT, and it is a different kind of motion rather than a
+     faster one: the Lift is the drawing assembling itself when the page comes to
+     rest, and this is an answer to a question a pointer just asked. Read per
+     gesture, so dragging it in the Editor changes the next hover without a
+     reload. */
+  --eater-map-drop-time: 0.45s;
+
   /* ---- the leader lines ---------------------------------------------------
      Four thin rules joining each numbered point to the part of the Exploded View
-     it names (#178). Three Tokens, and they are the three the composition can
-     have an opinion about: how heavy the rule is, how far back it stands from
-     the ink around it, and how far it runs horizontally out of its point before
-     turning towards the part. `reach` at 0 is a straight rule from the point to
-     the corner; the shoulder is what binds the rule to the row of text it
-     leaves. */
-  --eater-map-leader-weight: 1px;
-  --eater-map-leader-veil: 62%;
+     it names (#178). ONE Token here, and it is the one thing about a leader that
+     is only a leader's: how far the rule runs horizontally out of its point
+     before turning towards the part. `reach` at 0 is a straight rule from the
+     point to the corner; the shoulder is what binds the rule to the row of text
+     it leaves.
+
+     NEITHER THE COLOUR NOR THE WEIGHT IS ONE OF THEM, AND THAT IS THE WHOLE OF
+     WHAT WAS WRONG WITH BOTH. There was a `--eater-map-leader-veil` here, spent on `--ink`,
+     which drew a rule that left an accent-coloured row rule and turned white half
+     an inch later — a reader following one line watched it change species. The
+     line the reader follows is ONE line: the grid's neutral hairline across the
+     frame, and then the accent from the row's own left edge all the way to the
+     part. So the leader spends `--eater-map-accent` at `--eater-map-accent-veil`,
+     which is the row rule's own colour and its own number rather than a second
+     one that has to agree with it. Drag the veil and the whole line moves
+     together, which is what took it to 0%: the ask was for the accent line to
+     carry no transparency, and it was one number rather than three because that
+     seam was already there.
+
+     `--eater-map-leader-weight` went the same way and for the same reason (#214).
+     It was the polyline's stroke while the row rule it continues was
+     `--eater-map-rule-weight`, so "make the orange line thicker" was two drags
+     and one of them thickened the neutral grid. The weight is
+     `--eater-map-accent-weight` now, declared up with the accent's colour and its
+     veil, and this block states none of the three: what a leader has an opinion
+     about is where it goes, and it is drawn in the line's own colour at the
+     line's own weight because it IS that line. */
   --eater-map-leader-reach: clamp(1.6rem, 0.9rem + 2.4vw, 3.8rem);
 
   /* THE TWO DOTS, and they are two different claims (#191). The one at the PART
-     is lit — full ink, larger — and is what says "this, here, is the thing the
-     number is about"; the one at the shoulder is the leader's own colour and
-     smaller, and says only that the rule turned. A rule that reaches a corner and
-     stops is the reference's own fault, which the reference itself has: its lines
-     begin in empty space and one ends nowhere.
+     is lit — the accent straight, larger — and is what says "this, here, is the
+     thing the number is about"; the one at the shoulder is the leader's own
+     colour and smaller, and says only that the rule turned. A rule that reaches a
+     corner and stops is the reference's own fault, which the reference itself
+     has: its lines begin in empty space and one ends nowhere.
 
      Radii, in px, because an SVG `r` is a length in the overlay's own user units
      and the overlay is laid out in CSS pixels. */
   --eater-map-leader-tip: 2.8px;
   --eater-map-leader-knee: 2px;
 
-  /* WHICH CORNER EACH RULE ENDS ON, as a share of the part's own width and
-     height — so it is a corner at every window and at every size the Slab is
-     drawn at, and dragging one in the Editor moves it around the Card rather
-     than around the page. 0,0 is the part's top-left and 1,1 its bottom-right.
+  /* AND THE LIT DOT GLOWS, which is the one place in this Section where a mark is
+     allowed to be brighter than the ink around it. The rule arrives at the part
+     veiled — it is a hairline, and a hairline that shouts is a scratch — so the
+     end of it needs something other than weight to say ARRIVED. Two shadows and
+     not one: a tight halo that reads as the dot itself being lit, and a wide,
+     much fainter bloom that puts the light onto the picture underneath, which is
+     what makes it a lamp on the drawing rather than a ring drawn round a circle.
 
-     The defaults are the corner nearest the points' column, taken down the
-     stack in the order the four points read: the search bar's foot, the lines
-     popup's foot, the detail panel's head, and the Slab's own bottom-left, which
-     is the one corner of the picture no Card is standing on. */
-  --eater-map-anchor-search-x: 0;
-  --eater-map-anchor-search-y: 1;
+     BOTH RADII ARE MEASURED AGAINST THE DOT AND NOT AGAINST THE PAGE, so dragging
+     `--eater-map-leader-tip` takes the glow with it and the mark stays one thing.
+     In px for the same reason the radii are: a `drop-shadow` blur is spent in the
+     overlay's own CSS pixels.
 
-  --eater-map-anchor-lines-x: 0;
-  --eater-map-anchor-lines-y: 1;
+     The bloom's veil is deep on purpose. A glow is an ANGULAR quantity to the eye
+     the way the plinth's lights are (docs/agents/plinth-marble.md): widen it and
+     it stops reading as a light on the drawing and starts reading as a smudge
+     over it, and past about 40% opacity at this reach the Cards behind it go
+     milky. */
+  --eater-map-leader-glow: 3px;
+  --eater-map-leader-bloom: 9px;
+  --eater-map-leader-bloom-veil: 68%;
 
-  --eater-map-anchor-details-x: 0;
+  /* WHICH CORNER EACH RULE ENDS ON, as a share of the PART's own width and
+     height — the component the number names, which since the fourth point moved
+     to the Offline button is not the same box as the Card it is drawn on: the
+     search Card is a topbar carrying two pills, and each of them is a part. So it
+     is a corner at every window and at every size the Slab is drawn at, and
+     dragging one in the Editor moves it around that component rather than around
+     the page. 0,0 is the part's top-left and 1,1 its bottom-right.
+
+     THE DEFAULT IS THE TOP RIGHT, FOR ALL FOUR. The Points stand down the right
+     edge (#191), so every rule arrives from the right and the top-right corner is
+     the one nearest the number — a line that crosses its own component to end on
+     the far side of it reads as a line passing over something rather than as one
+     arriving at it.
+
+     AND A DRAG MOVES THE RULE AND NOT ONLY THE POINT IT ENDS AT (#214). The
+     anchor is a zero-sized box, so moving it resizes nothing and the
+     `ResizeObserver` `leaders.ts` redraws on never fires — these eight Tokens and
+     the reach above wrote their file and left all four rules where they were
+     until a reload, which reads exactly like a Token that does nothing. The
+     leaders are drawn again by `redraw.ts` now, which is the Editor's own preview
+     sheet watched, and is the same seam the Slab's shading has been redrawn
+     through since #196. The slider's range is four times the value in the file,
+     so `y` at 1 offers 0 to 4 and only the first quarter of it is on the part —
+     the number beside it takes any share, and 0.5 is the middle of that edge. */
+  --eater-map-anchor-search-x: 1;
+  --eater-map-anchor-search-y: 0;
+
+  --eater-map-anchor-offline-x: 1;
+  --eater-map-anchor-offline-y: 0;
+
+  --eater-map-anchor-lines-x: 1;
+  --eater-map-anchor-lines-y: 0;
+
+  --eater-map-anchor-details-x: 1;
   --eater-map-anchor-details-y: 0;
 
-  --eater-map-anchor-slab-x: 0;
-  --eater-map-anchor-slab-y: 1;
+  /* AND HOW FAR IN FROM THAT CORNER THE DOT ACTUALLY SITS, because a corner is
+     not where the component is. Every surface in this drawing is rounded — the two
+     pills to their own half-height, the rail popup to 14px, the detail sheet to 28
+     — so the geometric corner of the box is outside the outline a reader sees, and
+     a lit dot drawn there floats beside the component instead of resting on it.
 
-  /* ---- the rules the composition draws ------------------------------------ */
+     THERE IS A FLOOR AND IT IS ARITHMETIC. Coming in by `d` along both axes puts
+     the dot √2·(r − d) from a corner arc's centre, so it is inside the fillet only
+     while d ≥ r(1 − 1/√2) — 0.293 of the radius, which is 8.2px at the sheet's 28
+     and the largest of the four.
+
+     AND THE FLOOR IS NOT THE ANSWER, because the outline a reader sees is not the
+     radius. A Card is an extruded solid: its edge rolls out past the face's own
+     corner, so a dot that clears the CSS fillet is still sitting on the bevel.
+     Rendered at 10, 14, 16, 18 and 22 and looked at, on the pill and on the sheet:
+     ten and fourteen sit on the outline, eighteen puts the pill's dot on the
+     tick in the Offline button and the sheet's on its close control, and sixteen
+     is clear of both.
+
+     IN THE COMPONENT'S OWN PIXELS. The Cards are frozen to the viewport they were
+     exported at, so a radius is a constant in these units and this stays in step
+     with it through every scale the Card is drawn at. */
+  --eater-map-anchor-inset: 16px;
+
+  /* ---- the rules the composition draws ------------------------------------
+     ONE WEIGHT FOR THE NEUTRAL ONES, and it is a Token because #201 made it one.
+     It was `1px` typed into three rules — above the copy, above each Point, and
+     the grid's own hairlines — and two literals agreeing is a coincidence a Check
+     can only assert by re-typing the number a third time; one name is the
+     agreement itself, and the author may drag it.
+
+     THE RULE ABOVE A POINT LEFT THIS TOKEN IN #214, which is the one change worth
+     knowing about here. That rule is not neutral — it is the accent line's first
+     inch, and it is `--eater-map-accent-weight` now, with the leader that
+     continues it. What is left under this name is the grid and the copy: the
+     marks the composition draws in ink rather than in the accent. The grid's
+     horizontal is still the Point's rule continued and still collinear with it,
+     by CENTRELINE rather than by standing one of its own border-widths above the
+     padding box — which was the same thing while the two weights were one Token,
+     and is the thing that stays true now they are two. */
   --eater-map-rule-veil: 78%;
+  --eater-map-rule-weight: 1px;
   --eater-map-muted-veil: 32%;
+
+  /* ---- the grid the composition sits across (#201) -------------------------
+     Faint hairlines through the whole frame, behind everything: four horizontals
+     that are the four Points' own rules continued, and three verticals that are
+     the three standing blocks' left edges. THESE TWO ARE THE WHOLE OF WHAT IS A
+     NUMBER HERE, and that is the point rather than an omission — every POSITION
+     is an edge the composition already has, so there is nothing to state and
+     nothing that can drift from what it is drawn against. A coordinate in a
+     composition is not a Token (ADR 0004); how far back the drawing stands from
+     the ink is, and it is this.
+
+     78% is the rule above the copy, and the rule above a Point stands at none at
+     all. 92% is a step further back again, because these cross the whole frame
+     rather than sitting over one column, and a rule that reads at a hand's width
+     of column shouts at 1600. The mockup's own was rgba(255,255,255,0.075) on black, which is this
+     to within a point — but stated as a veil on --ink rather than as white, so
+     the light theme takes it as ink on paper instead of vanishing. */
+  --eater-map-grid-veil: 92%;
 }

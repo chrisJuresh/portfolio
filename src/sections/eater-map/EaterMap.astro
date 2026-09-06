@@ -20,7 +20,6 @@
 import { CARDS } from './cards';
 import { content } from './content';
 import { markFor } from './icons';
-import { SLAB_PART } from './leaders';
 import { SLAB } from './slab';
 // The Eater app's own stylesheet, vendored with the Cards (#174). A plain CSS
 // file, so Astro does not scope it — every selector in it begins with the
@@ -38,6 +37,11 @@ import './assets/cards/results.css';
 // selector cannot reach markup that arrived through `set:html`. After the export
 // on purpose, though it does not depend on the order — the file says why.
 import './cards-shape.css';
+// And where a leader line ends on one of those surfaces, which is unscoped for
+// the same reason and is a second file because it is a different claim: that one
+// is what this Section says about a surface's SHAPE, this is where the drawing's
+// own annotation attaches to it. cards-anchor.css says the rest.
+import './cards-anchor.css';
 import './tokens.css';
 // variants.css is deliberately NOT imported: an unselected Variant has to cost
 // the shipped page nothing, so the sheet is not part of the build at all and the
@@ -65,6 +69,37 @@ import './tokens.css';
       of it here is the column it stands in, which is the page's own left margin
       and is what the padding below leaves. */}
   <div class="eater-map__inner">
+    {/* THE GRID THE COMPOSITION SITS ACROSS (#201), and it is THREE elements
+        rather than six because the other three are already on the page.
+
+        The reference and the mockup both draw faint hairlines through the whole
+        frame. The mockup stated six of them as fractions of a 1600x900 screen,
+        and #201 is right that fractions stop meaning anything the moment the
+        page scrolls — "a horizontal at 0.505 of WHAT". So none of them is a
+        fraction here. Every line is an EDGE THE COMPOSITION ALREADY HAS:
+
+        - the four HORIZONTALS are the four Points' own rules, continued out of
+          each row and across the frame. They are drawn by `.eater-map__points
+          li::before` rather than by anything in here, so there is no position to
+          state, nothing to measure and nothing to keep in step — a fifth Point
+          brings a fifth line with it. Measured against the mockup, its 0.505 and
+          0.735 were points 03 and 04 to within a per cent, which is what it was
+          tracking by hand.
+        - the three VERTICALS are these, and they are the left edges of the three
+          standing blocks: the writing at column 1, the drawing at column 5, the
+          Points at column 11. `subgrid` below is what lets them say that rather
+          than restate the twelve tracks — move a block and its line goes with
+          it. The third is where the leader lines' shoulders stand, so each rule
+          leaves its Point exactly on a vertical.
+
+        `aria-hidden` and empty: it is furniture, it says nothing the four points'
+        own words do not, and it contributes nothing to the accessibility tree.
+        `z-index: -1` in the stylesheet puts it behind every other layer. */}
+    <span class="eater-map__grid" aria-hidden="true">
+      <i></i>
+      <i></i>
+      <i></i>
+    </span>
     {/* PROJECTS, IN THE GALLERY'S OWN BOX (#191). The word the reader met on the
         Panel, drawn again here at the landing's own size and standing at the
         landing's own margin — so turning onto this screen does not move it. It is
@@ -162,8 +197,13 @@ import './tokens.css';
                 <div class="eater-map__face">
                   {/* `display: contents`, so the wrapper this Card's own markup has
                       to arrive in — set:html replaces an element's children, and
-                      the backdrop beside it would be one — generates no box at all
-                      and the Card is laid out exactly as it was without it. */}
+                      the dropdown hanging beside it would be one — generates no box
+                      at all and the Card is laid out exactly as it was without it.
+
+                      The leader lines' anchors are NOT here and are not this
+                      template's: a part is a component of the app rather than a
+                      Card, so an anchor is planted inside the surface it names by
+                      cards.ts and placed by cards-anchor.css. */}
                   <div class="eater-map__surface" set:html={card.html} />
                   {/* AND THE SEARCH CARD'S SECOND VENDORED ROOT (#194): the app's
                       own results dropdown, hanging off the bar it is typed into.
@@ -190,16 +230,9 @@ import './tokens.css';
                     />
                   )}
                 </div>
-                <span class="eater-map__anchor" data-eater-map-anchor={card.name} />
               </div>
             ))}
           </div>
-          {/* THE FOURTH ANCHOR IS ON THE PLANE ITSELF, because the fourth point
-              names the Slab: the offline basemap is the artefact the reader is
-              already looking at rather than something standing on it. It is a
-              sibling of the picture and inside the same camera, so it is turned
-              by the same one rotation everything else on the plane is. */}
-          <span class="eater-map__anchor" data-eater-map-anchor={SLAB_PART} />
         </div>
       </div>
     </div>
@@ -227,7 +260,13 @@ import './tokens.css';
         token stream rather than to pixels. leaders.ts. */}
     <ol class="eater-map__points" data-eater-map-watch>
       {content.points.map((point, at) => (
-        <li>
+        /* AND THE ROW SAYS WHICH PART IT NAMES, which is the Drop's half of the
+           correspondence (#213): hovering a Point lowers the piece that Point is
+           about, so the row has to carry the same word the rule leaving it does.
+           On the ROW rather than on the hook, because the hook is a zero-height
+           box a pointer can never be inside — what the reader points at is the
+           number, the title and the figure, which is this element. */
+        <li data-eater-map-point={point.part}>
           {/* THE NUMBER IS THE ORDINAL AND NOT A WORD, so it is derived from the
               list's own order rather than authored beside each point: an <ol>
               whose numbers are typed is two orders to keep in step, and the
@@ -419,6 +458,61 @@ import './tokens.css';
     column-gap: var(--eater-map-gutter);
   }
 
+  /* ---- THE GRID'S THREE VERTICALS (#201) ----------------------------------
+     The left edges of the three standing blocks, and they are stated as GRID
+     LINES rather than as lengths — column 1, column 5 and column 11 are the same
+     three numbers the `grid-area`s below use, so a block that moves takes its
+     line with it and there is no second copy of the layout to drift.
+
+     `subgrid` IS WHAT MAKES THAT TRUE, and it is the whole reason this is a box
+     with three children rather than three absolutely positioned rules. A track
+     boundary in a twelve-column grid is `4t + 3.5g` from the edge and neither `t`
+     nor `g` is a length anything here holds — both are the grid algorithm's. A
+     subgrid does not compute them, it INHERITS them, so `grid-column: 5` is
+     exactly where the drawing starts however the gutter clamps.
+
+     `z-index: -1` IS THE PAGE'S OWN "BELOW EVERYTHING" and not a number picked to
+     win: src/kernel/ground.css lays the page out as ground on the canvas, corner
+     pictures at -1, the Rail at 1 and the type at 5, so -1 is the layer that is
+     already defined as behind the composition and in front of the ground. Neither
+     this Section nor the body is a stacking context, so that is where these land
+     — and if either ever becomes one they land behind ITS content instead, which
+     is the same promise. A grid item takes `z-index` without being positioned. */
+  .eater-map__grid {
+    grid-area: 1 / 1 / 2 / 13;
+    align-self: stretch;
+    display: grid;
+    grid-template-columns: subgrid;
+    z-index: -1;
+    pointer-events: none;
+  }
+
+  /* FULL-BLEED BY SPENDING THE SECTION'S OWN INSET BACK, which is the same move
+     the collapse makes for the Slab and for the same reason: a negative margin is
+     stated against this box's containing block, so it lands on the Section's two
+     edges whether or not the window has a scrollbar gutter. `100vh` would be the
+     obvious way and would be wrong by exactly the header of a page that scrolls.
+
+     A border rather than a background, so the hairline is one device-pixel-ish
+     line at every zoom rather than a box rounded to none. */
+  .eater-map__grid i {
+    margin-block: calc(-1 * var(--eater-map-inset));
+    border-left: var(--eater-map-rule-weight) solid
+      color-mix(in oklab, var(--ink), transparent var(--eater-map-grid-veil));
+  }
+
+  .eater-map__grid i:nth-child(1) {
+    grid-column: 1;
+  }
+
+  .eater-map__grid i:nth-child(2) {
+    grid-column: 5;
+  }
+
+  .eater-map__grid i:nth-child(3) {
+    grid-column: 11;
+  }
+
   /* THE TWO ENDS OF THE LEFT COLUMN, and they are one grid area used twice
      rather than two rows. The head is start-aligned and the copy end-aligned in
      the SAME cell, which is what "the copy at the foot of the left column" is —
@@ -449,20 +543,47 @@ import './tokens.css';
      property's computed value ever is.
 
      ON THE ROW'S LEFT EDGE AND AT ITS TOP, which is the whole of what moving the
-     Points across the page cost the leader lines (#191). `leaders.ts` decides
-     which EDGE of this box a rule leaves from by which side of it the part is on,
-     so the shoulder turned round on its own; which edge of the ROW the box stands
-     on is a composition decision and this is it. And `top: 0` rather than half a
-     line down, because the row's own rule is drawn across its top edge now — so
-     the leader continues that line out of the Point rather than leaving from the
-     middle of it. Derived and not a Token: a coordinate in the composition rather
-     than a number the author chooses (ADR 0004). */
+     Points across the page cost the leader lines (#191).
+
+     AND `--eater-map-point-inset` DOES NOT MOVE IT, which is worth stating
+     because the obvious reading says it does. `right: 100%` is measured against
+     the containing block a positioned ancestor establishes, and that is the row's
+     PADDING box — the border box less its borders, with the padding INSIDE it.
+     So the row's inline padding stands the words off the line without moving this
+     box by a pixel, and a compensating `calc(100% + …)` here overshoots by
+     exactly the Token: written that way the shoulder crossed the vertical and
+     stopped short of it in the air, at every window, and the `eater-map` Check is
+     what said so.
+
+     `leaders.ts` decides which EDGE of this box a rule leaves from by which side
+     of it the part is on, so the shoulder turned round on its own; which edge of
+     the ROW the box stands on is a composition decision and this is it. Derived and not a Token: a
+     coordinate in the composition rather than a number the author chooses
+     (ADR 0004).
+
+     AND THE BOX IS THE ROW RULE'S OWN BOX, VERTICALLY — which is a half pixel,
+     and the half pixel was visible. It was `top: 0; height: 0`, and `top: 0` on
+     an absolutely positioned child is the row's PADDING box, because that is the
+     containing block a positioned ancestor establishes. The row's accent rule is
+     a border, drawn in the border box, so it sits entirely ABOVE that edge: at
+     `--eater-map-accent-weight` it spans [top − 1, top], centred on top − 0.5,
+     while a 1px stroke centred on `top` spans [top − 0.5, top + 0.5]. Half a
+     pixel apart, which is exactly one device pixel of step at DPR 1 — the line
+     jogged where the row ended, measured, both ends, all four rules.
+
+     So the hook is lifted by the rule's own weight and given it as a height. Its
+     rect is then the row rule's rect, and `leaders.ts` takes the CENTRELINE off
+     it — two x's and a y off one box, still, and still no Token parsed by a
+     script. THE WEIGHT IS THE ACCENT LINE'S AND NOT THE NEUTRAL RULES' (#214):
+     the row's border, this box and the polyline's stroke are one number now, so a
+     thicker orange line stays one bar of ink from the number to the shoulder
+     rather than a rule that changes weight where it leaves the row. */
   .eater-map__hook {
     position: absolute;
     right: 100%;
-    top: 0;
+    top: calc(-1 * var(--eater-map-accent-weight));
     width: var(--eater-map-leader-reach);
-    height: 0;
+    height: var(--eater-map-accent-weight);
     pointer-events: none;
   }
 
@@ -562,7 +683,7 @@ import './tokens.css';
   .eater-map__copy {
     grid-area: 1 / 1 / 2 / 5;
     align-self: end;
-    border-top: 1px solid
+    border-top: var(--eater-map-rule-weight) solid
       color-mix(in oklab, var(--ink), transparent var(--eater-map-rule-veil));
     padding-top: var(--eater-map-close);
     font-size: var(--eater-map-copy-size);
@@ -601,15 +722,85 @@ import './tokens.css';
   }
 
   /* THE RULE ABOVE EACH POINT, and it is the leader line's own first inch. The
-     accent at 36%, across the row and no further — the rule continues out of the
-     row's left edge as the leader's shoulder, in the leader's own colour, so what
-     the reader follows from a number to a part is one line that changes weight
-     once. Drawn as a border on the row rather than as a box, so a point growing a
-     second line of title does not move it. */
+     accent at `--eater-map-accent-veil`, which is none of it — across the row and
+     no further; the rule continues out of the
+     row's left edge as the leader's shoulder, in the leader's own colour and at
+     the leader's own weight, so what the reader follows from a number to a part
+     is one line that changes NEITHER. Drawn as a border on the row rather than as
+     a box, so a point growing a second line of title does not move it.
+
+     `--eater-map-accent-weight` AND NOT `--eater-map-rule-weight` (#214). This
+     rule is the accent line's and the grid's hairlines are the composition's ink,
+     and while one Token was both there was no drag that thickened the orange
+     without thickening the grey. It grows UPWARD out of the row, because a border
+     is painted inside the border box and this box's foot is the row's own text.
+
+     AND THE WORDS STAND OFF THE GRID'S THIRD VERTICAL, which is a padding on the
+     ROW and not on the list. The vertical is this column's own left edge (#201)
+     and has to stay on it, so the air cannot be spent by moving the block: a
+     padding on the `<ol>` would carry the row's border box in with it and take
+     the accent rule and the leader's shoulder off the line together. Spent
+     inside the row instead, all three keep the edge they had — the rule is drawn
+     on the border box, the hook is placed against the PADDING box, which the
+     padding is inside rather than outside, and only the number, the title and
+     the figure sit in the content box that moves. Nothing else has to be told,
+     and the `.eater-map__hook` comment below says what happens when it is. */
   .eater-map__points li {
-    border-top: 1px solid
+    border-top: var(--eater-map-accent-weight) solid
       color-mix(in oklab, var(--eater-map-accent), transparent var(--eater-map-accent-veil));
     padding-top: var(--eater-map-point-air);
+    padding-inline-start: var(--eater-map-point-inset);
+  }
+
+  /* ---- AND THE GRID'S FOUR HORIZONTALS ARE THAT SAME RULE, CONTINUED (#201) --
+     The line above each Point, carried out of the row and across the whole frame
+     in a fainter neutral. One line per Point, drawn by the Point, so the grid has
+     no horizontal position to state anywhere: a fifth Point brings a fifth line
+     and the composition cannot get out of step with it. That is also the answer
+     to the question #201 says has to be answered before anything is written — a
+     horizontal at "0.505 of the height" stops meaning anything once the page
+     scrolls below the band, and none of these is a share of anything. They are
+     where the Points are, in both regimes, for nothing.
+
+     The reader follows ONE line that changes ONCE, at the row's own edge: the
+     neutral hairline across the frame, and then the accent — across the row, out
+     of it, round the shoulder and onto the part, at one colour and one weight the
+     whole way. The accent border above wins where they overlap because this is at
+     `z-index: -1` and that is not — see the verticals, where that layer is
+     explained.
+
+     `-100vw` EACH WAY AND CLIPPED, which is the one place a `vw` is safe here.
+     `.eater-map` is `overflow-x: clip`, so this is an over-reach the Section cuts
+     off at its own edges — the scrollbar gutter that makes `width: 100vw` wrong
+     for a full-bleed box (scripts/checks/NOTES.md) cannot show up in a length
+     that is thrown away. The row's containing block is the row, so there is no
+     way to say "the window's edge" from here that does not go through one.
+
+     `top` PUTS THIS HAIRLINE ON THE ROW RULE'S CENTRELINE, which is what makes it
+     that rule continued rather than a second line beside it. The row's border is
+     painted inside its border box, so it spans [−accent, 0] against the padding
+     box and is centred on −accent/2; this box's own border is painted inside
+     ITS border box, so a hairline of weight `rule` centred on that line stands at
+     −(accent + rule)/2. Both weights, because there are two of them since #214 —
+     while there was one Token this arithmetic came to `-1 * that`, which is the
+     literal that used to be here.
+
+     THE TWO WEIGHTS PART BECAUSE THEY ARE TWO DIFFERENT CLAIMS. The accent's is
+     the orange line's, from the number all the way to the part; this one is the
+     composition's ink. Making the orange thicker used to thicken the frame's grid
+     with it, which is the drag #214 was asked for and could not give. What is NOT
+     given up is the agreement: it is still one name on each side and never a
+     literal, and the `eater-map` Check reads both ends of it — the pseudo's `top`
+     and its own border against the row's — so it survives either being dragged. */
+  .eater-map__points li::before {
+    content: '';
+    position: absolute;
+    inset-inline: -100vw;
+    top: calc(-0.5 * (var(--eater-map-accent-weight) + var(--eater-map-rule-weight)));
+    border-top: var(--eater-map-rule-weight) solid
+      color-mix(in oklab, var(--ink), transparent var(--eater-map-grid-veil));
+    z-index: -1;
+    pointer-events: none;
   }
 
   /* The number and the icon on one line, the number on the baseline and the icon
@@ -941,8 +1132,32 @@ import './tokens.css';
      what makes the Card dark enough to lie over a dark map. */
   .eater-map__card {
     --eater-map-card-lift: var(--eater-map-lift);
+    /* THE DROP, AND IT IS A SECOND PLAYHEAD RATHER THAN A SECOND OPINION ABOUT
+       THE FIRST (#213). `timeline.ts` writes the lift above and `drop.ts` writes
+       this, and the two are composed into the one coefficient below instead of
+       taking turns at one name — so a reader who hovers a piece while the Lift is
+       still running gets both. Written the other way, whichever module wrote last
+       would win, the drawing would still move, and the failure would be silent.
+
+       0 IS WHAT THE STYLESHEET RESTS AT, which is the finished Exploded View and
+       is the whole of what a reader whose scripts never arrived gets: the Drop is
+       a way of ASKING and carries no claim the four Points do not already carry
+       in words.
+
+       HELD IS WHAT IS LEFT OF THE LIFT once the Drop has taken its share, and
+       every length below is a term of it rather than of the lift — which is what
+       makes the piece come to rest exactly where the Lift's near end puts it,
+       by arithmetic rather than by a second set of numbers agreeing with the
+       first. `--eater-map-card-rise` and the two drifts keep their names because
+       they are read from outside this block: the `eater-map` Check sets the rise
+       to 0 to measure how far a Card came off the map, and two Variants argue
+       about the camera by rewriting the transform out of all three. */
+    --eater-map-card-drop: 0;
+    --eater-map-card-held: calc(
+      var(--eater-map-card-lift) * (1 - var(--eater-map-card-drop))
+    );
     --eater-map-card-rise: calc(
-      var(--eater-map-card-lift) * var(--eater-map-rise) * var(--eater-map-card-depth)
+      var(--eater-map-card-held) * var(--eater-map-rise) * var(--eater-map-card-depth)
     );
     /* THE WHOLE OF THE SCALE THIS CARD IS DRAWN AT, as one name, because two
        things need it and one of them is not in this file. The `scale()` below is
@@ -968,10 +1183,10 @@ import './tokens.css';
        it, which reads as a broken vendoring rather than as a missing Token. 0 is
        a Card that does not slide, which is the honest reading. */
     --eater-map-card-drift-x: calc(
-      var(--eater-map-card-lift) * var(--eater-map-card-slide-x, 0)
+      var(--eater-map-card-held) * var(--eater-map-card-slide-x, 0)
     );
     --eater-map-card-drift-y: calc(
-      var(--eater-map-card-lift) * var(--eater-map-card-slide-y, 0)
+      var(--eater-map-card-held) * var(--eater-map-card-slide-y, 0)
     );
     position: absolute;
     left: calc(var(--eater-map-card-x) * 100cqw);
@@ -992,6 +1207,42 @@ import './tokens.css';
         )
       )
       scale(var(--eater-map-card-total));
+    /* WHAT COVERS WHAT IS THE RISE, AND SINCE #207 NOTHING SAYS SO BUT THIS.
+       The plane is `flat`, so there is no depth sort left to do it: the browser
+       paints these three in document order, `cards.ts` writes them back to front
+       in the app's own order — the detail sheet, the lines popup, the search bar
+       always on top — and while every Card carried the same playhead that order
+       and the depth order were the same order. THE DROP BROKE THAT TIE (#213).
+       A piece put back on the map is at rise 0 under two pieces still standing off
+       it, and it went on being painted over both — the search bar lying flat with
+       the rail popup's corner disappearing underneath it, which is a drawing of
+       nothing.
+
+       IT IS AN EXACT SORT AND NOT AN APPROXIMATION, which is the one thing worth
+       knowing before touching it. Every Card lies in a plane PARALLEL to the map,
+       so no two of them intersect: under a parallel projection the whole of the
+       Card with the greater rise is in front of the whole of the other one,
+       wherever on the plane either of them has slid to. So one number per Card
+       decides every pair, and it is the number the Card is already placed by.
+
+       x10000 BECAUSE `z-index` IS AN INTEGER and the rise is a fraction of the
+       Slab's width — about 0.3 at the top of the Lift. That is finer than the
+       Drop's own slack (`SLACK` in drop.ts, a thousandth of the travel), so no
+       distinction either playhead can make is rounded away. A tie — every Card at
+       rise 0, which is the collapse below the band and a scriptless reader's flat
+       page — falls back to document order, which is the app's order, which is
+       what those readers should get.
+
+       AND IT COSTS THE TEXT NOTHING, which is the question #207 makes worth
+       asking of any new grouping property here. A `z-index` makes the Card a
+       stacking context; it does not make it a render surface, and it does not
+       make it a 3D one. Measured on the built page at 1440x900 with this
+       declaration as the only difference, over the 730x610 crop that holds the
+       whole drawing: 38 of those 445,300 pixels change and the largest by 17 of
+       255 — one antialiased edge, and nothing resampled. It has to be near enough
+       nothing, since at rest the rise order IS the document order and this only
+       says so. */
+    z-index: calc(var(--eater-map-card-rise) * 10000);
   }
 
   /* ---- THE CARDS ARE DARK, AND IT IS AN OVERRIDE RATHER THAN A FORK ---------
@@ -1212,44 +1463,13 @@ import './tokens.css';
     display: contents;
   }
 
-  /* WHERE A LEADER LINE ENDS, and the whole reason the anchors are elements
-     rather than arithmetic. This box is ZERO-SIZED and lives INSIDE the camera,
-     so it projects to a POINT and `getBoundingClientRect()` hands back that
-     corner's actual position on screen. Reading the Card's own rect instead
-     gives the axis-aligned bounding box of the projected quad, whose corners are
-     nowhere on the Card once it is turned — which looks right at the flat end of
-     the Lift and wrong at every other frame of it. leaders.ts.
-
-     A share of the part it is on, so it is a corner at every window and at every
-     size the Slab is drawn at, and so dragging it in the Editor moves it around
-     the Card rather than around the page. */
-  .eater-map__anchor {
-    position: absolute;
-    left: calc(var(--eater-map-anchor-x) * 100%);
-    top: calc(var(--eater-map-anchor-y) * 100%);
-    width: 0;
-    height: 0;
-  }
-
-  .eater-map__anchor[data-eater-map-anchor='search'] {
-    --eater-map-anchor-x: var(--eater-map-anchor-search-x);
-    --eater-map-anchor-y: var(--eater-map-anchor-search-y);
-  }
-
-  .eater-map__anchor[data-eater-map-anchor='lines'] {
-    --eater-map-anchor-x: var(--eater-map-anchor-lines-x);
-    --eater-map-anchor-y: var(--eater-map-anchor-lines-y);
-  }
-
-  .eater-map__anchor[data-eater-map-anchor='details'] {
-    --eater-map-anchor-x: var(--eater-map-anchor-details-x);
-    --eater-map-anchor-y: var(--eater-map-anchor-details-y);
-  }
-
-  .eater-map__anchor[data-eater-map-anchor='slab'] {
-    --eater-map-anchor-x: var(--eater-map-anchor-slab-x);
-    --eater-map-anchor-y: var(--eater-map-anchor-slab-y);
-  }
+  /* WHERE A LEADER LINE ENDS is not in this block, and cannot be. The anchors
+     live INSIDE the vendored surfaces their parts name — a part is a component of
+     the app rather than a Card, and the search Card carries two of them — so they
+     arrive through `set:html`, carry none of this component's scoping attributes,
+     and no selector written here can reach them. `cards-anchor.css` is the whole
+     of it, imported above; `cards.ts` plants the boxes and `leaders.ts` says what
+     they are zero-sized for. */
 
   /* ---- the leader lines --------------------------------------------------
      Four thin rules over the composition, joining each numbered point to the
@@ -1261,10 +1481,24 @@ import './tokens.css';
      the composition's own box and the rule to it has to follow. The Section's
      own `overflow-x: clip` is still what stops anything leaving the page.
 
-     The rules are painted from --ink like every other quiet mark in this Section
-     — mixed towards transparent rather than towards a colour, so they sit
-     correctly in both themes at the far end of a Turn that finished before the
-     reader arrived. */
+     THE RULES ARE PAINTED FROM THE ACCENT AND NOT FROM --ink, which is the one
+     thing about them that used to be wrong. They were `--ink` at a veil of their
+     own, and the row rule each one leaves is the accent at a veil of its own, so
+     the reader followed a line that started warm and turned white a shoulder's
+     width later. It is ONE line: neutral grid hairline across the frame, and the
+     accent from the row's left edge to the part. Straight `--eater-map-accent`
+     rather than a mix on `--ink` for the reason the accent itself is a plain
+     colour — it was sampled off the reference's own `01.` and this Section stands
+     at the far end of the Turn in BOTH themes, so there is no crossing for it to
+     ride and nothing for a theme to invert (tokens.css). Mixed towards
+     transparent rather than towards a colour, so what it stands on is whatever is
+     behind it.
+
+     AND FROM THE ACCENT'S WEIGHT FOR THE SAME REASON (#214). The stroke was
+     `--eater-map-leader-weight` while the row rule it continues was
+     `--eater-map-rule-weight`, so the one line had two numbers and neither of them
+     made it thicker on its own: this one thickened the diagonal alone, and that
+     one took the frame's neutral grid with it. One name, one drag, one line. */
   .eater-map__leaders {
     position: absolute;
     inset: 0;
@@ -1273,18 +1507,22 @@ import './tokens.css';
     overflow: visible;
     pointer-events: none;
     fill: none;
-    stroke: color-mix(in oklab, var(--ink), transparent var(--eater-map-leader-veil));
-    stroke-width: var(--eater-map-leader-weight);
+    stroke: color-mix(
+      in oklab,
+      var(--eater-map-accent),
+      transparent var(--eater-map-accent-veil)
+    );
+    stroke-width: var(--eater-map-accent-weight);
     stroke-linecap: round;
     stroke-linejoin: round;
   }
 
   /* THE TWO DOTS, and they are filled where the rules are stroked — so `fill:
      none` on the overlay has to be undone per circle rather than left to be
-     inherited into nothing. The one on the PART is lit: the ink straight, at the
-     larger radius, which is what makes it read as the thing the number points at.
-     The one at the shoulder is the rule's own colour and smaller, and says only
-     that the line turned.
+     inherited into nothing. The one on the PART is lit: the accent straight, at
+     the larger radius and with a glow under it, which is what makes it read as
+     the thing the number points at. The one at the shoulder is the rule's own
+     colour and smaller, and says only that the line turned.
 
      `stroke: none` on both. A circle inherits the overlay's stroke, and a filled
      dot with a half-pixel ring round it in another colour is a dot drawn twice. */
@@ -1304,14 +1542,45 @@ import './tokens.css';
      custom property by the script, which is the rule the shoulder's reach is
      under: a custom property's computed value is its own token stream, so
      `0.2rem` read from script is the string `0.2rem`. */
+  /* AND THE LIT ONE GLOWS. Two `drop-shadow`s on the circle rather than a second
+     circle behind it, so the glow is the DOT's own light and cannot come adrift
+     from it: there is one centre, written once by `leaders.ts`, and the filter
+     follows whatever that centre is. A halo tight enough to read as the mark
+     being lit, and a wide faint bloom that lands on the picture underneath.
+
+     BOTH OFFSETS ARE 0,0, WHICH IS NOT A DEFAULT BUT THE THING THAT KEEPS THE
+     CHECK HONEST. The `eater-map` Check reads the dot's position off its own
+     PAINTED box — `getBoundingClientRect`, not the attribute the script wrote —
+     and Chromium grows that box by a filter's spread. A symmetric glow leaves the
+     box's CENTRE exactly where the circle's is, so the assertion still measures
+     the dot against the polyline's last vertex; an offset shadow would move the
+     centre and the rule would read as detached from the corner it names.
+
+     `overflow: visible` on the overlay is what lets the bloom off the edge of the
+     composition, which it needs: a Card raised off the Slab can stand outside the
+     composition's own box, and the light around a dot on its corner does not stop
+     at that box. */
   .eater-map__leaders [data-eater-map-tip][cx] {
     r: var(--eater-map-leader-tip);
-    fill: var(--ink);
+    fill: var(--eater-map-accent);
+    filter: drop-shadow(0 0 var(--eater-map-leader-glow) var(--eater-map-accent))
+      drop-shadow(
+        0 0 var(--eater-map-leader-bloom)
+          color-mix(
+            in oklab,
+            var(--eater-map-accent),
+            transparent var(--eater-map-leader-bloom-veil)
+          )
+      );
   }
 
   .eater-map__leaders [data-eater-map-knee][cx] {
     r: var(--eater-map-leader-knee);
-    fill: color-mix(in oklab, var(--ink), transparent var(--eater-map-leader-veil));
+    fill: color-mix(
+      in oklab,
+      var(--eater-map-accent),
+      transparent var(--eater-map-accent-veil)
+    );
   }
 
   .eater-map__card[data-eater-map-card='search'] {
@@ -1378,9 +1647,20 @@ import './tokens.css';
          not a thing a full-bleed picture at the top of a column has. The stage
          multiplies its depth and its radius by this, so the whole solid closes up
          to the flat picture down here and opens again on a resize back into the
-         band without anything being re-mounted. Declared beside the playhead and
+         band. Declared beside the playhead and
          not in tokens.css for the reason --eater-map-collapsed is: it is a regime
-         and not a number the author chooses. */
+         and not a number the author chooses.
+
+         AND IT IS THE ONE INPUT TO THE EDGE THAT A WINDOW CAN MOVE, which is what
+         makes it worth reading twice. `edge.ts` substitutes every Token into the
+         generated lengths at mount — a `var()` in a declaration is re-parsed on
+         every style recalc, and the page turn recalculates the document every
+         frame — and leaves the container units alone, so an ordinary resize still
+         moves the whole stack for nothing. This value going 1 -> 0 is the
+         exception, and `redraw.ts` watches THIS DECLARATION to draw the stack
+         again when it does. Give the edge a second window-driven input and that
+         watch is wrong; the `eater-map` Check carries the assertion that would
+         fail. */
       --eater-map-solid: 0;
       /* The columns and the side padding are the base rule's out here too, since
          the Rail left the grid (#192) — they are restated because this block used
@@ -1437,6 +1717,33 @@ import './tokens.css';
     .eater-map__points {
       margin-top: var(--eater-map-act);
       row-gap: var(--eater-map-move);
+    }
+
+    /* AND THE ROWS SPEND THEIR INSET BACK, for the same reason the verticals go:
+       the air is what stands the words off the grid's third vertical, and out
+       here there is no third vertical to stand off. Left standing it would be an
+       indent on the four Points and on nothing else in a column where the
+       masthead, the copy and the Points' own rules are all at one margin — the
+       rule across a row would start at the page's edge and its words half a
+       gutter in. The horizontals stay because the Points do (#201); this goes
+       with the line it was air against. */
+    .eater-map__points li {
+      padding-inline-start: 0;
+    }
+
+    /* NO VERTICALS OUT HERE, AND THE FOUR HORIZONTALS STAY. The verticals are the
+       three standing blocks' left edges and out here there are no three blocks —
+       one column, everything at the same margin, so all three lines would land on
+       top of each other at the page's own edge and draw one rule down the side of
+       a phone. The horizontals are the Points' own rules and the Points are still
+       a list of four, so they carry on meaning exactly what they meant in the
+       band. That asymmetry is the whole reason the grid is derived rather than
+       declared: neither half had to be told which regime it is in.
+
+       `display: none` and not a hidden box: it holds nothing, so there is nothing
+       to keep in the layout and nothing to reveal. */
+    .eater-map__grid {
+      display: none;
     }
 
     /* FULL-BLEED, AND THE NEGATIVE MARGIN IS WHY IT IS NOT `100vw`. The Section

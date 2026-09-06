@@ -35,8 +35,11 @@ Here: the masthead PROJECTS, the four authored lines of the serif
 project title under it, the copy at the foot of that column, the four numbered
 points down the right edge with a number and an icon each, the Exploded View, the
 four leader lines that join the one to the other and the two dots on each, the
-**Lift** that assembles it, the **glass** every Card's surfaces are made of
-(#190), and the collapse that puts all of it away below the
+**Lift** that assembles it, the **Drop** that puts one piece back on the map under
+a reader's pointer (#213), the **glass** every Card's surfaces are made of
+(#190), the **grid** the whole composition sits across — four horizontals that
+are the Points' own rules and three verticals that are the standing blocks' own
+left edges (#201) — and the collapse that puts all of it away below the
 band.
 
 Not here: which of the two stages draws the Slab. #181 built the alternative —
@@ -194,10 +197,17 @@ Every mutation below has been made on purpose and every one was caught.
 | the points put back before the stage in the markup | the features above the picture, and the document's order disagreeing with the screen's |
 | the leader lines drawn once instead of on every tick of the Lift | all four rules off their corners half way up and raised, at both windows — and NOT at flat |
 | the rules drawn to the Card's own rect instead of to the anchor | the details rule 263px out at flat, and all four out at the other two moments |
-| an anchor moved out of the plane and onto the Slab | that anchor not inside `.eater-map__plane`, at both windows. **This used to be geometry and had to stop being** — it was caught by the anchor standing in one place at both ends of the Lift, and the Slab's own anchor stands still legitimately now, because the Slab does. The movement half is kept for the three Cards, which are what the Lift carries |
+| an anchor moved out of the plane and onto the Slab | that anchor not inside `.eater-map__plane`, at both windows. **Containment and movement are two halves and both are asked** — containment catches an anchor that was never in the projection, movement catches one that is in it and is not riding the depth. Every part is a component drawn on a Card, so all four move; while the Slab carried a number, its own anchor stood still legitimately (#189) and had to be excused from the second half |
 | `display: none` dropped from the overlay's collapse rule | the rules still drawn at 390x844 |
-| a second point given `part: 'search'` | the BUILD, on both refinements at once — no point names the slab, and two name the search |
+| a second point given `part: 'search'` | the BUILD, on both refinements at once — no point names the offline, and two name the search |
 | the plate mix put back on the three glass colours | the offline button opaque at the raised end, at both windows — and NOT at the flat end, which is the frame it was always honest at |
+| `--eater-map-card-held` back to `--eater-map-card-lift` in the rise and both drifts | every piece 76 to 97px from the map at every gesture — the Drop wired to a name nothing reads |
+| the Point rows stop naming their part | four gestures with nothing on the page to point at |
+| a Point's part resolved as a Card's name rather than through `cardOf` | hovering `02.` puts every piece back instead of lowering the search Card — `offline` is a part and never a Card |
+| `redraw` not called as a piece moves | all four rules 76 to 97px off their anchors, at every gesture |
+| the whole stack lowered rather than the piece | all three down at every gesture, and one still holding a drop below the band |
+| the footprint test inverted | the details Card back to a drop of 0.041 over 600ms of a jogged pointer. **It passed twice before it failed**, and both were the Check's fault: the watch held the pointer at ONE COORDINATE, and this module hears `pointermove` and nothing else, so a parked pointer is never asked a second question — then, jogged, the vacuity guard read "the Card is under the pointer" as a reason to SKIP, which is precisely what a flickering piece looks like half the time |
+| `collapsed()` dropped from `choose()` | the details Card holding a drop of 1 below the band. **It passed first**, because the collapse is one tall column: with the Section's own top on the fold the Card's middle is at y=1219 in an 844px window, the pointer was moved off the bottom of the screen, and "nothing moved" was true because nothing was asked |
 | one backdrop round the search Card's pair | the search Card drawing 1 glass surface where the app gives it 2, at both windows |
 | one corner radius typed here instead of read off `cards.css` | the offline button drawn `0.43/24/24/24` against the `24/24/24/24` the export states |
 | #197's rebuild — the clear per box and the host per Card | `search .search` with no edge while `search .offline-button` has one, which is exactly the silent half of it |
@@ -210,6 +220,9 @@ Every mutation below has been made on purpose and every one was caught.
 | the copy given `align-self: start` in the right-hand columns, and the Points put back on the left | four failures at each window: the copy in another column, off the foot, printed over the head, and the Points left of the drawing |
 | the lit dot written at the shoulder instead of at the terminus | all four dots, at all three moments and both windows — 322.5px to 625.2px from the rule's own last point |
 | `--eater-map-leader-tip` dragged to 0 | all four lit dots in the document painting nothing, at all three moments and both windows |
+| the leader stroked from `--ink` at a veil of its own again | all four rules, at all three moments and both windows — stroked `26,26,24,97` against the row rule's `188,152,111,92`. The colour half of the fault this section is about |
+| `.eater-map__hook` put back to `top: 0; height: 0` | all four rules, at all three moments and both windows — leaving at y 1 against a row rule centred on 0.5, **0.50px apart, every time**. This is the whole reason `ONE_LINE` is a twentieth of `ATTACHED`: at a pixel it passes |
+| `--eater-map-leader-glow` renamed out from under the `drop-shadow` | all four lit dots carrying no glow, at all three moments and both windows — the filter computed to `none`, which is what an invalid one does, and nothing else in the Check moved |
 | the lateral normal dropped out of the edge's gradient | ALL FIVE extruded surfaces at once — the Slab's four sides all at luminance 0.0488 and every glass surface's all at 0.0772, 0% apart against 5% required, at both windows. This is exactly what the code did before #197, and asking it per surface is what makes a build that lit the Slab and left the Cards flat fail too |
 | `--eater-map-light-azimuth` rotated 180deg | the Slab's foot at luminance 0.1174 against its right flank's 0.2690, at both windows — the two flanks that face the reader, lit the wrong way round |
 | the plane's rotation left out of `edgeShade`, so the LOCAL normal is dotted | the foot and the right flank both at luminance 0.0488, at both windows — an object-fixed light, which is the thing #197 removed |
@@ -234,7 +247,7 @@ at is never crossed and the Check read as asleep when it was the gesture being
 wrong. It walks the reader out a pixel a frame now, and the mutation fails every
 time.
 
-**The three Cards' corners are Tokens** — `--eater-map-card-<name>-x` and `-y`,
+**The three Cards' places are Tokens** — `--eater-map-card-<name>-x` and `-y`,
 as shares of the Slab's width and height — so dragging one in the Editor moves it
 across the picture rather than across the page, and the arrangement holds at every
 size the Slab is drawn at. Their defaults are the app's own layout: the search bar
@@ -289,8 +302,8 @@ and are both silent when broken.
           .eater-map__face      FLAT, so z-index decides inside it
             .eater-map__glass x1 per glass surface  the blurred copy of the map
             .eater-map__surface   display: contents, and the app's own markup
+              <the app's own surface>  .eater-map__anchor  where a leader line ends
             .eater-map__hang      a BOX, and a second vendored root under the first
-          .eater-map__anchor    where a leader line ends
 ```
 
 `.eater-map__hang` is the search Card's alone and is the one box in that list
@@ -439,8 +452,16 @@ the export, no special case.
 two refinements are *no part without a number and no number without a part*, and
 there are four numbered Points; a fourth drawn thing that declared itself a part
 would need a fifth. It does not need one — the dropdown is what Point 01 is
-already about. So the drawing is **four parts across five surfaces**, the search
-Card keeps one anchor and one leader line, and the `eater-map` Check counts both.
+already about. So the drawing is **four parts across five surfaces**, and the
+`eater-map` Check counts both.
+
+**THE SEARCH CARD CARRIES TWO OF THOSE FOUR PARTS, AND THE DROPDOWN IS STILL NOT
+ONE.** Its topbar holds two pills — `.search` and `.offline-button` — and each is
+a component the app has and a claim the Section makes, so each has a number, an
+anchor and a leader line of its own. The dropdown is not a component beside them;
+it is what the search bar DOES, and it appears because something was typed into
+the bar Point 01 is about. Three Cards and four parts is the shape to hold: a part
+is a component, not a piece of the drawing.
 
 **A SECOND VENDORED ROOT INSIDE ONE CARD, AND THAT IS WHAT MAKES THE SCALE FREE.**
 A dropdown narrower or wider than the bar it hangs from reads as a different
@@ -751,6 +772,12 @@ denied by the vendoring's own README and undone by the next regeneration, and a
 selector naming the `svelte-…` hash announces itself at the next re-vendoring by
 ceasing to match — at which point the third rule's Check catches it too.
 
+**`cards-anchor.css` is a second file of the same kind, under the same three
+rules**, and it is a second file rather than a second half of this one because it
+is a different claim: that one is what this Section says about a vendored
+surface's SHAPE, this is where the drawing's own annotation attaches to it. The
+anchor section under the leader lines has it.
+
 **The details sheet's foot is the first of them.** In the app it is a bottom sheet
 resting on the screen's edge, where a rounded foot would show a sliver of map
 beneath it; off the map it is a floating object with four visible corners, and one
@@ -847,13 +874,192 @@ is re-aimed from wherever the drawing has got to, and it spends the time the
 DISTANCE LEFT is worth rather than the whole Lift's, so a turn taken a third of the
 way up undoes a third of a Lift.
 
+## The Drop, and why leaving a piece is not what puts it back
+
+The Exploded View's whole claim is the correspondence — *this number names that
+piece* — and the leader lines say it as far as a drawn rule can. What they cannot
+say is WHERE ON THE MAP the piece came from: a reader who wants to know where the
+search bar actually sits has to imagine it back down. So #213 lets them ask.
+**Hovering a Card, or hovering the numbered Point that names it, lowers that one
+piece back onto the Slab**, and leaves the other two and the Slab exactly where
+they are.
+
+It is the **Drop**, which is the Lift's antonym and is what it is.
+`src/sections/eater-map/drop.ts` is the module and `--eater-map-drop-time` the
+only Token it has.
+
+**IT IS A SECOND PLAYHEAD AND NOT A SECOND OPINION ABOUT THE FIRST.**
+`timeline.ts` owns `--eater-map-card-lift` and `drop.ts` owns
+`--eater-map-card-drop`; neither module reads the other's, and the STYLESHEET
+composes them:
+
+```css
+--eater-map-card-held: calc(var(--eater-map-card-lift) * (1 - var(--eater-map-card-drop)));
+```
+
+Every length the Card is placed by — its rise and both of its slides — is a term
+of `held` rather than of the lift, which is what makes a lowered piece come to
+rest **exactly** where the Lift's near end puts it, by arithmetic rather than by
+two sets of numbers agreeing. Written the other way, with both modules driving one
+name, whichever wrote last would win: a reader who hovers a piece while the Lift
+is still running would get one of the two, the drawing would still move, and the
+failure would be silent. `--eater-map-card-rise` and the two drifts keep their
+names because they are read from OUTSIDE that block — the `eater-map` Check sets
+the rise to 0 to measure how far a Card came off the map, and two Variants argue
+about the camera by rewriting the transform out of all three.
+
+**WHAT PUTS A PIECE BACK UP IS NOT LEAVING IT, AND THAT IS THE ONE THING IN THIS
+DEVICE THAT LOOKS LIKE A MISTAKE.** A Card that lowers moves out from under the
+cursor. Put back on `pointerleave` it would rise, arrive back under the cursor, be
+hovered again, and lower — for as long as the pointer is HELD STILL, which is not
+a gesture anybody makes on purpose and is exactly what a reader reading the Point
+beside it does. So the piece stays down while the pointer is anywhere it covered
+**when it was raised**, and `standing()` is what records that footprint: the
+Card's rect with the drop temporarily taken off, read at the moment the piece is
+chosen. The footprint always contains the pointer that chose the piece, so a still
+pointer can never fall out of it, whatever the drawing does in between.
+
+It is read fresh on every choice rather than remembered, because a reader who
+re-enters a piece half way back up has never seen it raised in this gesture and
+there is nothing to have remembered.
+
+**AND THE FOOTPRINT IS AN AXIS-ALIGNED BOX, which is right here and is the trap
+next door.** A Card is turned under the plane, so `getBoundingClientRect()` gives
+the bounding box of the projected quad and not the quad — bigger than the Card.
+For a footprint that is the safe direction: the error is a piece that stays down a
+moment longer than it might have, never one that flickers. The leader lines want
+the corner ITSELF and cannot use a rect at all, which is why every part carries a
+zero-sized anchor.
+
+**THE POINTER IS THE MOUSE'S, and it is asked of the EVENT.** A tap is not a
+hover: a touch pointer is destroyed on release, so a finger would lower a piece
+and leave nothing to raise it, and a finger dragging the page across the drawing
+would lower every piece it crossed. `pointerType !== 'mouse'` is the whole gate —
+a `(hover: hover)` media query would answer once at mount and get a laptop with a
+touchscreen wrong in both directions.
+
+**A CARD NAMES ITSELF AND A POINT NAMES A COMPONENT**, which is the one asymmetry
+in `asked()` and is what the Offline button costs. A Point names a PART, and two
+of the four parts are pills in the search Card's own topbar — so what goes back on
+the map is the Card that part is DRAWN ON, resolved through `leaders.ts`'s one
+correspondence rather than by looking the point's own word up among the Cards.
+Looked up directly, `offline` finds no piece, and hovering `02.` puts every piece
+back instead of lowering the search bar. Three answers and not two, all the same:
+a trigger naming nothing answers with no piece, and anything that is not a trigger
+answers `null` and lets the footprint decide.
+
+**THE ROW CARRIES THE PART AND THE HOOK DOES NOT.** `data-eater-map-point` is on
+the `<li>`, because the hook is a zero-height box a pointer can never be inside —
+what the reader points at is the number, the title and the figure.
+
+**BELOW THE BAND THE GATE IS FOR THE WINDOW GOING BACK THE OTHER WAY.** Down there
+the Lift is at 0, so a drop multiplies to nothing and the drawing cannot tell a
+Drop that refused from one that ran. What `collapsed()` in `choose()` actually
+buys is that no piece is left HOLDING a drop: one that was would still be lying on
+the map when the Exploded View came back, until the reader happened to move the
+pointer. The `eater-map` Check reads the drop as well as the drawing down there
+for exactly that reason — the drawing half of it would pass with the gate deleted.
+
+**A READER WHO ASKED FOR STILLNESS STILL GETS THE ANSWER**, with nothing to watch:
+the travel is put on in one write rather than tweened. That is a different call
+from the Lift's, and the difference is who started it. The Lift runs AT a reader
+who has just come to rest from a turn, so a reader who asked for stillness is
+given the finished drawing and no motion at all; the Drop is an answer to a
+question a pointer just asked, and refusing to answer it would take the
+correspondence away rather than the animation. That is also why `mountDrop` is
+called ABOVE the reduced-motion branch in `timeline.ts`, which returns.
+
+A reader whose scripts never arrived loses the asking and no claim:
+`--eater-map-card-drop` rests at 0, which is the finished Exploded View, and the
+four Points still say in words what the four pieces are.
+
+### It broke the tie the paint order was resting on, and what covers what is the rise now
+
+**Until a piece could come down on its own, document order and depth order were
+the same order.** `cards.ts` writes the three back to front in the app's own
+stacking — the detail sheet, the lines popup, the search bar always on top — and
+the three depths run the same way, so a `flat` plane painting in document order
+(#207 took the depth sort away) happened to paint them correctly. Every Card
+carried one playhead and they climbed together.
+
+The Drop gives one Card a playhead of its own, and that is the whole of it: a
+piece put back on the map is at rise 0 under two pieces still standing off it, and
+it went on being painted over both. **Reproduced, and it is not subtle** — dropping
+the search bar swallowed the rail popup's whole left half, and dropping the rail
+popup put it over the detail sheet standing above it. Both read as the drawing
+losing its third dimension for as long as the pointer was there.
+
+`EaterMap.astro` gives `.eater-map__card` a `z-index` derived from
+`--eater-map-card-rise`, which is the number the Card is already placed by, and
+**that is an exact sort rather than a heuristic**: every Card lies in a plane
+PARALLEL to the map, parallel planes do not intersect, and under a parallel
+projection the whole of the Card with the greater rise is in front of the whole of
+the other one — wherever on the plane either of them has slid to. One number per
+Card decides every pair.
+
+Three things about it worth not rediscovering. It is multiplied by **10000**
+because `z-index` is an integer and a rise is a fraction of the Slab's width, about
+0.3 at the top of the Lift; that is finer than `drop.ts`'s own `SLACK`, so no
+distinction either playhead can make is rounded away. A **tie falls back to
+document order**, which is the app's order — which is what the collapse below the
+band and a scriptless reader both get, and is right for both. And it is contained:
+`.eater-map__plane` carries a `transform`, so it is a stacking context whatever its
+`z-index` says, and nothing here can outrank the leader lines' overlay outside it.
+
+**It costs the text nothing, and that is measured rather than assumed**, because
+#207 makes it the question to ask of any new grouping property here. A `z-index`
+makes the Card a stacking context; it does not make it a render surface and it does
+not make it a 3D one. With this declaration as the only difference, over the
+730x610 crop at 1440x900 that holds the whole drawing: 38 of those 445,300 pixels
+change, and the largest by 17 of 255.
+
+### And it found the one Card whose flat place was not the app's
+
+The Drop's claim is *this is where the search bar actually sits*, so the flat place
+each Card is put back to is load-bearing in a way it was not while the Lift's near
+end was a frame nobody ever rested on. `--eater-map-card-search-y` was `0.152`,
+which is 59.7 capture-pixels down the Slab; Eater's `.topbar` is
+`top: max(12px, env(safe-area-inset-top)); left: 12px`, and the Slab is that app
+captured in a browser at 393x852 where the safe area is 0. Measured on the running
+app: `12, 12, 369 x 48`. The other two were right — the detail sheet is
+bottom-aligned on the 852-tall capture to the pixel — so it was one Token and not a
+convention.
+
+**THE PAIR IS THE FLAT PLACE AND THE CLIMB, AND ONLY THEIR SUM IS ON SCREEN AT
+REST.** A Card stands at `y + slide-y - rise x depth-y`, so correcting `y` alone
+would have moved the composition 47.7 capture-pixels up the plane — a drawing
+nobody chose, to fix a landing nobody could see until #213. `slide-y` took the same
+0.1215 the other way and the drawing at rest is unchanged: every surface's rect on
+the plane is identical to the digit. That is what the two Tokens per Card are FOR
+(#189), and this is the first change that used them as a pair.
+
+**The `x` is left at `0.034` on purpose**, and it is not 12/393. The Cards were
+captured at 390 wide and the Slab at 393, so the vendored bar is 366 where the
+app's is 369; left-aligning on 12 would put 12 down one side and 15 down the other,
+and 13.5 centres the difference. The detail sheet's `x` is the same arithmetic.
+
+**One thing does move at rest, and it is the right thing.** `glass.ts` offsets each
+surface's blurred copy of the Slab by the Card's RESTING place and never by its
+drift — the parallax. So this Token is *which piece of map the glass carries*, and
+the search Card now carries the piece from under the app's own search bar. 25,662
+of the same 445,300 pixels change and none by more than 95 of 255, which is what a
+heavily blurred picture sliding under glass looks like.
+
 ## The leader lines, and why a stylesheet cannot draw one
 
 Four thin rules, each running from one numbered point to the part of the Exploded
-View it names — three to Cards and the fourth to the Slab itself, because the
-offline basemap is the artefact the reader is already looking at (#178). They are
-structure and not decoration: they are how a reader knows which claim belongs to
-which piece, and they are the exploded-view convention the device is named for.
+View it names (#178). A part is a COMPONENT of the app rather than a piece of the
+drawing, so the four run to three Cards: the search Card's topbar carries two of
+them, its bar and the Offline button beside it. They are structure and not
+decoration — they are how a reader knows which claim belongs to which piece, and
+they are the exploded-view convention the device is named for.
+
+**The Slab was the fourth part and is not one now.** `04.` claimed the offline
+basemap, and while the picture was the only thing left to point at, pointing at it
+was the honest reading. It is not the only thing: the app SAYS it is available
+offline, on a pill at the end of its own search bar, and a number on the map
+itself pointed at everything and therefore at nothing. The claim moved to the
+button that makes it, and up the list to `02.`
 
 **The correspondence is exact, and it is exact mechanically.** Every point
 carries a `part`, typed against the four parts of the drawing, and two
@@ -898,11 +1104,51 @@ right wherever it was computed and wrong everywhere else, and one moment cannot
 tell the two apart. **That same fact is why the `eater-map` Check has to lift the
 projection to read a Card's SCALE**; the scale section above has it.
 
-The three Cards' anchors sit inside their own `.eater-map__card`, which meant the
-Card's markup needed a wrapper to arrive in — `set:html` replaces an element's
-children, and the anchor beside it would be one. That wrapper is
-`display: contents`, so it generates no box and the Card is laid out exactly as it
-was; `cards.css` has no child combinator in it, checked, so the vendored
+### And it sits inside the SURFACE, which is not the same box as the Card
+
+**A part is a component of the app rather than a piece of the drawing.** The
+search Card is a topbar carrying two pills, and both of them are parts: `01.`
+names the bar, `02.` names the Offline button beside it. So
+`--eater-map-anchor-<part>-x` and `-y` are a share of the SURFACE, and the anchor
+has to be a child of that surface for `100%` to mean what it says.
+
+**It is planted in the vendored markup, by `cards.ts`, first inside its
+surface.** The alternative is to measure where a pill sits inside a topbar and
+write the answer down here — 270 of 366 across, in the export's own pixels — which
+is exactly the second opinion `glass.ts`'s ruler exists to avoid, and it goes
+stale the day that repository moves the button. A share of the box the rule ends
+on is the browser's arithmetic and is exact at every window.
+
+It is allowed under the same standard as the `role="presentation"` and the two
+refused input routes in that file: **nothing on screen moves**. The span is
+out of flow, zero-sized, paints nothing, and is `aria-hidden`; the ruler that
+measures a surface for its glass measures the same box with it there.
+
+**What it needs from the surface is a containing block, and that is
+`cards-anchor.css` rather than a second `style` attribute.** An element keeps the
+FIRST of two attributes with the same name, and the search Card's Offline button
+already collects one from the pointer refusal — so a second written in `cards.ts`
+would be dropped by the parser and the anchor would silently resolve against the
+vendored root instead, which is the Card's box and is the thing this whole section
+is about not being. Two of the four surfaces are the vendored roots and already
+carry `position: relative !important` from the collector's normalisation; the
+rule is written through the anchor itself — `:has(> [data-eater-map-anchor])` —
+so a re-vendoring that renames a surface changes `leaders.ts` and nothing else.
+
+**The one length that is not a share** is `--eater-map-anchor-inset`, which is how
+far in from the corner the dot actually sits. Every surface here is rounded, and a
+Card is an extruded solid whose edge rolls out past the face's own corner — so the
+geometric corner of the box is outside the outline the reader sees, and a lit dot
+drawn there floats beside the component instead of resting on it. It comes in
+along BOTH axes, towards the centre, by `(0.5 − share) × 2 × inset`: +1 at the near
+edge, −1 at the far one, 0 in the middle of an edge, which is the only direction
+that reads as "in" for any corner the author drags to. `tokens.css` carries the
+floor and what 10, 14, 16, 18 and 22 each looked like.
+
+The Card's markup still needs a wrapper to arrive in — `set:html` replaces an
+element's children, and the dropdown hanging beside it would be one. That wrapper
+is `display: contents`, so it generates no box and the Card is laid out exactly as
+it was; `cards.css` has no child combinator in it, checked, so the vendored
 stylesheet does not notice either.
 
 ### The shoulder is a box, because a Token is not a number to a script
@@ -940,15 +1186,147 @@ circle of radius 0 renders nothing, so `[cx]` in the selector is the same promis
 the polylines already make — they carry no `points` until a script comes, and paint
 nothing until then.
 
-Three Tokens and no more, which are the three the composition can have an opinion
-about: `--eater-map-leader-weight`, `--eater-map-leader-veil` and that reach. The
-reach at 0 is a straight rule from the point to the corner. Where a rule leaves
-its row VERTICALLY is derived rather than a Token — half a line of the title down
-from the row's top — because it is a coordinate in a composition and not a number
-the author chooses (ADR 0004). The eight `--eater-map-anchor-<part>-x/-y` are
-Tokens for the opposite reason: which corner of a Card a rule comes off is a
-choice, and as a share of the part it is a corner at every window and at every
-size the Slab is drawn at.
+One Token for the rule itself, which is the one thing about a leader that is only
+a leader's: that reach. The reach at 0 is a straight rule from the point to the
+corner. Its WEIGHT is `--eater-map-accent-weight` and its colour
+`--eater-map-accent` — the accent line's, declared up with the Points, because
+this rule is that line rather than something that matches it (#214, below). Where
+a rule leaves its row VERTICALLY is derived rather than a Token — it is the row
+rule's own centreline — because it is a coordinate in a composition and not a
+number the author chooses (ADR 0004). The eight
+`--eater-map-anchor-<part>-x/-y` are Tokens for the opposite reason: which corner
+of a component a rule comes off is a choice, and as a share of the part it is a
+corner at every window and at every size the Slab is drawn at. All eight rest at
+the TOP RIGHT, because the Points stand down the right edge and a rule that
+crosses its own component to end on the far side of it reads as one passing over
+something rather than as one arriving at it.
+
+### The leader IS the row's rule continued, and for a while it was two lines
+
+The reader follows one line from a number to the part it names: the grid's neutral
+hairline across the frame, then the accent from the row's own left edge, out of the
+row, round the shoulder and onto the drawing. It changes colour ONCE, where the
+grid meets the row, and nowhere else.
+
+**It used to change colour twice and step where it did.** Two faults, and they
+compounded because they arrived at the same seam.
+
+**The colour.** The leader was `--ink` at a `--eater-map-leader-veil` of its own
+while the row rule it leaves is `--eater-map-accent` at `--eater-map-accent-veil` —
+so a line the reader was following started warm and turned white a shoulder's width
+later, which reads as two marks that happen to touch rather than as one line. The
+veil Token is gone: the overlay spends the accent's own colour and the accent's own
+veil, so there is ONE number and dragging it moves the whole line. That number now
+stands at **0%** — the accent line carries no transparency — and it took one edit
+rather than three for exactly that reason. That is the
+argument `--eater-map-rule-weight` is already under, one seam further along — two
+literals agreeing is a coincidence a Check can only assert by typing the number a
+third time.
+
+**The half pixel, which is the more expensive half to find.** `.eater-map__hook`
+was `top: 0; height: 0`, and `top: 0` on an absolutely positioned child is the
+row's **padding** box, because that is the containing block a positioned ancestor
+establishes. The row's accent rule is a BORDER, painted inside the border box, so
+it sits entirely above that edge — at a weight of 1px it spans `[top − 1, top]`,
+centred on `top − 0.5`. A 1px stroke centred on `top` spans `[top − 0.5, top +
+0.5]`. Half a CSS pixel apart, which is one whole device pixel of step at DPR 1,
+at the exact place the reader's eye is.
+
+The fix is that **the hook's box is now the row rule's box**: lifted by
+`--eater-map-accent-weight` and given it as a height. `leaders.ts` takes the
+CENTRELINE off it — still two x's and a y off one rect, still no Token parsed by a
+script — and it holds at every weight, because whatever the leader's stroke is it
+is centred on the rule it continues.
+
+**The Check asserts both, against the ROW and not against the hook.** Measuring the
+leader against the hook only says the script read the box it was handed; measuring
+it against the row's own border says the two lines are the same line. And
+`ATTACHED` is a pixel — deliberately, against a rule drawn to an untransformed box,
+which is tens of pixels out — so it swallowed this whole. `ONE_LINE` is a
+twentieth of it and exists for exactly that reason.
+
+**WHAT IS LEFT, AND WHY IT IS LEFT.** The two are now collinear in CSS pixels and
+identical in colour, measured. They are not always identical in RASTER: a Point's
+row lands wherever `space-between` puts it, which is usually a fraction of a pixel,
+and Chromium SNAPS a border's box to the device grid while it ANTIALIASES an SVG
+stroke at the position it was given. So on a row at a fractional y the border paints
+one crisp device row and the leader spreads the same total ink over about 1.13 of
+them — measured at 1440x900: peak 69 against 79, with the remainder in the row
+below, and no step in POSITION. At DPR 2 it is half of that. On a row that happens
+to land on an integer the two are pixel-identical.
+
+**Do not chase it by snapping the leader's y in `leaders.ts`.** That trades a
+rasterisation difference for a geometric one — the stroke would sit up to half a
+device pixel off the line it is meant to be on — and it is DPR-dependent in a way
+the fix cannot be written once: a stroke is crisp on a half-integer when its device
+width is odd and on an integer when it is even, so the arithmetic changes under
+zoom, under a second monitor, and under any drag of `--eater-map-accent-weight`. It
+would also fail `ONE_LINE`, and the only way to keep both is to compute the
+snapping in the Check as well — which is the Check re-running the implementation
+and asserting nothing (`scripts/checks/NOTES.md`). The one honest fix is
+structural: draw the SHOULDER as a border on `.eater-map__hook`, so the rasteriser
+snaps it exactly as it snaps the row's, and let the polyline start at the turn
+under the knee dot, which already covers that seam. That is a redesign of this
+module's contract — the rule is one polyline and the dots are its vertices — for
+12% of peak luminance on a hairline, and it has not been thought worth it.
+
+### And the weight is one Token now, for the reason the colour already was (#214)
+
+The colour above is the argument in full and the weight was the same argument left
+half finished. The accent line's thickness was `--eater-map-rule-weight` for the
+row's border and the hook's box, and `--eater-map-leader-weight` for the polyline —
+**so there was no drag that made the orange line thicker.** Dragging the leader's
+thickened the diagonal and left the row a hairline, which is one line changing
+weight where it leaves the row. Dragging the rule's took the frame's neutral grid
+and the rule above the copy with it, because that Token is those rules' weight too.
+
+**`--eater-map-accent-weight` is the whole line's**, declared beside
+`--eater-map-accent` and its veil, and spent by all three: the Point's border, the
+hook's box and the stroke. `--eater-map-rule-weight` keeps what it was always
+naming underneath — the composition's ink, which is the grid and the copy.
+
+**The grid's hairline is still that rule continued, and it is a CENTRELINE that
+says so now.** While the two weights were one Token, "one border-width above the
+padding box" and "on the row rule's centreline" were the same sentence; with two
+they are not, and only the second stays true. So the pseudo-element stands at
+`-(accent + rule) / 2` and the `eater-map` Check compares the two centrelines
+rather than a `top` against a weight — both ends of the agreement read, so it
+survives either Token being dragged. Measured at 1, 3, 5 and 7px: the row, the
+hook and the stroke all move together, the hairline stays where it was and stays
+centred, and the whole Check suite passes with the line built at 5px.
+
+**What this does not buy is a leader of its own weight**, and that is the point
+rather than a cost. The mechanism still holds if the two ever part — the hook is
+the row rule's box, so whatever the stroke is it is centred on the rule it
+continues — but there is no longer a Token that parts them, because a reader
+following one line is not asking about two numbers.
+
+### And the lit dot glows
+
+The rule arrives at its part veiled, because it is a hairline and a hairline that
+shouts is a scratch. So the END of it says *arrived* with light rather than with
+weight: two `drop-shadow`s on the tip circle — a tight halo that reads as the mark
+being lit, and a wide, much fainter bloom that puts that light onto the picture
+underneath. `--eater-map-leader-glow`, `--eater-map-leader-bloom` and its veil, all
+measured against the dot rather than against the page, so dragging
+`--eater-map-leader-tip` takes the glow with it and the mark stays one thing.
+
+**A filter and not a second circle**, so the glow is the dot's own light and cannot
+come adrift from it: one centre, written once by `leaders.ts`.
+
+**Both offsets are 0,0, and that is what keeps the Check honest.** It reads the
+dot's position off its PAINTED box, and Chromium grows that box by a filter's
+spread — a symmetric glow leaves the centre exactly where the circle's is, and an
+offset shadow would move it and make the rule read as detached from the corner it
+names.
+
+**And the Check asserts the glow is there at all**, by looking for `none`. A
+`drop-shadow` built out of Tokens is invalid at computed-value time the moment one
+of them is misspelled or dragged away, and an invalid `filter` computes to `none`
+in silence — leaving a dot that is drawn, on the right vertex, at the right radius,
+in the right colour, and unlit, with every other assertion passing. How BRIGHT it
+is is a matter for the eye and the Check has no opinion about it
+(`scripts/checks/NOTES.md`).
 
 ### When it redraws, and where it does not draw at all
 
@@ -963,6 +1341,18 @@ of a pixel at 1440x900, at 1600x1000, and back again across the breakpoint.
 
 Nothing hangs on a frame ticker. The rules are read out of the layout, so a redraw
 forces one, and one per tick of a Lift that runs for a second is the whole cost.
+
+**And `redraw.ts` has it too, which is what makes the Tokens that decide where a
+rule GOES draggable at all (#214).** Those three signals are all a rule needs while
+the composition is fixed and none of them is the one the Editor sends: an anchor is
+a zero-sized box, so moving it resizes nothing and the `ResizeObserver` never
+fires, and the shoulder's reach is the hook's width, which is absolutely positioned
+and resizes nothing either. So the eight anchors and the reach wrote their file and
+left all four rules where they were until a reload — a Token that drags and moves
+nothing, which is the exact bug the same seam was built for below. `timeline.ts`
+hands this module's redraw to `mountRedraw` alongside the stage's and the glass's,
+BELOW `mountLeaders` rather than above it, and the `editor` Check drags an anchor
+and requires the far end to follow.
 
 **Below the band there are no rules and they are absent rather than redrawn.** The
 composition is one column with the four points BENEATH the picture (#179), so a
@@ -998,9 +1388,22 @@ playhead, so `--eater-map-lift: 0` no longer takes it away — and an edge is
 something an Exploded View has, not something a full-bleed picture at the top of a
 column has. The stage multiplies its depth and its radius by this, so the whole
 solid closes up to the flat picture down here and opens again on a resize back
-into the band without anything being re-mounted. It is declared in the component's
+into the band. It is declared in the component's
 `<style>` and never in `tokens.css`, because it is a regime and not a number the
 author chooses.
+
+**AND IT IS THE ONE INPUT TO THE EDGE THAT A WINDOW CAN MOVE, WHICH IS WHAT MAKES
+IT WORTH READING TWICE.** The crossing used to move nothing: every generated length
+named this Token, so the browser re-evaluated all of them on a resize with nothing
+re-mounted. It does not any more — the lengths carry the *number* now, for the page
+turn's sake, and "Where the gradient is expensive" below is why — so this
+declaration going 1 → 0 is a rebuild, and `redraw.ts` watches **this declaration**
+to make it one. Nothing else about a window is watched, because nothing else about
+a window reaches these expressions: the container units are still container units.
+**Give the edge a second window-driven input and that watch is wrong**, silently
+and only below the band; the `eater-map` Check's fourteenth group is what fails
+instead, because it compares a page carried across the band against a page mounted
+there rather than asking about the mechanism.
 
 **ONE COMPOSITION AND NOT THREE, AND THAT IS THE ASSERTION RATHER THAN THE
 DESCRIPTION.** Three readers meet it — the narrow window, the reader who asked for
@@ -1473,30 +1876,162 @@ runs each interleaved, worst style recalc of a turn and p90 frame time with it:
 `border-radius` is written once rather than four times where the four corners are
 one value, for the same reason and a smaller share of it.
 
-**What is left of it is the lengths**, which are still expressions naming Tokens
-(#196 is why) and are therefore still substituted per recalc — six declarations a
-slice now that #207 has given the depth one too. Resolving those to numbers as well
-is the other half of the win and it is a big half: 26ms → 16ms into the Gallery,
-20ms → 10ms coming back off this Section, measured the same way. **What it costs is
-a redraw on every resize**, which is the thing `stage-dom.ts` says these expressions
-exist to avoid — so it is a decision and not a tidy-up, and #182 may moot it by
-taking this stage out entirely. Not done, and stated here with its price so the next
-reader is choosing rather than discovering.
+**The other half was the lengths, and it turned out to cost almost nothing.** Six
+declarations a slice — `left`, `top`, `width`, `height`, `border-radius` and, since
+#207, the depth's `transform` — every one of them naming a Token and therefore
+substituted and re-parsed per recalc, on 144 elements. They carry the Tokens'
+*numbers* now. `edge.ts`'s `resolved` reads the host's computed style once per solid
+and substitutes every `var()` before the expressions are composed, and the `color`
+declaration is the one it deliberately leaves alone, because that is `currentColor`'s
+whole route and the Editor's drag arrives through it.
 
-### The shading follows a dragged Token, under the Editor and nowhere else (#196)
+Two builds of this tree, differing only in whether `resolved` returns its argument,
+five reps interleaved in one browser session at 1536x760 on a real GPU — p90 frame
+time and worst style recalc of the turn:
 
-`redraw.ts`, and it is forty lines because almost nothing was missing. **Every Token
-a STYLESHEET consumes has been draggable since #144**: the Editor previews by
-putting one declaration into a sheet of its own, and every `calc()` naming that
-Token is re-evaluated by the browser — which is why `edge.ts` states every length as
-an expression rather than as a number, and why the thickness, the radii, the colour
-and the whole collapse below the band already moved under a drag.
+| turn | before | after |
+| --- | --- | --- |
+| into the Gallery | 24.3ms / 21ms | **18.3ms / 16ms** |
+| into the Eater Map | 12.3ms / 15ms | **12.2ms / 10ms** |
+| back off it | 18.0ms / 17ms | **12.3ms / 10ms** |
+| back to the Front Screen | 18.3ms / 20ms | **18.3ms / 17ms** |
+
+Inline style across the 144 slices falls from 415,027 characters to 283,517 with it,
+and the launch moves the same way rather than the other way: FCP 216ms → 196ms, LCP
+unchanged at 348ms, the edge finished at 427ms instead of 509ms, CLS 0.0000 both
+sides. The floor, measured by deleting this Section from the document entirely, is
+about 10ms; 16ms is where the crossing now sits, and what is between them is DOM
+rather than declarations — which is #182's business.
+
+**WHAT IT WOULD HAVE COST, AND WHY IT DOES NOT.** The obvious version of this
+resolves the lengths to *pixels*, which is what the handoff for the work priced: a
+number is a number, so the drawing stops following the window and every resize needs
+the stack rebuilt. That was measured too, and a rebuild is **57ms** as a single
+main-thread task — 43ms of it the redraw call itself — so it would have had to be
+debounced to the end of a resize drag, leaving the edge visibly detached from the
+map while the reader dragged.
+
+**None of that is necessary, because it is only the `var()` that is expensive.**
+`100cqw` and `100%` are *relative units*, not variables: a declaration holding them
+is parsed once and merely evaluated per recalc, and it is invalidated when the
+container resizes — which is exactly the behaviour wanted. Measured as a third arm
+on the same page, keeping the container units landed on the fully-resolved arm to
+within a millisecond on all four turns (17/8/9/17 against 16/9/10/16). So the
+container units stayed, and a resize inside the band still moves the Slab's 24
+slices with nothing re-mounted.
+
+**What is given up is one thing and it is narrow: a Token moving under a mounted
+drawing.** Two things move one — the Editor's drag, which `redraw.ts` already
+covered, and the collapse's media query answering `--eater-map-solid` differently.
+So `redraw.ts` grew a second half that watches that one declaration on a resize and
+draws the stack again when it moves. The 57ms is still paid, once, on the crossing
+at 1100x700 — a regime change that re-lays out the whole page anyway — and never on
+an ordinary resize.
+
+**Verified identical, by the gate that let the `currentColor` change through.** A
+screenshot of the same page either side of the rewrite differs by at most **one
+level in one channel, on zero pixels above that**, at 1536x760 and 1440x900, in both
+themes; below the band, where the slices are closed up behind the picture, by
+nothing at all. And the substitution was checked to be exact rather than close
+before any of it was written: rewriting all 144 slices' six declarations on a live
+page and re-reading all nine resolved properties off every one of them gave **0 of
+144 differing**, at 1536, 1200 and 1000 wide.
+
+**One thing to know before reading these numbers as a ceiling.** #182 may take this
+stage out entirely, and with it these 144 elements and this whole cost.
+
+### A Card's edge is glass, and the transparency belongs to the STACK
+
+A Card is a translucent pane with a heavily blurred map behind it, and until this
+its EDGE was `rgba(198, 196, 192, 0.92)` — a light, near-solid rim, which is the
+one part of a Card made of something the rest of it is not. It reads as a bezel
+stuck round a window rather than as the shoulder of one solid, and it hides the map
+at exactly the place the drawing is telling a reader the piece has been lifted off
+it. So the rim is see-through now, and the map's roads and pins carry on through
+it.
+
+**The whole of the difficulty is that a slice stack cannot carry transparency in
+its paint.** A slice is a FILLED BOX, not a ring, and a stack is twenty-four of
+them overlapping by as much as the object is deep — so an alpha in the colour is
+composited once per slice: `1 - (1 - a)^n`, where `n` is most of the stack where
+the rim meets the face and one at the silhouette. A translucent colour therefore
+draws a rim that is nearly solid against the face and nearly gone at the outline,
+in as many visible steps as there are slices, and the smear has a direction of its
+own laid over the direction the light already gave the edge. Which is also why the
+old `0.92` did almost nothing: at `n` of twenty-four it resolves to 1 everywhere
+but the outermost band.
+
+**So it is `opacity` on a box holding the whole stack instead.** `edge.ts`'s
+`Solid.alpha` is the field, `clearEdge` takes the box off with the slices, and the
+group is rendered once and composited once — one material, at one alpha,
+everywhere. The Slab does not ask for one: a phone is not see-through, and a render
+surface to say so would be a cost with nothing to buy.
+
+**Three things about it are easy to get wrong, and two of them are silent.**
+
+`--eater-map-card-edge` HAS TO STAY OPAQUE. It is the colour and
+`--eater-map-card-edge-alpha` is the transparency; an alpha in both is the
+per-slice compounding put straight back on top of the group's. The `eater-map`
+Check reads the alpha off every slice's computed `color` and fails on anything but
+1 — which is a relationship and not a look: the author may drag the rim to any
+transparency they like, including back to solid, through the Token that exists for
+it.
+
+`opacity` IS A RENDER SURFACE, which is the question #207 makes worth asking of any
+new grouping property on this plane — a `preserve-3d` Card was rasterised square
+and resampled, and that is what cost the app's own text its sharpness. Nothing
+inside this box is text: it holds the slices, and the face is its SIBLING. Measured
+by wrapping the stacks on the live page and leaving the alpha at 1: against the
+shipped drawing, 5,043 of 84,896 pixels over the search Card differ and the worst by
+12 of 255 — and all of it is the `0.92` the old colour let through at the one band
+where a single slice covers, which is `0.08 x (200 - 40)` to the level. The
+grouping itself moves nothing.
+
+`resolved()` PARENTHESISES WHAT IT SUBSTITUTES, so the declaration is
+`opacity: calc(...)` and not `opacity: ...`. Every other length it feeds is
+composed into a `calc()` by its caller; a bare `opacity: (0.5)` is not a
+declaration, and CSS drops an invalid one rather than refusing it. The rim comes
+back at full alpha, the page looks exactly as it did before the change, and nothing
+says so. That is one build of this, found by looking.
+
+**0.5 is where it was left, and the floor is worth knowing.** Below about a fifth
+the pieces stop having any thickness where they overhang the Slab onto the page's
+own ground — a Card against black has nothing behind its rim for the rim to be
+transparent to — so the drawing goes flat at the one place a reader is most likely
+to be looking at its edge.
+
+### The generated geometry follows a Token that moves — dragged, or answered by a media query (#196)
+
+`redraw.ts`, and it started at forty lines because almost nothing was missing.
+**Every Token a STYLESHEET consumes has been draggable since #144**: the Editor
+previews by putting one declaration into a sheet of its own, and every `calc()`
+naming that Token is re-evaluated by the browser — which is why the colour, reached
+through `currentColor`, still moves under a drag with nothing rebuilt at all.
+
+**THE LENGTHS USED TO BE IN THAT SENTENCE AND ARE NOT ANY MORE**, which is the one
+correction to make while reading the rest of this section. They were expressions
+naming Tokens, so the thickness, the radii and the whole collapse moved under a drag
+by the same route the colour does; they carry the numbers now, for the page turn's
+sake, and the paragraphs above are the measurement. So a dragged Token reaches them
+through this module's rebuild rather than through the browser — which is what the
+module was already for — and the collapse reaches them the same way, through the
+second half of it. **The mechanism did not change; what depends on it grew.**
 
 **The shading is the one exception and it is the only one.** A slice's
 `conic-gradient` is arithmetic on the light, on the plane's attitude and on the
 outline, and arithmetic done at mount does not move — so `--eater-map-light-azimuth`
 was a real Token that wrote its file and left the drawing alone until a reload,
 which reads exactly like a broken Token and is not one.
+
+**AND THE LEADER LINES ARE A SECOND EXCEPTION OF ANOTHER SHAPE (#214)**, which is
+worth knowing because the two are easy to read as one. The shading is arithmetic
+frozen at mount; a rule's ends are a POSITION READ BACK off the layout, and the
+box it is read off — `.eater-map__anchor` — is zero-sized. So the stylesheet does
+move the anchor under a drag, instantly and for free, and the polyline does not
+follow it: nothing resizes, so `leaders.ts`'s own observer never fires. The same
+holds for the shoulder's reach, which is the hook's width. One rebuild answers for
+both exceptions, and `timeline.ts` hands it all three redraws — the stage's, the
+glass's and the leaders' — in the order they were first made.
 
 **The seam is the Editor's own preview sheet, so nothing was added to the Editor.**
 It is how a drag reaches the page at all; a `MutationObserver` on it needs no
@@ -1515,10 +2050,11 @@ is not lit by the light, so requiring it to MOVE would fail a correct drawing:
 that is why it is in the second set and not the first.
 
 **The thickness needs no assertion of its own, and that is a judgement.** It reaches
-the drawing two ways, and neither is specific to it: every slice's depth is a CSS
-expression naming it, which the browser re-evaluates with nothing observed at all,
-and the gradient's outline goes through the same signature and the same redraw the
-light's assertion already covers. What is left that is only the thickness's is the
+the drawing through the same signature and the same redraw the light's assertion
+already covers — one of its two routes has closed since this was written, because a
+slice's depth is a number now rather than an expression the browser re-evaluates,
+but the surviving one is the one the assertion was resting on.
+What is left that is only the thickness's is the
 `min(radius, thickness)` clamp — and a Slab dragged THICKER leaves that clamp
 exactly where it was, so an assertion built on it would have to drag the row to zero
 and would then fail the day the author chose a square-edged Slab, which is a
@@ -1559,7 +2095,7 @@ per box deletes the first surface's slices as the second is built and the surviv
 looks perfect. The Slab is rebuilt too now, so there were two callers and two
 spellings of a clear is how one of them ends up per box again.
 
-**Five mutations, all caught**, and the last two are the ones worth knowing, because
+**Six mutations, all caught**, and the last three are the ones worth knowing, because
 each fails as something other than itself:
 
 | mutation                                        | wanted | got |
@@ -1569,6 +2105,7 @@ each fails as something other than itself:
 | `clearEdge` taken out of the Slab's draw        | fail   | fail: the slab edge 24 → 48 slices on one drag, and 172 generated elements out and back against 124 |
 | the DOM stage returning no `redraw`             | fail   | fail: all 24 slab slices painted as they were, and the four Card surfaces still following |
 | the GLASS clear disabled, the slices' left in   | fail   | fail: 132 generated elements out and back against 124 |
+| the LEADERS' redraw left out of `again` (#214)  | fail   | fail: the Slab's rule still ending at 442.72,538.28 with its anchor dragged from 0 to 1 |
 
 The fourth is why the Check asks **per surface**: the Cards are not a stage's, so a
 redraw wired to the stage alone — or to the Cards alone — leaves half the drawing lit
@@ -1860,6 +2397,122 @@ the document to the SECOND resting place, which is the Panel's. So this Section
 is at the far end of the Turn in both themes, and the `ground` Check is what says
 so.
 
+## The grid, and why not one of its lines is a number (#201)
+
+Faint hairlines through the whole frame, behind everything, that the drawing and
+the type sit across. They were in the reference and in the mockup the composition
+was signed off against, and they were in no ticket because #187 never carried
+them — nothing was implemented wrongly, and #201 says so in as many words.
+
+**#201'S ONE REAL DECISION IS WHOSE THEY ARE, AND THE ANSWER IS THIS SECTION'S.**
+Not the Kernel's, and the reason is the shape the lines take rather than a
+preference: every horizontal is a Point's own rule continued, and the Points are
+this Section's. There is nothing on the Front Screen or in the Gallery for a line
+to extend FROM, so a Kernel grid would have had to invent positions for two
+Sections in order to derive them for a third. The Rail is the Kernel's because
+there is one of it and it stands still while the page turns past; this travels
+with the composition it dissects, which is the opposite property.
+
+**AND THE SECOND HALF OF THAT DECISION IS THAT NOTHING HERE IS A FRACTION.** The
+ticket carried the mockup's own six as a starting point — three verticals at
+0.035 / 0.300 / 0.755 of the width, three horizontals at 0.145 / 0.505 / 0.735 of
+the height — and named the problem with them itself: below the band the page
+scrolls, and "a horizontal at 0.505" of what. Measured against the shipped
+composition at 1600x900 the mockup's own numbers answer the question. Its
+verticals are the page's left margin, the writing-to-drawing seam and the
+drawing-to-Points seam, to within a couple of per cent. Its 0.505 and 0.735 are
+Points 03 and 04 (0.519 and 0.772), to within one. **It was tracking the
+composition's own edges by hand.** So:
+
+- **Four horizontals, and they are the four Points' rules.** Drawn by
+  `.eater-map__points li::before` — the row already draws a rule across its top
+  in the accent, and this carries that same line out of the row and across the
+  frame in a fainter neutral. A fifth Point brings a fifth line for nothing, and
+  there is no position stated anywhere to keep in step with anything. What the
+  reader follows from a number to a part is now ONE line that changes weight
+  twice: hairline across the frame, accent across the row, the leader's own
+  colour turning out of it towards the part.
+- **Three verticals, and they are the three standing blocks' left edges** —
+  columns 1, 5 and 11, which are the same three numbers the `grid-area`s use.
+  `grid-template-columns: subgrid` is what lets them say that: a track boundary
+  in a twelve-column grid is `4t + 3.5g` from the edge and neither term is a
+  length anything here holds, so the lines INHERIT the tracks rather than
+  recomputing them. Move a block and its line goes with it. The third is where
+  the leader lines' shoulders stand, so each rule leaves its Point exactly on a
+  vertical.
+
+**THE THIRD VERTICAL WAS TOUCHING ITS OWN WORDS, AND THE FIX IS NOT TO MOVE IT.**
+A line that is a block's left edge lands on the first character of every line of
+that block, and against the Points — a number, a title and a paragraph all
+starting at one x — it read as a rule drawn through the text rather than behind
+it. The other two verticals do the same thing and neither shows it: the first is
+the page's own left margin, which a reader takes for a margin rule, and the
+second is the drawing's edge, which has no ink to touch. Moving the third off the
+column would have cost both of the things that make it derived — it would stop
+being an edge, and the four leader shoulders that end on it would run past it
+into the air. So the line stays and the WORDS move: `--eater-map-point-inset`,
+spent as a `padding-inline-start` on the ROW.
+
+**ON THE ROW AND NOT ON THE LIST, AND THAT IS THE WHOLE IMPLEMENTATION.** A
+padding on the `<ol>` is the obvious spelling and is wrong twice over — the row's
+border box goes with it, so the accent rule above each Point starts a gutter-half
+inside the vertical, and the hook goes with it too — and the `eater-map` Check as
+it stood would have caught neither, because its assertion is line-against-block
+and the `<ol>`'s own rect never moves. On the row, the border box is where it was
+and only the content box travels, so the rule and the shoulder keep the line and
+the three text boxes move.
+
+**AND NOTHING HAD TO BE COMPENSATED, WHICH IS NOT WHAT IT LOOKS LIKE.**
+`.eater-map__hook` is `right: 100%` of the row, and the reading that says a row
+padding must therefore drag it in is wrong: the containing block a positioned
+ancestor establishes is the PADDING box — the border box less its borders, with
+the padding INSIDE it — so an inline padding does not move that box at all. It
+was written as `calc(100% + var(--eater-map-point-inset))` first, on exactly that
+misreading, and the shoulder then crossed the vertical and stopped a gutter-half
+short of it in the air beside the words, at every window in the band. **The Check
+below is what said so, on the run that was meant to confirm the change**, which
+is the only reason it is three assertions rather than one.
+
+**HALF THE GUTTER, AND IT GOES BELOW THE BAND.** The default is
+`calc(var(--eater-map-gutter) / 2)`: the words clear the line by the measure the
+grid already puts between two columns, at every window, with nothing to keep in
+step. Out of the band the collapse spends it back — there are no verticals there,
+so an indent on the Points and on nothing else would be a step in a column where
+the masthead, the copy and the Points' own rules all stand at one margin.
+
+**THE TWO HALVES ANSWER THE REGIME DIFFERENTLY AND NEITHER IS TOLD WHICH REGIME
+IT IS IN.** Below the band the verticals go — one column, everything at the same
+margin, so all three would land on each other and draw one rule down the side of
+a phone — and the horizontals stay, because the Points are still a list of four
+and their rules still mean what they meant. That asymmetry is the whole return on
+deriving rather than declaring, and the `eater-map` Check reads a third window for
+it.
+
+**ONE TOKEN CAME OUT OF THIS THAT IS NOT ABOUT THE GRID.** The grid hairline has
+to be COLLINEAR with the Point's rule — it stands one border-width above the
+row's padding box, which is exactly where that border is drawn — and both were
+`1px` typed into a stylesheet. Two literals agreeing at one value is a thing a
+Check can only assert by typing the number a third time, so
+`--eater-map-rule-weight` is the agreement itself, and the copy's rule takes it
+too. The Check reads the pseudo's `top` against the ROW's `border-top-width`, so
+dragging that Token moves both and the assertion still holds.
+
+**WHAT IS A TOKEN HERE, AND WHY THAT IS SO LITTLE.** `--eater-map-grid-veil`,
+`--eater-map-rule-weight` and — since the third vertical was found touching its
+own words — `--eater-map-point-inset`, and nothing else. All three are about how
+the grid MEETS the composition rather than about where any line is. The ticket
+asked for the positions to be Tokens as well; they are not, because under this
+derivation there ARE no positions — a coordinate in a composition is not a Token
+(ADR 0004), and a line that is an edge is not even a coordinate. What the author can still move is how
+far back the drawing stands from the ink, which is the only thing about it that
+was ever a choice.
+
+**ONE THING LEFT FOR THE AUTHOR TO LOOK AT.** Point 04's horizontal and the copy's
+own top rule are two near-parallel lines in the left column, 16px apart at
+1600x900 and closer at the band's short corner. Both are where they are for a
+reason and neither is wrong; whether the near-miss reads as a grid or as a
+mistake is a look, and looks are the author's.
+
 ## Two things this Section cost the Kernel
 
 **The Turn's span in the band stopped being "the document's whole scroll".** It
@@ -1970,10 +2623,14 @@ their figures attached, and saying them twice would cost the paragraph lines it
 does not have. Same cut, for the same reason, as the Panel's.
 
 The four points are the ticket's own four, one per part of the Exploded View, and
-each carries the `part` its leader line is drawn to. The fourth names the Slab
-itself. That field is Content and the words are Content, and the Editor offers
-the words and never the field — it matches an element against the text it DRAWS,
-and a part is drawn nowhere.
+each carries the `part` its leader line is drawn to. That field is Content and the
+words are Content, and the Editor offers the words and never the field — it
+matches an element against the text it DRAWS, and a part is drawn nowhere.
+
+**Their ORDER is Content too, and it is the reading order twice over.** `02.` is
+the one about the Tube because it is the claim that follows searching — and
+because its part, the Offline button, is the pill next to the search bar it names.
+Reordering the array reorders the drawn numbers with it, since those are ordinals.
 
 **Two things a point draws are NOT Content (#191).** Its number is the ORDINAL,
 derived from the list's own order: an `<ol>` whose numbers are typed is two orders

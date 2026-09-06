@@ -8,11 +8,16 @@ rem reloads as you edit. But `astro dev` runs as a background daemon, which a
 rem double-clicked window cannot own or stop, so this file builds and serves
 rem instead - one process, ended by closing the window.
 rem
-rem The other two windows beside this one are not this one. editor.bat builds and
-rem serves the same way but puts the Editor over the page, which is how the site's
-rem words and numbers get CHANGED rather than read. run.bat serves the repo root
-rem as plain files, for the dev-only instruments under design/, and cannot serve
-rem the site at all, because /portfolio is a build and not a folder.
+rem It serves ONE build and leaves it there, which is what makes it the one to
+rem read a fixed version in. watch.bat beside this one is this file plus a watch
+rem on the branch: it rebuilds and reloads the page every time a commit lands, so
+rem leave that one open when changes are arriving from a worktree or an agent.
+rem
+rem The other three windows beside this one are not this one. editor.bat builds
+rem and serves the same way but puts the Editor over the page, which is how the
+rem site's words and numbers get CHANGED rather than read. run.bat serves the repo
+rem root as plain files, for the dev-only instruments under design/, and cannot
+rem serve the site at all, because /portfolio is a build and not a folder.
 
 setlocal EnableDelayedExpansion
 cd /d "%~dp0"

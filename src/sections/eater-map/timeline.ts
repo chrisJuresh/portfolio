@@ -2,6 +2,8 @@ import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { mountStage, type Stage } from './stage';
 
+import mountDrop from './drop';
+import { seconds } from './duration';
 import mountGlass from './glass';
 import { mountLeaders } from './leaders';
 import { mountTitle } from './title';
@@ -109,13 +111,6 @@ function collapsed(root: HTMLElement): boolean {
   return Number(getComputedStyle(root).getPropertyValue('--eater-map-collapsed')) === 1;
 }
 
-/** A duration Token, in seconds, written in either `s` or `ms`. */
-function seconds(raw: string, fallback: number): number {
-  const value = Number.parseFloat(raw);
-  if (!Number.isFinite(value)) return fallback;
-  return raw.trim().endsWith('ms') ? value / 1000 : value;
-}
-
 export default function mountLift(root: HTMLElement): gsap.core.Timeline | void {
   // THE SERIF TITLE, AND IT IS NOT PART OF THE TIMELINE EITHER — nor of the
   // drawing. It is here for the same mechanical reason `mountStage` is:
@@ -167,17 +162,6 @@ export default function mountLift(root: HTMLElement): gsap.core.Timeline | void 
   // computed.
   mountGlass(root);
 
-  // AND THE TWO OF THEM AGAIN WHENEVER THE EDITOR MOVES A TOKEN (#196), which
-  // costs a reader nothing: `redraw.ts` looks for the Editor's own footprint and
-  // observes nothing if there is none. What it draws again is exactly the two calls
-  // above, in the order they were first made. `stage` is still null while its
-  // dynamic import is in flight, so a drag in that first moment redraws the Cards
-  // and finds the Slab a beat later — a beat and not a state.
-  mountRedraw(root, () => {
-    stage?.redraw?.();
-    mountGlass(root);
-  });
-
   gsap.registerPlugin(ScrollTrigger);
 
   const lift = gsap.timeline({ paused: true });
@@ -212,6 +196,45 @@ export default function mountLift(root: HTMLElement): gsap.core.Timeline | void 
   // reading, which is the frame the rules are first drawn on.
   const redraw = mountLeaders(root);
   if (redraw) lift.eventCallback('onUpdate', redraw);
+
+  // AND ALL THREE OF THEM AGAIN WHENEVER THE EDITOR MOVES A TOKEN (#196, #214),
+  // which costs a reader nothing: `redraw.ts` looks for the Editor's own footprint
+  // and observes nothing if there is none. What it draws again is exactly the three
+  // calls above, in the order they were first made. `stage` is still null while its
+  // dynamic import is in flight, so a drag in that first moment redraws the Cards
+  // and finds the Slab a beat later — a beat and not a state.
+  //
+  // BELOW `mountLeaders` AND NOT ABOVE IT, WHICH IS THE WHOLE OF #214'S SECOND
+  // HALF. The rules were left out of this because the redraw to give it did not
+  // exist yet where this call used to stand, and the Tokens that decide where a
+  // rule ENDS reach the page through nothing else: an anchor is a zero-sized box,
+  // so moving it resizes nothing and the ResizeObserver in `leaders.ts` never
+  // fires — the eight anchors and the shoulder's reach wrote their file and left
+  // all four rules where they were until a reload. The Lift's own `onUpdate` is
+  // still what keeps them attached while a piece MOVES; this is what keeps them
+  // attached while the composition is being TUNED.
+  mountRedraw(root, () => {
+    stage?.redraw?.();
+    mountGlass(root);
+    redraw?.();
+  });
+
+  // THE DROP, AND IT IS NOT PART OF THE TIMELINE — it is the Lift's antonym rather
+  // than a second one of it (#213). Hovering a Card or the Point that names it
+  // lowers that one piece back onto the Slab, through `--eater-map-card-drop`,
+  // which this Timeline never writes and that module never reads: the stylesheet
+  // composes the two into the one coefficient a Card's rise and slides are terms
+  // of, so a reader who hovers a piece part way up gets both rather than whichever
+  // wrote last. Here for the mechanical reason the stage and the glass are — this
+  // module is the Section's only mount point — and given the leader lines' redraw
+  // for the reason the Timeline is given it: a rule has to stay attached to a
+  // piece that is moving, whatever is moving it.
+  //
+  // ABOVE THE REDUCED-MOTION BRANCH, because that branch returns. A reader who
+  // asked for stillness is asking about a Lift that runs at them unbidden, not
+  // about an answer they asked a question to get — so the Drop is still wired up
+  // down there, and puts the piece where the pointer says with nothing to watch.
+  mountDrop(root, redraw);
 
   const lessMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)');
   // A reader who asked for stillness gets the finished composition and NOTHING

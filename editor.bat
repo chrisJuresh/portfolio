@@ -43,11 +43,13 @@ rem numbers and which values the Editor has already written for you. Press copy
 rem and paste it to an agent. "put the page back" takes every kept change off the
 rem page; "clear the Recording" empties the document and leaves the page alone.
 rem
-rem The other two windows beside this one are not this one. site.bat serves the
+rem The other three windows beside this one are not this one. site.bat serves the
 rem same build with nothing over it, which is how the article is READ rather than
-rem edited; run.bat serves the repository root as plain files, for the dev-only
-rem instruments under design/. `pnpm dev` is the one to work in, reloading as you
-rem edit - but it cannot carry the Editor, which serves a build on purpose.
+rem edited; watch.bat serves that build and keeps rebuilding it as commits land,
+rem which is how it is read while somebody else is changing it; run.bat serves the
+rem repository root as plain files, for the dev-only instruments under design/.
+rem `pnpm dev` is the one to work in, reloading as you edit - but it cannot carry
+rem the Editor, which serves a build on purpose.
 rem
 rem It builds first, and that is load-bearing rather than polite: the Editor
 rem matches an element on the page against the Content the SERVED BUILD was made

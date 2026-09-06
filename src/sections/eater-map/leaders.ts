@@ -26,6 +26,16 @@
  * rotated. That is the failure this arrangement exists to avoid, and it looks
  * right at the flat end of the Lift and wrong everywhere else.
  *
+ * AND THE ANCHOR SITS INSIDE THE SURFACE ITS PART NAMES, WHICH IS NOT THE SAME
+ * BOX AS THE CARD. A part is a COMPONENT of the app — the search bar, the Offline
+ * button, the rail popup, the detail sheet — and the search Card carries two of
+ * them side by side in one topbar. So `--eater-map-anchor-<part>-x/-y` are a
+ * share of the SURFACE, and the anchor is planted inside that surface by
+ * `cards.ts` rather than beside the Card's own markup: a percentage of the box
+ * the rule ends on is the browser's own arithmetic, and the alternative is
+ * measuring a pill's offset inside a topbar and typing the answer here, which is
+ * a second opinion about a number the vendored export already holds.
+ *
  * THE SHOULDER, AND WHY IT IS A BOX RATHER THAN A NUMBER. Each rule leaves its
  * point horizontally for `--eater-map-leader-reach` before turning towards the
  * part. That length is the `.eater-map__hook`'s own width, so this module reads
@@ -37,6 +47,16 @@
  * the page cost this file nothing**: the shoulder turned round on its own, and
  * the one declaration it needed — which edge of the ROW the hook stands on — is a
  * composition decision and is in the stylesheet.
+ *
+ * AND THE HOOK CARRIES THE y AS WELL, FOR THE SAME REASON AND AT THE SAME PRICE.
+ * Its box is the row rule's box — lifted by `--eater-map-rule-weight` and given
+ * it as a height — so the rule's CENTRELINE is a midpoint of the same rect these
+ * two x's come off, and the leader is collinear with the accent rule it
+ * continues rather than half a weight below it. Reading the hook's TOP edge is
+ * what put it there: a border is painted inside its box and a stroke is centred
+ * on its path, so the two disagreed by half a rule-weight — one device pixel at
+ * DPR 1, at the junction, which is the one part of the line a reader following
+ * it actually looks at.
  *
  * AND TWO DOTS, WHICH ARE VERTICES OF THE RULE ITSELF (#191). A lit one at the
  * part, which is the polyline's own last point, and a smaller one at the shoulder
@@ -67,18 +87,55 @@
  */
 
 /** The three Cards, by the Token stem each one's placement is named for. */
-export const CARD_PARTS = ['search', 'lines', 'details'] as const;
+export const CARD_NAMES = ['search', 'lines', 'details'] as const;
 
-/** The fourth part is the Slab itself: the offline basemap is the artefact the
- *  reader is already looking at, so its point names the picture rather than
- *  anything standing on it. */
-export const SLAB_PART = 'slab';
+export type CardName = (typeof CARD_NAMES)[number];
 
-/** Every part of the Exploded View a numbered point may name. */
-export const PARTS = [...CARD_PARTS, SLAB_PART] as const;
+/**
+ * Every part of the Exploded View a numbered point may name, in the order the
+ * points read.
+ *
+ * FOUR PARTS AND THREE CARDS, which is the thing to know before reading anything
+ * else here. A part is a COMPONENT of the app rather than a piece of the drawing:
+ * the search Card is a topbar carrying two of them — the bar itself and the
+ * Offline button beside it — and the two are exactly what the first two points
+ * are about. The Slab is no longer one. It was, while `04.` claimed the offline
+ * basemap and the picture was the only thing to point at; the claim belongs to
+ * the button that says so, and a number on the map itself pointed at everything
+ * and therefore at nothing.
+ */
+export const PARTS = ['search', 'offline', 'lines', 'details'] as const;
 
-export type CardPart = (typeof CARD_PARTS)[number];
 export type Part = (typeof PARTS)[number];
+
+/**
+ * Where each part IS: the Card it is drawn on, and the surface inside that Card
+ * it actually is.
+ *
+ * ONE PLACE, BECAUSE THREE THINGS ASK IT. A leader line ends on this surface, the
+ * Drop lowers the Card underneath it when the reader hovers the point, and
+ * `glass.ts` gives it a copy of the map and an edge — and a correspondence that
+ * disagrees with itself between those three is a rule ending on one component
+ * while the number beside it lowers another. `cards.ts` builds a Card's glass
+ * surfaces out of this rather than restating them.
+ *
+ * THE SELECTOR IS THE APP'S OWN CLASS and is the one thing here that answers to
+ * another repository. A re-vendoring that renames a surface fails loudly:
+ * `glass.ts` says so on the console and the `console` Check makes that a build
+ * failure, and the leader line to it finds no anchor and is not drawn.
+ */
+export const ANCHORED_AT: Record<Part, { readonly card: CardName; readonly surface: string }> = {
+  search: { card: 'search', surface: '.search' },
+  offline: { card: 'search', surface: '.offline-button' },
+  lines: { card: 'lines', surface: '.lines-popup' },
+  details: { card: 'details', surface: '.details-panel' },
+};
+
+/** Which Card a part is drawn on, for a name that may not be a part at all —
+ *  `data-eater-map-point` reaches `drop.ts` as a plain string. */
+export function cardOf(part: string): CardName | null {
+  return ANCHORED_AT[part as Part]?.card ?? null;
+}
 
 /** One rule, and the two elements whose screen positions are its two ends. */
 interface Leader {
@@ -136,7 +193,14 @@ export function mountLeaders(root: HTMLElement): (() => void) | void {
     for (const { rule, hook, anchor, tip, knee } of leaders) {
       const from = hook.getBoundingClientRect();
       const to = anchor.getBoundingClientRect();
-      const y = from.top - frame.top;
+      // THE HOOK'S CENTRELINE AND NOT ITS TOP EDGE, because the hook IS the row
+      // rule's box — the stylesheet lifts it by the rule's weight and gives it
+      // that weight as a height, precisely so this line can be a midpoint. A
+      // stroke is centred on its path, a border is drawn inside its box, and
+      // taking the top edge put the two half a rule-weight apart: one device
+      // pixel of step at DPR 1, right where the rule leaves the row, which is the
+      // one place on it a reader is looking.
+      const y = (from.top + from.bottom) / 2 - frame.top;
       const x = to.left - frame.left;
       const at = to.top - frame.top;
       // Out of the near edge of the hook and across it: which edge is near is

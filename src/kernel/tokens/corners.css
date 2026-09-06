@@ -49,9 +49,17 @@
   --eye-src: none;
 }
 
-/* Every picture needs more of itself on black, and nothing else moves. */
+/* Every picture needs more of itself on black, and nothing else moves.
+
+   THE CAR'S IS A DIFFERENT NUMBER ON BLACK, and not only a larger one. In the
+   dark theme corners.css blends the car MULTIPLY into the Moonlight behind it,
+   so its opacity is how deep the silhouette is cut into the lit sky rather than
+   how much of a lighter ghost shows — 0 is no car, 1 is the car's own tones
+   taken out of the light entirely. Over ground the light does not reach the
+   same number is a faint dark shape, because there is little there to take
+   away. src/kernel/NOTES.md, under the Moonlight. */
 :root[data-theme='dark'] {
   --plate-opacity: 0.17;
-  --car-opacity: 0.17;
+  --car-opacity: 0.55;
   --eye-opacity: 0.17;
 }

@@ -1,0 +1,102 @@
+/*
+ * Where a leader line ENDS, on the vendored surface its part names. A plain,
+ * unscoped stylesheet for the reason `cards-shape.css` is one: these boxes
+ * arrived through `set:html`, they carry none of Astro's scoping attributes, and
+ * a scoped selector cannot reach them. NOTES.md is the authority; the two rules
+ * a selector here has to keep are the same two — SELECT ONLY THROUGH THE BOXES
+ * THE RULER GIVES THE CLONE (`.eater-cards` and `.eater-map__face`), and NEVER
+ * NAME THE EXPORT'S `svelte-…` CLASS, which is a build fingerprint.
+ *
+ * A SECOND FILE AND NOT A SECOND HALF OF THAT ONE. That one is what this Section
+ * says about the SHAPE of a vendored surface — one `border-radius`, argued from
+ * the drawing. This is where the drawing's own annotation attaches to it, which is
+ * a different claim about a different thing and is drawn by `leaders.ts`.
+ *
+ * THE ANCHOR IS A CHILD OF THE SURFACE, WHICH IS THE WHOLE POINT. A part is a
+ * COMPONENT of the app — the search bar, the Offline button, the rail popup, the
+ * detail sheet — and the search Card carries two of them side by side. `100%` of
+ * the box the rule ends on is the browser's own arithmetic and is exact at every
+ * window and at every size the Slab is drawn at; the alternative is measuring a
+ * pill's offset inside a topbar and writing the answer down here, which goes stale
+ * the next time that repository moves it. `cards.ts` plants the box; `leaders.ts`
+ * says what it is zero-sized for.
+ */
+
+/*
+ * The box an anchor is IN is the box its two shares are OF.
+ *
+ * Said through the anchor rather than by naming the app's four classes a third
+ * time, so a re-vendoring that renames a surface changes `leaders.ts` and nothing
+ * else. Two of the four are the vendored roots and already carry
+ * `position: relative !important` from the collector's own normalisation; this is
+ * for the two pills inside the search Card's topbar, which carry no position of
+ * their own.
+ *
+ * NOTHING ON SCREEN MOVES, which is the standard everything this Section says to
+ * the app's markup is held to. `position: relative` with no offsets displaces
+ * nothing and resizes nothing — it makes a containing block, and both of the
+ * topbar's children get one, so their paint order relative to each other is what
+ * it was.
+ */
+.eater-cards .eater-map__face :has(> [data-eater-map-anchor]) {
+  position: relative;
+}
+
+/*
+ * A ZERO-SIZED BOX PROJECTS TO A POINT, so `getBoundingClientRect()` on this IS
+ * the corner's position on screen while the Card is turned under the plane's
+ * camera. `leaders.ts` carries what the alternative costs.
+ *
+ * AND IT STANDS OFF THE CORNER BY ONE LENGTH, because a corner is not where the
+ * component is. Every surface in the drawing is rounded — the pills to their own
+ * half-height, the sheet to 28px — so the geometric corner of the box is outside
+ * the outline the reader sees, and a lit dot drawn there floats beside the
+ * component rather than sitting on it. `--eater-map-anchor-inset` is how far in
+ * it comes, along BOTH axes, TOWARDS THE CENTRE: `(0.5 - share) * 2` is +1 at the
+ * near edge, -1 at the far one and 0 in the middle of an edge, which is the only
+ * direction that reads as "in" for any corner the author drags this to.
+ *
+ * IN THE SURFACE'S OWN PIXELS, which is what keeps it in step with the radius it
+ * is clearing. The Cards are frozen to the viewport they were exported at, so a
+ * corner radius is a constant in these units; the whole Card is then scaled onto
+ * the Slab, and this scales with it. A share of the box instead would be a
+ * different distance on a 366px pill and a 390px sheet, which is the one thing
+ * that has to stay the same.
+ */
+.eater-cards .eater-map__face [data-eater-map-anchor] {
+  position: absolute;
+  left: calc(
+    var(--eater-map-anchor-x) * 100% + (0.5 - var(--eater-map-anchor-x)) * 2 *
+      var(--eater-map-anchor-inset)
+  );
+  top: calc(
+    var(--eater-map-anchor-y) * 100% + (0.5 - var(--eater-map-anchor-y)) * 2 *
+      var(--eater-map-anchor-inset)
+  );
+  width: 0;
+  height: 0;
+}
+
+/* And which corner each one is, which is two Tokens per part and the author's
+   (ADR 0004). The names are spelled out one part at a time rather than built
+   from the attribute — CSS has no way to compose a custom property's name — and
+   `leaders.ts` is where the list of parts actually lives. */
+.eater-cards [data-eater-map-anchor='search'] {
+  --eater-map-anchor-x: var(--eater-map-anchor-search-x);
+  --eater-map-anchor-y: var(--eater-map-anchor-search-y);
+}
+
+.eater-cards [data-eater-map-anchor='offline'] {
+  --eater-map-anchor-x: var(--eater-map-anchor-offline-x);
+  --eater-map-anchor-y: var(--eater-map-anchor-offline-y);
+}
+
+.eater-cards [data-eater-map-anchor='lines'] {
+  --eater-map-anchor-x: var(--eater-map-anchor-lines-x);
+  --eater-map-anchor-y: var(--eater-map-anchor-lines-y);
+}
+
+.eater-cards [data-eater-map-anchor='details'] {
+  --eater-map-anchor-x: var(--eater-map-anchor-details-x);
+  --eater-map-anchor-y: var(--eater-map-anchor-details-y);
+}

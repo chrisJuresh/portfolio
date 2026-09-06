@@ -7,6 +7,7 @@
     "dev": "astro dev",
     "build": "node scripts/check-source.mjs && astro check && tsc -p tsconfig.scripts.json && astro build && node scripts/assemble-dist.mjs",
     "preview": "node scripts/serve-dist.mjs",
+    "watch": "node scripts/watch-branch.mjs",
     "variants": "node design/tools/render-variants.mjs",
     "stages": "node design/tools/render-stages.mjs",
     "editor": "node scripts/editor/open.mjs",

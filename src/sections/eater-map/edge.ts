@@ -37,6 +37,16 @@ import { edgeShade, lightingIn, type Shade } from './stage';
  * across each straight side, where the normal genuinely is constant, and a ramp
  * across each corner's angular range. `stage.ts` is where the light stands.
  *
+ * AND A SOLID MAY BE SEE-THROUGH, WHICH IS A PROPERTY OF THE STACK AND NEVER OF
+ * THE PAINT. `Solid.alpha` carries the whole argument: two dozen filled boxes
+ * overlap by as much as the object is deep, so transparency put in the colour is
+ * composited once per slice and draws a rim that fades from solid at the face to
+ * gone at the silhouette, in as many steps as there are slices. Given as `alpha`
+ * it goes on a box holding the whole stack instead, which is rendered once — one
+ * material, one alpha, and the pane of glass the Cards are made of goes all the
+ * way round their edge. The Slab does not ask for one: a phone is not
+ * see-through.
+ *
  * WHERE IT STILL STOPS. A slice cannot carry the PICTURE: the captured pixels end
  * at the flat face and the edge is paint. That is the sheet's one empty cell, and
  * it does NOT decide #182 — the corner is closed and the edge has a direction, so
@@ -49,13 +59,25 @@ import { edgeShade, lightingIn, type Shade } from './stage';
  * with the vendored markup, and the same answer. `:global()` is the escape hatch
  * and `check-source.mjs` fails the build on it.
  *
- * EVERY LENGTH IS A CSS EXPRESSION AND NOT A NUMBER, which is what lets a Token
- * dragged in the Editor and a window carried across the breakpoint both move the
- * drawing without anything being re-mounted. **The SHADING is the one thing that
- * is computed once**, and it can afford to be: the gradient is exactly
- * scale-invariant, so a window that changes an object's size cannot make it wrong.
- * What a mount does not survive is a dragged Token, and `redraw.ts` is the answer
- * to that — NOTES.md.
+ * EVERY LENGTH IS A CSS EXPRESSION IN THE CONTAINER'S OWN UNITS, WITH THE TOKENS
+ * ALREADY SUBSTITUTED — and the split between those two halves is the one thing on
+ * this page that a reader can feel. A declaration holding a `var()` anywhere in it
+ * is a pending-substitution value, so the browser re-substitutes and re-parses the
+ * whole thing on every style recalc of the document — and the Kernel writes
+ * `--turn` on the root on every frame of a page turn, which recalculates all of
+ * it. Six of these declarations a slice, times a hundred and forty-four slices,
+ * was two thirds of the crossing's style recalc. `resolved` below is what takes
+ * the `var()`s out; `100cqw` and `100%` STAY, because a relative unit costs
+ * nothing to recalculate and is what keeps the drawing following the window.
+ * NOTES.md carries the measurement and the price.
+ *
+ * **The SHADING is computed once too**, and it can afford to be for a different
+ * reason: the gradient is exactly scale-invariant, so a window that changes an
+ * object's size cannot make it wrong.
+ *
+ * What a mount does not survive is a Token MOVING under it — dragged in the
+ * Editor, or answered differently by a media query when the window leaves the
+ * band. `redraw.ts` is the answer to both and NOTES.md is why they are one answer.
  */
 
 /** Four corner radii, top-left clockwise, as bare CSS length expressions. */
@@ -144,8 +166,43 @@ export interface Solid {
    * has no text to keep sharp and no scale to divide by.
    */
   readonly flatten?: string;
-  /** what the edge is painted from: any CSS colour */
+  /**
+   * What the edge is painted from: any CSS colour.
+   *
+   * **OPAQUE, WHEREVER `alpha` IS GIVEN**, and that field is why: an alpha carried
+   * by the paint is composited once per slice and an alpha carried by the stack is
+   * composited once. They are not two spellings of one thing.
+   */
   readonly colour: string;
+  /**
+   * How much of what is behind the solid comes through it, as a bare CSS number —
+   * and it belongs to the STACK rather than to the colour, which is the whole of
+   * what this field exists to say.
+   *
+   * A SLICE IS A FILLED BOX AND A STACK IS TWO DOZEN OF THEM OVERLAPPING. Put the
+   * transparency in `colour` and every slice under a pixel composites its own
+   * film: `1 - (1 - a)^n`, where `n` runs from most of the stack where the edge
+   * meets the face down to one at the object's silhouette. So a translucent colour
+   * draws a rim that is nearly solid against the face and nearly gone at the
+   * outline, in as many visible steps as there are slices — a smear with a
+   * direction of its own, over the direction the light already gave the edge.
+   *
+   * Given here, the slices go into a box of their own and that box carries the
+   * `opacity`. The stack is then rendered once and composited once, so what a
+   * reader sees is ONE material at ONE alpha everywhere — a pane of glass with
+   * thickness rather than a stack of films.
+   *
+   * Absent, there is no box and the slices are the host's own children, which is
+   * what the Slab is: a phone is not see-through and paying for a render surface
+   * to say so would be a cost with nothing to buy.
+   *
+   * IT COSTS THE DRAWING NOTHING TO BE GROUPED, which is the question #207 makes
+   * worth asking of any new grouping property on this plane — `opacity` is a
+   * render surface, and a render surface is what cost the Cards' text its
+   * sharpness. Nothing inside this box is text: it holds the slices and the face
+   * is its SIBLING. NOTES.md carries the measurement.
+   */
+  readonly alpha?: string;
   /**
    * Which glass surface this stack belongs to, written on every slice as
    * `data-eater-map-edge`.
@@ -192,15 +249,28 @@ const WALL = 8;
  *  Token-bearing name: nothing styles it. */
 const SLICE = 'eater-map__slice';
 
+/** ...and the class the box holding one whole stack carries, where `Solid.alpha`
+ *  asked for one. Nothing styles this either — the one declaration on it is
+ *  written here, with the rest of the geometry. */
+const STACK = 'eater-map__stack';
+
 /**
  * Take one host's slices back off, which is what makes a redraw land on the DOM it
  * started from.
  *
  * PER HOST AND NEVER PER BOX — a Card with two glass surfaces has two stacks under
  * one host, and NOTES.md carries what a clear written per box costs.
+ *
+ * BOTH SHAPES, because `Solid.alpha` decides which one a caller built and this
+ * function is called by both of them. A clear that swept only the loose slices
+ * would leave a translucent stack behind on every redraw and put the next one on
+ * top of it — two rims at one alpha each, which reads as a rim at the wrong alpha
+ * rather than as a rebuild that leaked.
  */
 export function clearEdge(host: HTMLElement): void {
-  for (const stale of host.querySelectorAll(`:scope > .${SLICE}`)) stale.remove();
+  for (const stale of host.querySelectorAll(`:scope > .${SLICE}, :scope > .${STACK}`)) {
+    stale.remove();
+  }
 }
 
 /** Degrees to radians. */
@@ -370,6 +440,42 @@ function figure(n: number): string {
   return String(Math.round(n * 1e6) / 1e6);
 }
 
+/** One `var()`, with an optional fallback that is a single term — which every
+ *  fallback in this Section is, and the only one is `SOLID`'s `1`. */
+const VARIABLE = /var\(\s*(--[a-z0-9-]+)\s*(?:,\s*([^,()]*))?\)/gi;
+
+/**
+ * One expression with every Token in it replaced by what the host holds, and every
+ * relative unit left exactly where it was.
+ *
+ * WHY THIS IS THE WHOLE OF THE PAGE TURN'S REMAINING COST. See the module comment:
+ * a declaration carrying a `var()` is re-substituted and re-parsed on every style
+ * recalc of the document, and the turn recalculates the document every frame. What
+ * comes back from here is a `calc()` over numbers and container units, which the
+ * browser parses once and then merely evaluates.
+ *
+ * A CUSTOM PROPERTY'S COMPUTED VALUE IS ALREADY SUBSTITUTED, so one pass is enough
+ * and the second is only there to be sure. **What matters is the third line**: an
+ * expression that still names something after that goes back UNCHANGED rather than
+ * half-substituted — a live expression is slow, and an invalid one is an edge that
+ * was never drawn.
+ *
+ * AND EVERY SUBSTITUTION IS PARENTHESISED, because these are composed into larger
+ * arithmetic before they are written. `--eater-map-card-total` resolves to
+ * `calc(tan(atan2(100cqw, 393px)) * 1)` — a whole math function, which is a term
+ * only if it is bracketed as one.
+ */
+function resolved(expr: string, style: CSSStyleDeclaration): string {
+  let out = expr;
+  for (let pass = 0; pass < 2 && out.includes('var('); pass += 1) {
+    out = out.replace(VARIABLE, (_whole, name: string, fallback: string | undefined) => {
+      const held = style.getPropertyValue(name).trim();
+      return `(${held || fallback?.trim() || '0'})`;
+    });
+  }
+  return out.includes('var(') ? expr : out;
+}
+
 /**
  * Four radii clamped so that no edge of the box is asked for more than it has.
  *
@@ -408,7 +514,89 @@ export function fitRadii(w: number, h: number, radii: Corners): Corners {
  * order a sort would have painted them — see `place` below.
  */
 export function extrude(host: HTMLElement, before: Node | null, solid: Solid): void {
-  const { box, radii, plan, colour, surface, flatten } = solid;
+  const { plan, colour, surface } = solid;
+
+  // ONE LIGHT, READ OFF THE HOST ITSELF (#197). Not a field of `Solid` and not a
+  // parameter: every caller is inside `.eater-map`, the light and the attitude are
+  // custom properties and custom properties inherit, so asking the host is asking
+  // the Section — and there is then no way for two callers to be handed two
+  // lights. The plane's attitude is read with it, because the light stands on the
+  // PAGE and a local normal has to be carried into screen space before it is
+  // dotted. Zero is the honest reading of a missing attitude; `stage.ts` says why
+  // the light's own fallbacks are not zero.
+  //
+  // AND IT IS THE SAME READING THE LENGTHS ARE SUBSTITUTED FROM, which is why it
+  // is taken before them rather than beside the shade below. One
+  // `getComputedStyle` for a whole solid: the light, the attitude, and every
+  // Token the geometry is generated from.
+  const style = getComputedStyle(host);
+
+  /** Every length this solid is stated in, with the Tokens taken out and the
+   *  container units left in — `resolved`, and the module comment is why. */
+  const box = {
+    x: resolved(solid.box.x, style),
+    y: resolved(solid.box.y, style),
+    w: resolved(solid.box.w, style),
+    h: resolved(solid.box.h, style),
+  };
+  // WRITTEN OUT RATHER THAN MAPPED, because `.map` over a readonly tuple hands
+  // back an array and the cast back to four would be the only unchecked thing in
+  // this function.
+  const radii: Radii = [
+    resolved(solid.radii[0], style),
+    resolved(solid.radii[1], style),
+    resolved(solid.radii[2], style),
+    resolved(solid.radii[3], style),
+  ];
+  const fillet = resolved(solid.fillet, style);
+  const filletBack = resolved(solid.filletBack, style);
+  const depth = resolved(solid.depth, style);
+  const flatten = solid.flatten === undefined ? undefined : resolved(solid.flatten, style);
+  /** How far a unit of depth projects along the plane, per axis — the two numbers
+   *  `Solid.flatten` is about, substituted here for the same reason as the rest.
+   *  Not a field of `Solid`: they are the PLANE's and every caller is on it, which
+   *  is the same argument the light above is read by. */
+  const alongX = resolved('var(--eater-map-depth-x)', style);
+  const alongY = resolved('var(--eater-map-depth-y)', style);
+
+  /**
+   * What the slices are built into: the host itself, or a box of their own that
+   * carries the whole stack's alpha. `Solid.alpha` is why.
+   *
+   * NO SIZE, AND THAT IS NOT A BOX THAT FAILED TO BE MEASURED. A slice states its
+   * own `left` and `top` in the host's units, so what this box has to be is a
+   * containing block at the host's own origin and nothing else — and a box with a
+   * size would be one more number to keep in step with a solid that already knows
+   * where it is. It does not clip: the fillet rolls in across the face and the
+   * wall stands past it, so a stack reaches outside its face's box on the two
+   * sides the light does not come from, and that overhang IS the drawing.
+   */
+  // Substituted like every length beside it, and for the same reason: a
+  // declaration carrying a `var()` is re-parsed on every style recalc of the
+  // document, and the page turn recalculates the document every frame.
+  const alpha = solid.alpha === undefined ? undefined : resolved(solid.alpha, style);
+  let stack = host;
+  if (alpha !== undefined) {
+    stack = document.createElement('div');
+    stack.className = STACK;
+    stack.setAttribute('aria-hidden', 'true');
+    if (surface !== undefined) stack.dataset.eaterMapEdge = surface;
+    stack.style.cssText = [
+      'position:absolute',
+      'left:0',
+      'top:0',
+      'width:0',
+      'height:0',
+      'pointer-events:none',
+      // `calc()` ROUND A NUMBER THAT NEEDS NO ARITHMETIC, because `resolved`
+      // parenthesises what it substitutes — every other length it feeds is
+      // composed into a `calc()` by its caller, and `opacity: (0.5)` is not a
+      // declaration. It is dropped rather than refused, so the rim comes back at
+      // full alpha and the drawing looks like the change was never made.
+      `opacity:calc(${alpha})`,
+    ].join(';');
+    host.insertBefore(stack, before);
+  }
 
   /** Where the next slice goes.
    *
@@ -421,22 +609,18 @@ export function extrude(host: HTMLElement, before: Node | null, solid: Solid): v
    *  them: deepest first. They are BUILT shallowest first — the fillet rolls back
    *  from the face and the wall goes on behind it — so each one is inserted
    *  before the one built before it, and the stack comes out reversed. The face
-   *  still wins, because it is behind every one of them in the document. */
-  let next = before;
+   *  still wins, because it is behind every one of them in the document.
+   *
+   *  GROUPED, THE MARK TO INSERT BEFORE IS THE END OF THE BOX rather than the
+   *  face — the face is the box's sibling and no longer something a slice can be
+   *  placed against. `insertBefore(sheet, null)` appends, so the two branches say
+   *  the same thing about order and only the parent differs. */
+  let next: Node | null = stack === host ? before : null;
   const place = (sheet: HTMLElement) => {
-    host.insertBefore(sheet, next);
+    stack.insertBefore(sheet, next);
     if (flatten !== undefined) next = sheet;
   };
 
-  // ONE LIGHT, READ OFF THE HOST ITSELF (#197). Not a field of `Solid` and not a
-  // parameter: every caller is inside `.eater-map`, the light and the attitude are
-  // custom properties and custom properties inherit, so asking the host is asking
-  // the Section — and there is then no way for two callers to be handed two
-  // lights. The plane's attitude is read with it, because the light stands on the
-  // PAGE and a local normal has to be carried into screen space before it is
-  // dotted. Zero is the honest reading of a missing attitude; `stage.ts` says why
-  // the light's own fallbacks are not zero.
-  const style = getComputedStyle(host);
   const angle = (name: string) => {
     const value = Number.parseFloat(style.getPropertyValue(name));
     return Number.isFinite(value) ? value : 0;
@@ -561,8 +745,8 @@ export function extrude(host: HTMLElement, before: Node | null, solid: Solid): v
       flatten === undefined
         ? `transform:translateZ(calc(-1 * (${back})))`
         : `transform:translate(` +
-          `calc((${back}) * var(--eater-map-depth-x) / (${flatten})),` +
-          `calc((${back}) * var(--eater-map-depth-y) / (${flatten})))`,
+          `calc((${back}) * ${alongX} / (${flatten})),` +
+          `calc((${back}) * ${alongY} / (${flatten})))`,
     ].join(';');
     place(sheet);
   };
@@ -590,9 +774,9 @@ export function extrude(host: HTMLElement, before: Node | null, solid: Solid): v
     const turn = (Math.PI / 2) * (step / rings);
     slice(
       'fillet',
-      `(${solid.fillet}) * ${figure(1 - Math.sin(turn))}`,
+      `(${fillet}) * ${figure(1 - Math.sin(turn))}`,
       plan.fillet * (1 - Math.sin(turn)),
-      `(${solid.filletBack}) * ${figure(1 - Math.cos(turn))}`,
+      `(${filletBack}) * ${figure(1 - Math.cos(turn))}`,
       // THE DEPTH COMPONENT OF THE SECTION'S TRUE NORMAL, and `conicEdge` supplies
       // the lateral part from whatever is left of a unit vector. At the first step
       // the section almost faces the reader and its edge is almost one colour; at
@@ -616,7 +800,7 @@ export function extrude(host: HTMLElement, before: Node | null, solid: Solid): v
       'wall',
       '0px',
       0,
-      `(${solid.filletBack}) + ((${solid.depth}) - (${solid.filletBack})) * ${figure(along)}`,
+      `(${filletBack}) + ((${depth}) - (${filletBack})) * ${figure(along)}`,
       0,
     );
   }

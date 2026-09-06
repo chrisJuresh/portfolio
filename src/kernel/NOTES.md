@@ -2,7 +2,7 @@
 
 The small set of things every Section may rely on, and the only thing permitted
 to cross a Section boundary: the faces, the theme and the Turn, the Effect Stack,
-the corner pictures, the Rail, the Section loader, and the page turn between the
+the corner pictures and the Moonlight they stand in, the Rail, the Section loader, and the page turn between the
 Sections along with the landing it arrives at.
 
 It is also the only place in `src/` allowed to write a global selector. A Section
@@ -15,7 +15,7 @@ than a convenience.
 | --------------------------- | ----------------------------------------------------------- |
 | `faces.css` / `tokens/faces.css` | the five families, six files, the face Tokens, and the page's own type size — the zoom, the ceiling and the give-way |
 | `ground.css` / `tokens/ground.css` | the theme's two papers, the Turn across them, the shade over the DARK theme's first screen, and that the document never scrolls sideways |
-| `corners.css` / `corners.ts`| the plate, the car and the eye — geometry, and which rung    |
+| `corners.css` / `corners.ts` / `tokens/moonlight.css` | the plate, the car and the eye — geometry, and which rung; and the Moonlight they stand in, which the car is cut out of |
 | `rail/` / `tokens/rail.css` | the Rail — the one index on the page, its words, its two regimes, and which entry is current |
 | `effect-stack/`             | the nine layers, and the grain tile                          |
 | `theme.ts`                  | which paper, where it is stored, and who is told when it changes |
@@ -832,6 +832,104 @@ means publishing the *shaded* ground as a second colour for everything standing
 above the layer to mix against — a change to the theme's own API and a decision
 rather than a number.
 
+## The Moonlight: one cool light over the DARK theme's first screen
+
+`.kernel-corners .moonlight` in `corners.css` is the layer, `tokens/moonlight.css`
+is its eight numbers, and it answers to `kernel-moonlight` on the Editor. A radial
+light cast from just inside the top-right corner, across the ground the Front
+Screen is printed on, that the car hangs in as a silhouette. **The light theme
+takes none of it**, as a rule and not a value — the shade's own gate, for the
+shade's own reason.
+
+**It was measured off a reference rather than described, and what the reference
+did is worth keeping because it is smaller than it looks.** The author brought a
+ten-second clip of this screen with "a subtle blue moonlight from the top right"
+in it, and asked for that alone. Sampled every quarter-second: the two
+photographs' own pixels do not move — the flowers hold 120, 76, 42 of 255 to the
+frame and their saturation drifts by two points; the second picture the same —
+and there is no shadow cast beside either, every band around them brightens.
+**What moves is the ground.** It swells from 8 to about 30, 38, 50 across the
+right half of the screen over seven seconds and back, a cool light whose added
+colour is about 22, 30, 42 at its peak, weakest at the far left and the bottom
+left; and the far top-right corner, where the car is, stays near black while the
+sky beside it lights, so the car reads as a dark shape against it. The
+"illuminated, more three-dimensional, a shade more colourful" the author saw in
+the photographs is what a warm picture does against a cool lit surround and what
+a cool one does against a ground that has come up to meet its own shadows. So
+nothing here touches the photographs, and that is the reading of the reference
+and not a shortcut.
+
+**Where it stands, and why it is in the corners' band rather than beside the
+shade.** The light is drawn INSIDE `.kernel-corners`, first, under the three
+pictures — so the plate and the eye stand in it as the lighter ghosts they are
+graded as, and the car stands against it. It has to be inside for the car's sake:
+that band is a stacking context (a positioned box with a `z-index`), and a
+`mix-blend-mode` on anything in it reaches only what was painted before it inside
+the same box, never the page. A light beside the shade, at the root, would be
+invisible to the car's blend. What it costs is that the light is the first
+screen's sky rather than the window's — it scrolls off with the pictures it
+lights, and needs no `1 - --turn` to take it away.
+
+**The band paints the ground, and that one line is also for the car.** Over a
+transparent backdrop `multiply` is a no-op, so without it the car would paint as
+its light ghost exactly where the light does not reach and as a silhouette where
+it does — two pictures of one car. `.kernel-corners` paints `var(--ground)`, the
+same colour on the same Turn over the same pixels the canvas already shows there,
+so the car's backdrop is opaque sky everywhere. Nothing on screen changes for it:
+there is nothing but the canvas below -1, and the canvas is that colour.
+
+**The car is backlit, by a blend and not by a re-bake.** The same `dark-` rung
+serves, at the same grade; `multiply` takes its tones out of whatever light is
+behind it, most where the sky is brightest and almost nothing where the light does
+not reach. The dark theme's `--car-opacity` therefore changed meaning rather than
+only value — it is how deep the cut goes, and it went from 0.17 to 0.55 because a
+silhouette cut at a sixth is not one. A darker grade in the file would have done
+the same arithmetic in Python and needed the 20 MB source this repository ignores;
+the blend does it in the compositor and leaves the light theme's car alone.
+
+**The colour runs to `transparent` and the strength is the layer's opacity.** So
+the layer is light and nothing else, and one number says how much of it there is —
+which is also what lets the breath ride on it. `--moonlight-swell` is a registered
+`<number>` the keyframes carry from 1 to 0 and back over `--moonlight-breathe`, and
+the opacity reads it through `--moonlight-breathe-floor`, so the Tokens keep the
+strength and the floor while the animation keeps a bare number. A period of `0s`
+is an animation with no active duration and applies nothing, so the light stands
+at full; `prefers-reduced-motion` gets the light and not the breath. The layer's
+opacity is what animates, so the breath is a composite and not a repaint of a
+full-screen gradient.
+
+**The foot is masked whatever the reach says.** `--moonlight-reach` is a share of
+the fold and the author may drag it past 1, where a radial light would meet the
+band's bottom edge with a value still in it — a line across the page that travels
+with the scroll, which is exactly what "banding" has meant here twice. The last
+quarter of the band dissolves the layer, so there is no reach at which a foot
+exists. Measured at 1536x760 with the reach at 1.6: the last 30px of the band
+carry +1 of 255, and the bottom-left corner 0.
+
+**What the numbers are, at the values that shipped, measured after the shade.**
+Against the untouched dark page at 1536x760, luminance in 255ths: +19 to +30
+beside the second photograph's right edge, +6 to +11 at the flowers' left edge,
++10 to +18 above the strip, +35 at the brightest patch of sky, 0 across the left
+third and at the bottom-left corner. That is the reference's own distribution, at
+about its own strength. On a portrait phone the light is nearly uniform across the
+top of the screen, because a reach of one and a half folds is wider than the
+page; that is the geometry and not a bug.
+
+**Two things the Editor will do with these that are worth knowing.** The slider
+it draws for a percentage runs to four times the value, so `--moonlight-y` at 6%
+gets a slider to 24% and the number beside it is how the light is moved further
+than that. And the shade stands over this as over everything below the type, so
+half of whatever `--moonlight-strength` asks for is what reaches the screen at the
+shade's shipped 0.5 — drag the strength while looking, not by arithmetic.
+
+**What is deliberately not here.** No treatment on the photographs, for the
+reason above. No light in the light theme — moonlight over paper is a blue wash
+over a white page, and the reference was a dark page. No Check: a light that
+fails to draw, a car that fails to darken, or a breath that stops are all things
+the author would see, and the only invisible half — the light theme moving — is
+held by the gate being a rule rather than a value, which is the same guarantee
+the shade has.
+
 ## A Section mounts when the browser is idle, and "approaching" is the deadline
 
 `IntersectionObserver` at half a screen's margin is what the loader had, and it is
@@ -1030,6 +1128,12 @@ grid rather than off a list, and picks again when the theme or the display chang
 under it. A miss on a dark file is the ordinary untuned state and not an error:
 the generator writes no dark ladder while dark's grade matches light's, so there
 is one retry against the light rung of the same width.
+
+**In the dark theme the car is a silhouette and not a ghost.** `corners.css` blends
+it `multiply` into the Moonlight painted under it, at an opacity that is now the
+depth of the cut rather than the strength of a ghost. The Moonlight section above
+has the whole of it, including why the band paints the ground for the blend's
+sake.
 
 A picture whose whole ladder is missing is retried on every resize and every
 theme flip, because `shown` never advances past 0 and `upgrade()` only compares

@@ -640,6 +640,10 @@ Section states it, so what keeps the statement honest is a Check that reads the 
 layers' own z-indexes back and compares — the Kernel renumbering its stack would
 otherwise un-lift the type in silence.
 
+**And the lift only means anything while the Section is not a group.** That is the
+next heading, and the two have to be read together: a lift is a z compared against
+the stack's, and a stacking context anywhere between the two ends the comparison.
+
 ## The reveal
 
 A CSS animation on the Section, with `backwards` fill, and both halves matter.
@@ -654,6 +658,41 @@ ever and the last keyframe says `transform: none` — which computes not to the
 keyword but to the identity matrix, and any transform makes an element a stacking
 context. Permanently a stacking context, this Section would seal the Cut Title's
 tail inside itself instead of letting it stand over the Section below.
+
+### It is a stacking context for 0.9s, and the lift has to survive that
+
+The paragraph above is about the fill and stops one step short. The context is not
+permanent, but while the animation runs it is **real**: an `opacity` below 1 makes
+one and so does a `transform`, and the reveal animates both.
+
+Everything this Section lifts out of the Effect Stack is therefore sealed inside
+it for the reveal's whole span — the four type blocks, the strip, the bar and the
+Cut Title, every one of them still at `--front-screen-type-z`, and every one of
+them now compared against its **siblings** rather than against the stack. What the
+stack compares against in their place is the Section's own z, which was `auto`.
+`auto` is under `paper` (2) and `halftone` (4).
+
+So for as long as the composition was arriving, the two lit layers painted over it
+instead of under it: the halftone's dots printed through every photograph, every
+word and the Cut Title, and the page then corrected itself the instant the
+animation ended. Reported as *the filters being on top of everything before the
+text and the photos come back on top of them*, and it had shipped — a fault that is
+invisible from a settled page and easy to miss on a warm cache, because the fade
+starts at nothing and the layers are strongest exactly where the composition is
+faintest.
+
+The fix is one declaration in each keyframe: the animation carries
+`--front-screen-type-z` at both ends, so the Section stands where its contents
+stand for precisely as long as it is a group and reverts to `auto` when the
+animation is over. The Token is the one the contents read, so the two cannot come
+apart, and the paragraph above stays true — nothing here makes the context
+permanent. The base rule's `position: relative` is what a z has to stand on and is
+the whole of what moved out of the band block to get it.
+
+`front-screen`'s last assertion is this one, restarting the reveal and holding it
+half way rather than reading a settled page: the older assertion above passed
+throughout, because the type's z is still 5 and being sealed is what stops that
+meaning anything.
 
 ## The switch
 

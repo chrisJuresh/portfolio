@@ -78,6 +78,95 @@ async function revealed(page) {
 }
 
 /**
+ * The Front Screen held half way through its reveal, and everything needed to
+ * say whether the Effect Stack is over it or under it there.
+ *
+ * RESTARTED RATHER THAN CAUGHT, and that is the difference between an assertion
+ * and a race. The reveal is 0.9s from the page's first style resolution and
+ * `open()` waits for `load` — which on a Section carrying five photographs is
+ * comfortably longer, on a warm cache especially. A Check that tried to catch the
+ * animation live would find nothing to hold on the machine the author runs it on
+ * and read as though it had asserted something, which is the shape NOTES.md warns
+ * about three times. Clearing `animation-name` for a frame and putting it back is
+ * what a browser treats as a NEW animation, so the state can be produced on
+ * demand and paused anywhere in its span. Half way, because that is where every
+ * property the keyframes touch is unambiguously mid-flight.
+ *
+ * WHAT THE KEYFRAMES TOUCH IS READ OFF THE STYLESHEET AND NOT OFF THE HELD
+ * ELEMENT. The precondition is "this reveal makes the Section a stacking
+ * context", and asking the held element whether it is one would be asking the
+ * state under test to certify its own precondition — a hold that silently failed
+ * would then report that there was nothing to assert. So the rule is read from
+ * the CSSOM, and the held element only ever answers the question.
+ *
+ * THIS LEAVES THE SECTION MID-REVEAL, so whatever calls it goes last: anything
+ * measured afterwards is measured through a fade and 4px of rise.
+ */
+async function heldReveal(page) {
+  await page.evaluate(() => {
+    const section = document.querySelector('.front-screen');
+    if (section instanceof HTMLElement) section.style.animationName = 'none';
+  });
+  await page.evaluate(
+    () => new Promise((next) => requestAnimationFrame(() => requestAnimationFrame(next))),
+  );
+  await page.evaluate(() => {
+    const section = document.querySelector('.front-screen');
+    if (section instanceof HTMLElement) section.style.animationName = '';
+  });
+  return page.evaluate(() => {
+    const section = document.querySelector('.front-screen');
+    if (!(section instanceof HTMLElement)) return null;
+
+    const declared = getComputedStyle(section).animationName;
+    /** Every property the named keyframes set, at any frame. */
+    const touches = new Set();
+    for (const sheet of document.styleSheets) {
+      let rules;
+      try {
+        rules = sheet.cssRules;
+      } catch {
+        continue;
+      }
+      for (const rule of rules) {
+        if (!('name' in rule) || rule.name !== declared || !('cssRules' in rule)) continue;
+        for (const frame of rule.cssRules) {
+          for (const property of frame.style) touches.add(property);
+        }
+      }
+    }
+
+    const running = section.getAnimations();
+    for (const one of running) {
+      one.pause();
+      one.currentTime = (Number(one.effect?.getComputedTiming().duration) || 0) / 2;
+    }
+
+    const held = getComputedStyle(section);
+    const layerZ = (selector) => {
+      const layer = document.querySelector(selector);
+      return layer ? Number(getComputedStyle(layer).zIndex) : null;
+    };
+    return {
+      declared,
+      touches: [...touches],
+      running: running.length,
+      // Either of the two the reveal animates makes a stacking context, and
+      // `transform` has to be read as a COMPUTED value: `transform: none` in a
+      // keyframe computes to the identity matrix and groups the box exactly as
+      // any other matrix would, which is the whole reason the reveal fills
+      // `backwards` and not `both`.
+      grouped: Number(held.opacity) < 1 || held.transform !== 'none',
+      opacity: held.opacity,
+      transform: held.transform,
+      z: held.zIndex,
+      paperZ: layerZ('.fx-paper'),
+      halftoneZ: layerZ('.fx-halftone'),
+    };
+  });
+}
+
+/**
  * Every listing entry, and which of its organisation's forms is on the page.
  *
  * The line count is `getClientRects().length` on the shown form, which is one
@@ -547,6 +636,58 @@ export const check = {
         `the switch: ${before.theme}/${before.checked}/"${before.shown[0]}" became ` +
           `${after.theme}/${after.checked}/"${after.shown[0]}"`,
       );
+
+      // ---- and they stay off it WHILE IT IS ARRIVING ----------------------
+      // LAST IN THIS BLOCK, because it puts the Section back into its reveal.
+      //
+      // The lift asserted above is on the four type blocks, the strip, the bar
+      // and the Cut Title — never on the Section — and for the reveal's 0.9s the
+      // Section IS a stacking context, which seals every one of them inside it
+      // and stands the Section's own z against the stack in their place. At
+      // `auto` that is below both lit layers, so the page opened with the
+      // halftone printed through every photograph and every word and then
+      // corrected itself when the animation ended. The assertion above passes
+      // throughout: it reads the type's z, which is still 5, and the seal is what
+      // stops that meaning anything. This is the half that was missing.
+      const held = await heldReveal(page);
+      if (held === null) {
+        failures.push('the Front Screen is not on the page to hold half way through its reveal');
+      } else if (held.declared === 'none') {
+        notes.push('the Front Screen declares no reveal, so there is no group to stand over the stack');
+      } else if (!held.touches.includes('opacity') && !held.touches.includes('transform')) {
+        notes.push(
+          `the reveal "${held.declared}" animates ${held.touches.join(', ') || 'nothing'}, none of which ` +
+            'groups the Section',
+        );
+      } else if (held.running === 0) {
+        failures.push(
+          `the Front Screen declares the reveal "${held.declared}" and restarting it produced no animation — ` +
+            'this assertion cannot reach the state it is about',
+        );
+      } else if (!held.grouped) {
+        failures.push(
+          `the reveal "${held.declared}" animates ${held.touches.join(', ')} yet the Section held half way ` +
+            `through it reads opacity ${held.opacity} and transform ${held.transform} — the hold did not take, ` +
+            'so nothing below was asserted',
+        );
+      } else {
+        for (const [layer, z] of [
+          ['the paper', held.paperZ],
+          ['the halftone', held.halftoneZ],
+        ]) {
+          if (z !== null && !(Number(held.z) > z)) {
+            failures.push(
+              `half way through its reveal the Front Screen is a stacking context at z-index ${held.z} and ` +
+                `${layer} stands at ${z} — every block this Section lifts out of the Effect Stack is sealed ` +
+                'inside that group, so both layers print through the whole composition until the reveal ends',
+            );
+          }
+        }
+        notes.push(
+          `held half way through the reveal the Front Screen is a group at z-index ${held.z}, against the ` +
+            `paper at ${held.paperZ} and the halftone at ${held.halftoneZ}`,
+        );
+      }
 
       return { failures, notes };
     } finally {
