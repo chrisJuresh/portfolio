@@ -4500,6 +4500,22 @@ async function theEdgeFollowsTheWindow(browser, origin) {
  * in plausible places that are no longer anybody's edge — a few pixels out at one
  * window and a good deal more at another, and correct-looking in both.
  *
+ * AND THE THIRD VERTICAL KEEPS THAT EDGE WHILE THE WORDS STAND OFF IT. A line
+ * that is a block's left edge lands on the first character of every line of that
+ * block, and against the Points it read as a rule drawn through the text. The air
+ * is `--eater-map-point-inset` and it is spent on the ROW, so three x's are read
+ * off each row rather than one: the row's border box, still on the line, because
+ * that is what the accent rule is drawn on; the mark's box, off it, because that
+ * is where the words start; and the hook's right edge, still on it, because a
+ * positioned child's containing block is the PADDING box and an inline padding is
+ * inside that rather than outside it. The obvious spelling — a padding on the
+ * `<ol>` — takes the rule and the shoulder off the line together while moving
+ * nothing the assertion above reads, which is why this is three assertions and
+ * not one. THE THIRD HAS ALREADY EARNED ITSELF: the hook was written with a
+ * `calc(100% + …)` compensating for a padding that never moved it, and this is
+ * what caught the shoulder stopping a gutter-half short of the line in the air.
+ * Below the band the inset is spent back, and that is read too.
+ *
  * IT TAKES NO HITS, AND IT IS HEARD BY NOBODY. `elementFromPoint` along each
  * vertical has to answer something other than the grid — the `rail` Check's idiom,
  * and this is the half of "behind everything" that a Check can honestly assert.
@@ -4574,6 +4590,27 @@ async function theGridIsTheCompositionsOwnEdges(browser, origin) {
           };
         });
 
+        // WHERE THE THIRD VERTICAL MEETS THE WORDS IT STANDS BESIDE. Three x's
+        // off the same row, all of them real rects rather than a stylesheet read
+        // back: the row's BORDER box, which is what the accent rule is drawn on
+        // and what the vertical has to be collinear with; the mark's box, which
+        // is a block filling the row's PADDING box and is therefore where the
+        // words start; and the hook's right edge, which is where the leader's
+        // shoulder ends. `--eater-map-point-inset` is spent between the first
+        // two and moves the third by nothing, so reading the padding property
+        // instead would only say the stylesheet contains what it contains.
+        const insets = rows.map((row, at) => {
+          const box = row.getBoundingClientRect();
+          const mark = row.querySelector('.eater-map__mark')?.getBoundingClientRect();
+          const hook = row.querySelector('.eater-map__hook')?.getBoundingClientRect();
+          return {
+            at: at + 1,
+            x: round(box.left - bounds.left),
+            ink: mark ? round(mark.left - bounds.left) : null,
+            shoulder: hook ? round(hook.right - bounds.left) : null,
+          };
+        });
+
         const hidden = getComputedStyle(grid).display === 'none';
         const lines = hidden
           ? []
@@ -4611,6 +4648,7 @@ async function theGridIsTheCompositionsOwnEdges(browser, origin) {
           horizontals,
           lines,
           blocks,
+          insets,
           height: round(bounds.height),
           covered: [...new Set(covered)],
           focusable: grid.querySelectorAll('a, button, input, select, textarea, [tabindex], [contenteditable]')
@@ -4696,6 +4734,49 @@ async function theGridIsTheCompositionsOwnEdges(browser, origin) {
             `${where}: the grid answers elementFromPoint along its vertical ${at}. It is furniture behind ` +
               'the whole composition, so anything it is hit-tested over is something a reader cannot ' +
               'point at any more',
+          );
+        }
+      }
+
+      // ---- and where that third vertical meets the words it stands beside ----
+      // THE LINE KEEPS THE ROW'S EDGE AND THE WORDS STAND OFF IT, which is one
+      // relationship read three ways because the wrong way to spend the air
+      // satisfies the assertion above. A padding on the `<ol>` never moves the
+      // `<ol>`'s own rect, so `line.x === block.x` still holds while the accent
+      // rule and the leader's shoulder have both come a gutter-half inside the
+      // line they are meant to leave from. Spent on the ROW instead, the border
+      // box does not move and only the ink does — so all three are asserted.
+      for (const row of seen.insets) {
+        if (row.ink === null || row.shoulder === null) continue;
+        if (seen.collapsed) {
+          // NO VERTICAL OUT HERE AND THEREFORE NO INSET. An indent on the four
+          // Points and on nothing else is a step in a column where the masthead,
+          // the copy and the Points' own rules all stand at one margin.
+          if (Math.abs(row.ink - row.x) > COLLINEAR) {
+            failures.push(
+              `${where}: Point ${row.at}'s words stand ${(row.ink - row.x).toFixed(2)}px inside its own row below ` +
+                'the band. --eater-map-point-inset is the air against the grid\'s third vertical and there ' +
+                'is no third vertical out here — the collapse spends it back, or the Points are indented ' +
+                'from a margin every other block in the column stands on (#201)',
+            );
+          }
+          continue;
+        }
+        if (row.ink - row.x <= COLLINEAR) {
+          failures.push(
+            `${where}: Point ${row.at}'s words start on its own left edge, which is the grid's third ` +
+              'vertical. The line then lands on the first character of the number, the title and every ' +
+              'line of the figure, and reads as a rule drawn THROUGH the text rather than behind it. ' +
+              '--eater-map-point-inset is the air, and it is spent inside the row',
+          );
+        }
+        if (Math.abs(row.shoulder - row.x) > COLLINEAR) {
+          failures.push(
+            `${where}: Point ${row.at}'s leader shoulder ends at ${row.shoulder}px while its row's own edge — ` +
+              `and so the grid's third vertical — is at ${row.x}px. The hook is \`right: 100%\` of the row's ` +
+              "PADDING box, which the row's inline padding is INSIDE rather than outside, so " +
+              '--eater-map-point-inset stands the words off the line and moves this box by nothing. ' +
+              'Compensated for anyway, the rule crosses the vertical and stops short of it in the air',
           );
         }
       }

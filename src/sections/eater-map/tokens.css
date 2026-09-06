@@ -128,6 +128,21 @@
   --eater-map-icon-weight: 1.3;
   --eater-map-point-air: 0.7em;
 
+  /* THE ROOM BETWEEN THE GRID'S THIRD VERTICAL AND THE FIRST WORD, which is the
+     same thing `--eater-map-copy-inset` was for the rule that used to run down
+     the copy's left edge — the composition that took it away is not this one.
+     The vertical IS this column's left edge (#201) and stays there, so the air
+     is spent INSIDE the row: the rule above each Point still starts on the line
+     and the leader's shoulder still lands on it, and only the words stand off.
+
+     Half the gutter is the default because that is the air the grid already puts
+     between two columns, so the words clear the line by the same measure the
+     columns clear each other. It is a Token and not that expression spent in
+     place, because how far ink stands off a rule is exactly the kind of number
+     an author looks at (ADR 0004). Below the band it is spent back: there are no
+     verticals out there and everything stands at one margin. */
+  --eater-map-point-inset: calc(var(--eater-map-gutter) / 2);
+
   --eater-map-point-size: clamp(0.95rem, 0.85rem + 0.35vw, 1.2rem);
   --eater-map-point-weight: 500;
   --eater-map-point-leading: 1.14;

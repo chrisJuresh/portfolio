@@ -541,10 +541,21 @@ import './tokens.css';
      property's computed value ever is.
 
      ON THE ROW'S LEFT EDGE AND AT ITS TOP, which is the whole of what moving the
-     Points across the page cost the leader lines (#191). `leaders.ts` decides
-     which EDGE of this box a rule leaves from by which side of it the part is on,
-     so the shoulder turned round on its own; which edge of the ROW the box stands
-     on is a composition decision and this is it. Derived and not a Token: a
+     Points across the page cost the leader lines (#191).
+
+     AND `--eater-map-point-inset` DOES NOT MOVE IT, which is worth stating
+     because the obvious reading says it does. `right: 100%` is measured against
+     the containing block a positioned ancestor establishes, and that is the row's
+     PADDING box — the border box less its borders, with the padding INSIDE it.
+     So the row's inline padding stands the words off the line without moving this
+     box by a pixel, and a compensating `calc(100% + …)` here overshoots by
+     exactly the Token: written that way the shoulder crossed the vertical and
+     stopped short of it in the air, at every window, and the `eater-map` Check is
+     what said so.
+
+     `leaders.ts` decides which EDGE of this box a rule leaves from by which side
+     of it the part is on, so the shoulder turned round on its own; which edge of
+     the ROW the box stands on is a composition decision and this is it. Derived and not a Token: a
      coordinate in the composition rather than a number the author chooses
      (ADR 0004).
 
@@ -712,11 +723,23 @@ import './tokens.css';
      row's left edge as the leader's shoulder, in the leader's own colour, so what
      the reader follows from a number to a part is one line that changes weight
      once. Drawn as a border on the row rather than as a box, so a point growing a
-     second line of title does not move it. */
+     second line of title does not move it.
+
+     AND THE WORDS STAND OFF THE GRID'S THIRD VERTICAL, which is a padding on the
+     ROW and not on the list. The vertical is this column's own left edge (#201)
+     and has to stay on it, so the air cannot be spent by moving the block: a
+     padding on the `<ol>` would carry the row's border box in with it and take
+     the accent rule and the leader's shoulder off the line together. Spent
+     inside the row instead, all three keep the edge they had — the rule is drawn
+     on the border box, the hook is placed against the PADDING box, which the
+     padding is inside rather than outside, and only the number, the title and
+     the figure sit in the content box that moves. Nothing else has to be told,
+     and the `.eater-map__hook` comment below says what happens when it is. */
   .eater-map__points li {
     border-top: var(--eater-map-rule-weight) solid
       color-mix(in oklab, var(--eater-map-accent), transparent var(--eater-map-accent-veil));
     padding-top: var(--eater-map-point-air);
+    padding-inline-start: var(--eater-map-point-inset);
   }
 
   /* ---- AND THE GRID'S FOUR HORIZONTALS ARE THAT SAME RULE, CONTINUED (#201) --
@@ -1697,6 +1720,18 @@ import './tokens.css';
     .eater-map__points {
       margin-top: var(--eater-map-act);
       row-gap: var(--eater-map-move);
+    }
+
+    /* AND THE ROWS SPEND THEIR INSET BACK, for the same reason the verticals go:
+       the air is what stands the words off the grid's third vertical, and out
+       here there is no third vertical to stand off. Left standing it would be an
+       indent on the four Points and on nothing else in a column where the
+       masthead, the copy and the Points' own rules are all at one margin — the
+       rule across a row would start at the page's edge and its words half a
+       gutter in. The horizontals stay because the Points do (#201); this goes
+       with the line it was air against. */
+    .eater-map__points li {
+      padding-inline-start: 0;
     }
 
     /* NO VERTICALS OUT HERE, AND THE FOUR HORIZONTALS STAY. The verticals are the

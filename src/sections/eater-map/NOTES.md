@@ -2255,6 +2255,45 @@ composition's own edges by hand.** So:
   the leader lines' shoulders stand, so each rule leaves its Point exactly on a
   vertical.
 
+**THE THIRD VERTICAL WAS TOUCHING ITS OWN WORDS, AND THE FIX IS NOT TO MOVE IT.**
+A line that is a block's left edge lands on the first character of every line of
+that block, and against the Points — a number, a title and a paragraph all
+starting at one x — it read as a rule drawn through the text rather than behind
+it. The other two verticals do the same thing and neither shows it: the first is
+the page's own left margin, which a reader takes for a margin rule, and the
+second is the drawing's edge, which has no ink to touch. Moving the third off the
+column would have cost both of the things that make it derived — it would stop
+being an edge, and the four leader shoulders that end on it would run past it
+into the air. So the line stays and the WORDS move: `--eater-map-point-inset`,
+spent as a `padding-inline-start` on the ROW.
+
+**ON THE ROW AND NOT ON THE LIST, AND THAT IS THE WHOLE IMPLEMENTATION.** A
+padding on the `<ol>` is the obvious spelling and is wrong twice over — the row's
+border box goes with it, so the accent rule above each Point starts a gutter-half
+inside the vertical, and the hook goes with it too — and the `eater-map` Check as
+it stood would have caught neither, because its assertion is line-against-block
+and the `<ol>`'s own rect never moves. On the row, the border box is where it was
+and only the content box travels, so the rule and the shoulder keep the line and
+the three text boxes move.
+
+**AND NOTHING HAD TO BE COMPENSATED, WHICH IS NOT WHAT IT LOOKS LIKE.**
+`.eater-map__hook` is `right: 100%` of the row, and the reading that says a row
+padding must therefore drag it in is wrong: the containing block a positioned
+ancestor establishes is the PADDING box — the border box less its borders, with
+the padding INSIDE it — so an inline padding does not move that box at all. It
+was written as `calc(100% + var(--eater-map-point-inset))` first, on exactly that
+misreading, and the shoulder then crossed the vertical and stopped a gutter-half
+short of it in the air beside the words, at every window in the band. **The Check
+below is what said so, on the run that was meant to confirm the change**, which
+is the only reason it is three assertions rather than one.
+
+**HALF THE GUTTER, AND IT GOES BELOW THE BAND.** The default is
+`calc(var(--eater-map-gutter) / 2)`: the words clear the line by the measure the
+grid already puts between two columns, at every window, with nothing to keep in
+step. Out of the band the collapse spends it back — there are no verticals there,
+so an indent on the Points and on nothing else would be a step in a column where
+the masthead, the copy and the Points' own rules all stand at one margin.
+
 **THE TWO HALVES ANSWER THE REGIME DIFFERENTLY AND NEITHER IS TOLD WHICH REGIME
 IT IS IN.** Below the band the verticals go — one column, everything at the same
 margin, so all three would land on each other and draw one rule down the side of
@@ -2272,11 +2311,13 @@ Check can only assert by typing the number a third time, so
 too. The Check reads the pseudo's `top` against the ROW's `border-top-width`, so
 dragging that Token moves both and the assertion still holds.
 
-**WHAT IS A TOKEN HERE, AND WHY THAT IS SO LITTLE.** `--eater-map-grid-veil` and
-`--eater-map-rule-weight`, and nothing else. The ticket asked for the positions to
-be Tokens as well; they are not, because under this derivation there ARE no
-positions — a coordinate in a composition is not a Token (ADR 0004), and a line
-that is an edge is not even a coordinate. What the author can still move is how
+**WHAT IS A TOKEN HERE, AND WHY THAT IS SO LITTLE.** `--eater-map-grid-veil`,
+`--eater-map-rule-weight` and — since the third vertical was found touching its
+own words — `--eater-map-point-inset`, and nothing else. All three are about how
+the grid MEETS the composition rather than about where any line is. The ticket
+asked for the positions to be Tokens as well; they are not, because under this
+derivation there ARE no positions — a coordinate in a composition is not a Token
+(ADR 0004), and a line that is an edge is not even a coordinate. What the author can still move is how
 far back the drawing stands from the ink, which is the only thing about it that
 was ever a choice.
 
