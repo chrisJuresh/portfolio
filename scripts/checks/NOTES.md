@@ -99,7 +99,7 @@ cannot be verified there even by hand.
 | `carousel`       | the photograph strip's Timeline is not where the strip is, either end of it comes off the text column, the corner eye stops being measured off that same edge, the arrow keys or the focus ring go, the dissolve stops following the Timeline, or the one-screen budget stops affording a photograph |
 | `console`        | anything logs an error or throws, including across a theme flip — warnings deliberately not, because on this page they are nearly always Chromium's own |
 | `faces`          | a declared `@font-face` will not load, or no face Token names a declared family |
-| `front-screen`   | the Front Screen's rhyme, its one-screen budget, the Cut Title's cut or its accessible name, the crossing's span, the switch's ARIA, or the type's place in the Effect Stack breaks |
+| `front-screen`   | the Front Screen's rhyme, its one-screen budget, the Cut Title's cut or its accessible name, the crossing's span, the switch's ARIA, or the type's place in the Effect Stack breaks — at rest, and again half way through the reveal, where the Section is a stacking context and the lift is sealed inside it |
 | `projects-panel` | a control in the Frame leaves the centre its own Token names, the window and its titlebar are cut to two radii, the recording's box stops being inset on three sides, the occlusion of the subheading's second line moves or stops being painted, the titlebar reports a rung it is not made of, the chrome grows a control, the small-Frame reduction starts asking about the window instead of the Frame, the Plinth's depths stop being shares of the Frame, its slab stops being symmetric about it, its bottom-right corner comes off the page's on either branch of the fit, or the Frame moves towards the engineering points instead of away from them, the reflection stops being a life-size fold of the window, the marble stops being drawn without script, a reader who asked for reduced motion is charged for the recording, a reader who runs no script at all loses the copy that arrives with the page turn, the titlebar grows past the clearance the clip on disk was cut with, or that clip stops opening on that many rows of flat, light ground |
 | `eater-map`      | PROJECTS stops standing where the Gallery's own masthead stands or stops being the same word, the serif title's cap height or its drop below the masthead's baseline stops matching the two ratios the Section declares — which a font size proportional to the masthead does, by 4% — the copy leaves the foot of the column PROJECTS heads or the Points leave the right of the drawing, the three Cards on the Slab stop being drawn at the Slab's own scale at the Lift's flat end, one of them stops moving between the Lift's two ends, one of the Section's own boxes is invisible at either end, a reader who leaves part way up is left with a Lift that ran on without them, hovering a piece or the Point that names it stops putting that ONE piece back where the Lift's near end puts it, or puts it back and then flickers under a reader's hand, or a piece takes a drop below the band where nothing is raised to put back, a leader line comes off the corner it names part way up the Lift or stops ending in a lit dot on it, a point and a part stop being one to one, the picture of the app puts a focusable control or a heading into the page, an extruded edge stops having a direction or stops taking it from the one page-fixed light, a corner of the Slab shows the page behind it, `--eater-map-slab-edge` stops being live inside the gradient, a slice's geometry starts naming a Token again so the page turn re-parses it a hundred and forty-four times a frame, or stops following the window inside the band, or a page carried out of the band stops agreeing with a page mounted there, the rebuild that makes a dragged light visible starts running for a reader with no Editor on the page, the grid behind the composition stops being the composition's own edges — a horizontal that is not collinear with the Point whose rule it continues, a vertical that is not a standing block's left edge, either of them stopping short of the frame, three verticals shipped into a one-column collapse, or a hairline a reader can no longer point through, or below the band the drawing stops collapsing — a perspective left standing on a column, a Slab that misses the window's edges, a Lift still running where there is no page turn, the four features no longer a list under the picture, or one of the three readers down there handed a composition of their own |
 | `rail`           | the page carries more than one Rail or none, at any of four windows; the Rail moves when the page turns; it stops standing in the page's own left margin, or stops sharing the composition's left edge below the band; the current entry stops naming the Section at rest, in either direction; an entry stops being reachable at a resting place because a Section is hit-tested over it; the Rail stays reachable on the first screen, where it is drawn transparent; the entry with no Section of its own stops saying so to a screen reader; or a reader who runs no script gets no Rail or no current entry |
@@ -625,7 +625,7 @@ Every failure string names the thing that broke: the URL, the family, the
 selector, the measured number and the wanted one. "something is wrong" costs a
 diagnosis session; "404 for /_astro/vollkorn-regular.Dnyk-4Dy.woff2" costs nothing.
 
-## Fourteen traps, each of which cost a wrong answer here
+## Fifteen traps, each of which cost a wrong answer here
 
 **`hold()` before you seek, and it is not enough to seek twice.** A scrubbed
 Timeline is recomputed from the scroll position, so a bare seek survives about a
@@ -808,6 +808,31 @@ the bottom of the screen, no hover happened, and "nothing moved" was true becaus
 nothing was asked. Scroll to the ELEMENT, and then ask `elementFromPoint` whether
 the pointer actually landed on it: an assertion whose failure mode is "nothing
 happened" needs to establish that something was attempted.
+
+**A SETTLED PAGE CANNOT SEE WHAT AN ANIMATION DOES TO PAINT ORDER, and every
+Check here settles one.** The Front Screen lifts its type, its strip, its bar and
+its Cut Title above the Effect Stack's two lit layers, and `front-screen` asserted
+that lift by reading their z-indexes back off the layers — correctly, and it went
+on passing while the page shipped with the halftone printed through every
+photograph and every word for the first 0.9 seconds. The reveal is an `opacity`
+and a `transform`, either of which makes the Section a stacking context, which
+seals all four lifts inside it and stands the Section's own `auto` against the
+stack in their place. Everything the Check read was true; it was reading a state
+the reader does not arrive in. **A property asserted on a settled page is asserted
+about one frame of the page's life** — and where a Section animates anything that
+groups (`opacity`, `transform`, `filter`, `mask`, `isolation`), that is not the
+frame the fault lives in.
+
+Two things made writing it a trap of its own. It cannot be CAUGHT: the reveal is
+0.9s from first style resolution and `open()` waits for `load`, which on five
+photographs is longer, so a live catch finds nothing on the machine the author
+runs it on and reads as though it asserted something. Clearing `animation-name`
+for a frame and putting it back is a NEW animation, which can then be paused
+anywhere in its span. And the precondition — does this reveal group the Section at
+all — is read off the KEYFRAMES in the CSSOM rather than off the held element,
+because asking the held element would let a hold that silently failed report that
+there was nothing to assert. That is the vacuity-guard rule above, arriving from
+the other end.
 
 Two more names that are taken and should not be reused: `Check`, which CONTEXT.md
 defines and every module in `checks/` exports, and `Record`, which is TypeScript's

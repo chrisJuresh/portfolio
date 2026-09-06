@@ -292,7 +292,14 @@ const EAGER = 2;
   }
 
   /* ---- the page ---------------------------------------------------------- */
+  /* `position: relative` AND NO z-index, so this is not a stacking context: it is
+     here for the keyframes below, which have a z to put somewhere and nowhere to
+     put it on an unpositioned block. The band's own rule used to carry this line
+     and no longer does — the reveal runs at every window, so what it stands on
+     has to be at every window too. It moves nothing else: every absolutely
+     positioned box in this Section already has a nearer positioned ancestor. */
   .front-screen {
+    position: relative;
     display: flex;
     flex-direction: column;
     min-height: var(--fold);
@@ -306,15 +313,27 @@ const EAGER = 2;
   /* `backwards` and not `both`: a forward fill holds `transform: none` for ever,
      which computes to the identity matrix rather than to the keyword and makes
      this a permanent stacking context — which would seal the Cut Title's tail
-     inside the Section instead of letting it stand over the one below. */
+     inside the Section instead of letting it stand over the one below.
+
+     AND THE Z IS IN THE KEYFRAMES, WHICH IS THE OTHER HALF OF THAT SENTENCE.
+     The stacking context is not permanent, but for the reveal's 0.9s it is real
+     — and it SEALS every block this Section lifts out of the Effect Stack,
+     standing the Section's own z against the layers in their place. At `auto`
+     that is under `paper` and `halftone`, so the page opened with both printed
+     through the composition and corrected itself when the animation ended. The
+     animation carries the type's own Token at both ends instead: the Section
+     stands where its contents stand for exactly as long as it is a group, and
+     goes back to `auto` after. NOTES.md, under the reveal. */
   @keyframes front-screen-in {
     from {
       opacity: 0;
       transform: translateY(var(--front-screen-reveal-rise));
+      z-index: var(--front-screen-type-z);
     }
     to {
       opacity: 1;
       transform: none;
+      z-index: var(--front-screen-type-z);
     }
   }
 
@@ -1195,7 +1214,6 @@ const EAGER = 2;
          --landing-mast-top nearer this Section's own foot than it was. */
       height: calc(var(--fold) - var(--front-screen-cut-clip) - var(--landing-mast-top));
       min-height: 0;
-      position: relative;
       padding-bottom: calc(var(--front-screen-cut-gap) - var(--landing-mast-top));
     }
 
