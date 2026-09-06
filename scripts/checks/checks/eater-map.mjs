@@ -280,6 +280,22 @@ const FOCUSABLE = 'a[href], button, input, select, textarea, [tabindex], [conten
  *  pixels out at the first degree of tilt. */
 const ATTACHED = 1;
 
+/** How far a leader line's foot may sit off the centreline of the row rule it
+ *  continues, in px. A twentieth of what `ATTACHED` allows, and deliberately: the
+ *  two are ONE line, and the failure this names is HALF a rule-weight — which
+ *  `ATTACHED` swallows whole and which shipped for exactly that reason. The rule
+ *  was drawn to the hook's top EDGE while the row's border is centred half a
+ *  weight above it, so the line jogged by one device pixel where it left the row.
+ *  Both numbers come out of one layout and are rounded to two places on the way
+ *  here, so this is that rounding and a hair.
+ *
+ *  Named rather than folded into the two 0.5s this file already has — `COLLINEAR`
+ *  for the grid's own lines and `CONTINUOUS` for a gradient's largest step —
+ *  because it is a tighter claim than either and about a different thing, and
+ *  three constants that agree by coincidence is what `--eater-map-rule-weight`
+ *  exists to argue against. */
+const ONE_LINE = 0.05;
+
 /** How far outside its part's own box an anchor may sit, in px. A point inside
  *  the unit square of a rotated Card is inside that Card's bounding box by
  *  convexity, whatever the two placement Tokens are set to — so this is rounding
@@ -638,7 +654,7 @@ async function atWindow(browser, origin, viewport) {
       // it PAINTS, and a `fill` that computes to a fully transparent colour is a
       // dot that is drawn and invisible. `ground` reads the page's ground the same
       // way and says why a spelling is not a colour.
-      const paint = (() => {
+      const rasterise = (() => {
         const canvas = document.createElement('canvas');
         canvas.width = canvas.height = 1;
         const ink = canvas.getContext('2d');
@@ -647,9 +663,15 @@ async function atWindow(browser, origin, viewport) {
           ink.clearRect(0, 0, 1, 1);
           ink.fillStyle = colour;
           ink.fillRect(0, 0, 1, 1);
-          return ink.getImageData(0, 0, 1, 1).data[3];
+          return [...ink.getImageData(0, 0, 1, 1).data];
         };
       })();
+      const paint = (colour) => rasterise(colour)?.[3] ?? null;
+      /** The same colour written two ways — `oklab(…)` here and a `color-mix`
+       *  there — is one colour, and the only place the two are comparable is
+       *  after they have been rasterised. Answers a string so the comparison is
+       *  an equality rather than four of them. */
+      const asPainted = (colour) => rasterise(colour)?.join(',') ?? null;
 
       /** One of the two dots on a rule: where it is, how big, and whether it
        *  paints. `r` is read computed, because the radius is a Token spent by the
@@ -665,6 +687,13 @@ async function atWindow(browser, origin, viewport) {
           y: has ? round(box.top + box.height / 2 - frame.top) : null,
           r: Number.parseFloat(style.r),
           alpha: paint(style.fill),
+          // The glow on the lit dot, and it is captured because a `drop-shadow`
+          // built out of Tokens is INVALID AT COMPUTED-VALUE TIME the moment one
+          // of them is misspelled or dragged away — and an invalid `filter`
+          // computes to `none` silently, leaving a dot that is drawn, on the
+          // right vertex, at the right radius, in the right colour, and unlit.
+          // Every other assertion here would pass.
+          glow: style.filter,
         };
       };
 
@@ -690,13 +719,39 @@ async function atWindow(browser, origin, viewport) {
           // between the anchor and the Card's own axis-aligned bounding box.
           const at = anchor?.getBoundingClientRect();
           const box = on?.getBoundingClientRect();
+          const shoulder = hook?.getBoundingClientRect();
+          // THE ROW'S OWN RULE, read off the ROW and not off the hook — which is
+          // what stops the two assertions below being one assertion twice. The
+          // hook is placed against this border by the stylesheet, so measuring
+          // the leader against the hook only says the script read the box it was
+          // given; measuring it against the border says the two lines are the
+          // same line. A border is painted inside the border box, so its
+          // centreline is that box's top plus half its width.
+          const row = hook?.closest('li');
+          const rowStyle = row ? getComputedStyle(row) : null;
+          const rowBox = row?.getBoundingClientRect();
           return {
             part,
             drawn,
             tip,
             knee,
             anchor: at ? { x: round(at.left - frame.left), y: round(at.top - frame.top) } : null,
-            hookY: hook ? round(hook.getBoundingClientRect().top - frame.top) : null,
+            // THE HOOK'S CENTRELINE, because the hook is the row rule's own box
+            // and the rule the reader follows is that line CONTINUED. Its top
+            // edge would be half a rule-weight out, and `ATTACHED` is a pixel —
+            // so a leader drawn to the edge instead of the centre would pass this
+            // while visibly jogging where it leaves the row, which is what it did.
+            hookY: shoulder ? round(shoulder.top + shoulder.height / 2 - frame.top) : null,
+            stroke: asPainted(getComputedStyle(line).stroke),
+            row:
+              rowBox && rowStyle
+                ? {
+                    centre: round(
+                      rowBox.top + Number.parseFloat(rowStyle.borderTopWidth) / 2 - frame.top,
+                    ),
+                    colour: asPainted(rowStyle.borderTopColor),
+                  }
+                : null,
             named: Boolean(on),
             sits:
               at && box
@@ -2003,6 +2058,40 @@ async function atWindow(browser, origin, viewport) {
               `own row is at ${rule.hookY} — the rule is not attached to the number it belongs to`,
           );
         }
+
+        // ---- AND IT IS THE ROW'S OWN RULE CONTINUED, NOT A SECOND LINE -------
+        // Two claims, and each of them shipped broken once. ONE_LINE: the row's
+        // accent rule is a border, painted inside its box, and the leader is a
+        // stroke, centred on its path — so a leader drawn to the row's top edge
+        // sits half a rule-weight below the line it continues, which is a whole
+        // device pixel of step at DPR 1 exactly where the reader's eye is. And
+        // ONE COLOUR: the leader used to be `--ink` at a veil of its own, so a
+        // line that left the row warm turned white a shoulder's width later.
+        // Rasterised on both sides, because `oklab(…)` and a `color-mix` are the
+        // same colour written two different ways and only the pixels are
+        // comparable.
+        if (rule.row === null) {
+          failures.push(
+            `${where}, ${when}: the ${rule.part} rule's point has no row, so nothing about whether it ` +
+              'continues that row\'s own rule was checked',
+          );
+        } else {
+          const step = Math.abs(footY - rule.row.centre);
+          if (!Number.isFinite(step) || step > ONE_LINE) {
+            failures.push(
+              `${where}, ${when}: the ${rule.part} rule leaves at y ${footY} and the row rule it continues ` +
+                `is centred on ${rule.row.centre} — ${Number.isFinite(step) ? `${step.toFixed(2)}px` : 'no distance'} ` +
+                'apart. One line that steps where it changes colour is two lines',
+            );
+          }
+          if (rule.stroke === null || rule.stroke !== rule.row.colour) {
+            failures.push(
+              `${where}, ${when}: the ${rule.part} rule is stroked ${rule.stroke ?? 'nothing'} and the row ` +
+                `rule it continues is painted ${rule.row.colour} — the reader follows one line from the ` +
+                'number to the part, and it does not change colour halfway along',
+            );
+          }
+        }
         if (rule.sits === false) {
           failures.push(
             `${where}, ${when}: the ${rule.part} rule's anchor is not on the part it names — it is drawn ` +
@@ -2061,6 +2150,21 @@ async function atWindow(browser, origin, viewport) {
                 `to alpha ${mark.alpha} — a dot drawn in a transparent colour is a dot nobody can see`,
             );
           }
+        }
+
+        // AND THE LIT ONE IS LIT. The glow is what makes the arrival read at a
+        // hairline's weight, and it is built out of three Tokens inside a
+        // `drop-shadow` — so one of them renamed or dragged to nothing makes the
+        // whole `filter` invalid at computed-value time, which computes to `none`
+        // and fails NOTHING above. `none` is the value to look for and not a
+        // radius, because how bright the light is is a matter for the eye and a
+        // Check may not have an opinion about it (scripts/checks/NOTES.md).
+        if (rule.tip && rule.tip.drawn && rule.tip.glow === 'none') {
+          failures.push(
+            `${where}, ${when}: the ${rule.part} rule's lit dot carries no glow — its filter computed to ` +
+              '`none`, which is what a drop-shadow does when a Token inside it has gone. The dot is ' +
+              'drawn, in the right place, and unlit',
+          );
         }
       }
     }

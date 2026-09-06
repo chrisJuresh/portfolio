@@ -219,6 +219,9 @@ Every mutation below has been made on purpose and every one was caught.
 | the copy given `align-self: start` in the right-hand columns, and the Points put back on the left | four failures at each window: the copy in another column, off the foot, printed over the head, and the Points left of the drawing |
 | the lit dot written at the shoulder instead of at the terminus | all four dots, at all three moments and both windows — 322.5px to 625.2px from the rule's own last point |
 | `--eater-map-leader-tip` dragged to 0 | all four lit dots in the document painting nothing, at all three moments and both windows |
+| the leader stroked from `--ink` at a veil of its own again | all four rules, at all three moments and both windows — stroked `26,26,24,97` against the row rule's `188,152,111,92`. The colour half of the fault this section is about |
+| `.eater-map__hook` put back to `top: 0; height: 0` | all four rules, at all three moments and both windows — leaving at y 1 against a row rule centred on 0.5, **0.50px apart, every time**. This is the whole reason `ONE_LINE` is a twentieth of `ATTACHED`: at a pixel it passes |
+| `--eater-map-leader-glow` renamed out from under the `drop-shadow` | all four lit dots carrying no glow, at all three moments and both windows — the filter computed to `none`, which is what an invalid one does, and nothing else in the Check moved |
 | the lateral normal dropped out of the edge's gradient | ALL FIVE extruded surfaces at once — the Slab's four sides all at luminance 0.0488 and every glass surface's all at 0.0772, 0% apart against 5% required, at both windows. This is exactly what the code did before #197, and asking it per surface is what makes a build that lit the Slab and left the Cards flat fail too |
 | `--eater-map-light-azimuth` rotated 180deg | the Slab's foot at luminance 0.1174 against its right flank's 0.2690, at both windows — the two flanks that face the reader, lit the wrong way round |
 | the plane's rotation left out of `edgeShade`, so the LOCAL normal is dotted | the foot and the right flank both at luminance 0.0488, at both windows — an object-fixed light, which is the thing #197 removed |
@@ -1117,15 +1120,108 @@ circle of radius 0 renders nothing, so `[cx]` in the selector is the same promis
 the polylines already make — they carry no `points` until a script comes, and paint
 nothing until then.
 
-Three Tokens and no more, which are the three the composition can have an opinion
-about: `--eater-map-leader-weight`, `--eater-map-leader-veil` and that reach. The
-reach at 0 is a straight rule from the point to the corner. Where a rule leaves
-its row VERTICALLY is derived rather than a Token — half a line of the title down
-from the row's top — because it is a coordinate in a composition and not a number
-the author chooses (ADR 0004). The eight `--eater-map-anchor-<part>-x/-y` are
-Tokens for the opposite reason: which corner of a Card a rule comes off is a
-choice, and as a share of the part it is a corner at every window and at every
-size the Slab is drawn at.
+Two Tokens for the rule itself, which are the two the composition can have an
+opinion about: `--eater-map-leader-weight` and that reach. The reach at 0 is a
+straight rule from the point to the corner. Where a rule leaves its row VERTICALLY
+is derived rather than a Token — it is the row rule's own centreline — because it
+is a coordinate in a composition and not a number the author chooses (ADR 0004).
+The eight `--eater-map-anchor-<part>-x/-y` are Tokens for the opposite reason:
+which corner of a Card a rule comes off is a choice, and as a share of the part it
+is a corner at every window and at every size the Slab is drawn at.
+
+### The leader IS the row's rule continued, and for a while it was two lines
+
+The reader follows one line from a number to the part it names: the grid's neutral
+hairline across the frame, then the accent from the row's own left edge, out of the
+row, round the shoulder and onto the drawing. It changes colour ONCE, where the
+grid meets the row, and nowhere else.
+
+**It used to change colour twice and step where it did.** Two faults, and they
+compounded because they arrived at the same seam.
+
+**The colour.** The leader was `--ink` at a `--eater-map-leader-veil` of its own
+while the row rule it leaves is `--eater-map-accent` at `--eater-map-accent-veil` —
+so a line the reader was following started warm and turned white a shoulder's width
+later, which reads as two marks that happen to touch rather than as one line. The
+veil Token is gone: the overlay spends the accent's own colour and the accent's own
+veil, so there is ONE number and dragging it moves the whole line. That is the
+argument `--eater-map-rule-weight` is already under, one seam further along — two
+literals agreeing is a coincidence a Check can only assert by typing the number a
+third time.
+
+**The half pixel, which is the more expensive half to find.** `.eater-map__hook`
+was `top: 0; height: 0`, and `top: 0` on an absolutely positioned child is the
+row's **padding** box, because that is the containing block a positioned ancestor
+establishes. The row's accent rule is a BORDER, painted inside the border box, so
+it sits entirely above that edge — at a weight of 1px it spans `[top − 1, top]`,
+centred on `top − 0.5`. A 1px stroke centred on `top` spans `[top − 0.5, top +
+0.5]`. Half a CSS pixel apart, which is one whole device pixel of step at DPR 1,
+at the exact place the reader's eye is.
+
+The fix is that **the hook's box is now the row rule's box**: lifted by
+`--eater-map-rule-weight` and given it as a height. `leaders.ts` takes the
+CENTRELINE off it — still two x's and a y off one rect, still no Token parsed by a
+script — and it keeps holding if the two weights ever part, because whatever the
+leader's stroke is it is centred on the rule it continues.
+
+**The Check asserts both, against the ROW and not against the hook.** Measuring the
+leader against the hook only says the script read the box it was handed; measuring
+it against the row's own border says the two lines are the same line. And
+`ATTACHED` is a pixel — deliberately, against a rule drawn to an untransformed box,
+which is tens of pixels out — so it swallowed this whole. `ONE_LINE` is a
+twentieth of it and exists for exactly that reason.
+
+**WHAT IS LEFT, AND WHY IT IS LEFT.** The two are now collinear in CSS pixels and
+identical in colour, measured. They are not always identical in RASTER: a Point's
+row lands wherever `space-between` puts it, which is usually a fraction of a pixel,
+and Chromium SNAPS a border's box to the device grid while it ANTIALIASES an SVG
+stroke at the position it was given. So on a row at a fractional y the border paints
+one crisp device row and the leader spreads the same total ink over about 1.13 of
+them — measured at 1440x900: peak 69 against 79, with the remainder in the row
+below, and no step in POSITION. At DPR 2 it is half of that. On a row that happens
+to land on an integer the two are pixel-identical.
+
+**Do not chase it by snapping the leader's y in `leaders.ts`.** That trades a
+rasterisation difference for a geometric one — the stroke would sit up to half a
+device pixel off the line it is meant to be on — and it is DPR-dependent in a way
+the fix cannot be written once: a stroke is crisp on a half-integer when its device
+width is odd and on an integer when it is even, so the arithmetic changes under
+zoom, under a second monitor, and under any drag of `--eater-map-leader-weight`. It
+would also fail `ONE_LINE`, and the only way to keep both is to compute the
+snapping in the Check as well — which is the Check re-running the implementation
+and asserting nothing (`scripts/checks/NOTES.md`). The one honest fix is
+structural: draw the SHOULDER as a border on `.eater-map__hook`, so the rasteriser
+snaps it exactly as it snaps the row's, and let the polyline start at the turn
+under the knee dot, which already covers that seam. That is a redesign of this
+module's contract — the rule is one polyline and the dots are its vertices — for
+12% of peak luminance on a hairline, and it has not been thought worth it.
+
+### And the lit dot glows
+
+The rule arrives at its part veiled, because it is a hairline and a hairline that
+shouts is a scratch. So the END of it says *arrived* with light rather than with
+weight: two `drop-shadow`s on the tip circle — a tight halo that reads as the mark
+being lit, and a wide, much fainter bloom that puts that light onto the picture
+underneath. `--eater-map-leader-glow`, `--eater-map-leader-bloom` and its veil, all
+measured against the dot rather than against the page, so dragging
+`--eater-map-leader-tip` takes the glow with it and the mark stays one thing.
+
+**A filter and not a second circle**, so the glow is the dot's own light and cannot
+come adrift from it: one centre, written once by `leaders.ts`.
+
+**Both offsets are 0,0, and that is what keeps the Check honest.** It reads the
+dot's position off its PAINTED box, and Chromium grows that box by a filter's
+spread — a symmetric glow leaves the centre exactly where the circle's is, and an
+offset shadow would move it and make the rule read as detached from the corner it
+names.
+
+**And the Check asserts the glow is there at all**, by looking for `none`. A
+`drop-shadow` built out of Tokens is invalid at computed-value time the moment one
+of them is misspelled or dragged away, and an invalid `filter` computes to `none`
+in silence — leaving a dot that is drawn, on the right vertex, at the right radius,
+in the right colour, and unlit, with every other assertion passing. How BRIGHT it
+is is a matter for the eye and the Check has no opinion about it
+(`scripts/checks/NOTES.md`).
 
 ### When it redraws, and where it does not draw at all
 

@@ -574,27 +574,59 @@
 
   /* ---- the leader lines ---------------------------------------------------
      Four thin rules joining each numbered point to the part of the Exploded View
-     it names (#178). Three Tokens, and they are the three the composition can
-     have an opinion about: how heavy the rule is, how far back it stands from
-     the ink around it, and how far it runs horizontally out of its point before
-     turning towards the part. `reach` at 0 is a straight rule from the point to
-     the corner; the shoulder is what binds the rule to the row of text it
-     leaves. */
+     it names (#178). Two Tokens, and they are the two the composition can have an
+     opinion about: how heavy the rule is, and how far it runs horizontally out of
+     its point before turning towards the part. `reach` at 0 is a straight rule
+     from the point to the corner; the shoulder is what binds the rule to the row
+     of text it leaves.
+
+     THE COLOUR IS NOT ONE OF THEM ANY MORE, AND THAT IS THE WHOLE OF WHAT WAS
+     WRONG WITH IT. There was a `--eater-map-leader-veil` here, spent on `--ink`,
+     which drew a rule that left an accent-coloured row rule and turned white half
+     an inch later — a reader following one line watched it change species. The
+     line the reader follows is ONE line: the grid's neutral hairline across the
+     frame, and then the accent from the row's own left edge all the way to the
+     part. So the leader spends `--eater-map-accent` at `--eater-map-accent-veil`,
+     which is the row rule's own colour and its own number rather than a second
+     one that has to agree with it — the argument `--eater-map-rule-weight` is
+     already under, one seam further along. Drag the veil and the whole line
+     moves together. */
   --eater-map-leader-weight: 1px;
-  --eater-map-leader-veil: 62%;
   --eater-map-leader-reach: clamp(1.6rem, 0.9rem + 2.4vw, 3.8rem);
 
   /* THE TWO DOTS, and they are two different claims (#191). The one at the PART
-     is lit — full ink, larger — and is what says "this, here, is the thing the
-     number is about"; the one at the shoulder is the leader's own colour and
-     smaller, and says only that the rule turned. A rule that reaches a corner and
-     stops is the reference's own fault, which the reference itself has: its lines
-     begin in empty space and one ends nowhere.
+     is lit — the accent straight, larger — and is what says "this, here, is the
+     thing the number is about"; the one at the shoulder is the leader's own
+     colour and smaller, and says only that the rule turned. A rule that reaches a
+     corner and stops is the reference's own fault, which the reference itself
+     has: its lines begin in empty space and one ends nowhere.
 
      Radii, in px, because an SVG `r` is a length in the overlay's own user units
      and the overlay is laid out in CSS pixels. */
   --eater-map-leader-tip: 2.8px;
   --eater-map-leader-knee: 2px;
+
+  /* AND THE LIT DOT GLOWS, which is the one place in this Section where a mark is
+     allowed to be brighter than the ink around it. The rule arrives at the part
+     veiled — it is a hairline, and a hairline that shouts is a scratch — so the
+     end of it needs something other than weight to say ARRIVED. Two shadows and
+     not one: a tight halo that reads as the dot itself being lit, and a wide,
+     much fainter bloom that puts the light onto the picture underneath, which is
+     what makes it a lamp on the drawing rather than a ring drawn round a circle.
+
+     BOTH RADII ARE MEASURED AGAINST THE DOT AND NOT AGAINST THE PAGE, so dragging
+     `--eater-map-leader-tip` takes the glow with it and the mark stays one thing.
+     In px for the same reason the radii are: a `drop-shadow` blur is spent in the
+     overlay's own CSS pixels.
+
+     The bloom's veil is deep on purpose. A glow is an ANGULAR quantity to the eye
+     the way the plinth's lights are (docs/agents/plinth-marble.md): widen it and
+     it stops reading as a light on the drawing and starts reading as a smudge
+     over it, and past about 40% opacity at this reach the Cards behind it go
+     milky. */
+  --eater-map-leader-glow: 3px;
+  --eater-map-leader-bloom: 9px;
+  --eater-map-leader-bloom-veil: 68%;
 
   /* WHICH CORNER EACH RULE ENDS ON, as a share of the part's own width and
      height — so it is a corner at every window and at every size the Slab is

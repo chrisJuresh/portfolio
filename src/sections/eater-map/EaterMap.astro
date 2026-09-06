@@ -544,17 +544,31 @@ import './tokens.css';
      Points across the page cost the leader lines (#191). `leaders.ts` decides
      which EDGE of this box a rule leaves from by which side of it the part is on,
      so the shoulder turned round on its own; which edge of the ROW the box stands
-     on is a composition decision and this is it. And `top: 0` rather than half a
-     line down, because the row's own rule is drawn across its top edge now — so
-     the leader continues that line out of the Point rather than leaving from the
-     middle of it. Derived and not a Token: a coordinate in the composition rather
-     than a number the author chooses (ADR 0004). */
+     on is a composition decision and this is it. Derived and not a Token: a
+     coordinate in the composition rather than a number the author chooses
+     (ADR 0004).
+
+     AND THE BOX IS THE ROW RULE'S OWN BOX, VERTICALLY — which is a half pixel,
+     and the half pixel was visible. It was `top: 0; height: 0`, and `top: 0` on
+     an absolutely positioned child is the row's PADDING box, because that is the
+     containing block a positioned ancestor establishes. The row's accent rule is
+     a border, drawn in the border box, so it sits entirely ABOVE that edge: at
+     `--eater-map-rule-weight` it spans [top − 1, top], centred on top − 0.5,
+     while a 1px stroke centred on `top` spans [top − 0.5, top + 0.5]. Half a
+     pixel apart, which is exactly one device pixel of step at DPR 1 — the line
+     jogged where the row ended, measured, both ends, all four rules.
+
+     So the hook is lifted by the rule's own weight and given it as a height. Its
+     rect is then the row rule's rect, and `leaders.ts` takes the CENTRELINE off
+     it — two x's and a y off one box, still, and still no Token parsed by a
+     script. It also holds if the two weights ever part: whatever the leader's
+     stroke, it is centred on the rule it continues. */
   .eater-map__hook {
     position: absolute;
     right: 100%;
-    top: 0;
+    top: calc(-1 * var(--eater-map-rule-weight));
     width: var(--eater-map-leader-reach);
-    height: 0;
+    height: var(--eater-map-rule-weight);
     pointer-events: none;
   }
 
@@ -1453,10 +1467,18 @@ import './tokens.css';
      the composition's own box and the rule to it has to follow. The Section's
      own `overflow-x: clip` is still what stops anything leaving the page.
 
-     The rules are painted from --ink like every other quiet mark in this Section
-     — mixed towards transparent rather than towards a colour, so they sit
-     correctly in both themes at the far end of a Turn that finished before the
-     reader arrived. */
+     THE RULES ARE PAINTED FROM THE ACCENT AND NOT FROM --ink, which is the one
+     thing about them that used to be wrong. They were `--ink` at a veil of their
+     own, and the row rule each one leaves is the accent at a veil of its own, so
+     the reader followed a line that started warm and turned white a shoulder's
+     width later. It is ONE line: neutral grid hairline across the frame, and the
+     accent from the row's left edge to the part. Straight `--eater-map-accent`
+     rather than a mix on `--ink` for the reason the accent itself is a plain
+     colour — it was sampled off the reference's own `01.` and this Section stands
+     at the far end of the Turn in BOTH themes, so there is no crossing for it to
+     ride and nothing for a theme to invert (tokens.css). Mixed towards
+     transparent rather than towards a colour, so what it stands on is whatever is
+     behind it. */
   .eater-map__leaders {
     position: absolute;
     inset: 0;
@@ -1465,7 +1487,11 @@ import './tokens.css';
     overflow: visible;
     pointer-events: none;
     fill: none;
-    stroke: color-mix(in oklab, var(--ink), transparent var(--eater-map-leader-veil));
+    stroke: color-mix(
+      in oklab,
+      var(--eater-map-accent),
+      transparent var(--eater-map-accent-veil)
+    );
     stroke-width: var(--eater-map-leader-weight);
     stroke-linecap: round;
     stroke-linejoin: round;
@@ -1473,10 +1499,10 @@ import './tokens.css';
 
   /* THE TWO DOTS, and they are filled where the rules are stroked — so `fill:
      none` on the overlay has to be undone per circle rather than left to be
-     inherited into nothing. The one on the PART is lit: the ink straight, at the
-     larger radius, which is what makes it read as the thing the number points at.
-     The one at the shoulder is the rule's own colour and smaller, and says only
-     that the line turned.
+     inherited into nothing. The one on the PART is lit: the accent straight, at
+     the larger radius and with a glow under it, which is what makes it read as
+     the thing the number points at. The one at the shoulder is the rule's own
+     colour and smaller, and says only that the line turned.
 
      `stroke: none` on both. A circle inherits the overlay's stroke, and a filled
      dot with a half-pixel ring round it in another colour is a dot drawn twice. */
@@ -1496,14 +1522,44 @@ import './tokens.css';
      custom property by the script, which is the rule the shoulder's reach is
      under: a custom property's computed value is its own token stream, so
      `0.2rem` read from script is the string `0.2rem`. */
+  /* AND THE LIT ONE GLOWS. Two `drop-shadow`s on the circle rather than a second
+     circle behind it, so the glow is the DOT's own light and cannot come adrift
+     from it: there is one centre, written once by `leaders.ts`, and the filter
+     follows whatever that centre is. A halo tight enough to read as the mark
+     being lit, and a wide faint bloom that lands on the picture underneath.
+
+     BOTH OFFSETS ARE 0,0, WHICH IS NOT A DEFAULT BUT THE THING THAT KEEPS THE
+     CHECK HONEST. The `eater-map` Check reads the dot's position off its own
+     PAINTED box — `getBoundingClientRect`, not the attribute the script wrote —
+     and Chromium grows that box by a filter's spread. A symmetric glow leaves the
+     box's CENTRE exactly where the circle's is, so the assertion still measures
+     the dot against the polyline's last vertex; an offset shadow would move the
+     centre and the rule would read as detached from the corner it names.
+
+     `overflow: visible` on the overlay is what lets the bloom off the edge of the
+     composition, which it needs: the Slab's own point is drawn at the picture's
+     bottom-left corner and the light around it does not stop at the box. */
   .eater-map__leaders [data-eater-map-tip][cx] {
     r: var(--eater-map-leader-tip);
-    fill: var(--ink);
+    fill: var(--eater-map-accent);
+    filter: drop-shadow(0 0 var(--eater-map-leader-glow) var(--eater-map-accent))
+      drop-shadow(
+        0 0 var(--eater-map-leader-bloom)
+          color-mix(
+            in oklab,
+            var(--eater-map-accent),
+            transparent var(--eater-map-leader-bloom-veil)
+          )
+      );
   }
 
   .eater-map__leaders [data-eater-map-knee][cx] {
     r: var(--eater-map-leader-knee);
-    fill: color-mix(in oklab, var(--ink), transparent var(--eater-map-leader-veil));
+    fill: color-mix(
+      in oklab,
+      var(--eater-map-accent),
+      transparent var(--eater-map-accent-veil)
+    );
   }
 
   .eater-map__card[data-eater-map-card='search'] {

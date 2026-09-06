@@ -38,6 +38,16 @@
  * the one declaration it needed — which edge of the ROW the hook stands on — is a
  * composition decision and is in the stylesheet.
  *
+ * AND THE HOOK CARRIES THE y AS WELL, FOR THE SAME REASON AND AT THE SAME PRICE.
+ * Its box is the row rule's box — lifted by `--eater-map-rule-weight` and given
+ * it as a height — so the rule's CENTRELINE is a midpoint of the same rect these
+ * two x's come off, and the leader is collinear with the accent rule it
+ * continues rather than half a weight below it. Reading the hook's TOP edge is
+ * what put it there: a border is painted inside its box and a stroke is centred
+ * on its path, so the two disagreed by half a rule-weight — one device pixel at
+ * DPR 1, at the junction, which is the one part of the line a reader following
+ * it actually looks at.
+ *
  * AND TWO DOTS, WHICH ARE VERTICES OF THE RULE ITSELF (#191). A lit one at the
  * part, which is the polyline's own last point, and a smaller one at the shoulder
  * where it turns, which is the polyline's middle point. Written from the same two
@@ -136,7 +146,14 @@ export function mountLeaders(root: HTMLElement): (() => void) | void {
     for (const { rule, hook, anchor, tip, knee } of leaders) {
       const from = hook.getBoundingClientRect();
       const to = anchor.getBoundingClientRect();
-      const y = from.top - frame.top;
+      // THE HOOK'S CENTRELINE AND NOT ITS TOP EDGE, because the hook IS the row
+      // rule's box — the stylesheet lifts it by the rule's weight and gives it
+      // that weight as a height, precisely so this line can be a midpoint. A
+      // stroke is centred on its path, a border is drawn inside its box, and
+      // taking the top edge put the two half a rule-weight apart: one device
+      // pixel of step at DPR 1, right where the rule leaves the row, which is the
+      // one place on it a reader is looking.
+      const y = (from.top + from.bottom) / 2 - frame.top;
       const x = to.left - frame.left;
       const at = to.top - frame.top;
       // Out of the near edge of the hook and across it: which edge is near is
