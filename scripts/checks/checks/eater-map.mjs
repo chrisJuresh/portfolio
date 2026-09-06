@@ -2,7 +2,7 @@ import { luminance } from '../lib/colour.mjs';
 import { DESK, open, settle } from '../lib/page.mjs';
 
 /**
- * The Eater Map Section's Exploded View — the fourteen things about it that break
+ * The Eater Map Section's Exploded View — the fifteen things about it that break
  * without anybody noticing.
  *
  * None is aesthetic. Every Token in `src/sections/eater-map/tokens.css` may be set
@@ -577,6 +577,14 @@ const RATIO = 0.02;
  *  foot OF, in px. The two are the same grid area, one end-aligned; this is
  *  rounding. */
 const FOOT = 1;
+
+/** How far a grid line may sit from the edge it IS, in px. Half a pixel: the
+ *  three verticals are grid lines of the same grid their blocks are placed in
+ *  and the four horizontals are a border-width above a border, so both are
+ *  equalities and this is the rounding a fractional layout leaves. Anything
+ *  looser and a restated twelve-column grid — the failure the subgrid exists to
+ *  make impossible — walks through at the window it was tuned at. */
+const COLLINEAR = 0.5;
 
 async function atWindow(browser, origin, viewport) {
   const { context, page } = await open(browser, origin, { viewport });
@@ -4356,13 +4364,270 @@ async function theEdgeFollowsTheWindow(browser, origin) {
   }
 }
 
+/**
+ * FIFTEEN. THE GRID IS THE COMPOSITION'S OWN EDGES AND NOT A SET OF FRACTIONS.
+ *
+ * #201 asked for faint hairlines through the whole frame and named the one real
+ * decision in it: whose they are, and what "a horizontal at 0.505 of the height"
+ * means once the page scrolls below the band. The answer taken is that NOTHING
+ * here is a fraction. Every line is an edge the composition already has — the
+ * four horizontals are the four Points' own rules continued, the three verticals
+ * are the three standing blocks' left edges — so there is no position stated
+ * anywhere and nothing that can drift from what it is drawn against.
+ *
+ * THAT ANSWER IS INVISIBLE ON SCREEN, which is the whole reason it is here. A
+ * grid at six typed fractions and a grid derived from four Points and three
+ * columns are the SAME PICTURE at the window they were typed at, and different
+ * pictures at every other. Nobody looking at one screenshot can tell them apart.
+ *
+ * ONE HORIZONTAL PER POINT, AND COLLINEAR WITH THAT POINT'S RULE. The line stands
+ * one rule-weight above the row's padding box, which is exactly where the row's
+ * own border is drawn, so the two are one line that changes colour at the row's
+ * edge. BOTH ENDS OF THAT AGREEMENT ARE READ — the pseudo-element's `top` against
+ * the row's `border-top-width` — which is what makes the assertion survive
+ * `--eater-map-rule-weight` being dragged, and is why that Token exists at all.
+ * The count is asserted too: a fifth Point brings a fifth line for nothing, and a
+ * Point that stopped drawing one is a hole nothing else on the page reports.
+ *
+ * ONE VERTICAL PER STANDING BLOCK, ON THAT BLOCK'S OWN LEFT EDGE. This is the
+ * assertion the implementation exists to earn: the lines say `grid-column: 1 / 5
+ * / 11` into a `subgrid`, so they inherit the twelve tracks rather than restating
+ * them. A restated `repeat(12, …)` clamps its own gutter and leaves three lines
+ * in plausible places that are no longer anybody's edge — a few pixels out at one
+ * window and a good deal more at another, and correct-looking in both.
+ *
+ * IT TAKES NO HITS, AND IT IS HEARD BY NOBODY. `elementFromPoint` along each
+ * vertical has to answer something other than the grid — the `rail` Check's idiom,
+ * and this is the half of "behind everything" that a Check can honestly assert.
+ * **It does not assert paint order**, and saying so is the point: what a reader
+ * loses when this breaks is not a line drawn over a picture, it is three vertical
+ * strips of the composition they can no longer point at, which on this Section
+ * takes the Drop with it. That is worth a failure; which of two hairlines is on
+ * top of the other is a look. Nothing in it is focusable, it holds no words, and
+ * the box is `aria-hidden` — the half a reader navigating by keyboard or by voice
+ * would meet and a reader looking at the page never would.
+ *
+ * AND BELOW THE BAND THE VERTICALS GO AND THE HORIZONTALS STAY. There are no
+ * three standing blocks out there — one column, everything at the same margin —
+ * so three lines would land on top of each other and draw one rule down the side
+ * of a phone. The Points are still four, so their four lines still mean exactly
+ * what they meant. That the two halves answer the regime DIFFERENTLY while
+ * NEITHER is told which regime it is in is the whole of the derivation, and the
+ * regime is read from `--eater-map-collapsed` — the stylesheet's own answer to
+ * its own breakpoint, which is what `leaders.ts` reads too — rather than from the
+ * viewport, so this asks the composition the question it asks itself.
+ */
+async function theGridIsTheCompositionsOwnEdges(browser, origin) {
+  const failures = [];
+  for (const viewport of [WIDE, SHORT, NARROW]) {
+    const { context, page } = await open(browser, origin, { viewport });
+    const where = `${viewport.width}x${viewport.height}`;
+    try {
+      failures.push(...(await settle(page)).map((why) => `${where}: ${why}`));
+
+      const seen = await page.evaluate(async () => {
+        const section = document.querySelector('.eater-map');
+        if (!section) return { missing: 'no .eater-map on the page' };
+        // ONTO THE SECTION FIRST. Every reading below is in viewport coordinates
+        // and one of them is a hit test, so a Section left off the screen answers
+        // about nothing at all — the shape scripts/checks/NOTES.md warns about.
+        // The snapping is lifted because in the band this is a port and a
+        // `scrollTo` between two of them is pulled back within a frame.
+        window.portfolio?.snapping?.(false);
+        window.scrollTo(0, section.getBoundingClientRect().top + window.scrollY);
+        await new Promise((frame) => requestAnimationFrame(frame));
+        await new Promise((frame) => requestAnimationFrame(frame));
+        window.portfolio?.snapping?.(true);
+
+        const grid = section.querySelector('.eater-map__grid');
+        if (!grid) return { missing: 'no .eater-map__grid — the Section draws no grid at all' };
+        const rows = [...section.querySelectorAll('.eater-map__points li')];
+        if (rows.length === 0) {
+          return { missing: 'no Points on the page, so there is nothing for a horizontal to be' };
+        }
+
+        const round = (n) => Math.round(n * 100) / 100;
+        const px = (value) => Number.parseFloat(value) || 0;
+        const bounds = section.getBoundingClientRect();
+        const collapsed =
+          Number(getComputedStyle(section).getPropertyValue('--eater-map-collapsed')) === 1;
+
+        // THE HORIZONTALS ARE NOT IN THE DOM — each is its row's own `::before` —
+        // so what is read is that pseudo's computed style against the ROW's.
+        const horizontals = rows.map((row, at) => {
+          const rule = getComputedStyle(row);
+          const line = getComputedStyle(row, '::before');
+          const box = row.getBoundingClientRect();
+          return {
+            at: at + 1,
+            drawn: px(line.borderTopWidth) > 0 && line.borderTopStyle !== 'none',
+            top: round(px(line.top)),
+            rule: round(px(rule.borderTopWidth)),
+            // `left` and `right` are the pseudo's own insets, negative, measured
+            // from the row. So the line's own edges are the row's plus those.
+            reachesLeft: box.left + px(line.left) <= bounds.left,
+            reachesRight: box.right - px(line.right) >= bounds.right,
+          };
+        });
+
+        const hidden = getComputedStyle(grid).display === 'none';
+        const lines = hidden
+          ? []
+          : [...grid.children].map((line) => {
+              const box = line.getBoundingClientRect();
+              return {
+                x: round(box.left - bounds.left),
+                top: round(box.top - bounds.top),
+                bottom: round(box.bottom - bounds.top),
+              };
+            });
+        const blocks = ['__head', '__stage', '__points'].map((part) => {
+          const element = section.querySelector('.eater-map' + part);
+          return {
+            part,
+            x: element ? round(element.getBoundingClientRect().left - bounds.left) : null,
+          };
+        });
+
+        // BEHIND EVERYTHING, ASKED OF THE PAGE. Three probes down each vertical
+        // rather than one, because a single one can land in the Section's own
+        // margin where the answer is the Section either way.
+        const covered = [];
+        for (const [at, line] of lines.entries()) {
+          for (const share of [0.25, 0.5, 0.75]) {
+            const y = Math.max(1, Math.min(window.innerHeight - 1, bounds.top + bounds.height * share));
+            const hit = document.elementFromPoint(bounds.left + line.x, y);
+            if (hit === grid || grid.contains(hit)) covered.push(at + 1);
+          }
+        }
+
+        return {
+          collapsed,
+          hidden,
+          horizontals,
+          lines,
+          blocks,
+          height: round(bounds.height),
+          covered: [...new Set(covered)],
+          focusable: grid.querySelectorAll('a, button, input, select, textarea, [tabindex], [contenteditable]')
+            .length,
+          spoken: grid.getAttribute('aria-hidden') !== 'true',
+          words: grid.textContent.trim().length,
+        };
+      });
+
+      if (seen.missing) {
+        failures.push(`${where}: ${seen.missing}`);
+        continue;
+      }
+
+      // ---- the horizontals, in both regimes --------------------------------
+      for (const line of seen.horizontals) {
+        if (!line.drawn) {
+          failures.push(
+            `${where}: Point ${line.at} draws no grid hairline. The grid's horizontals ARE the Points' ` +
+              'own rules continued across the frame (#201), so a Point without one is a line missing ' +
+              'from the grid and nothing else in the composition would say so',
+          );
+          continue;
+        }
+        if (Math.abs(line.top + line.rule) > COLLINEAR) {
+          failures.push(
+            `${where}: Point ${line.at}'s hairline stands ${-line.top}px above its padding box while the ` +
+              `row's own rule is ${line.rule}px thick. The two have to be COLLINEAR — the grid line is ` +
+              'that rule continued rather than a second line beside it — which is what one ' +
+              '--eater-map-rule-weight behind both buys. Two `1px` literals agreeing is what it replaced',
+          );
+        }
+        if (!line.reachesLeft || !line.reachesRight) {
+          failures.push(
+            `${where}: Point ${line.at}'s hairline does not reach the Section's ` +
+              `${line.reachesLeft ? 'right' : 'left'} edge. The grid is full-bleed and the Section's ` +
+              '`overflow-x: clip` is what ends it; a line that stops short has lost the over-reach',
+          );
+        }
+      }
+
+      // ---- the verticals, and where they go below the band ------------------
+      if (seen.collapsed) {
+        if (!seen.hidden) {
+          failures.push(
+            `${where}: the grid still draws its verticals below the band. Out here the Section is ONE ` +
+              'column and all three lines are the same left edge, so what ships is one rule down the ' +
+              'side of a phone. The horizontals stay because the Points do (#201)',
+          );
+        }
+      } else {
+        if (seen.hidden || seen.lines.length !== seen.blocks.length) {
+          failures.push(
+            `${where}: the grid draws ${seen.hidden ? 'no' : seen.lines.length} verticals for ` +
+              `${seen.blocks.length} standing blocks. There is one line per block and it is that ` +
+              "block's own left edge (#201)",
+          );
+        } else {
+          for (const [at, line] of seen.lines.entries()) {
+            const block = seen.blocks[at];
+            if (!block || block.x === null) continue;
+            if (Math.abs(line.x - block.x) > COLLINEAR) {
+              failures.push(
+                `${where}: the grid's vertical ${at + 1} stands at ${line.x}px while .eater-map${block.part} ` +
+                  `starts at ${block.x}px. The verticals are the three standing blocks' own left edges, ` +
+                  'and they say so by taking the twelve tracks through `grid-template-columns: subgrid` ' +
+                  'rather than restating them — a restated `repeat(12, …)` clamps its own gutter and ' +
+                  "puts every line a few pixels off somebody's edge, which is the failure this is for",
+              );
+            }
+            if (line.top > COLLINEAR || line.bottom < seen.height - COLLINEAR) {
+              failures.push(
+                `${where}: the grid's vertical ${at + 1} runs ${line.top}px to ${line.bottom}px of a ` +
+                  `${seen.height}px Section. It spends the Section's own inset back as a negative margin ` +
+                  'to reach both edges, which is how it lands on them whether or not the window reserves ' +
+                  'a scrollbar gutter',
+              );
+            }
+          }
+        }
+        for (const at of seen.covered) {
+          failures.push(
+            `${where}: the grid answers elementFromPoint along its vertical ${at}. It is furniture behind ` +
+              'the whole composition, so anything it is hit-tested over is something a reader cannot ' +
+              'point at any more',
+          );
+        }
+      }
+
+      // ---- and nobody hears it ---------------------------------------------
+      if (seen.focusable > 0) {
+        failures.push(
+          `${where}: the grid puts ${seen.focusable} focusable element(s) into the tab order. It is a ` +
+            'drawing behind a composition and belongs in nobody\'s tab order',
+        );
+      }
+      if (seen.spoken) {
+        failures.push(
+          `${where}: the grid is not aria-hidden. It carries nothing the four Points' own words do not, ` +
+            'so a reader listening should be given none of it',
+        );
+      }
+      if (seen.words > 0) {
+        failures.push(`${where}: the grid holds ${seen.words} character(s) of text — it is a drawing`);
+      }
+    } finally {
+      await context.close();
+    }
+  }
+  return failures;
+}
+
 export const check = {
   name: 'eater-map',
   title:
     'PROJECTS stands in the Gallery’s own box with the serif title sized off its ink, the copy at the ' +
     'foot and the Points to the right; the Cards lie on the Slab at its own scale, come off it and go ' +
     'back, go back one at a time under a reader’s pointer without flickering, are joined to their ' +
-    'numbers by rules that end in a lit dot, are only a picture, and lie flat and full-bleed below the band',
+    'numbers by rules that end in a lit dot, are only a picture, and lie flat and full-bleed below the band; ' +
+    'and the grid behind all of it is the four Points’ own rules and the three blocks’ own left edges rather ' +
+    'than any set of fractions',
 
   /** @param {{ browser: import('playwright').Browser, origin: string }} ctx */
   async run({ browser, origin }) {
@@ -4384,6 +4649,11 @@ export const check = {
     found.push(...edge.failures);
     edge.notes.push(...drop.notes);
     found.push(...(await nothingWatchesTheTokens(browser, origin)));
+    // THREE WINDOWS OF ITS OWN, AND THE THIRD IS THE POINT. The grid's two halves
+    // answer the regime differently while neither is told which regime it is in,
+    // so a run that never leaves the band asserts only the half that is the same
+    // in both.
+    found.push(...(await theGridIsTheCompositionsOwnEdges(browser, origin)));
     // ITS OWN NOTES, for the same reason the group above reports what it saw: how
     // many slices a resize moved and whether a carried page agreed with a mounted
     // one is what tells a reader of a passing log that both halves were exercised

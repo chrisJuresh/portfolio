@@ -37,7 +37,9 @@ points down the right edge with a number and an icon each, the Exploded View, th
 four leader lines that join the one to the other and the two dots on each, the
 **Lift** that assembles it, the **Drop** that puts one piece back on the map under
 a reader's pointer (#213), the **glass** every Card's surfaces are made of
-(#190), and the collapse that puts all of it away below the
+(#190), the **grid** the whole composition sits across — four horizontals that
+are the Points' own rules and three verticals that are the standing blocks' own
+left edges (#201) — and the collapse that puts all of it away below the
 band.
 
 Not here: which of the two stages draws the Slab. #181 built the alternative —
@@ -2110,6 +2112,81 @@ By the time the reader is here the crossing has finished: it runs from the top o
 the document to the SECOND resting place, which is the Panel's. So this Section
 is at the far end of the Turn in both themes, and the `ground` Check is what says
 so.
+
+## The grid, and why not one of its lines is a number (#201)
+
+Faint hairlines through the whole frame, behind everything, that the drawing and
+the type sit across. They were in the reference and in the mockup the composition
+was signed off against, and they were in no ticket because #187 never carried
+them — nothing was implemented wrongly, and #201 says so in as many words.
+
+**#201'S ONE REAL DECISION IS WHOSE THEY ARE, AND THE ANSWER IS THIS SECTION'S.**
+Not the Kernel's, and the reason is the shape the lines take rather than a
+preference: every horizontal is a Point's own rule continued, and the Points are
+this Section's. There is nothing on the Front Screen or in the Gallery for a line
+to extend FROM, so a Kernel grid would have had to invent positions for two
+Sections in order to derive them for a third. The Rail is the Kernel's because
+there is one of it and it stands still while the page turns past; this travels
+with the composition it dissects, which is the opposite property.
+
+**AND THE SECOND HALF OF THAT DECISION IS THAT NOTHING HERE IS A FRACTION.** The
+ticket carried the mockup's own six as a starting point — three verticals at
+0.035 / 0.300 / 0.755 of the width, three horizontals at 0.145 / 0.505 / 0.735 of
+the height — and named the problem with them itself: below the band the page
+scrolls, and "a horizontal at 0.505" of what. Measured against the shipped
+composition at 1600x900 the mockup's own numbers answer the question. Its
+verticals are the page's left margin, the writing-to-drawing seam and the
+drawing-to-Points seam, to within a couple of per cent. Its 0.505 and 0.735 are
+Points 03 and 04 (0.519 and 0.772), to within one. **It was tracking the
+composition's own edges by hand.** So:
+
+- **Four horizontals, and they are the four Points' rules.** Drawn by
+  `.eater-map__points li::before` — the row already draws a rule across its top
+  in the accent, and this carries that same line out of the row and across the
+  frame in a fainter neutral. A fifth Point brings a fifth line for nothing, and
+  there is no position stated anywhere to keep in step with anything. What the
+  reader follows from a number to a part is now ONE line that changes weight
+  twice: hairline across the frame, accent across the row, the leader's own
+  colour turning out of it towards the part.
+- **Three verticals, and they are the three standing blocks' left edges** —
+  columns 1, 5 and 11, which are the same three numbers the `grid-area`s use.
+  `grid-template-columns: subgrid` is what lets them say that: a track boundary
+  in a twelve-column grid is `4t + 3.5g` from the edge and neither term is a
+  length anything here holds, so the lines INHERIT the tracks rather than
+  recomputing them. Move a block and its line goes with it. The third is where
+  the leader lines' shoulders stand, so each rule leaves its Point exactly on a
+  vertical.
+
+**THE TWO HALVES ANSWER THE REGIME DIFFERENTLY AND NEITHER IS TOLD WHICH REGIME
+IT IS IN.** Below the band the verticals go — one column, everything at the same
+margin, so all three would land on each other and draw one rule down the side of
+a phone — and the horizontals stay, because the Points are still a list of four
+and their rules still mean what they meant. That asymmetry is the whole return on
+deriving rather than declaring, and the `eater-map` Check reads a third window for
+it.
+
+**ONE TOKEN CAME OUT OF THIS THAT IS NOT ABOUT THE GRID.** The grid hairline has
+to be COLLINEAR with the Point's rule — it stands one border-width above the
+row's padding box, which is exactly where that border is drawn — and both were
+`1px` typed into a stylesheet. Two literals agreeing at one value is a thing a
+Check can only assert by typing the number a third time, so
+`--eater-map-rule-weight` is the agreement itself, and the copy's rule takes it
+too. The Check reads the pseudo's `top` against the ROW's `border-top-width`, so
+dragging that Token moves both and the assertion still holds.
+
+**WHAT IS A TOKEN HERE, AND WHY THAT IS SO LITTLE.** `--eater-map-grid-veil` and
+`--eater-map-rule-weight`, and nothing else. The ticket asked for the positions to
+be Tokens as well; they are not, because under this derivation there ARE no
+positions — a coordinate in a composition is not a Token (ADR 0004), and a line
+that is an edge is not even a coordinate. What the author can still move is how
+far back the drawing stands from the ink, which is the only thing about it that
+was ever a choice.
+
+**ONE THING LEFT FOR THE AUTHOR TO LOOK AT.** Point 04's horizontal and the copy's
+own top rule are two near-parallel lines in the left column, 16px apart at
+1600x900 and closer at the band's short corner. Both are where they are for a
+reason and neither is wrong; whether the near-miss reads as a grid or as a
+mistake is a look, and looks are the author's.
 
 ## Two things this Section cost the Kernel
 

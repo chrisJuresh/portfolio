@@ -65,6 +65,37 @@ import './tokens.css';
       of it here is the column it stands in, which is the page's own left margin
       and is what the padding below leaves. */}
   <div class="eater-map__inner">
+    {/* THE GRID THE COMPOSITION SITS ACROSS (#201), and it is THREE elements
+        rather than six because the other three are already on the page.
+
+        The reference and the mockup both draw faint hairlines through the whole
+        frame. The mockup stated six of them as fractions of a 1600x900 screen,
+        and #201 is right that fractions stop meaning anything the moment the
+        page scrolls — "a horizontal at 0.505 of WHAT". So none of them is a
+        fraction here. Every line is an EDGE THE COMPOSITION ALREADY HAS:
+
+        - the four HORIZONTALS are the four Points' own rules, continued out of
+          each row and across the frame. They are drawn by `.eater-map__points
+          li::before` rather than by anything in here, so there is no position to
+          state, nothing to measure and nothing to keep in step — a fifth Point
+          brings a fifth line with it. Measured against the mockup, its 0.505 and
+          0.735 were points 03 and 04 to within a per cent, which is what it was
+          tracking by hand.
+        - the three VERTICALS are these, and they are the left edges of the three
+          standing blocks: the writing at column 1, the drawing at column 5, the
+          Points at column 11. `subgrid` below is what lets them say that rather
+          than restate the twelve tracks — move a block and its line goes with
+          it. The third is where the leader lines' shoulders stand, so each rule
+          leaves its Point exactly on a vertical.
+
+        `aria-hidden` and empty: it is furniture, it says nothing the four points'
+        own words do not, and it contributes nothing to the accessibility tree.
+        `z-index: -1` in the stylesheet puts it behind every other layer. */}
+    <span class="eater-map__grid" aria-hidden="true">
+      <i></i>
+      <i></i>
+      <i></i>
+    </span>
     {/* PROJECTS, IN THE GALLERY'S OWN BOX (#191). The word the reader met on the
         Panel, drawn again here at the landing's own size and standing at the
         landing's own margin — so turning onto this screen does not move it. It is
@@ -425,6 +456,61 @@ import './tokens.css';
     column-gap: var(--eater-map-gutter);
   }
 
+  /* ---- THE GRID'S THREE VERTICALS (#201) ----------------------------------
+     The left edges of the three standing blocks, and they are stated as GRID
+     LINES rather than as lengths — column 1, column 5 and column 11 are the same
+     three numbers the `grid-area`s below use, so a block that moves takes its
+     line with it and there is no second copy of the layout to drift.
+
+     `subgrid` IS WHAT MAKES THAT TRUE, and it is the whole reason this is a box
+     with three children rather than three absolutely positioned rules. A track
+     boundary in a twelve-column grid is `4t + 3.5g` from the edge and neither `t`
+     nor `g` is a length anything here holds — both are the grid algorithm's. A
+     subgrid does not compute them, it INHERITS them, so `grid-column: 5` is
+     exactly where the drawing starts however the gutter clamps.
+
+     `z-index: -1` IS THE PAGE'S OWN "BELOW EVERYTHING" and not a number picked to
+     win: src/kernel/ground.css lays the page out as ground on the canvas, corner
+     pictures at -1, the Rail at 1 and the type at 5, so -1 is the layer that is
+     already defined as behind the composition and in front of the ground. Neither
+     this Section nor the body is a stacking context, so that is where these land
+     — and if either ever becomes one they land behind ITS content instead, which
+     is the same promise. A grid item takes `z-index` without being positioned. */
+  .eater-map__grid {
+    grid-area: 1 / 1 / 2 / 13;
+    align-self: stretch;
+    display: grid;
+    grid-template-columns: subgrid;
+    z-index: -1;
+    pointer-events: none;
+  }
+
+  /* FULL-BLEED BY SPENDING THE SECTION'S OWN INSET BACK, which is the same move
+     the collapse makes for the Slab and for the same reason: a negative margin is
+     stated against this box's containing block, so it lands on the Section's two
+     edges whether or not the window has a scrollbar gutter. `100vh` would be the
+     obvious way and would be wrong by exactly the header of a page that scrolls.
+
+     A border rather than a background, so the hairline is one device-pixel-ish
+     line at every zoom rather than a box rounded to none. */
+  .eater-map__grid i {
+    margin-block: calc(-1 * var(--eater-map-inset));
+    border-left: var(--eater-map-rule-weight) solid
+      color-mix(in oklab, var(--ink), transparent var(--eater-map-grid-veil));
+  }
+
+  .eater-map__grid i:nth-child(1) {
+    grid-column: 1;
+  }
+
+  .eater-map__grid i:nth-child(2) {
+    grid-column: 5;
+  }
+
+  .eater-map__grid i:nth-child(3) {
+    grid-column: 11;
+  }
+
   /* THE TWO ENDS OF THE LEFT COLUMN, and they are one grid area used twice
      rather than two rows. The head is start-aligned and the copy end-aligned in
      the SAME cell, which is what "the copy at the foot of the left column" is —
@@ -568,7 +654,7 @@ import './tokens.css';
   .eater-map__copy {
     grid-area: 1 / 1 / 2 / 5;
     align-self: end;
-    border-top: 1px solid
+    border-top: var(--eater-map-rule-weight) solid
       color-mix(in oklab, var(--ink), transparent var(--eater-map-rule-veil));
     padding-top: var(--eater-map-close);
     font-size: var(--eater-map-copy-size);
@@ -613,9 +699,49 @@ import './tokens.css';
      once. Drawn as a border on the row rather than as a box, so a point growing a
      second line of title does not move it. */
   .eater-map__points li {
-    border-top: 1px solid
+    border-top: var(--eater-map-rule-weight) solid
       color-mix(in oklab, var(--eater-map-accent), transparent var(--eater-map-accent-veil));
     padding-top: var(--eater-map-point-air);
+  }
+
+  /* ---- AND THE GRID'S FOUR HORIZONTALS ARE THAT SAME RULE, CONTINUED (#201) --
+     The line above each Point, carried out of the row and across the whole frame
+     in a fainter neutral. One line per Point, drawn by the Point, so the grid has
+     no horizontal position to state anywhere: a fifth Point brings a fifth line
+     and the composition cannot get out of step with it. That is also the answer
+     to the question #201 says has to be answered before anything is written — a
+     horizontal at "0.505 of the height" stops meaning anything once the page
+     scrolls below the band, and none of these is a share of anything. They are
+     where the Points are, in both regimes, for nothing.
+
+     The reader follows ONE line that changes weight twice: neutral hairline
+     across the frame, the accent across the row, then the leader's own colour
+     turning out of the row towards the part. The accent border above wins where
+     they overlap because this is at `z-index: -1` and that is not — see the
+     verticals, where that layer is explained.
+
+     `-100vw` EACH WAY AND CLIPPED, which is the one place a `vw` is safe here.
+     `.eater-map` is `overflow-x: clip`, so this is an over-reach the Section cuts
+     off at its own edges — the scrollbar gutter that makes `width: 100vw` wrong
+     for a full-bleed box (scripts/checks/NOTES.md) cannot show up in a length
+     that is thrown away. The row's containing block is the row, so there is no
+     way to say "the window's edge" from here that does not go through one.
+
+     `top` IS THE ROW RULE'S OWN WEIGHT, negated: the row's border is drawn inside
+     its border box, so a hairline placed one border-width above the padding box
+     is collinear with it. THE TWO ARE ONE TOKEN AND THAT IS WHY — they were two
+     `1px` literals agreeing by coincidence, which is a thing a Check can only
+     assert by typing the number a third time, and `--eater-map-rule-weight` is
+     the agreement itself. Drag it and both move together. */
+  .eater-map__points li::before {
+    content: '';
+    position: absolute;
+    inset-inline: -100vw;
+    top: calc(-1 * var(--eater-map-rule-weight));
+    border-top: var(--eater-map-rule-weight) solid
+      color-mix(in oklab, var(--ink), transparent var(--eater-map-grid-veil));
+    z-index: -1;
+    pointer-events: none;
   }
 
   /* The number and the icon on one line, the number on the baseline and the icon
@@ -1514,6 +1640,21 @@ import './tokens.css';
     .eater-map__points {
       margin-top: var(--eater-map-act);
       row-gap: var(--eater-map-move);
+    }
+
+    /* NO VERTICALS OUT HERE, AND THE FOUR HORIZONTALS STAY. The verticals are the
+       three standing blocks' left edges and out here there are no three blocks —
+       one column, everything at the same margin, so all three lines would land on
+       top of each other at the page's own edge and draw one rule down the side of
+       a phone. The horizontals are the Points' own rules and the Points are still
+       a list of four, so they carry on meaning exactly what they meant in the
+       band. That asymmetry is the whole reason the grid is derived rather than
+       declared: neither half had to be told which regime it is in.
+
+       `display: none` and not a hidden box: it holds nothing, so there is nothing
+       to keep in the layout and nothing to reveal. */
+    .eater-map__grid {
+      display: none;
     }
 
     /* FULL-BLEED, AND THE NEGATIVE MARGIN IS WHY IT IS NOT `100vw`. The Section
