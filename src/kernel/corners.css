@@ -2,7 +2,9 @@
    bottom-right. Three baked photographs run in behind the opening composition,
    scaled to --fold so they grow together, and graded in the file rather than by
    a filter here. And the Moonlight they stand in: one cool light cast from the
-   top right across the DARK theme's first screen, which the car hangs in as a
+   top right across the DARK theme's first screen, which the plate and the eye
+   stand in as LIT things — a third, relit ladder of each is screened over the
+   picture and breathes with the sky — and which the car hangs in as a
    silhouette. The light theme takes none of it.
 
    Every number they are drawn from is in tokens/corners.css and
@@ -16,10 +18,16 @@
 
 /* The breath of the Moonlight, registered so it is a number the keyframes below
    can carry rather than a token stream the cascade cannot interpolate. Global,
-   as every registration is, and the Kernel is where a global belongs. */
+   as every registration is, and the Kernel is where a global belongs.
+
+   IT INHERITS, because it is animated ONCE, on the band, and read by three
+   layers inside it — the sky, and the light on each of the two pictures. Three
+   animations that happened to start together would drift apart the first time
+   one layer's rule applied a frame later than another's; one number on the box
+   they all sit in cannot. */
 @property --moonlight-swell {
   syntax: '<number>';
-  inherits: false;
+  inherits: true;
   initial-value: 1;
 }
 
@@ -60,6 +68,32 @@
   background-repeat: no-repeat;
 }
 
+/* THE BREATH IS THE BAND'S. One animation, on the box every lit layer stands
+   in, carrying --moonlight-swell from full down to nothing and back over
+   --moonlight-breathe; each layer below reads it through the floor the Tokens
+   name, so the sky and the light on the two pictures rise and fall on one
+   clock. Dark only, like everything it drives. A period of 0s is an animation
+   with no active duration and applies nothing, so the light stands at full. */
+:root[data-theme='dark'] .kernel-corners {
+  animation: kernel-moonlight-breathe var(--moonlight-breathe) ease-in-out infinite;
+}
+
+@keyframes kernel-moonlight-breathe {
+  50% {
+    --moonlight-swell: 0;
+  }
+}
+
+/* A reader who asked for less motion gets the light and not the breath. The
+   same selector as the rule that starts it, because that rule outranks a bare
+   class: an `animation: none` on `.kernel-corners` alone would lose the cascade
+   and say nothing, which is how the first version of this shipped. */
+@media (prefers-reduced-motion: reduce) {
+  :root[data-theme='dark'] .kernel-corners {
+    animation: none;
+  }
+}
+
 /* THE MOONLIGHT. A radial light, its centre and reach in the first screen's own
    terms, drawn under the three pictures so the plate and the eye stand in it as
    the lighter ghosts they are and the car stands AGAINST it (below). It is the
@@ -87,40 +121,92 @@
 
 /* THE DARK THEME'S ALONE, as a rule and not as a value — the shade's own gate,
    for the shade's own reason. Moonlight over paper is a blue wash over a white
-   page, and no setting of the Tokens should be able to put one there. */
+   page, and no setting of the Tokens should be able to put one there. The
+   opacity is the strength times where the breath has got to: the band's swell,
+   read through the floor, so the Tokens keep both numbers and the keyframes
+   carry a bare one. The two lit pictures below spell the same arithmetic. */
 :root[data-theme='dark'] .kernel-corners .moonlight {
   opacity: calc(
     var(--moonlight-strength) *
       (var(--moonlight-breathe-floor) + (1 - var(--moonlight-breathe-floor)) * var(--moonlight-swell))
   );
-  animation: kernel-moonlight-breathe var(--moonlight-breathe) ease-in-out infinite;
 }
 
-/* From full, down to the floor the Tokens name, and back: the swell is what the
-   opacity above reads, so the keyframes carry a number and the Tokens keep the
-   strength. A period of 0s runs no breath at all and the light stands at full. */
-@keyframes kernel-moonlight-breathe {
-  50% {
-    --moonlight-swell: 0;
-  }
+/* THE LIGHT ON THE PICTURES. The plate and the eye each carry a second layer:
+   the moonlit ladder build-plate.py bakes for it — the same frame, graded so
+   black is black and white is the light's colour, and then LIT, its own luma
+   read as relief and shaded from where the moon stands (design/plate/
+   build-plate.py, THE MOONLIT LADDER). It is drawn over the picture with
+   `screen`, so it only ever ADDS: the ghost under it is what the reader sees
+   with the light down, and as the light swells the dome and the wheel come up
+   out of the dark as things standing in it — the faces towards the moon
+   brightening, the ribs and the lattice catching it — rather than the whole
+   frame going a shade whiter, which is what lifting a ghost over a lit ground
+   does and what was reported.
+
+   MASKED BY THE MOON'S THROW: a second falloff from the same centre as the
+   sky's, wider and with a floor, so the light on a picture is strongest on its
+   side nearer the moon and the far corner of the page still gets some. That
+   gradient ACROSS a picture is the one thing the baked normals cannot supply —
+   they know which way a face turns and not how far it is from the lamp — and it
+   is what puts the eye, under the moon, in more light than the dome across the
+   page from it. `screen` on a layer over a transparent backdrop is a no-op,
+   which is one more thing the band's painted ground is for.
+
+   Each shares its picture's geometry declaration for declaration, below,
+   because the two are one frame and a pixel of light off its stone is exactly
+   the fringe this band is arranged to avoid. */
+.kernel-corners .plate-lit,
+.kernel-corners .eye-lit {
+  mix-blend-mode: screen;
+  mask-image: radial-gradient(
+    circle calc(var(--moonlight-throw) * var(--fold)) at var(--moonlight-x) var(--moonlight-y),
+    #000 0%,
+    rgb(0 0 0 / var(--moonlight-throw-floor)) 100%
+  );
+  opacity: 0;
 }
 
-/* A reader who asked for less motion gets the light and not the breath. */
-@media (prefers-reduced-motion: reduce) {
-  .kernel-corners .moonlight {
-    animation: none;
-  }
+.kernel-corners .plate-lit {
+  background-image: var(--plate-lit-src);
+}
+
+.kernel-corners .eye-lit {
+  background-image: var(--eye-lit-src);
+}
+
+/* Dark only, for the sky's reason, and one strength per picture: the moon is
+   high and to the right of the plate and nearly over the eye, and the two
+   frames are not equally loud to begin with. */
+:root[data-theme='dark'] .kernel-corners .plate-lit {
+  opacity: calc(
+    var(--moonlight-plate) *
+      (var(--moonlight-breathe-floor) + (1 - var(--moonlight-breathe-floor)) * var(--moonlight-swell))
+  );
+}
+
+:root[data-theme='dark'] .kernel-corners .eye-lit {
+  opacity: calc(
+    var(--moonlight-eye) *
+      (var(--moonlight-breathe-floor) + (1 - var(--moonlight-breathe-floor)) * var(--moonlight-swell))
+  );
 }
 
 /* Width from the token, height auto from the file's own aspect — so the aspect
    ratio lives in the file and the picture is never squeezed into a band it is
-   the wrong shape for. It overflows and the box does the cutting. */
-.kernel-corners .plate {
+   the wrong shape for. It overflows and the box does the cutting. The picture
+   and the light on it share every line of this, and only the file and the
+   opacity are each one's own. */
+.kernel-corners .plate,
+.kernel-corners .plate-lit {
   top: 0;
   height: var(--plate-band);
-  background-image: var(--plate-src);
   background-position: left var(--plate-x) bottom calc(-1 * var(--plate-crop) * var(--plate-w));
   background-size: var(--plate-w) auto;
+}
+
+.kernel-corners .plate {
+  background-image: var(--plate-src);
   opacity: var(--plate-opacity);
 }
 
@@ -166,7 +252,8 @@
    would move every time --eye-w did. --page-across is the page without the
    scrollbar's gutter, which is the same box .kernel-corners spans and the same
    one the column is centred in, so the two land on the same edge. */
-.kernel-corners .eye {
+.kernel-corners .eye,
+.kernel-corners .eye-lit {
   /* --front-screen-measure and --front-screen-side, spelled out. */
   --eye-measure: 27rem;
   --eye-side: 1.35rem;
@@ -174,10 +261,13 @@
 
   top: 0;
   height: calc(var(--fold) - var(--eye-y));
-  background-image: var(--eye-src);
   background-position:
     left calc(var(--eye-column) + var(--eye-x))
     bottom calc(-1 * var(--eye-crop) * var(--eye-w));
   background-size: var(--eye-w) auto;
+}
+
+.kernel-corners .eye {
+  background-image: var(--eye-src);
   opacity: var(--eye-opacity);
 }

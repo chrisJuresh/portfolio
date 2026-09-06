@@ -1,6 +1,6 @@
 {
   "title": "The corner pictures",
-  "note": "The plate, the car and the eye: three photographs graded to one paper stock and cut to a ladder of WebP under portfolio/img/. The Kernel's corners.ts picks a rung at run time, so a re-bake shows on the page as soon as this tree is rebuilt.",
+  "note": "The plate, the car and the eye: three photographs graded to one paper stock and cut to a ladder of WebP under portfolio/img/ - and, for the plate and the eye, a third ladder that is the Moonlight's light on the picture. The Kernel's corners.ts picks a rung at run time, so a re-bake shows on the page as soon as this tree is rebuilt.",
   "needs": "the original frame. The raws are gitignored, so `source` has to point at your own copy; without one the run stops on `no such file` and nothing is written.",
   "run": [
     "python",
@@ -31,7 +31,7 @@
             "car",
             "eye"
           ],
-          "note": "The plate is bottom-left, the car top-right and the eye bottom-right. Each has its own two grades below, because a picture on black wants its own endpoints rather than more of light's."
+          "note": "The plate is bottom-left, the car top-right and the eye bottom-right. Each has its own two grades below, because a picture on black wants its own endpoints rather than more of light's - and the plate and the eye a third, the Moonlight's light on them, with the light's own numbers beside it."
         }
       ]
     },
@@ -464,6 +464,216 @@
           "min": 0,
           "max": 0.03,
           "step": 0.0005
+        }
+      ]
+    },
+    {
+      "name": "Moonlight - the plate",
+      "note": "The third ladder, plate-moonlit-<width>.webp: the Moonlight's light ON the plate, which src/kernel/corners.css screens over the dark page and breathes with the sky. A grade and then a light - build-plate.py, THE MOONLIT LADDER and relight(). The moon stands high and to the right of this corner.",
+      "params": [
+        {
+          "key": "PLATE_MOONLIT.EXPOSURE_PCT",
+          "label": "exposure %ile",
+          "value": "99.0",
+          "note": "Which percentile of the building's brightness is driven to the exposure below. The same stage as the other two grades, on the same frame.",
+          "min": 90,
+          "max": 99.99,
+          "step": 0.01
+        },
+        {
+          "key": "PLATE_MOONLIT.EXPOSURE_TARGET",
+          "label": "exposure",
+          "value": "0.6",
+          "note": "Where that percentile lands, in linear light, before any tone curve.",
+          "min": 0.1,
+          "max": 0.8,
+          "step": 0.005
+        },
+        {
+          "key": "PLATE_MOONLIT.SAT_KEEP",
+          "label": "colour kept",
+          "value": "1.25",
+          "note": "Fraction of the original chroma left in - and this block alone may go past 1, which is MORE colour than the day had: the 'ever so slightly more colourful' a warm stone reads as under a cool light, put into the file rather than hoped for from the blend.",
+          "min": 0,
+          "max": 2,
+          "step": 0.01
+        },
+        {
+          "key": "PLATE_MOONLIT.CONTRAST",
+          "label": "contrast",
+          "value": "0.45",
+          "note": "How far the tone curve is blended toward a smoothstep S. A little more than the ghost under it, because a light finds edges.",
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "key": "PLATE_MOONLIT.HIGHLIGHT_PUSH",
+          "label": "highlight push",
+          "value": "1.34",
+          "note": "Lifts the top of the range without clipping it. 1 is off.",
+          "min": 1,
+          "max": 2.5,
+          "step": 0.01
+        },
+        {
+          "key": "PLATE_MOONLIT.SHADOW",
+          "label": "blacks land on",
+          "value": "#000000",
+          "note": "Black, and it is the meaning of the ladder rather than a choice: this layer is SCREENED over the page, and a screened black is transparent. An unlit pixel adds nothing. Lift it and the whole picture glows."
+        },
+        {
+          "key": "PLATE_MOONLIT.HIGHLIGHT",
+          "label": "whites land on",
+          "value": "#b0c8f0",
+          "note": "THE LIGHT'S COLOUR - where fully lit white stone lands, so the moon on limestone: a cool pale blue. The sky glow in kernel-moonlight is the darker end of the same light. This is also the colour of the glint below."
+        },
+        {
+          "key": "PLATE_MOONLIT.GRAIN_SIGMA",
+          "label": "grain",
+          "value": "0.0075",
+          "note": "Monochrome, weighted to the mids, the same stream as the other two ladders so the theme flip moves no grain.",
+          "min": 0,
+          "max": 0.03,
+          "step": 0.0005
+        },
+        {
+          "key": "PLATE_MOONLIT.LIGHT",
+          "label": "light from - azimuth, elevation",
+          "value": "45 35",
+          "note": "Where the moon is, as seen from this picture, in degrees: azimuth 0 is from the right and 90 from straight above; elevation 0 is grazing along the picture and 90 is straight down the reader's line of sight, which lights everything alike and shades nothing. Two numbers in one control because it is one direction."
+        },
+        {
+          "key": "PLATE_MOONLIT.RELIEF",
+          "label": "relief - strength, radius",
+          "value": "1.0 12",
+          "note": "The fine bump: the picture's own luma read as height, smoothed by this radius in SOURCE pixels, and tilted by this strength. This is the ribs of the dome and the members of the lattice catching the light on the side that faces it. 0 strength is off."
+        },
+        {
+          "key": "PLATE_MOONLIT.FORM",
+          "label": "form - strength, radius",
+          "value": "0.6 120",
+          "note": "The coarse bump, at a radius a hundred times the relief's: the whole curve of the dome rather than its ribs. The day's shading is a rough guide to form and a fair one to relief, so this is kept gentler than that. 0 strength is off."
+        },
+        {
+          "key": "PLATE_MOONLIT.SPECULAR",
+          "label": "glint - strength, shininess",
+          "value": "0.5 24",
+          "note": "Blinn-Phong: how bright a face turned squarely between the moon and the reader flares, and how narrow that flare is. It is the light's colour, not the stone's."
+        },
+        {
+          "key": "PLATE_MOONLIT.WRAP",
+          "label": "wrap",
+          "value": "0.3",
+          "note": "How far the light reaches round a face turned away from it. 0 is Lambert, and a bump's far side falls to black; a little wrap keeps the shadow side of a rib in the picture.",
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        }
+      ]
+    },
+    {
+      "name": "Moonlight - the eye",
+      "note": "The eye's moonlit ladder, the same way. The moon stands nearly over this corner, so the light comes down the mast rather than across it, and the lattice is finer than the dome's ribs.",
+      "params": [
+        {
+          "key": "EYE_MOONLIT.EXPOSURE_PCT",
+          "label": "exposure %ile",
+          "value": "99.0",
+          "note": "Which percentile of the building's brightness is driven to the exposure below. The same stage as the other two grades, on the same frame.",
+          "min": 90,
+          "max": 99.99,
+          "step": 0.01
+        },
+        {
+          "key": "EYE_MOONLIT.EXPOSURE_TARGET",
+          "label": "exposure",
+          "value": "0.65",
+          "note": "Where that percentile lands, in linear light, before any tone curve.",
+          "min": 0.1,
+          "max": 0.8,
+          "step": 0.005
+        },
+        {
+          "key": "EYE_MOONLIT.SAT_KEEP",
+          "label": "colour kept",
+          "value": "1.25",
+          "note": "Fraction of the original chroma left in - and this block alone may go past 1, which is MORE colour than the day had: the 'ever so slightly more colourful' a warm stone reads as under a cool light, put into the file rather than hoped for from the blend.",
+          "min": 0,
+          "max": 2,
+          "step": 0.01
+        },
+        {
+          "key": "EYE_MOONLIT.CONTRAST",
+          "label": "contrast",
+          "value": "0.5",
+          "note": "How far the tone curve is blended toward a smoothstep S. A little more than the ghost under it, because a light finds edges.",
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "key": "EYE_MOONLIT.HIGHLIGHT_PUSH",
+          "label": "highlight push",
+          "value": "1.7",
+          "note": "Lifts the top of the range without clipping it. 1 is off.",
+          "min": 1,
+          "max": 2.5,
+          "step": 0.01
+        },
+        {
+          "key": "EYE_MOONLIT.SHADOW",
+          "label": "blacks land on",
+          "value": "#000000",
+          "note": "Black, and it is the meaning of the ladder rather than a choice: this layer is SCREENED over the page, and a screened black is transparent. An unlit pixel adds nothing. Lift it and the whole picture glows."
+        },
+        {
+          "key": "EYE_MOONLIT.HIGHLIGHT",
+          "label": "whites land on",
+          "value": "#b4ccf2",
+          "note": "THE LIGHT'S COLOUR - where fully lit white stone lands, so the moon on limestone: a cool pale blue. The sky glow in kernel-moonlight is the darker end of the same light. This is also the colour of the glint below."
+        },
+        {
+          "key": "EYE_MOONLIT.GRAIN_SIGMA",
+          "label": "grain",
+          "value": "0.0075",
+          "note": "Monochrome, weighted to the mids, the same stream as the other two ladders so the theme flip moves no grain.",
+          "min": 0,
+          "max": 0.03,
+          "step": 0.0005
+        },
+        {
+          "key": "EYE_MOONLIT.LIGHT",
+          "label": "light from - azimuth, elevation",
+          "value": "75 35",
+          "note": "Where the moon is, as seen from this picture, in degrees: azimuth 0 is from the right and 90 from straight above; elevation 0 is grazing along the picture and 90 is straight down the reader's line of sight, which lights everything alike and shades nothing. Two numbers in one control because it is one direction."
+        },
+        {
+          "key": "EYE_MOONLIT.RELIEF",
+          "label": "relief - strength, radius",
+          "value": "1.2 8",
+          "note": "The fine bump: the picture's own luma read as height, smoothed by this radius in SOURCE pixels, and tilted by this strength. This is the ribs of the dome and the members of the lattice catching the light on the side that faces it. 0 strength is off."
+        },
+        {
+          "key": "EYE_MOONLIT.FORM",
+          "label": "form - strength, radius",
+          "value": "0.3 120",
+          "note": "The coarse bump, at a radius a hundred times the relief's: the whole curve of the dome rather than its ribs. The day's shading is a rough guide to form and a fair one to relief, so this is kept gentler than that. 0 strength is off."
+        },
+        {
+          "key": "EYE_MOONLIT.SPECULAR",
+          "label": "glint - strength, shininess",
+          "value": "0.7 20",
+          "note": "Blinn-Phong: how bright a face turned squarely between the moon and the reader flares, and how narrow that flare is. It is the light's colour, not the stone's."
+        },
+        {
+          "key": "EYE_MOONLIT.WRAP",
+          "label": "wrap",
+          "value": "0.35",
+          "note": "How far the light reaches round a face turned away from it. 0 is Lambert, and a bump's far side falls to black; a little wrap keeps the shadow side of a rib in the picture.",
+          "min": 0,
+          "max": 1,
+          "step": 0.01
         }
       ]
     },

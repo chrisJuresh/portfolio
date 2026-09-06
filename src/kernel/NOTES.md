@@ -15,7 +15,7 @@ than a convenience.
 | --------------------------- | ----------------------------------------------------------- |
 | `faces.css` / `tokens/faces.css` | the five families, six files, the face Tokens, and the page's own type size — the zoom, the ceiling and the give-way |
 | `ground.css` / `tokens/ground.css` | the theme's two papers, the Turn across them, the shade over the DARK theme's first screen, and that the document never scrolls sideways |
-| `corners.css` / `corners.ts` / `tokens/moonlight.css` | the plate, the car and the eye — geometry, and which rung; and the Moonlight they stand in, which the car is cut out of |
+| `corners.css` / `corners.ts` / `tokens/moonlight.css` | the plate, the car and the eye — geometry, and which rung; and the Moonlight they stand in, which lights the plate and the eye off a relit ladder of each and which the car is cut out of |
 | `rail/` / `tokens/rail.css` | the Rail — the one index on the page, its words, its two regimes, and which entry is current |
 | `effect-stack/`             | the nine layers, and the grain tile                          |
 | `theme.ts`                  | which paper, where it is stored, and who is told when it changes |
@@ -834,35 +834,64 @@ rather than a number.
 
 ## The Moonlight: one cool light over the DARK theme's first screen
 
-`.kernel-corners .moonlight` in `corners.css` is the layer, `tokens/moonlight.css`
-is its eight numbers, and it answers to `kernel-moonlight` on the Editor. A radial
+`.kernel-corners .moonlight` in `corners.css` is the sky, `.plate-lit` and
+`.eye-lit` beside it are the light ON the two pictures, `tokens/moonlight.css` is
+the twelve numbers, and it answers to `kernel-moonlight` on the Editor. A radial
 light cast from just inside the top-right corner, across the ground the Front
-Screen is printed on, that the car hangs in as a silhouette. **The light theme
-takes none of it**, as a rule and not a value — the shade's own gate, for the
-shade's own reason.
+Screen is printed on, breathing; the plate and the eye stand in it as lit things
+and the car hangs in it as a silhouette. **The light theme takes none of it**, as
+a rule and not a value — the shade's own gate, for the shade's own reason.
 
-**It was measured off a reference rather than described, and what the reference
-did is worth keeping because it is smaller than it looks.** The author brought a
-ten-second clip of this screen with "a subtle blue moonlight from the top right"
-in it, and asked for that alone. Sampled every quarter-second: the two
-photographs' own pixels do not move — the flowers hold 120, 76, 42 of 255 to the
-frame and their saturation drifts by two points; the second picture the same —
-and there is no shadow cast beside either, every band around them brightens.
-**What moves is the ground.** It swells from 8 to about 30, 38, 50 across the
-right half of the screen over seven seconds and back, a cool light whose added
-colour is about 22, 30, 42 at its peak, weakest at the far left and the bottom
-left; and the far top-right corner, where the car is, stays near black while the
-sky beside it lights, so the car reads as a dark shape against it. The
-"illuminated, more three-dimensional, a shade more colourful" the author saw in
-the photographs is what a warm picture does against a cool lit surround and what
-a cool one does against a ground that has come up to meet its own shadows. So
-nothing here touches the photographs, and that is the reading of the reference
-and not a shortcut.
+**It was measured off a reference, and the first reading of the reference was
+wrong in the one place that mattered.** The author brought a ten-second clip of
+this screen with "a subtle blue moonlight from the top right" in it, in which
+"the first two images are illuminated by it in a gorgeous way, making them look
+more 3d and ever so slightly more colorful, yet the cable car gets darker." The
+first session sampled the two photographs in the CAROUSEL, found their pixels
+held to the frame, and concluded that nothing in the clip touched a picture — so
+it lit the ground and left every picture alone, and what shipped was reported
+back as a breath nobody could see and two pictures that went "just whiter".
+**The two images are the corner pictures.** Sampled again: the dome at the far
+left is near black at the trough and a solid, moonlit thing at the peak — its
+face at about 23, 27, 32 of 255, its ribs brighter, the sky beside the eye at
+24, 31, 44 — and the car stays a dark shape in a sky that lights around it. What
+the clip does to a picture is what a light does to a thing standing in it, and a
+ghost lifted over a lit ground is not that: `normal` at 0.17 lets the ground
+through, so as the ground comes up the picture's own contrast goes DOWN and the
+whole frame moves a shade towards the light's colour. That is the flat wash the
+author saw, and no strength or floor fixes it.
+
+**So the light on a picture is a second ladder, baked, and screened.**
+`design/plate/build-plate.py` writes `<stem>-moonlit-<width>.webp` for the plate
+and the eye — THE MOONLIT LADDER in its docstring, and `relight()` — graded so
+black is black and white is the light's own colour, and then LIT: the picture's
+luma read as a height field, given a normal at two sizes (the ribs and the
+lattice; the whole curve of the dome), and shaded from a stated direction with a
+Lambert body, a Blinn-Phong glint and a little wrap. `corners.css` draws that
+file over the ghost with `mix-blend-mode: screen`, so it only ever ADDS — the
+ghost is the picture with the light down, and the faces towards the moon come up
+out of it as the light swells while the far sides stay dark. The layer is its own
+element and not a pseudo-element on the ghost, because the ghost's opacity makes
+it a group and a blend inside a group reaches only that group. The car has no
+moonlit ladder and must not get one: it stands against the light, and
+`corners.ts` never asks for a `car-moonlit-` file. Why a bake and not a filter is
+the plate's own argument — the relief is a convolution CSS has no primitive for,
+and a paint per frame on a layer this size is the one cost this page does not
+pay.
+
+**The throw is the one thing the bake cannot know.** Baked normals say which way
+a face turns and not how far it is from the lamp, so `.plate-lit` and `.eye-lit`
+are masked by a second radial falloff from the same centre as the sky's — wider
+(`--moonlight-throw`, in folds) and with a floor (`--moonlight-throw-floor`) — so
+the light on a picture is strongest on its side nearer the moon and the dome
+across the page still gets some. That is what puts the eye, under the moon, in
+more light than the plate, and it is live rather than baked so that moving the
+moon moves it.
 
 **Where it stands, and why it is in the corners' band rather than beside the
 shade.** The light is drawn INSIDE `.kernel-corners`, first, under the three
-pictures — so the plate and the eye stand in it as the lighter ghosts they are
-graded as, and the car stands against it. It has to be inside for the car's sake:
+pictures — so the ghosts stand in it, the lit ladders screen into it, and the car
+stands against it. It has to be inside for the car's sake:
 that band is a stacking context (a positioned box with a `z-index`), and a
 `mix-blend-mode` on anything in it reaches only what was painted before it inside
 the same box, never the page. A light beside the shade, at the root, would be
@@ -891,12 +920,32 @@ the blend does it in the compositor and leaves the light theme's car alone.
 the layer is light and nothing else, and one number says how much of it there is —
 which is also what lets the breath ride on it. `--moonlight-swell` is a registered
 `<number>` the keyframes carry from 1 to 0 and back over `--moonlight-breathe`, and
-the opacity reads it through `--moonlight-breathe-floor`, so the Tokens keep the
-strength and the floor while the animation keeps a bare number. A period of `0s`
-is an animation with no active duration and applies nothing, so the light stands
-at full; `prefers-reduced-motion` gets the light and not the breath. The layer's
-opacity is what animates, so the breath is a composite and not a repaint of a
-full-screen gradient.
+each layer's opacity reads it through `--moonlight-breathe-floor`, so the Tokens
+keep the strength and the floor while the animation keeps a bare number. A period
+of `0s` is an animation with no active duration and applies nothing, so the light
+stands at full; `prefers-reduced-motion` gets the light and not the breath. The
+layers' opacity is what animates, so the breath is a composite and not a repaint
+of a full-screen gradient.
+
+**The breath is ONE animation, on the band, and the swell inherits.** Three layers
+breathe — the sky and the light on each picture — and three animations that
+started together would come apart the first time one layer's rule applied a frame
+after another's, which a theme flip does. So `.kernel-corners` carries the
+animation and `--moonlight-swell` is registered `inherits: true`; each layer reads
+the band's number and the three cannot drift. It also fixed a bug the first
+version shipped: the `prefers-reduced-motion` rule said `animation: none` on
+`.kernel-corners .moonlight`, and the rule that started the animation was
+`:root[data-theme='dark'] .kernel-corners .moonlight`, which outranks it — so the
+reduced-motion rule lost the cascade and said nothing. The stop is spelled with
+the start's own selector now.
+
+**The breath was reported as not there, and the floor is why.** At a floor of
+0.6 the sky moved by a third of a strength that is itself halved by the shade —
+about 14 of 255 at the brightest patch and six beside a picture — under a
+halftone. The reference goes nearly dark between swells. The floor is 0.2 now
+and the period 12s, and the lit ladders ride the same numbers, so what breathes
+is the dome and the wheel coming up out of the dark and going back, which is a
+thing a reader notices.
 
 **The foot is masked whatever the reach says.** `--moonlight-reach` is a share of
 the fold and the author may drag it past 1, where a radial light would meet the
@@ -915,6 +964,16 @@ about its own strength. On a portrait phone the light is nearly uniform across t
 top of the screen, because a reach of one and a half folds is wider than the
 page; that is the geometry and not a bug.
 
+**And the pictures, at the same window, after the shade, in 255ths.** The dome's
+face towards the moon is 21, 23, 27 at the top of the breath and 11 at the
+bottom, its ribs 47, 51, 58 against the reference's 40, 44, 48; its far side
+16, 19, 23, which is more form than the clip has and is the "more 3d" that was
+asked for; the tower's brick 15, 14, 14, warm against a cool light, which is the
+"slightly more colourful". The eye's mast is 37, 42, 50 over a sky of 25, 31, 41
+behind it, its lattice 61, 67, 77 at the brightest, where before the ladder it
+stood four levels over that sky and read as the sky gone whiter. The sky itself
+did not move: 25, 31, 41 beside the eye against the clip's 24, 31, 44.
+
 **Two things the Editor will do with these that are worth knowing.** The slider
 it draws for a percentage runs to four times the value, so `--moonlight-y` at 6%
 gets a slider to 24% and the number beside it is how the light is moved further
@@ -922,13 +981,26 @@ than that. And the shade stands over this as over everything below the type, so
 half of whatever `--moonlight-strength` asks for is what reaches the screen at the
 shade's shipped 0.5 — drag the strength while looking, not by arithmetic.
 
-**What is deliberately not here.** No treatment on the photographs, for the
-reason above. No light in the light theme — moonlight over paper is a blue wash
-over a white page, and the reference was a dark page. No Check: a light that
-fails to draw, a car that fails to darken, or a breath that stops are all things
-the author would see, and the only invisible half — the light theme moving — is
-held by the gate being a rule rather than a value, which is the same guarantee
-the shade has.
+**Two levers on the lit pictures, and which is which.** `--moonlight-plate` and
+`--moonlight-eye` are how much of a moonlit ladder lands, live, and they stop at
+1. What the light DOES to a picture — its colour, how bright the stone gets, how
+hard the ribs catch it, where the moon is as seen from that corner — is the
+Bake's, in the two Moonlight blocks of `design/bake/plate/recipe.json`, and moves
+nothing until `build-plate.py` has run for that picture. A picture that wants to
+be brighter than its Token at 1 can make it wants a brighter HIGHLIGHT or a higher
+EXPOSURE_TARGET in the file, which is the same division the ghosts have always
+had: the stylesheet places and dials, the file owns the grade.
+
+**What is deliberately not here.** No treatment on the carousel's photographs —
+the reference holds them still, and the first reading was right about that much.
+No light in the light theme — moonlight over paper is a blue wash over a white
+page, and the reference was a dark page; `corners.ts` fetches no moonlit rung
+there and the layers are `none`. No Check: a light that fails to draw, a picture
+that fails to come up, a car that fails to darken, or a breath that stops are all
+things the author would see, and the only invisible half — the light theme moving
+— is held by the gate being a rule rather than a value, which is the same
+guarantee the shade has. A moonlit rung that goes missing is the `assets` Check's
+already: it forgives a missing DARK rung and nothing else.
 
 ## A Section mounts when the browser is idle, and "approaching" is the deadline
 
@@ -1127,7 +1199,10 @@ second answer on black — again per theme. So `corners.ts` picks one file out o
 grid rather than off a list, and picks again when the theme or the display changes
 under it. A miss on a dark file is the ordinary untuned state and not an error:
 the generator writes no dark ladder while dark's grade matches light's, so there
-is one retry against the light rung of the same width.
+is one retry against the light rung of the same width. The plate and the eye carry
+a third ladder besides, `<stem>-moonlit-<width>.webp` — the Moonlight's light on
+the picture, fetched at the same rung in the dark theme only and with no fallback,
+because the generator writes all of it or none (the Moonlight section above).
 
 **In the dark theme the car is a silhouette and not a ghost.** `corners.css` blends
 it `multiply` into the Moonlight painted under it, at an opacity that is now the

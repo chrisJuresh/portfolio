@@ -139,6 +139,37 @@ be pure cost, so a picture's dark files exist exactly when its dark has been
 tuned to something of its own. The comparison is within one picture — the plate
 having tuned its dark says nothing about whether the car needs to.
 
+THE MOONLIT LADDER
+------------------
+The plate and the eye carry a THIRD ladder, `<stem>-moonlit-<width>.webp`, and
+it is not a print of the picture on a third paper. It is the Moonlight's light ON
+the picture: what src/kernel/corners.css screens over the dark page, breathing
+with the sky, so that as the light swells the dome and the wheel come up out of
+the dark as things standing in it. The dark ladder is still there under it as the
+ghost the page shows when the light is down; this one is only ever ADDED.
+
+Two things follow from "added", and both are in the recipe as values that look
+odd until read this way. Its SHADOW is black, because an unlit pixel contributes
+nothing — a screened layer's black is transparent — and there is no paper for the
+blacks to land on. And its HIGHLIGHT is the LIGHT'S colour rather than a
+near-white: it is where fully lit white stone lands, so it is the moon on
+limestone, a cool pale blue, and the sky glow in tokens/moonlight.css is the
+darker, more saturated end of the same light.
+
+The grade alone would still be a flat wash — a bluer, brighter print, which is
+what "just whiter" means when it is reported. What makes it a LIT picture is the
+Relight stage after it: the picture's own luma read as a height field, given a
+normal at two sizes, and lit from a stated direction with a Lambert body, a
+Blinn-Phong glint and a little wrap. relight() carries the reasoning; the numbers
+are the `<STEM>_MOONLIT.LIGHT`, `.RELIEF`, `.FORM`, `.SPECULAR` and `.WRAP`
+blocks in the recipe, beside the grade they light. The direction is per picture
+because the moon is in one place and the pictures are in two: it is high and to
+the right of the plate, and nearly overhead of the eye.
+
+The car has no moonlit ladder and must not get one. It hangs in the light as a
+silhouette — corners.css blends it MULTIPLY into the lit sky — and a picture lit
+from behind shows the light round it and none of it on its face.
+
 The one thing alpha is used for is the sky, and it is a matte rather than a crop.
 No sky is wanted, only the building. Cropping it out was tried first and cannot
 work: the dome is the tallest thing in the frame and the sky closes over it on
@@ -433,6 +464,21 @@ class Grade(NamedTuple):
     GRAIN_SIGMA: float                  # in output units, 0..1
 
 
+class Relight(NamedTuple):
+    """One light over one picture — the stage that makes the moonlit ladder a
+    LIT picture rather than a bluer print of the same one. See THE MOONLIT
+    LADDER in the docstring, and relight() for what each number does to a pixel.
+
+    Pairs are pairs because each is one decision: a light has a direction, a
+    bump has a strength and a size, a highlight has a strength and a spread.
+    """
+    LIGHT: tuple[float, float]          # azimuth, elevation — degrees; 0 is from the right, 90 from the top
+    RELIEF: tuple[float, float]         # strength, radius in source px — the fine bump: ribs, lattice, mouldings
+    FORM: tuple[float, float]           # strength, radius in source px — the coarse bump: the dome's own curve
+    SPECULAR: tuple[float, float]       # strength, shininess — the glint on faces squarely towards the moon
+    WRAP: float                         # how far the light reaches round a face turned away; 0 is Lambert
+
+
 # Two Grades per picture, named <STEM>_<THEME> — which is the name
 # design/legacy/plate-tuner.html prints over each block it asks you to paste, so the
 # block and the call it replaces are found by the same word. Each is spelled out in
@@ -508,12 +554,37 @@ def graded(name: str) -> Grade:
     )
 
 
+def relit(name: str) -> Relight:
+    """One picture's Relight, out of design/bake/plate/recipe.json — the block
+    beside its MOONLIT Grade, under the same name."""
+    at = lambda field: "%s.%s" % (name, field)
+    light = TUNING.words(at("LIGHT"), 2)
+    relief = TUNING.words(at("RELIEF"), 2)
+    form = TUNING.words(at("FORM"), 2)
+    specular = TUNING.words(at("SPECULAR"), 2)
+    return Relight(
+        LIGHT=(light[0], light[1]),
+        RELIEF=(relief[0], relief[1]),
+        FORM=(form[0], form[1]),
+        SPECULAR=(specular[0], specular[1]),
+        WRAP=TUNING.num(at("WRAP")),
+    )
+
+
 # Light first in each: it is the page's default, and out_path() spells it
 # unsuffixed. Hung off the Picture below rather than held in a second dict keyed
 # by stem, so there is no pair of tables to drift apart.
-PLATE_GRADES = {"light": graded("PLATE_LIGHT"), "dark": graded("PLATE_DARK")}
+#
+# THE THIRD KEY IS NOT A THEME. `moonlit` is the ladder the Kernel screens over
+# the dark page as the Moonlight's own light on the picture — see THE MOONLIT
+# LADDER — and it hangs off the same dict because out_path() and main() treat a
+# key as "a ladder with this suffix", which is exactly what it is. The car has
+# none: it stands AGAINST the light as a silhouette and is never lit by it.
+PLATE_GRADES = {"light": graded("PLATE_LIGHT"), "dark": graded("PLATE_DARK"),
+                "moonlit": graded("PLATE_MOONLIT")}
 CAR_GRADES = {"light": graded("CAR_LIGHT"), "dark": graded("CAR_DARK")}
-EYE_GRADES = {"light": graded("EYE_LIGHT"), "dark": graded("EYE_DARK")}
+EYE_GRADES = {"light": graded("EYE_LIGHT"), "dark": graded("EYE_DARK"),
+              "moonlit": graded("EYE_MOONLIT")}
 
 GRAIN_SEED = 20250615      # the frame's own date; any constant would do
 # One seed for every grade, and not a field of Grade: the grain is the frame's
@@ -624,6 +695,9 @@ class Picture:
     corner: str
     mirror: bool
     grades: dict[str, Grade]
+    # The light over a ladder, keyed like `grades` — a key here names a ladder
+    # that is graded and THEN lit. Empty for a picture nothing lights.
+    relight: dict[str, Relight]
 
     @property
     def neutral_path(self) -> Path:
@@ -643,11 +717,11 @@ class Picture:
 
 PICTURES = {
     "plate": Picture(stem="plate", corner="bottom-left",  mirror=True,
-                     grades=PLATE_GRADES),
+                     grades=PLATE_GRADES, relight={"moonlit": relit("PLATE_MOONLIT")}),
     "car":   Picture(stem="car",   corner="top-right",    mirror=False,
-                     grades=CAR_GRADES),
+                     grades=CAR_GRADES, relight={}),
     "eye":   Picture(stem="eye",   corner="bottom-right", mirror=False,
-                     grades=EYE_GRADES),
+                     grades=EYE_GRADES, relight={"moonlit": relit("EYE_MOONLIT")}),
 }
 DEFAULT_PICTURE = "plate"
 
@@ -862,6 +936,94 @@ def grade(lin: np.ndarray, keep: np.ndarray, g: Grade) -> np.ndarray:
     return np.clip(out, 0.0, 1.0)
 
 
+def relight(out: np.ndarray, alpha: np.ndarray, r: Relight,
+            light_colour: tuple[int, int, int]) -> np.ndarray:
+    """The moonlit ladder's own stage: the graded picture, lit by one light.
+
+    sRGB-encoded 0..1 in — a MOONLIT Grade's output, black where the picture is
+    black and the light's colour where it is white — and sRGB-encoded 0..1 out.
+    Runs before bleed(), so the sky under the matte is still the picture's own
+    and the edge gets painted over afterwards like every other ladder's.
+
+    WHAT IT IS. A bump map, lit. The picture's luma is read as a height field —
+    a lit rib stands proud of the lead between it, a bright capsule proud of the
+    lattice — and the slope of that field at two sizes gives every pixel a
+    normal: RELIEF is the fine one, the ribs and the mouldings, and FORM the
+    coarse one, the whole curve of the dome. The normal is then lit from LIGHT
+    the way a renderer lights a surface: Lambert for the body of the light and
+    Blinn-Phong for the glint, with WRAP letting the light reach a little way
+    round the faces turned from it so a bump does not fall into a black pit on
+    its far side. That is the whole of it, and it is what makes the ladder read
+    as a thing STANDING IN the light rather than a print of one bathed in it — a
+    flat brightening keeps every relationship in the picture and only moves the
+    level, which is the "just whiter" the Kernel's Moonlight was reported as.
+
+    WHY LUMA IS THE HEIGHT. There is no depth in a photograph, and shape from a
+    single frame is a research problem. What a frame has is its own shading —
+    the day's light already told the sensor which faces stand out — and for stone
+    and steel under a bright sky that shading is a fair proxy for relief at the
+    fine scale and a rough one at the coarse. Rough is enough: the moon is a
+    second light over shading the first has already drawn, so a wrong normal is
+    a highlight in an odd place and not a hole in a building. Which is also why
+    the height is taken from the GRADED picture and not the develop: the tone
+    curve has already put the stone where the page wants it, so the ridges the
+    light finds are the ridges the reader sees.
+
+    THE SKY IS BLED INTO THE HEIGHT FIRST. Under the matte the sky is graded to
+    the light's own colour — it is the brightest thing in the frame — so the
+    roofline is a cliff in the height field, and a cliff is a normal turned hard
+    towards or away from the moon along the whole silhouette: a rim of light down
+    one side of the dome and a rim of dark down the other. Painting the nearest
+    kept pixel over the sky before the slope is taken makes the height continuous
+    at the edge, and the silhouette is then lit like the stone beside it.
+
+    LINEAR LIGHT. The multiply and the add are done with the transfer curve
+    taken off and put back, because a Lambert falloff in gamma-encoded numbers
+    goes muddy in exactly the half-lit faces this exists to draw. The glint is
+    the light's colour and not the stone's — a specular is a reflection of the
+    lamp — weighted a little towards the stone's tone so a glint does not land
+    on a face the day had in shadow.
+    """
+    h = out @ LUMA
+    h = bleed(h, alpha < 0.5)
+    peak = float(h[alpha > 0.5].max()) if (alpha > 0.5).any() else 1.0
+    h = h / max(peak, 1e-6)
+
+    az, el = np.radians(r.LIGHT[0]), np.radians(r.LIGHT[1])
+    # Image y runs DOWN, so a light from the top has a negative y here.
+    light = np.array([np.cos(el) * np.cos(az), -np.cos(el) * np.sin(az), np.sin(el)],
+                     dtype=np.float32)
+    light /= np.linalg.norm(light)
+
+    nx = np.zeros_like(h)
+    ny = np.zeros_like(h)
+    for strength, radius in (r.RELIEF, r.FORM):
+        if strength == 0.0 or radius <= 0.0:
+            continue
+        smooth = ndimage.gaussian_filter(h, radius)
+        dy, dx = np.gradient(smooth)
+        # Slope over one radius rather than over one pixel, so the strength means
+        # the same thing at both sizes and at any rung.
+        nx -= strength * dx * radius
+        ny -= strength * dy * radius
+    normal = np.stack([nx, ny, np.ones_like(h)], axis=-1)
+    normal /= np.linalg.norm(normal, axis=-1, keepdims=True)
+
+    facing = normal @ light
+    diffuse = np.clip((facing + r.WRAP) / (1.0 + r.WRAP), 0.0, 1.0)
+
+    towards_eye = np.array([0.0, 0.0, 1.0], dtype=np.float32)
+    half = light + towards_eye
+    half /= np.linalg.norm(half)
+    strength, shininess = r.SPECULAR
+    glint = strength * np.clip(normal @ half, 0.0, 1.0) ** shininess
+
+    lamp = srgb_decode(np.array(light_colour, dtype=np.float32) / 255.0)
+    lin = srgb_decode(out)
+    lit = lin * diffuse[..., None] + lamp * (glint * (0.25 + 0.75 * h))[..., None]
+    return srgb_encode(lit)
+
+
 def grade_json(g: Grade) -> dict:
     """One Grade as the tuner wants to read it: the colours as hex, everything
     else as it stands. Field order is the pipeline's order, which _asdict keeps."""
@@ -911,6 +1073,11 @@ def write_neutral(pic: Picture, lin: np.ndarray, alpha_f: np.ndarray, computed: 
         # the whole of per-picture on this end. The tuner files each theme's numbers
         # under its own key and shows you the one you are looking at.
         "grade": {theme: grade_json(g) for theme, g in pic.grades.items()},
+        # The light over the moonlit ladder, beside the grade it lights. The tuner
+        # reads `light` and `dark` out of `grade` and nothing out of this; it is
+        # here so the file describes the picture on the page and not two-thirds
+        # of it.
+        "relight": {theme: r._asdict() for theme, r in pic.relight.items()},
         "matte": {
             "SKY_LUMA_MIN": SKY_LUMA_MIN,
             "SKY_LUMA_LOW": SKY_LUMA_LOW,
@@ -987,6 +1154,11 @@ def main() -> int:
             continue
 
         graded = grade(lin, keep, g)
+        # The moonlit ladder is graded and THEN lit — see relight(). Before the
+        # bleed, so the light finds the picture's own edge and the paint-over
+        # below then carries the lit stone into the sky like any other ladder.
+        if theme in pic.relight:
+            graded = relight(graded, alpha_f, pic.relight[theme], g.HIGHLIGHT)
         # Everything short of fully opaque, not just the clear sky: a feathered
         # pixel carries the sky's colour in proportion to how transparent it is,
         # and that is exactly the mix that becomes a fringe.
