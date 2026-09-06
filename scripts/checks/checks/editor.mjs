@@ -447,8 +447,16 @@ export const check = {
               const name = slice.dataset.eaterMapEdge ?? '(unnamed)';
               (edges[name] ??= []).push(slice.style.background);
             }
+            // ...and the boxes the slices are grouped into, which is the third
+            // thing a redraw builds and the third thing its clear has to take back
+            // off. A stack left standing is a whole rim's worth of paint under the
+            // new one at the same alpha, so the rim comes out darker on every drag
+            // — the same shape of leak as the two above, and invisible for the same
+            // reason.
             const built = [
-              ...document.querySelectorAll('.eater-map__slice, .eater-map__glass'),
+              ...document.querySelectorAll(
+                '.eater-map__slice, .eater-map__glass, .eater-map__stack',
+              ),
             ].map((one) => `${one.className}|${one.getAttribute('style') ?? ''}`);
             // THE TWO WAYS OF HAVING NO MARKER ARE NAMED APART. `section?.dataset.x`
             // is undefined both for a Section that is not on the page and for one

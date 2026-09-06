@@ -932,7 +932,13 @@ async function atWindow(browser, origin, viewport) {
            * edge square is the failure #195 names — it looks almost right.
            */
           const outline = {};
-          for (const one of card.querySelectorAll(':scope > .eater-map__slice')) {
+          // A CARD'S SLICES ARE A GRANDCHILD AND NOT A CHILD, because a Card's rim
+          // is glass: `edge.ts` puts each stack in a box of its own so that the
+          // whole of it composites at one alpha instead of once per slice. Asked
+          // as `:scope >` this read finds nothing, every outline comes back
+          // undefined, and the two assertions below pass on a Card with no edge at
+          // all.
+          for (const one of card.querySelectorAll('.eater-map__slice')) {
             const of = one.getAttribute('data-eater-map-edge');
             if (of === null) continue;
             const r = corners(getComputedStyle(one));
@@ -1005,8 +1011,30 @@ async function atWindow(browser, origin, viewport) {
             // because the surviving surface looks perfect.
             edged: [
               ...new Set(
-                [...card.querySelectorAll(':scope > .eater-map__slice')].map((one) =>
+                [...card.querySelectorAll('.eater-map__slice')].map((one) =>
                   one.getAttribute('data-eater-map-edge'),
+                ),
+              ),
+            ],
+            // WHAT THE RIM IS DRAWN AT, per stack, and whether the paint carries a
+            // second opinion about it. A Card's edge is glass and the transparency
+            // belongs to the STACK: an alpha in the colour as well would be
+            // composited once per slice on top of it, which draws a rim fading
+            // from solid at the face to gone at the silhouette in as many steps as
+            // there are slices. The Token is the author's to drag; the invariant
+            // is that there is one of them.
+            stacked: [...card.querySelectorAll('.eater-map__stack')].map((one) => ({
+              of: one.getAttribute('data-eater-map-edge'),
+              alpha: Number.parseFloat(getComputedStyle(one).opacity),
+              slices: one.querySelectorAll('.eater-map__slice').length,
+            })),
+            // The alpha the PAINT carries, which has to be none of it. `color` is
+            // where `edge.ts` puts the Token and every stop of every gradient mixes
+            // from it, so one reading answers for the whole stack.
+            painted: [
+              ...new Set(
+                [...card.querySelectorAll('.eater-map__slice')].map(
+                  (one) => colour(getComputedStyle(one).color)?.alpha ?? null,
                 ),
               ),
             ],
@@ -1815,6 +1843,46 @@ async function atWindow(browser, origin, viewport) {
               'per surface deletes the one built before it',
           );
         }
+      }
+      // ---- and that edge is ONE MATERIAL AT ONE ALPHA -------------------------
+      // A Card's rim is glass, which is a pane seen end on, and the transparency
+      // belongs to the STACK: `edge.ts` puts every slice into a box of its own and
+      // gives that box the `opacity`, so the two dozen filled boxes under a pixel
+      // are rendered once and composited once. An alpha in the PAINT is composited
+      // once per slice instead — `1 - (1 - a)^n`, with `n` falling from most of the
+      // stack where the rim meets the face to one at the silhouette — so the rim
+      // fades from nearly solid to nearly gone across its own width, in as many
+      // steps as there are slices. That is a smear with a direction of its own laid
+      // over the direction the light gave the edge, and at four pixels wide it
+      // reads as a slightly wrong rim rather than as a broken one.
+      //
+      // NEITHER HALF ASSERTS A NUMBER. How see-through the rim is is the author's,
+      // through `--eater-map-card-edge-alpha`, and a rim dragged back to 1 passes
+      // both of these. What they assert is that there is ONE place that number
+      // lives: a stack per surface to carry it, and no second opinion in the
+      // colour every gradient stop is mixed from.
+      for (const surface of card.surfaces) {
+        const stack = card.stacked.find((one) => one.of === surface.name);
+        if (!stack) {
+          failures.push(
+            `${where}: the ${surface.name}'s edge is not in a stack of its own — the Cards' rim is ` +
+              'glass, and its alpha belongs to a box holding the whole stack. Loose slices composite ' +
+              "one film each and the rim fades across its own width instead of the map showing through it",
+          );
+        } else if (!(stack.slices > 0)) {
+          failures.push(
+            `${where}: the ${surface.name}'s stack holds no slices — the box that carries the rim's ` +
+              'alpha is there and empty, which draws no edge at all',
+          );
+        }
+      }
+      const painted = card.painted.filter((one) => one !== 1);
+      if (painted.length > 0) {
+        failures.push(
+          `${where}: a slice is painted from a colour at alpha ${painted.join(', ')} — the rim's ` +
+            'transparency is the stack\'s, and a second one in --eater-map-card-edge is composited ' +
+            'once per slice on top of it. Move it to --eater-map-card-edge-alpha',
+        );
       }
     }
 
@@ -4127,14 +4195,17 @@ async function nothingWatchesTheTokens(browser, origin) {
     const seen = await page.evaluate(async (mutant) => {
       const section = document.querySelector('.eater-map');
       if (!section) return { missing: 'the Section is not on the page' };
-      // EVERY ELEMENT A REDRAW BUILDS, which is the slices AND the blurred copy of
-      // the map behind each glass surface. `mountGlass` clears the two on
-      // consecutive lines, so counting only the slices leaves a regression in the
-      // second clear doubling elements per drag with nothing to fail.
+      // EVERY ELEMENT A REDRAW BUILDS, which is the slices, the box each stack of
+      // them is grouped into to carry the rim's alpha, and the blurred copy of the
+      // map behind each glass surface. `mountGlass` clears them on consecutive
+      // lines, so counting only the slices leaves a regression in either of the
+      // others doubling elements per drag with nothing to fail.
       const drawn = () =>
-        [...document.querySelectorAll('.eater-map__slice, .eater-map__glass')].map(
-          (one) => `${one.className} ${one.style.background}`,
-        );
+        [
+          ...document.querySelectorAll(
+            '.eater-map__slice, .eater-map__glass, .eater-map__stack',
+          ),
+        ].map((one) => `${one.className} ${one.style.background}`);
       const azimuth = () => getComputedStyle(section).getPropertyValue('--eater-map-light-azimuth').trim();
 
       const before = drawn();
@@ -4828,7 +4899,8 @@ export const check = {
     'PROJECTS stands in the Gallery’s own box with the serif title sized off its ink, the copy at the ' +
     'foot and the Points to the right; the Cards lie on the Slab at its own scale, come off it and go ' +
     'back, go back one at a time under a reader’s pointer without flickering, are joined to their ' +
-    'numbers by rules that end in a lit dot, are only a picture, and lie flat and full-bleed below the band; ' +
+    'numbers by rules that end in a lit dot, carry a rim that is one pane of glass rather than a stack of ' +
+    'films, are only a picture, and lie flat and full-bleed below the band; ' +
     'and the grid behind all of it is the four Points’ own rules and the three blocks’ own left edges rather ' +
     'than any set of fractions',
 

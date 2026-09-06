@@ -376,6 +376,14 @@ export default function mountGlass(root: HTMLElement): void {
           // the boost and the app's own scale are one name and not three.
           flatten: 'var(--eater-map-card-total)',
           colour: 'var(--eater-map-card-edge)',
+          // AND THE EDGE IS GLASS TOO, which is the one thing about a Card's rim
+          // that the Slab's does not want. A surface is a translucent pane and its
+          // edge is the same pane seen end on, so an opaque rim reads as a bezel
+          // round a window rather than as the shoulder of one solid — and it hides
+          // the map at exactly the place a reader is being shown that the piece is
+          // lifted off it. `edge.ts`'s `Solid.alpha` is why this is a Token of the
+          // stack rather than an alpha channel on the colour above.
+          alpha: 'var(--eater-map-card-edge-alpha)',
           surface: surface.name,
         });
       }

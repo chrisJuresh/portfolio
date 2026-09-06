@@ -591,8 +591,33 @@
   /* What a Card's edge is made of. Lighter than the Slab's, because a pane of
      glass on a map is not the same material as the map's own body, and it is a
      fact about the object rather than about the page — so it does not turn with
-     the theme, exactly as --eater-map-slab-edge does not. */
-  --eater-map-card-edge: rgba(198, 196, 192, 0.92);
+     the theme, exactly as --eater-map-slab-edge does not.
+
+     AND IT IS OPAQUE, WHICH IS A CONSTRAINT AND NOT A CHOICE. The alpha below is
+     the rim's transparency and this is only its colour; putting a second one here
+     would be composited once per slice on top of the one composited once for the
+     whole stack, which is the smear edge.ts's `Solid.alpha` exists to prevent. If
+     the rim wants to be more or less see-through, that is the number under this
+     one. */
+  --eater-map-card-edge: rgb(198, 196, 192);
+
+  /* HOW MUCH OF THE MAP COMES THROUGH THE RIM — the Cards' edge as glass rather
+     than as a bezel round glass.
+
+     A SURFACE IS A TRANSLUCENT PANE AND ITS EDGE IS THE SAME PANE SEEN END ON, so
+     an opaque rim is the one part of a Card made of something the rest of it is
+     not: it reads as a frame stuck round a window, and it hides the map at exactly
+     the place the drawing is showing a reader that the piece has been lifted off
+     it. At this the roads and the pins carry on through the shoulder and the piece
+     reads as one solid.
+
+     IT BELONGS TO THE STACK AND NOT TO THE COLOUR, which is the whole reason it is
+     its own Token — edge.ts's `Solid.alpha` carries the arithmetic. Dragging it to
+     1 gives back the solid rim and costs nothing but the render surface; below
+     about a fifth the pieces stop having thickness at all where they overhang the
+     Slab onto the page's own ground, which is the floor worth knowing about
+     rather than a rule. */
+  --eater-map-card-edge-alpha: 0.5;
 
   /* How long the Lift takes end to end, and therefore how long a turn back
      part-way through takes to undo: `timeline.ts` spends this in proportion to

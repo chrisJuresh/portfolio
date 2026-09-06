@@ -1871,6 +1871,66 @@ page and re-reading all nine resolved properties off every one of them gave **0 
 **One thing to know before reading these numbers as a ceiling.** #182 may take this
 stage out entirely, and with it these 144 elements and this whole cost.
 
+### A Card's edge is glass, and the transparency belongs to the STACK
+
+A Card is a translucent pane with a heavily blurred map behind it, and until this
+its EDGE was `rgba(198, 196, 192, 0.92)` — a light, near-solid rim, which is the
+one part of a Card made of something the rest of it is not. It reads as a bezel
+stuck round a window rather than as the shoulder of one solid, and it hides the map
+at exactly the place the drawing is telling a reader the piece has been lifted off
+it. So the rim is see-through now, and the map's roads and pins carry on through
+it.
+
+**The whole of the difficulty is that a slice stack cannot carry transparency in
+its paint.** A slice is a FILLED BOX, not a ring, and a stack is twenty-four of
+them overlapping by as much as the object is deep — so an alpha in the colour is
+composited once per slice: `1 - (1 - a)^n`, where `n` is most of the stack where
+the rim meets the face and one at the silhouette. A translucent colour therefore
+draws a rim that is nearly solid against the face and nearly gone at the outline,
+in as many visible steps as there are slices, and the smear has a direction of its
+own laid over the direction the light already gave the edge. Which is also why the
+old `0.92` did almost nothing: at `n` of twenty-four it resolves to 1 everywhere
+but the outermost band.
+
+**So it is `opacity` on a box holding the whole stack instead.** `edge.ts`'s
+`Solid.alpha` is the field, `clearEdge` takes the box off with the slices, and the
+group is rendered once and composited once — one material, at one alpha,
+everywhere. The Slab does not ask for one: a phone is not see-through, and a render
+surface to say so would be a cost with nothing to buy.
+
+**Three things about it are easy to get wrong, and two of them are silent.**
+
+`--eater-map-card-edge` HAS TO STAY OPAQUE. It is the colour and
+`--eater-map-card-edge-alpha` is the transparency; an alpha in both is the
+per-slice compounding put straight back on top of the group's. The `eater-map`
+Check reads the alpha off every slice's computed `color` and fails on anything but
+1 — which is a relationship and not a look: the author may drag the rim to any
+transparency they like, including back to solid, through the Token that exists for
+it.
+
+`opacity` IS A RENDER SURFACE, which is the question #207 makes worth asking of any
+new grouping property on this plane — a `preserve-3d` Card was rasterised square
+and resampled, and that is what cost the app's own text its sharpness. Nothing
+inside this box is text: it holds the slices, and the face is its SIBLING. Measured
+by wrapping the stacks on the live page and leaving the alpha at 1: against the
+shipped drawing, 5,043 of 84,896 pixels over the search Card differ and the worst by
+12 of 255 — and all of it is the `0.92` the old colour let through at the one band
+where a single slice covers, which is `0.08 x (200 - 40)` to the level. The
+grouping itself moves nothing.
+
+`resolved()` PARENTHESISES WHAT IT SUBSTITUTES, so the declaration is
+`opacity: calc(...)` and not `opacity: ...`. Every other length it feeds is
+composed into a `calc()` by its caller; a bare `opacity: (0.5)` is not a
+declaration, and CSS drops an invalid one rather than refusing it. The rim comes
+back at full alpha, the page looks exactly as it did before the change, and nothing
+says so. That is one build of this, found by looking.
+
+**0.5 is where it was left, and the floor is worth knowing.** Below about a fifth
+the pieces stop having any thickness where they overhang the Slab onto the page's
+own ground — a Card against black has nothing behind its rim for the rim to be
+transparent to — so the drawing goes flat at the one place a reader is most likely
+to be looking at its edge.
+
 ### The generated geometry follows a Token that moves — dragged, or answered by a media query (#196)
 
 `redraw.ts`, and it started at forty lines because almost nothing was missing.
