@@ -215,6 +215,17 @@ import { DESK, open, settle } from '../lib/page.mjs';
  * of the drawing, and the writing to its left. Each of those is a `grid-area` that
  * a Variant may move and the shipped page may not.
  *
+ * AND THE COLUMN'S THREE WORDS STAND ON ONE LINE, WHICH ITS THREE BOXES ALREADY
+ * DID. A glyph is drawn its own LEFT SIDE BEARING inside the box that carries it
+ * and that bearing is a share of a font size, so three blocks placed on one
+ * vertical drew the masthead 7.6px off it, the serif title 3px off it and the copy
+ * under 1px off it — and a reader saw the copy sitting ON the rule. The ink is
+ * SCANNED rather than measured for the same reason the cap is scaled from a
+ * reference: `actualBoundingBoxLeft` is quantised to a sixty-fourth of the em,
+ * which is two pixels at the masthead's size and a quarter of the distance being
+ * asserted. Read against PROJECTS and not against the vertical, because PROJECTS
+ * is the block in this column that cannot move.
+ *
  * AND EVERY RULE ENDS IN A LIT DOT ON ITS PART, checked at each of the three
  * moments beside the rule it belongs to. Three ways for a dot to be wrong and each
  * fails separately: not drawn at all — an SVG circle with no centre sits at the
@@ -590,6 +601,17 @@ const GALLERY = 1;
  *  arithmetic rather than the rasteriser's grid: measured at four windows across
  *  the band, both ratios came back exact to three figures. */
 const RATIO = 0.02;
+
+/** How far the left column's three words may stand from each other's left edge,
+ *  in px, measured off the ink rather than off the boxes that carry it.
+ *
+ *  A PIXEL, FOR THE SAME REASON `GALLERY` IS ONE: the claim is an equality and
+ *  the tolerance is the sub-pixel rounding under it. Measured, the three agree to
+ *  0.01px at four windows across the band. Taking the compensation off leaves the
+ *  serif title 4.6px inside PROJECTS' line and the copy 6.7px inside it at
+ *  1600x900, and 3.2px and 3.1px at the narrow corner — so the mutation fails
+ *  everywhere the assertion runs. */
+const WORDS = 1;
 
 /** How far the copy's foot may sit from the foot of the column it is at the
  *  foot OF, in px. The two are the same grid area, one end-aligned; this is
@@ -1258,6 +1280,65 @@ async function atWindow(browser, origin, viewport) {
         points: block('.eater-map__points'),
       };
 
+      // ---- and the three of them stand their WORDS on one line ---------------
+      // A BOX IS NOT A WORD. All three blocks in the left column are placed on the
+      // grid's first vertical, which `columns` above already asserts — but a glyph
+      // is drawn its own LEFT SIDE BEARING inside the box that carries it, and
+      // that bearing is a share of a font size the three do not share. Three boxes
+      // on one line drew three words on three: the masthead clearing the vertical
+      // by 7.6px at 1600x900, the serif title by 3px and the copy by under one,
+      // which read as the copy sitting ON the rule. So this reads where the INK
+      // falls and `title.ts` is what has to have made them agree.
+      //
+      // SCANNED AND NOT MEASURED, for the reason `title.ts` gives at length:
+      // `actualBoundingBoxLeft` is quantised to a sixty-fourth of the em, which is
+      // two whole pixels at the masthead's size and a quarter of the answer.
+      const scan = (() => {
+        const REFERENCE = 1000;
+        const ORIGIN = REFERENCE / 4;
+        const REACH = REFERENCE / 4;
+        const RISE = REFERENCE * 1.1;
+        const FALL = REFERENCE * 0.4;
+        const canvas = document.createElement('canvas');
+        canvas.width = ORIGIN + REACH;
+        canvas.height = RISE + FALL;
+        const pen = canvas.getContext('2d', { willReadFrequently: true });
+        return (element) => {
+          if (!element || !pen) return Number.NaN;
+          const style = getComputedStyle(element);
+          const said = (element.textContent ?? '').trim();
+          const glyph = style.textTransform === 'uppercase' ? said.toUpperCase()[0] : said[0];
+          if (!glyph || glyph.trim() === '') return Number.NaN;
+          pen.clearRect(0, 0, canvas.width, canvas.height);
+          pen.font = `${style.fontStyle} ${style.fontWeight} ${REFERENCE}px ${style.fontFamily}`;
+          pen.textBaseline = 'alphabetic';
+          pen.fillStyle = '#000';
+          pen.fillText(glyph, ORIGIN, RISE);
+          const pixels = pen.getImageData(ORIGIN, 0, REACH, canvas.height).data;
+          for (let x = 0; x < REACH; x += 1) {
+            for (let y = 0; y < canvas.height; y += 1) {
+              if (pixels[(y * REACH + x) * 4 + 3] > 8) {
+                // The box's own content edge plus the bearing at the drawn size.
+                // `getBoundingClientRect` is the BORDER box, so the padding this
+                // whole assertion is about has to be added back by hand.
+                const pad = Number.parseFloat(style.paddingInlineStart) || 0;
+                return round(
+                  element.getBoundingClientRect().left +
+                    pad +
+                    (x / REFERENCE) * Number.parseFloat(style.fontSize),
+                );
+              }
+            }
+          }
+          return Number.NaN;
+        };
+      })();
+      const words = {
+        masthead: scan(eaterMast),
+        title: scan(titleEl),
+        copy: scan(document.querySelector('[data-eater-map-copy] p')),
+      };
+
       const was = { progress: lift.progress(), scroll: window.scrollY };
       kernel.hold?.();
       try {
@@ -1354,6 +1435,7 @@ async function atWindow(browser, origin, viewport) {
           masthead,
           title,
           columns,
+          words,
           overlay: overlay
             ? {
                 spoken: overlay.getAttribute('aria-hidden') !== 'true',
@@ -1518,6 +1600,36 @@ async function atWindow(browser, origin, viewport) {
               "grotesque's cap is not a serif's",
           );
         }
+      }
+    }
+
+    // ---- and the three of them stand their words on one line -----------------
+    // The blocks are placed on the grid's first vertical below; this is the claim
+    // that the WORDS are too. It is an equality between three readings off the
+    // page and not a distance from the rule, because PROJECTS is the block in this
+    // column that cannot move — it stands in the Gallery's own box, which the
+    // assertion above is about — so where its ink falls is the line, and the other
+    // two are measured against it rather than against a number.
+    for (const [what, ink] of [
+      ['the serif title', seen.words.title],
+      ['the copy', seen.words.copy],
+    ]) {
+      if (!Number.isFinite(seen.words.masthead) || !Number.isFinite(ink)) {
+        failures.push(
+          `${where}: ${what}'s left edge reads ${ink} against PROJECTS' ${seen.words.masthead} — the ink ` +
+            'could not be read, so nothing about the column standing on one line was asserted',
+        );
+        continue;
+      }
+      const inside = ink - seen.words.masthead;
+      if (Math.abs(inside) > WORDS) {
+        failures.push(
+          `${where}: ${what} starts at ${ink}px where PROJECTS starts at ${seen.words.masthead}px, ` +
+            `${inside.toFixed(2)}px ${inside > 0 ? 'right of' : 'left of'} it. All three blocks in this ` +
+            'column stand their boxes on the same vertical, so a face whose side bearing is not the ' +
+            "masthead's has to be given the difference back, or the reader sees the column's words on " +
+            'three edges',
+        );
       }
     }
 

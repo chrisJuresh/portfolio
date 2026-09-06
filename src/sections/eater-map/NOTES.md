@@ -2401,6 +2401,58 @@ module removes both properties rather than leaving them standing, because a wind
 dragged across the boundary would otherwise carry the band's two lengths into the
 collapse and hand the scriptless reader a different column from everybody else.
 
+## The column's three words stand on one line, and its three boxes always did
+
+**A box is not a word.** The masthead, the serif title and the copy are all placed
+on the grid's first vertical — one `grid-area` for the head and the copy, the same
+left edge for both, and `--eater-map-side` is that edge (#201). What the reader
+sees, though, is ink, and a glyph is drawn its own LEFT SIDE BEARING inside the box
+that carries it. That bearing is a share of the FONT SIZE, and these three blocks
+do not share one:
+
+| block | size at 1600x900 | bearing | clear of the vertical |
+| --- | --- | --- | --- |
+| PROJECTS | 127.0px | 0.060em | 7.62px |
+| the serif title | 75.2px | 0.040em | 3.01px |
+| the copy | 15.1px | 0.060em | 0.91px |
+
+So three boxes on one line drew three words on three, and at the copy's size the
+line lands under one pixel from the first letter — which reads as the paragraph
+sitting ON the rule while the masthead stands off it. That is what was reported.
+
+**PROJECTS is the block that cannot move, so it is the line.** It stands in the
+Gallery's own box and the `eater-map` Check compares the two at their resting
+places; moving it across would be moving the word the page turn is meant not to
+move. So the other two are given `the masthead's bearing less their own` as a
+padding, and the three inks agree to 0.01px at four windows across the band.
+
+**`title.ts` writes it, for the same reason it writes the size and the drop**: a
+side bearing is a fact about ink, and the only way to read ink is to measure it.
+The one difference is HOW. `actualBoundingBoxLeft` is the obvious call and it is
+quantised to a sixty-fourth of the em — 2px at the masthead's size, a quarter of
+the answer, and the reason the first attempt at this compensated PROJECTS by 6px
+where it wanted 7.6. `capRatio` gets away with the same call because a cap is 0.7
+of an em and a sixty-fourth of that is a rounding. So the glyph is drawn once at
+1000px on a scratch canvas and its first inked COLUMN is found by reading the
+pixels: exact, cached per face and glyph, and three reads in the life of the
+document however many resizes follow.
+
+**It is spent on the WORDS and not on the boxes**, which is the rule
+`--eater-map-point-inset` is already under at the other end of the composition:
+the copy's padding is on its paragraphs, so the rule across its top still starts on
+the vertical and only the writing stands off it. A padding on `.eater-map__copy`
+would take that border with it and shorten the one line in this column that is
+meant to be the column's whole width.
+
+**Floored at zero, which is a composition decision.** A face whose bearing is wider
+than the masthead's would want a negative padding — ink hanging out over the grid's
+own vertical. None of the three does; the day one does, the box's edge is the
+honest answer rather than an overhang nothing else on the page makes.
+
+**And below the band it writes nothing, for a different reason from the other
+two.** There are no verticals out there and everything stands at one margin, so
+there is no line for a word to be short of.
+
 ## Which of the Kernel's lengths this Section reads
 
 **This Section JOINED the landing measure in #191, and that is a change of

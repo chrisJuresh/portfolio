@@ -127,7 +127,7 @@ import './tokens.css';
         ))}
       </p>
     </header>
-    <div class="eater-map__copy">
+    <div class="eater-map__copy" data-eater-map-copy>
       {content.copy.map((paragraph) => (
         <p>{paragraph}</p>
       ))}
@@ -652,6 +652,14 @@ import './tokens.css';
         )
       )
       0 0;
+    /* ITS INK ON PROJECTS' LINE AND NOT ITS BOX ON PROJECTS' BOX. All three
+       blocks in this column stand their boxes on the grid's first vertical, but a
+       glyph is drawn its own LEFT SIDE BEARING inside the box that carries it —
+       so at rest the masthead cleared the line by about 7.6px and this title by
+       3px, and the reader saw a title further left than the word over it.
+       `title.ts` writes the difference; a reader with no script gets the column
+       as it was, which is a composition and not a hole. */
+    padding-inline-start: var(--eater-map-title-bearing, 0px);
     font-family: var(--face-year);
     font-size: var(
       --eater-map-title-size,
@@ -697,8 +705,17 @@ import './tokens.css';
     color: var(--ink-soft);
   }
 
+  /* ON THE PARAGRAPHS AND NOT ON THE BOX, which is the same rule the Points are
+     under at the other end of the composition: the seam a reader sees — there the
+     rule over a row, here the rule over the copy — still starts on the vertical,
+     and only the writing stands off it. A padding on `.eater-map__copy` would
+     take the border with it and shorten the one line in this column that is meant
+     to be the column's whole width. At 15px this face's ink clears the vertical
+     by under a pixel, which is why the copy is the block that read as sitting ON
+     the line rather than beside it. */
   .eater-map__copy p {
     margin: 0;
+    padding-inline-start: var(--eater-map-copy-bearing, 0px);
   }
 
   .eater-map__copy p + p {
