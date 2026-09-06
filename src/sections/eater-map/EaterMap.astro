@@ -20,7 +20,6 @@
 import { CARDS } from './cards';
 import { content } from './content';
 import { markFor } from './icons';
-import { SLAB_PART } from './leaders';
 import { SLAB } from './slab';
 // The Eater app's own stylesheet, vendored with the Cards (#174). A plain CSS
 // file, so Astro does not scope it — every selector in it begins with the
@@ -38,6 +37,11 @@ import './assets/cards/results.css';
 // selector cannot reach markup that arrived through `set:html`. After the export
 // on purpose, though it does not depend on the order — the file says why.
 import './cards-shape.css';
+// And where a leader line ends on one of those surfaces, which is unscoped for
+// the same reason and is a second file because it is a different claim: that one
+// is what this Section says about a surface's SHAPE, this is where the drawing's
+// own annotation attaches to it. cards-anchor.css says the rest.
+import './cards-anchor.css';
 import './tokens.css';
 // variants.css is deliberately NOT imported: an unselected Variant has to cost
 // the shipped page nothing, so the sheet is not part of the build at all and the
@@ -193,8 +197,13 @@ import './tokens.css';
                 <div class="eater-map__face">
                   {/* `display: contents`, so the wrapper this Card's own markup has
                       to arrive in — set:html replaces an element's children, and
-                      the backdrop beside it would be one — generates no box at all
-                      and the Card is laid out exactly as it was without it. */}
+                      the dropdown hanging beside it would be one — generates no box
+                      at all and the Card is laid out exactly as it was without it.
+
+                      The leader lines' anchors are NOT here and are not this
+                      template's: a part is a component of the app rather than a
+                      Card, so an anchor is planted inside the surface it names by
+                      cards.ts and placed by cards-anchor.css. */}
                   <div class="eater-map__surface" set:html={card.html} />
                   {/* AND THE SEARCH CARD'S SECOND VENDORED ROOT (#194): the app's
                       own results dropdown, hanging off the bar it is typed into.
@@ -221,16 +230,9 @@ import './tokens.css';
                     />
                   )}
                 </div>
-                <span class="eater-map__anchor" data-eater-map-anchor={card.name} />
               </div>
             ))}
           </div>
-          {/* THE FOURTH ANCHOR IS ON THE PLANE ITSELF, because the fourth point
-              names the Slab: the offline basemap is the artefact the reader is
-              already looking at rather than something standing on it. It is a
-              sibling of the picture and inside the same camera, so it is turned
-              by the same one rotation everything else on the plane is. */}
-          <span class="eater-map__anchor" data-eater-map-anchor={SLAB_PART} />
         </div>
       </div>
     </div>
@@ -1461,44 +1463,13 @@ import './tokens.css';
     display: contents;
   }
 
-  /* WHERE A LEADER LINE ENDS, and the whole reason the anchors are elements
-     rather than arithmetic. This box is ZERO-SIZED and lives INSIDE the camera,
-     so it projects to a POINT and `getBoundingClientRect()` hands back that
-     corner's actual position on screen. Reading the Card's own rect instead
-     gives the axis-aligned bounding box of the projected quad, whose corners are
-     nowhere on the Card once it is turned — which looks right at the flat end of
-     the Lift and wrong at every other frame of it. leaders.ts.
-
-     A share of the part it is on, so it is a corner at every window and at every
-     size the Slab is drawn at, and so dragging it in the Editor moves it around
-     the Card rather than around the page. */
-  .eater-map__anchor {
-    position: absolute;
-    left: calc(var(--eater-map-anchor-x) * 100%);
-    top: calc(var(--eater-map-anchor-y) * 100%);
-    width: 0;
-    height: 0;
-  }
-
-  .eater-map__anchor[data-eater-map-anchor='search'] {
-    --eater-map-anchor-x: var(--eater-map-anchor-search-x);
-    --eater-map-anchor-y: var(--eater-map-anchor-search-y);
-  }
-
-  .eater-map__anchor[data-eater-map-anchor='lines'] {
-    --eater-map-anchor-x: var(--eater-map-anchor-lines-x);
-    --eater-map-anchor-y: var(--eater-map-anchor-lines-y);
-  }
-
-  .eater-map__anchor[data-eater-map-anchor='details'] {
-    --eater-map-anchor-x: var(--eater-map-anchor-details-x);
-    --eater-map-anchor-y: var(--eater-map-anchor-details-y);
-  }
-
-  .eater-map__anchor[data-eater-map-anchor='slab'] {
-    --eater-map-anchor-x: var(--eater-map-anchor-slab-x);
-    --eater-map-anchor-y: var(--eater-map-anchor-slab-y);
-  }
+  /* WHERE A LEADER LINE ENDS is not in this block, and cannot be. The anchors
+     live INSIDE the vendored surfaces their parts name — a part is a component of
+     the app rather than a Card, and the search Card carries two of them — so they
+     arrive through `set:html`, carry none of this component's scoping attributes,
+     and no selector written here can reach them. `cards-anchor.css` is the whole
+     of it, imported above; `cards.ts` plants the boxes and `leaders.ts` says what
+     they are zero-sized for. */
 
   /* ---- the leader lines --------------------------------------------------
      Four thin rules over the composition, joining each numbered point to the
@@ -1586,8 +1557,9 @@ import './tokens.css';
      centre and the rule would read as detached from the corner it names.
 
      `overflow: visible` on the overlay is what lets the bloom off the edge of the
-     composition, which it needs: the Slab's own point is drawn at the picture's
-     bottom-left corner and the light around it does not stop at the box. */
+     composition, which it needs: a Card raised off the Slab can stand outside the
+     composition's own box, and the light around a dot on its corner does not stop
+     at that box. */
   .eater-map__leaders [data-eater-map-tip][cx] {
     r: var(--eater-map-leader-tip);
     fill: var(--eater-map-accent);

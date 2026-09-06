@@ -197,12 +197,13 @@ Every mutation below has been made on purpose and every one was caught.
 | the points put back before the stage in the markup | the features above the picture, and the document's order disagreeing with the screen's |
 | the leader lines drawn once instead of on every tick of the Lift | all four rules off their corners half way up and raised, at both windows — and NOT at flat |
 | the rules drawn to the Card's own rect instead of to the anchor | the details rule 263px out at flat, and all four out at the other two moments |
-| an anchor moved out of the plane and onto the Slab | that anchor not inside `.eater-map__plane`, at both windows. **This used to be geometry and had to stop being** — it was caught by the anchor standing in one place at both ends of the Lift, and the Slab's own anchor stands still legitimately now, because the Slab does. The movement half is kept for the three Cards, which are what the Lift carries |
+| an anchor moved out of the plane and onto the Slab | that anchor not inside `.eater-map__plane`, at both windows. **Containment and movement are two halves and both are asked** — containment catches an anchor that was never in the projection, movement catches one that is in it and is not riding the depth. Every part is a component drawn on a Card, so all four move; while the Slab carried a number, its own anchor stood still legitimately (#189) and had to be excused from the second half |
 | `display: none` dropped from the overlay's collapse rule | the rules still drawn at 390x844 |
-| a second point given `part: 'search'` | the BUILD, on both refinements at once — no point names the slab, and two name the search |
+| a second point given `part: 'search'` | the BUILD, on both refinements at once — no point names the offline, and two name the search |
 | the plate mix put back on the three glass colours | the offline button opaque at the raised end, at both windows — and NOT at the flat end, which is the frame it was always honest at |
 | `--eater-map-card-held` back to `--eater-map-card-lift` in the rise and both drifts | every piece 76 to 97px from the map at every gesture — the Drop wired to a name nothing reads |
 | the Point rows stop naming their part | four gestures with nothing on the page to point at |
+| a Point's part resolved as a Card's name rather than through `cardOf` | hovering `02.` puts every piece back instead of lowering the search Card — `offline` is a part and never a Card |
 | `redraw` not called as a piece moves | all four rules 76 to 97px off their anchors, at every gesture |
 | the whole stack lowered rather than the piece | all three down at every gesture, and one still holding a drop below the band |
 | the footprint test inverted | the details Card back to a drop of 0.041 over 600ms of a jogged pointer. **It passed twice before it failed**, and both were the Check's fault: the watch held the pointer at ONE COORDINATE, and this module hears `pointermove` and nothing else, so a parked pointer is never asked a second question — then, jogged, the vacuity guard read "the Card is under the pointer" as a reason to SKIP, which is precisely what a flickering piece looks like half the time |
@@ -246,7 +247,7 @@ at is never crossed and the Check read as asleep when it was the gesture being
 wrong. It walks the reader out a pixel a frame now, and the mutation fails every
 time.
 
-**The three Cards' corners are Tokens** — `--eater-map-card-<name>-x` and `-y`,
+**The three Cards' places are Tokens** — `--eater-map-card-<name>-x` and `-y`,
 as shares of the Slab's width and height — so dragging one in the Editor moves it
 across the picture rather than across the page, and the arrangement holds at every
 size the Slab is drawn at. Their defaults are the app's own layout: the search bar
@@ -301,8 +302,8 @@ and are both silent when broken.
           .eater-map__face      FLAT, so z-index decides inside it
             .eater-map__glass x1 per glass surface  the blurred copy of the map
             .eater-map__surface   display: contents, and the app's own markup
+              <the app's own surface>  .eater-map__anchor  where a leader line ends
             .eater-map__hang      a BOX, and a second vendored root under the first
-          .eater-map__anchor    where a leader line ends
 ```
 
 `.eater-map__hang` is the search Card's alone and is the one box in that list
@@ -451,8 +452,16 @@ the export, no special case.
 two refinements are *no part without a number and no number without a part*, and
 there are four numbered Points; a fourth drawn thing that declared itself a part
 would need a fifth. It does not need one — the dropdown is what Point 01 is
-already about. So the drawing is **four parts across five surfaces**, the search
-Card keeps one anchor and one leader line, and the `eater-map` Check counts both.
+already about. So the drawing is **four parts across five surfaces**, and the
+`eater-map` Check counts both.
+
+**THE SEARCH CARD CARRIES TWO OF THOSE FOUR PARTS, AND THE DROPDOWN IS STILL NOT
+ONE.** Its topbar holds two pills — `.search` and `.offline-button` — and each is
+a component the app has and a claim the Section makes, so each has a number, an
+anchor and a leader line of its own. The dropdown is not a component beside them;
+it is what the search bar DOES, and it appears because something was typed into
+the bar Point 01 is about. Three Cards and four parts is the shape to hold: a part
+is a component, not a piece of the drawing.
 
 **A SECOND VENDORED ROOT INSIDE ONE CARD, AND THAT IS WHAT MAKES THE SCALE FREE.**
 A dropdown narrower or wider than the bar it hangs from reads as a different
@@ -763,6 +772,12 @@ denied by the vendoring's own README and undone by the next regeneration, and a
 selector naming the `svelte-…` hash announces itself at the next re-vendoring by
 ceasing to match — at which point the third rule's Check catches it too.
 
+**`cards-anchor.css` is a second file of the same kind, under the same three
+rules**, and it is a second file rather than a second half of this one because it
+is a different claim: that one is what this Section says about a vendored
+surface's SHAPE, this is where the drawing's own annotation attaches to it. The
+anchor section under the leader lines has it.
+
 **The details sheet's foot is the first of them.** In the app it is a bottom sheet
 resting on the screen's edge, where a rounded foot would show a sliver of map
 beneath it; off the map it is a floating object with four visible corners, and one
@@ -923,12 +938,15 @@ would lower every piece it crossed. `pointerType !== 'mouse'` is the whole gate 
 a `(hover: hover)` media query would answer once at mount and get a laptop with a
 touchscreen wrong in both directions.
 
-**THREE ANSWERS AND NOT TWO** to "what is the pointer over". A Card or a Point
-NAMES a piece. The Slab's own Point is a trigger that names NONE — the fourth
-number is about the picture the reader is already looking at, and there is nothing
-standing off it to put back — so hovering it puts everything back, which is the
-honest reading of pointing at the map. Anything else is not a trigger at all, and
-the footprint decides.
+**A CARD NAMES ITSELF AND A POINT NAMES A COMPONENT**, which is the one asymmetry
+in `asked()` and is what the Offline button costs. A Point names a PART, and two
+of the four parts are pills in the search Card's own topbar — so what goes back on
+the map is the Card that part is DRAWN ON, resolved through `leaders.ts`'s one
+correspondence rather than by looking the point's own word up among the Cards.
+Looked up directly, `offline` finds no piece, and hovering `02.` puts every piece
+back instead of lowering the search bar. Three answers and not two, all the same:
+a trigger naming nothing answers with no piece, and anything that is not a trigger
+answers `null` and lets the footprint decide.
 
 **THE ROW CARRIES THE PART AND THE HOOK DOES NOT.** `data-eater-map-point` is on
 the `<li>`, because the hook is a zero-height box a pointer can never be inside —
@@ -1030,10 +1048,18 @@ heavily blurred picture sliding under glass looks like.
 ## The leader lines, and why a stylesheet cannot draw one
 
 Four thin rules, each running from one numbered point to the part of the Exploded
-View it names — three to Cards and the fourth to the Slab itself, because the
-offline basemap is the artefact the reader is already looking at (#178). They are
-structure and not decoration: they are how a reader knows which claim belongs to
-which piece, and they are the exploded-view convention the device is named for.
+View it names (#178). A part is a COMPONENT of the app rather than a piece of the
+drawing, so the four run to three Cards: the search Card's topbar carries two of
+them, its bar and the Offline button beside it. They are structure and not
+decoration — they are how a reader knows which claim belongs to which piece, and
+they are the exploded-view convention the device is named for.
+
+**The Slab was the fourth part and is not one now.** `04.` claimed the offline
+basemap, and while the picture was the only thing left to point at, pointing at it
+was the honest reading. It is not the only thing: the app SAYS it is available
+offline, on a pill at the end of its own search bar, and a number on the map
+itself pointed at everything and therefore at nothing. The claim moved to the
+button that makes it, and up the list to `02.`
 
 **The correspondence is exact, and it is exact mechanically.** Every point
 carries a `part`, typed against the four parts of the drawing, and two
@@ -1078,11 +1104,51 @@ right wherever it was computed and wrong everywhere else, and one moment cannot
 tell the two apart. **That same fact is why the `eater-map` Check has to lift the
 projection to read a Card's SCALE**; the scale section above has it.
 
-The three Cards' anchors sit inside their own `.eater-map__card`, which meant the
-Card's markup needed a wrapper to arrive in — `set:html` replaces an element's
-children, and the anchor beside it would be one. That wrapper is
-`display: contents`, so it generates no box and the Card is laid out exactly as it
-was; `cards.css` has no child combinator in it, checked, so the vendored
+### And it sits inside the SURFACE, which is not the same box as the Card
+
+**A part is a component of the app rather than a piece of the drawing.** The
+search Card is a topbar carrying two pills, and both of them are parts: `01.`
+names the bar, `02.` names the Offline button beside it. So
+`--eater-map-anchor-<part>-x` and `-y` are a share of the SURFACE, and the anchor
+has to be a child of that surface for `100%` to mean what it says.
+
+**It is planted in the vendored markup, by `cards.ts`, first inside its
+surface.** The alternative is to measure where a pill sits inside a topbar and
+write the answer down here — 270 of 366 across, in the export's own pixels — which
+is exactly the second opinion `glass.ts`'s ruler exists to avoid, and it goes
+stale the day that repository moves the button. A share of the box the rule ends
+on is the browser's arithmetic and is exact at every window.
+
+It is allowed under the same standard as the `role="presentation"` and the two
+refused input routes in that file: **nothing on screen moves**. The span is
+out of flow, zero-sized, paints nothing, and is `aria-hidden`; the ruler that
+measures a surface for its glass measures the same box with it there.
+
+**What it needs from the surface is a containing block, and that is
+`cards-anchor.css` rather than a second `style` attribute.** An element keeps the
+FIRST of two attributes with the same name, and the search Card's Offline button
+already collects one from the pointer refusal — so a second written in `cards.ts`
+would be dropped by the parser and the anchor would silently resolve against the
+vendored root instead, which is the Card's box and is the thing this whole section
+is about not being. Two of the four surfaces are the vendored roots and already
+carry `position: relative !important` from the collector's normalisation; the
+rule is written through the anchor itself — `:has(> [data-eater-map-anchor])` —
+so a re-vendoring that renames a surface changes `leaders.ts` and nothing else.
+
+**The one length that is not a share** is `--eater-map-anchor-inset`, which is how
+far in from the corner the dot actually sits. Every surface here is rounded, and a
+Card is an extruded solid whose edge rolls out past the face's own corner — so the
+geometric corner of the box is outside the outline the reader sees, and a lit dot
+drawn there floats beside the component instead of resting on it. It comes in
+along BOTH axes, towards the centre, by `(0.5 − share) × 2 × inset`: +1 at the near
+edge, −1 at the far one, 0 in the middle of an edge, which is the only direction
+that reads as "in" for any corner the author drags to. `tokens.css` carries the
+floor and what 10, 14, 16, 18 and 22 each looked like.
+
+The Card's markup still needs a wrapper to arrive in — `set:html` replaces an
+element's children, and the dropdown hanging beside it would be one. That wrapper
+is `display: contents`, so it generates no box and the Card is laid out exactly as
+it was; `cards.css` has no child combinator in it, checked, so the vendored
 stylesheet does not notice either.
 
 ### The shoulder is a box, because a Token is not a number to a script
@@ -1129,8 +1195,11 @@ a rule leaves its row VERTICALLY is derived rather than a Token — it is the ro
 rule's own centreline — because it is a coordinate in a composition and not a
 number the author chooses (ADR 0004). The eight
 `--eater-map-anchor-<part>-x/-y` are Tokens for the opposite reason: which corner
-of a Card a rule comes off is a choice, and as a share of the part it is a corner
-at every window and at every size the Slab is drawn at.
+of a component a rule comes off is a choice, and as a share of the part it is a
+corner at every window and at every size the Slab is drawn at. All eight rest at
+the TOP RIGHT, because the Points stand down the right edge and a rule that
+crosses its own component to end on the far side of it reads as one passing over
+something rather than as one arriving at it.
 
 ### The leader IS the row's rule continued, and for a while it was two lines
 
@@ -2554,10 +2623,14 @@ their figures attached, and saying them twice would cost the paragraph lines it
 does not have. Same cut, for the same reason, as the Panel's.
 
 The four points are the ticket's own four, one per part of the Exploded View, and
-each carries the `part` its leader line is drawn to. The fourth names the Slab
-itself. That field is Content and the words are Content, and the Editor offers
-the words and never the field — it matches an element against the text it DRAWS,
-and a part is drawn nowhere.
+each carries the `part` its leader line is drawn to. That field is Content and the
+words are Content, and the Editor offers the words and never the field — it
+matches an element against the text it DRAWS, and a part is drawn nowhere.
+
+**Their ORDER is Content too, and it is the reading order twice over.** `02.` is
+the one about the Tube because it is the claim that follows searching — and
+because its part, the Offline button, is the pill next to the search bar it names.
+Reordering the array reorders the drawn numbers with it, since those are ordinals.
 
 **Two things a point draws are NOT Content (#191).** Its number is the ORDINAL,
 derived from the list's own order: an `<ol>` whose numbers are typed is two orders

@@ -1,5 +1,6 @@
 import gsap from 'gsap';
 import { seconds } from './duration';
+import { cardOf } from './leaders';
 
 /**
  * The **Drop**: one piece put back on the map while the reader is asking about
@@ -190,20 +191,26 @@ export default function mountDrop(root: HTMLElement, redraw?: (() => void) | voi
    * Which piece a pointer over this element is asking about, and whether it is
    * asking at all.
    *
-   * Three answers rather than two. A Card or a Point NAMES a piece; the Slab's
-   * own Point is a trigger that names none, because the fourth number is about
-   * the picture the reader is already looking at and there is nothing standing
-   * off it to put back — so hovering it puts everything back, which is the honest
-   * reading of pointing at the map. Anything else is not a trigger, and the
-   * footprint decides.
+   * A CARD NAMES ITSELF AND A POINT NAMES A COMPONENT, which is the one asymmetry
+   * here and is what the Offline button costs. A Point names a PART — a component
+   * of the app — and two of the four parts are pills in the search Card's own
+   * topbar, so what goes back on the map is the Card that part is drawn on rather
+   * than a piece of that name. `leaders.ts` owns that correspondence, and owning
+   * it in one place is what stops a rule ending on one component while the number
+   * beside it lowers another.
+   *
+   * Three answers rather than two. A trigger that names nothing answers with no
+   * piece — which puts everything back, the honest reading of pointing at
+   * something the drawing does not take apart. Anything that is not a trigger at
+   * all answers `null`, and the footprint decides.
    */
   function asked(target: EventTarget | null): { piece: Piece | null } | null {
     if (!(target instanceof Element)) return null;
     const owner = target.closest<HTMLElement>('[data-eater-map-card], [data-eater-map-point]');
     if (!owner) return null;
-    const part =
-      owner.getAttribute('data-eater-map-card') ?? owner.getAttribute('data-eater-map-point');
-    return { piece: (part && pieces.get(part)) || null };
+    const point = owner.getAttribute('data-eater-map-point');
+    const name = owner.getAttribute('data-eater-map-card') ?? (point ? cardOf(point) : null);
+    return { piece: (name && pieces.get(name)) || null };
   }
 
   root.addEventListener(

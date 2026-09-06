@@ -104,9 +104,10 @@ import { DESK, open, settle } from '../lib/page.mjs';
  *
  * TEN. THE FOURTH SURFACE, AND THE TWO THINGS ITS ARRIVAL COSTS (#194). The search
  * Card draws THREE glass surfaces now — its two pills and the results dropdown hung
- * off them — and the dropdown is a surface of the search PART rather than a fifth
- * part, so the drawing is four parts across five surfaces and the leader lines are
- * unchanged.
+ * off them — and the dropdown is a surface of the search PART rather than a part of
+ * its own, so the drawing is four parts across five surfaces. Its two pills ARE two
+ * of those four: a part is a component of the app rather than a Card, and the
+ * Offline button is what the point about the Tube names.
  *
  * NOTHING IS DRAWN ON TOP OF ANYTHING, asked ON THE PLANE with the projection
  * lifted. That is the only form of the question with an answer: two rotated quads
@@ -167,12 +168,13 @@ import { DESK, open, settle } from '../lib/page.mjs';
  * and how far its shoulder runs is another; what is asserted is that the end of
  * the rule is where the anchor is and that the anchor is somewhere on the part.
  *
- * AND WHETHER AN ANCHOR IS INSIDE THE CAMERA IS ASKED OF THE MARKUP NOW. It was
- * geometry — an anchor outside the projection stands still while its part turns, so
- * both ends of the Lift found it in one place — and the SLAB's anchor stands still
- * legitimately since #189, because the Slab does. Containment is what that
- * assertion was asking all along; the movement half is kept for the three Cards,
- * which are what the Lift carries.
+ * AND WHETHER AN ANCHOR IS INSIDE THE CAMERA IS ASKED OF THE MARKUP AS WELL AS OF
+ * THE GEOMETRY. Containment catches an anchor that was never in the projection; the
+ * movement catches one that is in it and is not riding the depth — a `position:
+ * fixed` in the vendored markup would do that, and containment would not notice.
+ * Every part is a component drawn on a Card, so all four move; while the Slab
+ * carried a number, its own anchor stood still legitimately (#189, because the Slab
+ * does) and had to be excused from the second half.
  *
  * SIX. BELOW THE BAND THE DRAWING HAS COLLAPSED, AND EVERY READER GETS THE SAME
  * ONE. An Exploded View is fitted to a wide window; a column has no width to
@@ -641,13 +643,19 @@ async function atWindow(browser, origin, viewport) {
           };
         });
 
-      // WHICH ELEMENT EACH POINT NAMES. Three of the four are Cards and the
-      // fourth is the picture itself, and knowing that here is the point: it is
-      // the claim being checked rather than something the drawing hands over.
+      // WHICH ELEMENT EACH POINT NAMES, WRITTEN OUT HERE. A part is a COMPONENT
+      // of the app rather than a Card — the search Card's topbar carries two of
+      // them — and knowing which is which is the point: it is the claim being
+      // checked rather than something the drawing hands over. Asked through the
+      // Card so `.search` cannot resolve to something else on the page.
+      const NAMES = {
+        search: '[data-eater-map-card="search"] .search',
+        offline: '[data-eater-map-card="search"] .offline-button',
+        lines: '[data-eater-map-card="lines"] .lines-popup',
+        details: '[data-eater-map-card="details"] .details-panel',
+      };
       const partNamed = (part) =>
-        part === 'slab'
-          ? document.querySelector('.eater-map__plane')
-          : document.querySelector(`[data-eater-map-card="${part}"]`);
+        Object.hasOwn(NAMES, part) ? document.querySelector(NAMES[part]) : null;
 
       // A COLOUR, RASTERISED RATHER THAN COMPARED AS A SPELLING, and read for its
       // ALPHA rather than for its channels: what is asserted about a dot is that
@@ -2254,13 +2262,12 @@ async function atWindow(browser, origin, viewport) {
       }
     }
 
-    // AND THE THREE CARDS' ANCHORS STILL MOVE, which is the geometry half and is
-    // the Cards' alone: they are what the Lift carries, so an anchor of theirs that
-    // stands still is one that is not riding the depth even though it is inside the
-    // projection — a `position: fixed` in the vendored markup would do it, and
-    // containment would not notice.
+    // AND EVERY ANCHOR STILL MOVES, which is the geometry half. All four parts are
+    // components drawn on a Card now, and the Cards are what the Lift carries — so
+    // an anchor that stands still is one that is not riding the depth even though
+    // it is inside the projection. A `position: fixed` in the vendored markup would
+    // do it, and containment would not notice.
     for (const rule of seen.rules.flat) {
-      if (rule.part === 'slab') continue;
       const up = seen.rules.raised.find((other) => other.part === rule.part);
       if (!rule.anchor || !up?.anchor) continue;
       if (Math.hypot(up.anchor.x - rule.anchor.x, up.anchor.y - rule.anchor.y) <= ATTACHED) {
@@ -2534,11 +2541,16 @@ async function hoveringPutsOnePieceBack(browser, origin) {
             box: card.getBoundingClientRect(),
           };
         }
-        const slab = document
-          .querySelector('[data-eater-map-anchor="slab"]')
-          ?.getBoundingClientRect();
+        // AND THE PICTURE ITSELF, off its own box rather than off an anchor: no
+        // number names the Slab since the fourth point moved to the Offline
+        // button, so there is no zero-sized box on it to read — and none is
+        // needed. The plane's parent is not turned, so its rect IS where the
+        // drawing stands, which is the only thing asked of it below.
+        const picture = document.querySelector('.eater-map__slab')?.getBoundingClientRect();
         found.slab = {
-          anchor: slab ? { x: round(slab.left - at.left), y: round(slab.top - at.top) } : null,
+          anchor: picture
+            ? { x: round(picture.left - at.left), y: round(picture.top - at.top) }
+            : null,
           box: null,
         };
         return found;
@@ -2675,6 +2687,16 @@ async function hoveringPutsOnePieceBack(browser, origin) {
           at[anchor.getAttribute('data-eater-map-anchor') ?? '(unnamed)'] = {
             x: round(box.left - origin.left),
             y: round(box.top - origin.top),
+          };
+        }
+        // The picture goes in beside them under a name no part uses, read off its
+        // own box: no number names the Slab, so it carries no anchor — and the one
+        // thing asked of it is that it did not move, which its rect answers.
+        const picture = document.querySelector('.eater-map__slab')?.getBoundingClientRect();
+        if (picture) {
+          at.slab = {
+            x: round(picture.left - origin.left),
+            y: round(picture.top - origin.top),
           };
         }
         /** @type {Record<string, number|null>} */
@@ -2837,10 +2859,18 @@ async function hoveringPutsOnePieceBack(browser, origin) {
       await gesture(`hovering the Point that names ${part}`, `[data-eater-map-point="${part}"]`, part);
     }
 
-    // THE FOURTH POINT NAMES THE SLAB, which does not stand off anything — so
-    // pointing at it puts every piece back, and that is the reading rather than a
-    // gesture with no effect.
-    await gesture('hovering the Point that names the Slab', '[data-eater-map-point="slab"]', null);
+    // AND THE POINT THAT NAMES A COMPONENT RATHER THAN A CARD LOWERS THE CARD THAT
+    // COMPONENT IS ON. `02.` names the Offline button, which is a pill in the
+    // search Card's own topbar — so the piece that goes back on the map is the
+    // search Card, exactly as if the reader had hovered the bar's own number. The
+    // failure this names is a Point resolved by its own word: `offline` is not a
+    // Card, `pieces.get` finds nothing, and hovering the number puts EVERY piece
+    // back instead of one.
+    await gesture(
+      'hovering the Point that names the Offline button',
+      '[data-eater-map-point="offline"]',
+      'search',
+    );
 
     // ---- and now the Card itself, at a spot the piece will leave -------------
     const travels = parts.find((part) => ends.aim[part]?.clear) ?? null;

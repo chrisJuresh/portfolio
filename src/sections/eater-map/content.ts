@@ -122,6 +122,13 @@ export const content = defineContent(schema, {
         'descriptions, plus place geocoding.',
     },
     {
+      title: 'It works on the Tube',
+      part: 'offline',
+      figure:
+        'Around 76 MB of vector tiles precached; the service worker slices HTTP Range ' +
+        'out of the Cache API itself, because the Cache API cannot serve ranges.',
+    },
+    {
       title: 'The rail overlay',
       part: 'lines',
       figure:
@@ -134,13 +141,6 @@ export const content = defineContent(schema, {
       figure:
         '4,043 guide entries merged into 2,336; 665 carry write-ups from more than ' +
         'one guide.',
-    },
-    {
-      title: 'It works on the Tube',
-      part: 'slab',
-      figure:
-        'Around 76 MB of vector tiles precached; the service worker slices HTTP Range ' +
-        'out of the Cache API itself, because the Cache API cannot serve ranges.',
     },
   ],
 });

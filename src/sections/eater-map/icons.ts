@@ -26,13 +26,17 @@ import { PARTS, type Part } from './leaders';
 const MARKS: Record<Part, string> = {
   /** A magnifying glass: the search bar, and the results that hang off it. */
   search: '<circle cx="10.8" cy="10.8" r="6.6" /><path d="m15.7 15.7 4.8 4.8" />',
+  /** Stacked planes: the vector tiles the Offline button says are already here.
+   *  The mark is about the tiles rather than about the button, because the point
+   *  beside it is — the button is where that claim is MADE on the app's screen,
+   *  which is why the rule ends there. */
+  offline:
+    '<path d="M12 3 3 7.5 12 12l9-4.5Z" /><path d="m3 12 9 4.5L21 12" /><path d="m3 16.5 9 4.5 9-4.5" />',
   /** The roundel, which is what the rail overlay draws. */
   lines: '<circle cx="12" cy="12" r="7.6" /><path d="M3.6 12h16.8" />',
   /** A sheet with two lines of writing: one record per restaurant. */
   details:
     '<path d="M6.5 3h7l4 4v14h-11Z" /><path d="M13.5 3v4h4" /><path d="M9.5 12.5h5M9.5 16h5" />',
-  /** Stacked planes: the vector tiles the basemap is precached as. */
-  slab: '<path d="M12 3 3 7.5 12 12l9-4.5Z" /><path d="m3 12 9 4.5L21 12" /><path d="m3 16.5 9 4.5 9-4.5" />',
 };
 
 /**

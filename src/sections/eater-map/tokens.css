@@ -704,15 +704,19 @@
   --eater-map-leader-bloom: 9px;
   --eater-map-leader-bloom-veil: 68%;
 
-  /* WHICH CORNER EACH RULE ENDS ON, as a share of the part's own width and
-     height — so it is a corner at every window and at every size the Slab is
-     drawn at, and dragging one in the Editor moves it around the Card rather
-     than around the page. 0,0 is the part's top-left and 1,1 its bottom-right.
+  /* WHICH CORNER EACH RULE ENDS ON, as a share of the PART's own width and
+     height — the component the number names, which since the fourth point moved
+     to the Offline button is not the same box as the Card it is drawn on: the
+     search Card is a topbar carrying two pills, and each of them is a part. So it
+     is a corner at every window and at every size the Slab is drawn at, and
+     dragging one in the Editor moves it around that component rather than around
+     the page. 0,0 is the part's top-left and 1,1 its bottom-right.
 
-     The defaults are the corner nearest the points' column, taken down the
-     stack in the order the four points read: the search bar's foot, the lines
-     popup's foot, the detail panel's head, and the Slab's own bottom-left, which
-     is the one corner of the picture no Card is standing on.
+     THE DEFAULT IS THE TOP RIGHT, FOR ALL FOUR. The Points stand down the right
+     edge (#191), so every rule arrives from the right and the top-right corner is
+     the one nearest the number — a line that crosses its own component to end on
+     the far side of it reads as a line passing over something rather than as one
+     arriving at it.
 
      AND A DRAG MOVES THE RULE AND NOT ONLY THE POINT IT ENDS AT (#214). The
      anchor is a zero-sized box, so moving it resizes nothing and the
@@ -724,17 +728,41 @@
      through since #196. The slider's range is four times the value in the file,
      so `y` at 1 offers 0 to 4 and only the first quarter of it is on the part —
      the number beside it takes any share, and 0.5 is the middle of that edge. */
-  --eater-map-anchor-search-x: 0;
-  --eater-map-anchor-search-y: 1;
+  --eater-map-anchor-search-x: 1;
+  --eater-map-anchor-search-y: 0;
 
-  --eater-map-anchor-lines-x: 0;
-  --eater-map-anchor-lines-y: 1;
+  --eater-map-anchor-offline-x: 1;
+  --eater-map-anchor-offline-y: 0;
 
-  --eater-map-anchor-details-x: 0;
+  --eater-map-anchor-lines-x: 1;
+  --eater-map-anchor-lines-y: 0;
+
+  --eater-map-anchor-details-x: 1;
   --eater-map-anchor-details-y: 0;
 
-  --eater-map-anchor-slab-x: 0;
-  --eater-map-anchor-slab-y: 1;
+  /* AND HOW FAR IN FROM THAT CORNER THE DOT ACTUALLY SITS, because a corner is
+     not where the component is. Every surface in this drawing is rounded — the two
+     pills to their own half-height, the rail popup to 14px, the detail sheet to 28
+     — so the geometric corner of the box is outside the outline a reader sees, and
+     a lit dot drawn there floats beside the component instead of resting on it.
+
+     THERE IS A FLOOR AND IT IS ARITHMETIC. Coming in by `d` along both axes puts
+     the dot √2·(r − d) from a corner arc's centre, so it is inside the fillet only
+     while d ≥ r(1 − 1/√2) — 0.293 of the radius, which is 8.2px at the sheet's 28
+     and the largest of the four.
+
+     AND THE FLOOR IS NOT THE ANSWER, because the outline a reader sees is not the
+     radius. A Card is an extruded solid: its edge rolls out past the face's own
+     corner, so a dot that clears the CSS fillet is still sitting on the bevel.
+     Rendered at 10, 14, 16, 18 and 22 and looked at, on the pill and on the sheet:
+     ten and fourteen sit on the outline, eighteen puts the pill's dot on the
+     tick in the Offline button and the sheet's on its close control, and sixteen
+     is clear of both.
+
+     IN THE COMPONENT'S OWN PIXELS. The Cards are frozen to the viewport they were
+     exported at, so a radius is a constant in these units and this stays in step
+     with it through every scale the Card is drawn at. */
+  --eater-map-anchor-inset: 16px;
 
   /* ---- the rules the composition draws ------------------------------------
      ONE WEIGHT FOR THE NEUTRAL ONES, and it is a Token because #201 made it one.

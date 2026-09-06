@@ -1,4 +1,4 @@
-import type { CardPart } from './leaders';
+import { ANCHORED_AT, type CardName, PARTS } from './leaders';
 import manifest from './assets/cards/cards.json';
 import details from './assets/cards/details.html?raw';
 import lines from './assets/cards/lines.html?raw';
@@ -60,6 +60,26 @@ import search from './assets/cards/search.html?raw';
  * interface, which is why it is allowed where rewriting the markup would not be:
  * nothing on screen moves.
  *
+ * AND WHY A LEADER LINE'S ANCHOR IS PLANTED IN HERE
+ * ------------------------------------------------
+ * A numbered point names a COMPONENT — the search bar, the Offline button — and
+ * its rule ends on that component's own corner as a share of that component's own
+ * box. A share is the browser's arithmetic if the anchor is a child of the box,
+ * and ours if it is not: the alternative is measuring where a pill sits inside a
+ * topbar and writing the answer down in this repository, which is the second
+ * opinion `glass.ts`'s whole ruler exists to avoid. So a zero-sized box goes in,
+ * first, as the surface's own first child.
+ *
+ * It is allowed under the same standard as the heading above: nothing on screen
+ * moves. The span is out of flow and zero-sized, it paints nothing, it is
+ * `aria-hidden`, and the ruler that measures the surface for its glass measures
+ * the same box with it there. What it needs from the surface is a containing
+ * block, and that is a stylesheet's job rather than a second `style` attribute's
+ * — an element keeps the FIRST of two, so a second one written here would be
+ * dropped by the parser and the anchor would silently resolve against the
+ * vendored root instead. `cards-anchor.css`, which is unscoped for the reason
+ * every rule below is inline.
+ *
  * AND WHY THERE IS A THIRD REFUSAL SINCE #194
  * -------------------------------------------
  * The search results dropdown is a SCROLL CONTAINER — 81 matching rows behind
@@ -103,6 +123,17 @@ const carrying = (owned: string) =>
   new RegExp(`(<[a-z][\\w-]*\\b)(?=[^>]*\\bclass="(?:[^"]*\\s)?${owned}(?:\\s[^"]*)?")`, 'gi');
 
 /**
+ * The WHOLE opening tag of the element carrying one class, so something can be
+ * put inside it.
+ *
+ * The first one and not every one, unlike `carrying` above: a surface is one
+ * element, and a class matched twice would be a re-vendoring that has changed
+ * what a surface is rather than something to plant two anchors in.
+ */
+const opening = (owned: string) =>
+  new RegExp(`<[a-z][\\w-]*\\b[^>]*\\bclass="(?:[^"]*\\s)?${owned}(?:\\s[^"]*)?"[^>]*>`, 'i');
+
+/**
  * The attributes go in FIRST, immediately after the tag name.
  *
  * Not decoration: the HTML parser keeps the first of two attributes with the
@@ -127,15 +158,54 @@ function asPicture(html: string, scrolls: readonly string[] = []): string {
   return out;
 }
 
+/**
+ * Plant one zero-sized anchor inside each surface this Card is made of, so a
+ * leader line's far end is a share of the component it names.
+ *
+ * `aria-hidden` and empty. It is the same claim the overlay itself makes: the
+ * correspondence between a number and a piece is a drawing convention, and a
+ * reader listening is given it by the four points' own words in order.
+ *
+ * SILENT WHEN A SELECTOR FINDS NOTHING, and that is the one refusal here that is
+ * deliberate rather than lazy: `glass.ts` is already looking for the same element
+ * and already says so on the console, the `console` Check makes that a build
+ * failure, and a second message about one re-vendoring is noise. What this leaves
+ * behind is a part with no anchor, which draws no rule at all — the hole the
+ * Content's own schema and the `eater-map` Check both exist to catch.
+ */
+function anchored(html: string, card: CardName): string {
+  let out = html;
+  for (const part of PARTS.filter((one) => ANCHORED_AT[one].card === card)) {
+    const owned = BY_CLASS.exec(ANCHORED_AT[part].surface)?.[1];
+    if (!owned) continue;
+    // A function rather than a string, so a `$` in the tag is a `$`.
+    out = out.replace(
+      opening(owned),
+      (tag) => `${tag}<span class="eater-map__anchor" data-eater-map-anchor="${part}"` +
+        ' aria-hidden="true"></span>',
+    );
+  }
+  return out;
+}
+
+/** Which of a Card's glass surfaces are parts of the Exploded View — read off the
+ *  one correspondence rather than written out a second time here (`leaders.ts`).
+ *  A Card's glass is these plus whatever hangs off them. */
+const partsOf = (card: CardName): readonly string[] =>
+  PARTS.filter((part) => ANCHORED_AT[part].card === card).map((part) => ANCHORED_AT[part].surface);
+
 export interface Card {
   /**
-   * The Token stem: `--eater-map-card-<name>-x` and `-y` place it, and
-   * `--eater-map-anchor-<name>-x` and `-y` put its leader line's anchor on one
-   * of its corners. Typed against `leaders.ts` rather than left a string, so a
-   * Card renamed here without its point being renamed with it is a build error
-   * rather than a rule that draws to nothing.
+   * The Token stem: `--eater-map-card-<name>-x` and `-y` place it on the Slab.
+   * Typed against `leaders.ts` rather than left a string, so a Card renamed here
+   * without the parts drawn on it being renamed with it is a build error rather
+   * than a rule that draws to nothing.
+   *
+   * A CARD'S NAME IS NOT A PART, since the fourth point became the Offline
+   * button: three Cards carry four parts, and where a rule ENDS is
+   * `--eater-map-anchor-<part>-x` and `-y` on the SURFACE that part is.
    */
-  readonly name: CardPart;
+  readonly name: CardName;
   /** the Eater surface, as a picture of one: no tab stop, no click, no heading */
   readonly html: string;
   /**
@@ -149,6 +219,12 @@ export interface Card {
    * buttons stuck on the end, which is not an interface the app has. The other
    * two Cards are one surface each, and their surface is the vendored root
    * itself.
+   *
+   * AND THE LIST IS DERIVED RATHER THAN WRITTEN. Every surface on it is a part of
+   * the Exploded View — `leaders.ts` says which parts a Card carries and which
+   * element each one is — plus whatever HANGS off one of them. Written out here
+   * as well, the two would be a rule ending on a component that has no glass, or
+   * glass round something no number names, and neither is visible as a mistake.
    *
    * SELECTORS AND NEVER SIZES OR RADII. This says which elements to measure; it
    * says nothing about what the measurement will be. Every number `glass.ts`
@@ -214,12 +290,12 @@ const DROPDOWN = '.results-panel';
  * is the one thing always on top.
  */
 export const CARDS: readonly Card[] = [
-  { name: 'details', html: asPicture(details), surfaces: ['.details-panel'] },
-  { name: 'lines', html: asPicture(lines), surfaces: ['.lines-popup'] },
+  { name: 'details', html: anchored(asPicture(details), 'details'), surfaces: partsOf('details') },
+  { name: 'lines', html: anchored(asPicture(lines), 'lines'), surfaces: partsOf('lines') },
   {
     name: 'search',
-    html: asPicture(search),
-    surfaces: ['.search', '.offline-button', DROPDOWN],
+    html: anchored(asPicture(search), 'search'),
+    surfaces: [...partsOf('search'), DROPDOWN],
     hung: asPicture(results, [DROPDOWN]),
     rows: VENDORED.find((one) => one.name === 'results')?.rows,
   },

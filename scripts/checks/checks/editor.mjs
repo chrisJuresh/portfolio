@@ -583,24 +583,26 @@ export const check = {
           // `redraw.ts` is what moves them, and `timeline.ts` handing it the
           // leaders' own redraw is the whole of the fix.
           //
-          // THE SLAB'S, because it is the one part that is not a Card: its anchor
-          // sits on the picture every stage draws, so this asks nothing about
-          // which stage mounted.
-          const ANCHOR = '--eater-map-anchor-slab-x';
+          // THE DETAIL SHEET'S, because a Card is drawn from the vendored markup
+          // by both stages — the stage decides how the SLAB is rendered — so this
+          // asks nothing about which one mounted. It is also the largest surface
+          // in the drawing, which is what makes the drag below a travel rather
+          // than a rounding.
+          const ANCHOR = '--eater-map-anchor-details-x';
           /** The polyline's LAST vertex, which is its own end and the lit dot's
            *  centre — read off the attribute `leaders.ts` writes rather than off a
            *  painted box, because a `drop-shadow` grows the box and not the rule. */
           const endOfRule = () =>
             view.evaluate(() => {
-              const rule = document.querySelector('[data-eater-map-leader="slab"]');
+              const rule = document.querySelector('[data-eater-map-leader="details"]');
               const written = (rule?.getAttribute('points') ?? '').trim();
               if (written === '') return null;
               const [x, y] = (written.split(/\s+/).at(-1) ?? '').split(',').map(Number);
               return Number.isFinite(x) && Number.isFinite(y) ? { x, y } : null;
             });
           /** Far enough to be a move and not a rounding. The drag below takes the
-           *  end from one edge of the Slab to the other, which is hundreds of px at
-           *  every window this Check opens. */
+           *  end from one edge of the detail sheet to the other and then past it,
+           *  which is hundreds of px at every window this Check opens. */
           const MOVED = 1;
 
           const anchorRow = view.locator(`[data-editor-token$="${ANCHOR}"]`).first();
@@ -612,7 +614,7 @@ export const check = {
             );
           } else if (rested === null) {
             failures.push(
-              'the Slab’s leader line carries no points under the Editor, so there was no rule to move and' +
+              'the detail sheet’s leader line carries no points under the Editor, so there was no rule to move and' +
                 ' nothing about where a rule ENDS was checked — leaders.ts writes them at mount',
             );
           } else {
@@ -635,10 +637,10 @@ export const check = {
                   ' is built on never moved and everything below it asserted nothing',
               );
             } else if (dragged === null) {
-              failures.push(`the Slab’s leader line lost its points while ${ANCHOR} was dragged`);
+              failures.push(`the detail sheet’s leader line lost its points while ${ANCHOR} was dragged`);
             } else if (Math.hypot(dragged.x - rested.x, dragged.y - rested.y) <= MOVED) {
               failures.push(
-                `dragging ${ANCHOR} from ${anchorWas} to ${anchorEnd} left the Slab’s rule ending at` +
+                `dragging ${ANCHOR} from ${anchorWas} to ${anchorEnd} left the detail sheet’s rule ending at` +
                   ` ${dragged.x},${dragged.y} against ${rested.x},${rested.y} — the anchor moved and the rule` +
                   ' did not, so the drag moved the file and left the drawing where it was until a reload',
               );
@@ -654,7 +656,7 @@ export const check = {
             const home = await endOfRule();
             if (home === null || Math.hypot(home.x - rested.x, home.y - rested.y) > MOVED) {
               failures.push(
-                `putting ${ANCHOR} back to ${anchorWas} left the Slab’s rule ending at` +
+                `putting ${ANCHOR} back to ${anchorWas} left the detail sheet’s rule ending at` +
                   ` ${home ? `${home.x},${home.y}` : 'nothing'} against the ${rested.x},${rested.y} it mounted` +
                   ' at — where a rule ends is not a function of the Tokens alone',
               );
@@ -663,7 +665,7 @@ export const check = {
               failures.push(`previewing ${ANCHOR} wrote eater-map/tokens.css — a drag previews and a release writes`);
             }
             notes.push(
-              `dragged ${ANCHOR} ${anchorWas} → ${anchorEnd} → ${anchorWas}, and the Slab’s rule ended at` +
+              `dragged ${ANCHOR} ${anchorWas} → ${anchorEnd} → ${anchorWas}, and the detail sheet’s rule ended at` +
                 ` ${rested.x},${rested.y} → ${dragged ? `${dragged.x},${dragged.y}` : 'nothing'} → ` +
                 `${home ? `${home.x},${home.y}` : 'nothing'}`,
             );
