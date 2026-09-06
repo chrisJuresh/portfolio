@@ -81,6 +81,7 @@ than described. It is one document, served statically from Vercel.
 ├── vercel.json         # clean URLs, the /projects redirect, the deep links, cache headers
 ├── astro.config.mjs    # the build, and the dev server's stand-in for the deployment
 ├── site.bat            # double-click to see the site — builds, then serves the build
+├── watch.bat           # the same, kept up to date — rebuilds and reloads as commits land
 ├── editor.bat          # double-click to edit the site — the same build, with the Editor on it
 ├── run.bat             # double-click to serve the repo root for design/ — NOT the site
 ├── src/
@@ -145,15 +146,17 @@ pnpm dev         # Astro's dev server, standing in for the deployment
 `pnpm dev` answers everything the deployment does off one origin: the built
 routes, the four paths served verbatim, and the deep-link rewrites. `pnpm build`
 then `pnpm preview` serves the real `dist/` instead, which is what the Checks
-drive.
+drive. `pnpm watch` is that pair left running: it rebuilds and reloads the open
+page every time a commit lands on the branch this checkout is on.
 
-### Or double-click one of the three `.bat` files
+### Or double-click one of the four `.bat` files
 
-No terminal, and none of the three is interchangeable with another:
+No terminal, and none of the four is interchangeable with another:
 
 | file | what it serves | for |
 | --- | --- | --- |
 | `site.bat` | builds the tree, then serves that `dist/` | seeing the site |
+| `watch.bat` | the same, rebuilt and reloaded whenever the branch moves | leaving it open while changes land |
 | `editor.bat` | the same build, with the Editor over it | changing what it says |
 | `run.bat` | the repository root as plain files | the instruments under `design/` |
 
@@ -162,6 +165,21 @@ browser opened, so it shows the article that deploys and takes about fifteen
 seconds to get there. It builds rather than running `pnpm dev` because `astro
 dev` daemonises — a double-clicked window cannot own that process, so closing
 the window would leave it running. `pnpm dev` is still the one to *work* in.
+
+`watch.bat` is `pnpm watch`, which is `site.bat` plus a watch on the branch this
+checkout is standing on — `development`, in the main checkout. Every time a
+commit lands on it the tree is rebuilt and the page in the browser reloads
+itself, back to the Section that was being read. `pnpm feature land`
+fast-forwards the main checkout as its last act before taking the worktree down,
+so a change appears in the browser about a rebuild after it lands on the branch,
+with nothing clicked. A build that fails leaves the last good one on screen and
+says so in the window.
+
+It watches the **branch**, not the files — `pnpm dev` is the one that reloads as
+*you* edit, and this is the one to leave open while changes arrive from somewhere
+else: a worktree, the Editor, an agent, another machine you have just pulled
+from. The one thing it adds to the page is the reload channel, a `<script>` before
+`</body>`; ask `site.bat` about anything to do with how the page *renders*.
 
 `editor.bat` is `pnpm editor` the same way: the same build, on a free port, with
 the Editor over it — so it is **Editing the site** below without a terminal.
