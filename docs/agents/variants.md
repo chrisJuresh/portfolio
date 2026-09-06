@@ -161,6 +161,25 @@ a worktree it reports on `development` while looking like it reports on your
 branch. Run `pnpm build` in the same tree first; the tool says so if `dist/` is
 missing.
 
+**A `data:` URI in a Variant is silently corrupted, and a Variant's own asset is
+the way round it.** The tool rewrites every relative `url()` in a sheet to an
+absolute one so a Variant can reference a file in its own folder — and the
+pattern it does that with, `url\(\s*(['"]?)(?!data:|https?:|\/)`, lets the
+optional quote **backtrack**. With `url("data:…")` the engine tries the quote,
+fails the lookahead on `data:`, gives the quote back, and then succeeds against
+the `"` — so what reaches the browser is
+`url(/src/sections/<section>/"data:…")`, the declaration is dropped by the CSS
+parser, and the shot comes back as though the Variant declared nothing. Quoted
+`https:` and quoted absolute paths go the same way. Nothing reports it: the
+`identical` digest catches it only if the Variant declared nothing else, and the
+Projects Panel's `grain` had a second layer, so it rendered, differed, and was
+captioned as a normal shot.
+
+Until that pattern is fixed, put the file in the Section's `assets/` and
+reference it relatively — `url('assets/grain.svg')` — which is the path the
+`/src/` half of the tool's own server exists for, and which the rewrite handles
+correctly.
+
 **`design/sheets/` is wiped on every run** and is not committed. It is a picture
 of the source it was run against, so a kept copy could only ever be a picture of
 a Variant that has since been rewritten, captioned with the declarations it used

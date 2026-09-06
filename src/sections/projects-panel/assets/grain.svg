@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200">
+  <!-- The Panel's film grain, for the `grain` Variant and nothing else.
+
+       A FILE AND NOT A data: URI IN variants.css, and that is forced rather than
+       chosen. render-variants.mjs rewrites every relative url() in a Variant's
+       sheet to an absolute one, and its pattern lets the optional quote
+       backtrack — so `url("data:…")` comes out as
+       `url(/src/sections/projects-panel/"data:…")`, the declaration is dropped by
+       the parser, and the shot comes back as bare ground with nothing to say it
+       did. That cost a diagnosis. A Variant's own asset served out of its own
+       folder is the path that tool was built for, and it is this.
+
+       RGB IS FLAT AND THE ALPHA IS THE NOISE. feTurbulence writes a noisy alpha
+       channel as well as noisy colour, so desaturating it leaves a texture that
+       is mostly not there; the matrix forces the colour to mid grey and drives
+       alpha off the noise instead. Mid grey rather than white or black because
+       the Section crosses: it lightens the dark end and darkens the paper end by
+       the same amount without knowing which end it is at. -->
+  <filter id="grain" x="0" y="0" width="100%" height="100%">
+    <feTurbulence type="fractalNoise" baseFrequency="0.62" numOctaves="2" stitchTiles="stitch" />
+    <feColorMatrix
+      type="matrix"
+      values="0 0 0 0 0.5
+              0 0 0 0 0.5
+              0 0 0 0 0.5
+              0.34 0.34 0.34 0 0"
+    />
+    <!-- AND THE CONTRAST IS STRETCHED, which is what makes it grain rather than
+         a grey wash. fractalNoise's alpha lands in a narrow band around a half,
+         so a straight veil off it measured a mean of 23 against a spread of 3 —
+         the Section read as though somebody had turned the black up, not as
+         though it had a texture. The slope pulls the band apart and the clamp at
+         both ends does the rest. -->
+    <feComponentTransfer>
+      <feFuncA type="linear" slope="5" intercept="-2" />
+    </feComponentTransfer>
+  </filter>
+  <rect width="200" height="200" filter="url(#grain)" opacity="0.16" />
+</svg>
