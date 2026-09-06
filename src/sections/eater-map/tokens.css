@@ -108,14 +108,19 @@
      it is a plain colour rather than a mix on `--ink`: it was sampled off the
      reference's own `01.`, and this Section stands at the far end of the Turn in
      both themes, so there is no crossing for it to ride. The rule above each Point
-     is the same colour at 36% of it, which is the veil below.
+     is the same colour at the veil below, and that veil is NONE: the accent line
+     — the row rule, the leader out of it, and the dot where it turns — is the
+     accent straight. It stood at 36% until it was asked to stand at full, and the
+     Token is still here because the number is one the author may move (ADR 0004);
+     it is at 0% rather than gone so the whole line can be veiled again in one
+     drag rather than in three edits.
 
      The number and the icon are one row and are set at the same weight, so a Point
      reads as an annotation on a drawing rather than as an entry in a list. Which
      icon a Point carries follows from the PART it names — `icons.ts`, keyed by the
      part — so there is nothing here to choose. */
   --eater-map-accent: #bc9870;
-  --eater-map-accent-veil: 64%;
+  --eater-map-accent-veil: 0%;
 
   --eater-map-number-size: clamp(1.4rem, 1.1rem + 1vw, 2.1rem);
   --eater-map-number-leading: 0.9;
@@ -590,7 +595,9 @@
      which is the row rule's own colour and its own number rather than a second
      one that has to agree with it — the argument `--eater-map-rule-weight` is
      already under, one seam further along. Drag the veil and the whole line
-     moves together. */
+     moves together, which is what took it to 0%: the ask was for the accent line
+     to carry no transparency, and it was one number rather than three because
+     that seam was already there. */
   --eater-map-leader-weight: 1px;
   --eater-map-leader-reach: clamp(1.6rem, 0.9rem + 2.4vw, 3.8rem);
 
@@ -671,10 +678,10 @@
      composition is not a Token (ADR 0004); how far back the drawing stands from
      the ink is, and it is this.
 
-     78% is the rule above the copy and 64% the rule above a Point. 92% is a step
-     further back again, because these cross the whole frame rather than sitting
-     over one column, and a rule that reads at a hand's width of column shouts at
-     1600. The mockup's own was rgba(255,255,255,0.075) on black, which is this
+     78% is the rule above the copy, and the rule above a Point stands at none at
+     all. 92% is a step further back again, because these cross the whole frame
+     rather than sitting over one column, and a rule that reads at a hand's width
+     of column shouts at 1600. The mockup's own was rgba(255,255,255,0.075) on black, which is this
      to within a point — but stated as a veil on --ink rather than as white, so
      the light theme takes it as ink on paper instead of vanishing. */
   --eater-map-grid-veil: 92%;

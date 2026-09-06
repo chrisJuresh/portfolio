@@ -1144,7 +1144,9 @@ while the row rule it leaves is `--eater-map-accent` at `--eater-map-accent-veil
 so a line the reader was following started warm and turned white a shoulder's width
 later, which reads as two marks that happen to touch rather than as one line. The
 veil Token is gone: the overlay spends the accent's own colour and the accent's own
-veil, so there is ONE number and dragging it moves the whole line. That is the
+veil, so there is ONE number and dragging it moves the whole line. That number now
+stands at **0%** — the accent line carries no transparency — and it took one edit
+rather than three for exactly that reason. That is the
 argument `--eater-map-rule-weight` is already under, one seam further along — two
 literals agreeing is a coincidence a Check can only assert by typing the number a
 third time.
