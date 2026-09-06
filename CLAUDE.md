@@ -307,6 +307,16 @@ nothing else, so they are changed by hand. The current entry is derived from the
 Section at rest and never declared; the `rail` Check asserts the count, that the
 box does not move across the turn, and that the highlight follows it back.
 
+**The Moonlight is the Kernel's too**: one cool light over the DARK theme's first
+screen, cast from just inside the top right, that the car hangs in as a
+silhouette. `src/kernel/corners.css` draws it INSIDE the corner pictures' band and
+not beside the shade, because the car's blend reaches only what that band painted
+before it — which is also why the band now paints the ground it was already
+showing. `src/kernel/tokens/moonlight.css` is its numbers and answers to
+`kernel-moonlight`; the photographs are untouched, because the reference it was
+measured from never touched them; and the light theme takes none of it, as a rule
+and not a value. `src/kernel/NOTES.md` has the measurements.
+
 **Read [`src/kernel/NOTES.md`](src/kernel/NOTES.md) before touching the Kernel,
 and [`src/sections/NOTES.md`](src/sections/NOTES.md) before adding a
 Section.** Between them they carry the folder convention, what the build actually
@@ -448,9 +458,9 @@ STRING, so the property the fill gesture is entirely about is the one property a
 stylesheet walk cannot see, and it has to be split out of the shorthand instead.
 
 **Tokens are not only a Section's.** The Effect Stack's hundred numbers, the three
-corner pictures’ placement, the landing's four terms and the page's own type size
-live in `src/kernel/tokens/`, one file per part of the Kernel, and answer to
-`kernel-<stem>`. **`kernel-faces`’s `--type-zoom` is how the whole drawing is
+corner pictures’ placement, the Moonlight's eight, the landing's four terms and
+the page's own type size live in `src/kernel/tokens/`, one file per part of the
+Kernel, and answer to `kernel-<stem>`. **`kernel-faces`’s `--type-zoom` is how the whole drawing is
 scaled up**: every ladder on the page is in rem, so it is the one number that
 makes a composition bigger without changing its proportions — and there is no
 per-element width to drag instead, because a Section's boxes are measures and

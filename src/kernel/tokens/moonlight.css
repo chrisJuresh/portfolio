@@ -1,0 +1,48 @@
+/* The Moonlight's numbers, apart from the layer that draws them — corners.css is
+   that layer, and src/kernel/NOTES.md says what was measured to arrive at these,
+   what the light falls on and what stands against it.
+
+   One file per part of the Kernel, so the Editor reaches this the way it reaches
+   the corner pictures' placement: it is `kernel-moonlight` on the Tokens
+   surface. THE LIGHT THEME TAKES NONE OF IT, whatever these hold — that is a
+   rule in corners.css and not a second value here, for the reason the shade
+   gives: a value is something the next session at the panel drags straight back
+   into paper. */
+
+:root {
+  /* How much of the light lands. The layer's own opacity at the top of a
+     breath, and the one number to drag first: 0 is the dark page as it was.
+     The shade stands over this as it stands over everything below the type, so
+     what reaches the screen is this less the shade's share. */
+  --moonlight-strength: 0.8;
+
+  /* The colour of the light where it is brightest. A cool, desaturated blue —
+     measured off the reference as an added light of about 22, 30, 42 of 255 at
+     its peak, over a ground of 8; this is that light restated as a colour that
+     mixes to it over the dark paper at the strength above and behind the shade. */
+  --moonlight-colour: #6d8abb;
+
+  /* Where the moon is, as a share of the first screen across and down. Just
+     inside the top-right corner rather than on it, so the brightest patch of sky
+     is on the page and the car hangs in it. */
+  --moonlight-x: 94%;
+  --moonlight-y: 6%;
+
+  /* How far the light carries, as a share of the fold — the radius at which it
+     has gone entirely. At 1 it reaches the bottom of the screen only at the
+     corner it is cast from, so the band has no foot to find. */
+  --moonlight-reach: 1.6;
+
+  /* The shape of the falloff: how far out, as a share of the reach, the light
+     is at half strength. 0.5 is a straight ramp; lower gathers the light towards
+     the moon, higher carries it out across the page. */
+  --moonlight-bend: 0.55;
+
+  /* The breath: one swell and back, as a cloud passing off the moon and over it
+     again. 0s holds the light still at full strength. */
+  --moonlight-breathe: 14s;
+
+  /* How much of the light is left at the bottom of a breath, as a share of the
+     strength. 1 is a light that does not move. */
+  --moonlight-breathe-floor: 0.6;
+}

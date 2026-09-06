@@ -1,15 +1,27 @@
 /* The corner pictures: the plate bottom-left, the car top-right, the eye
    bottom-right. Three baked photographs run in behind the opening composition,
    scaled to --fold so they grow together, and graded in the file rather than by
-   a filter here.
+   a filter here. And the Moonlight they stand in: one cool light cast from the
+   top right across the DARK theme's first screen, which the car hangs in as a
+   silhouette. The light theme takes none of it.
 
-   Every number they are drawn from is in tokens/corners.css, imported first so
-   this file's rules stand after them, and so the Editor has one file per part of
-   the Kernel that is nothing but Tokens. src/kernel/NOTES.md says what each one
-   is measured from and which of them the ladder in corners.ts has to agree
-   with. */
+   Every number they are drawn from is in tokens/corners.css and
+   tokens/moonlight.css, imported first so this file's rules stand after them,
+   and so the Editor has one file per part of the Kernel that is nothing but
+   Tokens. src/kernel/NOTES.md says what each one is measured from and which of
+   them the ladder in corners.ts has to agree with. */
 
 @import './tokens/corners.css';
+@import './tokens/moonlight.css';
+
+/* The breath of the Moonlight, registered so it is a number the keyframes below
+   can carry rather than a token stream the cascade cannot interpolate. Global,
+   as every registration is, and the Kernel is where a global belongs. */
+@property --moonlight-swell {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 1;
+}
 
 /* One band, the height of the first screen, at the top of the document. The
    nearest positioned ancestor is the BODY, and what this needs from it is that
@@ -17,7 +29,18 @@
    initial containing block it used to be measured against was too. Every offset
    here is 0 or a length, so the two answer identically; ground.css is where the
    body was positioned and why. What must not happen is a positioned ancestor
-   INSIDE the Shell, which would put these at the Shell's origin. */
+   INSIDE the Shell, which would put these at the Shell's origin.
+
+   IT PAINTS THE GROUND, AND THAT IS FOR THE CAR. The band is a stacking context
+   — a positioned box with a z-index is one — so a blend on anything inside it
+   reaches only what was painted before it INSIDE it, and never the page. Over a
+   transparent backdrop `multiply` is a no-op and the car would paint as the
+   light ghost it is graded as, exactly where the Moonlight does not reach. The
+   band therefore paints the ground the page already shows there — the same
+   `--ground`, on the same Turn, over the same pixels — so the car's backdrop is
+   opaque sky everywhere and the silhouette is the car's shape and nothing else.
+   Nothing on screen changes for it: there is nothing but the canvas below -1,
+   and the canvas is this colour. */
 .kernel-corners {
   position: absolute;
   top: 0;
@@ -27,6 +50,7 @@
   z-index: -1;
   pointer-events: none;
   contain: paint;
+  background: var(--ground);
 }
 
 .kernel-corners > * {
@@ -34,6 +58,58 @@
   left: 0;
   right: 0;
   background-repeat: no-repeat;
+}
+
+/* THE MOONLIGHT. A radial light, its centre and reach in the first screen's own
+   terms, drawn under the three pictures so the plate and the eye stand in it as
+   the lighter ghosts they are and the car stands AGAINST it (below). It is the
+   first screen's sky rather than the window's, which is why it is here and not
+   beside the shade: it scrolls off with the pictures it lights, and the Turn
+   needs no second term to take it away.
+
+   THE COLOUR RUNS TO `transparent` AND NOT TO THE GROUND, so the layer is light
+   and nothing else, and its opacity is the whole of how much of it there is —
+   the strength, times where the breath has got to. The foot is masked whatever
+   the reach says: a light run past the fold would end in a line the reader
+   scrolls past, and that is the one thing about this band that must not happen. */
+.kernel-corners .moonlight {
+  top: 0;
+  bottom: 0;
+  background-image: radial-gradient(
+    circle calc(var(--moonlight-reach) * var(--fold)) at var(--moonlight-x) var(--moonlight-y),
+    var(--moonlight-colour) 0%,
+    calc(var(--moonlight-bend) * 100%),
+    transparent 100%
+  );
+  mask-image: linear-gradient(to bottom, #000 75%, transparent 100%);
+  opacity: 0;
+}
+
+/* THE DARK THEME'S ALONE, as a rule and not as a value — the shade's own gate,
+   for the shade's own reason. Moonlight over paper is a blue wash over a white
+   page, and no setting of the Tokens should be able to put one there. */
+:root[data-theme='dark'] .kernel-corners .moonlight {
+  opacity: calc(
+    var(--moonlight-strength) *
+      (var(--moonlight-breathe-floor) + (1 - var(--moonlight-breathe-floor)) * var(--moonlight-swell))
+  );
+  animation: kernel-moonlight-breathe var(--moonlight-breathe) ease-in-out infinite;
+}
+
+/* From full, down to the floor the Tokens name, and back: the swell is what the
+   opacity above reads, so the keyframes carry a number and the Tokens keep the
+   strength. A period of 0s runs no breath at all and the light stands at full. */
+@keyframes kernel-moonlight-breathe {
+  50% {
+    --moonlight-swell: 0;
+  }
+}
+
+/* A reader who asked for less motion gets the light and not the breath. */
+@media (prefers-reduced-motion: reduce) {
+  .kernel-corners .moonlight {
+    animation: none;
+  }
 }
 
 /* Width from the token, height auto from the file's own aspect — so the aspect
@@ -55,6 +131,17 @@
   background-position: right var(--car-x) top calc(var(--car-y) - var(--car-crop) * var(--car-w));
   background-size: var(--car-w) auto;
   opacity: var(--car-opacity);
+}
+
+/* THE CAR IS BACKLIT. The moon is behind it, so where the other two pictures
+   are lit ghosts over the sky this one is a shape cut out of it: `multiply`
+   takes the car's own tones out of whatever light is behind it, most where the
+   sky is brightest and almost nothing where the Moonlight does not reach. The
+   grade in the file is unchanged — the same rung serves both — and the dark
+   theme's --car-opacity is how deep the cut goes (tokens/corners.css). Dark
+   only, because the light theme has no moon for it to stand against. */
+:root[data-theme='dark'] .kernel-corners .car {
+  mix-blend-mode: multiply;
 }
 
 /* THE ONE PICTURE OF THE THREE THAT IS NOT MEASURED OFF A PAGE EDGE. It stands

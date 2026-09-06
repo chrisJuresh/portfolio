@@ -15,8 +15,12 @@ import './corners.css';
 import './landing.css';
 ---
 
-{/* The corner pictures. Empty, decorative, and sized entirely in CSS. */}
+{/* The corner pictures, and the Moonlight they stand in. Empty, decorative, and
+    sized entirely in CSS. The light is the FIRST child because it is the sky the
+    pictures are drawn against: the car blends into it, and a blend reaches only
+    what was painted before it inside this box. corners.css. */}
 <div class="kernel-corners" aria-hidden="true">
+  <div class="moonlight"></div>
   <div class="plate"></div>
   <div class="car"></div>
   <div class="eye"></div>

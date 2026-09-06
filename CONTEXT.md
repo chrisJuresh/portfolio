@@ -106,6 +106,13 @@ The Kernel's layers over the finished page — paper tooth, halftone, film, grai
 grille, scan, roll, tube, vignette — each inert until named.
 _Avoid_: filters, overlays, post-processing
 
+**Moonlight**:
+The Kernel's one light over the dark theme's first screen: cool, cast from just
+inside the top right across the ground the Front Screen is printed on, breathing
+slowly, and what the car stands against as a silhouette. The light theme has
+none.
+_Avoid_: glow, spotlight, gradient, haze, the blue light
+
 **Timeline**:
 A Section's motion as one named, seekable object. Asking a Timeline for a given
 moment is how both the Editor and a Check see motion.
