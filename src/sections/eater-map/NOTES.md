@@ -1120,14 +1120,17 @@ circle of radius 0 renders nothing, so `[cx]` in the selector is the same promis
 the polylines already make — they carry no `points` until a script comes, and paint
 nothing until then.
 
-Two Tokens for the rule itself, which are the two the composition can have an
-opinion about: `--eater-map-leader-weight` and that reach. The reach at 0 is a
-straight rule from the point to the corner. Where a rule leaves its row VERTICALLY
-is derived rather than a Token — it is the row rule's own centreline — because it
-is a coordinate in a composition and not a number the author chooses (ADR 0004).
-The eight `--eater-map-anchor-<part>-x/-y` are Tokens for the opposite reason:
-which corner of a Card a rule comes off is a choice, and as a share of the part it
-is a corner at every window and at every size the Slab is drawn at.
+One Token for the rule itself, which is the one thing about a leader that is only
+a leader's: that reach. The reach at 0 is a straight rule from the point to the
+corner. Its WEIGHT is `--eater-map-accent-weight` and its colour
+`--eater-map-accent` — the accent line's, declared up with the Points, because
+this rule is that line rather than something that matches it (#214, below). Where
+a rule leaves its row VERTICALLY is derived rather than a Token — it is the row
+rule's own centreline — because it is a coordinate in a composition and not a
+number the author chooses (ADR 0004). The eight
+`--eater-map-anchor-<part>-x/-y` are Tokens for the opposite reason: which corner
+of a Card a rule comes off is a choice, and as a share of the part it is a corner
+at every window and at every size the Slab is drawn at.
 
 ### The leader IS the row's rule continued, and for a while it was two lines
 
@@ -1161,10 +1164,10 @@ centred on `top − 0.5`. A 1px stroke centred on `top` spans `[top − 0.5, top
 at the exact place the reader's eye is.
 
 The fix is that **the hook's box is now the row rule's box**: lifted by
-`--eater-map-rule-weight` and given it as a height. `leaders.ts` takes the
+`--eater-map-accent-weight` and given it as a height. `leaders.ts` takes the
 CENTRELINE off it — still two x's and a y off one rect, still no Token parsed by a
-script — and it keeps holding if the two weights ever part, because whatever the
-leader's stroke is it is centred on the rule it continues.
+script — and it holds at every weight, because whatever the leader's stroke is it
+is centred on the rule it continues.
 
 **The Check asserts both, against the ROW and not against the hook.** Measuring the
 leader against the hook only says the script read the box it was handed; measuring
@@ -1188,7 +1191,7 @@ rasterisation difference for a geometric one — the stroke would sit up to half
 device pixel off the line it is meant to be on — and it is DPR-dependent in a way
 the fix cannot be written once: a stroke is crisp on a half-integer when its device
 width is odd and on an integer when it is even, so the arithmetic changes under
-zoom, under a second monitor, and under any drag of `--eater-map-leader-weight`. It
+zoom, under a second monitor, and under any drag of `--eater-map-accent-weight`. It
 would also fail `ONE_LINE`, and the only way to keep both is to compute the
 snapping in the Check as well — which is the Check re-running the implementation
 and asserting nothing (`scripts/checks/NOTES.md`). The one honest fix is
@@ -1197,6 +1200,37 @@ snaps it exactly as it snaps the row's, and let the polyline start at the turn
 under the knee dot, which already covers that seam. That is a redesign of this
 module's contract — the rule is one polyline and the dots are its vertices — for
 12% of peak luminance on a hairline, and it has not been thought worth it.
+
+### And the weight is one Token now, for the reason the colour already was (#214)
+
+The colour above is the argument in full and the weight was the same argument left
+half finished. The accent line's thickness was `--eater-map-rule-weight` for the
+row's border and the hook's box, and `--eater-map-leader-weight` for the polyline —
+**so there was no drag that made the orange line thicker.** Dragging the leader's
+thickened the diagonal and left the row a hairline, which is one line changing
+weight where it leaves the row. Dragging the rule's took the frame's neutral grid
+and the rule above the copy with it, because that Token is those rules' weight too.
+
+**`--eater-map-accent-weight` is the whole line's**, declared beside
+`--eater-map-accent` and its veil, and spent by all three: the Point's border, the
+hook's box and the stroke. `--eater-map-rule-weight` keeps what it was always
+naming underneath — the composition's ink, which is the grid and the copy.
+
+**The grid's hairline is still that rule continued, and it is a CENTRELINE that
+says so now.** While the two weights were one Token, "one border-width above the
+padding box" and "on the row rule's centreline" were the same sentence; with two
+they are not, and only the second stays true. So the pseudo-element stands at
+`-(accent + rule) / 2` and the `eater-map` Check compares the two centrelines
+rather than a `top` against a weight — both ends of the agreement read, so it
+survives either Token being dragged. Measured at 1, 3, 5 and 7px: the row, the
+hook and the stroke all move together, the hairline stays where it was and stays
+centred, and the whole Check suite passes with the line built at 5px.
+
+**What this does not buy is a leader of its own weight**, and that is the point
+rather than a cost. The mechanism still holds if the two ever part — the hook is
+the row rule's box, so whatever the stroke is it is centred on the rule it
+continues — but there is no longer a Token that parts them, because a reader
+following one line is not asking about two numbers.
 
 ### And the lit dot glows
 
@@ -1238,6 +1272,18 @@ of a pixel at 1440x900, at 1600x1000, and back again across the breakpoint.
 
 Nothing hangs on a frame ticker. The rules are read out of the layout, so a redraw
 forces one, and one per tick of a Lift that runs for a second is the whole cost.
+
+**And `redraw.ts` has it too, which is what makes the Tokens that decide where a
+rule GOES draggable at all (#214).** Those three signals are all a rule needs while
+the composition is fixed and none of them is the one the Editor sends: an anchor is
+a zero-sized box, so moving it resizes nothing and the `ResizeObserver` never
+fires, and the shoulder's reach is the hook's width, which is absolutely positioned
+and resizes nothing either. So the eight anchors and the reach wrote their file and
+left all four rules where they were until a reload — a Token that drags and moves
+nothing, which is the exact bug the same seam was built for below. `timeline.ts`
+hands this module's redraw to `mountRedraw` alongside the stage's and the glass's,
+BELOW `mountLeaders` rather than above it, and the `editor` Check drags an anchor
+and requires the far end to follow.
 
 **Below the band there are no rules and they are absent rather than redrawn.** The
 composition is one column with the four points BENEATH the picture (#179), so a
@@ -1848,6 +1894,16 @@ outline, and arithmetic done at mount does not move — so `--eater-map-light-az
 was a real Token that wrote its file and left the drawing alone until a reload,
 which reads exactly like a broken Token and is not one.
 
+**AND THE LEADER LINES ARE A SECOND EXCEPTION OF ANOTHER SHAPE (#214)**, which is
+worth knowing because the two are easy to read as one. The shading is arithmetic
+frozen at mount; a rule's ends are a POSITION READ BACK off the layout, and the
+box it is read off — `.eater-map__anchor` — is zero-sized. So the stylesheet does
+move the anchor under a drag, instantly and for free, and the polyline does not
+follow it: nothing resizes, so `leaders.ts`'s own observer never fires. The same
+holds for the shoulder's reach, which is the hook's width. One rebuild answers for
+both exceptions, and `timeline.ts` hands it all three redraws — the stage's, the
+glass's and the leaders' — in the order they were first made.
+
 **The seam is the Editor's own preview sheet, so nothing was added to the Editor.**
 It is how a drag reaches the page at all; a `MutationObserver` on it needs no
 cooperation and opens no route by which anything can be written (ADR 0004). A
@@ -1910,7 +1966,7 @@ per box deletes the first surface's slices as the second is built and the surviv
 looks perfect. The Slab is rebuilt too now, so there were two callers and two
 spellings of a clear is how one of them ends up per box again.
 
-**Five mutations, all caught**, and the last two are the ones worth knowing, because
+**Six mutations, all caught**, and the last three are the ones worth knowing, because
 each fails as something other than itself:
 
 | mutation                                        | wanted | got |
@@ -1920,6 +1976,7 @@ each fails as something other than itself:
 | `clearEdge` taken out of the Slab's draw        | fail   | fail: the slab edge 24 → 48 slices on one drag, and 172 generated elements out and back against 124 |
 | the DOM stage returning no `redraw`             | fail   | fail: all 24 slab slices painted as they were, and the four Card surfaces still following |
 | the GLASS clear disabled, the slices' left in   | fail   | fail: 132 generated elements out and back against 124 |
+| the LEADERS' redraw left out of `again` (#214)  | fail   | fail: the Slab's rule still ending at 442.72,538.28 with its anchor dragged from 0 to 1 |
 
 The fourth is why the Check asks **per surface**: the Cards are not a stage's, so a
 redraw wired to the stage alone — or to the Cards alone — leaves half the drawing lit

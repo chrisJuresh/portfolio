@@ -55,6 +55,13 @@ import { PAGE, open, settle } from '../lib/page.mjs';
  * only through a rebuild — and a rebuild is a thing that mounts on approach. That
  * assertion needs a settled page and the one above needs an unsettled one, so it
  * gets a page of its own rather than a compromise.
+ *
+ * THAT GROUP DRAGS TWO TOKENS AND NOT ONE (#214), because "generated rather than
+ * expressed" has two shapes in that Section and a redraw wired to one of them
+ * satisfies neither. The light is arithmetic baked into a gradient; a leader
+ * line's far end is a POSITION read back off the layout, and the box it is read
+ * off is zero-sized, so moving it fires no observer. One rebuild answers for both
+ * and each half was missing from it once.
  */
 
 const MARKER = 'Edited by the smoke Check';
@@ -551,6 +558,106 @@ export const check = {
             failures.push(
               'the Exploded View came back from a drag out and back drawn differently to how it mounted, with' +
                 ' the same Token values — the redraw is not a function of the Tokens alone',
+            );
+          }
+
+          // ---- and a Token that moves where a LEADER LINE ENDS (#214) --------
+
+          // THE SECOND TOKEN THIS CHECK NAMES, AND IT NAMES ONE FOR THE SAME
+          // REASON: the claim is about a mechanism rather than about the surface.
+          // A leader's far end is `--eater-map-anchor-<part>-x/-y`, a share of the
+          // part's own box, and it reaches the drawing through a zero-sized
+          // `.eater-map__anchor` that the polyline is redrawn against. Moving a
+          // zero-sized box resizes nothing, so the `ResizeObserver` in
+          // `leaders.ts` never fires and the eight anchors wrote their file and
+          // left all four rules where they were until a reload — which is what a
+          // reader of the Editor cannot tell from a Token that does nothing.
+          // `redraw.ts` is what moves them, and `timeline.ts` handing it the
+          // leaders' own redraw is the whole of the fix.
+          //
+          // THE SLAB'S, because it is the one part that is not a Card: its anchor
+          // sits on the picture every stage draws, so this asks nothing about
+          // which stage mounted.
+          const ANCHOR = '--eater-map-anchor-slab-x';
+          /** The polyline's LAST vertex, which is its own end and the lit dot's
+           *  centre — read off the attribute `leaders.ts` writes rather than off a
+           *  painted box, because a `drop-shadow` grows the box and not the rule. */
+          const endOfRule = () =>
+            view.evaluate(() => {
+              const rule = document.querySelector('[data-eater-map-leader="slab"]');
+              const written = (rule?.getAttribute('points') ?? '').trim();
+              if (written === '') return null;
+              const [x, y] = (written.split(/\s+/).at(-1) ?? '').split(',').map(Number);
+              return Number.isFinite(x) && Number.isFinite(y) ? { x, y } : null;
+            });
+          /** Far enough to be a move and not a rounding. The drag below takes the
+           *  end from one edge of the Slab to the other, which is hundreds of px at
+           *  every window this Check opens. */
+          const MOVED = 1;
+
+          const anchorRow = view.locator(`[data-editor-token$="${ANCHOR}"]`).first();
+          const rested = await endOfRule();
+          if ((await anchorRow.count()) === 0) {
+            failures.push(
+              `the Tokens surface drew no control for ${ANCHOR} — the eight anchors are declared in` +
+                ' eater-map/tokens.css, so this is one being renamed or the surface not finding it',
+            );
+          } else if (rested === null) {
+            failures.push(
+              'the Slab’s leader line carries no points under the Editor, so there was no rule to move and' +
+                ' nothing about where a rule ENDS was checked — leaders.ts writes them at mount',
+            );
+          } else {
+            const anchorSlider = anchorRow.locator('input[type="range"]').first();
+            const anchorWas = await anchorSlider.inputValue();
+            const anchorEnd = await anchorSlider.evaluate((input, here) => {
+              const far =
+                Math.abs(Number(input.max) - Number(here)) > Math.abs(Number(here) - Number(input.min))
+                  ? input.max
+                  : input.min;
+              input.value = far;
+              input.dispatchEvent(new Event('input', { bubbles: true }));
+              return input.value;
+            }, anchorWas);
+            await settled();
+            const dragged = await endOfRule();
+            if (anchorEnd === anchorWas) {
+              failures.push(
+                `dragging ${ANCHOR} to the end of its row left it at ${anchorWas}, so the gesture this group` +
+                  ' is built on never moved and everything below it asserted nothing',
+              );
+            } else if (dragged === null) {
+              failures.push(`the Slab’s leader line lost its points while ${ANCHOR} was dragged`);
+            } else if (Math.hypot(dragged.x - rested.x, dragged.y - rested.y) <= MOVED) {
+              failures.push(
+                `dragging ${ANCHOR} from ${anchorWas} to ${anchorEnd} left the Slab’s rule ending at` +
+                  ` ${dragged.x},${dragged.y} against ${rested.x},${rested.y} — the anchor moved and the rule` +
+                  ' did not, so the drag moved the file and left the drawing where it was until a reload',
+              );
+            }
+
+            // ...and back, because a rule that follows an anchor out and does not
+            // come back is a redraw reading something other than the Tokens.
+            await anchorSlider.evaluate((input, back) => {
+              input.value = back;
+              input.dispatchEvent(new Event('input', { bubbles: true }));
+            }, anchorWas);
+            await settled();
+            const home = await endOfRule();
+            if (home === null || Math.hypot(home.x - rested.x, home.y - rested.y) > MOVED) {
+              failures.push(
+                `putting ${ANCHOR} back to ${anchorWas} left the Slab’s rule ending at` +
+                  ` ${home ? `${home.x},${home.y}` : 'nothing'} against the ${rested.x},${rested.y} it mounted` +
+                  ' at — where a rule ends is not a function of the Tokens alone',
+              );
+            }
+            if (readFileSync(lightFile, 'utf8') !== lightWas) {
+              failures.push(`previewing ${ANCHOR} wrote eater-map/tokens.css — a drag previews and a release writes`);
+            }
+            notes.push(
+              `dragged ${ANCHOR} ${anchorWas} → ${anchorEnd} → ${anchorWas}, and the Slab’s rule ended at` +
+                ` ${rested.x},${rested.y} → ${dragged ? `${dragged.x},${dragged.y}` : 'nothing'} → ` +
+                `${home ? `${home.x},${home.y}` : 'nothing'}`,
             );
           }
 

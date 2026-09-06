@@ -596,7 +596,7 @@ const FOOT = 1;
 
 /** How far a grid line may sit from the edge it IS, in px. Half a pixel: the
  *  three verticals are grid lines of the same grid their blocks are placed in
- *  and the four horizontals are a border-width above a border, so both are
+ *  and the four horizontals share a centreline with a border, so both are
  *  equalities and this is the rounding a fractional layout leaves. Anything
  *  looser and a restated twelve-column grid — the failure the subgrid exists to
  *  make impossible — walks through at the window it was tuned at. */
@@ -4484,12 +4484,14 @@ async function theEdgeFollowsTheWindow(browser, origin) {
  * columns are the SAME PICTURE at the window they were typed at, and different
  * pictures at every other. Nobody looking at one screenshot can tell them apart.
  *
- * ONE HORIZONTAL PER POINT, AND COLLINEAR WITH THAT POINT'S RULE. The line stands
- * one rule-weight above the row's padding box, which is exactly where the row's
- * own border is drawn, so the two are one line that changes colour at the row's
- * edge. BOTH ENDS OF THAT AGREEMENT ARE READ — the pseudo-element's `top` against
- * the row's `border-top-width` — which is what makes the assertion survive
- * `--eater-map-rule-weight` being dragged, and is why that Token exists at all.
+ * ONE HORIZONTAL PER POINT, AND COLLINEAR WITH THAT POINT'S RULE. The two share a
+ * CENTRELINE, which is what makes them one line that changes colour and weight at
+ * the row's edge rather than two lines that happen to touch. BOTH ENDS OF THAT
+ * AGREEMENT ARE READ — the pseudo-element's `top` and its own border-width against
+ * the row's — which is what makes the assertion survive either
+ * `--eater-map-accent-weight` or `--eater-map-rule-weight` being dragged, and is
+ * why those Tokens exist at all. They were one Token until #214, and while they
+ * were, sharing a centreline and sharing a box were the same claim.
  * The count is asserted too: a fifth Point brings a fifth line for nothing, and a
  * Point that stopped drawing one is a hole nothing else on the page reports.
  *
@@ -4582,6 +4584,10 @@ async function theGridIsTheCompositionsOwnEdges(browser, origin) {
             at: at + 1,
             drawn: px(line.borderTopWidth) > 0 && line.borderTopStyle !== 'none',
             top: round(px(line.top)),
+            // BOTH WEIGHTS, because they are two Tokens since #214 — the accent
+            // line's and the composition's ink — and the claim is that the two
+            // lines share a CENTRELINE, which needs each one's own thickness.
+            hair: round(px(line.borderTopWidth)),
             rule: round(px(rule.borderTopWidth)),
             // `left` and `right` are the pseudo's own insets, negative, measured
             // from the row. So the line's own edges are the row's plus those.
@@ -4673,12 +4679,24 @@ async function theGridIsTheCompositionsOwnEdges(browser, origin) {
           );
           continue;
         }
-        if (Math.abs(line.top + line.rule) > COLLINEAR) {
+        // THE TWO CENTRELINES, AND NOT THE HAIRLINE'S TOP AGAINST THE ROW'S
+        // WEIGHT. Both borders are painted inside their own border boxes, so the
+        // row's rule is centred half its weight above the padding box and the
+        // hairline half of ITS weight below its `top`. Those two expressions are
+        // the same number while the weights are — which they were until #214 gave
+        // the accent line a weight of its own — and only the centrelines stay an
+        // equality once they are two Tokens the author drags apart. Reading both
+        // ends of the agreement is the point: an assertion that took either
+        // weight as read would pass a hairline drawn against a literal.
+        const hairline = line.top + line.hair / 2;
+        const accent = -line.rule / 2;
+        if (Math.abs(hairline - accent) > COLLINEAR) {
           failures.push(
-            `${where}: Point ${line.at}'s hairline stands ${-line.top}px above its padding box while the ` +
-              `row's own rule is ${line.rule}px thick. The two have to be COLLINEAR — the grid line is ` +
-              'that rule continued rather than a second line beside it — which is what one ' +
-              '--eater-map-rule-weight behind both buys. Two `1px` literals agreeing is what it replaced',
+            `${where}: Point ${line.at}'s hairline is ${line.hair}px thick and centred ${-hairline}px above ` +
+              `its padding box, while the row's own rule is ${line.rule}px thick and centred ${-accent}px ` +
+              'above it. The two have to be COLLINEAR — the grid line is that rule continued rather than a ' +
+              'second line beside it — which is what --eater-map-accent-weight and --eater-map-rule-weight ' +
+              'naming both ends of the arithmetic buys. Literals agreeing is what they replaced',
           );
         }
         if (!line.reachesLeft || !line.reachesRight) {

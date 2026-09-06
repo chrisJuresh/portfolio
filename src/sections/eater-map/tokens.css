@@ -122,6 +122,28 @@
   --eater-map-accent: #bc9870;
   --eater-map-accent-veil: 0%;
 
+  /* AND ITS WEIGHT, WHICH IS THE THIRD NUMBER ABOUT ONE LINE AND USED TO BE TWO
+     NUMBERS ABOUT TWO (#214). The accent line is the rule across a Point's row
+     and the leader out of that row's left edge onto the part — one line, and the
+     Section's own NOTES.md say so at length. Its weight was
+     `--eater-map-rule-weight` for the row and the hook and
+     `--eater-map-leader-weight` for the polyline, so there was no drag that made
+     the orange line thicker: one of them thickened the diagonal and left the row
+     a hairline, and the other took the frame's neutral grid and the rule above
+     the copy with it, because the same Token is those rules' weight too.
+
+     So this is the accent line's, end to end — the Point's border, the hook's box
+     and the polyline's stroke — and `--eater-map-rule-weight` is left holding the
+     NEUTRAL rules, which is what it was always naming underneath. It is the same
+     argument the veil above is under, one seam further along: one number the
+     author drags, rather than two that have to agree.
+
+     THE GRID'S HAIRLINE IS STILL THIS RULE CONTINUED and stays collinear with it
+     by CENTRELINE — which is what sharing a box already meant while the two
+     weights were one, said so it survives either of them being dragged. The
+     leader needs nothing: `leaders.ts` has always taken the hook's centreline. */
+  --eater-map-accent-weight: 1px;
+
   --eater-map-number-size: clamp(1.4rem, 1.1rem + 1vw, 2.1rem);
   --eater-map-number-leading: 0.9;
   --eater-map-icon-size: clamp(1.15rem, 0.95rem + 0.85vw, 1.8rem);
@@ -594,26 +616,33 @@
 
   /* ---- the leader lines ---------------------------------------------------
      Four thin rules joining each numbered point to the part of the Exploded View
-     it names (#178). Two Tokens, and they are the two the composition can have an
-     opinion about: how heavy the rule is, and how far it runs horizontally out of
-     its point before turning towards the part. `reach` at 0 is a straight rule
-     from the point to the corner; the shoulder is what binds the rule to the row
-     of text it leaves.
+     it names (#178). ONE Token here, and it is the one thing about a leader that
+     is only a leader's: how far the rule runs horizontally out of its point
+     before turning towards the part. `reach` at 0 is a straight rule from the
+     point to the corner; the shoulder is what binds the rule to the row of text
+     it leaves.
 
-     THE COLOUR IS NOT ONE OF THEM ANY MORE, AND THAT IS THE WHOLE OF WHAT WAS
-     WRONG WITH IT. There was a `--eater-map-leader-veil` here, spent on `--ink`,
+     NEITHER THE COLOUR NOR THE WEIGHT IS ONE OF THEM, AND THAT IS THE WHOLE OF
+     WHAT WAS WRONG WITH BOTH. There was a `--eater-map-leader-veil` here, spent on `--ink`,
      which drew a rule that left an accent-coloured row rule and turned white half
      an inch later — a reader following one line watched it change species. The
      line the reader follows is ONE line: the grid's neutral hairline across the
      frame, and then the accent from the row's own left edge all the way to the
      part. So the leader spends `--eater-map-accent` at `--eater-map-accent-veil`,
      which is the row rule's own colour and its own number rather than a second
-     one that has to agree with it — the argument `--eater-map-rule-weight` is
-     already under, one seam further along. Drag the veil and the whole line
-     moves together, which is what took it to 0%: the ask was for the accent line
-     to carry no transparency, and it was one number rather than three because
-     that seam was already there. */
-  --eater-map-leader-weight: 1px;
+     one that has to agree with it. Drag the veil and the whole line moves
+     together, which is what took it to 0%: the ask was for the accent line to
+     carry no transparency, and it was one number rather than three because that
+     seam was already there.
+
+     `--eater-map-leader-weight` went the same way and for the same reason (#214).
+     It was the polyline's stroke while the row rule it continues was
+     `--eater-map-rule-weight`, so "make the orange line thicker" was two drags
+     and one of them thickened the neutral grid. The weight is
+     `--eater-map-accent-weight` now, declared up with the accent's colour and its
+     veil, and this block states none of the three: what a leader has an opinion
+     about is where it goes, and it is drawn in the line's own colour at the
+     line's own weight because it IS that line. */
   --eater-map-leader-reach: clamp(1.6rem, 0.9rem + 2.4vw, 3.8rem);
 
   /* THE TWO DOTS, and they are two different claims (#191). The one at the PART
@@ -658,7 +687,18 @@
      The defaults are the corner nearest the points' column, taken down the
      stack in the order the four points read: the search bar's foot, the lines
      popup's foot, the detail panel's head, and the Slab's own bottom-left, which
-     is the one corner of the picture no Card is standing on. */
+     is the one corner of the picture no Card is standing on.
+
+     AND A DRAG MOVES THE RULE AND NOT ONLY THE POINT IT ENDS AT (#214). The
+     anchor is a zero-sized box, so moving it resizes nothing and the
+     `ResizeObserver` `leaders.ts` redraws on never fires — these eight Tokens and
+     the reach above wrote their file and left all four rules where they were
+     until a reload, which reads exactly like a Token that does nothing. The
+     leaders are drawn again by `redraw.ts` now, which is the Editor's own preview
+     sheet watched, and is the same seam the Slab's shading has been redrawn
+     through since #196. The slider's range is four times the value in the file,
+     so `y` at 1 offers 0 to 4 and only the first quarter of it is on the part —
+     the number beside it takes any share, and 0.5 is the middle of that edge. */
   --eater-map-anchor-search-x: 0;
   --eater-map-anchor-search-y: 1;
 
@@ -672,13 +712,21 @@
   --eater-map-anchor-slab-y: 1;
 
   /* ---- the rules the composition draws ------------------------------------
-     ONE WEIGHT FOR ALL OF THEM, and it is a Token because #201 made it one. It
-     was `1px` typed into three rules — above the copy, above each Point, and the
-     grid's own hairlines — and the third has to be COLLINEAR with the second: the
-     grid line stands one border-width above a Point's padding box so that it is
-     the same line as the Point's rule, continued. Two literals agreeing is a
-     coincidence a Check can only assert by re-typing the number a fourth time;
-     one name is the agreement itself, and the author may drag it. */
+     ONE WEIGHT FOR THE NEUTRAL ONES, and it is a Token because #201 made it one.
+     It was `1px` typed into three rules — above the copy, above each Point, and
+     the grid's own hairlines — and two literals agreeing is a coincidence a Check
+     can only assert by re-typing the number a third time; one name is the
+     agreement itself, and the author may drag it.
+
+     THE RULE ABOVE A POINT LEFT THIS TOKEN IN #214, which is the one change worth
+     knowing about here. That rule is not neutral — it is the accent line's first
+     inch, and it is `--eater-map-accent-weight` now, with the leader that
+     continues it. What is left under this name is the grid and the copy: the
+     marks the composition draws in ink rather than in the accent. The grid's
+     horizontal is still the Point's rule continued and still collinear with it,
+     by CENTRELINE rather than by standing one of its own border-widths above the
+     padding box — which was the same thing while the two weights were one Token,
+     and is the thing that stays true now they are two. */
   --eater-map-rule-veil: 78%;
   --eater-map-rule-weight: 1px;
   --eater-map-muted-veil: 32%;

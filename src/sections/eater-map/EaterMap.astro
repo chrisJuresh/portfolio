@@ -564,7 +564,7 @@ import './tokens.css';
      an absolutely positioned child is the row's PADDING box, because that is the
      containing block a positioned ancestor establishes. The row's accent rule is
      a border, drawn in the border box, so it sits entirely ABOVE that edge: at
-     `--eater-map-rule-weight` it spans [top − 1, top], centred on top − 0.5,
+     `--eater-map-accent-weight` it spans [top − 1, top], centred on top − 0.5,
      while a 1px stroke centred on `top` spans [top − 0.5, top + 0.5]. Half a
      pixel apart, which is exactly one device pixel of step at DPR 1 — the line
      jogged where the row ended, measured, both ends, all four rules.
@@ -572,14 +572,16 @@ import './tokens.css';
      So the hook is lifted by the rule's own weight and given it as a height. Its
      rect is then the row rule's rect, and `leaders.ts` takes the CENTRELINE off
      it — two x's and a y off one box, still, and still no Token parsed by a
-     script. It also holds if the two weights ever part: whatever the leader's
-     stroke, it is centred on the rule it continues. */
+     script. THE WEIGHT IS THE ACCENT LINE'S AND NOT THE NEUTRAL RULES' (#214):
+     the row's border, this box and the polyline's stroke are one number now, so a
+     thicker orange line stays one bar of ink from the number to the shoulder
+     rather than a rule that changes weight where it leaves the row. */
   .eater-map__hook {
     position: absolute;
     right: 100%;
-    top: calc(-1 * var(--eater-map-rule-weight));
+    top: calc(-1 * var(--eater-map-accent-weight));
     width: var(--eater-map-leader-reach);
-    height: var(--eater-map-rule-weight);
+    height: var(--eater-map-accent-weight);
     pointer-events: none;
   }
 
@@ -720,10 +722,16 @@ import './tokens.css';
   /* THE RULE ABOVE EACH POINT, and it is the leader line's own first inch. The
      accent at `--eater-map-accent-veil`, which is none of it — across the row and
      no further; the rule continues out of the
-     row's left edge as the leader's shoulder, in the leader's own colour, so what
-     the reader follows from a number to a part is one line that changes weight
-     once. Drawn as a border on the row rather than as a box, so a point growing a
-     second line of title does not move it.
+     row's left edge as the leader's shoulder, in the leader's own colour and at
+     the leader's own weight, so what the reader follows from a number to a part
+     is one line that changes NEITHER. Drawn as a border on the row rather than as
+     a box, so a point growing a second line of title does not move it.
+
+     `--eater-map-accent-weight` AND NOT `--eater-map-rule-weight` (#214). This
+     rule is the accent line's and the grid's hairlines are the composition's ink,
+     and while one Token was both there was no drag that thickened the orange
+     without thickening the grey. It grows UPWARD out of the row, because a border
+     is painted inside the border box and this box's foot is the row's own text.
 
      AND THE WORDS STAND OFF THE GRID'S THIRD VERTICAL, which is a padding on the
      ROW and not on the list. The vertical is this column's own left edge (#201)
@@ -736,7 +744,7 @@ import './tokens.css';
      the figure sit in the content box that moves. Nothing else has to be told,
      and the `.eater-map__hook` comment below says what happens when it is. */
   .eater-map__points li {
-    border-top: var(--eater-map-rule-weight) solid
+    border-top: var(--eater-map-accent-weight) solid
       color-mix(in oklab, var(--eater-map-accent), transparent var(--eater-map-accent-veil));
     padding-top: var(--eater-map-point-air);
     padding-inline-start: var(--eater-map-point-inset);
@@ -752,11 +760,12 @@ import './tokens.css';
      scrolls below the band, and none of these is a share of anything. They are
      where the Points are, in both regimes, for nothing.
 
-     The reader follows ONE line that changes weight twice: neutral hairline
-     across the frame, the accent across the row, then the leader's own colour
-     turning out of the row towards the part. The accent border above wins where
-     they overlap because this is at `z-index: -1` and that is not — see the
-     verticals, where that layer is explained.
+     The reader follows ONE line that changes ONCE, at the row's own edge: the
+     neutral hairline across the frame, and then the accent — across the row, out
+     of it, round the shoulder and onto the part, at one colour and one weight the
+     whole way. The accent border above wins where they overlap because this is at
+     `z-index: -1` and that is not — see the verticals, where that layer is
+     explained.
 
      `-100vw` EACH WAY AND CLIPPED, which is the one place a `vw` is safe here.
      `.eater-map` is `overflow-x: clip`, so this is an over-reach the Section cuts
@@ -765,17 +774,27 @@ import './tokens.css';
      that is thrown away. The row's containing block is the row, so there is no
      way to say "the window's edge" from here that does not go through one.
 
-     `top` IS THE ROW RULE'S OWN WEIGHT, negated: the row's border is drawn inside
-     its border box, so a hairline placed one border-width above the padding box
-     is collinear with it. THE TWO ARE ONE TOKEN AND THAT IS WHY — they were two
-     `1px` literals agreeing by coincidence, which is a thing a Check can only
-     assert by typing the number a third time, and `--eater-map-rule-weight` is
-     the agreement itself. Drag it and both move together. */
+     `top` PUTS THIS HAIRLINE ON THE ROW RULE'S CENTRELINE, which is what makes it
+     that rule continued rather than a second line beside it. The row's border is
+     painted inside its border box, so it spans [−accent, 0] against the padding
+     box and is centred on −accent/2; this box's own border is painted inside
+     ITS border box, so a hairline of weight `rule` centred on that line stands at
+     −(accent + rule)/2. Both weights, because there are two of them since #214 —
+     while there was one Token this arithmetic came to `-1 * that`, which is the
+     literal that used to be here.
+
+     THE TWO WEIGHTS PART BECAUSE THEY ARE TWO DIFFERENT CLAIMS. The accent's is
+     the orange line's, from the number all the way to the part; this one is the
+     composition's ink. Making the orange thicker used to thicken the frame's grid
+     with it, which is the drag #214 was asked for and could not give. What is NOT
+     given up is the agreement: it is still one name on each side and never a
+     literal, and the `eater-map` Check reads both ends of it — the pseudo's `top`
+     and its own border against the row's — so it survives either being dragged. */
   .eater-map__points li::before {
     content: '';
     position: absolute;
     inset-inline: -100vw;
-    top: calc(-1 * var(--eater-map-rule-weight));
+    top: calc(-0.5 * (var(--eater-map-accent-weight) + var(--eater-map-rule-weight)));
     border-top: var(--eater-map-rule-weight) solid
       color-mix(in oklab, var(--ink), transparent var(--eater-map-grid-veil));
     z-index: -1;
@@ -1502,7 +1521,13 @@ import './tokens.css';
      at the far end of the Turn in BOTH themes, so there is no crossing for it to
      ride and nothing for a theme to invert (tokens.css). Mixed towards
      transparent rather than towards a colour, so what it stands on is whatever is
-     behind it. */
+     behind it.
+
+     AND FROM THE ACCENT'S WEIGHT FOR THE SAME REASON (#214). The stroke was
+     `--eater-map-leader-weight` while the row rule it continues was
+     `--eater-map-rule-weight`, so the one line had two numbers and neither of them
+     made it thicker on its own: this one thickened the diagonal alone, and that
+     one took the frame's neutral grid with it. One name, one drag, one line. */
   .eater-map__leaders {
     position: absolute;
     inset: 0;
@@ -1516,7 +1541,7 @@ import './tokens.css';
       var(--eater-map-accent),
       transparent var(--eater-map-accent-veil)
     );
-    stroke-width: var(--eater-map-leader-weight);
+    stroke-width: var(--eater-map-accent-weight);
     stroke-linecap: round;
     stroke-linejoin: round;
   }
