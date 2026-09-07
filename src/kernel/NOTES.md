@@ -696,6 +696,44 @@ deliver the event afterwards, so the target is hit-tested against a page that ha
 already moved, and the strip took the first notch of every page scroll begun near
 it.
 
+**AND BOTH OF THEM STAND ASIDE WHERE NEITHER CAN ACT, WHICH IS THE OTHER HALF OF
+THAT SENTENCE.** Non-passive is not free: Chromium may not scroll until the main
+thread has run, so a listener that never prevents anything down there is still a
+frame of the reader's own scroll. Past the last port the page turn hands the
+wheel back to the browser and the only roll on the page is three screens up, so
+the two reasons above have nothing left to buy — and below the band there is one
+port, no turn, and a whole ordinary scroll paying for one.
+
+So `page-turn.ts` re-registers both listeners **passive** in exactly those two
+regions and non-passive again on the way back, and `wheel.ts` exposes
+`standAside()` for its half. **Measured 300px inside the Catalogue at 1440x900,
+as the time a notch took to be handled: 41ms as shipped, 24ms with the two
+listeners taken off, and 41ms again with every Timeline held** — so it was never
+the scrubbing, and "the Catalogue scrolls late" was half the reader's frames
+spent on two decisions that had already been made (#218).
+
+Three things about it are easy to get wrong. **A passive listener still runs**,
+which is what keeps the push tracking following the wheel across the line and
+lets the way back be decided from the reader's own scroll — a `scroll` listener
+compares against the ports *as last read* and only reads the layout when that
+disagrees with where the two listeners are standing, so it costs nothing on the
+frames where nothing changed. **The swap is never decided mid-turn**: the ease
+carries the speed and the force already on the page, so a reversal can take it
+past a port before it settles back onto one, and standing aside on an overshot
+frame would leave the rest of that push unable to prevent the default it is
+already preventing — a passive `preventDefault` is a console warning and a page
+scrolled twice. Where the reader ENDS UP is the answer, so `land()` asks. And
+**the push on which the line is crossed is the browser's whichever way it went**,
+because a registration governs the events after it — which is the rule coming
+back up already had.
+
+The `turn` Check asserts it as the listeners themselves rather than as a time: a
+stopwatch in a Check is a false failure waiting for a busy machine, and what has
+to hold is the stronger claim that NOTHING non-passive stands on the document
+down there, including something a Section adds later. The DOM does not report its
+own listeners, so that one group asks Chromium through `DOMDebugger`, and it is
+the only place in the suite that speaks CDP.
+
 ## The page's own type size
 
 `faces.css` sets the root `font-size` — a zoom the author owns times a ceiling,

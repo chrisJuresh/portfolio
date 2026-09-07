@@ -1,4 +1,4 @@
-import { pageOwnsWheel, wheelGesture } from './wheel';
+import { pageOwnsWheel, standAside, wheelGesture } from './wheel';
 
 /**
  * The page turn: one wheel GESTURE carries the reader from one Section's resting
@@ -124,6 +124,79 @@ export function portOf(section: HTMLElement): number {
 const turnable = () => ports().length > 1;
 
 /**
+ * WHERE THE WHEEL IS THE BROWSER'S, THE KERNEL STANDS OUT OF ITS WAY — and not
+ * only in the decision, which is all this used to be.
+ *
+ * Both of the Kernel's document-level wheel listeners are `passive: false` and
+ * each has its reason: this one prevents the default scroll so it can ease the
+ * page itself, and the arbitration is non-passive so a roll's target is hit-tested
+ * where the pointer actually was (src/kernel/wheel.ts). A non-passive wheel
+ * listener means Chromium may not scroll until the main thread has run — so both
+ * reasons were being paid for on every notch the page saw, including every notch
+ * neither of them can act on.
+ *
+ * Past the last port there is nothing for either of them to do. The handler below
+ * hands the wheel back to the browser down there, and the only roll on the page is
+ * the photograph strip, three screens up. MEASURED, 300px inside the Catalogue at
+ * 1440x900, as the time a notch took to be handled: 41ms as shipped, 24ms with the
+ * two listeners taken off, and 41ms again with every Timeline held — so it was
+ * never the scrubbing. Half the reader's frames spent on two decisions that had
+ * already been made, which is what "the Catalogue scrolls late" was (#218).
+ *
+ * So both listeners are re-registered PASSIVE wherever the turn cannot act — past
+ * the last port, and below the band, where there is one port and no turn at all —
+ * and non-passive again when it can. A passive listener still runs, so the push
+ * tracking further down never stops following the wheel, and the way back is
+ * decided from the reader's own scroll like everything else here.
+ */
+let aside = false;
+
+/**
+ * The ports as they were last read: what the cheap question is asked against.
+ *
+ * A stale reading costs a recompute and can never make a wrong decision, because
+ * the recompute is what decides — which is what lets the scroll listener ask this
+ * on every event without reading the layout on any of them.
+ */
+let known = { turnable: false, last: 0 };
+
+/** Is this scroll position the browser's own, as far as the last reading knows? */
+const browsersHere = (): boolean => !known.turnable || window.scrollY > known.last + SLACK;
+
+/** Read the ports, and answer properly. */
+function readRegion(): number[] {
+  const list = ports();
+  known = { turnable: list.length > 1, last: list[list.length - 1] as number };
+  return list;
+}
+
+/** Re-register both listeners for whichever side of that line the reader is on. */
+function handOver(toBrowser: boolean): void {
+  if (toBrowser === aside) return;
+  aside = toBrowser;
+  document.removeEventListener('wheel', onWheel);
+  document.addEventListener('wheel', onWheel, { passive: toBrowser });
+  standAside(toBrowser);
+}
+
+/**
+ * Ask again, now the page has moved.
+ *
+ * NOT WHILE A TURN IS IN FLIGHT. The ease carries the speed and the force already
+ * on the page, so a reversal can take it past a port before it settles back onto
+ * one, and standing aside on an overshot frame would leave the rest of that push
+ * unable to prevent the default it is already preventing — a passive listener
+ * calling `preventDefault` is a console warning and a page scrolled twice. Where
+ * the reader ENDS UP is the answer, so `land()` asks.
+ */
+function place(): void {
+  if (raf !== null) return;
+  if (browsersHere() === aside) return;
+  readRegion();
+  handOver(browsersHere());
+}
+
+/**
  * Lift the mandatory snapping, or put it back.
  *
  * The Kernel's handle for a Check or the Editor that wants the page placed
@@ -142,6 +215,10 @@ function land(): void {
   speed = 0;
   force = 0;
   if (!frozen) root.style.scrollSnapType = '';
+  // The one scroll position `place()` refuses to judge is a moving one, and this
+  // is where it stops moving — a link clicked from inside the Catalogue eases the
+  // reader back into the turn's own region, and nothing else would notice.
+  place();
 }
 
 /** Ease the window onto `to`, carrying whatever speed and force are already on it. */
@@ -340,7 +417,12 @@ function onWheel(event: WheelEvent): void {
 
   follow(Math.abs(pixels(event)));
   if (settled) {
-    if (turned) event.preventDefault();
+    // `&& !aside`, because the two are independent: a resize can take the window
+    // out of the band while a push that has already turned the page is still
+    // preventing the default on its own tail, and preventing it from a passive
+    // listener is a console warning and nothing else. Where the listener cannot
+    // prevent, the tail is simply the browser's, which is what it would have been.
+    if (turned && !aside) event.preventDefault();
     return;
   }
   // Settled from here, and native until something below actually turns: every
@@ -350,9 +432,6 @@ function onWheel(event: WheelEvent): void {
   settled = true;
   turned = false;
 
-  const list = ports();
-  if (list.length < 2) return;
-
   // Past the last port, inside a Section taller than the window, the wheel is the
   // browser's again: there is a composition to read down there and the turn has
   // already done its job. CSS agrees — a snap area larger than the scrollport
@@ -360,9 +439,21 @@ function onWheel(event: WheelEvent): void {
   // browser's — it scrolls natively to the port and stops there, and the next
   // push turns the page. That is what the decision above buys: a tail long enough
   // to coast back onto the port used to carry straight on through it.
-  const last = list[list.length - 1] as number;
-  if (window.scrollY > last + SLACK) return;
+  const list = readRegion();
+  const browsers = browsersHere();
+  if (browsers !== aside) {
+    // The listeners were standing on the wrong side of that line — normally the
+    // scroll listener has already moved them, and this is the fallback for a
+    // window that changed shape under a reader who has not scrolled since.
+    handOver(browsers);
+    // Either way this PUSH is the browser's. A registration governs the events
+    // AFTER it, so an event delivered passively cannot be prevented, and a turn
+    // eased on top of the browser's own scroll is the same journey driven twice.
+    return;
+  }
+  if (browsers) return;
 
+  const last = known.last;
   const y = window.scrollY;
   const to =
     delta > 0
@@ -420,4 +511,25 @@ function onClick(event: MouseEvent): void {
 export function mountPageTurn(): void {
   document.addEventListener('wheel', onWheel, { passive: false });
   document.addEventListener('click', onClick);
+  // The reader's own scroll is what carries them across the line `place()` judges,
+  // so this is where the way back is noticed — and it is cheap enough to sit on
+  // every scroll event because it compares against the last reading and only reads
+  // the layout when that disagrees with where the two listeners are standing.
+  window.addEventListener('scroll', place, { passive: true });
+  // A resize is the one thing that moves the line itself — a window crossing the
+  // band's own edge gains a turn or loses one without the page scrolling a pixel
+  // — so this reads the ports rather than asking `place()`, which would compare
+  // against the reading the resize just invalidated and see nothing to do.
+  window.addEventListener(
+    'resize',
+    () => {
+      readRegion();
+      handOver(browsersHere());
+    },
+    { passive: true },
+  );
+  // And once at the start, because a window that never had a turn should not have
+  // to be scrolled before it stops paying for one — a reload deep inside a tall
+  // Section is the same case.
+  place();
 }

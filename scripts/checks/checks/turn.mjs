@@ -812,6 +812,7 @@ export const check = {
           );
         }
       }
+
       notes.push(
         `one flick: down ${flicked.down.from.toFixed(0)} → ${flicked.down.landed.toFixed(0)}px over ` +
           `${flicked.down.notches} notches, up ${flicked.up.from.toFixed(0)} → ` +
@@ -1074,6 +1075,112 @@ export const check = {
             `${scrolled.toFixed(0)}px of scroll after it, and gone by the last port`,
         );
       }
+
+      // ---- and where it cannot act, it stands out of the compositor's way ----
+      //
+      // A non-passive wheel listener means Chromium may not scroll until the main
+      // thread has run. The Kernel keeps two of them on the document — the page
+      // turn, which prevents the default scroll to ease the page itself, and the
+      // arbitration, which wants a roll's target hit-tested where the pointer
+      // actually was — so both were being paid for on every notch the page saw,
+      // including every notch past the last port, where the wheel is the browser's
+      // and neither of them can do a thing with it. Measured 300px inside the
+      // Catalogue: 41ms for a notch to be handled against 24ms with the two taken
+      // off, and 41ms again with every Timeline held, so it was never the
+      // scrubbing. Half the reader's frames spent on two decisions already made,
+      // which is the whole of what "the Catalogue scrolls late" was (#218).
+      //
+      // ASSERTED AS THE LISTENERS AND NEVER AS A TIME. A stopwatch in a Check is a
+      // false failure waiting for a busy machine, and the invariant is stronger
+      // than the fix anyway: what has to hold down there is that NOTHING
+      // non-passive stands on the document, including something a Section adds
+      // later for its own reasons. The DOM does not report its own listeners, so
+      // `DOMDebugger.getEventListeners` is the only route to the question — which
+      // is why this one group speaks CDP and nothing else in the suite does.
+      const cdp = await context.newCDPSession(page);
+      /** The four targets a wheel listener blocks the whole document's scroll from. */
+      const OWNERS = ['window', 'document', 'document.documentElement', 'document.body'];
+      const standingOn = async () => {
+        const found = [];
+        for (const owner of OWNERS) {
+          const { result } = await cdp.send('Runtime.evaluate', { expression: owner });
+          if (!result.objectId) continue;
+          const { listeners } = await cdp.send('DOMDebugger.getEventListeners', {
+            objectId: result.objectId,
+          });
+          for (const listener of listeners) {
+            if (listener.type !== 'wheel') continue;
+            found.push({
+              owner,
+              passive: listener.passive === true,
+              capture: listener.useCapture === true,
+            });
+          }
+        }
+        return found;
+      };
+      /** Put the page somewhere and give the Kernel its two frames to answer for it. */
+      const stand = async (y) => {
+        await page.evaluate((to) => window.scrollTo(0, to), y);
+        await page.evaluate(
+          () => new Promise((ok) => requestAnimationFrame(() => requestAnimationFrame(ok))),
+        );
+        return page.evaluate(() => Math.round(window.scrollY));
+      };
+
+      const lastPort = flicked.ports[flicked.ports.length - 1] ?? 0;
+      /** @type {string[]} */
+      const readings = [];
+      const held = (found) => found.filter((listener) => !listener.passive);
+      const naming = (found) =>
+        held(found)
+          .map((listener) => listener.owner + (listener.capture ? ' (capture)' : ''))
+          .join(', ');
+      for (const [where, y, blocking] of [
+        ['the top of the document', 0, true],
+        ['the last port', lastPort, true],
+        ['600px past the last port', lastPort + 600, false],
+        ['the last port again, coming back up', lastPort, true],
+      ]) {
+        const at = await stand(y);
+        const found = await standingOn();
+        readings.push(`${where} (${at}px): ${held(found).length}/${found.length} non-passive`);
+        if (blocking && held(found).length === 0) {
+          failures.push(
+            `at ${where} (${at}px) every wheel listener on the document is PASSIVE, so nothing can ` +
+              'prevent the browser’s own scroll and there is no page turn left to take. Standing ' +
+              'aside where the turn cannot act means standing back where it can — src/kernel/' +
+              'page-turn.ts, and the flick assertions above are what a reader would feel instead.',
+          );
+        } else if (!blocking && held(found).length > 0) {
+          failures.push(
+            `at ${where} (${at}px) ${held(found).length} NON-PASSIVE wheel listener(s) still stand on ` +
+              `the document — ${naming(found)}. Past the last port the wheel is the browser's: a ` +
+              'non-passive listener there means Chromium may not scroll until the main thread has ' +
+              'run, which is 17ms a notch and half the reader’s frames, for a decision that has ' +
+              'already been made (#218). src/kernel/page-turn.ts.',
+          );
+        }
+      }
+
+      // BELOW THE BAND IS THE SAME RULE AND THE COMMONER WINDOW: one port, no
+      // turn, and a whole page that was paying for one anyway. The viewport
+      // changes here for the reason a Check normally may not name — the regime IS
+      // the viewport — and this is the last thing in the file, so nothing after it
+      // reads a page of another size.
+      await page.setViewportSize({ width: 900, height: 700 });
+      const belowAt = await stand(300);
+      const below = await standingOn();
+      readings.push(`900x700 (${belowAt}px): ${held(below).length}/${below.length} non-passive`);
+      if (held(below).length > 0) {
+        failures.push(
+          `below the band, at 900x700 and ${belowAt}px, ${held(below).length} NON-PASSIVE wheel ` +
+            `listener(s) stand on the document — ${naming(below)}. Out here there is one port and no ` +
+            'turn at all (src/kernel/landing.css), so every notch of an ordinary scroll waits for a ' +
+            'main thread that has nothing to say about it (#218). src/kernel/page-turn.ts.',
+        );
+      }
+      notes.push(`wheel listeners on the document — ${readings.join('; ')}`);
 
       return { failures, notes };
     } finally {

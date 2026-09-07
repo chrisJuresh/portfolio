@@ -331,6 +331,13 @@ the band its top is the page turn's last resting place and the rest of it is rea
 by scrolling, which `page-turn.ts` hands back to the browser past the last port —
 so "the last port" is the Catalogue's and not the Eater Map's, and the `eater-map`
 Check, which assumed otherwise in three places, finds its own Section's port now.
+**Handing it back means the LISTENERS and not only the decision**: the Kernel's two
+document-level wheel listeners are re-registered passive past the last port and
+below the band, because a non-passive one stops Chromium scrolling until the main
+thread has run and that cost this Section 17ms a notch — half the reader's frames
+— for a decision already made (#218). `src/kernel/NOTES.md` has the measurement,
+the three things about it that are easy to get wrong, and why the `turn` Check
+asserts the listeners rather than a time.
 **Its Stills are PLACEHOLDERS until a picture is named**: `still.file` in its
 Content names a file under `src/sections/catalogue/assets/stills/`, resolved at
 build so a wrong name fails `pnpm build` rather than 404ing, and an Entry naming
