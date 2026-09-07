@@ -314,14 +314,13 @@
    is looking at this Section, so the real form of this idea is extending the
    stack past the crossing rather than giving one Section a grain of its own.
 
-   THE NOISE IS A FILE IN assets/ AND NOT A data: URI, and that is forced rather
-   than chosen. render-variants.mjs rewrites every relative url() in a Variant's
-   sheet to an absolute one, and its pattern lets the optional quote backtrack:
-   `url("data:...")` comes out as `url(/src/sections/projects-panel/"data:...")`,
-   the declaration is dropped by the parser, and the shot comes back as bare
-   ground with nothing in it to say that it did. Three renders and a bisect. A
-   Variant's own asset, served out of its own folder, is the path that tool was
-   built for — assets/grain.svg carries the arithmetic. */
+   THE NOISE IS A FILE IN assets/ AND NOT A data: URI, and that is now a choice.
+   It was not: render-variants.mjs corrupted a quoted data: URI on its way into
+   the sheet, and the Variant came back as bare ground with nothing anywhere to
+   say that it had — three renders and a bisect. That is fixed and tested
+   (design/tools/urls.mjs), so either would work. The file stays because the
+   arithmetic below wants the room: assets/grain.svg carries it commented, line
+   by line, which is not something a URI on one line can do. */
 :root[data-variant='grain'] .projects-panel {
   background-image:
     linear-gradient(
