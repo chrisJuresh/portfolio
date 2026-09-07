@@ -1,0 +1,466 @@
+---
+// The Catalogue: the Portfolio's other projects, one Entry each — a Still beside
+// a few words, the two alternating sides down one centred column with a spine
+// between them and each Entry's number standing on that spine above it.
+//
+// It is the fourth Section and the last, and it is TALLER THAN A SCREEN on
+// purpose: inside the landing band its top is the page turn's last resting place
+// and everything below that is read by scrolling, which is what src/kernel/
+// page-turn.ts hands back to the browser past the last port. NOTES.md carries the
+// reasoning — why a spine, why the number stands above the row rather than beside
+// it, how a real Still arrives, what the collapse keeps, and what is deliberately
+// not asserted about any of it.
+import type { ImageMetadata } from 'astro';
+import { content } from './content';
+import './tokens.css';
+// variants.css is deliberately NOT imported: an unselected Variant has to cost the
+// shipped page nothing. NOTES.md, and check-source.mjs if this is ever undone.
+
+/**
+ * The Stills that exist, by path. Resolved at BUILD: an Entry naming a picture
+ * that is not under assets/stills/ fails `pnpm build` here rather than shipping a
+ * 404, and an Entry naming none is drawn as the placeholder below.
+ */
+const stills = import.meta.glob<{ default: ImageMetadata }>(
+  './assets/stills/*.{avif,webp,png,jpg,jpeg}',
+  { eager: true },
+);
+
+function stillFor(file: string): ImageMetadata {
+  const found = Object.entries(stills).find(([path]) => path.endsWith(`/${file}`));
+  if (!found) {
+    throw new Error(
+      `catalogue: no Still called "${file}" under assets/stills/ — the Entry names a picture that is not there`,
+    );
+  }
+  return found[1].default;
+}
+
+/** The Section's deep link, and the fragment the Rail's own entry names. */
+const here = 'catalogue';
+
+/** An Entry's number, two figures wide, derived from the list's own order and
+ *  never typed: an <ol> whose numbers were authored is two orders to keep in step. */
+const numbered = (at: number): string => String(at + 1).padStart(2, '0');
+---
+
+{/* data-section is the loader's handle, and what makes this a resting place:
+    src/kernel/landing.css declares every Section after the first a port as a
+    relationship rather than a list, so the Kernel never learned this name.
+
+    No data-turn. The crossing is finished by the time the Projects Panel comes to
+    rest, two Sections above this one, so the page is dark here in both themes
+    and the Section paints no ground of its own — src/kernel/turn.ts. */}
+<section
+  class="catalogue"
+  id={here}
+  data-section="catalogue"
+  aria-labelledby="catalogue-masthead"
+>
+  <div class="catalogue__inner">
+    {/* THE HEAD IS CENTRED, and that is the one thing here that no other Section
+        does. The two Showcases stand PROJECTS at the top left; this Section is a
+        spine composition and its opener stands over the spine. `head-left` in
+        variants.css is the other answer. */}
+    <header class="catalogue__head">
+      <h2 class="catalogue__masthead" id="catalogue-masthead">{content.masthead}</h2>
+      <p class="catalogue__standfirst">{content.standfirst}</p>
+    </header>
+
+    {/* An <ol>, because the Entries are numbered on the page and a reader
+        listening is owed the same count. role="list" on a list that already is
+        one: `list-style: none` costs a list its semantics in VoiceOver.
+
+        THE STILL'S SIDE ALTERNATES FROM THE LIST'S OWN ORDER — the first on the
+        left, the next on the right — and it is written on the row as
+        data-catalogue-side so the stylesheet, the Timeline and a Variant all read
+        one fact rather than each counting for itself. */}
+    <ol class="catalogue__entries" role="list">
+      {
+        content.entries.map((entry, at) => {
+          const side = at % 2 === 0 ? 'left' : 'right';
+          const still = entry.still.file ? stillFor(entry.still.file) : null;
+          return (
+            <li class="catalogue__entry" data-catalogue-entry data-catalogue-side={side}>
+              {/* THE STATION: the Entry's number, standing on the spine above the
+                  row. It paints the page's own ground behind itself, which is
+                  what interrupts the line. aria-hidden, because the <ol> already
+                  says which of eight this is. */}
+              <span class="catalogue__station" aria-hidden="true">{numbered(at)}</span>
+              {/* THE STILL, or the box that stands for one. A real picture is
+                  cropped to the Section's own ratio so every Entry stands the same
+                  height; a placeholder is a plate with the Entry's number drawn
+                  large across it and the words that say so in its corner, and it
+                  carries the Entry's alt as its own name so a reader who cannot see
+                  it is told the same thing the picture will say. */}
+              <figure class="catalogue__still" data-catalogue-still>
+                {still ? (
+                  <img
+                    src={still.src}
+                    width={still.width}
+                    height={still.height}
+                    alt={entry.still.alt}
+                    loading="lazy"
+                    decoding="async"
+                  />
+                ) : (
+                  <div class="catalogue__ghost" role="img" aria-label={entry.still.alt}>
+                    <span class="catalogue__ghost-number" aria-hidden="true">{numbered(at)}</span>
+                    <span class="catalogue__ghost-label" aria-hidden="true">{content.placeholder}</span>
+                  </div>
+                )}
+              </figure>
+              {/* THE WORDS: a serif title, the small tracked line, one paragraph,
+                  and where the project lives if it lives anywhere. The year and
+                  the stack are two elements so the Editor reaches each; the dot
+                  between them is the stylesheet's. */}
+              <div class="catalogue__note" data-catalogue-note>
+                <h3 class="catalogue__title">{entry.title}</h3>
+                <p class="catalogue__meta">
+                  <span>{entry.year}</span>
+                  <span>{entry.made}</span>
+                </p>
+                <p class="catalogue__copy">{entry.note}</p>
+                {entry.link && (
+                  <a class="catalogue__link" href={entry.link.href}>
+                    {entry.link.text}
+                  </a>
+                )}
+              </div>
+            </li>
+          );
+        })
+      }
+    </ol>
+
+    {/* The spine ends in a dot (the list's own ::after), and the Section ends on
+        one line: the only link here that is not an Entry's. */}
+    <footer class="catalogue__foot">
+      <a class="catalogue__colophon" href={content.colophon.href}>{content.colophon.text}</a>
+    </footer>
+  </div>
+</section>
+
+<style>
+  /* Scoped by the build: none of these selectors can match an element in another
+     Section. THE SECTION PAINTS NO GROUND, for the reason the Eater Map gives —
+     the page's ground is the Kernel's and is itself a crossing on --turn, and the
+     Turn finished two Sections above this one. Every grey below is the page's own
+     --ink let go towards transparent by a Token, so it crosses with the page for
+     nothing. NOTES.md. */
+  .catalogue {
+    --catalogue-muted: color-mix(in oklab, var(--ink), transparent var(--catalogue-muted-veil));
+    --catalogue-quiet: color-mix(in oklab, var(--ink), transparent var(--catalogue-quiet-veil));
+    --catalogue-rule: color-mix(in oklab, var(--ink), transparent var(--catalogue-rule-veil));
+    --catalogue-frame: color-mix(in oklab, var(--ink), transparent var(--catalogue-frame-veil));
+    --catalogue-fill: color-mix(in oklab, var(--ink), transparent var(--catalogue-fill-veil));
+    --catalogue-ghost: color-mix(in oklab, var(--ink), transparent var(--catalogue-ghost-veil));
+
+    box-sizing: border-box;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    /* At least a screen, so the deep link can bring its top to the top of the
+       window; taller when the Entries are, which they are. */
+    min-height: var(--fold);
+    padding-block: var(--catalogue-inset);
+    padding-inline: var(--catalogue-side);
+    /* Clip, not hidden, and only across: a Still mid-arrival stands past the
+       column's edge and must not reach the root's clip (the `across` Check), and
+       `hidden` would make the Section a scroll container. */
+    overflow-x: clip;
+    font-family: var(--face-panel);
+    font-weight: 400;
+    line-height: var(--catalogue-leading);
+  }
+
+  /* ---- the column: one measure, centred on the page ------------------------ */
+  .catalogue__inner {
+    width: 100%;
+    max-width: var(--catalogue-measure);
+    margin-inline: auto;
+  }
+
+  /* ---- the head ------------------------------------------------------------ */
+  .catalogue__head {
+    text-align: center;
+    margin-bottom: var(--catalogue-act);
+  }
+
+  /* The paper half's serif on the dark half of the page, which is what makes the
+     Catalogue read as printed matter rather than as a third Showcase. */
+  .catalogue__masthead {
+    margin: 0;
+    font-family: var(--face-body);
+    font-weight: 400;
+    font-size: var(--catalogue-masthead-size);
+    line-height: var(--catalogue-masthead-leading);
+    letter-spacing: var(--catalogue-masthead-tracking);
+  }
+
+  .catalogue__standfirst {
+    margin: var(--catalogue-close) auto 0;
+    max-width: var(--catalogue-standfirst-measure);
+    font-size: var(--catalogue-standfirst-size);
+    color: var(--catalogue-muted);
+  }
+
+  /* ---- the Entries, and the spine down the middle of them ------------------
+     The list is the spine's box: `relative` with no z-index, so it is not a
+     stacking context and the stations below still paint over the line. */
+  .catalogue__entries {
+    position: relative;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    row-gap: var(--catalogue-entry-air);
+  }
+
+  /* THE SPINE: one hairline the height of the list, on the column's centre line
+     — which is the middle of the twelve columns' sixth gutter, so a Still on
+     either side stops short of it by five columns' worth of the other side. */
+  .catalogue__entries::before {
+    content: '';
+    position: absolute;
+    inset-block: 0;
+    left: 50%;
+    width: var(--catalogue-rule-weight);
+    translate: -50% 0;
+    background: var(--catalogue-rule);
+  }
+
+  /* And where it ends: a lit dot, the Eater Map's leaders' own full stop. */
+  .catalogue__entries::after {
+    content: '';
+    position: absolute;
+    left: 50%;
+    bottom: 0;
+    width: var(--catalogue-dot-size);
+    height: var(--catalogue-dot-size);
+    translate: -50% 50%;
+    border-radius: 50%;
+    background: var(--catalogue-accent);
+  }
+
+  /* ---- one Entry: twelve columns, two rows -----------------------------------
+     Row one is the station, centred across all twelve; row two is the Still on
+     five columns and the words on the other five, with two columns of air either
+     side of the spine between them. Which five is which is the row's own
+     data-catalogue-side, below. */
+  .catalogue__entry {
+    display: grid;
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    grid-template-rows: auto auto;
+    column-gap: var(--catalogue-gutter);
+    row-gap: var(--catalogue-close);
+    align-items: start;
+  }
+
+  /* THE STATION paints the page's own ground behind the number, which is what
+     opens a gap in the spine for it. `relative` so it paints in the positioned
+     layer above the spine's pseudo-element, which precedes it in the tree. */
+  .catalogue__station {
+    grid-area: 1 / 1 / 2 / 13;
+    justify-self: center;
+    position: relative;
+    padding-inline: var(--catalogue-station-pad);
+    background: var(--ground);
+    font-family: var(--face-year);
+    font-size: var(--catalogue-number-size);
+    line-height: 1;
+    letter-spacing: var(--catalogue-number-tracking);
+    font-variant-numeric: tabular-nums;
+    color: var(--catalogue-accent);
+  }
+
+  .catalogue__still {
+    grid-row: 2;
+    grid-column: 1 / 6;
+  }
+
+  .catalogue__note {
+    grid-row: 2;
+    grid-column: 8 / 13;
+  }
+
+  .catalogue__entry[data-catalogue-side='right'] .catalogue__still {
+    grid-column: 8 / 13;
+  }
+
+  .catalogue__entry[data-catalogue-side='right'] .catalogue__note {
+    grid-column: 1 / 6;
+  }
+
+  /* ---- the Still ----------------------------------------------------------- */
+  .catalogue__still {
+    margin: 0;
+    display: grid;
+    aspect-ratio: var(--catalogue-still-ratio);
+    border: var(--catalogue-rule-weight) solid var(--catalogue-frame);
+    border-radius: var(--catalogue-still-corner);
+    background: var(--catalogue-fill);
+    /* A real picture is cropped to the box. `clip`, for the reason the Section
+       clips: `hidden` is a scroll container. */
+    overflow: clip;
+  }
+
+  .catalogue__still img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  /* The placeholder: the number drawn large and faint across the plate, and the
+     words that say what the plate is in its corner. */
+  .catalogue__ghost {
+    position: relative;
+    display: grid;
+    place-items: center;
+  }
+
+  .catalogue__ghost-number {
+    font-family: var(--face-year);
+    font-size: var(--catalogue-ghost-size);
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+    color: var(--catalogue-ghost);
+  }
+
+  .catalogue__ghost-label,
+  .catalogue__meta,
+  .catalogue__link,
+  .catalogue__colophon {
+    font-size: var(--catalogue-label-size);
+    letter-spacing: var(--catalogue-label-tracking);
+    text-transform: uppercase;
+    font-feature-settings: 'case' 1;
+  }
+
+  .catalogue__ghost-label {
+    position: absolute;
+    left: var(--catalogue-close);
+    bottom: var(--catalogue-close);
+    color: var(--catalogue-quiet);
+  }
+
+  /* ---- the words ----------------------------------------------------------- */
+  .catalogue__title {
+    margin: 0;
+    font-family: var(--face-body);
+    font-weight: 400;
+    font-size: var(--catalogue-title-size);
+    line-height: var(--catalogue-title-leading);
+    letter-spacing: 0;
+    text-wrap: balance;
+  }
+
+  .catalogue__meta {
+    margin: var(--catalogue-close) 0 0;
+    display: flex;
+    flex-wrap: wrap;
+    column-gap: 0.45em;
+    color: var(--catalogue-muted);
+  }
+
+  /* The dot between the year and the stack is the composition's, so each of the
+     two stays one Content string the Editor can reach. It hangs off the YEAR
+     rather than leading the stack, so a line that wraps ends on the dot instead
+     of beginning with one; and it is spaced as the dots inside the stack are —
+     one tracked space each side — so the three read as one row of separators. */
+  .catalogue__meta span:not(:last-child)::after {
+    content: '·';
+    margin-inline-start: 0.45em;
+  }
+
+  .catalogue__copy {
+    margin: var(--catalogue-close) 0 0;
+    max-width: var(--catalogue-note-measure);
+    font-size: var(--catalogue-note-size);
+    line-height: var(--catalogue-note-leading);
+  }
+
+  .catalogue__link,
+  .catalogue__colophon {
+    display: inline-block;
+    padding-bottom: 0.15em;
+    color: var(--catalogue-accent);
+    text-decoration: none;
+    border-bottom: var(--catalogue-rule-weight) solid
+      color-mix(in oklab, var(--catalogue-accent), transparent 60%);
+  }
+
+  .catalogue__link {
+    margin-top: var(--catalogue-move);
+  }
+
+  .catalogue__link:hover,
+  .catalogue__colophon:hover {
+    border-bottom-color: var(--catalogue-accent);
+  }
+
+  .catalogue__link:focus-visible,
+  .catalogue__colophon:focus-visible {
+    outline: 1px solid currentColor;
+    outline-offset: 3px;
+  }
+
+  /* ---- the foot ------------------------------------------------------------ */
+  .catalogue__foot {
+    text-align: center;
+    margin-top: var(--catalogue-act);
+  }
+
+  /* ---- one column, below the band's width ------------------------------------
+     No spine and no alternation: the number, then the Still the width of the
+     column, then the words, in the order the document already reads. Everything
+     stands on the left, which is where every other Section's collapse stands. */
+  @media not all and (min-width: 1100px) {
+    .catalogue__head,
+    .catalogue__foot {
+      text-align: left;
+    }
+
+    .catalogue__standfirst {
+      margin-inline: 0;
+    }
+
+    .catalogue__entries::before,
+    .catalogue__entries::after {
+      display: none;
+    }
+
+    .catalogue__entry {
+      grid-template-columns: minmax(0, 1fr);
+      grid-template-rows: none;
+    }
+
+    .catalogue__station {
+      grid-area: auto;
+      grid-column: 1;
+      justify-self: start;
+      padding-inline: 0;
+      background: none;
+    }
+
+    .catalogue__still,
+    .catalogue__note,
+    .catalogue__entry[data-catalogue-side='right'] .catalogue__still,
+    .catalogue__entry[data-catalogue-side='right'] .catalogue__note {
+      grid-row: auto;
+      grid-column: 1;
+    }
+  }
+
+  /* ---- in the band: the landing's own two margins ----------------------------
+     The Rail stands in the page's left margin, so the Section's padding is that
+     margin on both sides, which is also what keeps the column centred on the
+     page rather than on what the Rail leaves. The top is the page's top margin
+     in the band; there is no masthead here to land on the word's line. */
+  @media (min-width: 1100px) and (min-height: 700px) {
+    .catalogue {
+      padding-block: var(--landing-inset);
+      padding-inline: var(--landing-side);
+    }
+  }
+</style>

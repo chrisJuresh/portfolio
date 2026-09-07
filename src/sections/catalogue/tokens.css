@@ -1,0 +1,87 @@
+/* The Catalogue's Tokens: plain custom properties on the Section's own root, and
+   the only style file the Editor writes here. Every name carries the Section's,
+   there is nothing in this file but custom properties, and
+   scripts/check-source.mjs fails the build otherwise.
+
+   THE WHOLE LADDER IS IN rem, for the reason the Eater Map's is: the page's own
+   type size is the Kernel's --type-zoom times a ceiling
+   (src/kernel/tokens/faces.css), so a composition written in rem is one the
+   author scales bodily without touching a length in here. NOTES.md says where
+   each number came from and which are restatements. */
+.catalogue {
+  /* ---- the page's margins out of the band ---------------------------------
+     Inside the band the Section takes the landing's own two margins, so its
+     white agrees with the two Showcases'; these are what it has everywhere else,
+     and they are the Eater Map's clamps restated. */
+  --catalogue-side: clamp(1.35rem, 1rem + 2.2vw, 3.5rem);
+  --catalogue-inset: clamp(1.6rem, 1rem + 3vh, 3.4rem);
+
+  /* ---- the column ---------------------------------------------------------
+     One centred column, capped. The Entries alternate across it and the spine
+     runs down its middle; the gutter is the twelve columns' own. */
+  --catalogue-measure: 76rem;
+  --catalogue-gutter: clamp(0.75rem, 0.4rem + 1vw, 1.5rem);
+
+  /* ---- the seams, as one step and three powers of φ ------------------------
+     The two Showcases' ladder at this Section's step: a seam inside an Entry is
+     φ⁻¹ of it, the head to its list is φ², and the air between one Entry and
+     the next is its own number, because it is the one seam the reader scrolls
+     through eight times. */
+  --catalogue-step: clamp(1.15rem, 0.6rem + 2.6vw, 2.1rem);
+  --catalogue-close: calc(0.618 * var(--catalogue-step));
+  --catalogue-move: calc(1.618 * var(--catalogue-step));
+  --catalogue-act: calc(2.618 * var(--catalogue-step));
+  --catalogue-entry-air: calc(3.5 * var(--catalogue-step));
+
+  /* ---- the type ladder ----------------------------------------------------
+     The head and the titles are in the paper half's serif, the notes and the
+     small tracked lines in the dark half's sans, the numbers in the face the
+     page sets figures in. */
+  --catalogue-leading: 1.5;
+  --catalogue-masthead-size: clamp(1.7rem, 1.2rem + 1.5vw, 2.6rem);
+  --catalogue-masthead-leading: 1.1;
+  --catalogue-masthead-tracking: -0.01em;
+  --catalogue-standfirst-size: clamp(0.92rem, 0.84rem + 0.3vw, 1.08rem);
+  --catalogue-standfirst-measure: 34em;
+  --catalogue-label-size: clamp(0.66rem, 0.6rem + 0.2vw, 0.78rem);
+  --catalogue-label-tracking: 0.22em;
+  --catalogue-number-size: clamp(0.8rem, 0.72rem + 0.3vw, 1rem);
+  --catalogue-number-tracking: 0.1em;
+  --catalogue-title-size: clamp(1.3rem, 1rem + 1vw, 1.9rem);
+  --catalogue-title-leading: 1.15;
+  --catalogue-note-size: clamp(0.9rem, 0.82rem + 0.3vw, 1.02rem);
+  --catalogue-note-leading: 1.55;
+  --catalogue-note-measure: 30em;
+
+  /* ---- the Still ----------------------------------------------------------
+     Its shape as one number, width over height: the placeholder has no picture
+     to take a shape from, and a real Still is cropped to the same box, so every
+     Entry stands the same height beside its words. The ghost is the number
+     drawn large across a placeholder. */
+  --catalogue-still-ratio: 1.6;
+  --catalogue-still-corner: 2px;
+  --catalogue-ghost-size: clamp(3.5rem, 2rem + 6vw, 7.5rem);
+
+  /* ---- the inks: one accent, and veils on the page's own ink ---------------
+     Every grey here is --ink let go towards transparent, so it crosses with the
+     page for nothing. The accent is the Eater Map's warm one restated by value,
+     because the Kernel publishes no accent and a second colour on the dark half
+     of the page would be a second page. */
+  --catalogue-accent: #bc9870;
+  --catalogue-muted-veil: 32%;
+  --catalogue-quiet-veil: 58%;
+  --catalogue-rule-veil: 84%;
+  --catalogue-frame-veil: 78%;
+  --catalogue-fill-veil: 96%;
+  --catalogue-ghost-veil: 88%;
+  --catalogue-rule-weight: 1px;
+  --catalogue-dot-size: 0.4rem;
+  --catalogue-station-pad: 0.55em;
+
+  /* ---- the arrival, which timeline.ts reads --------------------------------
+     How far a Still slides in from its own side, as a share of its width, and
+     how far its words are let go before they arrive, as an opacity. Both are
+     read once at mount, so a drag shows on the next reload. */
+  --catalogue-arrive: 0.06;
+  --catalogue-arrive-dim: 0.35;
+}

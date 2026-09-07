@@ -32,7 +32,7 @@ A Section presenting one project in depth, with a composition built for that
 project alone.
 _Avoid_: case study, project page, feature
 
-## The two Sections that exist
+## The Sections that exist
 
 **Front Screen**:
 The Section at the top of the Portfolio — masthead, bio, photo carousel, work,
@@ -43,6 +43,20 @@ _Avoid_: front page, home, hero, above the fold
 The dark Section presenting one project at a time: a masthead, copy, and the
 Frame on its Plinth. The Rail stands beside it and is the Kernel's.
 _Avoid_: projects page, photo gallery page, gallery
+
+**Eater Map**:
+The Showcase for the Eater restaurant map: PROJECTS at the head of the left
+column with the project's title under it, the Exploded View down the middle, and
+four numbered points down the right edge.
+_Avoid_: the map section, the third Section
+
+**Catalogue**:
+The last Section, presenting the Portfolio's other projects briefly — one Entry
+each, with one composition for all of them: a Still beside a few words,
+alternating sides down a centred column with a spine between them. Where a
+Showcase is built for one project alone, the Catalogue is where a project without
+a Showcase goes.
+_Avoid_: archive, list, grid, cards, other projects section, the rest
 
 ## What the composition is made of
 
@@ -94,11 +108,22 @@ and flat is where the motion begins, so a reader who is shown neither still gets
 the Exploded View.
 _Avoid_: reveal, raise, rise, explode, the animation
 
+**Entry**:
+One project's record in the Catalogue — its number, its Still, its title, the
+year and the stack, one paragraph, and where it lives.
+_Avoid_: item, row, card, tile, project block
+
+**Still**:
+One still of a project's own screen, shown small in a Catalogue Entry; a
+placeholder stands in for one not yet taken.
+_Avoid_: screenshot, thumbnail, image, picture, plate
+
 **Rail**:
-The list down the page's own left edge naming every project the Portfolio can
-show, marking which one is on screen and which are not yet built. One piece of
-furniture belonging to the Kernel, not a thing a Section draws: turning from one
-project to the next moves the highlight and nothing else.
+The list down the page's own left edge naming each Showcase the Portfolio has and
+the Catalogue that holds the rest, marking which is on screen — and, for a
+Showcase promised but not yet built, that it is not. One piece of furniture
+belonging to the Kernel, not a thing a Section draws: turning from one Section to
+the next moves the highlight and nothing else.
 _Avoid_: nav, sidebar, menu, tabs
 
 **Effect Stack**:

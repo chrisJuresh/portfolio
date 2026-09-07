@@ -12,7 +12,7 @@ expensive to rediscover. Read it before writing a spec and before the first edit
 Then, as the work needs them: [`CONTEXT.md`](CONTEXT.md) for the vocabulary —
 **Shell**, **Kernel**, **Section**, **Turn**, **Timeline**, **Token**,
 **Content**, **Variant**, **Bake**, **Check** — which is binding on identifiers,
-ticket titles and prose; and [`docs/adr/`](docs/adr/) for the seven decisions that
+ticket titles and prose; and [`docs/adr/`](docs/adr/) for the eight decisions that
 are binding on the build. Where a name in the existing code disagrees with the
 glossary, the glossary wins.
 
@@ -295,7 +295,7 @@ Every dependency version is pinned exactly and nothing is updated on a schedule
 ignores `.npmrc` for `saveExact`, and the failure mode is a caret quietly
 reappearing in `package.json`.
 
-**The Rail — Photo Vault / Eater Map / Record Engine — is the KERNEL's, and there
+**The Rail — Photo Vault / Eater Map / Other Work — is the KERNEL's, and there
 is exactly one of it.** #192 took it out of the two Sections that each drew one
 and swapped them as the reader turned. It is `src/kernel/rail/`, its Tokens are
 `src/kernel/tokens/rail.css`, and `src/pages/portfolio.astro` places it between
@@ -306,6 +306,26 @@ Editor cannot reach**, because that boundary discovers `src/sections/*` and
 nothing else, so they are changed by hand. The current entry is derived from the
 Section at rest and never declared; the `rail` Check asserts the count, that the
 box does not move across the turn, and that the highlight follows it back.
+
+**The fourth Section is the Catalogue, and it is the LAST** (ADR 0008): the other
+projects, one Entry each — a Still beside a few words, the two alternating sides
+down one centred column with a spine between them and each Entry's number
+standing on the spine above its row. It is `src/sections/catalogue/`, its words
+are placeholders until the author types over them in the Editor, and four things
+about it are cheap to get wrong. **It is TALLER THAN A SCREEN on purpose**: inside
+the band its top is the page turn's last resting place and the rest of it is read
+by scrolling, which `page-turn.ts` hands back to the browser past the last port —
+so "the last port" is the Catalogue's and not the Eater Map's, and the `eater-map`
+Check, which assumed otherwise in three places, finds its own Section's port now.
+**Its Stills are PLACEHOLDERS until a picture is named**: `still.file` in its
+Content names a file under `src/sections/catalogue/assets/stills/`, resolved at
+build so a wrong name fails `pnpm build` rather than 404ing, and an Entry naming
+none is drawn as a plate with its number across it. **Nothing on the Rail is
+unbuilt any more** — its third entry is a link to the Catalogue — so the `rail`
+Check's unbuilt-entry assertion is a note until a Showcase is promised again. And
+**PROJECTS does not stand on it**, by decision rather than omission: it is not a
+Showcase and its head is centred over the spine. `src/sections/catalogue/NOTES.md`
+says so for #193's sake, and carries the composition.
 
 **The Moonlight is the Kernel's too**: one cool light over the DARK theme's first
 screen, cast from just inside the top right, breathing, that the plate and the

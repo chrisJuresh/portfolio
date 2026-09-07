@@ -319,8 +319,9 @@ change to the design and belongs to the author.
 
 ## The Rail
 
-Three project names down the page's left edge, reading bottom to top, marking
-which project is being shown and which two are not built. **One of them, for the
+Three names down the page's left edge, reading bottom to top — two Showcases and
+the Catalogue that holds the rest (ADR 0008) — marking which the reader is standing
+in front of. **One of them, for the
 whole page** — #192, and that is the whole of what that ticket did.
 
 **Both Sections used to draw one and the page swapped them**, which the author
@@ -415,9 +416,9 @@ Out of the band it is a row, and two things about the row are worth keeping.
 **`--rail-crown` is a clearance and not a margin**: out here the Front Screen's cut
 PROJECTS hangs past that Section's foot, and what it hangs over is this. The
 Projects Panel paid that bill while the Rail was inside it, and its NOTES.md
-carries the measurement. And **the names WRAP** — RECORD ENGINE at 0.22em of
-tracking is a long word and 360 and 320 are real screens; without `wrap` the third
-project is simply not named, which is not a Rail. Both of its gaps are multiples
+carries the measurement. And **the names WRAP** — three names at 0.22em of
+tracking do not fit one row on 360 or 320, which are real screens; without `wrap`
+the third is simply not named, which is not a Rail. Both of its gaps are multiples
 of the names' own size, so the row shrinks as one drawing rather than opening up
 as the type closes.
 
@@ -454,15 +455,17 @@ window where the composition is centred would be asserting a coincidence.
 ### An entry is a route if it holds a link
 
 That is the whole of the machinery — no attribute says which Section an entry
-names, because the link's own fragment already does (ADR 0007). The other two
-projects become entries with an `href` on the day their Sections arrive, and
-nothing else changes.
+names, because the link's own fragment already does (ADR 0007). A Showcase
+promised and not yet built is an entry with no `href`; it becomes a link on the
+day its Section arrives, and nothing else changes. There is none today: the third
+entry names the Catalogue, which is where a project without a Showcase of its own
+goes (ADR 0008).
 
 That is also what earns the `<nav>` and the `aria-current`: a landmark announcing
-a set of links to nowhere would be worse than no landmark, and one of the three
-leads somewhere. `aria-current` goes on the `<a>`, where it is announced, rather
+a set of links to nowhere would be worse than no landmark, and every one of the
+three leads somewhere now. `aria-current` goes on the `<a>`, where it is announced, rather
 than on the `<li>`, where a screen reader is not obliged to say anything about it.
-The entries that lead nowhere carry a visually-hidden qualifier instead — grey says
+An entry that leads nowhere carries a visually-hidden qualifier instead — grey says
 "not selected" to anything looking, and the qualifier says "no page yet" to
 anything listening. `role="list"` on a list that already is one, because the items
 carry `list-style: none` and VoiceOver drops list semantics from a list with no

@@ -2411,6 +2411,37 @@ async function atWindow(browser, origin, viewport) {
 }
 
 /**
+ * This Section's own resting place, and the one before it, read off the Kernel.
+ *
+ * FOUND BY THE SECTION AND NOT TAKEN AS THE LAST PORT. Three groups below stand the
+ * page on the Eater Map, and each of them used to reach for `ports[ports.length - 1]`
+ * — which was this Section's port for exactly as long as it was the last Section.
+ * The Catalogue landed after it (ADR 0008), and "the last port" then stood the page
+ * on a Section with no Lift in it while every message here went on naming this one.
+ * So the port is the one that agrees with this Section's own snap position — its top
+ * edge less its `scroll-margin-top`, the way page-turn.ts reads one — and a page
+ * where no port does is reported as such rather than as a Lift that never ran.
+ *
+ * @param {import('playwright').Page} page
+ * @returns {Promise<{ ports: number[], here: number | null, before: number | null }>}
+ */
+function restingPlaces(page) {
+  return page.evaluate(() => {
+    const ports = window.portfolio?.ports?.() ?? [];
+    const section = document.querySelector('[data-section="eater-map"]');
+    if (!section) return { ports, here: null, before: null };
+    const margin = Number.parseFloat(getComputedStyle(section).scrollMarginTop) || 0;
+    const own = section.getBoundingClientRect().top + window.scrollY - margin;
+    const at = ports.findIndex((port) => Math.abs(port - own) <= 1);
+    return {
+      ports,
+      here: at >= 0 ? (ports[at] ?? null) : null,
+      before: at > 0 ? (ports[at - 1] ?? null) : null,
+    };
+  });
+}
+
+/**
  * Leaving the Section part way up puts the drawing back down.
  *
  * The Lift runs when the reader comes to rest here and reverses if they leave
@@ -2439,17 +2470,19 @@ async function reversesOnTheWayOut(browser, origin) {
 
     // The Section's own resting place, and the one before it. Read off the Kernel
     // rather than computed here, so a Section that changes where it lands does not
-    // need this Check changed with it.
-    const ports = await page.evaluate(() => window.portfolio?.ports?.() ?? []);
-    if (ports.length < 2) {
+    // need this Check changed with it — and found by the Section rather than taken
+    // as the last port, which is the Catalogue's now (restingPlaces, above).
+    const stood = await restingPlaces(page);
+    if (stood.here === null || stood.before === null) {
       failures.push(
-        `the page has ${ports.length} resting place(s) at ${WIDE.width}x${WIDE.height}, so there is no ` +
-          'turn to take and nothing about leaving the Section part way up was checked',
+        `the page has ${stood.ports.length} resting place(s) at ${WIDE.width}x${WIDE.height} and the ` +
+          `Eater Map's own ${stood.here === null ? 'is not among them' : 'is the first of them'}, so there ` +
+          'is no turn to take onto it and nothing about leaving the Section part way up was checked',
       );
       return failures;
     }
-    const here = ports[ports.length - 1];
-    const before = ports[ports.length - 2];
+    const here = stood.here;
+    const before = stood.before;
 
     const partWay = await page
       .evaluate((to) => {
@@ -2602,15 +2635,17 @@ async function hoveringPutsOnePieceBack(browser, origin) {
   try {
     const failures = await settle(page);
 
-    const ports = await page.evaluate(() => window.portfolio?.ports?.() ?? []);
-    if (ports.length === 0) {
+    // This Section's own port, and not the last one on the page (restingPlaces).
+    const stood = await restingPlaces(page);
+    if (stood.here === null) {
       failures.push(
-        `${where}: the Kernel reports no resting places, so the page could not be stood on this Section ` +
-          'and nothing about the Drop was checked',
+        `${where}: the Kernel reports ${stood.ports.length} resting place(s) and none of them is the ` +
+          "Eater Map's own, so the page could not be stood on this Section and nothing about the Drop " +
+          'was checked',
       );
       return { failures, notes };
     }
-    const here = ports[ports.length - 1];
+    const here = stood.here;
 
     /** Stand on the Section and wait for the drawing to be all the way up. */
     const raised = async () => {
@@ -3793,9 +3828,14 @@ async function edgeAsBuilt(spec) {
   }
 
   const kernel = window.portfolio;
-  const ports = kernel?.ports?.() ?? [];
+  // This Section's own resting place — its top edge less its scroll margin, the
+  // way page-turn.ts reads a port — and not the last port on the page, which is
+  // the Catalogue's now. Inline rather than `restingPlaces`, because this runs in
+  // the page and that helper is the runner's.
+  const margin = Number.parseFloat(getComputedStyle(section).scrollMarginTop) || 0;
+  const own = section.getBoundingClientRect().top + window.scrollY - margin;
   kernel?.snapping?.(false);
-  window.scrollTo(0, ports[ports.length - 1] ?? 0);
+  window.scrollTo(0, own);
   await new Promise((frame) => requestAnimationFrame(frame));
   await new Promise((frame) => requestAnimationFrame(frame));
 

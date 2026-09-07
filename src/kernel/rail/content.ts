@@ -11,7 +11,7 @@ import { defineContent, z } from '../content';
  *
  * WHAT THAT COSTS, STATED RATHER THAN DISCOVERED: the Editor writes Content for
  * a SECTION — `scripts/editor/lib/sections.mjs` discovers `src/sections/*` and
- * nothing else — so these five words are the only ones on the page an agent has
+ * nothing else — so these few words are the only ones on the page an agent has
  * to change by hand. Kernel Content reaching that surface is a ticket of its
  * own, and a small one: the Kernel's Tokens already answer to `kernel-<stem>`
  * there, and this would be the same move for the other boundary.
@@ -27,7 +27,10 @@ const schema = z.object({
   /**
    * An entry is a route if it holds a link, and that is the whole of the
    * machinery — the fragment already names the Section, so no attribute has to.
-   * An entry with no `href` is one of the ones that are not built yet.
+   * An entry with no `href` is one that is not built yet. There is none today:
+   * the third names the Catalogue, which is where a project without a Showcase
+   * of its own goes (ADR 0008), so the Rail is three links until a fourth
+   * Showcase is promised.
    */
   projects: z
     .array(
@@ -47,6 +50,6 @@ export const content = defineContent(schema, {
   projects: [
     { name: 'Photo Vault', href: '#projects' },
     { name: 'Eater Map', href: '#eater-map' },
-    { name: 'Record Engine' },
+    { name: 'Other Work', href: '#catalogue' },
   ],
 });
