@@ -2,10 +2,10 @@
    bottom-right. Three baked photographs run in behind the opening composition,
    scaled to --fold so they grow together, and graded in the file rather than by
    a filter here. And the Moonlight they stand in: one cool light cast from the
-   top right across the DARK theme's first screen, which the plate and the eye
-   stand in as LIT things — a third, relit ladder of each is screened over the
-   picture and breathes with the sky — and which the car hangs in as a
-   silhouette. The light theme takes none of it.
+   top right across the DARK theme's first screen. In that theme the plate and
+   the eye ARE their moonlit ladders — a relit picture of each, drawn as a
+   picture with its blacks left black, breathing with the sky — and the car
+   hangs in the light as a silhouette. The light theme takes none of it.
 
    Every number they are drawn from is in tokens/corners.css and
    tokens/moonlight.css, imported first so this file's rules stand after them,
@@ -132,17 +132,19 @@
   );
 }
 
-/* THE LIGHT ON THE PICTURES. The plate and the eye each carry a second layer:
-   the moonlit ladder build-plate.py bakes for it — the same frame, graded so
-   black is black and white is the light's colour, and then LIT, its own luma
-   read as relief and shaded from where the moon stands (design/plate/
-   build-plate.py, THE MOONLIT LADDER). It is drawn over the picture with
-   `screen`, so it only ever ADDS: the ghost under it is what the reader sees
-   with the light down, and as the light swells the dome and the wheel come up
-   out of the dark as things standing in it — the faces towards the moon
-   brightening, the ribs and the lattice catching it — rather than the whole
-   frame going a shade whiter, which is what lifting a ghost over a lit ground
-   does and what was reported.
+/* THE PICTURES BY MOONLIGHT. In the dark theme the plate and the eye are drawn
+   from ONE layer each: the moonlit ladder build-plate.py bakes — the same
+   frame, graded so black is black and white is the light's colour, and then
+   LIT, its own luma read as relief and shaded from where the moon stands
+   (design/plate/build-plate.py, THE MOONLIT LADDER). It is drawn as a PICTURE,
+   with normal blending and its blacks left black, so what the reader sees is a
+   night photograph of a thing standing in the moon: the faces towards it
+   bright, the far sides and the shadows as dark as the page, and the whole of
+   it dimming and returning as the light breathes. There is no ghost under it.
+   The first version SCREENED this ladder over a faded grey print of the same
+   frame — blacks lifted to #2c2c2c, at a sixth — and the author retired that:
+   the print greyed every black and the added light glowed through it, which on
+   the eye's thin white lattice read as a radiograph however dim it was made.
 
    MASKED BY THE MOON'S THROW: a second falloff from the same centre as the
    sky's, wider and with a floor, so the light on a picture is strongest on its
@@ -150,15 +152,16 @@
    gradient ACROSS a picture is the one thing the baked normals cannot supply —
    they know which way a face turns and not how far it is from the lamp — and it
    is what puts the eye, under the moon, in more light than the dome across the
-   page from it. `screen` on a layer over a transparent backdrop is a no-op,
-   which is one more thing the band's painted ground is for.
+   page from it. With normal blending, what the far side of a picture loses to
+   the mask it loses towards the ground, and on a page this dark that is the
+   same thing as being less lit.
 
    Each shares its picture's geometry declaration for declaration, below,
    because the two are one frame and a pixel of light off its stone is exactly
    the fringe this band is arranged to avoid. */
 .kernel-corners .plate-lit,
 .kernel-corners .eye-lit {
-  mix-blend-mode: screen;
+  mix-blend-mode: normal; /* a picture, not an addition — see above */
   mask-image: radial-gradient(
     circle calc(var(--moonlight-throw) * var(--fold)) at var(--moonlight-x) var(--moonlight-y),
     #000 0%,
@@ -270,4 +273,15 @@
 .kernel-corners .eye {
   background-image: var(--eye-src);
   opacity: var(--eye-opacity);
+}
+
+/* NEITHER GHOST IS DRAWN IN THE DARK THEME: the moonlit ladder is the whole
+   picture there (THE PICTURES BY MOONLIGHT, above), and corners.ts sets
+   --plate-src and --eye-src to `none` in that theme so nothing is fetched for a
+   layer that would not paint. Hidden rather than removed, so the geometry the
+   `carousel` Check reads off .eye is still there to read. The car stays, as a
+   silhouette, above. */
+:root[data-theme='dark'] .kernel-corners .plate,
+:root[data-theme='dark'] .kernel-corners .eye {
+  visibility: hidden;
 }

@@ -313,13 +313,18 @@ eye stand in as LIT things and the car hangs in as a silhouette.
 `src/kernel/corners.css` draws it INSIDE the corner pictures' band and not beside
 the shade, because the car's blend reaches only what that band painted before it
 — which is also why the band paints the ground it was already showing.
-**The light on the two pictures is BAKED, not blended**: `design/plate/
-build-plate.py` writes a third ladder of each, `<stem>-moonlit-<width>.webp`,
-graded black-to-the-light's-colour and then relit off its own luma as a bump map
-from where the moon stands, and the Kernel screens it over the ghost, masked by
-the moon's throw, at an opacity that breathes with the sky. Lifting the ghost's
-opacity instead is what "just whiter" means, and it shipped that way once. The
-car has no moonlit ladder and must not get one. `src/kernel/tokens/moonlight.css`
+**The two pictures are BAKED by moonlight, not blended into it**: `design/plate/
+build-plate.py` writes a second ladder of each, `<stem>-moonlit-<width>.webp`,
+graded black-to-the-light's-colour with a BLACK POINT under it and then relit off
+its own luma as a bump map from where the moon stands, and in the dark theme the
+Kernel draws THAT as the picture — normal blending, blacks left black, masked by
+the moon's throw, at an opacity that breathes with the sky — and nothing else of
+either: the plate and the eye have no dark ladder. Two earlier models are the
+traps. A faded grey ghost lifted over the lit ground is what "just whiter" means;
+and that same ghost with the moonlit ladder SCREENED over it read as a radiograph
+on the eye's lattice however dim the light was made, because the print under it
+already stood above the sky. The car has no moonlit ladder and must not get one;
+it keeps its dark ladder and is cut out of the light. `src/kernel/tokens/moonlight.css`
 is the twelve numbers and answers to `kernel-moonlight`; the relight's numbers
 are the plate Bake's two Moonlight blocks; the breath is ONE animation on the
 band, read by the sky and both lit layers; and the light theme takes none of it,

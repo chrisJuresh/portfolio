@@ -15,7 +15,7 @@ than a convenience.
 | --------------------------- | ----------------------------------------------------------- |
 | `faces.css` / `tokens/faces.css` | the five families, six files, the face Tokens, and the page's own type size — the zoom, the ceiling and the give-way |
 | `ground.css` / `tokens/ground.css` | the theme's two papers, the Turn across them, the shade over the DARK theme's first screen, and that the document never scrolls sideways |
-| `corners.css` / `corners.ts` / `tokens/moonlight.css` | the plate, the car and the eye — geometry, and which rung; and the Moonlight they stand in, which lights the plate and the eye off a relit ladder of each and which the car is cut out of |
+| `corners.css` / `corners.ts` / `tokens/moonlight.css` | the plate, the car and the eye — geometry, and which rung; and the Moonlight they stand in, by whose light alone the dark theme draws the plate and the eye — a relit ladder of each, as the picture — and which the car is cut out of |
 | `rail/` / `tokens/rail.css` | the Rail — the one index on the page, its words, its two regimes, and which entry is current |
 | `effect-stack/`             | the nine layers, and the grain tile                          |
 | `theme.ts`                  | which paper, where it is stored, and who is told when it changes |
@@ -842,6 +842,39 @@ Screen is printed on, breathing; the plate and the eye stand in it as lit things
 and the car hangs in it as a silhouette. **The light theme takes none of it**, as
 a rule and not a value — the shade's own gate, for the shade's own reason.
 
+**The second model (2026-09-07): the moonlit ladder IS the picture, and the ghost
+is gone.** The first model drew each of the two pictures as a faded grey print —
+its dark ladder, blacks lifted to #2c2c2c, at 0.17 — and SCREENED the moonlit
+ladder over it as added light. Two rounds of dimming that light did not change
+what the author saw on the eye: a lattice glowing above the sky behind it, every
+member the same white, a radiograph. Measured, the cause was not the light's
+level but its ground. The mast's body sat at 27 of 255 over a sky of 18, and no
+exposure, curve, moon height or bump moved that ratio, because the print under
+the light already stood above the sky and the ladder's own mid tone glowed
+through it — an object at night is a silhouette with highlights, and this was a
+glow with brighter lines in it. What the author pointed at instead was the
+moonlit ladder on black, as build-plate.py writes it: real blacks, lit stone,
+contrast. So that is what the dark theme draws. `corners.css` blends `.plate-lit`
+and `.eye-lit` `normal`, hides `.plate` and `.eye` in that theme, and `corners.ts`
+fetches neither plain ladder there; `build-plate.py` writes no dark ladder for
+either picture and the recipe declares no dark grade for them, so their ladders
+are `light` and `moonlit` and the car's are `light` and `dark`. The grade gained
+a BLACK POINT — the share of the range that is unlit and lands on SHADOW — because
+the S-curve is weakest exactly where a shadowed mid tone sits and could not hold
+the mast's interior at black while its members stayed lit: 0.08 on the plate, 0.2
+on the eye, 0 on every print. The Tokens: the breath's floor is 0.3, since the
+pictures are their light now and a floor of 0.1 took them away between swells;
+the throw's floor is 0.85, since what a picture loses to the throw it now loses
+towards the ground; both picture Tokens are 1. Measured at 1536x760 after the
+shade, against the first model's last numbers: the eye's mast top 23 → 4 and its
+middle 28 → 17 over a sky of 18, so the structure stands against the sky rather
+than glowing in it; the plate's shadowed stone 13 → 5 and its lit stone 19 → 13,
+black where it was grey and a night photograph where it was a wash; at the trough
+the plate is 8 to 11 over a ground of 7 and the eye is at the sky. In the files,
+by luminance, the eye's ladder median went from 32 to 18 and its 99th percentile
+from 100 to 115, with 28% of it black where 6% was; the plate's median from 34 to
+27 and its 99th from 142 to 146. The light theme is untouched.
+
 **It was measured off a reference, and the first reading of the reference was
 wrong in the one place that mattered.** The author brought a ten-second clip of
 this screen with "a subtle blue moonlight from the top right" in it, in which
@@ -861,7 +894,10 @@ through, so as the ground comes up the picture's own contrast goes DOWN and the
 whole frame moves a shade towards the light's colour. That is the flat wash the
 author saw, and no strength or floor fixes it.
 
-**So the light on a picture is a second ladder, baked, and screened.**
+**So the light on a picture is a second ladder, baked — and, in the first model,
+screened.** What follows is that first model, kept because the bake it describes
+is unchanged; the second model, above, changed what the Kernel does with the
+file and nothing about how the file is made.
 `design/plate/build-plate.py` writes `<stem>-moonlit-<width>.webp` for the plate
 and the eye — THE MOONLIT LADDER in its docstring, and `relight()` — graded so
 black is black and white is the light's own colour, and then LIT: the picture's
@@ -1000,7 +1036,8 @@ frame that stands nearer the moon and over a lit sky is the louder of the two
 before any light is put on it. The mast is 23-28 at the peak over a sky of 18,
 against 40-47 over 29: a little over the dome's 19-25, where it stood at twice
 it. Its ladder's mean halved and its brightest percentile went from 154 to 98
-of 255.
+of 255. Then the author looked again and the MODEL changed — the second model,
+at the head of this section — so these are the first model's last numbers.
 
 **Two things the Editor will do with these that are worth knowing.** The slider
 it draws for a percentage runs to four times the value, so `--moonlight-y` at 6%
@@ -1010,8 +1047,9 @@ half of whatever `--moonlight-strength` asks for is what reaches the screen at t
 shade's shipped 0.5 — drag the strength while looking, not by arithmetic.
 
 **Two levers on the lit pictures, and which is which.** `--moonlight-plate` and
-`--moonlight-eye` are how much of a moonlit ladder lands, live, and they stop at
-1 — the plate's is there and the eye's is 0.8, for the reason above. What the
+`--moonlight-eye` are how much of a moonlit ladder shows, live, and they stop at
+1 — both are there now, and in the dark theme that is how much of the PICTURE
+there is, the ladder being the picture. What the
 light DOES to a picture — its colour, how bright the stone gets, how hard the
 ribs catch it, where the moon is as seen from that corner — is the
 Bake's, in the two Moonlight blocks of `design/bake/plate/recipe.json`, and moves
@@ -1223,15 +1261,17 @@ redraw loop. They come back with whichever Section wants them, or not at all.
 
 ## The corner pictures
 
-Three baked photographs, each at four widths and — where the grade needed a
-second answer on black — again per theme. So `corners.ts` picks one file out of a
-grid rather than off a list, and picks again when the theme or the display changes
-under it. A miss on a dark file is the ordinary untuned state and not an error:
-the generator writes no dark ladder while dark's grade matches light's, so there
-is one retry against the light rung of the same width. The plate and the eye carry
-a third ladder besides, `<stem>-moonlit-<width>.webp` — the Moonlight's light on
-the picture, fetched at the same rung in the dark theme only and with no fallback,
-because the generator writes all of it or none (the Moonlight section above).
+Three baked photographs, each at four widths, and each with a second ladder for
+the dark theme — the car's is its dark grade, and the plate's and the eye's is the
+MOONLIT ladder, `<stem>-moonlit-<width>.webp`, which is the whole of what the dark
+theme draws of those two (the Moonlight section above). So `corners.ts` picks one
+file out of a grid rather than off a list, and picks again when the theme or the
+display changes under it. A miss on a dark file is the ordinary untuned state and
+not an error: the generator writes no dark ladder while dark's grade matches
+light's, so there is one retry against the light rung of the same width — the
+car's path, and only the car's now. The moonlit rung is fetched in the dark theme
+only and with no fallback, because the generator writes all of it or none; in
+that theme the plain ladder of a lit picture is not fetched at all.
 
 **In the dark theme the car is a silhouette and not a ghost.** `corners.css` blends
 it `multiply` into the Moonlight painted under it, at an opacity that is now the

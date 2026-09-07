@@ -6,9 +6,9 @@ import { onThemeChange, theme, type Theme } from './theme';
  * Each is baked at four widths and, where its grade needed a second answer on
  * black, again per theme — so this picks one file out of a grid rather than off a
  * list, and picks again when the theme or the display changes under it. The two
- * the Moonlight lights carry a third ladder besides, `<stem>-moonlit-<width>`:
- * the light ON the picture, which corners.css screens over it in the dark theme
- * and only there, so it is fetched only there.
+ * the Moonlight lights have no dark ladder: in the dark theme each IS its moonlit
+ * ladder, `<stem>-moonlit-<width>`, which corners.css draws as the picture there
+ * and only there — so that one is fetched only there, and the plain one is not.
  *
  * WHERE THE LADDER IS, AND THE ONLY LINE THAT KNOWS. The files are the ones
  * design/plate/build-plate.py writes into portfolio/img/, which is not built by
@@ -27,7 +27,7 @@ const RUNGS = [800, 1300, 2000, 2800] as const;
  * caches /portfolio/img/ for a day, so this is the only thing that makes a
  * re-bake visible. build-plate.py prints the current value at the end of a run.
  */
-const LADDER_VERSION = '7dcb7b29';
+const LADDER_VERSION = '470c39a9';
 
 interface Picture {
   /** the file stem, and Picture.out_path()'s in build-plate.py */
@@ -42,8 +42,9 @@ interface Picture {
   shown: Record<Theme, number>;
   /** and the URL it resolved to, so a theme flip is a repaint and not a fetch */
   src: Record<Theme, string | null>;
-  /** whether build-plate.py bakes a moonlit ladder for it — the Moonlight's
-   *  light on the picture. The car has none: it stands against the light. */
+  /** whether build-plate.py bakes a moonlit ladder for it — the picture the
+   *  dark theme shows of it. The car has none: it stands against the light,
+   *  from its own dark ladder. */
   readonly lit: boolean;
   /** the widest moonlit rung that has resolved, and its URL */
   shownLit: number;
@@ -102,8 +103,11 @@ export function mountCorners(): void {
   const paint = (): void => {
     const current = theme();
     for (const p of pictures) {
-      const src = p.src[current];
-      if (src) root.style.setProperty(p.property, `url("${src}")`);
+      // A lit picture's plain ladder is the light theme's alone. In the dark
+      // theme the moonlit ladder is the whole picture and the ghost is `none`
+      // rather than hidden, so nothing sits decoded behind it.
+      const src = p.lit && current === 'dark' ? null : p.src[current];
+      root.style.setProperty(p.property, src ? `url("${src}")` : 'none');
       if (p.lit) {
         const lit = current === 'dark' && p.srcLit ? `url("${p.srcLit}")` : 'none';
         root.style.setProperty(`--${p.stem}-lit-src`, lit);
@@ -114,6 +118,8 @@ export function mountCorners(): void {
   // A miss on a dark file is the ordinary untuned state and not an error:
   // build-plate.py writes no dark ladder while dark's grade matches light's. So
   // one retry against the light rung of the same width, and only then give up.
+  // Only the car asks for a dark rung now: the two lit pictures have none, and
+  // are drawn from their moonlit ladder in that theme (upgrade, below).
   const fetchRung = (p: Picture, width: number, forTheme: Theme): void => {
     const attempt = (url: string, fallback: string | null): void => {
       const img = new Image();
@@ -137,7 +143,7 @@ export function mountCorners(): void {
     attempt(rungUrl(p, width, forTheme), forTheme === 'light' ? null : rungUrl(p, width, 'light'));
   };
 
-  // The light on a picture, at the same rung as the picture. No fallback: a
+  // A lit picture in the dark theme, at the rung the display wants. No fallback: a
   // moonlit rung that misses is a missing file rather than an untuned state —
   // build-plate.py writes the whole ladder or none of it — and the layer then
   // draws nothing, which the `assets` Check reports as the 404 it is.
@@ -160,14 +166,16 @@ export function mountCorners(): void {
 
   // Upgrade only, and for the theme on screen only: a rung already good enough
   // is left alone so dragging a window cannot thrash, and the other theme is
-  // upgraded if and when it is next shown. The light on a picture is asked for
-  // in the dark theme only, because only the dark theme draws it.
+  // upgraded if and when it is next shown. A lit picture is asked for as its
+  // moonlit ladder in the dark theme and as its plain ladder in the light, and
+  // never both: the dark theme draws nothing else of it.
   const upgrade = (): void => {
     const current = theme();
     for (const p of pictures) {
       const need = rungFor(p);
-      if (need > p.shown[current]) fetchRung(p, need, current);
-      if (p.lit && current === 'dark' && need > p.shownLit) fetchLit(p, need);
+      const byMoon = p.lit && current === 'dark';
+      if (!byMoon && need > p.shown[current]) fetchRung(p, need, current);
+      if (byMoon && need > p.shownLit) fetchLit(p, need);
     }
   };
 
