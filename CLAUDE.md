@@ -308,14 +308,22 @@ Section at rest and never declared; the `rail` Check asserts the count, that the
 box does not move across the turn, and that the highlight follows it back.
 
 **The Moonlight is the Kernel's too**: one cool light over the DARK theme's first
-screen, cast from just inside the top right, that the car hangs in as a
-silhouette. `src/kernel/corners.css` draws it INSIDE the corner pictures' band and
-not beside the shade, because the car's blend reaches only what that band painted
-before it — which is also why the band now paints the ground it was already
-showing. `src/kernel/tokens/moonlight.css` is its numbers and answers to
-`kernel-moonlight`; the photographs are untouched, because the reference it was
-measured from never touched them; and the light theme takes none of it, as a rule
-and not a value. `src/kernel/NOTES.md` has the measurements.
+screen, cast from just inside the top right, breathing, that the plate and the
+eye stand in as LIT things and the car hangs in as a silhouette.
+`src/kernel/corners.css` draws it INSIDE the corner pictures' band and not beside
+the shade, because the car's blend reaches only what that band painted before it
+— which is also why the band paints the ground it was already showing.
+**The light on the two pictures is BAKED, not blended**: `design/plate/
+build-plate.py` writes a third ladder of each, `<stem>-moonlit-<width>.webp`,
+graded black-to-the-light's-colour and then relit off its own luma as a bump map
+from where the moon stands, and the Kernel screens it over the ghost, masked by
+the moon's throw, at an opacity that breathes with the sky. Lifting the ghost's
+opacity instead is what "just whiter" means, and it shipped that way once. The
+car has no moonlit ladder and must not get one. `src/kernel/tokens/moonlight.css`
+is the twelve numbers and answers to `kernel-moonlight`; the relight's numbers
+are the plate Bake's two Moonlight blocks; the breath is ONE animation on the
+band, read by the sky and both lit layers; and the light theme takes none of it,
+as a rule and not a value. `src/kernel/NOTES.md` has the measurements.
 
 **Read [`src/kernel/NOTES.md`](src/kernel/NOTES.md) before touching the Kernel,
 and [`src/sections/NOTES.md`](src/sections/NOTES.md) before adding a
@@ -458,7 +466,7 @@ STRING, so the property the fill gesture is entirely about is the one property a
 stylesheet walk cannot see, and it has to be split out of the shorthand instead.
 
 **Tokens are not only a Section's.** The Effect Stack's hundred numbers, the three
-corner pictures’ placement, the Moonlight's eight, the landing's four terms and
+corner pictures’ placement, the Moonlight's twelve, the landing's four terms and
 the page's own type size live in `src/kernel/tokens/`, one file per part of the
 Kernel, and answer to `kernel-<stem>`. **`kernel-faces`’s `--type-zoom` is how the whole drawing is
 scaled up**: every ladder on the page is in rem, so it is the one number that

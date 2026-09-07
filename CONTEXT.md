@@ -109,8 +109,8 @@ _Avoid_: filters, overlays, post-processing
 **Moonlight**:
 The Kernel's one light over the dark theme's first screen: cool, cast from just
 inside the top right across the ground the Front Screen is printed on, breathing
-slowly, and what the car stands against as a silhouette. The light theme has
-none.
+slowly, falling on the plate and the eye as a relit ladder of each, and what the
+car stands against as a silhouette. The light theme has none.
 _Avoid_: glow, spotlight, gradient, haze, the blue light
 
 **Timeline**:

@@ -15,8 +15,11 @@
   --plate-crop: 0.15;
   /* Set by corners.ts once it knows how many real pixels this display will draw
      the picture in. `none` until then, so a dead network leaves the page up
-     rather than blank — which is also why it is not worth typing into. */
+     rather than blank — which is also why it is not worth typing into. The
+     `-lit-src` is the same picture's moonlit ladder, fetched in the dark theme
+     only, and the light the Kernel screens over it — corners.css. */
   --plate-src: none;
+  --plate-lit-src: none;
 
   /* The car, top-right. Anchored by one corner and scaled to the fold itself, so
      --car-y moves it without resizing anything. --car-crop cuts the TOP off,
@@ -47,6 +50,7 @@
   --eye-y: 0px;
   --eye-crop: 0;
   --eye-src: none;
+  --eye-lit-src: none;
 }
 
 /* Every picture needs more of itself on black, and nothing else moves.

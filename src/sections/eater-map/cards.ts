@@ -1,4 +1,4 @@
-import { ANCHORED_AT, type CardName, PARTS } from './leaders';
+import { ANCHORED_AT, type CardName, DROPDOWN, type Part, PARTS } from './leaders';
 import manifest from './assets/cards/cards.json';
 import details from './assets/cards/details.html?raw';
 import lines from './assets/cards/lines.html?raw';
@@ -133,6 +133,12 @@ const carrying = (owned: string) =>
 const opening = (owned: string) =>
   new RegExp(`<[a-z][\\w-]*\\b[^>]*\\bclass="(?:[^"]*\\s)?${owned}(?:\\s[^"]*)?"[^>]*>`, 'i');
 
+/** Say which part of the Exploded View an opening tag is, immediately after the
+ *  tag name — the same place, and for the same reason, as every attribute
+ *  `asPicture` writes. */
+const named = (tag: string, part: Part) =>
+  tag.replace(/^<([a-z][\w-]*)/i, `<$1 data-eater-map-part="${part}"`);
+
 /**
  * The attributes go in FIRST, immediately after the tag name.
  *
@@ -181,18 +187,33 @@ function anchored(html: string, card: CardName): string {
     // A function rather than a string, so a `$` in the tag is a `$`.
     out = out.replace(
       opening(owned),
-      (tag) => `${tag}<span class="eater-map__anchor" data-eater-map-anchor="${part}"` +
+      (tag) =>
+        // AND THE SURFACE SAYS WHICH PART IT IS, which is the Drop's half (#215).
+        // A Point lowers the COMPONENT it names and not the Card that component is
+        // drawn on, so the piece that travels is every element this part is made
+        // of — this one, its blurred copy of the map and its edge — and each of
+        // them is found by this attribute. First in the tag, for the reason every
+        // other attribute here goes first: the parser keeps the first of two.
+        `${named(tag, part)}<span class="eater-map__anchor" data-eater-map-anchor="${part}"` +
         ' aria-hidden="true"></span>',
     );
   }
   return out;
 }
 
-/** Which of a Card's glass surfaces are parts of the Exploded View — read off the
- *  one correspondence rather than written out a second time here (`leaders.ts`).
- *  A Card's glass is these plus whatever hangs off them. */
-const partsOf = (card: CardName): readonly string[] =>
-  PARTS.filter((part) => ANCHORED_AT[part].card === card).map((part) => ANCHORED_AT[part].surface);
+/** Which parts of the Exploded View are drawn on one Card. */
+const on = (card: CardName): readonly Part[] =>
+  PARTS.filter((part) => ANCHORED_AT[part].card === card);
+
+/** Which of a Card's elements are GLASS — read off the one correspondence rather
+ *  than written out a second time here (`leaders.ts`). Every part's own surface
+ *  first and then whatever hangs off one, so the order is the order the Card's
+ *  own components read in and a surface that hangs comes after the one it hangs
+ *  from. */
+const partsOf = (card: CardName): readonly string[] => [
+  ...on(card).map((part) => ANCHORED_AT[part].surface),
+  ...on(card).flatMap((part) => ANCHORED_AT[part].hangs ?? []),
+];
 
 export interface Card {
   /**
@@ -254,6 +275,16 @@ export interface Card {
    */
   readonly hung?: string;
   /**
+   * Which part the hung surface belongs to, or nothing when this Card has none.
+   *
+   * The Drop is what asks (#215): a hung surface goes back on the map with the
+   * component it hangs off, so the box it arrives in has to say which component
+   * that is. Derived rather than written — `leaders.ts` already declares that the
+   * dropdown is one of the search bar's surfaces, and a second statement here
+   * would be a dropdown that lowers on its own or not at all.
+   */
+  readonly hungFor?: Part;
+  /**
    * How many rows the hung surface shows at once, off the capture's own manifest.
    *
    * THE ONE THING THE COLLECTOR CANNOT CARRY. The app sets
@@ -275,14 +306,10 @@ export interface Card {
  *  card happens to hold and only one of the four has a cap. */
 const VENDORED: readonly { readonly name: string; readonly rows?: number }[] = manifest.cards;
 
-/**
- * The results dropdown's own panel, and it is one name used twice for two
- * different claims: it is a glass surface the search Card draws, and it is the
- * one vendored element that SCROLLS and therefore has to be refused the pointer.
- * Written once so the two cannot drift; kept apart below because the second must
- * not spread to the other surfaces.
- */
-const DROPDOWN = '.results-panel';
+/** Which part a Card's hung surface belongs to, off the one correspondence:
+ *  the part on this Card that declares a surface hanging off it. */
+const hungOn = (card: CardName): Part | undefined =>
+  on(card).find((part) => (ANCHORED_AT[part].hangs?.length ?? 0) > 0);
 
 /**
  * Stacked back to front, which is also how the app stacks them: the detail panel
@@ -295,8 +322,9 @@ export const CARDS: readonly Card[] = [
   {
     name: 'search',
     html: anchored(asPicture(search), 'search'),
-    surfaces: [...partsOf('search'), DROPDOWN],
+    surfaces: partsOf('search'),
     hung: asPicture(results, [DROPDOWN]),
+    hungFor: hungOn('search'),
     rows: VENDORED.find((one) => one.name === 'results')?.rows,
   },
 ];

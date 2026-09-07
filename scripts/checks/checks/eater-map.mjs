@@ -215,6 +215,17 @@ import { DESK, open, settle } from '../lib/page.mjs';
  * of the drawing, and the writing to its left. Each of those is a `grid-area` that
  * a Variant may move and the shipped page may not.
  *
+ * AND THE COLUMN'S THREE WORDS STAND ON ONE LINE, WHICH ITS THREE BOXES ALREADY
+ * DID. A glyph is drawn its own LEFT SIDE BEARING inside the box that carries it
+ * and that bearing is a share of a font size, so three blocks placed on one
+ * vertical drew the masthead 7.6px off it, the serif title 3px off it and the copy
+ * under 1px off it — and a reader saw the copy sitting ON the rule. The ink is
+ * SCANNED rather than measured for the same reason the cap is scaled from a
+ * reference: `actualBoundingBoxLeft` is quantised to a sixty-fourth of the em,
+ * which is two pixels at the masthead's size and a quarter of the distance being
+ * asserted. Read against PROJECTS and not against the vertical, because PROJECTS
+ * is the block in this column that cannot move.
+ *
  * AND EVERY RULE ENDS IN A LIT DOT ON ITS PART, checked at each of the three
  * moments beside the rule it belongs to. Three ways for a dot to be wrong and each
  * fails separately: not drawn at all — an SVG circle with no centre sits at the
@@ -590,6 +601,17 @@ const GALLERY = 1;
  *  arithmetic rather than the rasteriser's grid: measured at four windows across
  *  the band, both ratios came back exact to three figures. */
 const RATIO = 0.02;
+
+/** How far the left column's three words may stand from each other's left edge,
+ *  in px, measured off the ink rather than off the boxes that carry it.
+ *
+ *  A PIXEL, FOR THE SAME REASON `GALLERY` IS ONE: the claim is an equality and
+ *  the tolerance is the sub-pixel rounding under it. Measured, the three agree to
+ *  0.01px at four windows across the band. Taking the compensation off leaves the
+ *  serif title 4.6px inside PROJECTS' line and the copy 6.7px inside it at
+ *  1600x900, and 3.2px and 3.1px at the narrow corner — so the mutation fails
+ *  everywhere the assertion runs. */
+const WORDS = 1;
 
 /** How far the copy's foot may sit from the foot of the column it is at the
  *  foot OF, in px. The two are the same grid area, one end-aligned; this is
@@ -1258,6 +1280,65 @@ async function atWindow(browser, origin, viewport) {
         points: block('.eater-map__points'),
       };
 
+      // ---- and the three of them stand their WORDS on one line ---------------
+      // A BOX IS NOT A WORD. All three blocks in the left column are placed on the
+      // grid's first vertical, which `columns` above already asserts — but a glyph
+      // is drawn its own LEFT SIDE BEARING inside the box that carries it, and
+      // that bearing is a share of a font size the three do not share. Three boxes
+      // on one line drew three words on three: the masthead clearing the vertical
+      // by 7.6px at 1600x900, the serif title by 3px and the copy by under one,
+      // which read as the copy sitting ON the rule. So this reads where the INK
+      // falls and `title.ts` is what has to have made them agree.
+      //
+      // SCANNED AND NOT MEASURED, for the reason `title.ts` gives at length:
+      // `actualBoundingBoxLeft` is quantised to a sixty-fourth of the em, which is
+      // two whole pixels at the masthead's size and a quarter of the answer.
+      const scan = (() => {
+        const REFERENCE = 1000;
+        const ORIGIN = REFERENCE / 4;
+        const REACH = REFERENCE / 4;
+        const RISE = REFERENCE * 1.1;
+        const FALL = REFERENCE * 0.4;
+        const canvas = document.createElement('canvas');
+        canvas.width = ORIGIN + REACH;
+        canvas.height = RISE + FALL;
+        const pen = canvas.getContext('2d', { willReadFrequently: true });
+        return (element) => {
+          if (!element || !pen) return Number.NaN;
+          const style = getComputedStyle(element);
+          const said = (element.textContent ?? '').trim();
+          const glyph = style.textTransform === 'uppercase' ? said.toUpperCase()[0] : said[0];
+          if (!glyph || glyph.trim() === '') return Number.NaN;
+          pen.clearRect(0, 0, canvas.width, canvas.height);
+          pen.font = `${style.fontStyle} ${style.fontWeight} ${REFERENCE}px ${style.fontFamily}`;
+          pen.textBaseline = 'alphabetic';
+          pen.fillStyle = '#000';
+          pen.fillText(glyph, ORIGIN, RISE);
+          const pixels = pen.getImageData(ORIGIN, 0, REACH, canvas.height).data;
+          for (let x = 0; x < REACH; x += 1) {
+            for (let y = 0; y < canvas.height; y += 1) {
+              if (pixels[(y * REACH + x) * 4 + 3] > 8) {
+                // The box's own content edge plus the bearing at the drawn size.
+                // `getBoundingClientRect` is the BORDER box, so the padding this
+                // whole assertion is about has to be added back by hand.
+                const pad = Number.parseFloat(style.paddingInlineStart) || 0;
+                return round(
+                  element.getBoundingClientRect().left +
+                    pad +
+                    (x / REFERENCE) * Number.parseFloat(style.fontSize),
+                );
+              }
+            }
+          }
+          return Number.NaN;
+        };
+      })();
+      const words = {
+        masthead: scan(eaterMast),
+        title: scan(titleEl),
+        copy: scan(document.querySelector('[data-eater-map-copy] p')),
+      };
+
       const was = { progress: lift.progress(), scroll: window.scrollY };
       kernel.hold?.();
       try {
@@ -1354,6 +1435,7 @@ async function atWindow(browser, origin, viewport) {
           masthead,
           title,
           columns,
+          words,
           overlay: overlay
             ? {
                 spoken: overlay.getAttribute('aria-hidden') !== 'true',
@@ -1518,6 +1600,36 @@ async function atWindow(browser, origin, viewport) {
               "grotesque's cap is not a serif's",
           );
         }
+      }
+    }
+
+    // ---- and the three of them stand their words on one line -----------------
+    // The blocks are placed on the grid's first vertical below; this is the claim
+    // that the WORDS are too. It is an equality between three readings off the
+    // page and not a distance from the rule, because PROJECTS is the block in this
+    // column that cannot move — it stands in the Gallery's own box, which the
+    // assertion above is about — so where its ink falls is the line, and the other
+    // two are measured against it rather than against a number.
+    for (const [what, ink] of [
+      ['the serif title', seen.words.title],
+      ['the copy', seen.words.copy],
+    ]) {
+      if (!Number.isFinite(seen.words.masthead) || !Number.isFinite(ink)) {
+        failures.push(
+          `${where}: ${what}'s left edge reads ${ink} against PROJECTS' ${seen.words.masthead} — the ink ` +
+            'could not be read, so nothing about the column standing on one line was asserted',
+        );
+        continue;
+      }
+      const inside = ink - seen.words.masthead;
+      if (Math.abs(inside) > WORDS) {
+        failures.push(
+          `${where}: ${what} starts at ${ink}px where PROJECTS starts at ${seen.words.masthead}px, ` +
+            `${inside.toFixed(2)}px ${inside > 0 ? 'right of' : 'left of'} it. All three blocks in this ` +
+            'column stand their boxes on the same vertical, so a face whose side bearing is not the ' +
+            "masthead's has to be given the difference back, or the reader sees the column's words on " +
+            'three edges',
+        );
       }
     }
 
@@ -2415,6 +2527,18 @@ async function reversesOnTheWayOut(browser, origin) {
  * Hovering a piece, or the Point that names it, puts that ONE piece back on the
  * map — and it stays there while the pointer does (#213).
  *
+ * AND SINCE #215 THE TWO GESTURES DO NOT MOVE THE SAME PIECE, which is the thing
+ * to know before reading anything below. A Point names a COMPONENT of the app and
+ * two of the four are pills in the search Card's own topbar, so hovering `01.`
+ * lowers the search bar and leaves the Offline button standing; hovering the
+ * DRAWING is still the whole Card, because what the pointer is on out there is
+ * the topbar. So every reading here is per COMPONENT — one anchor each, four of
+ * them — and the Card is asked about only where a Card is what the claim is about:
+ * the paint order, and the hover of the drawing itself. Read per Card, as this
+ * group was, "which piece went back" resolves to whichever of the search Card's
+ * two pills carries the first anchor in document order, and the failure #215
+ * fixes is invisible.
+ *
  * WHAT IS ASSERTED IS THE CORRESPONDENCE AND NOT A DISTANCE. A lowered piece has
  * to arrive exactly where the Lift's NEAR END puts it, which is a relationship
  * between two things the page already draws rather than a number anybody chose:
@@ -2526,6 +2650,23 @@ async function hoveringPutsOnePieceBack(browser, origin) {
       const cards = [...document.querySelectorAll('[data-eater-map-card]')];
       const named = cards.map((card) => card.getAttribute('data-eater-map-card') ?? '(unnamed)');
 
+      // ONE ENTRY PER COMPONENT AND NOT PER CARD, WHICH IS #215. A Point lowers
+      // the component it names rather than the Card that component is drawn on,
+      // so "that piece went back and the others did not" is a claim about four
+      // things where the search Card holds two of them — and read per Card it
+      // would be the first anchor in each, which is one of the search Card's two
+      // pills chosen by document order. Every assertion below is per component;
+      // `on` is which Card each is drawn on, which is what a hover of the DRAWING
+      // is still asked about.
+      const anchors = [...document.querySelectorAll('[data-eater-map-anchor]')];
+      /** @type {Record<string, string>} */
+      const on = {};
+      for (const anchor of anchors) {
+        on[anchor.getAttribute('data-eater-map-anchor') ?? '(unnamed)'] =
+          anchor.closest('[data-eater-map-card]')?.getAttribute('data-eater-map-card') ??
+          '(no card)';
+      }
+
       // OFF THE ANCHORS, for the reason the leader lines are drawn to them: a
       // zero-sized box inside the plane projects to a POINT, and the bounding box
       // of a rotated quad moves by a different amount from the quad.
@@ -2533,13 +2674,17 @@ async function hoveringPutsOnePieceBack(browser, origin) {
         const at = section.getBoundingClientRect();
         /** @type {Record<string, { anchor: { x: number, y: number } | null, box: DOMRect | null }>} */
         const found = {};
-        for (const card of cards) {
-          const part = card.getAttribute('data-eater-map-card') ?? '(unnamed)';
-          const point = card.querySelector('.eater-map__anchor')?.getBoundingClientRect();
+        for (const anchor of anchors) {
+          const part = anchor.getAttribute('data-eater-map-anchor') ?? '(unnamed)';
+          const point = anchor.getBoundingClientRect();
           found[part] = {
-            anchor: point ? { x: round(point.left - at.left), y: round(point.top - at.top) } : null,
-            box: card.getBoundingClientRect(),
+            anchor: { x: round(point.left - at.left), y: round(point.top - at.top) },
+            box: null,
           };
+        }
+        for (const card of cards) {
+          const name = card.getAttribute('data-eater-map-card') ?? '(unnamed)';
+          found[`card:${name}`] = { anchor: null, box: card.getBoundingClientRect() };
         }
         // AND THE PICTURE ITSELF, off its own box rather than off an anchor: no
         // number names the Slab since the fourth point moved to the Offline
@@ -2565,9 +2710,9 @@ async function hoveringPutsOnePieceBack(browser, origin) {
       /** @type {Record<string, { clear: { x: number, y: number } | null, anywhere: { x: number, y: number } | null }>} */
       const aim = {};
       for (const card of cards) {
-        const part = card.getAttribute('data-eater-map-card') ?? '(unnamed)';
-        const box = up[part]?.box;
-        const lying = down[part]?.box;
+        const name = card.getAttribute('data-eater-map-card') ?? '(unnamed)';
+        const box = up[`card:${name}`]?.box;
+        const lying = down[`card:${name}`]?.box;
         if (!box) continue;
         let anywhere = null;
         let clear = null;
@@ -2582,7 +2727,7 @@ async function hoveringPutsOnePieceBack(browser, origin) {
             if (off) clear = { x: round(x), y: round(y) };
           }
         }
-        aim[part] = { clear, anywhere };
+        aim[name] = { clear, anywhere };
       }
 
       kernel?.release?.();
@@ -2591,10 +2736,11 @@ async function hoveringPutsOnePieceBack(browser, origin) {
       /** @type {Record<string, { x: number, y: number } | null>} */
       const high = {};
       for (const part of Object.keys(up)) {
+        if (part.startsWith('card:')) continue;
         flat[part] = down[part]?.anchor ?? null;
         high[part] = up[part]?.anchor ?? null;
       }
-      return { down: flat, up: high, aim, named };
+      return { down: flat, up: high, aim, named, on };
     });
 
     if (ends.missing) {
@@ -2612,11 +2758,30 @@ async function hoveringPutsOnePieceBack(browser, origin) {
       return { failures, notes };
     }
 
-    const parts = ends.named.filter((part) => ends.up[part] && ends.down[part]);
+    // OFF THE ANCHORS AND NOT OFF EVERY NAME READ, because the Slab is in that
+    // record too under a name no component uses — it is what "the drawing did not
+    // shift" is asked of, and it never moves between the Lift's two ends, so
+    // leaving it in makes the very next assertion refuse the whole group.
+    const parts = Object.keys(ends.on).filter((part) => ends.up[part] && ends.down[part]);
     if (parts.length < 2) {
       failures.push(
-        `${where}: ${parts.length} Card(s) carry an anchor at both ends of the Lift, so "this piece went ` +
-          'back and the others did not" is not a claim this page can be asked about',
+        `${where}: ${parts.length} component(s) carry an anchor at both ends of the Lift, so "this piece ` +
+          'went back and the others did not" is not a claim this page can be asked about',
+      );
+      return { failures, notes };
+    }
+    // AND TWO OF THEM ARE ON ONE CARD, which is the whole of what #215 is about
+    // and is a precondition rather than a nicety: every assertion that separates a
+    // Point's piece from a Card's piece is vacuous on a page where each Card
+    // carries exactly one component, and it would pass with this change reverted.
+    const shared = ends.named.filter(
+      (card) => parts.filter((part) => ends.on[part] === card).length > 1,
+    );
+    if (shared.length === 0) {
+      failures.push(
+        `${where}: no Card carries two components, so "a Point lowers the component it names rather than ` +
+          'the Card it is drawn on" is not a claim this page can be asked about — every gesture below ' +
+          'would pass with the two treated as one piece',
       );
       return { failures, notes };
     }
@@ -2648,8 +2813,36 @@ async function hoveringPutsOnePieceBack(browser, origin) {
     };
 
     /**
-     * Wait for exactly one piece to be all the way down and every other one all
-     * the way up. `lowered` is null when the gesture puts everything back.
+     * How far each component has been put back, as ONE number per component.
+     *
+     * TWO PLAYHEADS COMPOSED AND NOT EITHER OF THEM (#215). `--eater-map-card-drop`
+     * lowers a whole Card and `--eater-map-part-drop` lowers one component of one;
+     * the stylesheets multiply what is left of each, so what a reader sees is
+     * `1 - (1 - card) * (1 - part)` and neither number on its own says whether a
+     * piece is on the map. Read here rather than in each caller, because a Check
+     * that asked only the Card's would pass with the Point's half deleted and one
+     * that asked only the component's would pass with a Card hover doing nothing.
+     */
+    const drops = () =>
+      page.evaluate(() =>
+        Object.fromEntries(
+          [...document.querySelectorAll('[data-eater-map-anchor]')].map((anchor) => {
+            const at = (element, name) =>
+              element ? Number(getComputedStyle(element).getPropertyValue(name)) || 0 : 0;
+            return [
+              anchor.getAttribute('data-eater-map-anchor') ?? '(unnamed)',
+              1 -
+                (1 - at(anchor.closest('[data-eater-map-card]'), '--eater-map-card-drop')) *
+                  (1 - at(anchor.closest('[data-eater-map-part]'), '--eater-map-part-drop')),
+            ];
+          }),
+        ),
+      );
+
+    /**
+     * Wait for exactly the wanted components to be all the way down and every
+     * other one all the way up. `lowered` is the list of components that should
+     * have gone back — empty when the gesture puts everything up.
      *
      * THE WANTED STATE AND NEVER "EVERYTHING HAS STOPPED", which was the first
      * version and asserted nothing: the pointer has only just arrived when this is
@@ -2662,9 +2855,16 @@ async function hoveringPutsOnePieceBack(browser, origin) {
       page
         .waitForFunction(
           (wanted) =>
-            [...document.querySelectorAll('[data-eater-map-card]')].every((card) => {
-              const at = Number(getComputedStyle(card).getPropertyValue('--eater-map-card-drop'));
-              return card.getAttribute('data-eater-map-card') === wanted ? at > 0.999 : at < 0.001;
+            [...document.querySelectorAll('[data-eater-map-anchor]')].every((anchor) => {
+              const at = (element, name) =>
+                element ? Number(getComputedStyle(element).getPropertyValue(name)) || 0 : 0;
+              const drop =
+                1 -
+                (1 - at(anchor.closest('[data-eater-map-card]'), '--eater-map-card-drop')) *
+                  (1 - at(anchor.closest('[data-eater-map-part]'), '--eater-map-part-drop'));
+              return wanted.includes(anchor.getAttribute('data-eater-map-anchor'))
+                ? drop > 0.999
+                : drop < 0.001;
             }),
           lowered,
           { timeout: 5000 },
@@ -2756,8 +2956,12 @@ async function hoveringPutsOnePieceBack(browser, origin) {
     /**
      * One gesture: put the pointer somewhere and say what the drawing did.
      *
-     * `lowered` is the part that should have gone back on the map, or null when
-     * the gesture is one that puts everything up.
+     * `lowered` is the list of components that should have gone back on the map —
+     * one for a Point, every component on the Card for a hover of the drawing
+     * itself, and none for a gesture that puts everything up. A LIST rather than a
+     * name since #215: those two gestures no longer move the same pieces, and a
+     * single name could not tell "the search bar went back" from "the topbar it is
+     * a pill of went back".
      */
     const gesture = async (what, selector, lowered) => {
       const spot = await aimAt(selector);
@@ -2766,17 +2970,10 @@ async function hoveringPutsOnePieceBack(browser, origin) {
         return null;
       }
       if (!(await settledDrop(lowered))) {
-        const at = await page.evaluate(() =>
-          Object.fromEntries(
-            [...document.querySelectorAll('[data-eater-map-card]')].map((card) => [
-              card.getAttribute('data-eater-map-card'),
-              getComputedStyle(card).getPropertyValue('--eater-map-card-drop').trim(),
-            ]),
-          ),
-        );
+        const at = await drops();
         failures.push(
           `${where}: ${what} — five seconds later the pieces are at ${JSON.stringify(at)} rather than ` +
-            `${lowered ? `${lowered} down and the rest up` : 'all of them up'}`,
+            `${lowered.length > 0 ? `${lowered.join(', ')} down and the rest up` : 'all of them up'}`,
         );
         return null;
       }
@@ -2786,13 +2983,14 @@ async function hoveringPutsOnePieceBack(browser, origin) {
         return null;
       }
       for (const part of parts) {
-        const wanted = part === lowered ? ends.down[part] : ends.up[part];
+        const down = lowered.includes(part);
+        const wanted = down ? ends.down[part] : ends.up[part];
         const missed = apart(now.at[part], wanted);
-        const asked = part === lowered ? 'onto the map' : 'where it was';
+        const asked = down ? 'onto the map' : 'where it was';
         if (!(missed <= BACK_ON_THE_MAP)) {
           failures.push(
             `${where}: ${what} — ${part} is ${Number.isNaN(missed) ? 'nowhere readable' : `${missed.toFixed(2)}px`} from ${asked}: ` +
-              `it stands at ${JSON.stringify(now.at[part])} and the Lift's ${part === lowered ? 'near' : 'far'} end ` +
+              `it stands at ${JSON.stringify(now.at[part])} and the Lift's ${down ? 'near' : 'far'} end ` +
               `puts it at ${JSON.stringify(wanted)}`,
           );
         }
@@ -2814,13 +3012,23 @@ async function hoveringPutsOnePieceBack(browser, origin) {
       // that tie, and it shipped broken: the search bar lay on the map with the
       // rail popup's left half disappearing underneath it. Nothing about the
       // GEOMETRY says so, which is why every assertion above passed.
-      if (lowered) {
+      //
+      // ASKED OF THE CARDS THOUGH THE PIECE IS A COMPONENT, and #215 is why that
+      // is the right question rather than a coarser one. A Card is a stacking
+      // context, so a pill lying on the map cannot be sorted against another CARD
+      // from inside one — the Card takes its lowest component's own height
+      // instead (`--eater-map-card-sunk`), and this is what asserts that it does.
+      // The pill still standing beside a lowered one is sorted as though it had
+      // come down too; `EaterMap.astro` carries why that is the lesser error.
+      if (lowered.length > 0) {
         const order = await painted();
+        const sank = [...new Set(lowered.map((part) => ends.on[part]))];
+        const standing = ends.named.filter((card) => !sank.includes(card));
         // `auto` IS ITS OWN FAILURE AND NOT A COMPARISON THAT LOST. It means the
         // Cards carry no paint order of their own and document order decides —
         // which is the app's stacking, and is the state this whole assertion was
         // written for. Said once rather than once per pair.
-        const none = parts.filter((part) => order[part] === 'auto');
+        const none = ends.named.filter((card) => order[card] === 'auto');
         if (none.length > 0) {
           failures.push(
             `${where}: ${what} — ${none.join(', ')} ${none.length === 1 ? 'carries' : 'carry'} no z-index, so ` +
@@ -2828,14 +3036,16 @@ async function hoveringPutsOnePieceBack(browser, origin) {
               'the drawing\'s the moment one piece is back on the map under two that are not',
           );
         } else {
-          for (const part of parts.filter((one) => one !== lowered)) {
-            if (!(Number(order[lowered]) < Number(order[part]))) {
-              failures.push(
-                `${where}: ${what} — ${lowered} is back on the map and is painted at ${order[lowered]} ` +
-                  `against ${part}'s ${order[part]}, so a piece lying on the Slab covers one still standing ` +
-                  'off it. What covers what on a flat plane is the paint order, and the rise is the only ' +
-                  'thing that may decide it',
-              );
+          for (const under of sank) {
+            for (const over of standing) {
+              if (!(Number(order[under]) < Number(order[over]))) {
+                failures.push(
+                  `${where}: ${what} — a component of the ${under} Card is back on the map and that Card is ` +
+                    `painted at ${order[under]} against ${over}'s ${order[over]}, so a piece lying on the Slab ` +
+                    'covers one still standing off it. What covers what on a flat plane is the paint order, ' +
+                    'and the rise of the lowest component on a Card is the only thing that may decide it',
+                );
+              }
             }
           }
         }
@@ -2855,26 +3065,44 @@ async function hoveringPutsOnePieceBack(browser, origin) {
       return { spot, now };
     };
 
+    // A POINT LOWERS THE COMPONENT IT NAMES AND NOTHING ELSE ON ITS CARD, which
+    // is #215 and is what these four gestures are now about. Two of the four are
+    // pills in the search Card's own topbar, so this loop asks of `01.` that the
+    // Offline button STAYED UP and of `02.` that the search bar did — the failure
+    // being a Point resolved to the Card its component is drawn on, which lowers
+    // both pills and says that one number names two components. That is what
+    // shipped, and every assertion in this group passed while it did.
+    //
+    // AND OF THE OTHER TWO POINTS IT ASKS THE SAME THING FOR NOTHING, since their
+    // Cards carry one component each. They are here because the four are one
+    // claim: no Point may move a piece it does not name.
     for (const part of parts) {
-      await gesture(`hovering the Point that names ${part}`, `[data-eater-map-point="${part}"]`, part);
+      await gesture(
+        `hovering the Point that names ${part}`,
+        `[data-eater-map-point="${part}"]`,
+        [part],
+      );
     }
 
-    // AND THE POINT THAT NAMES A COMPONENT RATHER THAN A CARD LOWERS THE CARD THAT
-    // COMPONENT IS ON. `02.` names the Offline button, which is a pill in the
-    // search Card's own topbar — so the piece that goes back on the map is the
-    // search Card, exactly as if the reader had hovered the bar's own number. The
-    // failure this names is a Point resolved by its own word: `offline` is not a
-    // Card, `pieces.get` finds nothing, and hovering the number puts EVERY piece
-    // back instead of one.
-    await gesture(
-      'hovering the Point that names the Offline button',
-      '[data-eater-map-point="offline"]',
-      'search',
-    );
-
     // ---- and now the Card itself, at a spot the piece will leave -------------
-    const travels = parts.find((part) => ends.aim[part]?.clear) ?? null;
-    const near = travels ?? parts.find((part) => ends.aim[part]?.anywhere) ?? null;
+    //
+    // AND HOVERING THE DRAWING IS THE WHOLE CARD, WHICH IS THE OTHER HALF OF #215
+    // AND IS ASSERTED HERE. What the pointer is on out there is the topbar, which
+    // is one piece of the drawing — so EVERY component on that Card goes back,
+    // including the one whose Point the reader never touched. Preferred to a Card
+    // that carries two components where the page has one, because the claim is
+    // vacuous on a Card that carries one and this is the gesture the two halves
+    // disagree about.
+    const near =
+      shared.find((card) => ends.aim[card]?.clear) ??
+      ends.named.find((card) => ends.aim[card]?.clear) ??
+      shared.find((card) => ends.aim[card]?.anywhere) ??
+      ends.named.find((card) => ends.aim[card]?.anywhere) ??
+      null;
+    // Whether the piece leaves the pointer when it goes down, which is the whole
+    // precondition of the flicker watch below.
+    const travels = near && ends.aim[near]?.clear ? near : null;
+    const carried = near ? parts.filter((part) => ends.on[part] === near) : [];
     if (!near) {
       failures.push(
         `${where}: no point inside any Card's own box lands on that Card, so hovering a piece itself was ` +
@@ -2883,21 +3111,25 @@ async function hoveringPutsOnePieceBack(browser, origin) {
     } else {
       const target = ends.aim[near].clear ?? ends.aim[near].anywhere;
       await page.mouse.move(target.x, target.y);
-      if (!(await settledDrop(near))) {
+      if (!(await settledDrop(carried))) {
         failures.push(
-          `${where}: hovering the ${near} Card itself did not put it down within five seconds — a Point ` +
-            'lowers its piece and the piece itself does not',
+          `${where}: hovering the ${near} Card itself did not put ${carried.join(', ')} down within five ` +
+            'seconds — a Point lowers the component it names and the drawing itself lowers every component ' +
+            'on the Card the pointer is over',
         );
       } else {
         const now = await drawing();
-        const missed = apart(now?.at[near], ends.down[near]);
-        if (!(missed <= BACK_ON_THE_MAP)) {
-          failures.push(
-            `${where}: hovering the ${near} Card itself left it ${Number.isNaN(missed) ? 'nowhere readable' : `${missed.toFixed(2)}px`} ` +
-              "from where the Lift's near end puts it — a Point lowers its piece and the piece itself does not",
-          );
+        for (const part of carried) {
+          const missed = apart(now?.at[part], ends.down[part]);
+          if (!(missed <= BACK_ON_THE_MAP)) {
+            failures.push(
+              `${where}: hovering the ${near} Card itself left ${part} ${Number.isNaN(missed) ? 'nowhere readable' : `${missed.toFixed(2)}px`} ` +
+                "from where the Lift's near end puts it — hovering the drawing lowers the whole Card, and " +
+                'every component drawn on it travels',
+            );
+          }
         }
-        for (const part of parts.filter((one) => one !== near)) {
+        for (const part of parts.filter((one) => !carried.includes(one))) {
           const moved = apart(now?.at[part], ends.up[part]);
           if (!(moved <= UNTOUCHED)) {
             failures.push(
@@ -3033,10 +3265,14 @@ async function hoveringPutsOnePieceBack(browser, origin) {
       );
     } else {
       const before = await drawing();
-      const spot = await aimAt(`[data-eater-map-card="${parts[0]}"]`);
+      // THE CARD AND NOT THE COMPONENT, which since #215 is a distinction this
+      // line has to make out loud: `parts` is four components now and two of them
+      // share a Card, so a selector built from one of those words matches nothing.
+      const onto = ends.named[0];
+      const spot = await aimAt(`[data-eater-map-card="${onto}"]`);
       if (!spot) {
         failures.push(
-          `${NARROW.width}x${NARROW.height}: the ${parts[0]} Card has no box to point at, so nothing about ` +
+          `${NARROW.width}x${NARROW.height}: the ${onto} Card has no box to point at, so nothing about ` +
             'the Drop below the band was checked',
         );
       } else if (
@@ -3046,14 +3282,14 @@ async function hoveringPutsOnePieceBack(browser, origin) {
             const on = document.elementFromPoint(x, y);
             return Boolean(card && on && card.contains(on));
           },
-          [parts[0], spot.x, spot.y],
+          [onto, spot.x, spot.y],
         ))
       ) {
         // THE POINTER HAS TO BE ON THE CARD, asked rather than assumed. Every
         // assertion under this branch is "nothing moved", which is what a pointer
         // that landed on the map — or off the screen — gets whatever the Drop does.
         failures.push(
-          `${NARROW.width}x${NARROW.height}: the pointer landed off the ${parts[0]} Card at ` +
+          `${NARROW.width}x${NARROW.height}: the pointer landed off the ${onto} Card at ` +
             `${spot.x.toFixed(0)},${spot.y.toFixed(0)}, so no hover was made down here and nothing about ` +
             'the Drop below the band was checked',
         );
@@ -3064,7 +3300,7 @@ async function hoveringPutsOnePieceBack(browser, origin) {
           const moved = apart(after?.at[part], before?.at[part]);
           if (!(moved <= UNTOUCHED)) {
             failures.push(
-              `${NARROW.width}x${NARROW.height}: hovering the ${parts[0]} Card moved ${part} ` +
+              `${NARROW.width}x${NARROW.height}: hovering the ${onto} Card moved ${part} ` +
                 `${Number.isNaN(moved) ? 'somewhere unreadable' : `${moved.toFixed(2)}px`} — below the band ` +
                 'nothing stands off the Slab, so there is nothing for a hover to put back',
             );
@@ -3078,15 +3314,13 @@ async function hoveringPutsOnePieceBack(browser, origin) {
         // holding a drop is a piece that stays on the map when the Exploded View
         // comes back, until the reader happens to move the pointer. So the
         // mechanism is read as well as the drawing.
-        const holding = await page.evaluate(() =>
-          [...document.querySelectorAll('[data-eater-map-card]')]
-            .map((card) => ({
-              part: card.getAttribute('data-eater-map-card'),
-              at: Number(getComputedStyle(card).getPropertyValue('--eater-map-card-drop')),
-            }))
-            .filter((one) => !(one.at < 0.001))
-            .map((one) => `${one.part} at ${one.at}`),
-        );
+        //
+        // BOTH PLAYHEADS, THROUGH THE ONE NUMBER THEY COMPOSE INTO (#215). A Card
+        // holding a drop and a component holding one are the same fault down here,
+        // and asking only the Card's would pass with the component's gate deleted.
+        const holding = Object.entries(await drops())
+          .filter(([, at]) => !(at < 0.001))
+          .map(([part, at]) => `${part} at ${at}`);
         if (holding.length > 0) {
           failures.push(
             `${NARROW.width}x${NARROW.height}: ${holding.join(', ')} — a piece took a drop below the band, ` +

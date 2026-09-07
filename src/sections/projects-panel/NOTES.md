@@ -16,7 +16,26 @@ It is a **port**. Every share, every colour and every word here is
 The Panel's text, its sizes, its positioning and its motion are all due a rework,
 and that rework is deliberately a later session — once the Editor exists, so the
 alternatives can be judged by eye instead of described. Rebuilding it twice is
-what that ordering avoids, and it is why `variants.css` is empty.
+what that ordering avoids.
+
+**`variants.css` used to be empty for that reason and is not any more.** It holds
+fourteen GROUNDS — background treatments for the Section and nothing else — and
+they do not pre-empt the rework: a ground is the thing every one of those later
+decisions is made against rather than one of them. The Editor exists now, which
+was the condition the rework was waiting on, and the sheet is where these are
+chosen:
+
+```bash
+pnpm build && pnpm variants -- --sections projects-panel --turn 1
+```
+
+**`--turn 1` is not optional for this Section.** The sheet renders at the start of
+the crossing by default, and this Section is only ever looked at once the crossing
+has finished — so its own sheet without that flag is fourteen pictures of a
+composition on white paper that no reader ever sees. Everything in that file is
+mixed from `--projects-panel-ink`, so it crosses with the Section rather than
+against it, and the file's own header says why that is the rule and what mixing
+from `--ground` instead has twice cost.
 
 ## What it is called
 

@@ -203,7 +203,8 @@ Every mutation below has been made on purpose and every one was caught.
 | the plate mix put back on the three glass colours | the offline button opaque at the raised end, at both windows — and NOT at the flat end, which is the frame it was always honest at |
 | `--eater-map-card-held` back to `--eater-map-card-lift` in the rise and both drifts | every piece 76 to 97px from the map at every gesture — the Drop wired to a name nothing reads |
 | the Point rows stop naming their part | four gestures with nothing on the page to point at |
-| a Point's part resolved as a Card's name rather than through `cardOf` | hovering `02.` puts every piece back instead of lowering the search Card — `offline` is a part and never a Card |
+| a Point's piece resolved to the CARD its component is drawn on | hovering `01.` and `02.` both leave the search Card's two pills at a drop of 1 — one number saying it names two components, which is what #215 fixes |
+| a Point's part resolved as a Card's name rather than through the components | hovering `02.` puts every piece back instead of lowering the Offline button — `offline` is a part and never a Card |
 | `redraw` not called as a piece moves | all four rules 76 to 97px off their anchors, at every gesture |
 | the whole stack lowered rather than the piece | all three down at every gesture, and one still holding a drop below the band |
 | the footprint test inverted | the details Card back to a drop of 0.041 over 600ms of a jogged pointer. **It passed twice before it failed**, and both were the Check's fault: the watch held the pointer at ONE COORDINATE, and this module hears `pointermove` and nothing else, so a parked pointer is never asked a second question — then, jogged, the vacuity guard read "the Card is under the pointer" as a reason to SKIP, which is precisely what a flickering piece looks like half the time |
@@ -778,6 +779,12 @@ is a different claim: that one is what this Section says about a vendored
 surface's SHAPE, this is where the drawing's own annotation attaches to it. The
 anchor section under the leader lines has it.
 
+**And `cards-drop.css` is a third**, on the same terms and for a third claim: how
+far one component of a Card travels when the reader hovers the Point that names it
+(#215). It is one rule and it reaches the vendored surfaces, the backdrops and the
+edge stacks alike, which is precisely the set no scoped selector can address. The
+Drop's own section below has the arithmetic.
+
 **The details sheet's foot is the first of them.** In the app it is a bottom sheet
 resting on the screen's edge, where a rounded foot would show a sliver of map
 beneath it; off the map it is a floating object with four visible corners, and one
@@ -880,9 +887,9 @@ The Exploded View's whole claim is the correspondence — *this number names tha
 piece* — and the leader lines say it as far as a drawn rule can. What they cannot
 say is WHERE ON THE MAP the piece came from: a reader who wants to know where the
 search bar actually sits has to imagine it back down. So #213 lets them ask.
-**Hovering a Card, or hovering the numbered Point that names it, lowers that one
-piece back onto the Slab**, and leaves the other two and the Slab exactly where
-they are.
+**Hovering a Card lowers that Card back onto the Slab, and hovering a numbered
+Point lowers the COMPONENT that Point names** (#215), and everything else on the
+plane — every other piece, and the Slab — stays exactly where it is.
 
 It is the **Drop**, which is the Lift's antonym and is what it is.
 `src/sections/eater-map/drop.ts` is the module and `--eater-map-drop-time` the
@@ -890,11 +897,12 @@ only Token it has.
 
 **IT IS A SECOND PLAYHEAD AND NOT A SECOND OPINION ABOUT THE FIRST.**
 `timeline.ts` owns `--eater-map-card-lift` and `drop.ts` owns
-`--eater-map-card-drop`; neither module reads the other's, and the STYLESHEET
-composes them:
+`--eater-map-card-drop` and `--eater-map-part-drop`; neither module reads the
+other's, and the STYLESHEETS compose them:
 
 ```css
 --eater-map-card-held: calc(var(--eater-map-card-lift) * (1 - var(--eater-map-card-drop)));
+--eater-map-part-fall: calc(var(--eater-map-card-held) * var(--eater-map-part-drop));
 ```
 
 Every length the Card is placed by — its rise and both of its slides — is a term
@@ -939,14 +947,59 @@ a `(hover: hover)` media query would answer once at mount and get a laptop with 
 touchscreen wrong in both directions.
 
 **A CARD NAMES ITSELF AND A POINT NAMES A COMPONENT**, which is the one asymmetry
-in `asked()` and is what the Offline button costs. A Point names a PART, and two
-of the four parts are pills in the search Card's own topbar — so what goes back on
-the map is the Card that part is DRAWN ON, resolved through `leaders.ts`'s one
-correspondence rather than by looking the point's own word up among the Cards.
-Looked up directly, `offline` finds no piece, and hovering `02.` puts every piece
-back instead of lowering the search bar. Three answers and not two, all the same:
-a trigger naming nothing answers with no piece, and anything that is not a trigger
-answers `null` and lets the footprint decide.
+in `asked()` and is what the Offline button costs. A Point names a PART — a
+component of the app — and two of the four parts are pills in the search Card's
+own topbar. Three answers and not two: a trigger naming nothing answers with no
+piece, and anything that is not a trigger answers `null` and lets the footprint
+decide.
+
+### #215: the piece a Point lowers is that COMPONENT and not the Card it is on
+
+**It shipped lowering the Card, and that made `01.` and `02.` the same gesture.**
+Hovering either of the search Card's two numbers put the search bar AND the
+Offline button back on the map together — one number saying it named both
+components, which is the exact claim the Exploded View exists to deny. The author
+asked for the other reading and it is the right one: *hovering over the text, only
+one at a time should go down.*
+
+**HOVERING THE DRAWING IS STILL THE WHOLE CARD**, and that is a decision rather
+than an omission. What the pointer is on out there is the topbar, which is one
+piece of the drawing; taking half of it out from under the cursor would answer a
+question the reader did not ask. So `asked()` resolves a Card to the Card and a
+Point to the component, and `cardOf` survives only as the fallback for a Point
+whose component has no elements — which is a re-vendoring that renamed a surface,
+already loud on the console and already a build failure through the `console`
+Check.
+
+**A COMPONENT IS THREE BOXES AND THEY ARE NOT NESTED**, which is the whole of what
+the change cost. `glass.ts` builds a surface's blurred copy of the map and its
+edge stack as absolutely-placed boxes in the CARD's own coordinates rather than as
+children of the surface they are drawn for — so lowering `.search` alone moves the
+pill and leaves its glass and its rim behind. All three carry
+`data-eater-map-part` now: the vendored surface from `cards.ts`, the other two
+from `glass.ts`, and a hung surface's from the box it arrives in, so the results
+dropdown goes back with the bar it is typed into.
+
+**AND THE TRAVEL IS THE CARD'S OWN, RUN BACKWARDS.** Every term of a Card's
+transform is linear in `--eater-map-card-held` — the rise and both slides — so the
+Card stands at `held` times one vector per axis, which is
+`--eater-map-part-reach-x` and `-y`. A component at a drop of `d` belongs where
+`held * (1 - d)` puts it, so what it owes the Card is `-held * d * reach`, divided
+by `--eater-map-card-total` because everything inside a Card is scaled by it.
+`cards-drop.css` is that one rule, unscoped for the reason `cards-anchor.css` and
+`cards-shape.css` are. Written as its own set of distances instead it would land
+where a second set of numbers said rather than exactly where the Lift's near end
+puts it — measured, and it lands on the same pixel a Card hover puts it on.
+
+**THE PAINT ORDER IS THE ONE THING A COMPONENT CANNOT SORT FOR ITSELF.** A Card is
+a stacking context, so a pill lying on the map cannot be put behind another CARD
+from inside one. `--eater-map-card-sunk` is the answer: `drop.ts` writes the
+deepest drop among a Card's components on the Card, and the z-index takes
+`max(drop, sunk)` while the PLACEMENT keeps the Card's own `held`. The pill still
+standing beside a lowered one is then sorted as though it had come down too, which
+is the lesser of the two errors — the two pills are 8px apart in one topbar and
+are always read together, where a piece lying on the Slab covering one standing off
+it is the failure #213 shipped and the `eater-map` Check asserts against.
 
 **THE ROW CARRIES THE PART AND THE HOOK DOES NOT.** `data-eater-map-point` is on
 the `<li>`, because the hook is a zero-height box a pointer can never be inside —
@@ -2347,6 +2400,58 @@ a regime where there is no Gallery box for a share of a cap to be a share OF. Th
 module removes both properties rather than leaving them standing, because a window
 dragged across the boundary would otherwise carry the band's two lengths into the
 collapse and hand the scriptless reader a different column from everybody else.
+
+## The column's three words stand on one line, and its three boxes always did
+
+**A box is not a word.** The masthead, the serif title and the copy are all placed
+on the grid's first vertical — one `grid-area` for the head and the copy, the same
+left edge for both, and `--eater-map-side` is that edge (#201). What the reader
+sees, though, is ink, and a glyph is drawn its own LEFT SIDE BEARING inside the box
+that carries it. That bearing is a share of the FONT SIZE, and these three blocks
+do not share one:
+
+| block | size at 1600x900 | bearing | clear of the vertical |
+| --- | --- | --- | --- |
+| PROJECTS | 127.0px | 0.060em | 7.62px |
+| the serif title | 75.2px | 0.040em | 3.01px |
+| the copy | 15.1px | 0.060em | 0.91px |
+
+So three boxes on one line drew three words on three, and at the copy's size the
+line lands under one pixel from the first letter — which reads as the paragraph
+sitting ON the rule while the masthead stands off it. That is what was reported.
+
+**PROJECTS is the block that cannot move, so it is the line.** It stands in the
+Gallery's own box and the `eater-map` Check compares the two at their resting
+places; moving it across would be moving the word the page turn is meant not to
+move. So the other two are given `the masthead's bearing less their own` as a
+padding, and the three inks agree to 0.01px at four windows across the band.
+
+**`title.ts` writes it, for the same reason it writes the size and the drop**: a
+side bearing is a fact about ink, and the only way to read ink is to measure it.
+The one difference is HOW. `actualBoundingBoxLeft` is the obvious call and it is
+quantised to a sixty-fourth of the em — 2px at the masthead's size, a quarter of
+the answer, and the reason the first attempt at this compensated PROJECTS by 6px
+where it wanted 7.6. `capRatio` gets away with the same call because a cap is 0.7
+of an em and a sixty-fourth of that is a rounding. So the glyph is drawn once at
+1000px on a scratch canvas and its first inked COLUMN is found by reading the
+pixels: exact, cached per face and glyph, and three reads in the life of the
+document however many resizes follow.
+
+**It is spent on the WORDS and not on the boxes**, which is the rule
+`--eater-map-point-inset` is already under at the other end of the composition:
+the copy's padding is on its paragraphs, so the rule across its top still starts on
+the vertical and only the writing stands off it. A padding on `.eater-map__copy`
+would take that border with it and shorten the one line in this column that is
+meant to be the column's whole width.
+
+**Floored at zero, which is a composition decision.** A face whose bearing is wider
+than the masthead's would want a negative padding — ink hanging out over the grid's
+own vertical. None of the three does; the day one does, the box's edge is the
+honest answer rather than an overhang nothing else on the page makes.
+
+**And below the band it writes nothing, for a different reason from the other
+two.** There are no verticals out there and everything stands at one margin, so
+there is no line for a word to be short of.
 
 ## Which of the Kernel's lengths this Section reads
 

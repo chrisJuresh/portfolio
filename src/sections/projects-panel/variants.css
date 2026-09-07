@@ -1,15 +1,417 @@
-/* The Projects Panel's Variants — none yet, deliberately.
+/* The Projects Panel's Variants — fourteen grounds for one Section.
 
-   The Panel arrived here as a port: it reads as the hand-written page's did, and
-   every number in `tokens.css` is that sheet's own. Its text, its sizes, its
-   positioning and its motion are all due a rework, and that rework is a later
-   session by design — once the Editor exists, so the alternatives can be judged
-   by eye against the real page rather than argued in prose. A direction invented
-   here would be a guess standing in the record as though it had been compared.
+   WHAT THESE ARE ARGUING ABOUT is the Section's BACKGROUND and nothing else.
+   The Eater Map sits across a grid of faint hairlines (#201) — four horizontals
+   that are its Points' own rules continued, three verticals that are its
+   standing blocks' left edges — and the Panel sits on flat black. These are the
+   alternatives to that flat black, and the point of having fourteen is that the
+   choice is made by looking rather than by reading a description of one.
 
-   `pnpm variants` still renders this Section: with nothing declared it shoots the
-   unselected direction alone, which is what `tokens.css` says on its own and the
-   thing every later Variant will be an argument against.
+   This file used to say "none yet, deliberately", and the reason it gave was
+   that the Panel's rework wanted the Editor first, so alternatives could be
+   judged by eye instead of argued in prose. The Editor exists; `pnpm variants`
+   is the eye. Nothing here touches the Panel's type, its sizes, its positioning
+   or its motion — that rework is still a later session's, and none of these
+   pre-empts it, because a ground is the one part of the composition every one of
+   those decisions is made against rather than a decision inside it.
 
-   docs/agents/variants.md is the authority on writing one, and `NOTES.md` in the
-   stub Section is where the grammar `check-source.mjs` enforces is written out. */
+   ---- what every one of them holds to ------------------------------------
+
+   THE INK IS ALWAYS `--projects-panel-ink`, VEILED. That is the Eater Map's own
+   idiom — its grid is `--ink` at a 92% veil — and it is not a habit: the Panel's
+   ink is already one crossing from `--paper-ink` to this Section's far end, so a
+   constant transparency on it crosses at that same one rate. Mixing a pattern
+   out of `--ground`, or out of anything else that is itself crossing, composes
+   two crossings and puts a step across the page at this Section's top edge that
+   travels with the scroll. That is the banding that has been reported twice.
+   `--grain` is the one exception and says why in its own note.
+
+   THE GROUND IS PAINTED AS `background-image` ON THE SECTION ITSELF, never as a
+   pseudo-element. `.projects-panel` is `position: relative` with `z-index: auto`,
+   so it is not a stacking context: an absolutely-placed `::before` at `z-index:
+   -1` would go behind the Section's OWN background and never be seen, and one at
+   `z-index: 0` would paint over the type, which is not positioned. Neither is a
+   taste. The Section's `background: var(--projects-panel-bg)` shorthand sets the
+   colour and clears the image slot; a Variant fills the image slot back in and
+   the colour underneath it is untouched.
+
+   ANYTHING TIED TO THE COMPOSITION IS TIED TO ITS PITCH AND CENTRED ON IT. One
+   column plus one gutter is `(1 + g) / 12` of `--projects-panel-w`, and the
+   composition's centre is exactly the centre of the sixth gutter — twelve columns
+   and eleven gutters put `6c + 5.5g` at both — so a tile of one pitch, centred,
+   lands a line down the middle of EVERY gutter and not approximately. That is
+   why these say `background-position: center` rather than a number.
+
+   docs/agents/variants.md is the authority on writing one, and `NOTES.md` beside
+   this file is where the grammar check-source.mjs enforces is written out. */
+
+/* ---- 1. column-rules ------------------------------------------------------
+   The Eater Map's device, restated on this Section's own twelve columns: one
+   hairline down the centre of every gutter, the full height of the Section. The
+   nearest of the fourteen to what the page already does, and the argument for it
+   is exactly that — two Sections standing on one grid rather than one Section
+   standing on a grid and one standing on nothing. */
+:root[data-variant='column-rules'] .projects-panel {
+  --projects-panel-pattern-ink: color-mix(in oklab, var(--projects-panel-ink), transparent 93%);
+  --projects-panel-pattern-pitch: calc(
+    (var(--projects-panel-column) + var(--projects-panel-gutter-share)) * var(--projects-panel-w)
+  );
+  background-image: linear-gradient(
+    to right,
+    transparent calc(50% - 0.5px),
+    var(--projects-panel-pattern-ink) calc(50% - 0.5px),
+    var(--projects-panel-pattern-ink) calc(50% + 0.5px),
+    transparent calc(50% + 0.5px)
+  );
+  background-size: var(--projects-panel-pattern-pitch) 100%;
+  background-position: center top;
+  background-repeat: repeat-x;
+}
+
+/* ---- 2. plate-rules -------------------------------------------------------
+   The other half of the Eater Map's grid on its own: horizontals only, at the
+   same pitch the columns use, so the rhythm across and the rhythm down are one
+   number. A ruled plate rather than a grid — the composition lies on lines
+   instead of inside cells. */
+:root[data-variant='plate-rules'] .projects-panel {
+  --projects-panel-pattern-ink: color-mix(in oklab, var(--projects-panel-ink), transparent 93%);
+  --projects-panel-pattern-pitch: calc(
+    (var(--projects-panel-column) + var(--projects-panel-gutter-share)) * var(--projects-panel-w)
+  );
+  background-image: linear-gradient(
+    to bottom,
+    var(--projects-panel-pattern-ink) 0 1px,
+    transparent 1px
+  );
+  background-size: 100% var(--projects-panel-pattern-pitch);
+  background-position: left center;
+  background-repeat: repeat-y;
+}
+
+/* ---- 3. grid-dots ---------------------------------------------------------
+   The grid with the lines taken out and only its intersections left: a dot where
+   every gutter centre crosses every row. Says the same thing as the two above
+   and says almost none of it — the eye assembles the lines that are not drawn,
+   and the ground stays quieter than a hairline can. */
+:root[data-variant='grid-dots'] .projects-panel {
+  --projects-panel-pattern-ink: color-mix(in oklab, var(--projects-panel-ink), transparent 84%);
+  --projects-panel-pattern-pitch: calc(
+    (var(--projects-panel-column) + var(--projects-panel-gutter-share)) * var(--projects-panel-w)
+  );
+  background-image: radial-gradient(
+    circle,
+    var(--projects-panel-pattern-ink) 0 1.4px,
+    transparent 1.8px
+  );
+  background-size: var(--projects-panel-pattern-pitch) var(--projects-panel-pattern-pitch);
+  background-position: center center;
+  background-repeat: repeat;
+}
+
+/* ---- 4. contact-sheet -----------------------------------------------------
+   A proof sheet: landscape cells at three-to-two, two column pitches across, the
+   lattice centred on the composition. The one direction here that is about what
+   the Section IS rather than about the grid it stands on — a wall of frames, with
+   the one frame that is actually a window standing in front of them. */
+:root[data-variant='contact-sheet'] .projects-panel {
+  --projects-panel-pattern-ink: color-mix(in oklab, var(--projects-panel-ink), transparent 91%);
+  --projects-panel-pattern-cell: calc(
+    2 * (var(--projects-panel-column) + var(--projects-panel-gutter-share)) *
+      var(--projects-panel-w)
+  );
+  background-image:
+    linear-gradient(to right, var(--projects-panel-pattern-ink) 0 1px, transparent 1px),
+    linear-gradient(to bottom, var(--projects-panel-pattern-ink) 0 1px, transparent 1px);
+  background-size:
+    var(--projects-panel-pattern-cell) calc(var(--projects-panel-pattern-cell) / 1.5),
+    var(--projects-panel-pattern-cell) calc(var(--projects-panel-pattern-cell) / 1.5);
+  background-position: center center;
+  background-repeat: repeat;
+}
+
+/* ---- 5. sprockets ---------------------------------------------------------
+   35mm, and the page is the film: a run of perforations down each margin with a
+   hairline just inside it, so the composition reads as one frame of a strip that
+   continues past the top and the bottom of the screen. The two runs are placed
+   off the Section's own edges rather than off the composition — the film is the
+   PAGE's edge, not the drawing's.
+
+   THE EDGE IS `--landing-side` AND NOT A MARGIN OF ITS OWN, and that is a
+   correction rather than a flourish: inside the band the Rail is `left: 0` and
+   exactly that wide, so a run set off the page's own edge lands ON TOP of PHOTO
+   VAULT / EATER MAP / RECORD ENGINE. It did, in the first render of this sheet.
+   Reading the Kernel's own number keeps the two clear of each other at every
+   window rather than at the one this happened to be looked at. */
+:root[data-variant='sprockets'] .projects-panel {
+  --projects-panel-pattern-ink: color-mix(in oklab, var(--projects-panel-ink), transparent 86%);
+  --projects-panel-pattern-edge: calc(var(--landing-side) + 0.5rem);
+  background-image:
+    radial-gradient(
+      closest-side,
+      var(--projects-panel-pattern-ink) 0 46%,
+      transparent 50%
+    ),
+    radial-gradient(
+      closest-side,
+      var(--projects-panel-pattern-ink) 0 46%,
+      transparent 50%
+    ),
+    linear-gradient(to right, var(--projects-panel-pattern-ink) 0 1px, transparent 1px),
+    linear-gradient(to right, var(--projects-panel-pattern-ink) 0 1px, transparent 1px);
+  background-size: 13px 22px, 13px 22px, 1px 100%, 1px 100%;
+  background-position:
+    left var(--projects-panel-pattern-edge) top 0,
+    right var(--projects-panel-pattern-edge) top 0,
+    left calc(var(--projects-panel-pattern-edge) + 2.25rem) top 0,
+    right calc(var(--projects-panel-pattern-edge) + 2.25rem) top 0;
+  background-repeat: repeat-y, repeat-y, repeat-y, repeat-y;
+}
+
+/* ---- 6. stack-edges -------------------------------------------------------
+   Self-stacking, drawn: the Section stands on the cut edge of a pile of prints,
+   dense at the foot and gone before it reaches the copy. The fade is a layer of
+   the Section's OWN ground painted back over the hairlines rather than a mask —
+   a mask on this element would take the type with it. First layer in the list
+   paints last, which is what puts the fade on top. */
+:root[data-variant='stack-edges'] .projects-panel {
+  --projects-panel-pattern-ink: color-mix(in oklab, var(--projects-panel-ink), transparent 82%);
+  background-image:
+    linear-gradient(to top, transparent 0, var(--projects-panel-bg) 68%),
+    repeating-linear-gradient(
+      to bottom,
+      var(--projects-panel-pattern-ink) 0 1px,
+      transparent 1px 9px
+    );
+  background-size: 100% 100%, 100% 100%;
+  background-position: left top, left bottom;
+  background-repeat: no-repeat, repeat;
+}
+
+/* ---- 7. halftone ----------------------------------------------------------
+   The screen the Effect Stack puts over the first screen, carried down here —
+   and it is not a duplicate: the stack's veil is a function of `--turn` and is
+   zero everywhere the Panel is ever looked at, so this is the treatment the page
+   LOSES when it goes dark rather than one it already has. Two lattices, the
+   second offset by half a pitch on both axes, which is the quincunx a real
+   screen is rather than a square grid of dots. */
+:root[data-variant='halftone'] .projects-panel {
+  --projects-panel-pattern-ink: color-mix(in oklab, var(--projects-panel-ink), transparent 88%);
+  background-image:
+    radial-gradient(circle, var(--projects-panel-pattern-ink) 0 1.1px, transparent 1.5px),
+    radial-gradient(circle, var(--projects-panel-pattern-ink) 0 1.1px, transparent 1.5px);
+  background-size: 13px 13px, 13px 13px;
+  background-position: 0 0, 6.5px 6.5px;
+  background-repeat: repeat, repeat;
+}
+
+/* ---- 8. weave -------------------------------------------------------------
+   Two families of hairlines at right angles to each other and at forty-five
+   degrees to everything the composition does, fine enough that the pattern reads
+   as a material rather than as a drawing — a scrim, or the linen a print is
+   mounted on. The one direction here with no grid in it at all. */
+:root[data-variant='weave'] .projects-panel {
+  --projects-panel-pattern-ink: color-mix(in oklab, var(--projects-panel-ink), transparent 94%);
+  background-image:
+    repeating-linear-gradient(
+      45deg,
+      var(--projects-panel-pattern-ink) 0 1px,
+      transparent 1px 11px
+    ),
+    repeating-linear-gradient(
+      -45deg,
+      var(--projects-panel-pattern-ink) 0 1px,
+      transparent 1px 11px
+    );
+  background-size: 100% 100%, 100% 100%;
+  background-position: center center, center center;
+  background-repeat: repeat, repeat;
+}
+
+/* ---- 9. gutter-bands ------------------------------------------------------
+   The grid as tone instead of as line: every other column pitch lifted, which
+   makes the twelve columns something the reader can feel the width of without a
+   single rule being drawn. Two pitches to a tile, centred, so the banding is the
+   composition's and not the window's.
+
+   THE BAND IS A RIDGE AND NOT A STEP. A hard edge at the half-tile is a vertical
+   seam every two columns, which is the one thing this Section has already been
+   reported for twice under the name banding — so the tint rises to the middle of
+   its column and falls away again, and the only place it is ever exactly equal
+   to the ground is the place a hard edge would have been. */
+:root[data-variant='gutter-bands'] .projects-panel {
+  --projects-panel-pattern-ink: color-mix(in oklab, var(--projects-panel-ink), transparent 93%);
+  --projects-panel-pattern-pitch: calc(
+    (var(--projects-panel-column) + var(--projects-panel-gutter-share)) * var(--projects-panel-w)
+  );
+  background-image: linear-gradient(
+    to right,
+    transparent 0,
+    var(--projects-panel-pattern-ink) 25%,
+    transparent 50%,
+    transparent 100%
+  );
+  background-size: calc(2 * var(--projects-panel-pattern-pitch)) 100%;
+  background-position: center top;
+  background-repeat: repeat-x;
+}
+
+/* ---- 10. lightbox ---------------------------------------------------------
+   Not a pattern: a pool. One very soft ellipse of light under the middle of the
+   composition, so the Frame stands on a lit table rather than in a void — which
+   is what a photographer's light box is and what this Section is a browser
+   window onto. Soft the whole way out, and that matters here more than anywhere
+   else in this file: a ground that lifts has to reach the Section's own edges at
+   nothing, or the lift is a step the reader scrolls past. */
+:root[data-variant='lightbox'] .projects-panel {
+  --projects-panel-pattern-ink: color-mix(in oklab, var(--projects-panel-ink), transparent 93%);
+  background-image: radial-gradient(
+    120% 85% at 50% 54%,
+    var(--projects-panel-pattern-ink) 0,
+    transparent 72%
+  );
+  background-size: 100% 100%;
+  background-position: center center;
+  background-repeat: no-repeat;
+}
+
+/* ---- 11. checksum ---------------------------------------------------------
+   Content-addressed, drawn: two dot fields at pitches with no common factor, so
+   the field they make together does not repeat inside any screen the page is
+   ever looked at. It is a regular pattern that reads as data — which is the
+   thing this project actually did to 1,374,328 file paths. */
+:root[data-variant='checksum'] .projects-panel {
+  --projects-panel-pattern-ink: color-mix(in oklab, var(--projects-panel-ink), transparent 87%);
+  background-image:
+    radial-gradient(circle, var(--projects-panel-pattern-ink) 0 1.2px, transparent 1.6px),
+    radial-gradient(circle, var(--projects-panel-pattern-ink) 0 1.2px, transparent 1.6px);
+  background-size: 23px 29px, 31px 19px;
+  background-position: 0 0, 7px 11px;
+  background-repeat: repeat, repeat;
+}
+
+/* ---- 12. grain ------------------------------------------------------------
+   Film, and THE ONE DIRECTION IN THIS FILE THAT IS NOT MIXED FROM THE SECTION'S
+   INK. It cannot be: it is a luminance texture and not a colour — mid grey, laid
+   on at an alpha the noise itself varies — so it lightens the dark end and
+   darkens the paper end without knowing which end it is at. The colour matrix is
+   what makes that true rather than `saturate`: turbulence writes a noisy ALPHA
+   channel as well as noisy colour, so desaturating alone leaves a texture that
+   is mostly not there. RGB is forced flat to 0.5 and the alpha row is driven off
+   the noise instead.
+
+   AND IT IS THE ONE DIRECTION THAT HAS TO FADE AT THE SECTION'S OWN EDGES. Every
+   other pattern here covers a few per cent of the ground and lifts its mean by
+   about a value — a hairline is invisible in the average. A texture covers all of
+   it, so it lifts the Section's black off the black of the Sections either side,
+   and THAT IS A STEP ACROSS THE PAGE at this Section's top edge — the banding
+   this Section has been reported for twice, arrived at from a completely
+   different direction. The first layer is the Section's own ground painted back
+   over the noise at both ends, which is the same device stack-edges uses.
+
+   What that says about the direction is worth more than the direction: a texture
+   the whole page should carry is the KERNEL's, and the page already has one. The
+   Effect Stack's veil is a function of `--turn` and is zero by the time anybody
+   is looking at this Section, so the real form of this idea is extending the
+   stack past the crossing rather than giving one Section a grain of its own.
+
+   THE NOISE IS A FILE IN assets/ AND NOT A data: URI, and that is forced rather
+   than chosen. render-variants.mjs rewrites every relative url() in a Variant's
+   sheet to an absolute one, and its pattern lets the optional quote backtrack:
+   `url("data:...")` comes out as `url(/src/sections/projects-panel/"data:...")`,
+   the declaration is dropped by the parser, and the shot comes back as bare
+   ground with nothing in it to say that it did. Three renders and a bisect. A
+   Variant's own asset, served out of its own folder, is the path that tool was
+   built for — assets/grain.svg carries the arithmetic. */
+:root[data-variant='grain'] .projects-panel {
+  background-image:
+    linear-gradient(
+      to bottom,
+      var(--projects-panel-bg) 0,
+      transparent 12%,
+      transparent 88%,
+      var(--projects-panel-bg) 100%
+    ),
+    url('assets/grain.svg');
+  background-size: 100% 100%, 200px 200px;
+  background-position: left top, left top;
+  background-repeat: no-repeat, repeat;
+}
+
+/* ---- 14. aperture ---------------------------------------------------------
+   Rings, struck from behind the window: a lens diagram, or the rings on a light
+   meter's dial. The one direction here whose centre is the Frame rather than the
+   page — the composition's own subject is a window full of photographs, and this
+   is the only ground that says so instead of saying grid.
+
+   The centre is a coordinate and therefore not a Token (ADR 0004). It is the
+   Frame's middle, measured off the drawing rather than derived, which is the
+   honest way round for a decoration: the drawing is what it has to line up with. */
+:root[data-variant='aperture'] .projects-panel {
+  --projects-panel-pattern-ink: color-mix(in oklab, var(--projects-panel-ink), transparent 91%);
+  background-image: repeating-radial-gradient(
+    circle at 60% 70%,
+    transparent 0 87px,
+    var(--projects-panel-pattern-ink) 87px 88px
+  );
+  background-size: 100% 100%;
+  background-position: center center;
+  background-repeat: no-repeat;
+}
+
+/* ---- 13. crop-marks -------------------------------------------------------
+   The four corners of a plate, and nothing in between: the marks a print is
+   trimmed to, set off the Section's own edges. Eight layers, because each corner
+   is an arm across and an arm down and a gradient tile can only ever be a stripe
+   in one of the two directions. The argument for it is that it says "this screen
+   is a plate" using less ink than any other direction here, and the argument
+   against is that a reader who does not know the mark sees four stray ticks.
+
+   THE INSET IS THE RAIL'S COLUMN AND NOT A SMALL MARGIN, for the reason
+   `sprockets` gives — and there is a second thing it has to clear. The Plinth's
+   marble bleeds to the foot of the screen, so a mark set a couple of paces off
+   the bottom edge is drawn on the stone in a colour meant for black and
+   disappears. At `--landing-side` the bottom pair stands above it.
+
+   THREE OF THE FOUR THEN READ AND THE FOURTH HALF DOES, measured rather than
+   guessed: 60, 79 and 79 pixels of the ground change at top left, top right and
+   bottom left, and 16 at bottom right, because that mark's arm runs back under
+   the Frame — the ground is BEHIND the window, so the part of it the window
+   covers is not drawn on top of anything, it is not drawn at all. That is the
+   real argument against this direction and it is stronger than the one above: a
+   plate's marks are a set of four, and a set of four with one of them eaten is
+   not a quieter version of the idea, it is a different and worse one. Kept
+   because a losing direction is the record of what was compared. */
+:root[data-variant='crop-marks'] .projects-panel {
+  --projects-panel-pattern-ink: color-mix(in oklab, var(--projects-panel-ink), transparent 72%);
+  --projects-panel-pattern-edge: calc(var(--landing-side) + 0.5rem);
+  --projects-panel-pattern-arm: 2.75rem;
+  background-image:
+    linear-gradient(var(--projects-panel-pattern-ink), var(--projects-panel-pattern-ink)),
+    linear-gradient(var(--projects-panel-pattern-ink), var(--projects-panel-pattern-ink)),
+    linear-gradient(var(--projects-panel-pattern-ink), var(--projects-panel-pattern-ink)),
+    linear-gradient(var(--projects-panel-pattern-ink), var(--projects-panel-pattern-ink)),
+    linear-gradient(var(--projects-panel-pattern-ink), var(--projects-panel-pattern-ink)),
+    linear-gradient(var(--projects-panel-pattern-ink), var(--projects-panel-pattern-ink)),
+    linear-gradient(var(--projects-panel-pattern-ink), var(--projects-panel-pattern-ink)),
+    linear-gradient(var(--projects-panel-pattern-ink), var(--projects-panel-pattern-ink));
+  background-size:
+    var(--projects-panel-pattern-arm) 1px,
+    1px var(--projects-panel-pattern-arm),
+    var(--projects-panel-pattern-arm) 1px,
+    1px var(--projects-panel-pattern-arm),
+    var(--projects-panel-pattern-arm) 1px,
+    1px var(--projects-panel-pattern-arm),
+    var(--projects-panel-pattern-arm) 1px,
+    1px var(--projects-panel-pattern-arm);
+  background-position:
+    left var(--projects-panel-pattern-edge) top var(--projects-panel-pattern-edge),
+    left var(--projects-panel-pattern-edge) top var(--projects-panel-pattern-edge),
+    right var(--projects-panel-pattern-edge) top var(--projects-panel-pattern-edge),
+    right var(--projects-panel-pattern-edge) top var(--projects-panel-pattern-edge),
+    left var(--projects-panel-pattern-edge) bottom var(--projects-panel-pattern-edge),
+    left var(--projects-panel-pattern-edge) bottom var(--projects-panel-pattern-edge),
+    right var(--projects-panel-pattern-edge) bottom var(--projects-panel-pattern-edge),
+    right var(--projects-panel-pattern-edge) bottom var(--projects-panel-pattern-edge);
+  background-repeat: no-repeat;
+}
+

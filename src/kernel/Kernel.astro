@@ -18,12 +18,18 @@ import './landing.css';
 {/* The corner pictures, and the Moonlight they stand in. Empty, decorative, and
     sized entirely in CSS. The light is the FIRST child because it is the sky the
     pictures are drawn against: the car blends into it, and a blend reaches only
-    what was painted before it inside this box. corners.css. */}
+    what was painted before it inside this box. The plate and the eye are two
+    layers each — the picture, and the Moonlight's light ON the picture, screened
+    over it and breathing with the sky — and the lit layer is its own element
+    rather than a pseudo-element because a blend inside a translucent box reaches
+    only that box. corners.css. */}
 <div class="kernel-corners" aria-hidden="true">
   <div class="moonlight"></div>
   <div class="plate"></div>
+  <div class="plate-lit"></div>
   <div class="car"></div>
   <div class="eye"></div>
+  <div class="eye-lit"></div>
 </div>
 
 {/* The shade: one Token's worth of dark over everything below the type, the
