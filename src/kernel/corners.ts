@@ -27,7 +27,7 @@ const RUNGS = [800, 1300, 2000, 2800] as const;
  * caches /portfolio/img/ for a day, so this is the only thing that makes a
  * re-bake visible. build-plate.py prints the current value at the end of a run.
  */
-const LADDER_VERSION = '0321ac9a';
+const LADDER_VERSION = '7dcb7b29';
 
 interface Picture {
   /** the file stem, and Picture.out_path()'s in build-plate.py */

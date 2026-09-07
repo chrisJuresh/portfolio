@@ -36,7 +36,7 @@
       "EXPOSURE_PCT": 99.0,
       "EXPOSURE_TARGET": 0.6,
       "SAT_KEEP": 1.25,
-      "CONTRAST": 0.45,
+      "CONTRAST": 0.65,
       "HIGHLIGHT_PUSH": 1.34,
       "SHADOW": "#000000",
       "HIGHLIGHT": "#b0c8f0",
@@ -61,7 +61,7 @@
         0.5,
         24.0
       ],
-      "WRAP": 0.3
+      "WRAP": 0.2
     }
   },
   "matte": null

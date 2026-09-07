@@ -34,10 +34,10 @@
     },
     "moonlit": {
       "EXPOSURE_PCT": 99.0,
-      "EXPOSURE_TARGET": 0.65,
+      "EXPOSURE_TARGET": 0.4,
       "SAT_KEEP": 1.25,
-      "CONTRAST": 0.5,
-      "HIGHLIGHT_PUSH": 1.7,
+      "CONTRAST": 0.55,
+      "HIGHLIGHT_PUSH": 1.2,
       "SHADOW": "#000000",
       "HIGHLIGHT": "#b4ccf2",
       "GRAIN_SIGMA": 0.0075
@@ -50,7 +50,7 @@
         35.0
       ],
       "RELIEF": [
-        1.2,
+        0.8,
         8.0
       ],
       "FORM": [
@@ -58,10 +58,10 @@
         120.0
       ],
       "SPECULAR": [
-        0.7,
-        20.0
+        0.25,
+        32.0
       ],
-      "WRAP": 0.35
+      "WRAP": 0.2
     }
   },
   "matte": null

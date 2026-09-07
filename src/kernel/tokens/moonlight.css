@@ -14,12 +14,15 @@
      breath, and the one number to drag first: 0 is the dark page as it was.
      The shade stands over this as it stands over everything below the type, so
      what reaches the screen is this less the shade's share. */
-  --moonlight-strength: 0.8;
+  --moonlight-strength: 0.4;
 
   /* The colour of the light where it is brightest. A cool, desaturated blue —
      measured off the reference as an added light of about 22, 30, 42 of 255 at
      its peak, over a ground of 8; this is that light restated as a colour that
-     mixes to it over the dark paper at the strength above and behind the shade. */
+     mixes to it over the dark paper at a strength of 0.8 and behind the shade.
+     The strength above is HALF that now: the reference's peak was judged too
+     bright on the page, so what lands is about half the reference's light, at
+     the reference's colour. */
   --moonlight-colour: #6d8abb;
 
   /* Where the moon is, as a share of the first screen across and down. Just
@@ -47,7 +50,7 @@
      strength — the sky's and the pictures' alike. 1 is a light that does not
      move; the reference went nearly dark between swells, and at 0.6 the breath
      was reported as not there. */
-  --moonlight-breathe-floor: 0.2;
+  --moonlight-breathe-floor: 0.1;
 
   /* ---- the light ON the pictures ------------------------------------------
      How much of the moonlit ladder lands on each picture at the top of a
@@ -56,9 +59,12 @@
      nearly over the eye, and the two frames are not equally loud to begin
      with. 0 leaves a picture the ghost it is with the light down. What the
      light DOES to the picture — its colour, where it falls, how the ribs catch
-     it — is baked, and is the plate Bake's two Moonlight blocks. */
+     it — is baked, and is the plate Bake's two Moonlight blocks. The eye's is
+     under 1 because its frame is the louder of the two — white steel rim-on,
+     standing nearer the moon and over a lit sky — and its file already holds
+     back as far as it can without losing the lattice's members. */
   --moonlight-plate: 1;
-  --moonlight-eye: 1;
+  --moonlight-eye: 0.8;
 
   /* How far the light on the pictures carries, as a share of the fold: the
      moon's throw, from the same centre as the sky's light but wider, because a

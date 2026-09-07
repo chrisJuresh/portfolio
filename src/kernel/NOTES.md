@@ -942,10 +942,13 @@ the start's own selector now.
 **The breath was reported as not there, and the floor is why.** At a floor of
 0.6 the sky moved by a third of a strength that is itself halved by the shade —
 about 14 of 255 at the brightest patch and six beside a picture — under a
-halftone. The reference goes nearly dark between swells. The floor is 0.2 now
-and the period 12s, and the lit ladders ride the same numbers, so what breathes
-is the dome and the wheel coming up out of the dark and going back, which is a
-thing a reader notices.
+halftone. The reference goes nearly dark between swells. The floor went to 0.2
+and the period to 12s, and the lit ladders ride the same numbers, so what
+breathes is the dome and the wheel coming up out of the dark and going back,
+which is a thing a reader notices. **The floor is 0.1 now**: at 0.2 the author
+saw the dome at the bottom of the breath as a shade too light and too blue, and
+a tenth of the ladder is the ghost with a trace of the light on it — see WHAT
+MOVED WHEN THE AUTHOR LOOKED, below.
 
 **The foot is masked whatever the reach says.** `--moonlight-reach` is a share of
 the fold and the author may drag it past 1, where a radial light would meet the
@@ -955,7 +958,7 @@ quarter of the band dissolves the layer, so there is no reach at which a foot
 exists. Measured at 1536x760 with the reach at 1.6: the last 30px of the band
 carry +1 of 255, and the bottom-left corner 0.
 
-**What the numbers are, at the values that shipped, measured after the shade.**
+**What the numbers were when this first shipped, measured after the shade.**
 Against the untouched dark page at 1536x760, luminance in 255ths: +19 to +30
 beside the second photograph's right edge, +6 to +11 at the flowers' left edge,
 +10 to +18 above the strip, +35 at the brightest patch of sky, 0 across the left
@@ -964,7 +967,7 @@ about its own strength. On a portrait phone the light is nearly uniform across t
 top of the screen, because a reach of one and a half folds is wider than the
 page; that is the geometry and not a bug.
 
-**And the pictures, at the same window, after the shade, in 255ths.** The dome's
+**And the pictures then, at the same window, after the shade, in 255ths.** The dome's
 face towards the moon is 21, 23, 27 at the top of the breath and 11 at the
 bottom, its ribs 47, 51, 58 against the reference's 40, 44, 48; its far side
 16, 19, 23, which is more form than the clip has and is the "more 3d" that was
@@ -973,6 +976,31 @@ asked for; the tower's brick 15, 14, 14, warm against a cool light, which is the
 behind it, its lattice 61, 67, 77 at the brightest, where before the ladder it
 stood four levels over that sky and read as the sky gone whiter. The sky itself
 did not move: 25, 31, 41 beside the eye against the clip's 24, 31, 44.
+
+**WHAT MOVED WHEN THE AUTHOR LOOKED, and what the numbers are now.** Three
+things, all by eye against the running page, and the reference is no longer the
+target for any of them. The sky's strength is 0.4 where it was 0.8 — the
+reference's peak judged too bright on the page — and the floor 0.1 where it was
+0.2, so the trough is darker and carries less of the light's colour. Measured
+at the same window, after the shade: +11 of 255 beside the eye's mast and +13
+in the brightest patch of sky the car leaves open, against +22 and +27 before;
+at the trough +1, against +5. The plate's moonlit grade keeps its exposure and
+its endpoints and takes a steeper S (CONTRAST 0.65, from 0.45) and less wrap
+(0.2, from 0.3), which is "highlights as they are, shadows and blacks a bit
+darker" spelled as the two stages that can do one without the other: the dome's
+lit face and the lantern moved by two levels at the peak, the shaded stone by
+one to three, and the whole picture by about two at the trough. In the file the
+ladder's 99th percentile is where it was and its median is down an eighth. The
+eye's was wrong rather than strong: white steel seen rim-on is thin bright
+members on nothing, and graded as hard as the stone — exposure 0.65, a push of
+1.7, a glint of 0.7 — every member came to the same white and the mast read as
+a radiograph. It is exposure 0.4, push 1.2, glint 0.25 at a shininess of 32,
+relief 0.8 and wrap 0.2 now, and `--moonlight-eye` is 0.8 besides, because a
+frame that stands nearer the moon and over a lit sky is the louder of the two
+before any light is put on it. The mast is 23-28 at the peak over a sky of 18,
+against 40-47 over 29: a little over the dome's 19-25, where it stood at twice
+it. Its ladder's mean halved and its brightest percentile went from 154 to 98
+of 255.
 
 **Two things the Editor will do with these that are worth knowing.** The slider
 it draws for a percentage runs to four times the value, so `--moonlight-y` at 6%
@@ -983,8 +1011,9 @@ shade's shipped 0.5 — drag the strength while looking, not by arithmetic.
 
 **Two levers on the lit pictures, and which is which.** `--moonlight-plate` and
 `--moonlight-eye` are how much of a moonlit ladder lands, live, and they stop at
-1. What the light DOES to a picture — its colour, how bright the stone gets, how
-hard the ribs catch it, where the moon is as seen from that corner — is the
+1 — the plate's is there and the eye's is 0.8, for the reason above. What the
+light DOES to a picture — its colour, how bright the stone gets, how hard the
+ribs catch it, where the moon is as seen from that corner — is the
 Bake's, in the two Moonlight blocks of `design/bake/plate/recipe.json`, and moves
 nothing until `build-plate.py` has run for that picture. A picture that wants to
 be brighter than its Token at 1 can make it wants a brighter HIGHLIGHT or a higher

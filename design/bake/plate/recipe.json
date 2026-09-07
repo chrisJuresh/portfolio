@@ -501,8 +501,8 @@
         {
           "key": "PLATE_MOONLIT.CONTRAST",
           "label": "contrast",
-          "value": "0.45",
-          "note": "How far the tone curve is blended toward a smoothstep S. A little more than the ghost under it, because a light finds edges.",
+          "value": "0.65",
+          "note": "How far the tone curve is blended toward a smoothstep S. Well past the ghost under it: a light finds edges, and the S is what keeps the stone's shadow side dark under a light that would otherwise lift everything. The highlights barely move for it - the shoulder above already owns the top of the range, and the wrap below takes back the little the S adds there.",
           "min": 0,
           "max": 1,
           "step": 0.01
@@ -564,7 +564,7 @@
         {
           "key": "PLATE_MOONLIT.WRAP",
           "label": "wrap",
-          "value": "0.3",
+          "value": "0.2",
           "note": "How far the light reaches round a face turned away from it. 0 is Lambert, and a bump's far side falls to black; a little wrap keeps the shadow side of a rib in the picture.",
           "min": 0,
           "max": 1,
@@ -574,7 +574,7 @@
     },
     {
       "name": "Moonlight - the eye",
-      "note": "The eye's moonlit ladder, the same way. The moon stands nearly over this corner, so the light comes down the mast rather than across it, and the lattice is finer than the dome's ribs.",
+      "note": "The eye's moonlit ladder, the same way. The moon stands nearly over this corner, so the light comes down the mast rather than across it, and the lattice is finer than the dome's ribs. GRADED WELL UNDER THE PLATE, on purpose: white steel seen rim-on is thin bright members on nothing, and driven as hard as the stone it read as a radiograph - every member the same white, glowing. It stands under the moon and gets the throw at full besides, so the file has to hold back where the plate's does not.",
       "params": [
         {
           "key": "EYE_MOONLIT.EXPOSURE_PCT",
@@ -588,7 +588,7 @@
         {
           "key": "EYE_MOONLIT.EXPOSURE_TARGET",
           "label": "exposure",
-          "value": "0.65",
+          "value": "0.4",
           "note": "Where that percentile lands, in linear light, before any tone curve.",
           "min": 0.1,
           "max": 0.8,
@@ -606,7 +606,7 @@
         {
           "key": "EYE_MOONLIT.CONTRAST",
           "label": "contrast",
-          "value": "0.5",
+          "value": "0.55",
           "note": "How far the tone curve is blended toward a smoothstep S. A little more than the ghost under it, because a light finds edges.",
           "min": 0,
           "max": 1,
@@ -615,8 +615,8 @@
         {
           "key": "EYE_MOONLIT.HIGHLIGHT_PUSH",
           "label": "highlight push",
-          "value": "1.7",
-          "note": "Lifts the top of the range without clipping it. 1 is off.",
+          "value": "1.2",
+          "note": "Lifts the top of the range without clipping it. 1 is off. Kept low here: a hard push is what flattens every member of a lattice to one white, which is the radiograph.",
           "min": 1,
           "max": 2.5,
           "step": 0.01
@@ -651,7 +651,7 @@
         {
           "key": "EYE_MOONLIT.RELIEF",
           "label": "relief - strength, radius",
-          "value": "1.2 8",
+          "value": "0.8 8",
           "note": "The fine bump: the picture's own luma read as height, smoothed by this radius in SOURCE pixels, and tilted by this strength. This is the ribs of the dome and the members of the lattice catching the light on the side that faces it. 0 strength is off."
         },
         {
@@ -663,13 +663,13 @@
         {
           "key": "EYE_MOONLIT.SPECULAR",
           "label": "glint - strength, shininess",
-          "value": "0.7 20",
+          "value": "0.25 32",
           "note": "Blinn-Phong: how bright a face turned squarely between the moon and the reader flares, and how narrow that flare is. It is the light's colour, not the stone's."
         },
         {
           "key": "EYE_MOONLIT.WRAP",
           "label": "wrap",
-          "value": "0.35",
+          "value": "0.2",
           "note": "How far the light reaches round a face turned away from it. 0 is Lambert, and a bump's far side falls to black; a little wrap keeps the shadow side of a rib in the picture.",
           "min": 0,
           "max": 1,
