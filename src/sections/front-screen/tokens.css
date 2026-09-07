@@ -182,6 +182,25 @@
 
   --front-screen-cut-show: 0.62;
 
+  /* HOW FAR THE ROOF DISSOLVES BELOW THE WORD'S BASELINE, as a share of the
+     landing's cap height -- so the fade scales with the drawing rather than
+     being a length that is right at one window (#193).
+
+     The roof is what the document goes behind while the word is held at the
+     landing, and this is its bottom edge: opaque to the baseline, gone this far
+     under it. TASTE, which is what makes it a Token and puts it beside
+     --front-screen-cut-show rather than among the drawing's measured constants
+     -- the same argument that one carries. A hard edge reads as a seam
+     travelling up the screen; too long a fade and the writing is legible under
+     the letters while it crosses.
+
+     At 0.35 the fade ends within a pixel of the foot of the J, which is a
+     consequence of this face rather than the reason for the number: the
+     descender is about 0.35 of the cap in Friz Quadrata's PROJECTS, so the roof
+     happens to stop exactly where the drawing does. A face whose J hung lower
+     would want more, and it is a drag rather than an edit. */
+  --front-screen-cut-roof-fade: 0.35;
+
   /* How much of its own transition each letter of the morph waits out before
      starting, as a fraction of the crossing. At 0 the eight change together and
      the word switches; at 0.05 each has 0.65 of the crossing to travel in, which

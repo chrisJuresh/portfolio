@@ -523,6 +523,61 @@ left margin; the white on its right is whatever is left.
 the Cut Title computes — which is why the landing's fit constant substitutes the
 masthead's own drop out of the equation rather than referring to the word.
 
+## The word is HELD past the landing, and it is still this Section's
+
+From the Gallery's resting place on, the Cut Title is `position: fixed` at the
+landing and the document turns underneath it (#193). The state is the Kernel's —
+`src/kernel/hold.ts` — and the two rules that spend it are at the foot of the
+band's block in `FrontScreen.astro`.
+
+**Everything above those rules is the FIRST page turn and is untouched by this.**
+The opening screen, the fold taking its bite out of the word, the morph across
+the Turn and the arrival in the masthead's slot are all the page they were: the
+Kernel writes the state only at or past the landing, so nothing here is true
+before it.
+
+**The offset is DERIVED, and that is the part worth reading twice.** The word's
+cap top comes to rest on `--landing-top` and the drawing's cap top is
+`--front-screen-cut-show` of its own cap below this box's top edge, so the sum is
+where the box has to be for the word not to move. Confirmed against the live page
+at #172's four windows and exact to within a hundredth of a pixel. The obvious
+build measures the box instead and the demo that proved the device did exactly
+that — with `offsetTop` rather than a client rect, because this Section spends
+its first 0.9s translated 8px down by its own reveal and a rect carries that
+transform where an offset does not. Not asking is a better answer than asking
+carefully.
+
+**`--landing-cap` and never `--front-screen-cut-slab`, and the two are the same
+length.** Inside the cut container the slab IS the landing's cap, because the
+drawing is fitted so its cap lands there — so the roof's own rules spend the slab
+quite correctly, being the container's children. The held offset is declared on
+the SECTION, and `--front-screen-cut-slab` carries `--front-screen-cut-ink`,
+which is `100cqw` in this band. **A custom property is a token sequence that
+resolves where it is USED**, so that one name is the drawing's width read by a
+child of `.front-screen__cut` and the whole page across read on the Section. It
+held the word 100px below its own resting place and put the roof's top edge 100px
+down the screen, in one commit, by two different amounts of the same mistake.
+`src/kernel/ground.css` carries the registered-property version of this trap for
+`--page-across`.
+
+**`fixed` and not `sticky`**, which is the first answer and cannot work: a sticky
+box is held within its own containing block, and this one's is the Front Screen,
+which ends a screen ABOVE where the word has to be held. Giving it a container
+that spans the Sections it stands across means wrapping them, and the wrapper is
+what breaks `[data-section] ~ [data-section]` in `src/kernel/landing.css` — the
+one line that makes a resting place a relationship rather than a list of names.
+
+**The roof is the other half of the device**, and it is furniture rather than
+composition: the word's own column, painting `--ground`, from the window's top
+edge to the word's baseline, dissolving over `--front-screen-cut-roof-fade` of
+the cap. Three things about it are in `src/kernel/NOTES.md` because they are
+measurements rather than rules — why it cannot be up at rest, why its width is
+the word's, and what it costs the Plinth for three frames. Two are here because
+they are this sheet's: it needs `z-index: -1` to stand BEHIND the word, since a
+positioned child paints after a non-positioned one; and its top edge is written
+by undoing the hold with the same name, so a change to where the word rests takes
+the roof with it.
+
 ## The two links go through the page turn
 
 The masthead's `Projects` and the Cut Title are one destination and it is Content:

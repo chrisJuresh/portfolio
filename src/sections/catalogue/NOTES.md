@@ -172,6 +172,16 @@ is centred, so the two would not collide; whether the word should be *hidden* ov
 the Catalogue is that ticket's call, and this file is where it will find that the
 Section did not want it.
 
+**#193 read that and took the answer.** This Section does not mark itself
+`data-landing-word`, which is how the Kernel is told where the hold ends: the
+word is held from the Gallery's resting place to the Eater Map's, and past that it
+travels up at the document's own rate, so it leaves with the Section it is the
+head of and is off the screen before this one comes to rest. Nothing hides it and
+nothing has to — it is simply gone, and the Rail's highlight moving to the third
+entry is what says where the reader is, exactly as this file asked. A Section that
+DID want the word would say so with that attribute and nothing in the Kernel
+would learn its name; `src/kernel/hold.ts` is the authority.
+
 ## The Timeline
 
 `timeline.ts` is the arrival: as each Entry comes up the screen, its Still slides

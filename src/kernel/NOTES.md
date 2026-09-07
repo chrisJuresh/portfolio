@@ -21,7 +21,8 @@ than a convenience.
 | `theme.ts`                  | which paper, where it is stored, and who is told when it changes |
 | `turn.ts`                   | the Turn, as one named seekable Timeline, how far it runs in each regime, and `onTurn()` for anything drawn against it that CSS cannot draw |
 | `landing.css` / `tokens/landing.css` | the landing band, the measure two Sections share across it, and the resting places — one per Section, stated as a relationship so a new one costs nothing |
-| `page-turn.ts`              | one wheel GESTURE between two resting places, and a link into a Section going the same way |
+| `page-turn.ts`              | one wheel GESTURE between two resting places, a link into a Section going the same way, and `portOf()` — where one Section's resting place is, asked in four places and stated in one |
+| `hold.ts`                   | PROJECTS standing still across the turn between the Sections that stand it in their masthead's slot, and travelling away with the last of them |
 | `wheel.ts`                  | who owns a wheel gesture — the page, or a roll inside it     |
 | `loader.ts`                 | mounting a Section as it approaches the viewport             |
 | `motion.ts`                 | `hold()` / `release()` — see below                            |
@@ -494,30 +495,6 @@ and the head of the index is one; making it exact would mean either a document p
 path, which ADR 0001 refuses, or a rewrite that varies the bytes, which the
 deployment does not do.
 
-### The place this leaves for the persistent PROJECTS
-
-#192 is the ordinary half of the persistence the author asked for and #193 is the
-hard half: one PROJECTS for the page, rather than the Front Screen's cut word, the
-Panel's hidden masthead and the Eater Map's own drawing of it. **The place that
-ticket takes over is `src/kernel/rail/`'s shape rather than a slot in this file**,
-and the shape is the deliverable: a Kernel part with its own component, its own
-Content, its own Tokens under `tokens/`, two regimes gated on the band, a
-client half mounted from `kernel.ts`, and a current state DERIVED from the
-Section at rest instead of declared by whichever Section is drawing it. Every one
-of those is what a persistent word needs too, and none of them existed in the
-Kernel before this.
-
-Two things this deliberately did NOT do for it, so the next ticket is not
-surprised. The word is a great deal harder than the list, because the Rail is
-three names in a margin that no Section's composition is solved against, and
-PROJECTS stands in the Projects Panel masthead's own box to the pixel — it is on
-the landing measure, `--landing-mast-size`, `--landing-cap` and
-`--landing-mast-top`, and the Front Screen's cut word morphs across the Turn. So
-a persistent PROJECTS is a Kernel element reading the landing rather than one
-reading a margin. And the Eater Map's masthead is still that Section's own
-element (`src/sections/eater-map/NOTES.md` says the slot is being held), which is
-where #193 starts.
-
 ### Its words are the one Content file the Editor cannot reach
 
 `rail/content.ts` is Content by every part of CONTEXT.md's definition except the
@@ -528,6 +505,108 @@ and a small one — the Kernel's **Tokens** already answer to `kernel-<stem>` on
 surface, and Content would be the same move at the other boundary. It is not this
 one, and the alternative was leaving one of the two Sections owning the words for
 a list that is no longer either Section's.
+
+## The hold: PROJECTS standing still across the second page turn
+
+#192 was the ordinary half of the persistence the author asked for and this is
+the hard half (#193). Turning from the Gallery to the Eater Map moves the
+composition and nothing else: the Rail's highlight changes and **the word does
+not move**, so the two screens read as one place rather than as two pages that
+share a heading.
+
+`hold.ts` is the whole of it, and **it is three states on the root and not one
+element touched.** The Kernel may not read a Section and the word is the Front
+Screen's element, so what this publishes is a fact about the PAGE and each
+Section spends it in its own stylesheet — the Front Screen pins its own word and
+draws its own roof, the Eater Map hides its own masthead. Same division `--turn`
+is under, and `--landing-past` is a length, so the two things a stylesheet has to
+branch on are attributes for the reason `data-rail-away` is one.
+
+**It is NOT the Kernel element this section used to predict.** The place left for
+#193 was `src/kernel/rail/`'s shape — a Kernel part with its own component, its
+own Content and its own Tokens — and the word did not need it. The word is
+already drawn once, at the Panel masthead's own cap, by the Section that owns the
+drawing and the morph; what was missing was not an element but a **position**.
+Moving it into the Kernel would have moved `assets/cut-title.svg`, the morph, the
+fold that cuts it and the out-of-band overhang along with it, to change one
+`position` and one `top`. The prediction was wrong in an instructive way: it read
+"one PROJECTS for the page" as "one PROJECTS element in the Kernel", and the
+first was already true.
+
+### Which Sections, asked rather than named
+
+A Section marks itself `data-landing-word` when it stands the landing's word in
+its own masthead's slot, and the hold runs **from the first such Section's
+resting place to the last one's**. Two carry it; the Catalogue deliberately does
+not, and its own NOTES.md asked for that decision by name. So a third Showcase
+joins the run by saying so and nothing in the Kernel learns its name — the
+property `data-turn` has, and the reason this is an attribute rather than a list
+of Sections in here.
+
+### Where it lets go, and why that is a travel rather than a switch
+
+At the last marked Section's own resting place, and past that the word goes up at
+exactly the rate the document does — so it leaves with the Section it is the head
+of and is off the screen by the turn onto the Catalogue. `--landing-past` is that
+travel and is the one number written per scroll.
+
+**Letting the box simply revert there is the failure #192 deleted for the Rail.**
+The held word stands at `--landing-top` and its own document position is a screen
+and a half above the window by then, so reverting is the word VANISHING in one
+frame at the moment the reader asks for the next Section. Both positions are off
+screen once it has travelled a whole window, which is where the state does come
+off — the two agree about everything the reader can see, and what that buys is a
+`top` that stays a real length instead of running to minus ten thousand pixels
+inside a Section taller than a screen.
+
+### The roof, and why it cannot be up at rest
+
+The word standing still is half of the device. The other half is that the
+document has to pass BEHIND it, and the roof is what it passes behind: the word's
+own column, from the window's top edge to the word's baseline, dissolving across
+the J's descender. `FrontScreen.astro` draws it and
+`--front-screen-cut-roof-fade` is its one Token.
+
+**It is up only while the page is between the two resting places, and that is
+measured rather than tidy.** At rest there is nothing crossing, so a roof
+standing at either port is a roof cutting a composition nobody is turning away
+from — and both ends cost something real, at all four of #172's windows:
+
+| window | the Gallery's subheading cap top, at its own rest | the word's ink bottom | the Eater Map's first Point hairline, at its own rest |
+| --- | --- | --- | --- |
+| 1100x700  |  93.1 | 115.5 | 26.2 |
+| 1536x760  | 110.1 | 137.8 | 27.8 |
+| 1920x980  | 141.8 | 177.6 | 35.9 |
+| 2560x1311 | 189.0 | 236.5 | 46.8 |
+
+So a permanent roof clips the top of SELF-STACKING at every window in the band,
+and puts a gap in a hairline the Eater Map draws across its whole frame with its
+first grid vertical running up past the window's edge behind the word. Both are
+invisible in a still of the crossing and obvious in a still of the rest, which is
+the wrong way round for a person looking. **A z-index cannot separate them
+either**, which is the tempting fix: the grid's hairlines are at `-1` and the
+type that must be hidden is at `0`, so any roof above the type is above the grid
+too.
+
+### The roof is the word's own width, and that is a measurement
+
+Every block that crosses under the word has ink **39 to 84px narrower** than the
+word at the four windows, and the Gallery's copy — the one block up there that
+stands BESIDE the word rather than under it — starts 33 to 69px to the RIGHT of
+the word's last letter. So the word's own column is wide enough to hide
+everything that passes and narrow enough never to reach the copy, and the `turn`
+Check asserts the second of those on the page rather than trusting this table.
+Read the ink and not the boxes: a range over block-level children hands back LINE
+BOXES, which made every crosser look 90 to 190px WIDER than the word and would
+have sized the roof off the column instead of off the letters.
+
+**What it costs is 78px of the Plinth's left overhang** for the last 9% of the
+turn, where the marble is crossing the word's band and the roof puts a straight
+vertical edge in it. Left rather than feathered: inside the band the reader
+cannot come to rest between two ports, so that slice is only ever seen at the
+ease's own speed — three frames — and the Plinth's left edge is a straight
+vertical anyway. A right-hand fade is the fix if it is ever reported, and the
+room for one is the 33px the copy leaves at the band's tightest window.
 
 ## The page turn, and who owns a notch
 

@@ -62,6 +62,39 @@ import { open, settle } from '../lib/page.mjs';
  *     rasterised without subpixel antialiasing and the resting page is meant to be
  *     one the arrival never touched. Every one of them is silent on screen.
  *
+ *   * AND THE WORD IS HELD ACROSS THE SECOND TURN (#193). The Sections that
+ *     stand PROJECTS in their own masthead's slot mark themselves
+ *     `data-landing-word`, and the Kernel holds the word from the first one's
+ *     resting place to the last one's — so turning between two Showcases moves
+ *     the composition and leaves the word alone. Read in VIEWPORT coordinates at
+ *     both resting places and compared, never against a typed number, which is
+ *     the criterion that ticket asks for in those words. Every failure it can
+ *     have is silent: the hold is one `position` and one derived offset, and a
+ *     word held a hundred pixels off its own resting place still looks like a
+ *     word standing still if you only ever look at one screen. The premise is
+ *     asserted first and on its own — two Sections have to CARRY the word, or
+ *     every claim below it passes by having nothing to say.
+ *   * THE ROOF IS UP ONLY BETWEEN THE TWO RESTING PLACES. What the held word
+ *     needs is for the document to pass BEHIND it, and the roof is what the
+ *     document passes behind; a roof standing at either port instead cuts a
+ *     composition nobody is turning away from — measured, the Gallery's
+ *     subheading at one end and the Eater Map's first grid hairline at the
+ *     other. Both of those are invisible in a still of the crossing and obvious
+ *     in a still of the rest, which is the wrong way round for a person looking.
+ *   * AND IT NEVER REACHES THE GALLERY'S COPY. The roof is the word's own drawn
+ *     width because that is wide enough to hide everything that crosses and
+ *     narrow enough to miss the one block up there that stands BESIDE the word
+ *     rather than under it. The margin is 33 to 69px across the band, so this is
+ *     the assertion that fails when a Content edit makes the word narrower or the
+ *     composition's gutter closes.
+ *   * AND THE WORD LEAVES WITH THE SECTION IT HEADS. Past the last marked
+ *     Section's port it travels at the document's own rate and is gone by the
+ *     last resting place, because the Catalogue is not a Showcase and does not
+ *     carry the word (`src/sections/catalogue/NOTES.md`). Letting the box simply
+ *     revert instead is the word VANISHING at the moment the reader asks for the
+ *     next Section, which is a single frame and reads as a glitch rather than as
+ *     a mistake.
+ *
  * IT ASSERTS NOTHING ABOUT THE CURVE. How the turn is eased and how fast is the
  * author's, and so is the stagger; what is asserted is that a notch arrives.
  */
@@ -788,6 +821,259 @@ export const check = {
           `try/tries, widest gaps ${flicked.down.widest.toFixed(0)}/${flicked.up.widest.toFixed(0)}/` +
           `${flicked.twice.widest.toFixed(0)}ms against a ${KERNEL_GAP}ms boundary`,
       );
+
+      // ---- the word, HELD across the second turn (#193) ------------------
+      // Placed rather than flicked: what is being asserted is where the word IS
+      // at each of two resting places and between them, not how it got there —
+      // and the snapping has to come off first or every position in between is
+      // pulled straight back onto the port it left.
+      const hold = await page.evaluate(async () => {
+        const kernel = window.portfolio;
+        const marked = [...document.querySelectorAll('[data-section][data-landing-word]')];
+        const list = kernel.ports();
+        // THE PREMISE, HANDED BACK ON ITS OWN so it fails as a premise rather
+        // than as four confusing consequences: with fewer than two Sections
+        // carrying the word there is nothing to hold it across, and every
+        // assertion below would pass by comparing a box to itself.
+        if (marked.length < 2 || list.length < 3) {
+          return { marked: marked.length, ports: list.length };
+        }
+
+        const portOf = (el) => {
+          const style = getComputedStyle(el);
+          return (
+            el.getBoundingClientRect().top +
+            window.scrollY -
+            (Number.parseFloat(style.scrollMarginTop) || 0)
+          );
+        };
+        // Read before anything is placed: a port is measured from a box, and the
+        // box moves as the page does.
+        const from = portOf(marked[0]);
+        const to = portOf(marked[marked.length - 1]);
+        const last = list[list.length - 1];
+
+        kernel.snapping(false);
+        const frame = () => new Promise((f) => requestAnimationFrame(() => requestAnimationFrame(f)));
+        const box = (el) => {
+          if (!el) return null;
+          const r = el.getBoundingClientRect();
+          return { x: r.x, y: r.y, w: r.width, h: r.height, right: r.right, bottom: r.bottom };
+        };
+        /** A drawing of PROJECTS the reader can actually see. */
+        const shown = (el) => {
+          if (!el) return false;
+          const style = getComputedStyle(el);
+          if (style.visibility === 'hidden' || style.display === 'none') return false;
+          if (Number(style.opacity) === 0) return false;
+          const r = el.getBoundingClientRect();
+          if (r.width === 0 || r.height === 0) return false;
+          return r.bottom > 0 && r.top < window.innerHeight;
+        };
+        const at = async (y) => {
+          window.scrollTo(0, y);
+          await frame();
+          const roof = document.querySelector('.front-screen__cut-roof');
+          const copy = document.querySelector('.projects-panel__copy');
+          return {
+            y: window.scrollY,
+            word: box(document.querySelector('.front-screen__cut-word')),
+            roof: roof && getComputedStyle(roof).display !== 'none' ? box(roof) : null,
+            copyLeft: copy ? copy.getBoundingClientRect().left : null,
+            words: [
+              document.querySelector('.front-screen__cut-word'),
+              document.querySelector('.projects-panel__masthead'),
+              document.querySelector('[data-eater-map-masthead]'),
+            ].filter((el) => shown(el)).length,
+          };
+        };
+
+        // JUST BEFORE THE HOLD ENGAGES, where the word is still this Section's
+        // own box in the document — which is the only reading that can say
+        // whether the pinned offset is the word's own resting place. Two
+        // readings of a HELD word agree with each other however wrong both are:
+        // a 40px error in the derived offset moved the word at both resting
+        // places by the same 40px and the comparison below passed.
+        const APPROACH = 2;
+        const before = await at(from - APPROACH);
+        const rest = { first: await at(from), second: await at(to) };
+        const between = [];
+        for (const share of [0.05, 0.25, 0.5, 0.75, 0.95]) {
+          between.push(await at(from + (to - from) * share));
+        }
+        // One screen past the last marked Section, where the word has to have
+        // travelled with the document rather than stayed on the window.
+        const leaving = await at(to + window.innerHeight / 2);
+        const gone = await at(last);
+
+        window.scrollTo(0, 0);
+        await frame();
+        kernel.snapping(true);
+        return {
+          marked: marked.length,
+          ports: list.length,
+          from,
+          to,
+          approach: APPROACH,
+          before,
+          rest,
+          between,
+          leaving,
+          gone,
+        };
+      });
+
+      if (hold.marked < 2 || hold.ports < 3) {
+        failures.push(
+          `the hold has nothing to hold across: ${hold.marked} Section(s) carry data-landing-word ` +
+            `and the document has ${hold.ports} resting place(s). Two Sections have to stand the ` +
+            `word in their own masthead's slot for #193's device to exist at all, and with fewer ` +
+            `than that every claim about it passes without asserting anything.`,
+        );
+      } else {
+        // THE BOX AT ONE RESTING PLACE AGAINST THE BOX AT THE OTHER, which is
+        // #193's criterion in its own words: an equality between two readings
+        // rather than either of them against a number somebody typed.
+        for (const side of ['x', 'y', 'w', 'h']) {
+          const a = hold.rest.first.word[side];
+          const b = hold.rest.second.word[side];
+          if (Math.abs(a - b) > STILL) {
+            failures.push(
+              `PROJECTS moved between the two resting places: ${side} ${a.toFixed(1)} at the ` +
+                `landing against ${b.toFixed(1)} at the Section after it. The word is meant to be ` +
+                `the one thing the second page turn does not move.`,
+            );
+          }
+        }
+
+        // AND THE OFFSET IT IS HELD AT IS THE WORD'S OWN RESTING PLACE, which
+        // is the assertion the two readings above CANNOT make. Approached from
+        // two pixels above the landing the word is still an ordinary box in this
+        // Section's document, so its viewport position there is the composition's
+        // own answer; pinned, it has to be that position less the two pixels of
+        // scroll. Without this a wrong derivation is invisible: the box agrees
+        // with itself at both resting places no matter where it is standing.
+        const engaged = hold.before.word.y - hold.approach - hold.rest.first.word.y;
+        if (Math.abs(engaged) > STILL) {
+          failures.push(
+            `PROJECTS moved ${engaged.toFixed(1)}px as the hold engaged: it stands at ` +
+              `${hold.before.word.y.toFixed(1)} two pixels above the landing and is pinned at ` +
+              `${hold.rest.first.word.y.toFixed(1)}, where the composition puts it at ` +
+              `${(hold.before.word.y - hold.approach).toFixed(1)}. The pinned offset is derived from ` +
+              `the landing rather than measured off the page, so this is what says the derivation ` +
+              `still agrees with the box it replaces.`,
+          );
+        }
+
+        // ONE WORD, EVERYWHERE. At most one drawing of PROJECTS is visible at
+        // any of these positions, and exactly one wherever a Section that
+        // carries it owns the screen — the Catalogue carries none by decision,
+        // so none is the right answer at the last port and is asserted below
+        // rather than here.
+        for (const [where, seen] of [
+          ['the landing', hold.rest.first],
+          ['the Section after it', hold.rest.second],
+          ...hold.between.map((seen, i) => [`${(i + 1) * 20 - 15}% through the turn`, seen]),
+        ]) {
+          if (seen.words !== 1) {
+            failures.push(
+              `${seen.words} drawing(s) of PROJECTS visible at ${where}, not 1 — the held word, ` +
+                `the Panel's hidden masthead and the Eater Map's own masthead are three elements ` +
+                `and the reader may only ever meet one of them.`,
+            );
+          }
+        }
+
+        // THE ROOF IS UP ONLY BETWEEN THEM.
+        for (const [where, seen] of [
+          ['the landing', hold.rest.first],
+          ['the Section after it', hold.rest.second],
+        ]) {
+          if (seen.roof) {
+            failures.push(
+              `the roof is up at ${where}, where nothing is crossing: it paints the ground over ` +
+                `the word's own column, so at rest it is cutting a composition instead of hiding ` +
+                `one going past — the Gallery's subheading at one end, the Eater Map's first grid ` +
+                `hairline at the other.`,
+            );
+          }
+        }
+        for (const [i, seen] of hold.between.entries()) {
+          if (!seen.roof) {
+            failures.push(
+              `the roof is down ${(i + 1) * 20 - 15}% through the turn, so the Section going past ` +
+                `is drawing straight through the letters.`,
+            );
+            continue;
+          }
+          // THE ROOF REACHES THE WINDOW'S TOP EDGE AND IS THE WORD'S OWN
+          // COLUMN. Both are relationships between two readings rather than
+          // numbers: the roof's top is written by undoing the hold, so a roof
+          // that does not reach the edge is the two spending different lengths
+          // for the same name — which shipped once, as a custom property
+          // carrying a container query unit resolving differently on a parent
+          // and on a child.
+          if (seen.roof.y > STILL) {
+            failures.push(
+              `the roof starts ${seen.roof.y.toFixed(1)}px down the window ${(i + 1) * 20 - 15}% ` +
+                `through the turn instead of at its top edge, so the composition going past is ` +
+                `visible in the air above the word.`,
+            );
+          }
+          if (
+            Math.abs(seen.roof.x - seen.word.x) > STILL ||
+            Math.abs(seen.roof.w - seen.word.w) > STILL
+          ) {
+            failures.push(
+              `the roof is not the word's own column ${(i + 1) * 20 - 15}% through the turn: ` +
+                `${seen.roof.x.toFixed(1)}+${seen.roof.w.toFixed(1)} against a word at ` +
+                `${seen.word.x.toFixed(1)}+${seen.word.w.toFixed(1)}.`,
+            );
+          }
+          if (seen.copyLeft !== null && seen.roof.right > seen.copyLeft + STILL) {
+            failures.push(
+              `the roof reaches the Gallery's copy ${(i + 1) * 20 - 15}% through the turn: its ` +
+                `right edge is at ${seen.roof.right.toFixed(1)} against a copy that starts at ` +
+                `${seen.copyLeft.toFixed(1)}. That block stands BESIDE the word, not under it, and ` +
+                `is meant to cross the screen in full.`,
+            );
+          }
+        }
+
+        // AND IT LEAVES WITH THE SECTION IT HEADS.
+        const travelled = hold.rest.second.word.y - hold.leaving.word.y;
+        const scrolled = hold.leaving.y - hold.rest.second.y;
+        if (Math.abs(travelled - scrolled) > 1) {
+          failures.push(
+            `past the last Section that carries it, PROJECTS travelled ${travelled.toFixed(1)}px ` +
+              `against ${scrolled.toFixed(1)}px of scroll — it has to go up at exactly the ` +
+              `document's rate from there, or it is either stuck on the window or gone in one frame.`,
+          );
+        }
+        if (hold.gone.word.bottom > 0) {
+          failures.push(
+            `PROJECTS is still on screen at the last resting place, ${hold.gone.word.bottom.toFixed(1)}px ` +
+              `down: the Catalogue is not a Showcase and does not carry the word, so it has to have ` +
+              `left with the Section above it.`,
+          );
+        }
+        if (hold.gone.words !== 0) {
+          failures.push(
+            `${hold.gone.words} drawing(s) of PROJECTS visible at the last resting place, where the ` +
+              `Section deliberately carries none.`,
+          );
+        }
+
+        notes.push(
+          `PROJECTS held from ${hold.from.toFixed(0)}px to ${hold.to.toFixed(0)}px across ` +
+            `${hold.marked} Section(s) that carry it: box ${hold.rest.first.word.x.toFixed(1)},` +
+            `${hold.rest.first.word.y.toFixed(1)} ${hold.rest.first.word.w.toFixed(1)}x` +
+            `${hold.rest.first.word.h.toFixed(1)} at both resting places; roof ` +
+            `${hold.between[2].roof ? hold.between[2].roof.w.toFixed(1) + 'px wide, ' + (hold.between[2].copyLeft - hold.between[2].roof.right).toFixed(1) + 'px clear of the copy' : 'down'} ` +
+            `mid-turn and down at both; travelled ${travelled.toFixed(0)}px against ` +
+            `${scrolled.toFixed(0)}px of scroll after it, and gone by the last port`,
+        );
+      }
 
       return { failures, notes };
     } finally {

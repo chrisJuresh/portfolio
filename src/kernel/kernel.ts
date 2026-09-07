@@ -1,6 +1,7 @@
 import { mountCorners } from './corners';
 import { mountGrain } from './effect-stack/grain';
 import { handles } from './handles';
+import { mountHold } from './hold';
 import { mountSections, observeSection } from './loader';
 import { hold, release } from './motion';
 import { mountPageTurn, ports, snapping } from './page-turn';
@@ -24,10 +25,12 @@ followSystemTheme();
 // capture phase, but only for events that arrive after it is attached.
 mountWheel();
 mountPageTurn();
-// After the page turn and before the Sections: it reads where the Sections are
-// and writes nothing else, so it only has to be on the page before the reader's
-// first scroll. The markup already names the entry the page opens on.
+// After the page turn and before the Sections: both read where the Sections are
+// and write nothing else, so they only have to be on the page before the
+// reader's first scroll. The markup already names the entry the Rail opens on,
+// and the hold has nothing to say until the reader has reached the landing.
 mountRail();
+mountHold();
 mountSections();
 
 const kernel = handles();

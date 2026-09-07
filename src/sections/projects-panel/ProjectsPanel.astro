@@ -23,11 +23,20 @@ const here = 'projects';
 
 {/* data-section is the loader's handle. No data-turn: the crossing into dark
     happens across the scroll of the Section ABOVE this one, which is where the
-    reader is when it happens — see NOTES.md. */}
+    reader is when it happens — see NOTES.md.
+
+    data-landing-word SAYS THIS SECTION STANDS THE LANDING'S WORD IN ITS OWN
+    MASTHEAD'S SLOT, and it is what makes this Section the START of the hold
+    (#193). The Kernel holds PROJECTS from the first marked Section's resting
+    place to the last one's, so a Section joins the run by saying this and the
+    Kernel never learns a Section's name — the property data-turn has, for the
+    same reason. This is the first of two; src/kernel/hold.ts is the authority
+    and the Catalogue's NOTES.md says why it is deliberately not a third. */}
 <section
   class="projects-panel"
   id={here}
   data-section="projects-panel"
+  data-landing-word
   aria-labelledby="projects-panel-masthead"
 >
   <div class="projects-panel__inner">

@@ -252,6 +252,20 @@ document moves past it. **The crossing is that first notch and not the document'
 whole scroll**, which were the same number while there were two Sections and are
 not now; `src/kernel/turn.ts` says so, and `src/kernel/NOTES.md` says what it
 cost to find out.
+
+**And on the SECOND notch the word does not leave: it is HELD** (#193). A Section
+that stands the landing's word in its own masthead's slot marks itself
+`data-landing-word`, and `src/kernel/hold.ts` pins the Cut Title at the landing
+from the first such Section's resting place to the last one's — so turning
+between the two Showcases moves the composition, moves the Rail's highlight, and
+leaves the word alone. Past the last of them the word travels at the document's
+own rate and leaves with the Section it heads, which is why nothing on the
+Catalogue hides it. What the document passes BEHIND while it is held is the
+**roof**: the word's own column, painting the ground, dissolving across the J's
+descender, and up ONLY between two resting places — at rest it would cut the
+Gallery's subheading at one end and an Eater Map hairline at the other, which is
+measured in `src/kernel/NOTES.md` along with the six pixels of the Eater Map
+column's ink agreement this cost and the three ways out of it.
 `src/kernel/landing.css` is the device and the one measure the two Sections share
 — a THIRD Section joining that list is a decision and #172 decided against it —
 and `src/kernel/page-turn.ts` is the notch, `src/kernel/wheel.ts` who owns it.

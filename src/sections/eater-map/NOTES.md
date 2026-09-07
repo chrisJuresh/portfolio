@@ -2356,6 +2356,68 @@ carries the four windows it was measured at. Nothing is cut into this slot; the
 word is simply drawn here as well, and the Panel's own masthead is still
 `visibility: hidden` because the CUT word is already that Section's head.
 
+### And since #193 this masthead YIELDS to the page's own word
+
+The word this Section draws was a second DRAWING of the Gallery's, and while it
+was, the two were never on the screen together: the first one is a box at the
+Front Screen's foot, two screens up by the time this Section owns the window. The
+Kernel holds it there now, so it IS up here — standing in this masthead's own
+slot, at this masthead's own size — and this element goes `visibility: hidden`
+while it is held, for the reason the Projects Panel's own masthead is hidden
+unconditionally. `visibility` and not `display`, because this element is the
+Section's `aria-labelledby` and a directly-referenced hidden element still
+supplies an accessible name.
+
+**Read as a fact about the page, not reached into.** The root carries
+`data-landing-held` and this Section decides what to do about it, which is the
+boundary `CONTEXT.md` draws. **Not gated on the band**, deliberately: the state
+only exists where there is a page turn to stand still across, so a second gate
+here would be a second copy of the band's two numbers — and a rule left gated on
+the regime of the thing that used to do its job is exactly how this page came to
+say PROJECTS twice once before.
+
+This Section still marks itself `data-landing-word`, which is what tells the
+Kernel the hold runs this far. It is the LAST Section that does, so the word
+leaves with this one.
+
+### What the hold costs this column, measured: six pixels of the masthead's bearing
+
+**This is the one target the hold moves, and it is reported rather than hidden.**
+#201 stands the column's three words on one line by giving the title and the copy
+`the masthead's bearing less their own` as a padding, so all three INKS land at
+the grid's vertical plus that bearing. The held word is a DRAWING whose box is
+its ink, so it stands on the vertical itself — the bearing to match is zero, and
+a negative padding is refused by #201's own floor.
+
+Measured at 1536x760, first inked pixel, at this Section's resting place:
+
+| block | before the hold | held |
+| --- | --- | --- |
+| PROJECTS | 55 | 49 |
+| the serif title | 55 | 55 |
+
+**What that replaces is a 6px JUMP.** On the shipped page the word's ink stood at
+49 on the Gallery and 55 here, so it moved six pixels right on the turn between
+them — which is the thing #193 exists to remove. A still six pixels is the trade
+for a moving six pixels, and #193 is the ticket that says the word must not move.
+
+Three ways out, and the choice is the author's rather than an agent's:
+
+1. **Leave it.** The masthead is flush to the page's margin and the two blocks
+   under it are a bearing inside it, which is an ordinary typographic
+   arrangement. What #201 actually reported — the copy reading as sitting ON its
+   own rule — stays fixed, because the copy's compensation is untouched.
+2. **Re-align this column to the word that is really there**, by compensating
+   against the drawing rather than the face while held. That closes the gap to
+   3px and puts the copy's ink 0.9px off the vertical again, which is #201's bug
+   returning.
+3. **Give the drawing the masthead's own left side bearing**, so its ink lands
+   where this masthead's ink stood and all three agree again. That is the most
+   correct reading of "the word stands in the masthead's slot" — but the word is
+   then a bearing off the page's left margin on the FIRST screen too, which is a
+   change to a composition the author has signed off, and it needs the Front
+   Screen to measure a face the way `title.ts` does.
+
 ## The serif title, and why two ratios need a script
 
 Under PROJECTS stands the project title: four authored lines, near-white, in

@@ -91,13 +91,33 @@ export function ports(): number[] {
   const max = pageMax();
   const found = [0];
   for (const section of document.querySelectorAll<HTMLElement>('[data-section]')) {
-    const style = getComputedStyle(section);
-    if (style.scrollSnapAlign === 'none') continue;
-    const top = section.getBoundingClientRect().top + window.scrollY;
-    const margin = Number.parseFloat(style.scrollMarginTop) || 0;
-    found.push(Math.max(0, Math.min(max, top - margin)));
+    if (getComputedStyle(section).scrollSnapAlign === 'none') continue;
+    found.push(Math.max(0, Math.min(max, portOf(section))));
   }
   return [...new Set(found)].sort((a, b) => a - b);
+}
+
+/**
+ * WHERE ONE SECTION'S RESTING PLACE IS, in document pixels: the box's top edge
+ * less its own `scroll-margin-top`, which is what puts the Projects Panel's
+ * landing on the word rather than on that Section's edge.
+ *
+ * ONE FUNCTION BECAUSE THERE WERE FOUR COPIES OF IT. `ports()` above, the deep
+ * link below, the Rail's current entry and the hold all ask this same question,
+ * and a Section's port is exactly the kind of relationship this repository holds
+ * in one place rather than in four that agree today. The Rail's copy was already
+ * subtly different — it did not clamp — which is why the clamping stays with the
+ * CALLER: `ports()` wants a scroll position the window can actually reach, and
+ * everything else wants the raw line the Section rests on.
+ *
+ * Measured per call rather than cached, for the reason `ports()` does the same on
+ * every wheel notch: a Section mounts on approach and changes height when it
+ * does, and its pictures change it again.
+ */
+export function portOf(section: HTMLElement): number {
+  const style = getComputedStyle(section);
+  const top = section.getBoundingClientRect().top + window.scrollY;
+  return top - (Number.parseFloat(style.scrollMarginTop) || 0);
 }
 
 /** Is the page turnable at all? Below the band there is one port and no turn. */
@@ -383,9 +403,7 @@ function onClick(event: MouseEvent): void {
   if (reduced() || !turnable()) return;
   if (getComputedStyle(dest).scrollSnapAlign === 'none') return;
 
-  const top = dest.getBoundingClientRect().top + window.scrollY;
-  const margin = Number.parseFloat(getComputedStyle(dest).scrollMarginTop) || 0;
-  const to = Math.max(0, Math.min(pageMax(), top - margin));
+  const to = Math.max(0, Math.min(pageMax(), portOf(dest)));
   if (!turnTo(to)) return;
   event.preventDefault();
   // The fragment the anchor would have left, without the history entry it would

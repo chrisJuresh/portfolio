@@ -66,6 +66,7 @@ import './tokens.css';
   class="eater-map"
   id="eater-map"
   data-section="eater-map"
+  data-landing-word
   aria-labelledby="eater-map-masthead"
 >
   {/* No Rail here. It is one piece of furniture standing on the page and the
@@ -619,6 +620,36 @@ import './tokens.css';
     text-transform: uppercase;
     font-feature-settings: 'case' 1;
     color: var(--ink);
+  }
+
+  /* ---- UNLESS THE PAGE'S OWN PROJECTS IS STANDING IN THIS SLOT (#193) -----
+     The word this Section draws is the Gallery's, in the Gallery's box, and
+     while it was a second DRAWING the two were never on the screen together:
+     the first one is a box at the Front Screen's foot, two screens up by the
+     time this Section owns the window. The Kernel holds it there now, so it IS
+     up here — standing in this masthead's own slot, at this masthead's own size
+     — and painting this one as well is the page saying PROJECTS twice, a few
+     pixels out rather than the few lines the Projects Panel's own hidden
+     masthead was guarding against.
+
+     A FACT ABOUT THE PAGE, READ — not a Section reached into. The root carries
+     the state and this Section decides what to do about it, which is the
+     boundary CONTEXT.md draws and the same shape --turn and the Variants' own
+     gate take. src/kernel/hold.ts is what writes it.
+
+     NOT GATED ON THE BAND, and that is deliberate rather than an omission: the
+     state itself only exists where there is a page turn to stand still across,
+     so gating it here as well would be a second copy of the band's two numbers
+     — and a rule left gated on the regime of the thing that used to do its job
+     is exactly how this page came to say PROJECTS twice once before.
+
+     `visibility` AND NOT `display`, for the Projects Panel's own reason: this
+     element is this Section's `aria-labelledby`, and a directly-referenced
+     hidden element still supplies an accessible name where a display:none one
+     supplies nothing at all. The box stays, which is also what keeps the serif
+     title on the line title.ts measured it onto. */
+  :root[data-landing-held] .eater-map__masthead {
+    visibility: hidden;
   }
 
   /* THE SERIF PROJECT TITLE, AND BOTH ITS LENGTHS ARE FALLBACKS.
