@@ -107,40 +107,40 @@ export const content = defineContent(schema, {
       'rail network drawn over the streets in the lines’ own colours.',
   },
   copy: [
-    "Eater's London guides are superb and scattered across hundreds of articles, " +
-      'each with its own small map. This scrapes all of them, merges duplicates into ' +
-      "one record per restaurant with a threshold read off the data's own error modes, " +
-      'and serves the result as an offline-first PWA. Put your phone in airplane mode ' +
-      'on the Underground and it all still works.',
+    "Eater's London guides are superb but scattered across hundreds of articles, " +
+      'each with its own small map. This collects all of them, merges the duplicates ' +
+      'into one entry per restaurant, and puts them all on one map you can install ' +
+      'on your phone. Put it in airplane mode on the Underground and it all ' +
+      'still works.',
   ],
   points: [
     {
       title: 'Search',
       part: 'search',
       figure:
-        'Full-text across 2,336 restaurants, 296 guide titles, addresses and ' +
-        'descriptions, plus place geocoding.',
+        'Find any of 2,336 restaurants by name, guide, address or description, or ' +
+        'jump straight to a place in London.',
     },
     {
       title: 'It works on the Tube',
       part: 'offline',
       figure:
-        'Around 76 MB of vector tiles precached; the service worker slices HTTP Range ' +
-        'out of the Cache API itself, because the Cache API cannot serve ranges.',
+        'About 90 MB of map is stored on the phone. Browsers cannot serve part of a ' +
+        'stored file, so the app’s service worker slices out the pieces itself.',
     },
     {
-      title: 'The rail overlay',
+      title: 'Every rail line',
       part: 'lines',
       figure:
-        'The whole network in official line colours; where lines share track the ' +
-        'geometry splits into side-by-side bands rather than one hiding another.',
+        'The whole rail network in each line’s official colour. Where lines share ' +
+        'track they are drawn side by side, so none hides another.',
     },
     {
       title: 'One record per restaurant',
       part: 'details',
       figure:
-        '4,043 guide entries merged into 2,336; 665 carry write-ups from more than ' +
-        'one guide.',
+        '4,043 guide entries merged into 2,336 restaurants; 665 of them carry write-ups ' +
+        'from more than one guide.',
     },
   ],
 });
