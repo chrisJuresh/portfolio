@@ -601,13 +601,48 @@ Read the ink and not the boxes: a range over block-level children hands back LIN
 BOXES, which made every crosser look 90 to 190px WIDER than the word and would
 have sized the roof off the column instead of off the letters.
 
-**What it costs is 78px of the Plinth's left overhang** for the last 9% of the
-turn, where the marble is crossing the word's band and the roof puts a straight
-vertical edge in it. Left rather than feathered: inside the band the reader
-cannot come to rest between two ports, so that slice is only ever seen at the
-ease's own speed — three frames — and the Plinth's left edge is a straight
-vertical anyway. A right-hand fade is the fix if it is ever reported, and the
-room for one is the 33px the copy leaves at the band's tightest window.
+**Its sides are feathered, because the straight edges were reported.** The right
+side dissolves back into the word over half the cap and hangs 0.08 of the cap
+past the S: every crosser's ink stops at least **0.64 of the cap** short of the
+word's right edge, the Gallery's copy starts **0.536** past it at all four windows
+(33 to 69px — the ratio is the same everywhere), and at 1536x760 the Gallery's
+frame starts **0.127** past it, so none of them is reached. The left side cannot
+feather inward — every crosser starts on the word's own left edge — so it hangs
+0.12 of the cap into the Rail's column, whose words stop at least 0.18 short of
+it. What that bought is the marble and the Eater Map's hairlines going soft into
+the S instead of meeting a vertical, which was the 78px of Plinth this used to
+say it would leave hard until somebody reported it.
+
+### The roof grows; it does not switch on
+
+A box that goes up at the first pixel of the turn paints the ground over whatever
+is above the word at that moment, and at the Gallery's rest that is the foot of
+the Front Screen's photographs — so the reader saw a black slab drop over them in
+one frame. **What the roof has to hide is only what crosses the baseline going
+up**, and at the first port nothing has, so its top edge is a line in the
+DOCUMENT: 0.04 of the cap above the baseline at rest (the subheading's cap tops
+stand 1.3 to 2.6px above it at the four windows), rising with the page. The
+photographs are never covered and leave as they would with no roof. The last
+port is the same thing backwards — the Eater Map is already behind the word at
+its own rest, so the roof hides only what rests above that window's top edge,
+and lets go of the document there.
+
+**The fade under the baseline starts above it**, one fade-length up, and slides
+down to the baseline over the first fade-length of travel — the subheading's cap
+tops are within 3px of the baseline at rest, so a fade already in place would dim
+them on the first frame. Every ramp is a five-step smoothstep, because a linear
+one has a visible start and end.
+
+**These are distances the ROOF reads off a scroll timeline, not lengths this
+Kernel writes per scroll**, and that is measured: a custom property written on
+the root restyles the whole document, and one write a frame took the crossing
+from **0.6ms to 19ms of style recalc a step** at 1536x760 in headless Chromium
+(1,441 elements). `hold.ts` publishes `--landing-from` and `--landing-to` —
+which change only with the layout — and the Front Screen animates two registered,
+non-inheriting properties on the one box that reads them. `--landing-past` is
+still a per-scroll root write and still costs that, for the screen after the
+last port; it is the next thing to move onto a timeline if the Catalogue's first
+screen is ever reported as heavy.
 
 ## The page turn, and who owns a notch
 

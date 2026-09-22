@@ -82,11 +82,12 @@ import { open, settle } from '../lib/page.mjs';
  *     other. Both of those are invisible in a still of the crossing and obvious
  *     in a still of the rest, which is the wrong way round for a person looking.
  *   * AND IT NEVER REACHES THE GALLERY'S COPY. The roof is the word's own drawn
- *     width because that is wide enough to hide everything that crosses and
- *     narrow enough to miss the one block up there that stands BESIDE the word
- *     rather than under it. The margin is 33 to 69px across the band, so this is
- *     the assertion that fails when a Content edit makes the word narrower or the
- *     composition's gutter closes.
+ *     column, feathered a little past both of its edges, because that is wide
+ *     enough to hide everything that crosses and narrow enough to miss the one
+ *     block up there that stands BESIDE the word rather than under it. The
+ *     margin is 33 to 69px across the band and the feather spends 0.08 of the cap
+ *     of it, so this is the assertion that fails when a Content edit makes the
+ *     word narrower or the composition's gutter closes.
  *   * AND THE WORD LEAVES WITH THE SECTION IT HEADS. Past the last marked
  *     Section's port it travels at the document's own rate and is gone by the
  *     last resting place, because the Catalogue is not a Showcase and does not
@@ -1007,7 +1008,7 @@ export const check = {
             );
             continue;
           }
-          // THE ROOF REACHES THE WINDOW'S TOP EDGE AND IS THE WORD'S OWN
+          // THE ROOF REACHES THE WINDOW'S TOP EDGE AND COVERS THE WORD'S OWN
           // COLUMN. Both are relationships between two readings rather than
           // numbers: the roof's top is written by undoing the hold, so a roof
           // that does not reach the edge is the two spending different lengths
@@ -1021,12 +1022,11 @@ export const check = {
                 `visible in the air above the word.`,
             );
           }
-          if (
-            Math.abs(seen.roof.x - seen.word.x) > STILL ||
-            Math.abs(seen.roof.w - seen.word.w) > STILL
-          ) {
+          // Covers rather than equals: the box hangs a feather past both of the
+          // word's edges, so the letters' own edges are never the mask's.
+          if (seen.roof.x > seen.word.x + STILL || seen.roof.right < seen.word.right - STILL) {
             failures.push(
-              `the roof is not the word's own column ${(i + 1) * 20 - 15}% through the turn: ` +
+              `the roof does not cover the word's own column ${(i + 1) * 20 - 15}% through the turn: ` +
                 `${seen.roof.x.toFixed(1)}+${seen.roof.w.toFixed(1)} against a word at ` +
                 `${seen.word.x.toFixed(1)}+${seen.word.w.toFixed(1)}.`,
             );

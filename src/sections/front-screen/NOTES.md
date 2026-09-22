@@ -353,13 +353,14 @@ Tokens and are written by the Timeline:
   the slot's ceiling so the strip is dressed before any script runs, and the
   Timeline corrects it.
 
-**The two `@property` registrations are the one global thing this Section
-writes**, and that is a decision rather than an oversight. A custom property has
+**The four `@property` registrations are the one global thing this Section
+writes** — the strip's two fades and the roof's two distances — and that is a
+decision rather than an oversight. A custom property has
 to be registered to be transitioned, and registration is document-scoped by
 specification — Astro scopes selectors and an at-rule has none, so scoping does
 not reach it and `check-source.mjs` does not catch it either. The Kernel is where
 a Section's global would normally go, and `ground.css`'s `@property --turn` is the
-precedent; these two are here instead because they are this Section's numbers and
+precedent; these are here instead because they are this Section's numbers and
 the Kernel owning a Section's Tokens is the worse trade. What makes it safe is the
 naming rule the Editor's file is already held to: `--front-screen-…`, so nothing
 registered here can collide with, or inherit into, anything that is not this
@@ -570,13 +571,17 @@ one line that makes a resting place a relationship rather than a list of names.
 **The roof is the other half of the device**, and it is furniture rather than
 composition: the word's own column, painting `--ground`, from the window's top
 edge to the word's baseline, dissolving over `--front-screen-cut-roof-fade` of
-the cap. Three things about it are in `src/kernel/NOTES.md` because they are
-measurements rather than rules — why it cannot be up at rest, why its width is
-the word's, and what it costs the Plinth for three frames. Two are here because
-they are this sheet's: it needs `z-index: -1` to stand BEHIND the word, since a
-positioned child paints after a non-positioned one; and its top edge is written
-by undoing the hold with the same name, so a change to where the word rests takes
-the roof with it.
+the cap and back into the S over `--front-screen-cut-roof-feather`. Three things
+about it are in `src/kernel/NOTES.md` because they are measurements rather than
+rules — why it cannot be up at rest, why its width is the word's, and why it
+arrives by growing rather than by switching. Three are here because they are this
+sheet's: it needs `z-index: -1` to stand BEHIND the word, since a positioned child
+paints after a non-positioned one; its box's top edge is written by undoing the
+hold with the same name, so a change to where the word rests takes the roof with
+it; and its two moving edges are a SCROLL TIMELINE on the roof and not a length
+the Kernel writes per frame, because a root custom property restyles the whole
+document every frame it changes — measured at 19ms of recalc a step across the
+crossing, against 0.6 without it.
 
 ## The two links go through the page turn
 

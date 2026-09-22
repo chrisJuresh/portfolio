@@ -91,6 +91,9 @@ export function mountHold(): void {
   const root = document.documentElement;
   /** The travel already written, so a resting page writes nothing per scroll. */
   let wrote: number | null = null;
+  /** The crossing's two ends already written, so a scroll writes neither. */
+  let wroteFrom: number | null = null;
+  let wroteTo: number | null = null;
 
   const draw = (): void => {
     const held = run();
@@ -98,7 +101,11 @@ export function mountHold(): void {
       root.removeAttribute('data-landing-held');
       root.removeAttribute('data-landing-crossing');
       root.style.removeProperty('--landing-past');
+      root.style.removeProperty('--landing-from');
+      root.style.removeProperty('--landing-to');
       wrote = null;
+      wroteFrom = null;
+      wroteTo = null;
       return;
     }
 
@@ -129,11 +136,10 @@ export function mountHold(): void {
      * running from above the window's top edge, so a permanent roof puts a gap
      * in one and starts the other half way down the word.
      *
-     * Strictly between, so landing on either port takes it down. The 800ms ease
-     * is what the reader sees it during, and there is nothing to see: what
-     * changes at the moment it goes up is a subheading's cap tops that are about
-     * to be behind the word anyway, and what changes when it comes down is a
-     * hairline at eight per cent of the page's ink.
+     * Strictly between, so landing on either port takes it down — and there is
+     * nothing to see at either switch, because the roof is shaped out of
+     * `--landing-from` and `--landing-to` below so that it covers nothing at
+     * either end of the run and grows from the baseline as the page moves.
      */
     root.toggleAttribute('data-landing-crossing', on && y > held.from + SLACK && y < held.to - SLACK);
 
@@ -152,6 +158,27 @@ export function mountHold(): void {
       wrote = travel;
       if (travel === null) root.style.removeProperty('--landing-past');
       else root.style.setProperty('--landing-past', `${travel}px`);
+    }
+
+    /**
+     * AND WHERE THE CROSSING RUNS FROM AND TO, as scroll positions — which is
+     * what lets the roof arrive without popping. Its top edge is a line in the
+     * DOCUMENT rather than on the screen, and its bottom lets go of the page at
+     * the last port's top edge; each is a distance into or out of this run, and
+     * the Front Screen reads it off a scroll timeline of its own.
+     *
+     * THE ENDS AND NOT THE TRAVEL, AND THAT IS A MEASUREMENT. A custom property
+     * written on the root restyles the whole document: one write a frame cost
+     * the crossing 19ms of style recalc against 0.6ms without it, at 1536x760 in
+     * headless Chromium. The two ends only move when the layout does, so they
+     * are written once and the roof's own animation does the per-frame work on
+     * the one element that reads it.
+     */
+    if (held.from !== wroteFrom || held.to !== wroteTo) {
+      wroteFrom = held.from;
+      wroteTo = held.to;
+      root.style.setProperty('--landing-from', `${held.from}px`);
+      root.style.setProperty('--landing-to', `${held.to}px`);
     }
   };
 

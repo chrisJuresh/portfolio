@@ -666,8 +666,9 @@ const EAGER = 2;
      interpolates in no useful way — the ramp below simply would not run, and
      nothing would say so.
 
-     THESE TWO REGISTRATIONS ARE DOCUMENT-GLOBAL and are the one global thing this
-     Section writes. Astro scopes selectors and `@property` has none, so scoping
+     THESE REGISTRATIONS ARE DOCUMENT-GLOBAL — these two and the roof's two
+     below — and are the one global thing this Section writes. Astro scopes
+     selectors and `@property` has none, so scoping
      does not reach it and `check-source.mjs` does not catch it. NOTES.md records
      why it is here rather than in the Kernel and what makes it safe. */
   @property --front-screen-fade-l {
@@ -680,6 +681,33 @@ const EAGER = 2;
     syntax: '<number>';
     inherits: false;
     initial-value: 0;
+  }
+
+  /* The roof's two distances into and out of the held crossing, registered so a
+     scroll timeline can interpolate them on the roof alone. Their initial value
+     is further than any page, which is the whole column covered — the roof as
+     it was — for a browser that never runs the animation. */
+  @property --front-screen-roof-since {
+    syntax: '<length>';
+    inherits: false;
+    initial-value: 100000px;
+  }
+
+  @property --front-screen-roof-until {
+    syntax: '<length>';
+    inherits: false;
+    initial-value: 100000px;
+  }
+
+  @keyframes front-screen-roof-travel {
+    from {
+      --front-screen-roof-since: 0px;
+      --front-screen-roof-until: calc(var(--landing-to) - var(--landing-from));
+    }
+    to {
+      --front-screen-roof-since: calc(var(--landing-to) - var(--landing-from));
+      --front-screen-roof-until: 0px;
+    }
   }
 
   /* Two mask layers, one per end, intersected. Each is a full-width gradient
@@ -1469,22 +1497,139 @@ const EAGER = 2;
        pictures are (src/kernel/ground.css). What it buys is paint order the
        right way round: a POSITIONED child paints after a non-positioned one, so
        without it the roof would paint over the word it is meant to stand
-       behind. */
+       behind.
+
+       ---- AND NO EDGE OF IT IS EVER A LINE ON THE SCREEN (the four masks) ----
+       It used to be a box that switched on at the first pixel of the turn, and
+       each of its four edges showed. The top blacked out the photographs'
+       foot above the word in one frame; the right cut a straight vertical through
+       them, the marble and the Eater Map's hairlines; the bottom was a linear
+       ramp, so a line of the subheading sat half-dissolved under the letters.
+       The four layers below are intersected, and each answers one edge.
+
+       THE TOP EDGE IS A LINE IN THE DOCUMENT. What the roof exists to hide is
+       whatever crosses the baseline going up, and at the first port nothing has
+       yet, so the roof starts with no height and its top edge rises with the
+       page: it stands just above the subheading's cap tops, in the ground
+       between them and the photographs, and travels up with them. The
+       photographs above the word are never covered and leave off the top as they
+       would with no roof at all.
+
+       THE BOTTOM EDGE AT THE FAR END IS THE SAME SENTENCE BACKWARDS. The Eater
+       Map is ALREADY behind the word at its own rest, its hairline and grid
+       vertical included, so what the roof hides on the way there is only what
+       rests above that window's top edge — the Gallery's foot and the marble —
+       and it lets go of the document exactly at that line, which is as far
+       below the window's top as the page has left to go. So the roof is gone by
+       the time the page lands rather than going.
+
+       BOTH DISTANCES ARE THE ROOF'S OWN, off a scroll timeline, and that is a
+       measurement rather than a style. The Kernel publishes only where the run
+       starts and ends (hold.ts), because a length written on the root every
+       frame restyles the whole document — 19ms a frame against 0.6 — and a
+       registered, non-inheriting property animated here restyles this box and
+       nothing else. Without scroll timelines the two keep their initial values,
+       which is the roof as it was: the whole column, switched.
+
+       THE FADE UNDER THE BASELINE STARTS ABOVE IT AND COMES DOWN. At the first
+       port the subheading's cap tops stand within 3px of the baseline at every
+       window, so the fade cannot already be in place under it or the first frame
+       of the turn dims them. It starts one fade-length up, inside the letters,
+       and slides down to the baseline over the first fade-length of travel,
+       which is also the moment the first line goes into it — so that line
+       dissolves as it rises rather than being clipped where it stood. Every
+       ramp here is a smoothstep in five steps and not a straight one: a linear
+       fade has a visible start and end, and those were the "bands" read off it.
+
+       THE SIDES ARE FEATHERED, AND BY MEASURED AMOUNTS. On the right it
+       dissolves --front-screen-cut-roof-feather back into the word, and hangs
+       0.08 of the cap past the S so the letter's own anti-aliasing is not the
+       mask's edge: the Gallery's frame begins 0.127 of the cap past the word at
+       1536x760 and its copy 0.536 at every window, so neither is reached. On the
+       left it hangs 0.12 of the cap into the Rail's column: the Rail paints under
+       this box (its z is 1, this is the type's), and its words stop at least 0.18
+       of the cap short of the word's left edge, so the feather lands on the Rail's
+       ground and never on its letters. It cannot feather INTO the word on that
+       side — every block that crosses under it starts on the word's own left
+       edge. */
     :root[data-landing-crossing] .front-screen__cut-roof {
+      --front-screen-roof-fade: calc(var(--front-screen-cut-roof-fade) * var(--landing-cap));
+      --front-screen-roof-lift: max(
+        0px,
+        var(--front-screen-roof-fade) - var(--front-screen-roof-since)
+      );
+      --front-screen-roof-crest: calc(
+        100% - var(--front-screen-roof-fade) - 0.04 * var(--landing-cap) -
+          var(--front-screen-roof-since)
+      );
+      --front-screen-roof-left: calc(0.12 * var(--landing-cap));
+      --front-screen-roof-right: calc(0.08 * var(--landing-cap));
+      --front-screen-roof-feather: calc(
+        var(--front-screen-cut-roof-feather) * var(--landing-cap) +
+          var(--front-screen-roof-right)
+      );
       display: block;
       position: absolute;
       z-index: -1;
-      left: 0;
-      right: 0;
+      left: calc(-1 * var(--front-screen-roof-left));
+      right: calc(-1 * var(--front-screen-roof-right));
       top: calc(-1 * var(--front-screen-cut-hold-at));
-      bottom: calc(-1 * var(--front-screen-cut-roof-fade) * var(--landing-cap));
+      bottom: calc(-1 * var(--front-screen-roof-fade));
       background: var(--ground);
-      mask-image: linear-gradient(
-        to bottom,
-        #000 calc(100% - var(--front-screen-cut-roof-fade) * var(--landing-cap)),
-        transparent
-      );
+      mask-image:
+        /* the fade under the baseline, lifted by --front-screen-roof-lift */
+        linear-gradient(
+          to bottom,
+          #000
+            calc(100% - var(--front-screen-roof-lift) - var(--front-screen-roof-fade)),
+          rgb(0 0 0 / 0.896)
+            calc(100% - var(--front-screen-roof-lift) - 0.8 * var(--front-screen-roof-fade)),
+          rgb(0 0 0 / 0.648)
+            calc(100% - var(--front-screen-roof-lift) - 0.6 * var(--front-screen-roof-fade)),
+          rgb(0 0 0 / 0.352)
+            calc(100% - var(--front-screen-roof-lift) - 0.4 * var(--front-screen-roof-fade)),
+          rgb(0 0 0 / 0.104)
+            calc(100% - var(--front-screen-roof-lift) - 0.2 * var(--front-screen-roof-fade)),
+          transparent calc(100% - var(--front-screen-roof-lift))
+        ),
+        /* the top edge, riding the document up from the first port */
+        linear-gradient(
+          to bottom,
+          transparent var(--front-screen-roof-crest),
+          #000 var(--front-screen-roof-crest)
+        ),
+        /* and letting go of it at the last port's top edge */
+        linear-gradient(
+          to bottom,
+          #000 var(--front-screen-roof-until),
+          transparent var(--front-screen-roof-until)
+        ),
+        /* the two sides */
+        linear-gradient(
+          to right,
+          transparent 0,
+          rgb(0 0 0 / 0.104) calc(0.2 * var(--front-screen-roof-left)),
+          rgb(0 0 0 / 0.352) calc(0.4 * var(--front-screen-roof-left)),
+          rgb(0 0 0 / 0.648) calc(0.6 * var(--front-screen-roof-left)),
+          rgb(0 0 0 / 0.896) calc(0.8 * var(--front-screen-roof-left)),
+          #000 var(--front-screen-roof-left),
+          #000 calc(100% - var(--front-screen-roof-feather)),
+          rgb(0 0 0 / 0.896) calc(100% - 0.8 * var(--front-screen-roof-feather)),
+          rgb(0 0 0 / 0.648) calc(100% - 0.6 * var(--front-screen-roof-feather)),
+          rgb(0 0 0 / 0.352) calc(100% - 0.4 * var(--front-screen-roof-feather)),
+          rgb(0 0 0 / 0.104) calc(100% - 0.2 * var(--front-screen-roof-feather)),
+          transparent 100%
+        );
+      mask-composite: intersect;
       pointer-events: none;
+    }
+
+    @supports (animation-timeline: scroll()) {
+      :root[data-landing-crossing] .front-screen__cut-roof {
+        animation: front-screen-roof-travel linear both;
+        animation-timeline: scroll(root);
+        animation-range: var(--landing-from) var(--landing-to);
+      }
     }
   }
 

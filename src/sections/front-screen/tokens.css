@@ -201,6 +201,15 @@
      would want more, and it is a drag rather than an edit. */
   --front-screen-cut-roof-fade: 0.35;
 
+  /* HOW FAR THE ROOF'S RIGHT SIDE DISSOLVES BACK INTO THE WORD, as a share of
+     the landing's cap. Without it the roof ends on a straight vertical at the
+     S, and that edge is what the reader sees cut through the photographs and the
+     marble going past. TASTE, bounded by a measurement: every block that crosses
+     under the word stops at least 0.64 of the cap short of its right edge at all
+     of #172's windows, so up to about 0.6 the feather never uncovers anything it
+     is there to hide. */
+  --front-screen-cut-roof-feather: 0.5;
+
   /* How much of its own transition each letter of the morph waits out before
      starting, as a fraction of the crossing. At 0 the eight change together and
      the word switches; at 0.05 each has 0.65 of the crossing to travel in, which
