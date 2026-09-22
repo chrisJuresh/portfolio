@@ -51,8 +51,9 @@ import { portOf, ports } from './page-turn';
  * position is a screen and a half above the window by then, so reverting is the
  * word VANISHING at the moment the reader asks for the next Section rather than
  * leaving with the one they are reading. `--landing-past` is that travel, and it
- * is the one number here that has to be written per scroll — and only for as
- * long as the word is held, which is the stretch the travel is read across.
+ * is the one number here that is ever written per scroll — only for a browser
+ * without scroll timelines, which cannot animate it on the word, and only for
+ * as long as the word is held, which is the stretch the travel is read across.
  *
  * NOTHING ON THE PAGE DEPENDS ON THIS FILE, in the sense `cut-morph.ts` means
  * it: a browser that never runs it gets the page exactly as it was before this
@@ -89,6 +90,11 @@ function run(): { from: number; to: number } | null {
 
 export function mountHold(): void {
   const root = document.documentElement;
+  /**
+   * Whether the Front Screen animates the travel itself — the same query its
+   * `@supports` block asks, so the two cannot disagree about who moves the word.
+   */
+  const timelines = CSS.supports('animation-timeline: scroll()');
   /** The travel already written, so a resting page writes nothing per scroll. */
   let wrote: number | null = null;
   /** The crossing's two ends already written, so a scroll writes neither. */
@@ -144,16 +150,20 @@ export function mountHold(): void {
     root.toggleAttribute('data-landing-crossing', on && y > held.from + SLACK && y < held.to - SLACK);
 
     /**
-     * AND ONLY WHILE IT IS HELD. The travel is read by the held word and by
-     * nothing else, and it is a custom property on the ROOT — so every write
-     * restyles the whole document, because every element inherits it. Past the
-     * release that was the Catalogue's entire scroll paying a full-page style
-     * recalculation per frame for a number no rule was reading: 1348 elements a
-     * scroll event at 1440x900, and most of what "scrolling the Catalogue is
-     * clunky" was. Let go, the travel is taken off once and nothing is written
-     * again until the word is held.
+     * AND ONLY WHERE THERE IS NO SCROLL TIMELINE, AND ONLY WHILE IT IS HELD.
+     * The travel is read by the held word and by nothing else, and it is a
+     * custom property on the ROOT — so every write restyles the whole document,
+     * because every element inherits it. Past the release that was the
+     * Catalogue's entire scroll paying a full-page style recalculation per frame
+     * for a number no rule was reading: 1348 elements a scroll event at
+     * 1440x900. Across the screen after the last port it was the same bill for
+     * a number one box reads, and a browser with scroll timelines no longer pays
+     * it: the Front Screen animates the travel on the word itself off
+     * `--landing-to`, and this writes nothing. Where it does write, let go, the
+     * travel is taken off once and nothing is written again until the word is
+     * held.
      */
-    const travel = on ? past : null;
+    const travel = on && !timelines ? past : null;
     if (travel !== wrote) {
       wrote = travel;
       if (travel === null) root.style.removeProperty('--landing-past');
@@ -165,7 +175,9 @@ export function mountHold(): void {
      * what lets the roof arrive without popping. Its top edge is a line in the
      * DOCUMENT rather than on the screen, and its bottom lets go of the page at
      * the last port's top edge; each is a distance into or out of this run, and
-     * the Front Screen reads it off a scroll timeline of its own.
+     * the Front Screen reads it off a scroll timeline of its own. `--landing-to`
+     * is also where the word's release starts, which is the same timeline on
+     * the word.
      *
      * THE ENDS AND NOT THE TRAVEL, AND THAT IS A MEASUREMENT. A custom property
      * written on the root restyles the whole document: one write a frame cost

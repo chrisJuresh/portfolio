@@ -1179,34 +1179,76 @@ export const check = {
       // stylesheet is what makes a root write expensive, and a Check can count the
       // writes exactly. Deep enough in that the word has been let go — a screen
       // past the last port — and then swept a screen further.
-      const sweepFrom = await stand(lastPort + 600);
-      await page.evaluate(() => {
-        const writes = [];
-        const watch = new MutationObserver((records) => {
-          for (const record of records) writes.push(record.oldValue ?? '');
+      //
+      // AND ACROSS THE SCREEN THE WORD LEAVES ON, which is the same bill for a
+      // number one box does read: the hold wrote the travel there on every scroll
+      // event too, 13ms of style recalculation a step at 1536x760 against 0.3ms
+      // once the Front Screen animated it on the word off a scroll timeline. That
+      // stretch is between two ports, so the snapping comes off for it or every
+      // position in between is pulled straight back onto the one it left.
+      // Headless Chromium has scroll timelines, so this asserts that path; the
+      // per-scroll write hold.ts keeps for a browser without them is not reached
+      // from here.
+      /** Sweep `steps` of 60px from `start`, counting the root's inline style writes. */
+      const rootWritesAcross = async (start, steps) => {
+        await page.evaluate(() => window.portfolio?.snapping?.(false));
+        const from = await stand(start);
+        await page.evaluate(() => {
+          const writes = [];
+          const watch = new MutationObserver((records) => {
+            for (const record of records) writes.push(record.oldValue ?? '');
+          });
+          watch.observe(document.documentElement, {
+            attributes: true,
+            attributeFilter: ['style'],
+            attributeOldValue: true,
+          });
+          Object.assign(window, { __rootWrites: { writes, watch } });
         });
-        watch.observe(document.documentElement, {
-          attributes: true,
-          attributeFilter: ['style'],
-          attributeOldValue: true,
+        for (let step = 1; step <= steps; step += 1) await stand(start + step * 60);
+        const found = await page.evaluate(() => {
+          const { writes, watch } = /** @type {any} */ (window).__rootWrites;
+          watch.disconnect();
+          window.portfolio?.snapping?.(true);
+          return { count: writes.length, now: document.documentElement.getAttribute('style') ?? '' };
         });
-        Object.assign(window, { __rootWrites: { writes, watch } });
-      });
-      for (let step = 1; step <= 12; step += 1) await stand(lastPort + 600 + step * 60);
-      const rootWrites = await page.evaluate(() => {
-        const { writes, watch } = /** @type {any} */ (window).__rootWrites;
-        watch.disconnect();
-        return { count: writes.length, now: document.documentElement.getAttribute('style') ?? '' };
-      });
-      readings.push(`root style writes across ${sweepFrom}..${sweepFrom + 720}px: ${rootWrites.count}`);
-      if (rootWrites.count > 0) {
+        return { ...found, from, to: from + steps * 60 };
+      };
+
+      const catalogue = await rootWritesAcross(lastPort + 600, 12);
+      readings.push(`root style writes across ${catalogue.from}..${catalogue.to}px: ${catalogue.count}`);
+      if (catalogue.count > 0) {
         failures.push(
-          `scrolling from ${sweepFrom}px to ${sweepFrom + 720}px, past the last port, wrote the root's ` +
-            `inline style ${rootWrites.count} time(s) — it reads "${rootWrites.now}" now. Every element ` +
+          `scrolling from ${catalogue.from}px to ${catalogue.to}px, past the last port, wrote the root's ` +
+            `inline style ${catalogue.count} time(s) — it reads "${catalogue.now}" now. Every element ` +
             'inherits a custom property on the root, so each write restyles the whole document, and ' +
             'past the release nothing is read from one: that was the Catalogue restyling 1348 ' +
             'elements a notch. src/kernel/hold.ts writes the travel only while the word is held.',
         );
+      }
+
+      const releasedFrom = await page.evaluate(() => {
+        const words = [...document.querySelectorAll('[data-section][data-landing-word]')];
+        const last = words[words.length - 1];
+        if (!last) return null;
+        return (
+          last.getBoundingClientRect().top +
+          window.scrollY -
+          (Number.parseFloat(getComputedStyle(last).scrollMarginTop) || 0)
+        );
+      });
+      if (releasedFrom !== null) {
+        const release = await rootWritesAcross(Math.round(releasedFrom) + 10, 12);
+        readings.push(`root style writes across the release, ${release.from}..${release.to}px: ${release.count}`);
+        if (release.count > 0) {
+          failures.push(
+            `scrolling from ${release.from}px to ${release.to}px, the screen PROJECTS leaves on, wrote ` +
+              `the root's inline style ${release.count} time(s) — it reads "${release.now}" now. The ` +
+              'travel is the Front Screen’s own `--front-screen-cut-past`, animated on the word off ' +
+              '`scroll(root)`; written on the root instead it restyles the whole document a step. ' +
+              'src/kernel/hold.ts writes it only where there are no scroll timelines.',
+          );
+        }
       }
 
       // BELOW THE BAND IS THE SAME RULE AND THE COMMONER WINDOW: one port, no

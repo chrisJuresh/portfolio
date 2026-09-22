@@ -337,10 +337,14 @@ document-level wheel listeners are re-registered passive past the last port and
 below the band, because a non-passive one stops Chromium scrolling until the main
 thread has run and that cost this Section 17ms a notch — half the reader's frames
 — for a decision already made (#218). **And nothing is written on the root while
-the Catalogue is read**: `hold.ts` writes `--landing-past` only while the word is held,
-because a custom property on the root is inherited by every element, and writing
-it on every scroll restyled all 1348 elements a notch for a number no rule was
-reading down there. `src/kernel/NOTES.md` has the measurement,
+the Catalogue is read, nor on the screen PROJECTS leaves on**: a custom property
+on the root is inherited by every element, so writing one per scroll restyles the
+whole document a notch. The word's travel is animated on the word itself off a
+scroll timeline, and `hold.ts` writes `--landing-past` only where there are no
+scroll timelines, and then only while the word is held. **A scroll-driven
+animation is written in longhands**, because the minifier folds `animation` and
+`animation-timeline` into a shorthand Chromium drops, silently.
+`src/kernel/NOTES.md` has the measurement,
 the three things about it that are easy to get wrong, and why the `turn` Check
 asserts the listeners rather than a time.
 **Its Stills are PLACEHOLDERS until a picture is named**: `still.file` in its

@@ -710,6 +710,28 @@ const EAGER = 2;
     }
   }
 
+  /* The held word's travel past the last port, registered for the same reason
+     and on the word alone: a length on this one box restyles this one box, where
+     the Kernel's `--landing-past` on the root restyled the whole document. Its
+     initial value is no travel, which is the word held where it rests. */
+  @property --front-screen-cut-past {
+    syntax: '<length>';
+    inherits: false;
+    initial-value: 0px;
+  }
+
+  /* One screen of scroll is one screen of travel, so the word goes up at exactly
+     the document's rate — the range that spends this is the same screen, and the
+     two cancel whatever `100vh` resolves to. */
+  @keyframes front-screen-cut-release {
+    from {
+      --front-screen-cut-past: 0px;
+    }
+    to {
+      --front-screen-cut-past: 100vh;
+    }
+  }
+
   /* Two mask layers, one per end, intersected. Each is a full-width gradient
      whose ramp sits in the last `-fade-w` before `-fade-reach`, so the flat
      regions of the two overlap harmlessly in the middle and only the ends do any
@@ -1265,17 +1287,15 @@ const EAGER = 2;
          the live page at #172's four windows and exact to within a
          hundredth of a pixel at each of them.
 
-         --landing-past IS THE RELEASE, and it is the only scrolled number in
-         here. It is 0 for the whole of the hold and grows once the reader turns
-         off the last Section that draws the word, so the word goes up at exactly
-         the rate the document does and leaves with the Section it is the head
-         of. src/kernel/hold.ts says why letting the box simply revert there is
-         the word vanishing rather than leaving.
-
-         The fallback keeps this a real length for a browser that never runs the
-         Kernel's client half: unwritten, `var()` would make the whole
-         declaration invalid at computed-value time and the box would fall back
-         to a `top` of `auto` half way up the first screen.
+         THE RELEASE IS NOT IN HERE, and that is a measurement. Past the last
+         Section that draws the word it goes up at exactly the rate the document
+         does, so it leaves with the Section it is the head of (src/kernel/
+         hold.ts says why reverting there is the word vanishing instead). That
+         travel is scrolled, and this name is declared on the SECTION, where an
+         unregistered property resolves its `var()`s once and hands the result
+         down — so a scrolled number in here has to be written on the root and
+         restyles the whole document a frame, which is what it was. The held
+         rule below subtracts it on the word alone.
 
          --landing-cap AND NOT --front-screen-cut-slab, WHICH ARE THE SAME
          LENGTH AND ARE NOT INTERCHANGEABLE HERE. Inside the cut container the
@@ -1298,8 +1318,7 @@ const EAGER = 2;
          of this trap for --page-across; the fix here is simply not to route a
          container unit through a name a parent reads. */
       --front-screen-cut-hold-at: calc(
-        var(--landing-top) + var(--front-screen-cut-show) * var(--landing-cap) -
-          var(--landing-past, 0px)
+        var(--landing-top) + var(--front-screen-cut-show) * var(--landing-cap)
       );
       --front-screen-cut-clip: calc(
         var(--front-screen-cut-show) * var(--front-screen-cut-cap-share) *
@@ -1437,8 +1456,17 @@ const EAGER = 2;
        the base rule, and the Sections it is now drawn over are its siblings in
        one stack rather than boxes above it. */
     :root[data-landing-held] .front-screen__cut {
+      /* THE RELEASE, on this box and nothing else: 0 for the whole of the hold,
+         then one pixel up for every pixel scrolled past the last port. Scroll
+         timelines drive it below; this declaration is what a browser without
+         them reads, off the one per-scroll root write hold.ts keeps for that
+         browser alone. The fallback keeps it a real length for a page that
+         never runs the Kernel's client half, where an unwritten `var()` would
+         make `top` invalid at computed-value time and drop the box half way up
+         the first screen. */
+      --front-screen-cut-past: var(--landing-past, 0px);
       position: fixed;
-      top: var(--front-screen-cut-hold-at);
+      top: calc(var(--front-screen-cut-hold-at) - var(--front-screen-cut-past));
     }
 
     /* ---- AND THE ROOF, WHICH IS WHAT THE DOCUMENT GOES BEHIND -------------
@@ -1624,11 +1652,29 @@ const EAGER = 2;
       pointer-events: none;
     }
 
+    /* LONGHANDS, AND THAT IS NOT STYLE. Written as `animation:` plus
+       `animation-timeline:`, the minifier folds the pair into one shorthand that
+       Chromium drops whole, and both boxes sit on their initial values — which
+       are the fallback, so nothing says so. src/kernel/NOTES.md. */
     @supports (animation-timeline: scroll()) {
       :root[data-landing-crossing] .front-screen__cut-roof {
-        animation: front-screen-roof-travel linear both;
+        animation-name: front-screen-roof-travel;
+        animation-timing-function: linear;
+        animation-fill-mode: both;
         animation-timeline: scroll(root);
         animation-range: var(--landing-from) var(--landing-to);
+      }
+
+      /* From the last port, over the screen the word is held for past it —
+         hold.ts lets go at exactly that screen. Before it the fill holds the
+         travel at 0, which is the whole of the hold; the animation outranks the
+         fallback declaration above for as long as it applies. */
+      :root[data-landing-held] .front-screen__cut {
+        animation-name: front-screen-cut-release;
+        animation-timing-function: linear;
+        animation-fill-mode: both;
+        animation-timeline: scroll(root);
+        animation-range: var(--landing-to) calc(var(--landing-to) + 100vh);
       }
     }
   }

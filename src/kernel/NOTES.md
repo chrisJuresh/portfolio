@@ -548,8 +548,11 @@ of Sections in here.
 
 At the last marked Section's own resting place, and past that the word goes up at
 exactly the rate the document does — so it leaves with the Section it is the head
-of and is off the screen by the turn onto the Catalogue. `--landing-past` is that
-travel and is the one number written per scroll.
+of and is off the screen by the turn onto the Catalogue. That travel is the Front
+Screen's registered `--front-screen-cut-past`, animated on the word off
+`scroll(root)` from `--landing-to` across one screen. `--landing-past` on the root
+is the same travel for a browser without scroll timelines, and is the one number
+ever written per scroll.
 
 **Letting the box simply revert there is the failure #192 deleted for the Rail.**
 The held word stands at `--landing-top` and its own document position is a screen
@@ -639,10 +642,28 @@ the root restyles the whole document, and one write a frame took the crossing
 from **0.6ms to 19ms of style recalc a step** at 1536x760 in headless Chromium
 (1,441 elements). `hold.ts` publishes `--landing-from` and `--landing-to` —
 which change only with the layout — and the Front Screen animates two registered,
-non-inheriting properties on the one box that reads them. `--landing-past` is
-still a per-scroll root write and still costs that, for the screen after the
-last port; it is the next thing to move onto a timeline if the Catalogue's first
-screen is ever reported as heavy.
+non-inheriting properties on the one box that reads them.
+
+**The release went the same way.** `--landing-past` was the same root write for
+the screen after the last port: **13ms of style recalc a step there against 0.3ms**
+once the Front Screen animated `--front-screen-cut-past` on the word itself, off
+`scroll(root)` from `--landing-to` across one screen. That was measured at 1536x760
+in headless Chromium, over 60 steps of `to + 10` to `to + 700`, with before and
+after builds interleaved, and the root's inline style went from 61 writes to none.
+`hold.ts` still writes `--landing-past` where `CSS.supports('animation-timeline:
+scroll()')` is false, and the word's held rule reads it as the fallback
+declaration that the animation outranks. The `turn` Check counts the root's
+writes across that screen and requires none; the old code wrote twelve.
+
+**Write a scroll-driven animation in LONGHANDS, never `animation:` followed by
+`animation-timeline:`.** The build's CSS minifier folds the pair into one
+shorthand, `animation: linear both <name> scroll(root)`, and Chromium drops that
+whole declaration. What survives is `animation-range` alone, so the element
+computes `animation-name: none` and sits on its registered initial values. Those
+values are chosen to be the old behaviour, so nothing on the page says it
+happened. The roof shipped that way in its first commit: it grew in `astro dev`
+and was switched in every build. Read `getAnimations()` on the served `dist/`,
+never on the dev server, to know a timeline is running.
 
 ## The page turn, and who owns a notch
 
