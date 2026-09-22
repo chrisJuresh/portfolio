@@ -59,6 +59,8 @@ const rolls: Roll[] = [];
 let owner: HTMLElement | 'page' | null = null;
 let lastWheel = -Infinity;
 let gesture = 0;
+/** Whether the arbitration is currently listening passively — see standAside(). */
+let passive = false;
 
 /** The axis a notch is on: whichever of the two deltas is larger. */
 export function wheelDelta(event: WheelEvent): number {
@@ -107,6 +109,34 @@ function arbitrate(event: WheelEvent): void {
       ? rolls.find((roll) => roll.element.contains(target) && !roll.spent(delta))
       : undefined;
   owner = claimed ? claimed.element : 'page';
+}
+
+/**
+ * Listen passively, or stand in front of the compositor again.
+ *
+ * THE LISTENER BELOW IS NOT PASSIVE, AND THAT IS PAID FOR ON EVERY NOTCH THE PAGE
+ * EVER SEES — including the ones there is nothing to arbitrate about. Chromium may
+ * not scroll until a non-passive wheel listener has run, so where no roll can take
+ * a gesture and no turn can take one either, this is a frame of the reader's own
+ * scroll spent settling an ownership nobody is going to ask about.
+ *
+ * The hit-test argument the paragraph at the top of this file makes does not go
+ * away; it stops applying. What non-passive buys is a target taken where the
+ * pointer WAS rather than where the compositor has already scrolled it to, and
+ * that only matters while a roll is under the pointer. Past the last port the page
+ * turn hands the wheel back to the browser and the only roll on the page is three
+ * screens above — so `page-turn.ts` asks for this from there, where the region is
+ * known, and carries the measurement (#218).
+ *
+ * `removeEventListener` matches on the type, the callback and the CAPTURE flag and
+ * not on the passivity, so the pair below re-registers the one listener rather
+ * than adding a second.
+ */
+export function standAside(aside: boolean): void {
+  if (aside === passive) return;
+  passive = aside;
+  document.removeEventListener('wheel', arbitrate, { capture: true });
+  document.addEventListener('wheel', arbitrate, { capture: true, passive: aside });
 }
 
 export function mountWheel(): void {

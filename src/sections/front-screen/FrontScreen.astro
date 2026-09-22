@@ -195,8 +195,18 @@ const EAGER = 2;
 
   {/* The Cut Title. The word is a picture of Friz Quadrata rather than type, so
       the text beside it is what a screen reader announces and a crawler indexes —
-      the only text in here, and the reason the picture is allowed to be one. */}
+      the only text in here, and the reason the picture is allowed to be one.
+
+      THE ROOF IS FIRST, AND IT IS FURNITURE (#193). While the word is held at
+      the landing the document turns UNDERNEATH it, so the Section going past
+      would otherwise draw its subheading and its four points straight through
+      the letters. This is what they go behind: the word's own column, from the
+      window's top edge down to its baseline, dissolving across the J's
+      descender. Empty and decorative — `aria-hidden`, and it says nothing the
+      word does not — and it is up only while the page is between two resting
+      places, which is the stylesheet's business and not this element's. */}
   <div class="front-screen__cut">
+    <span class="front-screen__cut-roof" aria-hidden="true"></span>
     <a href={content.projects.href}>
       <svg
         class="front-screen__cut-word"
@@ -656,8 +666,9 @@ const EAGER = 2;
      interpolates in no useful way — the ramp below simply would not run, and
      nothing would say so.
 
-     THESE TWO REGISTRATIONS ARE DOCUMENT-GLOBAL and are the one global thing this
-     Section writes. Astro scopes selectors and `@property` has none, so scoping
+     THESE REGISTRATIONS ARE DOCUMENT-GLOBAL — these two and the roof's two
+     below — and are the one global thing this Section writes. Astro scopes
+     selectors and `@property` has none, so scoping
      does not reach it and `check-source.mjs` does not catch it. NOTES.md records
      why it is here rather than in the Kernel and what makes it safe. */
   @property --front-screen-fade-l {
@@ -670,6 +681,55 @@ const EAGER = 2;
     syntax: '<number>';
     inherits: false;
     initial-value: 0;
+  }
+
+  /* The roof's two distances into and out of the held crossing, registered so a
+     scroll timeline can interpolate them on the roof alone. Their initial value
+     is further than any page, which is the whole column covered — the roof as
+     it was — for a browser that never runs the animation. */
+  @property --front-screen-roof-since {
+    syntax: '<length>';
+    inherits: false;
+    initial-value: 100000px;
+  }
+
+  @property --front-screen-roof-until {
+    syntax: '<length>';
+    inherits: false;
+    initial-value: 100000px;
+  }
+
+  @keyframes front-screen-roof-travel {
+    from {
+      --front-screen-roof-since: 0px;
+      --front-screen-roof-until: calc(var(--landing-to) - var(--landing-from));
+    }
+    to {
+      --front-screen-roof-since: calc(var(--landing-to) - var(--landing-from));
+      --front-screen-roof-until: 0px;
+    }
+  }
+
+  /* The held word's travel past the last port, registered for the same reason
+     and on the word alone: a length on this one box restyles this one box, where
+     the Kernel's `--landing-past` on the root restyled the whole document. Its
+     initial value is no travel, which is the word held where it rests. */
+  @property --front-screen-cut-past {
+    syntax: '<length>';
+    inherits: false;
+    initial-value: 0px;
+  }
+
+  /* One screen of scroll is one screen of travel, so the word goes up at exactly
+     the document's rate — the range that spends this is the same screen, and the
+     two cancel whatever `100vh` resolves to. */
+  @keyframes front-screen-cut-release {
+    from {
+      --front-screen-cut-past: 0px;
+    }
+    to {
+      --front-screen-cut-past: 100vh;
+    }
   }
 
   /* Two mask layers, one per end, intersected. Each is a full-width gradient
@@ -1012,7 +1072,7 @@ const EAGER = 2;
     color: var(--ink);
     text-decoration: none;
     border-bottom: var(--front-screen-hairline) solid var(--front-screen-rule);
-    overflow-wrap: anywhere;
+    overflow-wrap: break-word;
     transition: border-color var(--front-screen-hover-fade) ease;
   }
 
@@ -1024,21 +1084,30 @@ const EAGER = 2;
   /* ---- the theme toggle, in the corner of the contact block --------------
      Baseline alignment and not box alignment: the switch's word sits on the same
      line as the last contact link, whatever either one's line height is. */
+  /* A WRAPPING ROW AND NOT A TWO-COLUMN GRID. The grid gave the switch its width
+     first and the links what was left, so at 360px the list was ~205px and the
+     email and LinkedIn addresses broke mid-word. Here the list keeps its longest
+     link whole, and on a window too narrow for both the switch drops to a row of
+     its own, still at the right edge and still the column's last line. */
   .front-screen__corner {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
-    align-items: end;
+    display: flex;
+    flex-wrap: wrap;
     align-items: last baseline;
     column-gap: var(--front-screen-gutter);
+    row-gap: var(--front-screen-space-3xs);
+  }
+
+  .front-screen__contact {
+    flex: 1 1 auto;
+    min-width: 0;
   }
 
   .front-screen__toggle {
-    justify-self: end;
     display: inline-flex;
     align-items: baseline;
     gap: var(--front-screen-toggle-gap);
     min-height: 1.5rem;
-    margin: 0;
+    margin: 0 0 0 auto;
     padding: 0.2rem 0;
     border: 0;
     background: transparent;
@@ -1135,6 +1204,16 @@ const EAGER = 2;
     top: calc(-1 * var(--front-screen-cut-overshoot) * var(--front-screen-cut-ink));
   }
 
+  /* THE ROOF IS THE LANDING BAND'S ALONE, and off by default rather than gated
+     into existence later. Outside the band there is no page turn for a word to
+     stand still across (src/kernel/hold.ts), so there is nothing for this to
+     hide and a box that painted the ground over the first screen's own column
+     would be the whole of what the reader saw. The band's block at the foot of
+     this sheet is the only place it is ever anything. */
+  .front-screen__cut-roof {
+    display: none;
+  }
+
   .front-screen__cut-text {
     position: absolute;
     width: 1px;
@@ -1192,6 +1271,55 @@ const EAGER = 2;
          --landing-cap is declared under this same band and no other, so there is
          no regime where this reads a property nothing published. */
       --front-screen-cut-fit: calc(var(--landing-cap) / var(--front-screen-cut-cap-share));
+
+      /* ---- WHERE THE WORD STANDS WHILE IT IS HELD (#193) ------------------
+         DERIVED, NOT MEASURED, which is the one thing about the hold worth
+         reading twice. The obvious build reads the box's own position at the
+         landing and writes it back as an offset, and the demo that proved this
+         device did exactly that — measured with `offsetTop` rather than a client
+         rect, because this Section spends its first 0.9s translated 8px down by
+         its own reveal and a rect carries that transform where an offset does
+         not. It is a better answer not to ask. The word's cap top comes to rest
+         on --landing-top, the drawing's cap top is --front-screen-cut-show of
+         its own cap slab below this box's top edge (the rule at the foot of this
+         block is where that lift is spent), and the sum is therefore where this
+         box's top edge has to be for the word not to move. Confirmed against
+         the live page at #172's four windows and exact to within a
+         hundredth of a pixel at each of them.
+
+         THE RELEASE IS NOT IN HERE, and that is a measurement. Past the last
+         Section that draws the word it goes up at exactly the rate the document
+         does, so it leaves with the Section it is the head of (src/kernel/
+         hold.ts says why reverting there is the word vanishing instead). That
+         travel is scrolled, and this name is declared on the SECTION, where an
+         unregistered property resolves its `var()`s once and hands the result
+         down — so a scrolled number in here has to be written on the root and
+         restyles the whole document a frame, which is what it was. The held
+         rule below subtracts it on the word alone.
+
+         --landing-cap AND NOT --front-screen-cut-slab, WHICH ARE THE SAME
+         LENGTH AND ARE NOT INTERCHANGEABLE HERE. Inside the cut container the
+         slab IS the landing's cap: the drawing is fitted so that its cap lands
+         on --landing-cap, so `cap-share x --front-screen-cut-fit` and
+         --landing-cap are one number, and the two rules at the foot of this
+         block spend the slab because they are the container's CHILDREN.
+
+         This declaration is not, and that is the whole difference.
+         --front-screen-cut-slab carries --front-screen-cut-ink, which is
+         `100cqw` in this band, and A CUSTOM PROPERTY IS A TOKEN SEQUENCE THAT
+         RESOLVES WHERE IT IS USED — so the same name is two different lengths
+         depending on which element reads it. Read by a child of
+         .front-screen__cut it is that container's width, which is the drawing;
+         read here, on the Section, the nearest container is `html` and it is the
+         whole page across. Written that way this held the word 100px below its
+         own resting place at 1536x760 and put the roof's top edge 100px down the
+         screen, in the same commit, by two different amounts of the same
+         mistake. src/kernel/ground.css carries the registered-property version
+         of this trap for --page-across; the fix here is simply not to route a
+         container unit through a name a parent reads. */
+      --front-screen-cut-hold-at: calc(
+        var(--landing-top) + var(--front-screen-cut-show) * var(--landing-cap)
+      );
       --front-screen-cut-clip: calc(
         var(--front-screen-cut-show) * var(--front-screen-cut-cap-share) *
           var(--front-screen-cut-fit)
@@ -1294,6 +1422,260 @@ const EAGER = 2;
       overflow: visible;
       height: var(--front-screen-cut-slab);
       margin-top: calc(-1 * var(--front-screen-cut-show) * var(--front-screen-cut-slab));
+    }
+
+    /* ---- HELD AT THE LANDING (#193) --------------------------------------
+       THE WORD STOPS BEING THIS SECTION'S LAST LINE AND BECOMES THE PAGE'S,
+       and it is one property that does it. Everything above this rule is the
+       FIRST page turn and is inert for the whole of it: the Kernel writes this
+       state only at or past the landing (src/kernel/hold.ts), so the opening
+       screen, the cut the fold takes out of the word and the morph across the
+       Turn are all the page they were.
+
+       `fixed` AND NOT `sticky`, which is the first answer and cannot work. A
+       sticky box is held within its own containing block, and this box's is the
+       Front Screen -- which ends one screen ABOVE the place the word has to be
+       held at, so it would be released before it ever arrived. Giving it a
+       container that spans the Sections it has to stand across means wrapping
+       them, and the wrapper is what breaks `[data-section] ~ [data-section]` in
+       src/kernel/landing.css -- the one line that makes a resting place a
+       relationship rather than a list of Section names. A pinned box and one
+       written length cost less than that.
+
+       NOTHING BETWEEN THIS BOX AND THE VIEWPORT TRANSFORMS, FILTERS OR
+       CONTAINS, so `fixed` really is the viewport here rather than some
+       ancestor's box. Worth stating because this Section HAS a transform for
+       its first 0.9s -- the reveal -- and it is on the column and the bar, never
+       on an ancestor of this box. It is also why the offset above is derived
+       rather than read off the page.
+
+       `left` AND `width` ARE THE BAND RULE'S, UNTOUCHED. The Front Screen's
+       padding box starts on the page's own left edge, so --landing-side is the
+       same distance from the viewport's as it is from this Section's, and the
+       word lands in the same column pinned or not. The z is the type's, from
+       the base rule, and the Sections it is now drawn over are its siblings in
+       one stack rather than boxes above it. */
+    :root[data-landing-held] .front-screen__cut {
+      /* THE RELEASE, on this box and nothing else: 0 for the whole of the hold,
+         then one pixel up for every pixel scrolled past the last port. Scroll
+         timelines drive it below; this declaration is what a browser without
+         them reads, off the one per-scroll root write hold.ts keeps for that
+         browser alone. The fallback keeps it a real length for a page that
+         never runs the Kernel's client half, where an unwritten `var()` would
+         make `top` invalid at computed-value time and drop the box half way up
+         the first screen. */
+      --front-screen-cut-past: var(--landing-past, 0px);
+      position: fixed;
+      top: calc(var(--front-screen-cut-hold-at) - var(--front-screen-cut-past));
+    }
+
+    /* ---- AND THE ROOF, WHICH IS WHAT THE DOCUMENT GOES BEHIND -------------
+       The word standing still is half of the device and this is the other half:
+       with the word held, the Section turning away draws its subheading and its
+       four points UP THROUGH the letters, and the Section arriving draws its
+       serif title up through them the same way. Measured across the turn at
+       #172's four windows, every one of those blocks' ink is 39 to 84px
+       NARROWER than the word, and the Gallery's copy -- the one block up there
+       that must not be touched, because it stands beside the word rather than
+       under it -- starts 33 to 69px to the RIGHT of the word's last letter. So
+       the word's own column is exactly the right width for this: wide enough to
+       hide everything that passes under it, narrow enough never to reach the
+       copy.
+
+       WHICH IS WHY IT IS INSET INTO THIS BOX AND NOT SIZED IN THE LANDING'S
+       TERMS. `left: 0; right: 0` is the word's own drawn width, so the roof
+       cannot come to disagree with the word about where the word is, and
+       --front-screen-cut-fit stays named in one place.
+
+       `top` IS THE WINDOW'S TOP EDGE, reached by undoing the hold: the box is
+       held --front-screen-cut-hold-at below the window, so that much above the
+       box is the window's own edge. Both spend the SAME name, so a change to
+       where the word rests takes the roof with it. It has to reach the edge
+       rather than stopping above the letters -- content arrives from below and
+       goes on past the word, so a roof only as tall as the word leaves it
+       visible in the air above, which is what the reader sees first.
+
+       `bottom` IS THE BASELINE, PLUS THE FADE. This box's own bottom edge IS
+       the word's baseline -- the cap slab less the lift above it, which is what
+       the two rules above compose to -- so the fade begins exactly where the
+       letters stop and runs down across the J's descender, the one part of the
+       drawing that hangs below it. That is what makes it read as the page
+       dissolving under the word rather than being cut off at a line: a hard
+       edge there is a horizontal seam travelling up the screen.
+
+       --landing-cap RATHER THAN --front-screen-cut-slab, and here the two
+       genuinely ARE the same length: this box is a child of the container, so
+       the slab's `100cqw` would resolve against the drawing and come out right.
+       It is the one name anyway, because --front-screen-cut-hold-at above CANNOT
+       use the slab and the two edges of the roof have to be measured in the same
+       units as the hold they are undoing. The note on that declaration says what
+       happened when they were not.
+
+       `--ground` AND NOT `--dark`, though the two are the same colour
+       everywhere this is ever up. The roof is the page's own ground standing in
+       front of the page, so it takes the Kernel's crossing rather than the
+       colour that crossing happens to have arrived at -- and if the Projects
+       Panel ever selects one of its fourteen grounds, this is the declaration
+       to look at, because a Section painting its own ground under the word
+       during the crossing would show a step at the roof's edge.
+
+       `z-index: -1` IS LOCAL AND HAS TO BE. This box carries the type's z and a
+       `container-type`, so it is a stacking context twice over and -1 cannot
+       escape into the page's own "below everything" layer where the corner
+       pictures are (src/kernel/ground.css). What it buys is paint order the
+       right way round: a POSITIONED child paints after a non-positioned one, so
+       without it the roof would paint over the word it is meant to stand
+       behind.
+
+       ---- AND NO EDGE OF IT IS EVER A LINE ON THE SCREEN (the four masks) ----
+       It used to be a box that switched on at the first pixel of the turn, and
+       each of its four edges showed. The top blacked out the photographs'
+       foot above the word in one frame; the right cut a straight vertical through
+       them, the marble and the Eater Map's hairlines; the bottom was a linear
+       ramp, so a line of the subheading sat half-dissolved under the letters.
+       The four layers below are intersected, and each answers one edge.
+
+       THE TOP EDGE IS A LINE IN THE DOCUMENT. What the roof exists to hide is
+       whatever crosses the baseline going up, and at the first port nothing has
+       yet, so the roof starts with no height and its top edge rises with the
+       page: it stands just above the subheading's cap tops, in the ground
+       between them and the photographs, and travels up with them. The
+       photographs above the word are never covered and leave off the top as they
+       would with no roof at all.
+
+       THE BOTTOM EDGE AT THE FAR END IS THE SAME SENTENCE BACKWARDS. The Eater
+       Map is ALREADY behind the word at its own rest, its hairline and grid
+       vertical included, so what the roof hides on the way there is only what
+       rests above that window's top edge — the Gallery's foot and the marble —
+       and it lets go of the document exactly at that line, which is as far
+       below the window's top as the page has left to go. So the roof is gone by
+       the time the page lands rather than going.
+
+       BOTH DISTANCES ARE THE ROOF'S OWN, off a scroll timeline, and that is a
+       measurement rather than a style. The Kernel publishes only where the run
+       starts and ends (hold.ts), because a length written on the root every
+       frame restyles the whole document — 19ms a frame against 0.6 — and a
+       registered, non-inheriting property animated here restyles this box and
+       nothing else. Without scroll timelines the two keep their initial values,
+       which is the roof as it was: the whole column, switched.
+
+       THE FADE UNDER THE BASELINE STARTS ABOVE IT AND COMES DOWN. At the first
+       port the subheading's cap tops stand within 3px of the baseline at every
+       window, so the fade cannot already be in place under it or the first frame
+       of the turn dims them. It starts one fade-length up, inside the letters,
+       and slides down to the baseline over the first fade-length of travel,
+       which is also the moment the first line goes into it — so that line
+       dissolves as it rises rather than being clipped where it stood. Every
+       ramp here is a smoothstep in five steps and not a straight one: a linear
+       fade has a visible start and end, and those were the "bands" read off it.
+
+       THE SIDES ARE FEATHERED, AND BY MEASURED AMOUNTS. On the right it
+       dissolves --front-screen-cut-roof-feather back into the word, and hangs
+       0.08 of the cap past the S so the letter's own anti-aliasing is not the
+       mask's edge: the Gallery's frame begins 0.127 of the cap past the word at
+       1536x760 and its copy 0.536 at every window, so neither is reached. On the
+       left it hangs 0.12 of the cap into the Rail's column: the Rail paints under
+       this box (its z is 1, this is the type's), and its words stop at least 0.18
+       of the cap short of the word's left edge, so the feather lands on the Rail's
+       ground and never on its letters. It cannot feather INTO the word on that
+       side — every block that crosses under it starts on the word's own left
+       edge. */
+    :root[data-landing-crossing] .front-screen__cut-roof {
+      --front-screen-roof-fade: calc(var(--front-screen-cut-roof-fade) * var(--landing-cap));
+      --front-screen-roof-lift: max(
+        0px,
+        var(--front-screen-roof-fade) - var(--front-screen-roof-since)
+      );
+      --front-screen-roof-crest: calc(
+        100% - var(--front-screen-roof-fade) - 0.04 * var(--landing-cap) -
+          var(--front-screen-roof-since)
+      );
+      --front-screen-roof-left: calc(0.12 * var(--landing-cap));
+      --front-screen-roof-right: calc(0.08 * var(--landing-cap));
+      --front-screen-roof-feather: calc(
+        var(--front-screen-cut-roof-feather) * var(--landing-cap) +
+          var(--front-screen-roof-right)
+      );
+      display: block;
+      position: absolute;
+      z-index: -1;
+      left: calc(-1 * var(--front-screen-roof-left));
+      right: calc(-1 * var(--front-screen-roof-right));
+      top: calc(-1 * var(--front-screen-cut-hold-at));
+      bottom: calc(-1 * var(--front-screen-roof-fade));
+      background: var(--ground);
+      mask-image:
+        /* the fade under the baseline, lifted by --front-screen-roof-lift */
+        linear-gradient(
+          to bottom,
+          #000
+            calc(100% - var(--front-screen-roof-lift) - var(--front-screen-roof-fade)),
+          rgb(0 0 0 / 0.896)
+            calc(100% - var(--front-screen-roof-lift) - 0.8 * var(--front-screen-roof-fade)),
+          rgb(0 0 0 / 0.648)
+            calc(100% - var(--front-screen-roof-lift) - 0.6 * var(--front-screen-roof-fade)),
+          rgb(0 0 0 / 0.352)
+            calc(100% - var(--front-screen-roof-lift) - 0.4 * var(--front-screen-roof-fade)),
+          rgb(0 0 0 / 0.104)
+            calc(100% - var(--front-screen-roof-lift) - 0.2 * var(--front-screen-roof-fade)),
+          transparent calc(100% - var(--front-screen-roof-lift))
+        ),
+        /* the top edge, riding the document up from the first port */
+        linear-gradient(
+          to bottom,
+          transparent var(--front-screen-roof-crest),
+          #000 var(--front-screen-roof-crest)
+        ),
+        /* and letting go of it at the last port's top edge */
+        linear-gradient(
+          to bottom,
+          #000 var(--front-screen-roof-until),
+          transparent var(--front-screen-roof-until)
+        ),
+        /* the two sides */
+        linear-gradient(
+          to right,
+          transparent 0,
+          rgb(0 0 0 / 0.104) calc(0.2 * var(--front-screen-roof-left)),
+          rgb(0 0 0 / 0.352) calc(0.4 * var(--front-screen-roof-left)),
+          rgb(0 0 0 / 0.648) calc(0.6 * var(--front-screen-roof-left)),
+          rgb(0 0 0 / 0.896) calc(0.8 * var(--front-screen-roof-left)),
+          #000 var(--front-screen-roof-left),
+          #000 calc(100% - var(--front-screen-roof-feather)),
+          rgb(0 0 0 / 0.896) calc(100% - 0.8 * var(--front-screen-roof-feather)),
+          rgb(0 0 0 / 0.648) calc(100% - 0.6 * var(--front-screen-roof-feather)),
+          rgb(0 0 0 / 0.352) calc(100% - 0.4 * var(--front-screen-roof-feather)),
+          rgb(0 0 0 / 0.104) calc(100% - 0.2 * var(--front-screen-roof-feather)),
+          transparent 100%
+        );
+      mask-composite: intersect;
+      pointer-events: none;
+    }
+
+    /* LONGHANDS, AND THAT IS NOT STYLE. Written as `animation:` plus
+       `animation-timeline:`, the minifier folds the pair into one shorthand that
+       Chromium drops whole, and both boxes sit on their initial values — which
+       are the fallback, so nothing says so. src/kernel/NOTES.md. */
+    @supports (animation-timeline: scroll()) {
+      :root[data-landing-crossing] .front-screen__cut-roof {
+        animation-name: front-screen-roof-travel;
+        animation-timing-function: linear;
+        animation-fill-mode: both;
+        animation-timeline: scroll(root);
+        animation-range: var(--landing-from) var(--landing-to);
+      }
+
+      /* From the last port, over the screen the word is held for past it —
+         hold.ts lets go at exactly that screen. Before it the fill holds the
+         travel at 0, which is the whole of the hold; the animation outranks the
+         fallback declaration above for as long as it applies. */
+      :root[data-landing-held] .front-screen__cut {
+        animation-name: front-screen-cut-release;
+        animation-timing-function: linear;
+        animation-fill-mode: both;
+        animation-timeline: scroll(root);
+        animation-range: var(--landing-to) calc(var(--landing-to) + 100vh);
+      }
     }
   }
 

@@ -46,27 +46,28 @@ export const content = defineContent(schema, {
   frame: { address: '127.0.0.1:8770' },
   copy: [
     'Twenty years of photographs had turned into 1,374,328 file paths across ' +
-      'overlapping backups. This is the system that turned them into one immutable ' +
-      'content-addressed vault and a website that browses it. When the shipped ' +
-      'result disagreed with what I actually wanted, the objective moved and the ' +
-      'reasoning that produced the old one stayed on the page.',
+      'overlapping backups. I built the system that reduced them to one library ' +
+      'holding a single copy of every file, and a website that browses it and ' +
+      'stacks repeat shots of the same moment into one. The rule for what counts ' +
+      'as a repeat was tuned against my own judgements, and changed when the ' +
+      'results stopped matching what I wanted.',
   ],
   points: [
     {
-      title: 'Label-driven calibration',
-      figure: '96.5% precision, 85.6% recall — measured, not chosen',
+      title: 'Tuned on my own labels',
+      figure: 'Stacking set from photos I sorted by hand: 97.0% precision, 93.2% recall',
     },
     {
-      title: 'Screen-then-verify matcher',
-      figure: '3,632,211 candidate pairs, screened to 566,522',
+      title: 'Two-pass duplicate matcher',
+      figure: 'Screens 3,632,211 pairs fast, then checks 566,522 point by point',
     },
     {
-      title: 'Ledger-backed delete gate',
-      figure: '435.6 GB re-hashed and reconciled both ways',
+      title: 'Safe, verified deletion',
+      figure: 'Each delete logged first, then all 435.6 GB re-hashed to check',
     },
     {
-      title: 'Triage rule engine',
-      figure: '1,374,328 paths re-costed in 220 ms',
+      title: 'Instant triage rules',
+      figure: '1,374,328 paths re-checked in 220 ms',
     },
   ],
 });

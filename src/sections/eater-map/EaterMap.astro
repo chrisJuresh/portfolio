@@ -66,6 +66,7 @@ import './tokens.css';
   class="eater-map"
   id="eater-map"
   data-section="eater-map"
+  data-landing-word
   aria-labelledby="eater-map-masthead"
 >
   {/* No Rail here. It is one piece of furniture standing on the page and the
@@ -619,6 +620,36 @@ import './tokens.css';
     text-transform: uppercase;
     font-feature-settings: 'case' 1;
     color: var(--ink);
+  }
+
+  /* ---- UNLESS THE PAGE'S OWN PROJECTS IS STANDING IN THIS SLOT (#193) -----
+     The word this Section draws is the Gallery's, in the Gallery's box, and
+     while it was a second DRAWING the two were never on the screen together:
+     the first one is a box at the Front Screen's foot, two screens up by the
+     time this Section owns the window. The Kernel holds it there now, so it IS
+     up here — standing in this masthead's own slot, at this masthead's own size
+     — and painting this one as well is the page saying PROJECTS twice, a few
+     pixels out rather than the few lines the Projects Panel's own hidden
+     masthead was guarding against.
+
+     A FACT ABOUT THE PAGE, READ — not a Section reached into. The root carries
+     the state and this Section decides what to do about it, which is the
+     boundary CONTEXT.md draws and the same shape --turn and the Variants' own
+     gate take. src/kernel/hold.ts is what writes it.
+
+     NOT GATED ON THE BAND, and that is deliberate rather than an omission: the
+     state itself only exists where there is a page turn to stand still across,
+     so gating it here as well would be a second copy of the band's two numbers
+     — and a rule left gated on the regime of the thing that used to do its job
+     is exactly how this page came to say PROJECTS twice once before.
+
+     `visibility` AND NOT `display`, for the Projects Panel's own reason: this
+     element is this Section's `aria-labelledby`, and a directly-referenced
+     hidden element still supplies an accessible name where a display:none one
+     supplies nothing at all. The box stays, which is also what keeps the serif
+     title on the line title.ts measured it onto. */
+  :root[data-landing-held] .eater-map__masthead {
+    visibility: hidden;
   }
 
   /* THE SERIF PROJECT TITLE, AND BOTH ITS LENGTHS ARE FALLBACKS.
@@ -1400,10 +1431,22 @@ import './tokens.css';
     --glass-filter: none;
     --glass-filter-heavy: none;
     --glass-filter-fine: none;
-    --glass-rim: inset 0 0.5px 0 rgba(255, 255, 255, 0.26),
-      inset 0 0 0 0.5px rgba(255, 255, 255, 0.13);
-    --glass-rim-strong: inset 0 1px 0 rgba(255, 255, 255, 0.3),
-      inset 0 0 0 0.5px rgba(255, 255, 255, 0.16);
+    /* The app's hairline rims, and ONLY WHERE THERE IS NO SOLID. In the band a
+       Card is a slab whose side is the same frost and tint as its face, rolling
+       into it (`glass.ts`), and a white line drawn round the face is exactly what
+       says the face is a panel sitting on something else. Below the band the
+       drawing is the app's own screenshot, and these are the app's own lines. */
+    --eater-map-card-flat: calc(1 - var(--eater-map-solid, 1));
+    --glass-rim: inset 0 0.5px 0 rgba(255, 255, 255, calc(0.26 * var(--eater-map-card-flat))),
+      inset 0 0 0 0.5px rgba(255, 255, 255, calc(0.13 * var(--eater-map-card-flat)));
+    --glass-rim-strong: inset 0 1px 0 rgba(255, 255, 255, calc(0.3 * var(--eater-map-card-flat))),
+      inset 0 0 0 0.5px rgba(255, 255, 255, calc(0.16 * var(--eater-map-card-flat)));
+    /* ...and the app's drop shadows with them, for the same reason: in the band
+       they fall on the Card's own side, a darker line where the top meets it. */
+    --elev-1: 0 1px 2px rgba(0, 0, 0, calc(0.06 * var(--eater-map-card-flat))),
+      0 4px 12px rgba(0, 0, 0, calc(0.08 * var(--eater-map-card-flat)));
+    --elev-2: 0 2px 6px rgba(0, 0, 0, calc(0.07 * var(--eater-map-card-flat))),
+      0 12px 32px rgba(0, 0, 0, calc(0.12 * var(--eater-map-card-flat)));
     /* The host paints `color: rgb(0, 0, 0)` on itself, so the ink has to be said
        as well as the palette — read back off the name above rather than repeated,
        which is a property reading a custom property and not a cycle. */
@@ -1525,8 +1568,14 @@ import './tokens.css';
      `glass.ts` reads this class as well, which is how a surface knows it is hung:
      the ruler is given a clearance of zero and a hung surface's measured top is
      handed back with the clearance added as an expression, so the number written
-     down stays frozen to the export's viewport and the offset stays live. */
+     down stays frozen to the export's viewport and the offset stays live.
+
+     `relative` WITH NO OFFSET, which moves nothing and is only so `z-index`
+     applies. The Drop's `translate` makes this box a stacking context, and
+     `glass.ts` stands it at the level of the surface inside it so the app's own
+     dropdown-over-topbar order survives that — see `Surface.level`. */
   .eater-map__hang {
+    position: relative;
     margin-top: var(--eater-map-results-clear);
   }
 

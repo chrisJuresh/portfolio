@@ -139,19 +139,31 @@ be pure cost, so a picture's dark files exist exactly when its dark has been
 tuned to something of its own. The comparison is within one picture — the plate
 having tuned its dark says nothing about whether the car needs to.
 
+The plate and the eye have no dark Grade at all any more, and that is a third
+state rather than the second one: in the dark theme the Kernel draws their
+MOONLIT ladder as the picture (THE MOONLIT LADDER, below), so their ladders are
+`light` and `moonlit` while the car's are `light` and `dark`. Their dark grades —
+0x2c to 0x8a and 0x2c to 0x90, solved in THE ARITHMETIC OF THE DARK PAPER — were
+a faded grey print of each frame at a sixth of its strength, and once a light
+stood on them the print greyed every black beneath it; the author retired the
+print rather than the light. The arithmetic below is kept as the car's, and as
+the record of why those two were what they were.
+
 THE MOONLIT LADDER
 ------------------
-The plate and the eye carry a THIRD ladder, `<stem>-moonlit-<width>.webp`, and
-it is not a print of the picture on a third paper. It is the Moonlight's light ON
-the picture: what src/kernel/corners.css screens over the dark page, breathing
-with the sky, so that as the light swells the dome and the wheel come up out of
-the dark as things standing in it. The dark ladder is still there under it as the
-ghost the page shows when the light is down; this one is only ever ADDED.
+The plate and the eye carry a SECOND ladder, `<stem>-moonlit-<width>.webp`, and
+it is not a print of the picture on a second paper. It is the picture BY
+MOONLIGHT: what src/kernel/corners.css draws as the plate and the eye in the dark
+theme — as a picture, with normal blending, breathing with the sky — so that as
+the light swells the dome and the wheel come up out of the dark as things
+standing in it, and go back as it falls. Nothing else of either picture is drawn
+in that theme: the faded dark print there used to be greyed every black beneath
+the light, and the author retired it (A GRADE PER PICTURE, A LADDER PER THEME).
 
-Two things follow from "added", and both are in the recipe as values that look
-odd until read this way. Its SHADOW is black, because an unlit pixel contributes
-nothing — a screened layer's black is transparent — and there is no paper for the
-blacks to land on. And its HIGHLIGHT is the LIGHT'S colour rather than a
+Two things follow from "a night picture", and both are in the recipe as values
+that look odd until read this way. Its SHADOW is black, because on a near-black
+page a picture's blacks are the page's own, and lifting them is the grey print
+this replaced. And its HIGHLIGHT is the LIGHT'S colour rather than a
 near-white: it is where fully lit white stone lands, so it is the moon on
 limestone, a cool pale blue, and the sky glow in tokens/moonlight.css is the
 darker, more saturated end of the same light.
@@ -220,6 +232,13 @@ disagree about. The pipeline itself is shared by all six; only its numbers are n
    half of the brief: it is concentrated near the top of the range and, being a
    power of the *inverse*, cannot take anything past 1.0. A plain gain would have
    clipped the sunlit stone flat, which is the one thing this frame cannot spare.
+5b. Black point, BLACK_POINT: the share of the range that counts as unlit. It
+   lands on SHADOW and what is left is stretched back over the range. A floor
+   rather than a curve, and the moonlit ladders are what it is for: the S in
+   step 5 is weakest exactly where a shadowed mid tone sits, so on a night
+   picture it cannot on its own hold the dark interior of a lattice at the
+   page's own black while the members above it stay lit. 0 is off, and every
+   print grade runs at 0.
 6. Per-channel range remap onto SHADOW and HIGHLIGHT:
 
        out_c = SHADOW_c + (HIGHLIGHT_c - SHADOW_c) * t_c
@@ -459,6 +478,7 @@ class Grade(NamedTuple):
     SAT_KEEP: float                     # fraction of original chroma kept
     CONTRAST: float                     # blend toward a smoothstep S-curve
     HIGHLIGHT_PUSH: float               # >1 lifts highlights; 1.0 is off
+    BLACK_POINT: float                  # share of the range that is unlit and lands on SHADOW; 0 is off
     SHADOW: tuple[int, int, int]        # where black lands
     HIGHLIGHT: tuple[int, int, int]     # where white lands
     GRAIN_SIGMA: float                  # in output units, 0..1
@@ -525,6 +545,12 @@ class Relight(NamedTuple):
 # being the one of the three that was already right. 0x8a for the plate, 0x61 for
 # the car, 0x90 for the eye.
 #
+# Only the car's is left of those three. The plate and the eye have no dark
+# ladder since the Kernel began drawing their MOONLIT ladders as the dark theme's
+# pictures, blacks and all — a print with its blacks lifted to 0x2c under a light
+# was the faded look the author retired — so the arithmetic above is the car's
+# now, and the record of why the two retired grades were what they were.
+#
 # On the light paper the split runs the other way, which is that same rule with
 # the papers swapped rather than a second rule: the end that LANDS ON THE PAGE is
 # a property of the paper - 0xff composites to 255 on #fff for the eye exactly as
@@ -536,7 +562,10 @@ def graded(name: str) -> Grade:
     """One of the six Grades, out of design/bake/plate/recipe.json.
 
     Six and not one: a picture on black wants its own endpoints rather than more
-    of light's, and the car wants its own rather than the plate's. They opened on
+    of light's, and the car wants its own rather than the plate's. Two per
+    picture, and not the same two: the car's are light and dark, and the plate's
+    and the eye's are light and MOONLIT, the dark theme drawing those two by
+    the moon's light alone (below). They opened on
     identical numbers, because that is what shipped while there was one grade for
     everything, so splitting them changed no pixel. What it changed is that
     moving one of them now moves one of them.
@@ -548,6 +577,7 @@ def graded(name: str) -> Grade:
         SAT_KEEP=TUNING.num(at("SAT_KEEP")),
         CONTRAST=TUNING.num(at("CONTRAST")),
         HIGHLIGHT_PUSH=TUNING.num(at("HIGHLIGHT_PUSH")),
+        BLACK_POINT=TUNING.num(at("BLACK_POINT")),
         SHADOW=TUNING.colour8(at("SHADOW")),
         HIGHLIGHT=TUNING.colour8(at("HIGHLIGHT")),
         GRAIN_SIGMA=TUNING.num(at("GRAIN_SIGMA")),
@@ -575,16 +605,15 @@ def relit(name: str) -> Relight:
 # unsuffixed. Hung off the Picture below rather than held in a second dict keyed
 # by stem, so there is no pair of tables to drift apart.
 #
-# THE THIRD KEY IS NOT A THEME. `moonlit` is the ladder the Kernel screens over
-# the dark page as the Moonlight's own light on the picture — see THE MOONLIT
-# LADDER — and it hangs off the same dict because out_path() and main() treat a
-# key as "a ladder with this suffix", which is exactly what it is. The car has
-# none: it stands AGAINST the light as a silhouette and is never lit by it.
-PLATE_GRADES = {"light": graded("PLATE_LIGHT"), "dark": graded("PLATE_DARK"),
-                "moonlit": graded("PLATE_MOONLIT")}
+# `moonlit` IS THE DARK THEME'S LADDER for the two pictures the Moonlight lights,
+# and they have no `dark` one: the Kernel draws the moonlit ladder as the picture
+# there — see THE MOONLIT LADDER — and it hangs off the same dict because
+# out_path() and main() treat a key as "a ladder with this suffix", which is
+# exactly what it is. The car is the other way about, a `dark` ladder and no
+# `moonlit` one, because it stands AGAINST the light as a silhouette.
+PLATE_GRADES = {"light": graded("PLATE_LIGHT"), "moonlit": graded("PLATE_MOONLIT")}
 CAR_GRADES = {"light": graded("CAR_LIGHT"), "dark": graded("CAR_DARK")}
-EYE_GRADES = {"light": graded("EYE_LIGHT"), "dark": graded("EYE_DARK"),
-              "moonlit": graded("EYE_MOONLIT")}
+EYE_GRADES = {"light": graded("EYE_LIGHT"), "moonlit": graded("EYE_MOONLIT")}
 
 GRAIN_SEED = 20250615      # the frame's own date; any constant would do
 # One seed for every grade, and not a field of Grade: the grain is the frame's
@@ -917,6 +946,14 @@ def grade(lin: np.ndarray, keep: np.ndarray, g: Grade) -> np.ndarray:
     # 5. contrast, then the highlight shoulder
     t = t + (smoothstep(t) - t) * g.CONTRAST
     t = 1.0 - (1.0 - t) ** g.HIGHLIGHT_PUSH
+
+    # 5b. the black point: what counts as unlit. Everything under it lands on
+    # SHADOW and the rest is stretched over the range — a floor rather than a
+    # curve, which is what separates a dark interior from lit stone once the S
+    # above has done what it can, that S being weakest exactly where a shadowed
+    # mid tone sits. 0 is off, and is what every print grade runs at.
+    if g.BLACK_POINT > 0.0:
+        t = np.clip((t - g.BLACK_POINT) / (1.0 - g.BLACK_POINT), 0.0, 1.0)
 
     # 6. per-channel remap onto the two endpoints
     shadow = np.array(g.SHADOW, dtype=np.float32) / 255.0

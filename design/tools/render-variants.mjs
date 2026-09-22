@@ -62,6 +62,12 @@ import { rules, variantsIn, withoutComments } from '../../scripts/variant-sheet.
 // refusal rather than a shot if one never did (#185). Shared with
 // render-stages.mjs, which photographs the same Sections and meets the same race.
 import { pictures } from './pictures.mjs';
+// A Variant may reach for one of its Section's own assets, and a relative URL in
+// an injected <style> would resolve against the page instead of the Section. That
+// rewrite is a module with a test beside it because a url() it gets wrong is a
+// declaration the CSS parser drops — a shot of bare ground, captioned as a
+// direction, with nothing anywhere saying so. urls.mjs carries the whole of it.
+import { absoluteUrls } from './urls.mjs';
 
 /* Playwright is design/tools/'s dependency, not the root install's, so the first
    thing this can fail at is not finding it — and a bare ERR_MODULE_NOT_FOUND for
@@ -195,12 +201,6 @@ function declarations(css) {
     .flatMap((rule) => rule.declarations)
     .map((one) => `${one};`)
     .join('\n');
-}
-
-/** A Variant may reach for one of its Section's own assets, and a relative URL
- *  in an injected <style> would resolve against the page instead of the sheet. */
-function absoluteUrls(css, base) {
-  return css.replace(/url\(\s*(['"]?)(?!data:|https?:|\/)/g, (_, quote) => `url(${quote}${base}`);
 }
 
 async function present(path) {

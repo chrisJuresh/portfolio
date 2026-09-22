@@ -17,7 +17,8 @@
      the picture in. `none` until then, so a dead network leaves the page up
      rather than blank — which is also why it is not worth typing into. The
      `-lit-src` is the same picture's moonlit ladder, fetched in the dark theme
-     only, and the light the Kernel screens over it — corners.css. */
+     only, and THE PICTURE the Kernel draws there; the plain ladder is the light
+     theme's alone — corners.css. */
   --plate-src: none;
   --plate-lit-src: none;
 
@@ -53,7 +54,10 @@
   --eye-lit-src: none;
 }
 
-/* Every picture needs more of itself on black, and nothing else moves.
+/* ON BLACK ONLY THE CAR IS STILL DRAWN FROM ITS OWN LADDER. The plate and the
+   eye are their moonlit ladders there — a picture each, at --moonlight-plate
+   and --moonlight-eye in tokens/moonlight.css — and the faded print each used
+   to show under the light, at 0.17, is gone with the dark ladders it needed.
 
    THE CAR'S IS A DIFFERENT NUMBER ON BLACK, and not only a larger one. In the
    dark theme corners.css blends the car MULTIPLY into the Moonlight behind it,
@@ -63,7 +67,5 @@
    same number is a faint dark shape, because there is little there to take
    away. src/kernel/NOTES.md, under the Moonlight. */
 :root[data-theme='dark'] {
-  --plate-opacity: 0.17;
   --car-opacity: 0.55;
-  --eye-opacity: 0.17;
 }

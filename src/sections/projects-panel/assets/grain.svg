@@ -1,14 +1,13 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="200" height="200">
   <!-- The Panel's film grain, for the `grain` Variant and nothing else.
 
-       A FILE AND NOT A data: URI IN variants.css, and that is forced rather than
-       chosen. render-variants.mjs rewrites every relative url() in a Variant's
-       sheet to an absolute one, and its pattern lets the optional quote
-       backtrack — so `url("data:…")` comes out as
-       `url(/src/sections/projects-panel/"data:…")`, the declaration is dropped by
-       the parser, and the shot comes back as bare ground with nothing to say it
-       did. That cost a diagnosis. A Variant's own asset served out of its own
-       folder is the path that tool was built for, and it is this.
+       A FILE AND NOT A data: URI IN variants.css, and that is a choice now. It
+       was forced: render-variants.mjs corrupted a quoted data: URI on its way
+       into the sheet, and the Variant rendered as bare ground with nothing to
+       say it had. That cost a diagnosis, and it is fixed and tested
+       (design/tools/urls.mjs), so either would work today. What keeps the
+       picture in a file is the rest of this comment — a file can carry the
+       reasoning line by line, and a URI on one line cannot.
 
        RGB IS FLAT AND THE ALPHA IS THE NOISE. feTurbulence writes a noisy alpha
        channel as well as noisy colour, so desaturating it leaves a texture that

@@ -15,13 +15,15 @@ than a convenience.
 | --------------------------- | ----------------------------------------------------------- |
 | `faces.css` / `tokens/faces.css` | the five families, six files, the face Tokens, and the page's own type size — the zoom, the ceiling and the give-way |
 | `ground.css` / `tokens/ground.css` | the theme's two papers, the Turn across them, the shade over the DARK theme's first screen, and that the document never scrolls sideways |
-| `corners.css` / `corners.ts` / `tokens/moonlight.css` | the plate, the car and the eye — geometry, and which rung; and the Moonlight they stand in, which lights the plate and the eye off a relit ladder of each and which the car is cut out of |
+| `corners.css` / `corners.ts` / `tokens/moonlight.css` | the plate, the car and the eye — geometry, and which rung; and the Moonlight they stand in, by whose light alone the dark theme draws the plate and the eye — a relit ladder of each, as the picture — and which the car is cut out of |
+| `stars.css` / `stars.ts` / `tokens/stars.css` | the night sky behind the Moonlight, in the same band — a star field drawn once onto a canvas, a few twinkling stars and three meteors, masked by the three pictures' own shapes |
 | `rail/` / `tokens/rail.css` | the Rail — the one index on the page, its words, its two regimes, and which entry is current |
 | `effect-stack/`             | the nine layers, and the grain tile                          |
 | `theme.ts`                  | which paper, where it is stored, and who is told when it changes |
 | `turn.ts`                   | the Turn, as one named seekable Timeline, how far it runs in each regime, and `onTurn()` for anything drawn against it that CSS cannot draw |
 | `landing.css` / `tokens/landing.css` | the landing band, the measure two Sections share across it, and the resting places — one per Section, stated as a relationship so a new one costs nothing |
-| `page-turn.ts`              | one wheel GESTURE between two resting places, and a link into a Section going the same way |
+| `page-turn.ts`              | one wheel GESTURE between two resting places, a link into a Section going the same way, and `portOf()` — where one Section's resting place is, asked in four places and stated in one |
+| `hold.ts`                   | PROJECTS standing still across the turn between the Sections that stand it in their masthead's slot, and travelling away with the last of them |
 | `wheel.ts`                  | who owns a wheel gesture — the page, or a roll inside it     |
 | `loader.ts`                 | mounting a Section as it approaches the viewport             |
 | `motion.ts`                 | `hold()` / `release()` — see below                            |
@@ -319,8 +321,9 @@ change to the design and belongs to the author.
 
 ## The Rail
 
-Three project names down the page's left edge, reading bottom to top, marking
-which project is being shown and which two are not built. **One of them, for the
+Three names down the page's left edge, reading bottom to top — two Showcases and
+the Catalogue that holds the rest (ADR 0008) — marking which the reader is standing
+in front of. **One of them, for the
 whole page** — #192, and that is the whole of what that ticket did.
 
 **Both Sections used to draw one and the page swapped them**, which the author
@@ -415,9 +418,9 @@ Out of the band it is a row, and two things about the row are worth keeping.
 **`--rail-crown` is a clearance and not a margin**: out here the Front Screen's cut
 PROJECTS hangs past that Section's foot, and what it hangs over is this. The
 Projects Panel paid that bill while the Rail was inside it, and its NOTES.md
-carries the measurement. And **the names WRAP** — RECORD ENGINE at 0.22em of
-tracking is a long word and 360 and 320 are real screens; without `wrap` the third
-project is simply not named, which is not a Rail. Both of its gaps are multiples
+carries the measurement. And **the names WRAP** — three names at 0.22em of
+tracking do not fit one row on 360 or 320, which are real screens; without `wrap`
+the third is simply not named, which is not a Rail. Both of its gaps are multiples
 of the names' own size, so the row shrinks as one drawing rather than opening up
 as the type closes.
 
@@ -454,15 +457,17 @@ window where the composition is centred would be asserting a coincidence.
 ### An entry is a route if it holds a link
 
 That is the whole of the machinery — no attribute says which Section an entry
-names, because the link's own fragment already does (ADR 0007). The other two
-projects become entries with an `href` on the day their Sections arrive, and
-nothing else changes.
+names, because the link's own fragment already does (ADR 0007). A Showcase
+promised and not yet built is an entry with no `href`; it becomes a link on the
+day its Section arrives, and nothing else changes. There is none today: the third
+entry names the Catalogue, which is where a project without a Showcase of its own
+goes (ADR 0008).
 
 That is also what earns the `<nav>` and the `aria-current`: a landmark announcing
-a set of links to nowhere would be worse than no landmark, and one of the three
-leads somewhere. `aria-current` goes on the `<a>`, where it is announced, rather
+a set of links to nowhere would be worse than no landmark, and every one of the
+three leads somewhere now. `aria-current` goes on the `<a>`, where it is announced, rather
 than on the `<li>`, where a screen reader is not obliged to say anything about it.
-The entries that lead nowhere carry a visually-hidden qualifier instead — grey says
+An entry that leads nowhere carries a visually-hidden qualifier instead — grey says
 "not selected" to anything looking, and the qualifier says "no page yet" to
 anything listening. `role="list"` on a list that already is one, because the items
 carry `list-style: none` and VoiceOver drops list semantics from a list with no
@@ -491,30 +496,6 @@ and the head of the index is one; making it exact would mean either a document p
 path, which ADR 0001 refuses, or a rewrite that varies the bytes, which the
 deployment does not do.
 
-### The place this leaves for the persistent PROJECTS
-
-#192 is the ordinary half of the persistence the author asked for and #193 is the
-hard half: one PROJECTS for the page, rather than the Front Screen's cut word, the
-Panel's hidden masthead and the Eater Map's own drawing of it. **The place that
-ticket takes over is `src/kernel/rail/`'s shape rather than a slot in this file**,
-and the shape is the deliverable: a Kernel part with its own component, its own
-Content, its own Tokens under `tokens/`, two regimes gated on the band, a
-client half mounted from `kernel.ts`, and a current state DERIVED from the
-Section at rest instead of declared by whichever Section is drawing it. Every one
-of those is what a persistent word needs too, and none of them existed in the
-Kernel before this.
-
-Two things this deliberately did NOT do for it, so the next ticket is not
-surprised. The word is a great deal harder than the list, because the Rail is
-three names in a margin that no Section's composition is solved against, and
-PROJECTS stands in the Projects Panel masthead's own box to the pixel — it is on
-the landing measure, `--landing-mast-size`, `--landing-cap` and
-`--landing-mast-top`, and the Front Screen's cut word morphs across the Turn. So
-a persistent PROJECTS is a Kernel element reading the landing rather than one
-reading a margin. And the Eater Map's masthead is still that Section's own
-element (`src/sections/eater-map/NOTES.md` says the slot is being held), which is
-where #193 starts.
-
 ### Its words are the one Content file the Editor cannot reach
 
 `rail/content.ts` is Content by every part of CONTEXT.md's definition except the
@@ -525,6 +506,164 @@ and a small one — the Kernel's **Tokens** already answer to `kernel-<stem>` on
 surface, and Content would be the same move at the other boundary. It is not this
 one, and the alternative was leaving one of the two Sections owning the words for
 a list that is no longer either Section's.
+
+## The hold: PROJECTS standing still across the second page turn
+
+#192 was the ordinary half of the persistence the author asked for and this is
+the hard half (#193). Turning from the Gallery to the Eater Map moves the
+composition and nothing else: the Rail's highlight changes and **the word does
+not move**, so the two screens read as one place rather than as two pages that
+share a heading.
+
+`hold.ts` is the whole of it, and **it is three states on the root and not one
+element touched.** The Kernel may not read a Section and the word is the Front
+Screen's element, so what this publishes is a fact about the PAGE and each
+Section spends it in its own stylesheet — the Front Screen pins its own word and
+draws its own roof, the Eater Map hides its own masthead. Same division `--turn`
+is under, and `--landing-past` is a length, so the two things a stylesheet has to
+branch on are attributes for the reason `data-rail-away` is one.
+
+**It is NOT the Kernel element this section used to predict.** The place left for
+#193 was `src/kernel/rail/`'s shape — a Kernel part with its own component, its
+own Content and its own Tokens — and the word did not need it. The word is
+already drawn once, at the Panel masthead's own cap, by the Section that owns the
+drawing and the morph; what was missing was not an element but a **position**.
+Moving it into the Kernel would have moved `assets/cut-title.svg`, the morph, the
+fold that cuts it and the out-of-band overhang along with it, to change one
+`position` and one `top`. The prediction was wrong in an instructive way: it read
+"one PROJECTS for the page" as "one PROJECTS element in the Kernel", and the
+first was already true.
+
+### Which Sections, asked rather than named
+
+A Section marks itself `data-landing-word` when it stands the landing's word in
+its own masthead's slot, and the hold runs **from the first such Section's
+resting place to the last one's**. Two carry it; the Catalogue deliberately does
+not, and its own NOTES.md asked for that decision by name. So a third Showcase
+joins the run by saying so and nothing in the Kernel learns its name — the
+property `data-turn` has, and the reason this is an attribute rather than a list
+of Sections in here.
+
+### Where it lets go, and why that is a travel rather than a switch
+
+At the last marked Section's own resting place, and past that the word goes up at
+exactly the rate the document does — so it leaves with the Section it is the head
+of and is off the screen by the turn onto the Catalogue. That travel is the Front
+Screen's registered `--front-screen-cut-past`, animated on the word off
+`scroll(root)` from `--landing-to` across one screen. `--landing-past` on the root
+is the same travel for a browser without scroll timelines, and is the one number
+ever written per scroll.
+
+**Letting the box simply revert there is the failure #192 deleted for the Rail.**
+The held word stands at `--landing-top` and its own document position is a screen
+and a half above the window by then, so reverting is the word VANISHING in one
+frame at the moment the reader asks for the next Section. Both positions are off
+screen once it has travelled a whole window, which is where the state does come
+off — the two agree about everything the reader can see, and what that buys is a
+`top` that stays a real length instead of running to minus ten thousand pixels
+inside a Section taller than a screen.
+
+### The roof, and why it cannot be up at rest
+
+The word standing still is half of the device. The other half is that the
+document has to pass BEHIND it, and the roof is what it passes behind: the word's
+own column, from the window's top edge to the word's baseline, dissolving across
+the J's descender. `FrontScreen.astro` draws it and
+`--front-screen-cut-roof-fade` is its one Token.
+
+**It is up only while the page is between the two resting places, and that is
+measured rather than tidy.** At rest there is nothing crossing, so a roof
+standing at either port is a roof cutting a composition nobody is turning away
+from — and both ends cost something real, at all four of #172's windows:
+
+| window | the Gallery's subheading cap top, at its own rest | the word's ink bottom | the Eater Map's first Point hairline, at its own rest |
+| --- | --- | --- | --- |
+| 1100x700  |  93.1 | 115.5 | 26.2 |
+| 1536x760  | 110.1 | 137.8 | 27.8 |
+| 1920x980  | 141.8 | 177.6 | 35.9 |
+| 2560x1311 | 189.0 | 236.5 | 46.8 |
+
+So a permanent roof clips the top of SELF-STACKING at every window in the band,
+and puts a gap in a hairline the Eater Map draws across its whole frame with its
+first grid vertical running up past the window's edge behind the word. Both are
+invisible in a still of the crossing and obvious in a still of the rest, which is
+the wrong way round for a person looking. **A z-index cannot separate them
+either**, which is the tempting fix: the grid's hairlines are at `-1` and the
+type that must be hidden is at `0`, so any roof above the type is above the grid
+too.
+
+### The roof is the word's own width, and that is a measurement
+
+Every block that crosses under the word has ink **39 to 84px narrower** than the
+word at the four windows, and the Gallery's copy — the one block up there that
+stands BESIDE the word rather than under it — starts 33 to 69px to the RIGHT of
+the word's last letter. So the word's own column is wide enough to hide
+everything that passes and narrow enough never to reach the copy, and the `turn`
+Check asserts the second of those on the page rather than trusting this table.
+Read the ink and not the boxes: a range over block-level children hands back LINE
+BOXES, which made every crosser look 90 to 190px WIDER than the word and would
+have sized the roof off the column instead of off the letters.
+
+**Its sides are feathered, because the straight edges were reported.** The right
+side dissolves back into the word over half the cap and hangs 0.08 of the cap
+past the S: every crosser's ink stops at least **0.64 of the cap** short of the
+word's right edge, the Gallery's copy starts **0.536** past it at all four windows
+(33 to 69px — the ratio is the same everywhere), and at 1536x760 the Gallery's
+frame starts **0.127** past it, so none of them is reached. The left side cannot
+feather inward — every crosser starts on the word's own left edge — so it hangs
+0.12 of the cap into the Rail's column, whose words stop at least 0.18 short of
+it. What that bought is the marble and the Eater Map's hairlines going soft into
+the S instead of meeting a vertical, which was the 78px of Plinth this used to
+say it would leave hard until somebody reported it.
+
+### The roof grows; it does not switch on
+
+A box that goes up at the first pixel of the turn paints the ground over whatever
+is above the word at that moment, and at the Gallery's rest that is the foot of
+the Front Screen's photographs — so the reader saw a black slab drop over them in
+one frame. **What the roof has to hide is only what crosses the baseline going
+up**, and at the first port nothing has, so its top edge is a line in the
+DOCUMENT: 0.04 of the cap above the baseline at rest (the subheading's cap tops
+stand 1.3 to 2.6px above it at the four windows), rising with the page. The
+photographs are never covered and leave as they would with no roof. The last
+port is the same thing backwards — the Eater Map is already behind the word at
+its own rest, so the roof hides only what rests above that window's top edge,
+and lets go of the document there.
+
+**The fade under the baseline starts above it**, one fade-length up, and slides
+down to the baseline over the first fade-length of travel — the subheading's cap
+tops are within 3px of the baseline at rest, so a fade already in place would dim
+them on the first frame. Every ramp is a five-step smoothstep, because a linear
+one has a visible start and end.
+
+**These are distances the ROOF reads off a scroll timeline, not lengths this
+Kernel writes per scroll**, and that is measured: a custom property written on
+the root restyles the whole document, and one write a frame took the crossing
+from **0.6ms to 19ms of style recalc a step** at 1536x760 in headless Chromium
+(1,441 elements). `hold.ts` publishes `--landing-from` and `--landing-to` —
+which change only with the layout — and the Front Screen animates two registered,
+non-inheriting properties on the one box that reads them.
+
+**The release went the same way.** `--landing-past` was the same root write for
+the screen after the last port: **13ms of style recalc a step there against 0.3ms**
+once the Front Screen animated `--front-screen-cut-past` on the word itself, off
+`scroll(root)` from `--landing-to` across one screen. That was measured at 1536x760
+in headless Chromium, over 60 steps of `to + 10` to `to + 700`, with before and
+after builds interleaved, and the root's inline style went from 61 writes to none.
+`hold.ts` still writes `--landing-past` where `CSS.supports('animation-timeline:
+scroll()')` is false, and the word's held rule reads it as the fallback
+declaration that the animation outranks. The `turn` Check counts the root's
+writes across that screen and requires none; the old code wrote twelve.
+
+**Write a scroll-driven animation in LONGHANDS, never `animation:` followed by
+`animation-timeline:`.** The build's CSS minifier folds the pair into one
+shorthand, `animation: linear both <name> scroll(root)`, and Chromium drops that
+whole declaration. What survives is `animation-range` alone, so the element
+computes `animation-name: none` and sits on its registered initial values. Those
+values are chosen to be the old behaviour, so nothing on the page says it
+happened. The roof shipped that way in its first commit: it grew in `astro dev`
+and was switched in every build. Read `getAnimations()` on the served `dist/`,
+never on the dev server, to know a timeline is running.
 
 ## The page turn, and who owns a notch
 
@@ -613,6 +752,58 @@ anything — a passive wheel listener lets Chromium scroll on the compositor and
 deliver the event afterwards, so the target is hit-tested against a page that has
 already moved, and the strip took the first notch of every page scroll begun near
 it.
+
+**AND BOTH OF THEM STAND ASIDE WHERE NEITHER CAN ACT, WHICH IS THE OTHER HALF OF
+THAT SENTENCE.** Non-passive is not free: Chromium may not scroll until the main
+thread has run, so a listener that never prevents anything down there is still a
+frame of the reader's own scroll. Past the last port the page turn hands the
+wheel back to the browser and the only roll on the page is three screens up, so
+the two reasons above have nothing left to buy — and below the band there is one
+port, no turn, and a whole ordinary scroll paying for one.
+
+So `page-turn.ts` re-registers both listeners **passive** in exactly those two
+regions and non-passive again on the way back, and `wheel.ts` exposes
+`standAside()` for its half. **Measured 300px inside the Catalogue at 1440x900,
+as the time a notch took to be handled: 41ms as shipped, 24ms with the two
+listeners taken off, and 41ms again with every Timeline held** — so it was never
+the scrubbing, and "the Catalogue scrolls late" was half the reader's frames
+spent on two decisions that had already been made (#218).
+
+Three things about it are easy to get wrong. **A passive listener still runs**,
+which is what keeps the push tracking following the wheel across the line and
+lets the way back be decided from the reader's own scroll — a `scroll` listener
+compares against the ports *as last read* and only reads the layout when that
+disagrees with where the two listeners are standing, so it costs nothing on the
+frames where nothing changed. **The swap is never decided mid-turn**: the ease
+carries the speed and the force already on the page, so a reversal can take it
+past a port before it settles back onto one, and standing aside on an overshot
+frame would leave the rest of that push unable to prevent the default it is
+already preventing — a passive `preventDefault` is a console warning and a page
+scrolled twice. Where the reader ENDS UP is the answer, so `land()` asks. And
+**the push on which the line is crossed is the browser's whichever way it went**,
+because a registration governs the events after it — which is the rule coming
+back up already had.
+
+**And the listeners were only half of it.** With both passive, the Catalogue
+still scrolled late, because `hold.ts` was writing `--landing-past` on the root on
+every scroll event for the whole of that Section — long after the word it moves
+had been let go, with no rule left reading it. A custom property on the root is
+inherited by every element, so each write restyled the whole document: **1348
+elements a notch, and 588ms of style recalculation over thirty notches inside the
+Catalogue at 1440x900, against 52ms once the write stopped with the hold.** The
+travel is written only while the word is held now, taken off once on release, and
+nothing is written again until the word is held. The rule it leaves: **a number
+the Kernel writes on the root per scroll is a full-page restyle per frame**, so it
+is written only across the stretch something reads it. The `turn` Check counts
+the root's style writes across a screen of the Catalogue and requires none — the
+old code wrote twelve.
+
+The `turn` Check asserts it as the listeners themselves rather than as a time: a
+stopwatch in a Check is a false failure waiting for a busy machine, and what has
+to hold is the stronger claim that NOTHING non-passive stands on the document
+down there, including something a Section adds later. The DOM does not report its
+own listeners, so that one group asks Chromium through `DOMDebugger`, and it is
+the only place in the suite that speaks CDP.
 
 ## The page's own type size
 
@@ -842,6 +1033,39 @@ Screen is printed on, breathing; the plate and the eye stand in it as lit things
 and the car hangs in it as a silhouette. **The light theme takes none of it**, as
 a rule and not a value — the shade's own gate, for the shade's own reason.
 
+**The second model (2026-09-07): the moonlit ladder IS the picture, and the ghost
+is gone.** The first model drew each of the two pictures as a faded grey print —
+its dark ladder, blacks lifted to #2c2c2c, at 0.17 — and SCREENED the moonlit
+ladder over it as added light. Two rounds of dimming that light did not change
+what the author saw on the eye: a lattice glowing above the sky behind it, every
+member the same white, a radiograph. Measured, the cause was not the light's
+level but its ground. The mast's body sat at 27 of 255 over a sky of 18, and no
+exposure, curve, moon height or bump moved that ratio, because the print under
+the light already stood above the sky and the ladder's own mid tone glowed
+through it — an object at night is a silhouette with highlights, and this was a
+glow with brighter lines in it. What the author pointed at instead was the
+moonlit ladder on black, as build-plate.py writes it: real blacks, lit stone,
+contrast. So that is what the dark theme draws. `corners.css` blends `.plate-lit`
+and `.eye-lit` `normal`, hides `.plate` and `.eye` in that theme, and `corners.ts`
+fetches neither plain ladder there; `build-plate.py` writes no dark ladder for
+either picture and the recipe declares no dark grade for them, so their ladders
+are `light` and `moonlit` and the car's are `light` and `dark`. The grade gained
+a BLACK POINT — the share of the range that is unlit and lands on SHADOW — because
+the S-curve is weakest exactly where a shadowed mid tone sits and could not hold
+the mast's interior at black while its members stayed lit: 0.08 on the plate, 0.2
+on the eye, 0 on every print. The Tokens: the breath's floor is 0.3, since the
+pictures are their light now and a floor of 0.1 took them away between swells;
+the throw's floor is 0.85, since what a picture loses to the throw it now loses
+towards the ground; both picture Tokens are 1. Measured at 1536x760 after the
+shade, against the first model's last numbers: the eye's mast top 23 → 4 and its
+middle 28 → 17 over a sky of 18, so the structure stands against the sky rather
+than glowing in it; the plate's shadowed stone 13 → 5 and its lit stone 19 → 13,
+black where it was grey and a night photograph where it was a wash; at the trough
+the plate is 8 to 11 over a ground of 7 and the eye is at the sky. In the files,
+by luminance, the eye's ladder median went from 32 to 18 and its 99th percentile
+from 100 to 115, with 28% of it black where 6% was; the plate's median from 34 to
+27 and its 99th from 142 to 146. The light theme is untouched.
+
 **It was measured off a reference, and the first reading of the reference was
 wrong in the one place that mattered.** The author brought a ten-second clip of
 this screen with "a subtle blue moonlight from the top right" in it, in which
@@ -861,7 +1085,10 @@ through, so as the ground comes up the picture's own contrast goes DOWN and the
 whole frame moves a shade towards the light's colour. That is the flat wash the
 author saw, and no strength or floor fixes it.
 
-**So the light on a picture is a second ladder, baked, and screened.**
+**So the light on a picture is a second ladder, baked — and, in the first model,
+screened.** What follows is that first model, kept because the bake it describes
+is unchanged; the second model, above, changed what the Kernel does with the
+file and nothing about how the file is made.
 `design/plate/build-plate.py` writes `<stem>-moonlit-<width>.webp` for the plate
 and the eye — THE MOONLIT LADDER in its docstring, and `relight()` — graded so
 black is black and white is the light's own colour, and then LIT: the picture's
@@ -1000,7 +1227,8 @@ frame that stands nearer the moon and over a lit sky is the louder of the two
 before any light is put on it. The mast is 23-28 at the peak over a sky of 18,
 against 40-47 over 29: a little over the dome's 19-25, where it stood at twice
 it. Its ladder's mean halved and its brightest percentile went from 154 to 98
-of 255.
+of 255. Then the author looked again and the MODEL changed — the second model,
+at the head of this section — so these are the first model's last numbers.
 
 **Two things the Editor will do with these that are worth knowing.** The slider
 it draws for a percentage runs to four times the value, so `--moonlight-y` at 6%
@@ -1010,8 +1238,9 @@ half of whatever `--moonlight-strength` asks for is what reaches the screen at t
 shade's shipped 0.5 — drag the strength while looking, not by arithmetic.
 
 **Two levers on the lit pictures, and which is which.** `--moonlight-plate` and
-`--moonlight-eye` are how much of a moonlit ladder lands, live, and they stop at
-1 — the plate's is there and the eye's is 0.8, for the reason above. What the
+`--moonlight-eye` are how much of a moonlit ladder shows, live, and they stop at
+1 — both are there now, and in the dark theme that is how much of the PICTURE
+there is, the ladder being the picture. What the
 light DOES to a picture — its colour, how bright the stone gets, how hard the
 ribs catch it, where the moon is as seen from that corner — is the
 Bake's, in the two Moonlight blocks of `design/bake/plate/recipe.json`, and moves
@@ -1030,6 +1259,66 @@ things the author would see, and the only invisible half — the light theme mov
 — is held by the gate being a rule rather than a value, which is the same
 guarantee the shade has. A moonlit rung that goes missing is the `assets` Check's
 already: it forgives a missing DARK rung and nothing else.
+
+## The Stars: the night sky behind the Moonlight
+
+`.kernel-corners .stars` in `stars.css` is the layer, `stars.ts` draws it, and
+`tokens/stars.css` is its five numbers, reached on the Editor as `kernel-stars`.
+It is the FIRST child of the corner pictures' band, before the Moonlight, so the
+light veils it nearest the moon, the car is cut out of it, and the plate and the
+eye stand in front of it. **The light theme takes none of it**, as a rule:
+`display: none` there, so it is not painted, not animated and `stars.ts` draws
+nothing until the theme is dark.
+
+**It is masked by the pictures' own alpha, and that is why it is not simply
+drawn under them.** The plate and the eye breathe down to
+`--moonlight-breathe-floor` of themselves, so at the trough a star behind the
+dome would show through it at two thirds. The three ladders are cut out — the
+plate is about half transparent, the eye 85% — so `mask-image` takes each
+picture's own file, at the geometry its layer is drawn at, out of the sky:
+the three unioned, the moon's clearing less the union, and a foot that dissolves
+the sky from 68% of the band down so there is no line to scroll past. Rendered
+with the layer filled white, the mask is the skyline — both domes, the crosses,
+the wheel's pillar, the car. `--eye-column` moved from the eye's rule to the
+band for this, so the two measure from one line.
+
+**One sky, laid on like `cover`.** Every star is placed from a fixed seed in a
+1600x900 virtual sky, scaled to fill the band and centred, so a reload, a resize
+and a phone show the same constellations and a narrow window shows fewer of
+them. A star's radius follows the scale only as its square root, clamped: a star
+is a point, not part of a picture.
+
+**Drawn once, never per frame.** The field is a canvas at the display's density,
+capped at 2, repainted only when the band's size or the display's density
+changes. What moves is compositor work: the
+layer's opacity, the twinkles' opacity (their keyframes are constants for that
+reason; each star's brightness is its colour's alpha) and the meteors'
+transform.
+
+**It breathes against the moon.** The layer reads the band's
+`--moonlight-swell` and loses `--stars-moon-dim` of itself at the top of each
+breath, so the stars come out as the moon goes in, on the Moonlight's one clock.
+`prefers-reduced-motion` keeps the sky and stops the twinkle and the meteors,
+with the same selectors as the rules that start them.
+
+**What the shade does to it.** It stands under the shade like everything below
+the type, so at the shipped 0.5 what reaches the screen is half the canvas —
+the brightest stars at about 100 of 255 at 1536x760, the field's median star a
+few levels over a ground of 11.
+That is why the canvas stars are drawn near full alpha: drawn at a third, as
+they first were, the halftone's dots ate them. To judge the drawing itself,
+screenshot it with `.kernel-shade`, `.fx` and the band's other children hidden.
+
+**There is no Milky Way, by decision.** One shipped — a canvas of haze, lumps
+along a bent spine, a warm core and dust lanes cut out with `destination-out` —
+and the author judged it ugly: under the shade and the halftone it read as a
+flat grey stripe across the page, not a galaxy, however good it looked drawn
+alone. A band of light behind the Front Screen is a decision to make by looking
+at alternatives, not a number to retune.
+
+No Check, for the Moonlight's reason: a sky that fails to draw is something the
+author would see, and the one invisible half — the light theme — is held by the
+gate being a rule.
 
 ## A Section mounts when the browser is idle, and "approaching" is the deadline
 
@@ -1223,15 +1512,17 @@ redraw loop. They come back with whichever Section wants them, or not at all.
 
 ## The corner pictures
 
-Three baked photographs, each at four widths and — where the grade needed a
-second answer on black — again per theme. So `corners.ts` picks one file out of a
-grid rather than off a list, and picks again when the theme or the display changes
-under it. A miss on a dark file is the ordinary untuned state and not an error:
-the generator writes no dark ladder while dark's grade matches light's, so there
-is one retry against the light rung of the same width. The plate and the eye carry
-a third ladder besides, `<stem>-moonlit-<width>.webp` — the Moonlight's light on
-the picture, fetched at the same rung in the dark theme only and with no fallback,
-because the generator writes all of it or none (the Moonlight section above).
+Three baked photographs, each at four widths, and each with a second ladder for
+the dark theme — the car's is its dark grade, and the plate's and the eye's is the
+MOONLIT ladder, `<stem>-moonlit-<width>.webp`, which is the whole of what the dark
+theme draws of those two (the Moonlight section above). So `corners.ts` picks one
+file out of a grid rather than off a list, and picks again when the theme or the
+display changes under it. A miss on a dark file is the ordinary untuned state and
+not an error: the generator writes no dark ladder while dark's grade matches
+light's, so there is one retry against the light rung of the same width — the
+car's path, and only the car's now. The moonlit rung is fetched in the dark theme
+only and with no fallback, because the generator writes all of it or none; in
+that theme the plain ladder of a lit picture is not fetched at all.
 
 **In the dark theme the car is a silhouette and not a ghost.** `corners.css` blends
 it `multiply` into the Moonlight painted under it, at an opacity that is now the

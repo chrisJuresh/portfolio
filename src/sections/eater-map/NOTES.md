@@ -1001,6 +1001,20 @@ is the lesser of the two errors — the two pills are 8px apart in one topbar an
 are always read together, where a piece lying on the Slab covering one standing off
 it is the failure #213 shipped and the `eater-map` Check asserts against.
 
+**INSIDE A CARD THE ORDER IS THE APP'S, AND THE DROP HAD QUIETLY BROKEN IT.** The
+app stands its results dropdown at `z-index: 12` over the topbar's 10. The Drop's
+`translate` on `.eater-map__hang` made that box a stacking context at 0, which
+sealed the 12 inside it — so the whole dropdown painted UNDER the topbar, and a
+lowered Offline button was drawn over a dropdown still standing above it. And
+every backdrop and edge was at `auto`, beneath both pills, so a standing pane could
+not have hidden a lowered pill even with the order right. `glass.ts` now reads each
+surface's level off the vendored stylesheet in the ruler — where the `translate` is
+inert — and stands its backdrop, its edge and, for a hung surface, the hang box at
+it. Measured over the search Card at 1440x900: at rest 1,347 pixels change and none
+by more than 7 of 255, all on the seam between the bar and the dropdown; with `01.`
+hovered the dropdown now covers the bar's lower rim where the two lie on the map,
+which is the nearer piece covering the farther one's wall.
+
 **THE ROW CARRIES THE PART AND THE HOOK DOES NOT.** `data-eater-map-point` is on
 the `<li>`, because the hook is a zero-height box a pointer can never be inside —
 what the reader points at is the number, the title and the figure.
@@ -2047,11 +2061,117 @@ declaration, and CSS drops an invalid one rather than refusing it. The rim comes
 back at full alpha, the page looks exactly as it did before the change, and nothing
 says so. That is one build of this, found by looking.
 
-**0.5 is where it was left, and the floor is worth knowing.** Below about a fifth
-the pieces stop having any thickness where they overhang the Slab onto the page's
-own ground — a Card against black has nothing behind its rim for the rim to be
-transparent to — so the drawing goes flat at the one place a reader is most likely
-to be looking at its edge.
+**0.5 is where it was left, and it is 1 now — the section below is why.** The
+floor it recorded still holds for anyone who drags it back down: below about a
+fifth the pieces stop having any thickness where they overhang the Slab onto the
+page's own ground, because a Card against black has nothing behind its side to be
+transparent to.
+
+### The side is the pane, and the slices are the light on it
+
+The author's correction to the section above: the sides "look decent, but they
+don't look like they're the exact same liquid glass material as the top" — a flat
+panel with some thickness added later rather than a slab. That was an honest
+description of the build. The face was the app's tint over a heavily blurred,
+brightened copy of the map; the side was a grey that let the real map through at
+half strength. Two materials, and a hard line where they met.
+
+**So the side is made of the face now.** `glass.ts`'s `body()` is a second copy
+of the surface's frost — the same `<img>`, at the same offset, with the same
+filter, so the parallax is the face's parallax — under the tint the app paints
+that surface, read off the surface ON THE PAGE (the ruler is outside
+`.eater-map__card`, where `--glass` is remapped, so it would hand back the app's
+light glass). `edge.ts` lays that body at the bottom of the stack as
+`Solid.body`, and the slices stop being the material: they go into a group of
+their own, `.eater-map__film`, which carries `--eater-map-card-side-film` as ONE
+opacity and is SCREENED onto the body. It carries the HIGHLIGHT and nothing
+else — see the third correction below. The light still comes out of the one
+function and the one light (#197); what it lights is the pane.
+
+**The body is cut to the solid's silhouette, and that outline is a hull rather
+than a union.** The face's outline swept back along the depth is the hull of the
+outline and its own translate, because a rounded rectangle is convex — so a point
+of the outline whose normal faces along the depth is on the silhouette a whole
+depth back, and every other point is on it where it stands. Which points take
+which form depends on the depth's DIRECTION alone, and that is read once with a
+probe `translate()`; how far back stays the same expression the slices are
+translated by, so the cut follows a window exactly as they do.
+
+**The roll is on screen, because the face's frost is clipped back by it.** Every
+glass surface's backdrop is `inset(fillet round r - fillet)`, as the Slab's
+picture is in `stage-dom.ts`, so the band between that and the outline is the
+shoulder: the side's body and the light on it, seen through the app's own tint.
+Without the clip the face covers every fillet ring and the edge is cut square.
+
+**AND THE BODY'S TINT IS CUT OUT WHERE THE FACE IS, which is what makes it ONE
+material rather than a close match** — the author's second correction, "the edge
+and top look even more distinct". Inside the outline the app already paints the
+surface's tint, over the shoulder as well as the face, so a body tint there too is
+the tint twice and the roll reads as a darker frame. The body's veil is therefore
+`path(evenodd, …)` with the face's outline as a hole: one tint everywhere on the
+solid, painted by the app inside the outline and by the body outside it.
+
+**Three things that were tried and read as a second material, so are gone.** A
+screened, glossy film (the side glows, the top does not); a bright glint ring laid
+round the outline; and the app's own hairline rims (`--glass-rim`,
+`--glass-rim-strong`), which are a white line round a face and say it is a panel
+sitting on something. The rims are multiplied by `1 - --eater-map-solid` in
+`EaterMap.astro`, so below the band, where the drawing is the app's own
+screenshot, they are the app's own lines again. What is left to tell the side from
+the top is the highlight and the silhouette.
+
+**AND THE LIGHT IS A HIGHLIGHT, NOT A SHADING — the third correction:** "edges of
+the bottom component are a bit too bright", and "the colour doesn't match the top".
+Both were the diffuse term. A white film in soft light greys and lightens the pane,
+and the roll faces the light almost as squarely as the face does, so the shoulder
+lit up all the way round — most of all on the nearly clear details sheet. So the
+film has no diffuse term now. `edge.ts`'s `lit` is the MIRROR term alone
+(`stage.ts`'s `edgeGlint`, the same light reflected straight back at the reader),
+peaking half way round the roll, a fainter copy on the far side where the light
+comes back out, and zero on the wall. It is screened on because a highlight is
+light ADDED: colour dodge was tried, since it brightens the pane in its own colour,
+and over this map it brightened nothing at all. Narrow and zero elsewhere, the side
+is the top's colour everywhere the light is not.
+
+**The `eater-map` Check reads a glass surface's direction off its ROLL now, not
+its wall** — and that is a correction to what it asks, not a loosening. The wall of
+a glass surface is unlit on every side by design (a wall facing sideways sends no
+light back at the reader), so asking it whether its four sides differ fails a
+correct drawing. The Check picks the fillet ring whose perimeter varies most — the
+one standing where the highlight is — and asks it the same two questions a wall is
+asked: do its sides differ by `DIRECTED`, and does it ramp round the corners rather
+than step. The second caught a real fault on the way: a highlight is sharper than a
+shade, and at the shading's six points a corner the glint stepped round the ends of
+each pill (68% of its spread in one step). A body's slices are walked at
+`GLINT_ARC`, eighteen, which brings it to 22%. The Slab and every solid without a
+body are read off the wall exactly as before.
+
+The app's drop shadows (`--elev-1`, `--elev-2`) are gated on the solid for the
+rims' reason: in the band they fall on the Card's own side, as a darker line where
+the top meets it. The details sheet's own upward shadow is a literal in `cards.css`
+and stays.
+
+**Three things about it are easy to get wrong.**
+
+- **The body is NOT tagged as a part.** The Drop moves every `[data-eater-map-part]`
+  by `translate`, and the body is inside the stack, which already is one — tagged
+  twice, it would fall twice as far.
+- **`--eater-map-card-edge-alpha` is 1 for a reason, not by default.** The side
+  shows the pane's copy of the map; a see-through side shows that copy AND the
+  real map under it, which drift apart as a Card climbs.
+- **The slices' `colour` is the light's colour now, and it is still opaque.**
+  `--eater-map-card-edge` is white because the side is the face's own material and
+  only the light differs; the film's transparency is its group's, for
+  `Solid.alpha`'s reason.
+
+The thickness went from 0.01 to 0.016, and the roll is 0.005 — "slightly
+rounded" — chosen by looking at 1440x900: at #187's 1% the side was two or three pixels,
+which is not enough surface for any material to read on. `pnpm check` passes
+unchanged — the edge group asks what the slices are, and they are what they were,
+lit by the same light; the body is an element it does not count. What it
+does NOT answer is whether the side looks like the top, which is a look. No
+frame-time measurement was taken for this: it adds, per surface, one blurred
+`<img>`, one clipped box and one blended group — five of each on the page, against the 144 slices the turn's measurements above are about.
 
 ### The generated geometry follows a Token that moves — dragged, or answered by a media query (#196)
 
@@ -2355,6 +2475,68 @@ the whole of the marble's corner at every window in the band. `src/kernel/NOTES.
 carries the four windows it was measured at. Nothing is cut into this slot; the
 word is simply drawn here as well, and the Panel's own masthead is still
 `visibility: hidden` because the CUT word is already that Section's head.
+
+### And since #193 this masthead YIELDS to the page's own word
+
+The word this Section draws was a second DRAWING of the Gallery's, and while it
+was, the two were never on the screen together: the first one is a box at the
+Front Screen's foot, two screens up by the time this Section owns the window. The
+Kernel holds it there now, so it IS up here — standing in this masthead's own
+slot, at this masthead's own size — and this element goes `visibility: hidden`
+while it is held, for the reason the Projects Panel's own masthead is hidden
+unconditionally. `visibility` and not `display`, because this element is the
+Section's `aria-labelledby` and a directly-referenced hidden element still
+supplies an accessible name.
+
+**Read as a fact about the page, not reached into.** The root carries
+`data-landing-held` and this Section decides what to do about it, which is the
+boundary `CONTEXT.md` draws. **Not gated on the band**, deliberately: the state
+only exists where there is a page turn to stand still across, so a second gate
+here would be a second copy of the band's two numbers — and a rule left gated on
+the regime of the thing that used to do its job is exactly how this page came to
+say PROJECTS twice once before.
+
+This Section still marks itself `data-landing-word`, which is what tells the
+Kernel the hold runs this far. It is the LAST Section that does, so the word
+leaves with this one.
+
+### What the hold costs this column, measured: six pixels of the masthead's bearing
+
+**This is the one target the hold moves, and it is reported rather than hidden.**
+#201 stands the column's three words on one line by giving the title and the copy
+`the masthead's bearing less their own` as a padding, so all three INKS land at
+the grid's vertical plus that bearing. The held word is a DRAWING whose box is
+its ink, so it stands on the vertical itself — the bearing to match is zero, and
+a negative padding is refused by #201's own floor.
+
+Measured at 1536x760, first inked pixel, at this Section's resting place:
+
+| block | before the hold | held |
+| --- | --- | --- |
+| PROJECTS | 55 | 49 |
+| the serif title | 55 | 55 |
+
+**What that replaces is a 6px JUMP.** On the shipped page the word's ink stood at
+49 on the Gallery and 55 here, so it moved six pixels right on the turn between
+them — which is the thing #193 exists to remove. A still six pixels is the trade
+for a moving six pixels, and #193 is the ticket that says the word must not move.
+
+Three ways out, and the choice is the author's rather than an agent's:
+
+1. **Leave it.** The masthead is flush to the page's margin and the two blocks
+   under it are a bearing inside it, which is an ordinary typographic
+   arrangement. What #201 actually reported — the copy reading as sitting ON its
+   own rule — stays fixed, because the copy's compensation is untouched.
+2. **Re-align this column to the word that is really there**, by compensating
+   against the drawing rather than the face while held. That closes the gap to
+   3px and puts the copy's ink 0.9px off the vertical again, which is #201's bug
+   returning.
+3. **Give the drawing the masthead's own left side bearing**, so its ink lands
+   where this masthead's ink stood and all three agree again. That is the most
+   correct reading of "the word stands in the masthead's slot" — but the word is
+   then a bearing off the page's left margin on the FIRST screen too, which is a
+   change to a composition the author has signed off, and it needs the Front
+   Screen to measure a face the way `title.ts` does.
 
 ## The serif title, and why two ratios need a script
 

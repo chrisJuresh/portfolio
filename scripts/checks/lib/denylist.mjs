@@ -26,6 +26,8 @@ const NOT_A_TICKET = new Set([
   'AES',
   'ARIA',
   'AVIF',
+  // A dataset, not a tracker: CIFAR-10 and CIFAR-100.
+  'CIFAR',
   'CSS',
   'EN',
   'ES',

@@ -7,6 +7,7 @@
 // rewrites are declared in vercel.json, the local servers mirror them out of
 // that same file, and the Shell makes the jump.
 import Rail from '../kernel/rail/Rail.astro';
+import Catalogue from '../sections/catalogue/Catalogue.astro';
 import EaterMap from '../sections/eater-map/EaterMap.astro';
 import FrontScreen from '../sections/front-screen/FrontScreen.astro';
 import ProjectsPanel from '../sections/projects-panel/ProjectsPanel.astro';
@@ -47,6 +48,12 @@ const HERE = 'https://chrisj.uk/portfolio';
       finishes at the second one, so the Panel and everything after it are dark —
       src/kernel/turn.ts.
 
+      THE CATALOGUE IS LAST, AND TALLER THAN A SCREEN. Its top is the page turn's
+      last resting place and the rest of it is read by scrolling, which is what
+      page-turn.ts hands back to the browser past the last port; a Section added
+      AFTER it would take that role and give the Catalogue's foot a port to turn
+      to from inside it. src/sections/catalogue/NOTES.md.
+
       AND THE RAIL STANDS BETWEEN THE FIRST SECTION AND THE INDEX IT NAMES, which
       is a fact about the document and therefore belongs beside the order rather
       than inside either Section (#192). It is the Kernel's furniture and there is
@@ -59,4 +66,5 @@ const HERE = 'https://chrisj.uk/portfolio';
   <Rail />
   <ProjectsPanel />
   <EaterMap />
+  <Catalogue />
 </Shell>

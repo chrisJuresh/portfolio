@@ -12,7 +12,7 @@ expensive to rediscover. Read it before writing a spec and before the first edit
 Then, as the work needs them: [`CONTEXT.md`](CONTEXT.md) for the vocabulary —
 **Shell**, **Kernel**, **Section**, **Turn**, **Timeline**, **Token**,
 **Content**, **Variant**, **Bake**, **Check** — which is binding on identifiers,
-ticket titles and prose; and [`docs/adr/`](docs/adr/) for the seven decisions that
+ticket titles and prose; and [`docs/adr/`](docs/adr/) for the eight decisions that
 are binding on the build. Where a name in the existing code disagrees with the
 glossary, the glossary wins.
 
@@ -252,6 +252,20 @@ document moves past it. **The crossing is that first notch and not the document'
 whole scroll**, which were the same number while there were two Sections and are
 not now; `src/kernel/turn.ts` says so, and `src/kernel/NOTES.md` says what it
 cost to find out.
+
+**And on the SECOND notch the word does not leave: it is HELD** (#193). A Section
+that stands the landing's word in its own masthead's slot marks itself
+`data-landing-word`, and `src/kernel/hold.ts` pins the Cut Title at the landing
+from the first such Section's resting place to the last one's — so turning
+between the two Showcases moves the composition, moves the Rail's highlight, and
+leaves the word alone. Past the last of them the word travels at the document's
+own rate and leaves with the Section it heads, which is why nothing on the
+Catalogue hides it. What the document passes BEHIND while it is held is the
+**roof**: the word's own column, painting the ground, dissolving across the J's
+descender, and up ONLY between two resting places — at rest it would cut the
+Gallery's subheading at one end and an Eater Map hairline at the other, which is
+measured in `src/kernel/NOTES.md` along with the six pixels of the Eater Map
+column's ink agreement this cost and the three ways out of it.
 `src/kernel/landing.css` is the device and the one measure the two Sections share
 — a THIRD Section joining that list is a decision and #172 decided against it —
 and `src/kernel/page-turn.ts` is the notch, `src/kernel/wheel.ts` who owns it.
@@ -295,7 +309,7 @@ Every dependency version is pinned exactly and nothing is updated on a schedule
 ignores `.npmrc` for `saveExact`, and the failure mode is a caret quietly
 reappearing in `package.json`.
 
-**The Rail — Photo Vault / Eater Map / Record Engine — is the KERNEL's, and there
+**The Rail — Photo Vault / Eater Map / Other Work — is the KERNEL's, and there
 is exactly one of it.** #192 took it out of the two Sections that each drew one
 and swapped them as the reader turned. It is `src/kernel/rail/`, its Tokens are
 `src/kernel/tokens/rail.css`, and `src/pages/portfolio.astro` places it between
@@ -307,23 +321,72 @@ nothing else, so they are changed by hand. The current entry is derived from the
 Section at rest and never declared; the `rail` Check asserts the count, that the
 box does not move across the turn, and that the highlight follows it back.
 
+**The fourth Section is the Catalogue, and it is the LAST** (ADR 0008): the other
+projects, one Entry each — a Still beside a few words, the two alternating sides
+down one centred column with a spine between them and each Entry's number
+standing on the spine above its row. It is `src/sections/catalogue/`, its words
+are written from `chrisJuresh/career-record`'s project profiles and honour each
+profile's do-not-say rules (its `NOTES.md` says which), and four things
+about it are cheap to get wrong. **It is TALLER THAN A SCREEN on purpose**: inside
+the band its top is the page turn's last resting place and the rest of it is read
+by scrolling, which `page-turn.ts` hands back to the browser past the last port —
+so "the last port" is the Catalogue's and not the Eater Map's, and the `eater-map`
+Check, which assumed otherwise in three places, finds its own Section's port now.
+**Handing it back means the LISTENERS and not only the decision**: the Kernel's two
+document-level wheel listeners are re-registered passive past the last port and
+below the band, because a non-passive one stops Chromium scrolling until the main
+thread has run and that cost this Section 17ms a notch — half the reader's frames
+— for a decision already made (#218). **And nothing is written on the root while
+the Catalogue is read, nor on the screen PROJECTS leaves on**: a custom property
+on the root is inherited by every element, so writing one per scroll restyles the
+whole document a notch. The word's travel is animated on the word itself off a
+scroll timeline, and `hold.ts` writes `--landing-past` only where there are no
+scroll timelines, and then only while the word is held. **A scroll-driven
+animation is written in longhands**, because the minifier folds `animation` and
+`animation-timeline` into a shorthand Chromium drops, silently.
+`src/kernel/NOTES.md` has the measurement,
+the three things about it that are easy to get wrong, and why the `turn` Check
+asserts the listeners rather than a time.
+**Its Stills are PLACEHOLDERS until a picture is named**: `still.file` in its
+Content names a file under `src/sections/catalogue/assets/stills/`, resolved at
+build so a wrong name fails `pnpm build` rather than 404ing, and an Entry naming
+none is drawn as a plate with its number across it. **Nothing on the Rail is
+unbuilt any more** — its third entry is a link to the Catalogue — so the `rail`
+Check's unbuilt-entry assertion is a note until a Showcase is promised again. And
+**PROJECTS does not stand on it**, by decision rather than omission: it is not a
+Showcase and its head is centred over the spine. `src/sections/catalogue/NOTES.md`
+says so for #193's sake, and carries the composition.
+
 **The Moonlight is the Kernel's too**: one cool light over the DARK theme's first
 screen, cast from just inside the top right, breathing, that the plate and the
 eye stand in as LIT things and the car hangs in as a silhouette.
 `src/kernel/corners.css` draws it INSIDE the corner pictures' band and not beside
 the shade, because the car's blend reaches only what that band painted before it
 — which is also why the band paints the ground it was already showing.
-**The light on the two pictures is BAKED, not blended**: `design/plate/
-build-plate.py` writes a third ladder of each, `<stem>-moonlit-<width>.webp`,
-graded black-to-the-light's-colour and then relit off its own luma as a bump map
-from where the moon stands, and the Kernel screens it over the ghost, masked by
-the moon's throw, at an opacity that breathes with the sky. Lifting the ghost's
-opacity instead is what "just whiter" means, and it shipped that way once. The
-car has no moonlit ladder and must not get one. `src/kernel/tokens/moonlight.css`
+**The two pictures are BAKED by moonlight, not blended into it**: `design/plate/
+build-plate.py` writes a second ladder of each, `<stem>-moonlit-<width>.webp`,
+graded black-to-the-light's-colour with a BLACK POINT under it and then relit off
+its own luma as a bump map from where the moon stands, and in the dark theme the
+Kernel draws THAT as the picture — normal blending, blacks left black, masked by
+the moon's throw, at an opacity that breathes with the sky — and nothing else of
+either: the plate and the eye have no dark ladder. Two earlier models are the
+traps. A faded grey ghost lifted over the lit ground is what "just whiter" means;
+and that same ghost with the moonlit ladder SCREENED over it read as a radiograph
+on the eye's lattice however dim the light was made, because the print under it
+already stood above the sky. The car has no moonlit ladder and must not get one;
+it keeps its dark ladder and is cut out of the light. `src/kernel/tokens/moonlight.css`
 is the twelve numbers and answers to `kernel-moonlight`; the relight's numbers
 are the plate Bake's two Moonlight blocks; the breath is ONE animation on the
 band, read by the sky and both lit layers; and the light theme takes none of it,
 as a rule and not a value. `src/kernel/NOTES.md` has the measurements.
+
+**And behind the Moonlight, the Stars** — a star field drawn once onto a canvas by
+`src/kernel/stars.ts`, a few twinkling stars and three
+meteors, the first thing in the same band, dark only, breathing against the moon.
+They are MASKED by the three pictures' own alpha rather than merely drawn under
+them, because the plate and the eye breathe down to a third of themselves and a
+star would show through the dome at the trough. `src/kernel/tokens/stars.css` is
+`kernel-stars`; `src/kernel/NOTES.md` has the rest.
 
 **Read [`src/kernel/NOTES.md`](src/kernel/NOTES.md) before touching the Kernel,
 and [`src/sections/NOTES.md`](src/sections/NOTES.md) before adding a

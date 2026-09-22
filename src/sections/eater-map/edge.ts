@@ -1,4 +1,4 @@
-import { edgeShade, lightingIn, type Shade } from './stage';
+import { edgeGlint, edgeShade, lightingIn, type Shade } from './stage';
 
 /**
  * The **slice stack**: how anything on this plane is given thickness.
@@ -231,6 +231,31 @@ export interface Solid {
    * sheet exists to remove. A curved screen does not darken as it turns, either.
    */
   readonly wrap?: string;
+  /**
+   * What the solid is MADE OF, when that is more than an edge colour — and it is
+   * the Cards' glass that asks, because a pane whose face is frosted map and whose
+   * side is grey paint reads as two materials glued together.
+   *
+   * `element` is built by the caller and laid at the BOTTOM of the stack, in the
+   * face's own box, CUT TO THE SOLID'S SILHOUETTE — the face's outline swept back
+   * along the depth, which is convex because the outline is, so it is the hull of
+   * the outline and its own translate and needs no union of slices to find. The
+   * slices then stop being the material and become a lit FILM over it, at `film`,
+   * mixed by `blend`: the side of the pane is the pane, and the light is what says
+   * which way the side faces.
+   *
+   * THE FILM IS ONE GROUP, for `alpha`'s reason: the slices are filled boxes that
+   * overlap by as much as the solid is deep, so an opacity per slice is a smear.
+   *
+   * ONLY WHERE THE DEPTH IS DRAWN FLAT. The silhouette is a 2D outline, and a
+   * `translateZ` stack has no such thing until the compositor projects it — so
+   * without `flatten` this field is ignored and the slices are the material again.
+   */
+  readonly body?: {
+    readonly element: HTMLElement;
+    readonly film: string;
+    readonly blend?: string;
+  };
 }
 
 /**
@@ -245,6 +270,15 @@ export interface Solid {
 const FILLET = 16;
 const WALL = 8;
 
+/** How sharp a glass edge's highlight is, how bright at its peak, and how much of it
+ *  comes back out on the far side. Constants of the MATERIAL, chosen by looking:
+ *  `--eater-map-card-side-film` is the one number the author moves, and it scales
+ *  all three together. */
+const GLINT_POWER = 5;
+const GLINT_ARC = 18;
+const GLINT = 0.7;
+const GLINT_FAR = 0.45;
+
 /** The class the slices carry, so a reader of the DOM can see what they are. Not a
  *  Token-bearing name: nothing styles it. */
 const SLICE = 'eater-map__slice';
@@ -253,6 +287,10 @@ const SLICE = 'eater-map__slice';
  *  asked for one. Nothing styles this either — the one declaration on it is
  *  written here, with the rest of the geometry. */
 const STACK = 'eater-map__stack';
+
+/** ...and the group the slices go into when a `Solid.body` is the material and
+ *  they are only its film. Nothing styles it either. */
+const FILM = 'eater-map__film';
 
 /**
  * Take one host's slices back off, which is what makes a redraw land on the DOM it
@@ -342,7 +380,7 @@ interface Facet {
  * says. The sort is what closes the loop: the top side's left endpoint comes out
  * just under 360deg and lands at the end.
  */
-function perimeter(w: number, h: number, radii: Corners): Facet[] {
+function perimeter(w: number, h: number, radii: Corners, arcs = ARC): Facet[] {
   const [tl, tr, br, bl] = radii;
   const hw = w / 2;
   const hh = h / 2;
@@ -354,8 +392,8 @@ function perimeter(w: number, h: number, radii: Corners): Facet[] {
    *  which is what makes the shape and the shading fall out of one parameter. */
   const arc = (cx: number, cy: number, t0: number, r: number) => {
     if (r < SQUARE) return;
-    for (let step = 1; step < ARC; step += 1) {
-      const t = (t0 + 90 * (step / ARC)) * RAD;
+    for (let step = 1; step < arcs; step += 1) {
+      const t = (t0 + 90 * (step / arcs)) * RAD;
       push(cx + r * Math.cos(t), cy + r * Math.sin(t), Math.cos(t), Math.sin(t));
     }
   };
@@ -415,13 +453,20 @@ function perimeter(w: number, h: number, radii: Corners): Facet[] {
  * gradient does not wrap: without it the arc from the last stop round to the first
  * is interpolated against nothing and the top of the box is a seam.
  */
-function conicEdge(w: number, h: number, radii: Corners, nz: number, shade: Shade): string {
+function conicEdge(
+  w: number,
+  h: number,
+  radii: Corners,
+  nz: number,
+  shade: Shade,
+  arcs = ARC,
+): string {
   const lateral = Math.sqrt(Math.max(0, 1 - nz * nz));
   const mix = (point: Facet) =>
     `color-mix(in srgb, currentColor, #000 ${
       Math.round((1 - shade(point.nx * lateral, point.ny * lateral, nz)) * 1000) / 10
     }%)`;
-  const points = perimeter(w, h, radii);
+  const points = perimeter(w, h, radii, arcs);
   const first = points[0];
   // A slice with no width or no height has no perimeter to walk, and a gradient
   // with no stops is an invalid declaration — which paints NOTHING and reads as an
@@ -498,6 +543,59 @@ export function fitRadii(w: number, h: number, radii: Corners): Corners {
   pair(tr, br, h);
   const fit = (v: number) => Math.max(0, v * k);
   return [fit(tl), fit(tr), fit(br), fit(bl)];
+}
+
+/** How finely a corner is cut for the SILHOUETTE. Finer than `ARC`, because this
+ *  one is an outline a reader sees the edge of, where that one is only where a
+ *  gradient's stops fall. */
+const HULL_ARC = 16;
+
+/**
+ * The solid's silhouette as a `polygon()`, in the face box's own percentages plus
+ * the depth's offset — `Solid.body`'s cut.
+ *
+ * THE OUTLINE SWEPT ALONG A STRAIGHT LINE IS THE HULL OF ITS TWO ENDS, because a
+ * rounded rectangle is convex. So a point of the outline whose normal faces away
+ * from the depth is on the silhouette where it stands, one whose normal faces
+ * along it is on the silhouette a whole depth back, and at each of the two changes
+ * the side between them is the edge the eye reads as the solid's flank. WHICH
+ * points take which form depends on the depth's DIRECTION alone, which is a
+ * number; how far back is an expression and stays one, so the cut follows a
+ * window exactly as the slices do.
+ */
+function silhouette(plan: Plan, along: { x: number; y: number }, shift: { x: string; y: string }): string {
+  const { w, h } = plan;
+  const [tl, tr, br, bl] = plan.radii;
+  const points: { x: number; y: number; nx: number; ny: number }[] = [];
+  const corner = (cx: number, cy: number, t0: number, r: number) => {
+    for (let step = 0; step <= HULL_ARC; step += 1) {
+      const t = (t0 + 90 * (step / HULL_ARC)) * RAD;
+      points.push({ x: cx + r * Math.cos(t), y: cy + r * Math.sin(t), nx: Math.cos(t), ny: Math.sin(t) });
+    }
+  };
+  // Clockwise from the top-left corner's end, CSS's y down. A square corner is a
+  // radius of zero, which is sixteen coincident points walking the normal round —
+  // the right answer for a hull, since the normal genuinely turns there.
+  corner(w - tr, tr, -90, tr);
+  corner(w - br, h - br, 0, br);
+  corner(bl, h - bl, 90, bl);
+  corner(tl, tl, 180, tl);
+  /** Does the outline face along the depth here — and so stand on the silhouette
+   *  a whole depth back rather than where it is? */
+  const behind = (p: { nx: number; ny: number }) => p.nx * along.x + p.ny * along.y >= 0;
+  const at = (p: { x: number; y: number }, shifted: boolean) =>
+    `calc(${figure((p.x / w) * 100)}% + ${shifted ? shift.x : '0px'}) ` +
+    `calc(${figure((p.y / h) * 100)}% + ${shifted ? shift.y : '0px'})`;
+  const out: string[] = [];
+  const last = points[points.length - 1];
+  let was = last ? behind(last) : true;
+  for (const point of points) {
+    const now = behind(point);
+    if (now !== was) out.push(at(point, was));
+    out.push(at(point, now));
+    was = now;
+  }
+  return `polygon(${out.join(',')})`;
 }
 
 /**
@@ -598,6 +696,51 @@ export function extrude(host: HTMLElement, before: Node | null, solid: Solid): v
     host.insertBefore(stack, before);
   }
 
+  // THE MATERIAL UNDER THE FILM, where the caller has one (`Solid.body`). Laid in
+  // the face's own box and cut to the silhouette, then the slices go into a group
+  // of their own above it — and that group, not each slice, carries the film's
+  // opacity, for the reason the stack carries `alpha`.
+  let film: HTMLElement = stack;
+  if (solid.body !== undefined && flatten !== undefined && stack !== host) {
+    const probe = document.createElement('div');
+    probe.style.cssText =
+      'position:absolute;width:0;height:0;' +
+      `transform:translate(calc(${alongX} * 1000px),calc(${alongY} * 1000px))`;
+    host.append(probe);
+    const matrix = new DOMMatrixReadOnly(getComputedStyle(probe).transform);
+    probe.remove();
+    const shift = {
+      x: `calc((${depth}) * ${alongX} / (${flatten}))`,
+      y: `calc((${depth}) * ${alongY} / (${flatten}))`,
+    };
+    const { element } = solid.body;
+    element.setAttribute('aria-hidden', 'true');
+    element.style.cssText += [
+      'position:absolute',
+      `left:calc(${box.x})`,
+      `top:calc(${box.y})`,
+      `width:calc(${box.w})`,
+      `height:calc(${box.h})`,
+      'pointer-events:none',
+      `clip-path:${silhouette(plan, { x: matrix.m41, y: matrix.m42 }, shift)}`,
+    ].join(';');
+    stack.append(element);
+    film = document.createElement('div');
+    film.className = FILM;
+    film.setAttribute('aria-hidden', 'true');
+    film.style.cssText = [
+      'position:absolute',
+      'left:0',
+      'top:0',
+      'width:0',
+      'height:0',
+      'pointer-events:none',
+      `opacity:calc(${resolved(solid.body.film, style)})`,
+      ...(solid.body.blend === undefined ? [] : [`mix-blend-mode:${solid.body.blend}`]),
+    ].join(';');
+    stack.append(film);
+  }
+
   /** Where the next slice goes.
    *
    *  IN 3D, always immediately before the face: depth sorting decides what covers
@@ -615,9 +758,9 @@ export function extrude(host: HTMLElement, before: Node | null, solid: Solid): v
    *  face — the face is the box's sibling and no longer something a slice can be
    *  placed against. `insertBefore(sheet, null)` appends, so the two branches say
    *  the same thing about order and only the parent differs. */
-  let next: Node | null = stack === host ? before : null;
+  let next: Node | null = film === host ? before : null;
   const place = (sheet: HTMLElement) => {
-    stack.insertBefore(sheet, next);
+    film.insertBefore(sheet, next);
     if (flatten !== undefined) next = sheet;
   };
 
@@ -625,10 +768,9 @@ export function extrude(host: HTMLElement, before: Node | null, solid: Solid): v
     const value = Number.parseFloat(style.getPropertyValue(name));
     return Number.isFinite(value) ? value : 0;
   };
-  const shade: Shade = edgeShade(
-    { tilt: angle('--eater-map-tilt'), swing: angle('--eater-map-swing') },
-    lightingIn(style),
-  );
+  const attitude = { tilt: angle('--eater-map-tilt'), swing: angle('--eater-map-swing') };
+  const shade: Shade = edgeShade(attitude, lightingIn(style));
+  const mirror: Shade = edgeGlint(attitude, lightingIn(style), GLINT_POWER);
 
   /** One slice: how far in from the face's own outline it stands, and how far
    *  back. Its corners follow from the inset — a section taken `i` in from the
@@ -671,6 +813,30 @@ export function extrude(host: HTMLElement, before: Node | null, solid: Solid): v
     const size =
       across > 0 && down > 0 ? `${figure(100 / across)}% ${figure(100 / down)}%` : '100% 100%';
     return `url("${solid.wrap}") center / ${size} no-repeat`;
+  };
+
+  /**
+   * What a slice's film carries where it is only the light on a `Solid.body` — and
+   * it is the HIGHLIGHT and nothing else, which is the whole of liquid glass.
+   *
+   * THE BODY IS ALREADY THE FACE'S MATERIAL, so a film that shaded it would make
+   * the side a different colour from the top, which is exactly what the author
+   * saw: a white film in soft light greys the pane and lightens it, most of all
+   * on the nearly clear details sheet. So there is no diffuse term here at all.
+   * What is left is the mirror term — the light sent straight back at the reader —
+   * peaking half way round the roll, where the shoulder turns towards it, fainter
+   * again on the far side where light that went into the pane comes back out, and
+   * nothing down the wall. `glass.ts` SCREENS it on: a highlight is reflected light
+   * ADDED to the pane, so it shows on a dark map as well as a bright one — colour
+   * dodge was tried and only brightens what is there, which over this map is
+   * nothing — and because it is narrow and zero elsewhere, the side is the top's
+   * colour everywhere the light is not.
+   */
+  const lit = (nz: number, part: 'fillet' | 'wall'): Shade => {
+    if (solid.body === undefined) return shade;
+    const roll = part === 'fillet' ? 2 * nz * Math.sqrt(Math.max(0, 1 - nz * nz)) : 0;
+    return (x, y, z) =>
+      Math.min(1, GLINT * roll * Math.max(mirror(x, y, z), GLINT_FAR * mirror(-x, -y, z)));
   };
 
   const slice = (
@@ -739,7 +905,10 @@ export function extrude(host: HTMLElement, before: Node | null, solid: Solid): v
               Math.max(0, plan.radii[3] - apart),
             ],
             nz,
-            shade,
+            lit(nz, part),
+            // A HIGHLIGHT IS SHARPER THAN A SHADE, so it needs more of a corner's
+            // quarter-turn to ramp across or it steps round the ends of a pill.
+            solid.body === undefined ? ARC : GLINT_ARC,
           )}`,
       // AT ITS DEPTH, one way or the other — `flatten` says which and why.
       flatten === undefined

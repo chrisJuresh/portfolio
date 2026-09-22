@@ -161,24 +161,23 @@ a worktree it reports on `development` while looking like it reports on your
 branch. Run `pnpm build` in the same tree first; the tool says so if `dist/` is
 missing.
 
-**A `data:` URI in a Variant is silently corrupted, and a Variant's own asset is
-the way round it.** The tool rewrites every relative `url()` in a sheet to an
-absolute one so a Variant can reference a file in its own folder — and the
-pattern it does that with, `url\(\s*(['"]?)(?!data:|https?:|\/)`, lets the
-optional quote **backtrack**. With `url("data:…")` the engine tries the quote,
-fails the lookahead on `data:`, gives the quote back, and then succeeds against
-the `"` — so what reaches the browser is
-`url(/src/sections/<section>/"data:…")`, the declaration is dropped by the CSS
-parser, and the shot comes back as though the Variant declared nothing. Quoted
-`https:` and quoted absolute paths go the same way. Nothing reports it: the
-`identical` digest catches it only if the Variant declared nothing else, and the
-Projects Panel's `grain` had a second layer, so it rendered, differed, and was
-captioned as a normal shot.
-
-Until that pattern is fixed, put the file in the Section's `assets/` and
-reference it relatively — `url('assets/grain.svg')` — which is the path the
-`/src/` half of the tool's own server exists for, and which the rewrite handles
-correctly.
+**A `data:` URI in a Variant works, and for a while it silently did not.** Both
+ways of giving a Variant a picture are fine — a file in the Section's `assets/`,
+reached relatively as `url('assets/grain.svg')`, which is what the `/src/` half of
+the tool's own server is for; or the picture written inline. Recorded rather than
+deleted because the workaround had been written into three places — here, the
+`grain` Variant, and the picture it reaches for — and an author meeting one of
+them would put a file in `assets/` believing they had to. The rewrite that makes a
+relative `url()` absolute used to gate on a lookahead standing behind an
+**optional** quote, which a regex engine is free to step around: `url("data:…")`
+came out as `url(/src/sections/<section>/"data:…")`, the CSS parser dropped the
+whole declaration, and the shot came back as bare ground captioned like a
+considered direction. Quoted `https:` URLs and quoted absolute paths went the same
+way, and nothing reported any of it — the `identical` digest only says so when the
+Variant declared nothing else. It is `design/tools/urls.mjs` now, with a test
+beside it and the whole of it in its header, including the half that is not about
+quotes: an inline SVG carries `url()`s of its own, and the rewrite has to stay out
+of them.
 
 **`design/sheets/` is wiped on every run** and is not committed. It is a picture
 of the source it was run against, so a kept copy could only ever be a picture of

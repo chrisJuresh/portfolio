@@ -49,22 +49,22 @@
   /* How much of the light is left at the bottom of a breath, as a share of the
      strength — the sky's and the pictures' alike. 1 is a light that does not
      move; the reference went nearly dark between swells, and at 0.6 the breath
-     was reported as not there. */
-  --moonlight-breathe-floor: 0.1;
+     was reported as not there. Since the pictures ARE their lit ladders in the
+     dark theme, this is also how much of the plate and the eye is left at the
+     trough: 0.3 keeps them there, dim, rather than gone. */
+  --moonlight-breathe-floor: 0.3;
 
-  /* ---- the light ON the pictures ------------------------------------------
-     How much of the moonlit ladder lands on each picture at the top of a
-     breath — the relit plate and eye that corners.css screens over the ghosts,
-     one number each because the moon is high and to the right of the plate and
-     nearly over the eye, and the two frames are not equally loud to begin
-     with. 0 leaves a picture the ghost it is with the light down. What the
-     light DOES to the picture — its colour, where it falls, how the ribs catch
-     it — is baked, and is the plate Bake's two Moonlight blocks. The eye's is
-     under 1 because its frame is the louder of the two — white steel rim-on,
-     standing nearer the moon and over a lit sky — and its file already holds
-     back as far as it can without losing the lattice's members. */
+  /* ---- the pictures BY moonlight -------------------------------------------
+     How much of each moonlit ladder shows at the top of a breath. In the dark
+     theme these ARE the plate and the eye — corners.css draws each ladder as a
+     picture, blacks and all, with no ghost under it — so 1 is the picture at
+     full and 0 is no picture at all in that theme. One number each because the
+     moon is high and to the right of the plate and nearly over the eye, and
+     the two frames are not equally loud to begin with. What the light DOES to
+     a picture — its colour, where it falls, how the ribs catch it — is baked,
+     and is the plate Bake's two Moonlight blocks. */
   --moonlight-plate: 1;
-  --moonlight-eye: 0.8;
+  --moonlight-eye: 1;
 
   /* How far the light on the pictures carries, as a share of the fold: the
      moon's throw, from the same centre as the sky's light but wider, because a
@@ -75,6 +75,6 @@
 
   /* What reaches a picture at the far end of the throw, as a share of the
      light on one under the moon. 1 lights both pictures alike; 0 leaves the far
-     corner to its ghost. */
-  --moonlight-throw-floor: 0.5;
+     corner unlit — and unlit is unseen, now that a picture is its light. */
+  --moonlight-throw-floor: 0.85;
 }

@@ -14,17 +14,17 @@
  * rest on a port, and outside it the top edge is where a Section starts owning
  * the screen.
  *
- * WHERE A SECTION'S PORT IS, ASKED THE WAY page-turn.ts ASKS IT: the box's top
- * edge less its own `scroll-margin-top`, which is what puts the Panel's landing
- * on the word rather than on the Section's edge. Measured per call rather than
- * cached, for the reason `ports()` does the same on every wheel notch — a
- * Section mounts on approach and changes height when it does, and its pictures
- * change it again.
+ * WHERE A SECTION'S PORT IS, ASKED THE WAY page-turn.ts ASKS IT — and now asked
+ * BY page-turn.ts, which is where `portOf()` lives. This file used to carry its
+ * own copy of that arithmetic and the copy was subtly different: it did not
+ * clamp, which is correct here and wrong in `ports()`. The clamping stayed with
+ * the caller when the four copies became one.
  *
  * The markup already names one entry (Rail.astro), so this agrees with the
  * server at the top of the document and writes nothing until the reader moves.
  */
 
+import { portOf } from '../page-turn';
 import { onTurn } from '../turn';
 
 /** A pixel of travel is "already there" — the same slack page-turn.ts uses. */
@@ -69,10 +69,7 @@ export function mountRail(): void {
   const at = (): HTMLElement => {
     let found = first;
     for (const section of document.querySelectorAll<HTMLElement>('[data-section]')) {
-      const style = getComputedStyle(section);
-      const margin = Number.parseFloat(style.scrollMarginTop) || 0;
-      const port = section.getBoundingClientRect().top + window.scrollY - margin;
-      if (port > window.scrollY + SLACK) break;
+      if (portOf(section) > window.scrollY + SLACK) break;
       const entry = named.find((one) => one.dataset.railFor === section.id);
       if (entry) found = entry;
     }

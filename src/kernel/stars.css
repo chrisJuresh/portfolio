@@ -1,0 +1,192 @@
+/* The Stars: the night sky behind the Moonlight, in the corner pictures' band.
+   stars.ts draws it, tokens/stars.css is its numbers, and src/kernel/NOTES.md
+   says what stands in front of it and why it breathes against the moon.
+
+   Imported after corners.css, because it reads that file's geometry and the
+   swell that file's band carries. */
+
+@import './tokens/stars.css';
+
+/* THE FIRST THING IN THE BAND, so everything else in it stands in front: the
+   Moonlight veils it nearest the moon, the car is cut out of it, and the plate
+   and the eye stand before it. Dark only, as a rule — `display: none` in the
+   light theme, so there it is not painted, not animated and not drawn by
+   stars.ts at all. */
+.kernel-corners .stars {
+  top: 0;
+  bottom: 0;
+  display: none;
+
+  /* MASKED BY WHAT STANDS IN FRONT OF IT. The two lit pictures breathe down to
+     a third of themselves, and at the trough a star behind the dome would show
+     through it at two thirds — so the pictures' own alpha is taken out of the
+     sky, file for file and position for position with the layers that draw
+     them, and a star is behind a building at every moment of the breath. Then
+     the glare round the moon, and the foot, which dissolves the sky before the
+     band ends so there is no line for the reader to scroll past.
+
+     The layers composite bottom up: the three pictures unioned, the moon's
+     clearing less that union, and the foot over the result. A picture's layer
+     is `none` until corners.ts has resolved its rung, and a `none` layer is a
+     transparent one, which takes nothing out. The plate and the eye are
+     measured against the band's foot rather than their own boxes' — the same
+     place while --plate-y and --eye-y are 0, and a sliver of sky under the
+     picture otherwise. */
+  mask-image:
+    linear-gradient(to bottom, #000 68%, transparent 100%),
+    radial-gradient(
+      circle calc(var(--stars-clear) * var(--fold)) at var(--moonlight-x) var(--moonlight-y),
+      transparent 0%,
+      #000 100%
+    ),
+    var(--plate-lit-src),
+    var(--car-src),
+    var(--eye-lit-src);
+  mask-composite: intersect, subtract, add, add, add;
+  mask-repeat: no-repeat;
+  mask-size:
+    auto,
+    auto,
+    var(--plate-w) auto,
+    var(--car-w) auto,
+    var(--eye-w) auto;
+  mask-position:
+    0 0,
+    0 0,
+    left var(--plate-x) bottom calc(var(--plate-y) - var(--plate-crop) * var(--plate-w)),
+    right var(--car-x) top calc(var(--car-y) - var(--car-crop) * var(--car-w)),
+    left calc(var(--eye-column) + var(--eye-x)) bottom calc(var(--eye-y) - var(--eye-crop) * var(--eye-w));
+}
+
+/* THE STARS COME OUT AS THE MOON GOES IN. The layer reads the band's swell —
+   the Moonlight's one clock — and loses --stars-moon-dim of itself at the top
+   of each breath, so the sky and the moon trade places on one period and never
+   drift apart. */
+:root[data-theme='dark'] .kernel-corners .stars {
+  display: block;
+  opacity: calc(var(--stars-strength) * (1 - var(--stars-moon-dim) * var(--moonlight-swell)));
+}
+
+.kernel-corners .stars canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+/* THE TWINKLES: a few of the brighter stars as elements of their own, so each
+   flickers on the compositor without a paint. stars.ts places them in the same
+   sky as the canvas and gives each its size, colour, pace and phase. */
+.kernel-corners .stars i {
+  position: absolute;
+  width: var(--size);
+  height: var(--size);
+  margin: calc(var(--size) / -2) 0 0 calc(var(--size) / -2);
+  border-radius: 50%;
+  /* The star's own brightness is its colour's alpha, so the flicker below can
+     be constants and run on the compositor. */
+  background: rgb(var(--tint) / var(--peak));
+  box-shadow: 0 0 calc(var(--size) * 2.5) calc(var(--size) * 0.4) rgb(var(--tint) / calc(var(--peak) * 0.35));
+  animation: kernel-star-twinkle calc(var(--stars-twinkle) * var(--pace)) ease-in-out
+    calc(-4 * var(--stars-twinkle) * var(--phase)) infinite;
+}
+
+@keyframes kernel-star-twinkle {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  18% {
+    opacity: 0.45;
+  }
+  26% {
+    opacity: 1;
+  }
+  58% {
+    opacity: 0.3;
+  }
+  72% {
+    opacity: 0.85;
+  }
+}
+
+/* THE METEORS: three paths across the open sky, each on its own multiple of
+   --stars-meteors so the three never settle into a rhythm. The box is the
+   path's start and its direction; the streak is its ::after, a head and a tail
+   running along it and fading out. A period of 0s applies nothing, and a streak
+   at rest is invisible. */
+.kernel-corners .stars .meteor {
+  position: absolute;
+  width: 0;
+  height: 0;
+  transform: rotate(var(--heading));
+}
+
+.kernel-corners .stars .meteor::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: -0.5px;
+  width: 6.5rem;
+  height: 1px;
+  border-radius: 1px;
+  background: linear-gradient(to right, transparent, rgb(226 234 255 / 0.35) 70%, rgb(240 245 255 / 0.95));
+  opacity: 0;
+  animation: kernel-meteor calc(var(--stars-meteors) * var(--every)) cubic-bezier(0.25, 0.6, 0.45, 1)
+    calc(var(--stars-meteors) * var(--after)) infinite;
+}
+
+.kernel-corners .stars .meteor:nth-of-type(1) {
+  left: 34%;
+  top: 7%;
+  --heading: 152deg;
+  --every: 1;
+  --after: 0.2;
+}
+
+.kernel-corners .stars .meteor:nth-of-type(2) {
+  left: 70%;
+  top: 44%;
+  --heading: 128deg;
+  --every: 1.37;
+  --after: 0.62;
+}
+
+.kernel-corners .stars .meteor:nth-of-type(3) {
+  left: 19%;
+  top: 3%;
+  --heading: 164deg;
+  --every: 1.73;
+  --after: 1.1;
+}
+
+@keyframes kernel-meteor {
+  0% {
+    opacity: 0;
+    transform: translateX(0);
+  }
+  0.35% {
+    opacity: 1;
+  }
+  2.4% {
+    opacity: 0;
+    transform: translateX(15rem);
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(15rem);
+  }
+}
+
+/* A reader who asked for less motion gets the sky and not its motion: every
+   star stands at its peak and no meteor falls. The same selectors as the rules
+   that start them, so these win the cascade rather than losing it quietly. */
+@media (prefers-reduced-motion: reduce) {
+  .kernel-corners .stars i {
+    animation: none;
+  }
+
+  .kernel-corners .stars .meteor::after {
+    animation: none;
+  }
+}

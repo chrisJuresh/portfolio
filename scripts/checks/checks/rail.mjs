@@ -386,10 +386,16 @@ export const check = {
         }
 
         // ---- and the entry with no Section says so out loud ------------------
+        // A NOTE AND NOT A FAILURE WHEN THERE IS NO SUCH ENTRY. This used to fail
+        // a Rail whose every entry was a link, so the assertion below could never
+        // go vacuous unnoticed — and a Rail with nothing unbuilt in it is exactly
+        // the legitimate state the Catalogue put the page in (ADR 0008), which a
+        // blocking Check may not fail. What is given up is said in the note:
+        // while nothing is unbuilt, nothing here reads the clipped span.
         if (read.quiet.length === 0) {
-          failures.push(
-            `${name}: every entry of the Rail is a link, so nothing said "not built" — this Check ` +
-              'then asserts nothing about the one thing an unbuilt entry has to do (ADR 0007)',
+          notes.push(
+            `${name}: every entry of the Rail is a link — nothing is unbuilt, so the clipped span an ` +
+              'unbuilt entry has to carry is not on the page to read',
           );
         }
         for (const entry of read.quiet) {

@@ -86,6 +86,10 @@ import { SLAB } from './slab';
  *  Astro's scoped selectors reach only what its own template rendered. */
 const GLASS = 'eater-map__glass';
 
+/** ...and the body a surface's side is made of, which `edge.ts` lays under its
+ *  slices. Nothing styles it either. */
+const SIDE = 'eater-map__side';
+
 /**
  * The Card's own scale ABOVE the app's — its boost.
  *
@@ -115,6 +119,10 @@ const CARD_DEPTH = `${SOLID} * var(--eater-map-card-thickness)`;
 const CARD_ROUND =
   `${SOLID} * min(var(--eater-map-card-edge-radius), var(--eater-map-card-thickness))`;
 
+/** How far the fillet rolls in across a surface's face, in the Card's own units —
+ *  divided by the boost because the Card's face is scaled by it. */
+const FILLET_IN = `calc((${CARD_ROUND}) * ${APP_W}px / ${BOOST})`;
+
 /**
  * The gap a hung surface stands below the one it hangs from, and the ONE length
  * in a Card that is not frozen to the export's viewport (#194).
@@ -136,6 +144,8 @@ const HUNG = 'eater-map__hang';
 interface Surface {
   /** `<card> <selector>`, written on the backdrop and on every slice of its edge */
   readonly name: string;
+  /** the selector it was found by inside its Card, from `cards.ts` */
+  readonly selector: string;
   /**
    * Which part of the Exploded View this surface is, or `null` for one no number
    * names.
@@ -161,6 +171,39 @@ interface Surface {
   readonly h: number;
   /** top-left clockwise, already clamped to the box the way a browser clamps them */
   readonly radii: Corners;
+  /**
+   * The `z-index` the vendored stylesheet stands this surface at inside its Card,
+   * which the backdrop and the edge are painted at too — or `auto` for none.
+   *
+   * A PANE HIDES WHAT IS UNDER IT, AND IT HAS TO BE UNDER IT FOR THAT. The app
+   * stacks its results dropdown at 12 over the topbar's 10; a backdrop built here
+   * is the face's FIRST child, so at `auto` every backdrop and every edge in the
+   * Card was painted beneath BOTH pills. Nothing overlaps at rest, so nobody could
+   * see it until the Offline button could be lowered on its own — it came down
+   * under the dropdown standing above it and was drawn over it, pill, dot and
+   * all. At the surface's own level the three boxes of a component sort as one,
+   * and in document order the backdrop and the edge still come before the surface
+   * they are drawn for.
+   *
+   * READ OFF THE NEAREST ANCESTOR THAT STATES ONE, for the reason every other
+   * number here is measured: the two pills carry none of their own and stand in
+   * the topbar's, and a level typed in this file would be a second opinion about
+   * `cards.css`. The ruler is where it CAN be read, because the Drop's
+   * `translate` is inert there (`cards-drop.css`) — on the page it makes the box a
+   * hung surface arrives in a stacking context, which is the other half of this.
+   */
+  readonly level: string;
+  /** Does it arrive in the box a hung surface arrives in (`HUNG`)? */
+  readonly hung: boolean;
+}
+
+/** The z-index the vendored stylesheet stands `element` at, below `face`. */
+function levelOf(element: Element, face: Element): string {
+  for (let at: Element | null = element; at && at !== face; at = at.parentElement) {
+    const level = getComputedStyle(at).zIndex;
+    if (level !== 'auto') return level;
+  }
+  return 'auto';
 }
 
 /**
@@ -216,11 +259,13 @@ function measure(ruler: HTMLElement, card: HTMLElement, selectors: readonly stri
     const box = element.getBoundingClientRect();
     const style = getComputedStyle(element);
     const y = box.top - origin.top;
+    const hung = element.closest(`.${HUNG}`) !== null;
     found.push({
       name: `${name} ${selector}`,
+      selector,
       part: partOfSurface(selector),
       x: box.left - origin.left,
-      top: element.closest(`.${HUNG}`) ? `${y}px + ${HANG}` : `${y}px`,
+      top: hung ? `${y}px + ${HANG}` : `${y}px`,
       w: box.width,
       h: box.height,
       // `border-radius: 999px` is what a pill STATES and `999px` is what the
@@ -232,6 +277,8 @@ function measure(ruler: HTMLElement, card: HTMLElement, selectors: readonly stri
         Number.parseFloat(style.borderBottomRightRadius) || 0,
         Number.parseFloat(style.borderBottomLeftRadius) || 0,
       ]),
+      level: levelOf(element, copy),
+      hung,
     });
   }
 
@@ -253,10 +300,27 @@ function backdrop(surface: Surface): HTMLElement {
     `width:${surface.w}px`,
     `height:${surface.h}px`,
     `border-radius:${surface.radii.map((r) => `${r}px`).join(' ')}`,
+    `z-index:${surface.level}`,
     'overflow:hidden',
+    // CLIPPED BACK BY THE FILLET, which is what puts the roll on screen: the band
+    // between this and the outline is the shoulder, and what shows through the
+    // app's tint there is the side's own body and the light on it. The Slab's
+    // picture is clipped back by its fillet for the same reason (`stage-dom.ts`).
+    `clip-path:inset(${FILLET_IN} round ${surface.radii
+      .map((r) => `max(0px, ${r}px - ${FILLET_IN})`)
+      .join(' ')})`,
     'pointer-events:none',
   ].join(';');
+  box.append(frost(surface));
+  return box;
+}
 
+/**
+ * The frosted map itself, positioned for a box standing where `surface` does —
+ * which is what lets the face's backdrop and the side's body be ONE picture laid
+ * twice rather than two pictures that have to agree.
+ */
+function frost(surface: Surface): HTMLImageElement {
   const map = document.createElement('img');
   map.src = SLAB.src;
   map.alt = '';
@@ -285,8 +349,57 @@ function backdrop(surface: Surface): HTMLElement {
       ' brightness(var(--eater-map-glass-brighten))' +
       ' saturate(var(--eater-map-glass-saturate))',
   ].join(';');
-  box.append(map);
+  return map;
+}
+
+/**
+ * What a surface's SIDE is made of: the same frosted map as its face, under the
+ * same tint the app paints that face — so the pane's edge is the pane seen end on
+ * rather than a band of paint round it. `edge.ts` lays it under the slices and cuts
+ * it to the solid's silhouette; the slices become the light on it.
+ *
+ * THE TINT IS READ OFF THE SURFACE ON THE PAGE, NOT OFF THE RULER, because it is
+ * the Section's palette that paints it — `--glass` and its siblings are remapped on
+ * `.eater-map__card`, which the ruler is deliberately not inside. Read as the
+ * browser resolved it, so the declaration carries no `var()` to re-parse on a
+ * page turn, and `redraw.ts` reads it again when the Editor moves a glass Token.
+ */
+function body(surface: Surface, tint: string): HTMLElement {
+  const box = document.createElement('div');
+  box.className = SIDE;
+  box.append(frost(surface));
+  const veil = document.createElement('div');
+  const { w, h } = surface;
+  veil.style.cssText = [
+    'position:absolute',
+    // Oversized on purpose: the silhouette cut is what bounds it, and it reaches
+    // a depth past the face on two sides.
+    'inset:-50%',
+    `background:${tint}`,
+    // AND CUT OUT WHERE THE FACE IS, which is what makes the two ONE material and
+    // not a close match. Inside the outline the app already paints this tint over
+    // the face — including over the shoulder, where the face's frost is clipped
+    // back and this body is what shows — so a veil there too is the tint twice,
+    // and the roll reads as a darker frame. Outside the outline nothing else paints
+    // it. The veil's box is the face's grown by half on every side, so the outline
+    // stands a half-width and a half-height in.
+    `clip-path:path(evenodd,"M0 0H${2 * w}V${2 * h}H0Z${outline(w / 2, h / 2, w, h, surface.radii)}")`,
+  ].join(';');
+  box.append(veil);
   return box;
+}
+
+/** A rounded rectangle as an SVG path, top-left clockwise, for a `path()` cut. */
+function outline(x: number, y: number, w: number, h: number, radii: Corners): string {
+  const [tl, tr, br, bl] = radii;
+  const n = (v: number) => String(Math.round(v * 1000) / 1000);
+  return (
+    `M${n(x + tl)} ${n(y)}H${n(x + w - tr)}` +
+    `A${n(tr)} ${n(tr)} 0 0 1 ${n(x + w)} ${n(y + tr)}V${n(y + h - br)}` +
+    `A${n(br)} ${n(br)} 0 0 1 ${n(x + w - br)} ${n(y + h)}H${n(x + bl)}` +
+    `A${n(bl)} ${n(bl)} 0 0 1 ${n(x)} ${n(y + h - bl)}V${n(y + tl)}` +
+    `A${n(tl)} ${n(tl)} 0 0 1 ${n(x + tl)} ${n(y)}Z`
+  );
 }
 
 /**
@@ -345,6 +458,8 @@ export default function mountGlass(root: HTMLElement): void {
         // over it. The edge goes OUTSIDE the face, as its sibling, because a slice
         // is at a depth and a depth inside a flat face is nothing at all.
         face.insertBefore(backdrop(surface), face.firstChild);
+        const painted = card.querySelector(surface.selector);
+        const tint = painted ? getComputedStyle(painted).backgroundColor : 'transparent';
         extrude(card, face, {
           box: {
             x: `${surface.x}px`,
@@ -376,7 +491,7 @@ export default function mountGlass(root: HTMLElement): void {
           },
           // ACROSS THE FACE, in the Card's own units — divided by the boost,
           // because the Card's face is scaled by it.
-          fillet: `(${CARD_ROUND}) * ${APP_W}px / ${BOOST}`,
+          fillet: FILLET_IN,
           // ...and ALONG Z, in the plane's units, because `scale()` leaves Z alone.
           // The two are the same distance said twice.
           filletBack: `(${CARD_ROUND}) * 100cqw`,
@@ -398,6 +513,14 @@ export default function mountGlass(root: HTMLElement): void {
           // lifted off it. `edge.ts`'s `Solid.alpha` is why this is a Token of the
           // stack rather than an alpha channel on the colour above.
           alpha: 'var(--eater-map-card-edge-alpha)',
+          // AND WHAT THE PANE IS MADE OF, all the way round: the face's own frost
+          // and tint, with the slices as the light on it rather than as the
+          // material. `edge.ts`'s `Solid.body`.
+          body: {
+            element: body(surface, tint),
+            film: 'var(--eater-map-card-side-film)',
+            blend: 'screen',
+          },
           surface: surface.name,
         });
         // AND THE EDGE TRAVELS WITH THE PART, which is written here rather than
@@ -413,12 +536,25 @@ export default function mountGlass(root: HTMLElement): void {
         // tagged one by one each slice moves by the same amount, which is the same
         // drawing. What must never happen is BOTH, and neither shape can produce
         // both.
-        if (surface.part) {
-          for (const piece of card.querySelectorAll<HTMLElement>(
-            `:scope > [data-eater-map-edge="${CSS.escape(surface.name)}"]`,
-          )) {
-            piece.dataset.eaterMapPart = surface.part;
-          }
+        //
+        // AND IT IS PAINTED AT ITS SURFACE'S LEVEL, with the backdrop, so a
+        // standing pane's rim covers a lowered pill as its face does (`level`).
+        for (const piece of card.querySelectorAll<HTMLElement>(
+          `:scope > [data-eater-map-edge="${CSS.escape(surface.name)}"]`,
+        )) {
+          if (surface.part) piece.dataset.eaterMapPart = surface.part;
+          piece.style.zIndex = surface.level;
+        }
+        // AND SO IS THE BOX A HUNG SURFACE ARRIVES IN, which is the half of it
+        // that was actually wrong on the page. That box carries the Drop's
+        // `translate` (#215), and a `translate` makes a stacking context — so the
+        // dropdown's own 12 was sealed inside a box standing at 0, under the
+        // topbar's 10, and a lowered Offline button was painted over a dropdown
+        // still standing above it. Stood at the surface's level, the app's order
+        // is the Card's order again.
+        if (surface.hung) {
+          const hang = face.querySelector<HTMLElement>(`:scope > .${HUNG}`);
+          if (hang) hang.style.zIndex = surface.level;
         }
       }
     }

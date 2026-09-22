@@ -1,0 +1,51 @@
+/* The Catalogue's Variants — complete alternative directions, selected by
+   attribute, rendered side by side with `pnpm variants`. Nothing imports this
+   file, which is the whole of "an unselected Variant costs the shipped page
+   nothing". src/sections/NOTES.md is the grammar every selector below keeps and
+   why `:root` is load-bearing; docs/agents/variants.md is the authority on
+   writing one.
+
+   THREE QUESTIONS THE COMPOSITION ANSWERED ONE WAY, each kept the other way so
+   the choice is made by looking rather than by reading this file. The shipped
+   answers are a spine down the middle of the column, a centred head, and Entries
+   parted by air alone.
+
+   RENDER PAST THE CROSSING — `pnpm variants -- --sections catalogue --turn 1` —
+   for the reason the Projects Panel's sheet gives: this Section is only ever
+   looked at once the page is dark, and the sheet's default moment is paper. */
+
+/* ---- 1. spineless: the alternation carries itself -------------------------
+   No line down the middle and no dot at its foot. The numbers still stand
+   centred over each Entry, so the axis is implied by the alternation and marked
+   by the figures rather than drawn. The argument for it is that the page already
+   has a Section ruled with hairlines and this one need not be. */
+:root[data-variant='spineless'] .catalogue__entries::before {
+  display: none;
+}
+
+:root[data-variant='spineless'] .catalogue__entries::after {
+  display: none;
+}
+
+/* ---- 2. head-left: the opener stands where PROJECTS stands ----------------
+   The masthead and the standfirst against the column's left edge, which is the
+   line every other Section's head stands on, instead of centred over the spine.
+   The argument for it is continuity with the two Showcases; the argument against
+   is that a spine composition is symmetric and its head should be. */
+:root[data-variant='head-left'] .catalogue__head {
+  text-align: left;
+}
+
+:root[data-variant='head-left'] .catalogue__standfirst {
+  margin-inline: 0;
+}
+
+/* ---- 3. ruled: a hairline across the column above every Entry -------------
+   A ledger rather than a spine: each Entry begins on a rule the width of the
+   column, the way the Eater Map's Points each begin on one. The spine is kept,
+   so the two devices are seen together before either is judged. */
+:root[data-variant='ruled'] .catalogue__entry {
+  border-top: var(--catalogue-rule-weight) solid
+    color-mix(in oklab, var(--ink), transparent var(--catalogue-rule-veil));
+  padding-top: var(--catalogue-move);
+}
