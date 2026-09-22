@@ -176,6 +176,35 @@ export function edgeShade(attitude: Attitude, light: Lighting): Shade {
   };
 }
 
+/**
+ * How much of the light a piece of the edge sends STRAIGHT BACK AT THE READER — the
+ * mirror term, where `edgeShade` is the diffuse one. Same attitude, same light, same
+ * axes; what differs is that this is zero almost everywhere and sharp where it is
+ * not, which is what a highlight on glass is.
+ *
+ * The reader looks straight down screen z, so the light reflected about the normal
+ * reaches them by its z component alone: `2(n.l)n_z - l_z`.
+ */
+export function edgeGlint(attitude: Attitude, light: Lighting, power: number): Shade {
+  const ca = Math.cos(attitude.tilt * RAD);
+  const sa = Math.sin(attitude.tilt * RAD);
+  const cc = Math.cos(attitude.swing * RAD);
+  const sc = Math.sin(attitude.swing * RAD);
+  const lateral = Math.cos(light.elevation * RAD);
+  const [lx, ly, lz] = normalise(
+    lateral * Math.sin(light.azimuth * RAD),
+    -lateral * Math.cos(light.azimuth * RAD),
+    Math.sin(light.elevation * RAD),
+  );
+  return (nx, ny, nz) => {
+    const sx = cc * nx - sc * ny;
+    const sy = ca * sc * nx + ca * cc * ny - sa * nz;
+    const sz = sa * sc * nx + sa * cc * ny + ca * nz;
+    const facing = sx * lx + sy * ly + sz * lz;
+    return Math.max(0, 2 * facing * sz - lz) ** power;
+  };
+}
+
 /** Which edges each stage can actually draw. **THERE IS NO EMPTY CELL NOW** — #206
  *  filled the one DOM could not reach, so `pnpm stages` is six cells of the same
  *  three edges and the comparison is purely faceted-against-swept, which is the

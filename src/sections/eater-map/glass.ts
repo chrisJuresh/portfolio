@@ -519,7 +519,7 @@ export default function mountGlass(root: HTMLElement): void {
           body: {
             element: body(surface, tint),
             film: 'var(--eater-map-card-side-film)',
-            blend: 'soft-light',
+            blend: 'screen',
           },
           surface: surface.name,
         });

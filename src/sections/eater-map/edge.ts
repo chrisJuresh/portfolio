@@ -1,4 +1,4 @@
-import { edgeShade, lightingIn, type Shade } from './stage';
+import { edgeGlint, edgeShade, lightingIn, type Shade } from './stage';
 
 /**
  * The **slice stack**: how anything on this plane is given thickness.
@@ -270,6 +270,15 @@ export interface Solid {
 const FILLET = 16;
 const WALL = 8;
 
+/** How sharp a glass edge's highlight is, how bright at its peak, and how much of it
+ *  comes back out on the far side. Constants of the MATERIAL, chosen by looking:
+ *  `--eater-map-card-side-film` is the one number the author moves, and it scales
+ *  all three together. */
+const GLINT_POWER = 5;
+const GLINT_ARC = 18;
+const GLINT = 0.7;
+const GLINT_FAR = 0.45;
+
 /** The class the slices carry, so a reader of the DOM can see what they are. Not a
  *  Token-bearing name: nothing styles it. */
 const SLICE = 'eater-map__slice';
@@ -371,7 +380,7 @@ interface Facet {
  * says. The sort is what closes the loop: the top side's left endpoint comes out
  * just under 360deg and lands at the end.
  */
-function perimeter(w: number, h: number, radii: Corners): Facet[] {
+function perimeter(w: number, h: number, radii: Corners, arcs = ARC): Facet[] {
   const [tl, tr, br, bl] = radii;
   const hw = w / 2;
   const hh = h / 2;
@@ -383,8 +392,8 @@ function perimeter(w: number, h: number, radii: Corners): Facet[] {
    *  which is what makes the shape and the shading fall out of one parameter. */
   const arc = (cx: number, cy: number, t0: number, r: number) => {
     if (r < SQUARE) return;
-    for (let step = 1; step < ARC; step += 1) {
-      const t = (t0 + 90 * (step / ARC)) * RAD;
+    for (let step = 1; step < arcs; step += 1) {
+      const t = (t0 + 90 * (step / arcs)) * RAD;
       push(cx + r * Math.cos(t), cy + r * Math.sin(t), Math.cos(t), Math.sin(t));
     }
   };
@@ -444,13 +453,20 @@ function perimeter(w: number, h: number, radii: Corners): Facet[] {
  * gradient does not wrap: without it the arc from the last stop round to the first
  * is interpolated against nothing and the top of the box is a seam.
  */
-function conicEdge(w: number, h: number, radii: Corners, nz: number, shade: Shade): string {
+function conicEdge(
+  w: number,
+  h: number,
+  radii: Corners,
+  nz: number,
+  shade: Shade,
+  arcs = ARC,
+): string {
   const lateral = Math.sqrt(Math.max(0, 1 - nz * nz));
   const mix = (point: Facet) =>
     `color-mix(in srgb, currentColor, #000 ${
       Math.round((1 - shade(point.nx * lateral, point.ny * lateral, nz)) * 1000) / 10
     }%)`;
-  const points = perimeter(w, h, radii);
+  const points = perimeter(w, h, radii, arcs);
   const first = points[0];
   // A slice with no width or no height has no perimeter to walk, and a gradient
   // with no stops is an invalid declaration — which paints NOTHING and reads as an
@@ -752,10 +768,9 @@ export function extrude(host: HTMLElement, before: Node | null, solid: Solid): v
     const value = Number.parseFloat(style.getPropertyValue(name));
     return Number.isFinite(value) ? value : 0;
   };
-  const shade: Shade = edgeShade(
-    { tilt: angle('--eater-map-tilt'), swing: angle('--eater-map-swing') },
-    lightingIn(style),
-  );
+  const attitude = { tilt: angle('--eater-map-tilt'), swing: angle('--eater-map-swing') };
+  const shade: Shade = edgeShade(attitude, lightingIn(style));
+  const mirror: Shade = edgeGlint(attitude, lightingIn(style), GLINT_POWER);
 
   /** One slice: how far in from the face's own outline it stands, and how far
    *  back. Its corners follow from the inset — a section taken `i` in from the
@@ -801,15 +816,28 @@ export function extrude(host: HTMLElement, before: Node | null, solid: Solid): v
   };
 
   /**
-   * How much brighter than its shade a slice's film is drawn, by how far back it
-   * stands — and only where the slices are a film over a `Solid.body`.
+   * What a slice's film carries where it is only the light on a `Solid.body` — and
+   * it is the HIGHLIGHT and nothing else, which is the whole of liquid glass.
    *
-   * A ROLLED EDGE TURNS AWAY FROM THE LIGHT AS IT GOES ROUND, so the film is a
-   * touch brighter where the wall leaves the roll and a touch darker at its foot —
-   * shading, and nothing added: no line, no band, no second material. `1`
-   * everywhere else, so a solid with no body is lit exactly as it was.
+   * THE BODY IS ALREADY THE FACE'S MATERIAL, so a film that shaded it would make
+   * the side a different colour from the top, which is exactly what the author
+   * saw: a white film in soft light greys the pane and lightens it, most of all
+   * on the nearly clear details sheet. So there is no diffuse term here at all.
+   * What is left is the mirror term — the light sent straight back at the reader —
+   * peaking half way round the roll, where the shoulder turns towards it, fainter
+   * again on the far side where light that went into the pane comes back out, and
+   * nothing down the wall. `glass.ts` SCREENS it on: a highlight is reflected light
+   * ADDED to the pane, so it shows on a dark map as well as a bright one — colour
+   * dodge was tried and only brightens what is there, which over this map is
+   * nothing — and because it is narrow and zero elsewhere, the side is the top's
+   * colour everywhere the light is not.
    */
-  const gloss = (along: number): number => (solid.body === undefined ? 1 : 1.08 - 0.16 * along);
+  const lit = (nz: number, part: 'fillet' | 'wall'): Shade => {
+    if (solid.body === undefined) return shade;
+    const roll = part === 'fillet' ? 2 * nz * Math.sqrt(Math.max(0, 1 - nz * nz)) : 0;
+    return (x, y, z) =>
+      Math.min(1, GLINT * roll * Math.max(mirror(x, y, z), GLINT_FAR * mirror(-x, -y, z)));
+  };
 
   const slice = (
     part: 'fillet' | 'wall',
@@ -817,8 +845,6 @@ export function extrude(host: HTMLElement, before: Node | null, solid: Solid): v
     apart: number,
     back: string,
     nz: number,
-    /** how far back through the whole depth this slice stands, 0 to 1 */
-    along: number,
     /** the TEXTURE inset for a wrapped fillet ring, in the plan's own unit. Not the
      *  same number as `apart`, which is where the ring physically stands: the
      *  geometry follows `sin` and the pixels are spread evenly along the arc, and
@@ -879,7 +905,10 @@ export function extrude(host: HTMLElement, before: Node | null, solid: Solid): v
               Math.max(0, plan.radii[3] - apart),
             ],
             nz,
-            (x, y, z) => Math.min(1, shade(x, y, z) * gloss(along)),
+            lit(nz, part),
+            // A HIGHLIGHT IS SHARPER THAN A SHADE, so it needs more of a corner's
+            // quarter-turn to ramp across or it steps round the ends of a pill.
+            solid.body === undefined ? ARC : GLINT_ARC,
           )}`,
       // AT ITS DEPTH, one way or the other — `flatten` says which and why.
       flatten === undefined
@@ -923,7 +952,6 @@ export function extrude(host: HTMLElement, before: Node | null, solid: Solid): v
       // the last it is the object's silhouette and its edge is lit entirely from
       // the side.
       Math.cos(turn),
-      0,
       // WHERE THIS RING READS THE PICTURE, which is `stage-webgl.ts`'s
       // `roll(1 - 2phi/pi)` said in this loop's own counter — the band of pixels
       // spread EVENLY along the arc, against a geometry that follows `sin`. Ignored
@@ -943,7 +971,6 @@ export function extrude(host: HTMLElement, before: Node | null, solid: Solid): v
       0,
       `(${filletBack}) + ((${depth}) - (${filletBack})) * ${figure(along)}`,
       0,
-      along,
     );
   }
 }

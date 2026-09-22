@@ -597,10 +597,10 @@
 
   /* The colour of the LIGHT on a Card's side, and no longer what the side is
      made of. The side is the surface's own frost and tint (`glass.ts`'s body);
-     the slices are a film over it in soft light, so this is what the lit flank
-     lifts towards and the shaded one falls away from. White, because the edge is
-     the face's own material and the light is the only thing that differs — and it
-     does not turn with the theme, exactly as --eater-map-slab-edge does not.
+     the slices carry only the highlight, screened over it, and this is its
+     colour. White, because a highlight is the light's colour and not the pane's
+     — and it does not turn with the theme, exactly as --eater-map-slab-edge does
+     not.
 
      AND IT IS OPAQUE, WHICH IS A CONSTRAINT AND NOT A CHOICE. How much of the
      film shows is --eater-map-card-side-film, which the film's group carries;
@@ -622,13 +622,13 @@
      `Solid.alpha` and why it is still its own Token. */
   --eater-map-card-edge-alpha: 1;
 
-  /* How much of the light shows on the side — the slices, lit by the page's one
-     light and laid over the side's body in soft light, so the flank facing the
-     light is a little brighter and the one turned from it a little darker, and
-     the material underneath is the face's own either way. It is SHADING and
-     nothing else: at 0 the side is exactly the face, and the solid reads only by
-     its silhouette. */
-  --eater-map-card-side-film: 0.5;
+  /* How bright the highlight on a Card's rolled edge is — the page's one light
+     reflected straight back at the reader where the shoulder turns towards it,
+     SCREENED onto the side's body, narrow, and nothing anywhere else. So the side
+     is the top's own colour everywhere the light is not, and at 0 it is exactly
+     the top and the solid reads only by its silhouette. `edge.ts`'s `GLINT`
+     constants are the highlight's shape; this is its strength. */
+  --eater-map-card-side-film: 0.8;
 
   /* How long the Lift takes end to end, and therefore how long a turn back
      part-way through takes to undo: `timeline.ts` spends this in proportion to

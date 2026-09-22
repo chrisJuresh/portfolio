@@ -2084,7 +2084,8 @@ that surface, read off the surface ON THE PAGE (the ruler is outside
 light glass). `edge.ts` lays that body at the bottom of the stack as
 `Solid.body`, and the slices stop being the material: they go into a group of
 their own, `.eater-map__film`, which carries `--eater-map-card-side-film` as ONE
-opacity and is laid on the body in SOFT LIGHT — shading, not a coat. The light still comes out of the one
+opacity and is SCREENED onto the body. It carries the HIGHLIGHT and nothing
+else — see the third correction below. The light still comes out of the one
 function and the one light (#197); what it lights is the pane.
 
 **The body is cut to the solid's silhouette, and that outline is a hull rather
@@ -2117,8 +2118,38 @@ round the outline; and the app's own hairline rims (`--glass-rim`,
 sitting on something. The rims are multiplied by `1 - --eater-map-solid` in
 `EaterMap.astro`, so below the band, where the drawing is the app's own
 screenshot, they are the app's own lines again. What is left to tell the side from
-the top is the light — a soft-light film, a touch brighter where the wall leaves the
-roll and a touch darker at its foot (`edge.ts`'s `gloss`) — and the silhouette.
+the top is the highlight and the silhouette.
+
+**AND THE LIGHT IS A HIGHLIGHT, NOT A SHADING — the third correction:** "edges of
+the bottom component are a bit too bright", and "the colour doesn't match the top".
+Both were the diffuse term. A white film in soft light greys and lightens the pane,
+and the roll faces the light almost as squarely as the face does, so the shoulder
+lit up all the way round — most of all on the nearly clear details sheet. So the
+film has no diffuse term now. `edge.ts`'s `lit` is the MIRROR term alone
+(`stage.ts`'s `edgeGlint`, the same light reflected straight back at the reader),
+peaking half way round the roll, a fainter copy on the far side where the light
+comes back out, and zero on the wall. It is screened on because a highlight is
+light ADDED: colour dodge was tried, since it brightens the pane in its own colour,
+and over this map it brightened nothing at all. Narrow and zero elsewhere, the side
+is the top's colour everywhere the light is not.
+
+**The `eater-map` Check reads a glass surface's direction off its ROLL now, not
+its wall** — and that is a correction to what it asks, not a loosening. The wall of
+a glass surface is unlit on every side by design (a wall facing sideways sends no
+light back at the reader), so asking it whether its four sides differ fails a
+correct drawing. The Check picks the fillet ring whose perimeter varies most — the
+one standing where the highlight is — and asks it the same two questions a wall is
+asked: do its sides differ by `DIRECTED`, and does it ramp round the corners rather
+than step. The second caught a real fault on the way: a highlight is sharper than a
+shade, and at the shading's six points a corner the glint stepped round the ends of
+each pill (68% of its spread in one step). A body's slices are walked at
+`GLINT_ARC`, eighteen, which brings it to 22%. The Slab and every solid without a
+body are read off the wall exactly as before.
+
+The app's drop shadows (`--elev-1`, `--elev-2`) are gated on the solid for the
+rims' reason: in the band they fall on the Card's own side, as a darker line where
+the top meets it. The details sheet's own upward shadow is a literal in `cards.css`
+and stays.
 
 **Three things about it are easy to get wrong.**
 

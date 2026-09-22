@@ -3910,6 +3910,7 @@ async function edgeAsBuilt(spec) {
       squarest: Infinity,
       fillets: 0,
       pictures: 0,
+      rollRange: -1,
     };
     const seen = surfaces[name];
     seen.slices += 1;
@@ -3956,7 +3957,13 @@ async function edgeAsBuilt(spec) {
       seen.shallow ??= { left: at.left, top: at.top };
       seen.deep = { left: at.left, top: at.top };
       const stops = stopsIn(computed);
-      if (stops.length > 0) {
+      // A GLASS SURFACE'S DIRECTION IS ON ITS ROLL AND NOT ON ITS WALL, and is read
+      // there instead (below). Its slices are only the HIGHLIGHT over a body made
+      // of the face's own frost — `edge.ts`'s `lit` — and a highlight is the light
+      // reflected straight back at the reader, which a wall facing sideways never
+      // sends: its wall is unlit on every side by design, so asking it for a
+      // direction would fail a correct drawing.
+      if (stops.length > 0 && !slice.closest('.eater-map__film')) {
         // THE ANGLES ARE KEPT WITH THE COLOURS, and that is not for the report. Two
         // stops at the SAME angle are a hard stop, which is what a SQUARE corner
         // draws and is correct — the details sheet's plan corner really is
@@ -3969,6 +3976,26 @@ async function edgeAsBuilt(spec) {
           foot: near(stops, 180),
           left: near(stops, 270),
         };
+      }
+    }
+    // THE ROLL OF A GLASS SURFACE, and the ring of it that differs most round its
+    // perimeter — the one standing where the highlight is. Same reading, same
+    // sides, same criterion as a wall's: the light has a direction or it does not.
+    if (slice.dataset.eaterMapSlice === 'fillet' && slice.closest('.eater-map__film')) {
+      const stops = stopsIn(computed);
+      if (stops.length > 0) {
+        const glow = stops.map((stop) => stop.rgb[0] + stop.rgb[1] + stop.rgb[2]);
+        const range = Math.max(...glow) - Math.min(...glow);
+        if (range > seen.rollRange) {
+          seen.rollRange = range;
+          seen.ring = stops.map((stop) => ({ at: stop.at, rgb: stop.rgb }));
+          seen.sides = {
+            head: near(stops, 0),
+            right: near(stops, 90),
+            foot: near(stops, 180),
+            left: near(stops, 270),
+          };
+        }
       }
     }
   }
