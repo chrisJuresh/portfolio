@@ -1431,10 +1431,16 @@ import './tokens.css';
     --glass-filter: none;
     --glass-filter-heavy: none;
     --glass-filter-fine: none;
-    --glass-rim: inset 0 0.5px 0 rgba(255, 255, 255, 0.26),
-      inset 0 0 0 0.5px rgba(255, 255, 255, 0.13);
-    --glass-rim-strong: inset 0 1px 0 rgba(255, 255, 255, 0.3),
-      inset 0 0 0 0.5px rgba(255, 255, 255, 0.16);
+    /* The app's hairline rims, and ONLY WHERE THERE IS NO SOLID. In the band a
+       Card is a slab whose side is the same frost and tint as its face, rolling
+       into it (`glass.ts`), and a white line drawn round the face is exactly what
+       says the face is a panel sitting on something else. Below the band the
+       drawing is the app's own screenshot, and these are the app's own lines. */
+    --eater-map-card-flat: calc(1 - var(--eater-map-solid, 1));
+    --glass-rim: inset 0 0.5px 0 rgba(255, 255, 255, calc(0.26 * var(--eater-map-card-flat))),
+      inset 0 0 0 0.5px rgba(255, 255, 255, calc(0.13 * var(--eater-map-card-flat)));
+    --glass-rim-strong: inset 0 1px 0 rgba(255, 255, 255, calc(0.3 * var(--eater-map-card-flat))),
+      inset 0 0 0 0.5px rgba(255, 255, 255, calc(0.16 * var(--eater-map-card-flat)));
     /* The host paints `color: rgb(0, 0, 0)` on itself, so the ink has to be said
        as well as the palette — read back off the name above rather than repeated,
        which is a property reading a custom property and not a cycle. */

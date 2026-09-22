@@ -583,52 +583,6 @@ function silhouette(plan: Plan, along: { x: number; y: number }, shift: { x: str
 }
 
 /**
- * The light on a face's own outline, as a `conic-gradient` of `currentColor` at
- * the strength the shoulder there catches it — the glint that says a pane of glass
- * ends in a rolled edge rather than a cut one.
- *
- * THE SAME LIGHT AS THE SLICES, READ OFF THE SAME HOST, for `extrude`'s reason:
- * two lightings on one drawing is the thing this module exists to prevent.
- *
- * TWO GLINTS AND NOT ONE. A rolled glass edge lights where it faces the light and
- * again, fainter, on the far side, where the light that went in comes back out —
- * which is what makes a pane read as a solid with an inside rather than as a
- * surface with a bright line drawn on one side of it. `floor` is the least any
- * point of the outline catches, because a glass edge is never wholly dark.
- */
-export function glint(host: HTMLElement, plan: Plan, floor: number, far: number): string {
-  const style = getComputedStyle(host);
-  const angle = (name: string) => {
-    const value = Number.parseFloat(style.getPropertyValue(name));
-    return Number.isFinite(value) ? value : 0;
-  };
-  const light = lightingIn(style);
-  const shade = edgeShade(
-    { tilt: angle('--eater-map-tilt'), swing: angle('--eater-map-swing') },
-    light,
-  );
-  const ambient = Math.min(1, Math.max(0, light.ambient));
-  // THE SHOULDER, half way round the roll: the part of a rolled edge that turns
-  // from facing the reader to facing sideways, which is where it catches the light.
-  const nz = Math.SQRT1_2;
-  const lateral = Math.SQRT1_2;
-  const lit = (nx: number, ny: number) =>
-    Math.max(0, (shade(nx * lateral, ny * lateral, nz) - ambient) / Math.max(1e-6, 1 - ambient));
-  const mix = (point: Facet) => {
-    const near = lit(point.nx, point.ny) ** 2;
-    const opposite = lit(-point.nx, -point.ny) ** 2;
-    const strength = Math.min(1, floor + (1 - floor) * Math.max(near, far * opposite));
-    return `color-mix(in srgb, currentColor ${Math.round(strength * 1000) / 10}%, transparent)`;
-  };
-  const points = perimeter(plan.w, plan.h, plan.radii);
-  const first = points[0];
-  if (!first) return 'none';
-  const stops = points.map((point) => `${mix(point)} ${point.at.toFixed(2)}deg`);
-  stops.push(`${mix(first)} 360deg`);
-  return `conic-gradient(${stops.join(',')})`;
-}
-
-/**
  * Build one solid's slices into `host`, before `before` in the document.
  *
  * BEFORE THE FACE, and not appended after it. With `preserve-3d` two elements at
@@ -850,17 +804,12 @@ export function extrude(host: HTMLElement, before: Node | null, solid: Solid): v
    * How much brighter than its shade a slice's film is drawn, by how far back it
    * stands — and only where the slices are a film over a `Solid.body`.
    *
-   * A ROLLED GLASS EDGE IS GLOSSIEST WHERE IT TURNS OFF THE FACE AND DIMS DOWN ITS
-   * SIDE, then catches one fine line of light again at its foot, where the wall
-   * meets the underside. That profile is what makes the side read as a curve of
-   * the same solid rather than as a band standing under it. `1` everywhere else,
-   * so a solid with no body is lit exactly as it was.
+   * A ROLLED EDGE TURNS AWAY FROM THE LIGHT AS IT GOES ROUND, so the film is a
+   * touch brighter where the wall leaves the roll and a touch darker at its foot —
+   * shading, and nothing added: no line, no band, no second material. `1`
+   * everywhere else, so a solid with no body is lit exactly as it was.
    */
-  const gloss = (along: number): number => {
-    if (solid.body === undefined) return 1;
-    const foot = along >= 1 ? 0.4 : 0;
-    return 1.15 - 0.45 * along + foot;
-  };
+  const gloss = (along: number): number => (solid.body === undefined ? 1 : 1.08 - 0.16 * along);
 
   const slice = (
     part: 'fillet' | 'wall',

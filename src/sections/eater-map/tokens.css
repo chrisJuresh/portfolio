@@ -565,7 +565,7 @@
      width, so one object is one material and the Cards' edges are the Slab's edge
      seen closer. About half the Slab's own thickness — #187 asked for 1% against
      its 3%, and a pane that thin read as a flat panel with an edge added under
-     it, so it is a slab now, with a roll that is most of its depth. Held to each
+     it, so it is a slab now, with a slight roll off its face. Held to each
      other the same way: an edge cannot be rounder than it is deep, and `glass.ts`
      writes the `min()` that says so.
 
@@ -593,13 +593,13 @@
      the shoulder — the side's own body and the light on it, seen through the
      app's tint. At zero the face is cut square again. */
   --eater-map-card-thickness: 0.016;
-  --eater-map-card-edge-radius: 0.009;
+  --eater-map-card-edge-radius: 0.005;
 
   /* The colour of the LIGHT on a Card's side, and no longer what the side is
      made of. The side is the surface's own frost and tint (`glass.ts`'s body);
-     the slices are a film over it, screened on, so this is what the lit flank
-     glows towards and the shaded one barely reaches. White, because a glass edge
-     gives back the light it is given rather than a colour of its own — and it
+     the slices are a film over it in soft light, so this is what the lit flank
+     lifts towards and the shaded one falls away from. White, because the edge is
+     the face's own material and the light is the only thing that differs — and it
      does not turn with the theme, exactly as --eater-map-slab-edge does not.
 
      AND IT IS OPAQUE, WHICH IS A CONSTRAINT AND NOT A CHOICE. How much of the
@@ -622,20 +622,13 @@
      `Solid.alpha` and why it is still its own Token. */
   --eater-map-card-edge-alpha: 1;
 
-  /* How much of the light's film shows over the side's body — the slices, lit
-     by the page's one light and SCREENED on, so the flank facing the light
-     glows and the one turned from it stays the pane's own colour. `edge.ts`
-     also brightens the film where the roll turns off the face and at the foot
-     of the wall, which is what makes the side read as a curve of the solid. */
-  --eater-map-card-side-film: 0.34;
-
-  /* THE GLINT ON THE OUTLINE: a ring of the same light laid over the app's own
-     surface, strongest where the shoulder faces the light, fainter again on the
-     far side where the light comes back out through the pane, and never quite
-     dark. Its width is in the capture's own pixels, as a Card's other lengths
-     are; its colour is the light's, and it does not turn with the theme. */
-  --eater-map-card-rim: 0.8px;
-  --eater-map-card-rim-colour: rgb(255, 255, 255);
+  /* How much of the light shows on the side — the slices, lit by the page's one
+     light and laid over the side's body in soft light, so the flank facing the
+     light is a little brighter and the one turned from it a little darker, and
+     the material underneath is the face's own either way. It is SHADING and
+     nothing else: at 0 the side is exactly the face, and the solid reads only by
+     its silhouette. */
+  --eater-map-card-side-film: 0.5;
 
   /* How long the Lift takes end to end, and therefore how long a turn back
      part-way through takes to undo: `timeline.ts` spends this in proportion to

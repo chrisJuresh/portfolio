@@ -1,5 +1,5 @@
 import { CARDS } from './cards';
-import { clearEdge, type Corners, extrude, fitRadii, glint, SOLID } from './edge';
+import { clearEdge, type Corners, extrude, fitRadii, SOLID } from './edge';
 import { partOfSurface } from './leaders';
 import { SLAB } from './slab';
 
@@ -86,10 +86,9 @@ import { SLAB } from './slab';
  *  Astro's scoped selectors reach only what its own template rendered. */
 const GLASS = 'eater-map__glass';
 
-/** ...the body a surface's side is made of, which `edge.ts` lays under its slices,
- *  and the glint laid over its face. Neither is styled by anything else. */
+/** ...and the body a surface's side is made of, which `edge.ts` lays under its
+ *  slices. Nothing styles it either. */
 const SIDE = 'eater-map__side';
-const RIM = 'eater-map__rim';
 
 /**
  * The Card's own scale ABOVE the app's — its boost.
@@ -370,61 +369,37 @@ function body(surface: Surface, tint: string): HTMLElement {
   box.className = SIDE;
   box.append(frost(surface));
   const veil = document.createElement('div');
+  const { w, h } = surface;
   veil.style.cssText = [
     'position:absolute',
     // Oversized on purpose: the silhouette cut is what bounds it, and it reaches
     // a depth past the face on two sides.
     'inset:-50%',
     `background:${tint}`,
+    // AND CUT OUT WHERE THE FACE IS, which is what makes the two ONE material and
+    // not a close match. Inside the outline the app already paints this tint over
+    // the face — including over the shoulder, where the face's frost is clipped
+    // back and this body is what shows — so a veil there too is the tint twice,
+    // and the roll reads as a darker frame. Outside the outline nothing else paints
+    // it. The veil's box is the face's grown by half on every side, so the outline
+    // stands a half-width and a half-height in.
+    `clip-path:path(evenodd,"M0 0H${2 * w}V${2 * h}H0Z${outline(w / 2, h / 2, w, h, surface.radii)}")`,
   ].join(';');
   box.append(veil);
   return box;
 }
 
-/**
- * The glint round a face's outline — a ring of the light, laid OVER the app's own
- * surface, because under it the app's tint would dim the one thing that says the
- * pane's edge is rolled glass. `edge.ts`'s `glint` is the light; this is the ring.
- *
- * A GRADIENT BORDER, which is a background clipped out of its own middle: the two
- * mask layers are the whole box and its content box, and `exclude` leaves the
- * padding between them.
- */
-function rim(card: HTMLElement, surface: Surface, round: number): HTMLElement {
-  const ring = document.createElement('div');
-  ring.className = RIM;
-  ring.setAttribute('aria-hidden', 'true');
-  if (surface.part) ring.dataset.eaterMapPart = surface.part;
-  const mask = 'linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0)';
-  ring.style.cssText = [
-    'position:absolute',
-    `left:${surface.x}px`,
-    `top:calc(${surface.top})`,
-    `width:${surface.w}px`,
-    `height:${surface.h}px`,
-    `border-radius:${surface.radii.map((r) => `${r}px`).join(' ')}`,
-    'box-sizing:border-box',
-    // NO SOLID, NO ROLL, NO GLINT: below the band the drawing is a flat
-    // screenshot and a bright ring round it would be an outline, not an edge.
-    `padding:calc(${SOLID} * var(--eater-map-card-rim) / ${BOOST})`,
-    'pointer-events:none',
-    // Above the app's own surfaces, which stack themselves as high as 30.
-    'z-index:100',
-    'color:var(--eater-map-card-rim-colour)',
-    // A FIFTH OF THE LIGHT EVERYWHERE, AND JUST UNDER HALF OF IT COMING BACK
-    // OUT ON THE FAR SIDE — `glint`'s two numbers, chosen by looking.
-    `background:${glint(
-      card,
-      { w: surface.w, h: surface.h, radii: surface.radii, fillet: round },
-      0.18,
-      0.45,
-    )}`,
-    `mask:${mask}`,
-    'mask-composite:exclude',
-    `-webkit-mask:${mask}`,
-    '-webkit-mask-composite:xor',
-  ].join(';');
-  return ring;
+/** A rounded rectangle as an SVG path, top-left clockwise, for a `path()` cut. */
+function outline(x: number, y: number, w: number, h: number, radii: Corners): string {
+  const [tl, tr, br, bl] = radii;
+  const n = (v: number) => String(Math.round(v * 1000) / 1000);
+  return (
+    `M${n(x + tl)} ${n(y)}H${n(x + w - tr)}` +
+    `A${n(tr)} ${n(tr)} 0 0 1 ${n(x + w)} ${n(y + tr)}V${n(y + h - br)}` +
+    `A${n(br)} ${n(br)} 0 0 1 ${n(x + w - br)} ${n(y + h)}H${n(x + bl)}` +
+    `A${n(bl)} ${n(bl)} 0 0 1 ${n(x)} ${n(y + h - bl)}V${n(y + tl)}` +
+    `A${n(tl)} ${n(tl)} 0 0 1 ${n(x + tl)} ${n(y)}Z`
+  );
 }
 
 /**
@@ -476,16 +451,13 @@ export default function mountGlass(root: HTMLElement): void {
       if (!named || !face) continue;
 
       clearEdge(card);
-      for (const stale of face.querySelectorAll(`:scope > .${GLASS}, :scope > .${RIM}`)) {
-        stale.remove();
-      }
+      for (const stale of face.querySelectorAll(`:scope > .${GLASS}`)) stale.remove();
 
       for (const surface of measure(ruler, card, named.surfaces)) {
         // The copy goes INSIDE the flat face, first, so the vendored markup paints
         // over it. The edge goes OUTSIDE the face, as its sibling, because a slice
         // is at a depth and a depth inside a flat face is nothing at all.
         face.insertBefore(backdrop(surface), face.firstChild);
-        face.append(rim(card, surface, round));
         const painted = card.querySelector(surface.selector);
         const tint = painted ? getComputedStyle(painted).backgroundColor : 'transparent';
         extrude(card, face, {
@@ -547,7 +519,7 @@ export default function mountGlass(root: HTMLElement): void {
           body: {
             element: body(surface, tint),
             film: 'var(--eater-map-card-side-film)',
-            blend: 'screen',
+            blend: 'soft-light',
           },
           surface: surface.name,
         });
