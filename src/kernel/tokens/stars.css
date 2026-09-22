@@ -21,10 +21,6 @@
      the stars fade in out of. It is centred where the Moonlight is. */
   --stars-clear: 0.55;
 
-  /* How much of the Milky Way shows, over the stars' own strength. 0 is a
-     field of stars with no galaxy across it. */
-  --stars-galaxy: 1;
-
   /* The twinkle: the period of an average star's flicker. Each star takes its
      own share of it, so no two keep time. 0s holds every star still. */
   --stars-twinkle: 5s;

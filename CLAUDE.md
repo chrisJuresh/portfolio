@@ -376,8 +376,8 @@ are the plate Bake's two Moonlight blocks; the breath is ONE animation on the
 band, read by the sky and both lit layers; and the light theme takes none of it,
 as a rule and not a value. `src/kernel/NOTES.md` has the measurements.
 
-**And behind the Moonlight, the Stars** — a star field and a Milky Way drawn once
-onto two canvases by `src/kernel/stars.ts`, a few twinkling stars and three
+**And behind the Moonlight, the Stars** — a star field drawn once onto a canvas by
+`src/kernel/stars.ts`, a few twinkling stars and three
 meteors, the first thing in the same band, dark only, breathing against the moon.
 They are MASKED by the three pictures' own alpha rather than merely drawn under
 them, because the plate and the eye breathe down to a third of themselves and a

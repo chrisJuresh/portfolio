@@ -16,7 +16,7 @@ than a convenience.
 | `faces.css` / `tokens/faces.css` | the five families, six files, the face Tokens, and the page's own type size — the zoom, the ceiling and the give-way |
 | `ground.css` / `tokens/ground.css` | the theme's two papers, the Turn across them, the shade over the DARK theme's first screen, and that the document never scrolls sideways |
 | `corners.css` / `corners.ts` / `tokens/moonlight.css` | the plate, the car and the eye — geometry, and which rung; and the Moonlight they stand in, by whose light alone the dark theme draws the plate and the eye — a relit ladder of each, as the picture — and which the car is cut out of |
-| `stars.css` / `stars.ts` / `tokens/stars.css` | the night sky behind the Moonlight, in the same band — a star field and a Milky Way drawn once onto two canvases, a few twinkling stars and three meteors, masked by the three pictures' own shapes |
+| `stars.css` / `stars.ts` / `tokens/stars.css` | the night sky behind the Moonlight, in the same band — a star field drawn once onto a canvas, a few twinkling stars and three meteors, masked by the three pictures' own shapes |
 | `rail/` / `tokens/rail.css` | the Rail — the one index on the page, its words, its two regimes, and which entry is current |
 | `effect-stack/`             | the nine layers, and the grain tile                          |
 | `theme.ts`                  | which paper, where it is stored, and who is told when it changes |
@@ -1242,7 +1242,7 @@ already: it forgives a missing DARK rung and nothing else.
 ## The Stars: the night sky behind the Moonlight
 
 `.kernel-corners .stars` in `stars.css` is the layer, `stars.ts` draws it, and
-`tokens/stars.css` is its six numbers, reached on the Editor as `kernel-stars`.
+`tokens/stars.css` is its five numbers, reached on the Editor as `kernel-stars`.
 It is the FIRST child of the corner pictures' band, before the Moonlight, so the
 light veils it nearest the moon, the car is cut out of it, and the plate and the
 eye stand in front of it. **The light theme takes none of it**, as a rule:
@@ -1268,12 +1268,8 @@ them. A star's radius follows the scale only as its square root, clamped: a star
 is a point, not part of a picture.
 
 **Drawn once, never per frame.** The field is a canvas at the display's density,
-capped at 2; the Milky Way is a second canvas at half a CSS pixel, because it is
-nothing but blur — haze, a few hundred small lumps along a bent spine, a warmer
-core low on the page, and two dust lanes taken OUT of the glow with
-`destination-out` rather than painted over it, so a lane is darker only where
-there was light and never below the ground. Both repaint only when the band's
-size or the display's density changes. What moves is compositor work: the
+capped at 2, repainted only when the band's size or the display's density
+changes. What moves is compositor work: the
 layer's opacity, the twinkles' opacity (their keyframes are constants for that
 reason; each star's brightness is its colour's alpha) and the meteors'
 transform.
@@ -1287,10 +1283,17 @@ with the same selectors as the rules that start them.
 **What the shade does to it.** It stands under the shade like everything below
 the type, so at the shipped 0.5 what reaches the screen is half the canvas —
 the brightest stars at about 100 of 255 at 1536x760, the field's median star a
-few levels over a ground of 11, the Milky Way a soft rise under the halftone.
+few levels over a ground of 11.
 That is why the canvas stars are drawn near full alpha: drawn at a third, as
 they first were, the halftone's dots ate them. To judge the drawing itself,
 screenshot it with `.kernel-shade`, `.fx` and the band's other children hidden.
+
+**There is no Milky Way, by decision.** One shipped — a canvas of haze, lumps
+along a bent spine, a warm core and dust lanes cut out with `destination-out` —
+and the author judged it ugly: under the shade and the halftone it read as a
+flat grey stripe across the page, not a galaxy, however good it looked drawn
+alone. A band of light behind the Front Screen is a decision to make by looking
+at alternatives, not a number to retune.
 
 No Check, for the Moonlight's reason: a sky that fails to draw is something the
 author would see, and the one invisible half — the light theme — is held by the
