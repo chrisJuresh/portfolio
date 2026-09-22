@@ -563,9 +563,11 @@
   /* ---- and a Card is a solid too -------------------------------------------
      The same pair the Slab has above, in the same unit — shares of the SLAB's
      width, so one object is one material and the Cards' edges are the Slab's edge
-     seen closer. About a third of the Slab's own thickness, which is #187's 1%
-     against its 3%. Held to each other the same way: an edge cannot be rounder
-     than it is deep, and `glass.ts` writes the `min()` that says so.
+     seen closer. About half the Slab's own thickness — #187 asked for 1% against
+     its 3%, and a pane that thin read as a flat panel with an edge added under
+     it, so it is a slab now, with a roll that is most of its depth. Held to each
+     other the same way: an edge cannot be rounder than it is deep, and `glass.ts`
+     writes the `min()` that says so.
 
      A CARD'S EDGE IS ROUND EVERY GLASS SURFACE AND NOT ROUND THE CARD. The search
      Card is two pills with a gap between them, and one extrusion round the pair
@@ -584,40 +586,56 @@
      `.eater-map__card` became a `preserve-3d` parent, every slice's depth was
      flattened onto the face and this Token moved nothing at all; the comment
      below about a third of the Slab's is the proportion #187 asked for, and it is
-     now the proportion the page actually draws. */
-  --eater-map-card-thickness: 0.01;
-  --eater-map-card-edge-radius: 0.005;
+     now the proportion the page actually draws.
 
-  /* What a Card's edge is made of. Lighter than the Slab's, because a pane of
-     glass on a map is not the same material as the map's own body, and it is a
-     fact about the object rather than about the page — so it does not turn with
-     the theme, exactly as --eater-map-slab-edge does not.
+     THE ROLL IS ON SCREEN, AND ITS WIDTH IS THIS TOKEN. `glass.ts` clips each
+     surface's frost back by it, so the band between the clip and the outline is
+     the shoulder — the side's own body and the light on it, seen through the
+     app's tint. At zero the face is cut square again. */
+  --eater-map-card-thickness: 0.016;
+  --eater-map-card-edge-radius: 0.009;
 
-     AND IT IS OPAQUE, WHICH IS A CONSTRAINT AND NOT A CHOICE. The alpha below is
-     the rim's transparency and this is only its colour; putting a second one here
-     would be composited once per slice on top of the one composited once for the
-     whole stack, which is the smear edge.ts's `Solid.alpha` exists to prevent. If
-     the rim wants to be more or less see-through, that is the number under this
-     one. */
-  --eater-map-card-edge: rgb(198, 196, 192);
+  /* The colour of the LIGHT on a Card's side, and no longer what the side is
+     made of. The side is the surface's own frost and tint (`glass.ts`'s body);
+     the slices are a film over it, screened on, so this is what the lit flank
+     glows towards and the shaded one barely reaches. White, because a glass edge
+     gives back the light it is given rather than a colour of its own — and it
+     does not turn with the theme, exactly as --eater-map-slab-edge does not.
 
-  /* HOW MUCH OF THE MAP COMES THROUGH THE RIM — the Cards' edge as glass rather
-     than as a bezel round glass.
+     AND IT IS OPAQUE, WHICH IS A CONSTRAINT AND NOT A CHOICE. How much of the
+     film shows is --eater-map-card-side-film, which the film's group carries;
+     an alpha here would be composited once per slice on top of that, which is
+     the smear edge.ts's `Solid.alpha` exists to prevent. */
+  --eater-map-card-edge: rgb(255, 255, 255);
 
-     A SURFACE IS A TRANSLUCENT PANE AND ITS EDGE IS THE SAME PANE SEEN END ON, so
-     an opaque rim is the one part of a Card made of something the rest of it is
-     not: it reads as a frame stuck round a window, and it hides the map at exactly
-     the place the drawing is showing a reader that the piece has been lifted off
-     it. At this the roads and the pins carry on through the shoulder and the piece
-     reads as one solid.
+  /* HOW MUCH OF THE REAL MAP COMES THROUGH A CARD'S SIDE, on top of the frost
+     the side is made of — and it is 1, none, because the side is the same pane
+     as the face now and the face shows none either.
 
-     IT BELONGS TO THE STACK AND NOT TO THE COLOUR, which is the whole reason it is
-     its own Token — edge.ts's `Solid.alpha` carries the arithmetic. Dragging it to
-     1 gives back the solid rim and costs nothing but the render surface; below
-     about a fifth the pieces stop having thickness at all where they overhang the
-     Slab onto the page's own ground, which is the floor worth knowing about
-     rather than a rule. */
-  --eater-map-card-edge-alpha: 0.5;
+     It was 0.5 while the side was grey paint: a translucent rim was the only way
+     to stop it reading as a bezel round a window. That is what the side's BODY
+     does instead — the face's own frost, tint and parallax carried round the
+     shoulder and down the flank — and a see-through side over that body is two
+     maps, the copy the pane carries and the one under it, a Card's drift apart.
+
+     IT BELONGS TO THE STACK AND NOT TO THE COLOUR, which is edge.ts's
+     `Solid.alpha` and why it is still its own Token. */
+  --eater-map-card-edge-alpha: 1;
+
+  /* How much of the light's film shows over the side's body — the slices, lit
+     by the page's one light and SCREENED on, so the flank facing the light
+     glows and the one turned from it stays the pane's own colour. `edge.ts`
+     also brightens the film where the roll turns off the face and at the foot
+     of the wall, which is what makes the side read as a curve of the solid. */
+  --eater-map-card-side-film: 0.34;
+
+  /* THE GLINT ON THE OUTLINE: a ring of the same light laid over the app's own
+     surface, strongest where the shoulder faces the light, fainter again on the
+     far side where the light comes back out through the pane, and never quite
+     dark. Its width is in the capture's own pixels, as a Card's other lengths
+     are; its colour is the light's, and it does not turn with the theme. */
+  --eater-map-card-rim: 0.8px;
+  --eater-map-card-rim-colour: rgb(255, 255, 255);
 
   /* How long the Lift takes end to end, and therefore how long a turn back
      part-way through takes to undo: `timeline.ts` spends this in proportion to

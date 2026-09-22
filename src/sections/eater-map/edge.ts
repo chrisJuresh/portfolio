@@ -231,6 +231,31 @@ export interface Solid {
    * sheet exists to remove. A curved screen does not darken as it turns, either.
    */
   readonly wrap?: string;
+  /**
+   * What the solid is MADE OF, when that is more than an edge colour — and it is
+   * the Cards' glass that asks, because a pane whose face is frosted map and whose
+   * side is grey paint reads as two materials glued together.
+   *
+   * `element` is built by the caller and laid at the BOTTOM of the stack, in the
+   * face's own box, CUT TO THE SOLID'S SILHOUETTE — the face's outline swept back
+   * along the depth, which is convex because the outline is, so it is the hull of
+   * the outline and its own translate and needs no union of slices to find. The
+   * slices then stop being the material and become a lit FILM over it, at `film`,
+   * mixed by `blend`: the side of the pane is the pane, and the light is what says
+   * which way the side faces.
+   *
+   * THE FILM IS ONE GROUP, for `alpha`'s reason: the slices are filled boxes that
+   * overlap by as much as the solid is deep, so an opacity per slice is a smear.
+   *
+   * ONLY WHERE THE DEPTH IS DRAWN FLAT. The silhouette is a 2D outline, and a
+   * `translateZ` stack has no such thing until the compositor projects it — so
+   * without `flatten` this field is ignored and the slices are the material again.
+   */
+  readonly body?: {
+    readonly element: HTMLElement;
+    readonly film: string;
+    readonly blend?: string;
+  };
 }
 
 /**
@@ -253,6 +278,10 @@ const SLICE = 'eater-map__slice';
  *  asked for one. Nothing styles this either — the one declaration on it is
  *  written here, with the rest of the geometry. */
 const STACK = 'eater-map__stack';
+
+/** ...and the group the slices go into when a `Solid.body` is the material and
+ *  they are only its film. Nothing styles it either. */
+const FILM = 'eater-map__film';
 
 /**
  * Take one host's slices back off, which is what makes a redraw land on the DOM it
@@ -500,6 +529,105 @@ export function fitRadii(w: number, h: number, radii: Corners): Corners {
   return [fit(tl), fit(tr), fit(br), fit(bl)];
 }
 
+/** How finely a corner is cut for the SILHOUETTE. Finer than `ARC`, because this
+ *  one is an outline a reader sees the edge of, where that one is only where a
+ *  gradient's stops fall. */
+const HULL_ARC = 16;
+
+/**
+ * The solid's silhouette as a `polygon()`, in the face box's own percentages plus
+ * the depth's offset — `Solid.body`'s cut.
+ *
+ * THE OUTLINE SWEPT ALONG A STRAIGHT LINE IS THE HULL OF ITS TWO ENDS, because a
+ * rounded rectangle is convex. So a point of the outline whose normal faces away
+ * from the depth is on the silhouette where it stands, one whose normal faces
+ * along it is on the silhouette a whole depth back, and at each of the two changes
+ * the side between them is the edge the eye reads as the solid's flank. WHICH
+ * points take which form depends on the depth's DIRECTION alone, which is a
+ * number; how far back is an expression and stays one, so the cut follows a
+ * window exactly as the slices do.
+ */
+function silhouette(plan: Plan, along: { x: number; y: number }, shift: { x: string; y: string }): string {
+  const { w, h } = plan;
+  const [tl, tr, br, bl] = plan.radii;
+  const points: { x: number; y: number; nx: number; ny: number }[] = [];
+  const corner = (cx: number, cy: number, t0: number, r: number) => {
+    for (let step = 0; step <= HULL_ARC; step += 1) {
+      const t = (t0 + 90 * (step / HULL_ARC)) * RAD;
+      points.push({ x: cx + r * Math.cos(t), y: cy + r * Math.sin(t), nx: Math.cos(t), ny: Math.sin(t) });
+    }
+  };
+  // Clockwise from the top-left corner's end, CSS's y down. A square corner is a
+  // radius of zero, which is sixteen coincident points walking the normal round —
+  // the right answer for a hull, since the normal genuinely turns there.
+  corner(w - tr, tr, -90, tr);
+  corner(w - br, h - br, 0, br);
+  corner(bl, h - bl, 90, bl);
+  corner(tl, tl, 180, tl);
+  /** Does the outline face along the depth here — and so stand on the silhouette
+   *  a whole depth back rather than where it is? */
+  const behind = (p: { nx: number; ny: number }) => p.nx * along.x + p.ny * along.y >= 0;
+  const at = (p: { x: number; y: number }, shifted: boolean) =>
+    `calc(${figure((p.x / w) * 100)}% + ${shifted ? shift.x : '0px'}) ` +
+    `calc(${figure((p.y / h) * 100)}% + ${shifted ? shift.y : '0px'})`;
+  const out: string[] = [];
+  const last = points[points.length - 1];
+  let was = last ? behind(last) : true;
+  for (const point of points) {
+    const now = behind(point);
+    if (now !== was) out.push(at(point, was));
+    out.push(at(point, now));
+    was = now;
+  }
+  return `polygon(${out.join(',')})`;
+}
+
+/**
+ * The light on a face's own outline, as a `conic-gradient` of `currentColor` at
+ * the strength the shoulder there catches it — the glint that says a pane of glass
+ * ends in a rolled edge rather than a cut one.
+ *
+ * THE SAME LIGHT AS THE SLICES, READ OFF THE SAME HOST, for `extrude`'s reason:
+ * two lightings on one drawing is the thing this module exists to prevent.
+ *
+ * TWO GLINTS AND NOT ONE. A rolled glass edge lights where it faces the light and
+ * again, fainter, on the far side, where the light that went in comes back out —
+ * which is what makes a pane read as a solid with an inside rather than as a
+ * surface with a bright line drawn on one side of it. `floor` is the least any
+ * point of the outline catches, because a glass edge is never wholly dark.
+ */
+export function glint(host: HTMLElement, plan: Plan, floor: number, far: number): string {
+  const style = getComputedStyle(host);
+  const angle = (name: string) => {
+    const value = Number.parseFloat(style.getPropertyValue(name));
+    return Number.isFinite(value) ? value : 0;
+  };
+  const light = lightingIn(style);
+  const shade = edgeShade(
+    { tilt: angle('--eater-map-tilt'), swing: angle('--eater-map-swing') },
+    light,
+  );
+  const ambient = Math.min(1, Math.max(0, light.ambient));
+  // THE SHOULDER, half way round the roll: the part of a rolled edge that turns
+  // from facing the reader to facing sideways, which is where it catches the light.
+  const nz = Math.SQRT1_2;
+  const lateral = Math.SQRT1_2;
+  const lit = (nx: number, ny: number) =>
+    Math.max(0, (shade(nx * lateral, ny * lateral, nz) - ambient) / Math.max(1e-6, 1 - ambient));
+  const mix = (point: Facet) => {
+    const near = lit(point.nx, point.ny) ** 2;
+    const opposite = lit(-point.nx, -point.ny) ** 2;
+    const strength = Math.min(1, floor + (1 - floor) * Math.max(near, far * opposite));
+    return `color-mix(in srgb, currentColor ${Math.round(strength * 1000) / 10}%, transparent)`;
+  };
+  const points = perimeter(plan.w, plan.h, plan.radii);
+  const first = points[0];
+  if (!first) return 'none';
+  const stops = points.map((point) => `${mix(point)} ${point.at.toFixed(2)}deg`);
+  stops.push(`${mix(first)} 360deg`);
+  return `conic-gradient(${stops.join(',')})`;
+}
+
 /**
  * Build one solid's slices into `host`, before `before` in the document.
  *
@@ -598,6 +726,51 @@ export function extrude(host: HTMLElement, before: Node | null, solid: Solid): v
     host.insertBefore(stack, before);
   }
 
+  // THE MATERIAL UNDER THE FILM, where the caller has one (`Solid.body`). Laid in
+  // the face's own box and cut to the silhouette, then the slices go into a group
+  // of their own above it — and that group, not each slice, carries the film's
+  // opacity, for the reason the stack carries `alpha`.
+  let film: HTMLElement = stack;
+  if (solid.body !== undefined && flatten !== undefined && stack !== host) {
+    const probe = document.createElement('div');
+    probe.style.cssText =
+      'position:absolute;width:0;height:0;' +
+      `transform:translate(calc(${alongX} * 1000px),calc(${alongY} * 1000px))`;
+    host.append(probe);
+    const matrix = new DOMMatrixReadOnly(getComputedStyle(probe).transform);
+    probe.remove();
+    const shift = {
+      x: `calc((${depth}) * ${alongX} / (${flatten}))`,
+      y: `calc((${depth}) * ${alongY} / (${flatten}))`,
+    };
+    const { element } = solid.body;
+    element.setAttribute('aria-hidden', 'true');
+    element.style.cssText += [
+      'position:absolute',
+      `left:calc(${box.x})`,
+      `top:calc(${box.y})`,
+      `width:calc(${box.w})`,
+      `height:calc(${box.h})`,
+      'pointer-events:none',
+      `clip-path:${silhouette(plan, { x: matrix.m41, y: matrix.m42 }, shift)}`,
+    ].join(';');
+    stack.append(element);
+    film = document.createElement('div');
+    film.className = FILM;
+    film.setAttribute('aria-hidden', 'true');
+    film.style.cssText = [
+      'position:absolute',
+      'left:0',
+      'top:0',
+      'width:0',
+      'height:0',
+      'pointer-events:none',
+      `opacity:calc(${resolved(solid.body.film, style)})`,
+      ...(solid.body.blend === undefined ? [] : [`mix-blend-mode:${solid.body.blend}`]),
+    ].join(';');
+    stack.append(film);
+  }
+
   /** Where the next slice goes.
    *
    *  IN 3D, always immediately before the face: depth sorting decides what covers
@@ -615,9 +788,9 @@ export function extrude(host: HTMLElement, before: Node | null, solid: Solid): v
    *  face — the face is the box's sibling and no longer something a slice can be
    *  placed against. `insertBefore(sheet, null)` appends, so the two branches say
    *  the same thing about order and only the parent differs. */
-  let next: Node | null = stack === host ? before : null;
+  let next: Node | null = film === host ? before : null;
   const place = (sheet: HTMLElement) => {
-    stack.insertBefore(sheet, next);
+    film.insertBefore(sheet, next);
     if (flatten !== undefined) next = sheet;
   };
 
@@ -673,12 +846,30 @@ export function extrude(host: HTMLElement, before: Node | null, solid: Solid): v
     return `url("${solid.wrap}") center / ${size} no-repeat`;
   };
 
+  /**
+   * How much brighter than its shade a slice's film is drawn, by how far back it
+   * stands — and only where the slices are a film over a `Solid.body`.
+   *
+   * A ROLLED GLASS EDGE IS GLOSSIEST WHERE IT TURNS OFF THE FACE AND DIMS DOWN ITS
+   * SIDE, then catches one fine line of light again at its foot, where the wall
+   * meets the underside. That profile is what makes the side read as a curve of
+   * the same solid rather than as a band standing under it. `1` everywhere else,
+   * so a solid with no body is lit exactly as it was.
+   */
+  const gloss = (along: number): number => {
+    if (solid.body === undefined) return 1;
+    const foot = along >= 1 ? 0.4 : 0;
+    return 1.15 - 0.45 * along + foot;
+  };
+
   const slice = (
     part: 'fillet' | 'wall',
     inset: string,
     apart: number,
     back: string,
     nz: number,
+    /** how far back through the whole depth this slice stands, 0 to 1 */
+    along: number,
     /** the TEXTURE inset for a wrapped fillet ring, in the plan's own unit. Not the
      *  same number as `apart`, which is where the ring physically stands: the
      *  geometry follows `sin` and the pixels are spread evenly along the arc, and
@@ -739,7 +930,7 @@ export function extrude(host: HTMLElement, before: Node | null, solid: Solid): v
               Math.max(0, plan.radii[3] - apart),
             ],
             nz,
-            shade,
+            (x, y, z) => Math.min(1, shade(x, y, z) * gloss(along)),
           )}`,
       // AT ITS DEPTH, one way or the other — `flatten` says which and why.
       flatten === undefined
@@ -783,6 +974,7 @@ export function extrude(host: HTMLElement, before: Node | null, solid: Solid): v
       // the last it is the object's silhouette and its edge is lit entirely from
       // the side.
       Math.cos(turn),
+      0,
       // WHERE THIS RING READS THE PICTURE, which is `stage-webgl.ts`'s
       // `roll(1 - 2phi/pi)` said in this loop's own counter — the band of pixels
       // spread EVENLY along the arc, against a geometry that follows `sin`. Ignored
@@ -802,6 +994,7 @@ export function extrude(host: HTMLElement, before: Node | null, solid: Solid): v
       0,
       `(${filletBack}) + ((${depth}) - (${filletBack})) * ${figure(along)}`,
       0,
+      along,
     );
   }
 }

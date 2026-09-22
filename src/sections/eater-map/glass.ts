@@ -1,5 +1,5 @@
 import { CARDS } from './cards';
-import { clearEdge, type Corners, extrude, fitRadii, SOLID } from './edge';
+import { clearEdge, type Corners, extrude, fitRadii, glint, SOLID } from './edge';
 import { partOfSurface } from './leaders';
 import { SLAB } from './slab';
 
@@ -86,6 +86,11 @@ import { SLAB } from './slab';
  *  Astro's scoped selectors reach only what its own template rendered. */
 const GLASS = 'eater-map__glass';
 
+/** ...the body a surface's side is made of, which `edge.ts` lays under its slices,
+ *  and the glint laid over its face. Neither is styled by anything else. */
+const SIDE = 'eater-map__side';
+const RIM = 'eater-map__rim';
+
 /**
  * The Card's own scale ABOVE the app's — its boost.
  *
@@ -115,6 +120,10 @@ const CARD_DEPTH = `${SOLID} * var(--eater-map-card-thickness)`;
 const CARD_ROUND =
   `${SOLID} * min(var(--eater-map-card-edge-radius), var(--eater-map-card-thickness))`;
 
+/** How far the fillet rolls in across a surface's face, in the Card's own units —
+ *  divided by the boost because the Card's face is scaled by it. */
+const FILLET_IN = `calc((${CARD_ROUND}) * ${APP_W}px / ${BOOST})`;
+
 /**
  * The gap a hung surface stands below the one it hangs from, and the ONE length
  * in a Card that is not frozen to the export's viewport (#194).
@@ -136,6 +145,8 @@ const HUNG = 'eater-map__hang';
 interface Surface {
   /** `<card> <selector>`, written on the backdrop and on every slice of its edge */
   readonly name: string;
+  /** the selector it was found by inside its Card, from `cards.ts` */
+  readonly selector: string;
   /**
    * Which part of the Exploded View this surface is, or `null` for one no number
    * names.
@@ -252,6 +263,7 @@ function measure(ruler: HTMLElement, card: HTMLElement, selectors: readonly stri
     const hung = element.closest(`.${HUNG}`) !== null;
     found.push({
       name: `${name} ${selector}`,
+      selector,
       part: partOfSurface(selector),
       x: box.left - origin.left,
       top: hung ? `${y}px + ${HANG}` : `${y}px`,
@@ -291,9 +303,25 @@ function backdrop(surface: Surface): HTMLElement {
     `border-radius:${surface.radii.map((r) => `${r}px`).join(' ')}`,
     `z-index:${surface.level}`,
     'overflow:hidden',
+    // CLIPPED BACK BY THE FILLET, which is what puts the roll on screen: the band
+    // between this and the outline is the shoulder, and what shows through the
+    // app's tint there is the side's own body and the light on it. The Slab's
+    // picture is clipped back by its fillet for the same reason (`stage-dom.ts`).
+    `clip-path:inset(${FILLET_IN} round ${surface.radii
+      .map((r) => `max(0px, ${r}px - ${FILLET_IN})`)
+      .join(' ')})`,
     'pointer-events:none',
   ].join(';');
+  box.append(frost(surface));
+  return box;
+}
 
+/**
+ * The frosted map itself, positioned for a box standing where `surface` does —
+ * which is what lets the face's backdrop and the side's body be ONE picture laid
+ * twice rather than two pictures that have to agree.
+ */
+function frost(surface: Surface): HTMLImageElement {
   const map = document.createElement('img');
   map.src = SLAB.src;
   map.alt = '';
@@ -322,8 +350,81 @@ function backdrop(surface: Surface): HTMLElement {
       ' brightness(var(--eater-map-glass-brighten))' +
       ' saturate(var(--eater-map-glass-saturate))',
   ].join(';');
-  box.append(map);
+  return map;
+}
+
+/**
+ * What a surface's SIDE is made of: the same frosted map as its face, under the
+ * same tint the app paints that face — so the pane's edge is the pane seen end on
+ * rather than a band of paint round it. `edge.ts` lays it under the slices and cuts
+ * it to the solid's silhouette; the slices become the light on it.
+ *
+ * THE TINT IS READ OFF THE SURFACE ON THE PAGE, NOT OFF THE RULER, because it is
+ * the Section's palette that paints it — `--glass` and its siblings are remapped on
+ * `.eater-map__card`, which the ruler is deliberately not inside. Read as the
+ * browser resolved it, so the declaration carries no `var()` to re-parse on a
+ * page turn, and `redraw.ts` reads it again when the Editor moves a glass Token.
+ */
+function body(surface: Surface, tint: string): HTMLElement {
+  const box = document.createElement('div');
+  box.className = SIDE;
+  box.append(frost(surface));
+  const veil = document.createElement('div');
+  veil.style.cssText = [
+    'position:absolute',
+    // Oversized on purpose: the silhouette cut is what bounds it, and it reaches
+    // a depth past the face on two sides.
+    'inset:-50%',
+    `background:${tint}`,
+  ].join(';');
+  box.append(veil);
   return box;
+}
+
+/**
+ * The glint round a face's outline — a ring of the light, laid OVER the app's own
+ * surface, because under it the app's tint would dim the one thing that says the
+ * pane's edge is rolled glass. `edge.ts`'s `glint` is the light; this is the ring.
+ *
+ * A GRADIENT BORDER, which is a background clipped out of its own middle: the two
+ * mask layers are the whole box and its content box, and `exclude` leaves the
+ * padding between them.
+ */
+function rim(card: HTMLElement, surface: Surface, round: number): HTMLElement {
+  const ring = document.createElement('div');
+  ring.className = RIM;
+  ring.setAttribute('aria-hidden', 'true');
+  if (surface.part) ring.dataset.eaterMapPart = surface.part;
+  const mask = 'linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0)';
+  ring.style.cssText = [
+    'position:absolute',
+    `left:${surface.x}px`,
+    `top:calc(${surface.top})`,
+    `width:${surface.w}px`,
+    `height:${surface.h}px`,
+    `border-radius:${surface.radii.map((r) => `${r}px`).join(' ')}`,
+    'box-sizing:border-box',
+    // NO SOLID, NO ROLL, NO GLINT: below the band the drawing is a flat
+    // screenshot and a bright ring round it would be an outline, not an edge.
+    `padding:calc(${SOLID} * var(--eater-map-card-rim) / ${BOOST})`,
+    'pointer-events:none',
+    // Above the app's own surfaces, which stack themselves as high as 30.
+    'z-index:100',
+    'color:var(--eater-map-card-rim-colour)',
+    // A FIFTH OF THE LIGHT EVERYWHERE, AND JUST UNDER HALF OF IT COMING BACK
+    // OUT ON THE FAR SIDE — `glint`'s two numbers, chosen by looking.
+    `background:${glint(
+      card,
+      { w: surface.w, h: surface.h, radii: surface.radii, fillet: round },
+      0.18,
+      0.45,
+    )}`,
+    `mask:${mask}`,
+    'mask-composite:exclude',
+    `-webkit-mask:${mask}`,
+    '-webkit-mask-composite:xor',
+  ].join(';');
+  return ring;
 }
 
 /**
@@ -375,13 +476,18 @@ export default function mountGlass(root: HTMLElement): void {
       if (!named || !face) continue;
 
       clearEdge(card);
-      for (const stale of face.querySelectorAll(`:scope > .${GLASS}`)) stale.remove();
+      for (const stale of face.querySelectorAll(`:scope > .${GLASS}, :scope > .${RIM}`)) {
+        stale.remove();
+      }
 
       for (const surface of measure(ruler, card, named.surfaces)) {
         // The copy goes INSIDE the flat face, first, so the vendored markup paints
         // over it. The edge goes OUTSIDE the face, as its sibling, because a slice
         // is at a depth and a depth inside a flat face is nothing at all.
         face.insertBefore(backdrop(surface), face.firstChild);
+        face.append(rim(card, surface, round));
+        const painted = card.querySelector(surface.selector);
+        const tint = painted ? getComputedStyle(painted).backgroundColor : 'transparent';
         extrude(card, face, {
           box: {
             x: `${surface.x}px`,
@@ -413,7 +519,7 @@ export default function mountGlass(root: HTMLElement): void {
           },
           // ACROSS THE FACE, in the Card's own units — divided by the boost,
           // because the Card's face is scaled by it.
-          fillet: `(${CARD_ROUND}) * ${APP_W}px / ${BOOST}`,
+          fillet: FILLET_IN,
           // ...and ALONG Z, in the plane's units, because `scale()` leaves Z alone.
           // The two are the same distance said twice.
           filletBack: `(${CARD_ROUND}) * 100cqw`,
@@ -435,6 +541,14 @@ export default function mountGlass(root: HTMLElement): void {
           // lifted off it. `edge.ts`'s `Solid.alpha` is why this is a Token of the
           // stack rather than an alpha channel on the colour above.
           alpha: 'var(--eater-map-card-edge-alpha)',
+          // AND WHAT THE PANE IS MADE OF, all the way round: the face's own frost
+          // and tint, with the slices as the light on it rather than as the
+          // material. `edge.ts`'s `Solid.body`.
+          body: {
+            element: body(surface, tint),
+            film: 'var(--eater-map-card-side-film)',
+            blend: 'screen',
+          },
           surface: surface.name,
         });
         // AND THE EDGE TRAVELS WITH THE PART, which is written here rather than

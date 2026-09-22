@@ -2061,11 +2061,81 @@ declaration, and CSS drops an invalid one rather than refusing it. The rim comes
 back at full alpha, the page looks exactly as it did before the change, and nothing
 says so. That is one build of this, found by looking.
 
-**0.5 is where it was left, and the floor is worth knowing.** Below about a fifth
-the pieces stop having any thickness where they overhang the Slab onto the page's
-own ground — a Card against black has nothing behind its rim for the rim to be
-transparent to — so the drawing goes flat at the one place a reader is most likely
-to be looking at its edge.
+**0.5 is where it was left, and it is 1 now — the section below is why.** The
+floor it recorded still holds for anyone who drags it back down: below about a
+fifth the pieces stop having any thickness where they overhang the Slab onto the
+page's own ground, because a Card against black has nothing behind its side to be
+transparent to.
+
+### The side is the pane, and the slices are the light on it
+
+The author's correction to the section above: the sides "look decent, but they
+don't look like they're the exact same liquid glass material as the top" — a flat
+panel with some thickness added later rather than a slab. That was an honest
+description of the build. The face was the app's tint over a heavily blurred,
+brightened copy of the map; the side was a grey that let the real map through at
+half strength. Two materials, and a hard line where they met.
+
+**So the side is made of the face now.** `glass.ts`'s `body()` is a second copy
+of the surface's frost — the same `<img>`, at the same offset, with the same
+filter, so the parallax is the face's parallax — under the tint the app paints
+that surface, read off the surface ON THE PAGE (the ruler is outside
+`.eater-map__card`, where `--glass` is remapped, so it would hand back the app's
+light glass). `edge.ts` lays that body at the bottom of the stack as
+`Solid.body`, and the slices stop being the material: they go into a group of
+their own, `.eater-map__film`, which carries `--eater-map-card-side-film` as ONE
+opacity and is SCREENED onto the body. The light still comes out of the one
+function and the one light (#197); what it lights is the pane.
+
+**The body is cut to the solid's silhouette, and that outline is a hull rather
+than a union.** The face's outline swept back along the depth is the hull of the
+outline and its own translate, because a rounded rectangle is convex — so a point
+of the outline whose normal faces along the depth is on the silhouette a whole
+depth back, and every other point is on it where it stands. Which points take
+which form depends on the depth's DIRECTION alone, and that is read once with a
+probe `translate()`; how far back stays the same expression the slices are
+translated by, so the cut follows a window exactly as they do.
+
+**The roll is on screen, because the face's frost is clipped back by it.** Every
+glass surface's backdrop is `inset(fillet round r - fillet)`, as the Slab's
+picture is in `stage-dom.ts`, so the band between that and the outline is the
+shoulder: the side's body and the light on it, seen through the app's own tint.
+Without the clip the face covers every fillet ring and the edge is cut square,
+which is most of what "added later" looked like. `edge.ts`'s `gloss` brightens the
+film where the roll turns off the face, dims it down the wall, and lifts the last
+wall slice, so the flank reads as a curve of the solid and ends in a fine line.
+
+**And the outline glints.** `.eater-map__rim` is a gradient ring laid OVER the
+app's surface — under it, the app's tint would dim the one cue that the edge is
+rolled glass — drawn by `edge.ts`'s `glint`: strongest where the shoulder faces the
+light, fainter again on the far side where the light comes back out through the
+pane, never quite dark. Its width is multiplied by `--eater-map-solid`, because
+below the band there is no roll and a bright ring round a flat screenshot is an
+outline.
+
+**Four things about it are easy to get wrong.**
+
+- **The body is NOT tagged as a part.** The Drop moves every `[data-eater-map-part]`
+  by `translate`, and the body is inside the stack, which already is one — tagged
+  twice, it would fall twice as far. The rim is the face's child and IS tagged.
+- **The rim must not carry `data-eater-map-glass`.** The `eater-map` Check counts
+  glass surfaces by that attribute; a rim carrying it is a sixth surface.
+- **`--eater-map-card-edge-alpha` is 1 for a reason, not by default.** The side
+  shows the pane's copy of the map; a see-through side shows that copy AND the
+  real map under it, which drift apart as a Card climbs.
+- **The slices' `colour` is the light's colour now, and it is still opaque.**
+  `--eater-map-card-edge` is white because a glass edge gives back the light it is
+  given; the film's transparency is its group's, for `Solid.alpha`'s reason.
+
+The thickness went from 0.01 to 0.016 and the roll from 0.005 to 0.009 with it,
+chosen by looking at 1440x900: at #187's 1% the side was two or three pixels,
+which is not enough surface for any material to read on. `pnpm check` passes
+unchanged — the edge group asks what the slices are, and they are what they were,
+lit by the same light; the body and the rim are elements it does not count. What it
+does NOT answer is whether the side looks like the top, which is a look. No
+frame-time measurement was taken for this: it adds, per surface, one blurred
+`<img>`, one clipped box, one blended group and one masked ring — five of each on
+the page, against the 144 slices the turn's measurements above are about.
 
 ### The generated geometry follows a Token that moves — dragged, or answered by a media query (#196)
 
