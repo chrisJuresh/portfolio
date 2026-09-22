@@ -936,6 +936,66 @@ on its own `--front-screen-strip-max` ceiling and the fold had nothing left to g
 photographs BIGGER is therefore not a zoom at all: it is the type giving up some of
 the budget, which is a change to the Section's ladder rather than to this number.
 
+## What a frame costs: a custom property on the root is the whole page
+
+**Changing an inherited custom property on an element recalculates the style of
+every element under it, whether or not anything reads it.** Chromium has a fast
+path for an inherited change — a descendant whose own rules did not change just
+re-inherits — and a custom property defeats it: each descendant re-runs its whole
+cascade and re-substitutes every `var()` it carries, and this page carries a lot
+of them. Measured in-page at 1440x900, one write and one forced flush, 1441
+elements:
+
+| written on `:root` | ms |
+| --- | --- |
+| any custom property, even one nothing reads | 11–16 |
+| a registered one, `inherits: true` | 17 |
+| a registered one, `inherits: false` | 0.1 |
+| `color` | 1.5 |
+| the same custom property on `.front-screen` (170 elements) | 0.9 |
+| …on `.eater-map` (1009 elements, the vendored Cards) | 9.4 |
+
+So a number written per frame belongs on the smallest box that reads it. Two were
+not: `--landing-past`, which now runs on the word itself off a scroll timeline
+(the hold above), and the Lift's tween of the Eater Map's root, which is gone
+(`src/sections/eater-map/NOTES.md`). The other half was reads: the hold and the
+Rail asked `getComputedStyle` and `getBoundingClientRect` in the scroll event,
+straight after the Turn had dirtied the root, so each forced that recalculation
+mid-frame and the frame's own style pass ran it again. They read `measured()` in
+`page-turn.ts` now — the ports as the last box-resize left them. `cut-morph.ts`
+reads its stagger once; `leaders.ts` reads every rect before it writes.
+
+Traced across every turn at 1440x900 against `a7e5fc2`, before either the
+scroll-timeline change or this one, main-thread time in each 1.4s window:
+Eater Map → Catalogue 1000 → 360ms, scrolling the Catalogue 1270 → 360ms,
+Catalogue → Eater Map 840 → 575ms and 11 dropped frames → 0–1, Eater Map →
+Gallery 765 → 260ms. Dark at DPR 2 moves the same way. The Catalogue's share is
+mostly `--landing-past`; the Eater Map's is mostly the Lift.
+
+**What is left is `--turn`, and it is structural.** The first page turn, and
+below the band the whole first screen, writes `--turn` on the root every frame,
+and `--ground`, `--ink` and `--ink-soft` are declared there as mixes of it and
+read by inheritance in thirty-odd declarations across every Section — so it is a
+whole-page recalculation per frame by construction, ~15ms at 1440x900 on a fast
+desktop and six to eight dropped frames on the first screen of a phone-sized
+window under 4x CPU throttling. Scoping it means the crossing reaching its
+readers some way other than an inherited custom property (`color` and
+`currentColor` take the fast path; a background-colour animation is not
+inherited at all), which is a change to how every Section spends the Turn and is
+the author's call, not a fix.
+
+**`content-visibility: auto` does not help here, and one reading said it did.**
+Chromium keeps an `auto` box rendered while it is within about a screen and a
+half of the viewport, and every Section is one screen from the next, so nothing
+is ever skipped while it matters. Set from script, a box starts locked until the
+first intersection pass — a flush timed in the same task sees it skipped and
+reads 3ms where the real frame pays 15.
+
+**Profiling a turn: keep the pointer off the photograph strip.** A notch over a
+photograph is the strip's (`wheel.ts`), so a harness wheeling at the window's
+centre times the strip's step and not the page's turn — and on a fresh load does
+not turn the page at all.
+
 ## Two things a Check has to know
 
 **Ask a Timeline for a moment, but `hold()` first.** A scrubbed Timeline is

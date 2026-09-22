@@ -3413,7 +3413,12 @@ function composition(page) {
     // underneath them, because each backdrop is offset by that Card's RESTING place
     // and the drift is what the playhead spends. A comparison of rects alone
     // reports that as one composition; this is what makes it a difference.
-    return { lift: getComputedStyle(section).getPropertyValue('--eater-map-lift').trim(), boxes };
+    // Read off the CARDS, which is where the playhead lives: the Section's own
+    // `--eater-map-lift` is only their fallback, and the Lift writes each Card's.
+    const lift = [...section.querySelectorAll('.eater-map__card')]
+      .map((card) => getComputedStyle(card).getPropertyValue('--eater-map-card-lift').trim())
+      .join(',');
+    return { lift, boxes };
   });
 }
 
@@ -3492,7 +3497,9 @@ async function collapsedBelowTheBand(browser, origin) {
         return {
           missing: null,
           collapsed: getComputedStyle(section).getPropertyValue('--eater-map-collapsed').trim(),
-          lift: getComputedStyle(section).getPropertyValue('--eater-map-lift').trim(),
+          lift: [...section.querySelectorAll('.eater-map__card')]
+            .map((card) => getComputedStyle(card).getPropertyValue('--eater-map-card-lift').trim())
+            .join(','),
           planeTransform: getComputedStyle(plane).transform,
           planeStyle: getComputedStyle(plane).transformStyle,
           cardsStyle: getComputedStyle(cardHost).transformStyle,
@@ -3562,9 +3569,9 @@ async function collapsedBelowTheBand(browser, origin) {
           'projects',
       );
     }
-    if (Number.parseFloat(seen.lift) !== 0) {
+    if (!seen.lift || seen.lift.split(',').some((value) => Number.parseFloat(value) !== 0)) {
       failures.push(
-        `${where}: --eater-map-lift computes to ${seen.lift} on a collapsed composition — the geometry is ` +
+        `${where}: --eater-map-card-lift computes to ${seen.lift || 'nothing'} on a collapsed composition — the geometry is ` +
           "pinned by `transform: none` down here whatever the playhead holds, but each Card's glass " +
           'carries a copy of the map offset by that Card\'s RESTING place, so a drifted Card shows a map ' +
           'behind its glass that is not the map underneath it',
@@ -3760,7 +3767,7 @@ async function everyReaderGetsIt(browser, origin, ordinary) {
       }
       if (theirs.lift !== ordinary.lift) {
         failures.push(
-          `${where}: the reader ${reader} is given --eater-map-lift ${theirs.lift} where an ordinary reader ` +
+          `${where}: the reader ${reader} is given --eater-map-card-lift ${theirs.lift} where an ordinary reader ` +
             `gets ${ordinary.lift} — collapsed, the playhead is what fills the Cards' glass, and a drawing ` +
             'the same shape with different glass in it is still a second composition',
         );

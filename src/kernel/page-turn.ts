@@ -120,6 +120,55 @@ export function portOf(section: HTMLElement): number {
   return top - (Number.parseFloat(style.scrollMarginTop) || 0);
 }
 
+/**
+ * `ports()` and `portOf()` AS THE LAST LAYOUT THAT MOVED THEM LEFT THEM, for the
+ * two readers that ask on EVERY SCROLL EVENT — the hold and the Rail's highlight.
+ *
+ * Asked live, each of those was a style recalculation and a layout forced in the
+ * middle of a frame. They run in the scroll event straight after the Turn and the
+ * hold have written a custom property on the root, so every `getComputedStyle`
+ * and `getBoundingClientRect` in them re-resolved the whole document before the
+ * frame's own style pass did it again — two whole-document recalculations per
+ * frame, per reader, for four numbers that had not moved. NOTES.md has the trace.
+ *
+ * A port moves only when a box does, so a ResizeObserver on every Section and on
+ * the document says when the reading is stale — a Section mounting and growing, a
+ * picture arriving, a face landing, a Token dragged in the Editor — and a resize
+ * says so for the one thing no box reports, the band's own edge. The next reader
+ * after either measures live, once. The wheel and the deep link keep asking
+ * `ports()` and `portOf()` directly: they run once a notch, not once a frame.
+ */
+let reading: { ports: number[]; of: Map<HTMLElement, number> } | null = null;
+let watching = false;
+
+export function measured(): { ports: number[]; of: (section: HTMLElement) => number } {
+  if (!watching) {
+    watching = true;
+    const stale = (): void => {
+      reading = null;
+    };
+    const boxes = new ResizeObserver(stale);
+    boxes.observe(root);
+    for (const section of document.querySelectorAll<HTMLElement>('[data-section]')) {
+      boxes.observe(section);
+    }
+    window.addEventListener('resize', stale, { passive: true });
+  }
+  reading ??= { ports: ports(), of: new Map() };
+  const of = reading.of;
+  return {
+    ports: reading.ports,
+    of: (section) => {
+      let port = of.get(section);
+      if (port === undefined) {
+        port = portOf(section);
+        of.set(section, port);
+      }
+      return port;
+    },
+  };
+}
+
 /** Is the page turnable at all? Below the band there is one port and no turn. */
 const turnable = () => ports().length > 1;
 

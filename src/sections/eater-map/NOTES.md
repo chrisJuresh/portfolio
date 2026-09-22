@@ -2931,3 +2931,26 @@ title beside it says.
 **The project title is four lines and used to be two.** At 0.566 of PROJECTS' cap
 the two authored lines do not fit the column, and four is the reference's own
 block.
+
+## What the Lift costs a frame
+
+**The Lift writes the Cards and nothing else.** It used to tween the Section's
+own `--eater-map-lift` too, for the plane's rotations — which #189 took off the
+playhead — and for each Card's fallback, which the Cards' own tween overrides the
+moment it is built. A custom property changed on the Section's root is inherited
+by all thousand elements under it, so that write had the browser recalculate the
+whole Section's style every frame of the Lift, ~9ms of each, to move nothing
+(`src/kernel/NOTES.md` has the table). `--eater-map-lift` is the stylesheet's
+now: 1 in the band, 0 collapsed, and only a reader the Lift never reaches sees it.
+The `eater-map` Check and the stage sheet read the playhead off the Cards'
+`--eater-map-card-lift` for the same reason; screenshots at four moments of the
+Lift, both themes, match the old build to one level of one channel.
+
+**What is left is the Cards, ~7ms a frame.** Each Card's lift is inherited by the
+vendored app inside it, a hundred to four hundred elements, and it has to be:
+every glass surface's backdrop is offset by the Card's drift, which is a term of
+that lift. Taking it off inheritance would take it off the glass.
+
+**The leader lines read every rect before writing any.** Interleaved, each rule's
+`setAttribute` dirtied the layout and the next rule's reads forced it again —
+four layouts per tick of a Lift that runs while the page turns.

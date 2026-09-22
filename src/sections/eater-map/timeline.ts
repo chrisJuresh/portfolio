@@ -23,13 +23,13 @@ import mountRedraw from './redraw';
  * is to travel from there back to where the markup already reads.
  *
  * WHAT THE PROGRESS MEANS. 0 is flat, 1 is raised, and p is p of the way between
- * — the plane finding its angle first and the three Cards climbing after it, in
- * the order the app stacks them. That mapping is fixed and holds at every window,
- * so `seek(0.4)` is a deterministic frame for a Check to read and for the Editor
- * to scrub. Every ease inside it is `none` on purpose: the GEOMETRY is linear in
- * the progress and the FEEL is in the transport below, which is the same split
- * the Front Screen makes — the Timeline is the authority on where the drawing is,
- * and nothing else writes a transform.
+ * — the three Cards climbing in the order the app stacks them. That mapping is
+ * fixed and holds at every window, so `seek(0.4)` is a deterministic frame for a
+ * Check to read and for the Editor to scrub. Every ease inside it is `none` on
+ * purpose: the GEOMETRY is linear in the progress and the FEEL is in the
+ * transport below, which is the same split the Front Screen makes — the
+ * Timeline is the authority on where the drawing is, and nothing else writes a
+ * transform.
  *
  * IT IS PAUSED, ALWAYS. Nothing here plays it; a transport tween moves its
  * playhead, exactly as the Turn's ScrollTrigger scrubs the Kernel's. A Timeline
@@ -54,9 +54,6 @@ import mountRedraw from './redraw';
  * on. `collapsed()` is how this module is told, and it is told by the stylesheet
  * rather than by a second copy of the breakpoint.
  */
-
-/** The plane's own share of the Timeline: it starts turning before anything rises. */
-const TILT = 0.55;
 
 /** Where the Cards begin, and how long each one's climb takes. */
 const LAG = 0.18;
@@ -164,17 +161,16 @@ export default function mountLift(root: HTMLElement): gsap.core.Timeline | void 
 
   gsap.registerPlugin(ScrollTrigger);
 
+  // THE CARDS AND NOTHING ELSE, and the Section's own `--eater-map-lift` is not
+  // written here any more. Its one reader is each Card's fallback, and the tween
+  // below writes every Card's own the moment it is built, so the fallback is never
+  // consulted while this module runs — and a custom property changed on the ROOT
+  // is inherited by all thousand elements under it, so tweening it had the browser
+  // recalculate the whole Section's style on every frame of the Lift, about nine
+  // milliseconds of each, to move nothing. It stays the stylesheet's: the regime's
+  // answer for a reader this module never reaches. NOTES.md has the measurement.
   const lift = gsap.timeline({ paused: true });
   lift
-    // The Section's own playhead, which the plane's two rotations are written
-    // against. On the ROOT and not on the plane, because the Cards read it too:
-    // it is the value each Card's own falls back to when nothing has written one.
-    .fromTo(
-      root,
-      { '--eater-map-lift': 0 },
-      { '--eater-map-lift': 1, duration: TILT, ease: 'none' },
-      0,
-    )
     // In document order, which is the order the app stacks them: the detail panel
     // leaves the map first and the search bar last.
     .fromTo(
