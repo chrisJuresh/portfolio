@@ -16,6 +16,7 @@ than a convenience.
 | `faces.css` / `tokens/faces.css` | the five families, six files, the face Tokens, and the page's own type size — the zoom, the ceiling and the give-way |
 | `ground.css` / `tokens/ground.css` | the theme's two papers, the Turn across them, the shade over the DARK theme's first screen, and that the document never scrolls sideways |
 | `corners.css` / `corners.ts` / `tokens/moonlight.css` | the plate, the car and the eye — geometry, and which rung; and the Moonlight they stand in, by whose light alone the dark theme draws the plate and the eye — a relit ladder of each, as the picture — and which the car is cut out of |
+| `stars.css` / `stars.ts` / `tokens/stars.css` | the night sky behind the Moonlight, in the same band — a star field and a Milky Way drawn once onto two canvases, a few twinkling stars and three meteors, masked by the three pictures' own shapes |
 | `rail/` / `tokens/rail.css` | the Rail — the one index on the page, its words, its two regimes, and which entry is current |
 | `effect-stack/`             | the nine layers, and the grain tile                          |
 | `theme.ts`                  | which paper, where it is stored, and who is told when it changes |
@@ -1202,6 +1203,63 @@ things the author would see, and the only invisible half — the light theme mov
 — is held by the gate being a rule rather than a value, which is the same
 guarantee the shade has. A moonlit rung that goes missing is the `assets` Check's
 already: it forgives a missing DARK rung and nothing else.
+
+## The Stars: the night sky behind the Moonlight
+
+`.kernel-corners .stars` in `stars.css` is the layer, `stars.ts` draws it, and
+`tokens/stars.css` is its six numbers, reached on the Editor as `kernel-stars`.
+It is the FIRST child of the corner pictures' band, before the Moonlight, so the
+light veils it nearest the moon, the car is cut out of it, and the plate and the
+eye stand in front of it. **The light theme takes none of it**, as a rule:
+`display: none` there, so it is not painted, not animated and `stars.ts` draws
+nothing until the theme is dark.
+
+**It is masked by the pictures' own alpha, and that is why it is not simply
+drawn under them.** The plate and the eye breathe down to
+`--moonlight-breathe-floor` of themselves, so at the trough a star behind the
+dome would show through it at two thirds. The three ladders are cut out — the
+plate is about half transparent, the eye 85% — so `mask-image` takes each
+picture's own file, at the geometry its layer is drawn at, out of the sky:
+the three unioned, the moon's clearing less the union, and a foot that dissolves
+the sky from 68% of the band down so there is no line to scroll past. Rendered
+with the layer filled white, the mask is the skyline — both domes, the crosses,
+the wheel's pillar, the car. `--eye-column` moved from the eye's rule to the
+band for this, so the two measure from one line.
+
+**One sky, laid on like `cover`.** Every star is placed from a fixed seed in a
+1600x900 virtual sky, scaled to fill the band and centred, so a reload, a resize
+and a phone show the same constellations and a narrow window shows fewer of
+them. A star's radius follows the scale only as its square root, clamped: a star
+is a point, not part of a picture.
+
+**Drawn once, never per frame.** The field is a canvas at the display's density,
+capped at 2; the Milky Way is a second canvas at half a CSS pixel, because it is
+nothing but blur — haze, a few hundred small lumps along a bent spine, a warmer
+core low on the page, and two dust lanes taken OUT of the glow with
+`destination-out` rather than painted over it, so a lane is darker only where
+there was light and never below the ground. Both repaint only when the band's
+size or the display's density changes. What moves is compositor work: the
+layer's opacity, the twinkles' opacity (their keyframes are constants for that
+reason; each star's brightness is its colour's alpha) and the meteors'
+transform.
+
+**It breathes against the moon.** The layer reads the band's
+`--moonlight-swell` and loses `--stars-moon-dim` of itself at the top of each
+breath, so the stars come out as the moon goes in, on the Moonlight's one clock.
+`prefers-reduced-motion` keeps the sky and stops the twinkle and the meteors,
+with the same selectors as the rules that start them.
+
+**What the shade does to it.** It stands under the shade like everything below
+the type, so at the shipped 0.5 what reaches the screen is half the canvas —
+the brightest stars at about 100 of 255 at 1536x760, the field's median star a
+few levels over a ground of 11, the Milky Way a soft rise under the halftone.
+That is why the canvas stars are drawn near full alpha: drawn at a third, as
+they first were, the halftone's dots ate them. To judge the drawing itself,
+screenshot it with `.kernel-shade`, `.fx` and the band's other children hidden.
+
+No Check, for the Moonlight's reason: a sky that fails to draw is something the
+author would see, and the one invisible half — the light theme — is held by the
+gate being a rule.
 
 ## A Section mounts when the browser is idle, and "approaching" is the deadline
 

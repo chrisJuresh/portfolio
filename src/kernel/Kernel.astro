@@ -12,6 +12,7 @@
 import './faces.css';
 import './ground.css';
 import './corners.css';
+import './stars.css';
 import './landing.css';
 ---
 
@@ -24,6 +25,16 @@ import './landing.css';
     rather than a pseudo-element because a blend inside a translucent box reaches
     only that box. corners.css. */}
 <div class="kernel-corners" aria-hidden="true">
+  {/* The night sky, before the light: the Moonlight veils it, the car is cut
+      out of it and the plate and the eye stand in front of it. The canvases
+      are drawn by stars.ts; the meteors are CSS alone. stars.css. */}
+  <div class="stars">
+    <canvas class="galaxy"></canvas>
+    <canvas class="field"></canvas>
+    <b class="meteor"></b>
+    <b class="meteor"></b>
+    <b class="meteor"></b>
+  </div>
   <div class="moonlight"></div>
   <div class="plate"></div>
   <div class="plate-lit"></div>

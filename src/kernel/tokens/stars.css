@@ -1,0 +1,35 @@
+/* The Stars' numbers, apart from the layers that draw them — stars.css is those
+   layers, stars.ts is the sky they are drawn from, and src/kernel/NOTES.md says
+   what stands in front of them and why they breathe against the moon.
+
+   One file per part of the Kernel, so the Editor reaches this as `kernel-stars`
+   on the Tokens surface. THE LIGHT THEME TAKES NONE OF IT, whatever these hold —
+   a rule in stars.css and not a value here, for the Moonlight's reason. */
+
+:root {
+  /* How much of the sky shows while the moon is at its dimmest. The layer's own
+     opacity at the bottom of a breath, and the one number to drag first: 0 is
+     the dark page with no stars. The shade stands over this as over everything
+     below the type, so what reaches the screen is this less the shade's share. */
+  --stars-strength: 0.95;
+
+  /* How much of that the moon washes out at the top of a breath. 0 is a sky
+     that ignores the moon; 1 puts the stars out whenever the moon is full. */
+  --stars-moon-dim: 0.45;
+
+  /* How far round the moon no star shows, as a share of the fold — the glare
+     the stars fade in out of. It is centred where the Moonlight is. */
+  --stars-clear: 0.55;
+
+  /* How much of the Milky Way shows, over the stars' own strength. 0 is a
+     field of stars with no galaxy across it. */
+  --stars-galaxy: 1;
+
+  /* The twinkle: the period of an average star's flicker. Each star takes its
+     own share of it, so no two keep time. 0s holds every star still. */
+  --stars-twinkle: 5s;
+
+  /* How often a meteor crosses, roughly. Three paths, each on its own multiple
+     of this, so they never fall into a pattern. 0s is no meteors. */
+  --stars-meteors: 29s;
+}

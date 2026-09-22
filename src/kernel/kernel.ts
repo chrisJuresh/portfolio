@@ -6,6 +6,7 @@ import { mountSections, observeSection } from './loader';
 import { hold, release } from './motion';
 import { mountPageTurn, ports, snapping } from './page-turn';
 import { mountRail } from './rail/rail';
+import { mountStars } from './stars';
 import { followSystemTheme, toggleTheme } from './theme';
 import { createTurn } from './turn';
 import { mountWheel } from './wheel';
@@ -18,6 +19,7 @@ import { mountWheel } from './wheel';
 
 createTurn();
 mountCorners();
+mountStars();
 mountGrain();
 followSystemTheme();
 // Before the Sections, and before the page turn: both ask who owns the wheel, so

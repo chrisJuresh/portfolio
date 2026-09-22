@@ -59,6 +59,14 @@
   pointer-events: none;
   contain: paint;
   background: var(--ground);
+
+  /* The eye's column, on the band rather than on the eye, because the Stars
+     take the eye's shape out of the sky and have to measure it from the same
+     line. What it is and why it is restated: THE ONE PICTURE OF THE THREE, below.
+     --front-screen-measure and --front-screen-side, spelled out. */
+  --eye-measure: 27rem;
+  --eye-side: 1.35rem;
+  --eye-column: max(var(--eye-side), calc((var(--page-across) - var(--eye-measure)) / 2));
 }
 
 .kernel-corners > * {
@@ -257,11 +265,7 @@
    one the column is centred in, so the two land on the same edge. */
 .kernel-corners .eye,
 .kernel-corners .eye-lit {
-  /* --front-screen-measure and --front-screen-side, spelled out. */
-  --eye-measure: 27rem;
-  --eye-side: 1.35rem;
-  --eye-column: max(var(--eye-side), calc((var(--page-across) - var(--eye-measure)) / 2));
-
+  /* --eye-column is declared on the band, above. */
   top: 0;
   height: calc(var(--fold) - var(--eye-y));
   background-position:
