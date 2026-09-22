@@ -190,6 +190,13 @@
      read. Floored at the same 1.35rem, so nothing about a phone changes. */
   --projects-panel-stack-side: clamp(1.35rem, 1rem + 2.2vw, 3.5rem);
 
+  /* THE STACK'S FOOT, and the same clamp as the Eater Map's and the Catalogue's
+     --*-inset, restated because a Section reads no other Section's Tokens. It
+     was --projects-panel-inset, the Front Screen's 2.7vh rhyme, which left this
+     Section's seam with the next one about 20px shorter than every other seam
+     between two Sections on a phone. */
+  --projects-panel-stack-foot: clamp(1.6rem, 1rem + 3vh, 3.4rem);
+
   /* THE AIR UNDER THE OVERHANGING WORD WENT WITH THE RAIL (#192). Out of the
      band the Front Screen's cut PROJECTS is given its whole cap slab and hands
      the difference back as a negative bottom margin, so part of the letters hang

@@ -355,11 +355,11 @@ const numbered = (at: number): string => String(at + 1).padStart(2, '0');
     text-wrap: balance;
   }
 
+  /* ONE RUN OF TEXT AND NOT A FLEX ROW. As two flex items the stack wrapped as a
+     WHOLE, so a stack one word too long for the line left `YEAR ·` alone on the
+     first one. Inline, the line breaks between words like any other. */
   .catalogue__meta {
     margin: var(--catalogue-close) 0 0;
-    display: flex;
-    flex-wrap: wrap;
-    column-gap: 0.45em;
     color: var(--catalogue-muted);
   }
 
@@ -367,10 +367,11 @@ const numbered = (at: number): string => String(at + 1).padStart(2, '0');
      two stays one Content string the Editor can reach. It hangs off the YEAR
      rather than leading the stack, so a line that wraps ends on the dot instead
      of beginning with one; and it is spaced as the dots inside the stack are —
-     one tracked space each side — so the three read as one row of separators. */
+     a no-break space before it and an ordinary one after, written here because
+     the build drops the whitespace between the two spans — so the three
+     read as one row of separators. */
   .catalogue__meta span:not(:last-child)::after {
-    content: '·';
-    margin-inline-start: 0.45em;
+    content: '\00a0· ';
   }
 
   .catalogue__copy {

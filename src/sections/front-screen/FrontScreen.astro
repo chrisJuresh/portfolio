@@ -1022,7 +1022,7 @@ const EAGER = 2;
     color: var(--ink);
     text-decoration: none;
     border-bottom: var(--front-screen-hairline) solid var(--front-screen-rule);
-    overflow-wrap: anywhere;
+    overflow-wrap: break-word;
     transition: border-color var(--front-screen-hover-fade) ease;
   }
 
@@ -1034,21 +1034,30 @@ const EAGER = 2;
   /* ---- the theme toggle, in the corner of the contact block --------------
      Baseline alignment and not box alignment: the switch's word sits on the same
      line as the last contact link, whatever either one's line height is. */
+  /* A WRAPPING ROW AND NOT A TWO-COLUMN GRID. The grid gave the switch its width
+     first and the links what was left, so at 360px the list was ~205px and the
+     email and LinkedIn addresses broke mid-word. Here the list keeps its longest
+     link whole, and on a window too narrow for both the switch drops to a row of
+     its own, still at the right edge and still the column's last line. */
   .front-screen__corner {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
-    align-items: end;
+    display: flex;
+    flex-wrap: wrap;
     align-items: last baseline;
     column-gap: var(--front-screen-gutter);
+    row-gap: var(--front-screen-space-3xs);
+  }
+
+  .front-screen__contact {
+    flex: 1 1 auto;
+    min-width: 0;
   }
 
   .front-screen__toggle {
-    justify-self: end;
     display: inline-flex;
     align-items: baseline;
     gap: var(--front-screen-toggle-gap);
     min-height: 1.5rem;
-    margin: 0;
+    margin: 0 0 0 auto;
     padding: 0.2rem 0;
     border: 0;
     background: transparent;
