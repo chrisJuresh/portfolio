@@ -161,6 +161,39 @@ interface Surface {
   readonly h: number;
   /** top-left clockwise, already clamped to the box the way a browser clamps them */
   readonly radii: Corners;
+  /**
+   * The `z-index` the vendored stylesheet stands this surface at inside its Card,
+   * which the backdrop and the edge are painted at too — or `auto` for none.
+   *
+   * A PANE HIDES WHAT IS UNDER IT, AND IT HAS TO BE UNDER IT FOR THAT. The app
+   * stacks its results dropdown at 12 over the topbar's 10; a backdrop built here
+   * is the face's FIRST child, so at `auto` every backdrop and every edge in the
+   * Card was painted beneath BOTH pills. Nothing overlaps at rest, so nobody could
+   * see it until the Offline button could be lowered on its own — it came down
+   * under the dropdown standing above it and was drawn over it, pill, dot and
+   * all. At the surface's own level the three boxes of a component sort as one,
+   * and in document order the backdrop and the edge still come before the surface
+   * they are drawn for.
+   *
+   * READ OFF THE NEAREST ANCESTOR THAT STATES ONE, for the reason every other
+   * number here is measured: the two pills carry none of their own and stand in
+   * the topbar's, and a level typed in this file would be a second opinion about
+   * `cards.css`. The ruler is where it CAN be read, because the Drop's
+   * `translate` is inert there (`cards-drop.css`) — on the page it makes the box a
+   * hung surface arrives in a stacking context, which is the other half of this.
+   */
+  readonly level: string;
+  /** Does it arrive in the box a hung surface arrives in (`HUNG`)? */
+  readonly hung: boolean;
+}
+
+/** The z-index the vendored stylesheet stands `element` at, below `face`. */
+function levelOf(element: Element, face: Element): string {
+  for (let at: Element | null = element; at && at !== face; at = at.parentElement) {
+    const level = getComputedStyle(at).zIndex;
+    if (level !== 'auto') return level;
+  }
+  return 'auto';
 }
 
 /**
@@ -216,11 +249,12 @@ function measure(ruler: HTMLElement, card: HTMLElement, selectors: readonly stri
     const box = element.getBoundingClientRect();
     const style = getComputedStyle(element);
     const y = box.top - origin.top;
+    const hung = element.closest(`.${HUNG}`) !== null;
     found.push({
       name: `${name} ${selector}`,
       part: partOfSurface(selector),
       x: box.left - origin.left,
-      top: element.closest(`.${HUNG}`) ? `${y}px + ${HANG}` : `${y}px`,
+      top: hung ? `${y}px + ${HANG}` : `${y}px`,
       w: box.width,
       h: box.height,
       // `border-radius: 999px` is what a pill STATES and `999px` is what the
@@ -232,6 +266,8 @@ function measure(ruler: HTMLElement, card: HTMLElement, selectors: readonly stri
         Number.parseFloat(style.borderBottomRightRadius) || 0,
         Number.parseFloat(style.borderBottomLeftRadius) || 0,
       ]),
+      level: levelOf(element, copy),
+      hung,
     });
   }
 
@@ -253,6 +289,7 @@ function backdrop(surface: Surface): HTMLElement {
     `width:${surface.w}px`,
     `height:${surface.h}px`,
     `border-radius:${surface.radii.map((r) => `${r}px`).join(' ')}`,
+    `z-index:${surface.level}`,
     'overflow:hidden',
     'pointer-events:none',
   ].join(';');
@@ -413,12 +450,25 @@ export default function mountGlass(root: HTMLElement): void {
         // tagged one by one each slice moves by the same amount, which is the same
         // drawing. What must never happen is BOTH, and neither shape can produce
         // both.
-        if (surface.part) {
-          for (const piece of card.querySelectorAll<HTMLElement>(
-            `:scope > [data-eater-map-edge="${CSS.escape(surface.name)}"]`,
-          )) {
-            piece.dataset.eaterMapPart = surface.part;
-          }
+        //
+        // AND IT IS PAINTED AT ITS SURFACE'S LEVEL, with the backdrop, so a
+        // standing pane's rim covers a lowered pill as its face does (`level`).
+        for (const piece of card.querySelectorAll<HTMLElement>(
+          `:scope > [data-eater-map-edge="${CSS.escape(surface.name)}"]`,
+        )) {
+          if (surface.part) piece.dataset.eaterMapPart = surface.part;
+          piece.style.zIndex = surface.level;
+        }
+        // AND SO IS THE BOX A HUNG SURFACE ARRIVES IN, which is the half of it
+        // that was actually wrong on the page. That box carries the Drop's
+        // `translate` (#215), and a `translate` makes a stacking context — so the
+        // dropdown's own 12 was sealed inside a box standing at 0, under the
+        // topbar's 10, and a lowered Offline button was painted over a dropdown
+        // still standing above it. Stood at the surface's level, the app's order
+        // is the Card's order again.
+        if (surface.hung) {
+          const hang = face.querySelector<HTMLElement>(`:scope > .${HUNG}`);
+          if (hang) hang.style.zIndex = surface.level;
         }
       }
     }

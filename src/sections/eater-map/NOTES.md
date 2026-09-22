@@ -1001,6 +1001,20 @@ is the lesser of the two errors — the two pills are 8px apart in one topbar an
 are always read together, where a piece lying on the Slab covering one standing off
 it is the failure #213 shipped and the `eater-map` Check asserts against.
 
+**INSIDE A CARD THE ORDER IS THE APP'S, AND THE DROP HAD QUIETLY BROKEN IT.** The
+app stands its results dropdown at `z-index: 12` over the topbar's 10. The Drop's
+`translate` on `.eater-map__hang` made that box a stacking context at 0, which
+sealed the 12 inside it — so the whole dropdown painted UNDER the topbar, and a
+lowered Offline button was drawn over a dropdown still standing above it. And
+every backdrop and edge was at `auto`, beneath both pills, so a standing pane could
+not have hidden a lowered pill even with the order right. `glass.ts` now reads each
+surface's level off the vendored stylesheet in the ruler — where the `translate` is
+inert — and stands its backdrop, its edge and, for a hung surface, the hang box at
+it. Measured over the search Card at 1440x900: at rest 1,347 pixels change and none
+by more than 7 of 255, all on the seam between the bar and the dropdown; with `01.`
+hovered the dropdown now covers the bar's lower rim where the two lie on the map,
+which is the nearer piece covering the farther one's wall.
+
 **THE ROW CARRIES THE PART AND THE HOOK DOES NOT.** `data-eater-map-point` is on
 the `<li>`, because the hook is a zero-height box a pointer can never be inside —
 what the reader points at is the number, the title and the figure.

@@ -1556,8 +1556,14 @@ import './tokens.css';
      `glass.ts` reads this class as well, which is how a surface knows it is hung:
      the ruler is given a clearance of zero and a hung surface's measured top is
      handed back with the clearance added as an expression, so the number written
-     down stays frozen to the export's viewport and the offset stays live. */
+     down stays frozen to the export's viewport and the offset stays live.
+
+     `relative` WITH NO OFFSET, which moves nothing and is only so `z-index`
+     applies. The Drop's `translate` makes this box a stacking context, and
+     `glass.ts` stands it at the level of the surface inside it so the app's own
+     dropdown-over-topbar order survives that — see `Surface.level`. */
   .eater-map__hang {
+    position: relative;
     margin-top: var(--eater-map-results-clear);
   }
 
