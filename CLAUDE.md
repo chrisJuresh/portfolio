@@ -336,7 +336,11 @@ Check, which assumed otherwise in three places, finds its own Section's port now
 document-level wheel listeners are re-registered passive past the last port and
 below the band, because a non-passive one stops Chromium scrolling until the main
 thread has run and that cost this Section 17ms a notch — half the reader's frames
-— for a decision already made (#218). `src/kernel/NOTES.md` has the measurement,
+— for a decision already made (#218). **And nothing is written on the root while
+the Catalogue is read**: `hold.ts` writes `--landing-past` only while the word is held,
+because a custom property on the root is inherited by every element, and writing
+it on every scroll restyled all 1348 elements a notch for a number no rule was
+reading down there. `src/kernel/NOTES.md` has the measurement,
 the three things about it that are easy to get wrong, and why the `turn` Check
 asserts the listeners rather than a time.
 **Its Stills are PLACEHOLDERS until a picture is named**: `still.file` in its

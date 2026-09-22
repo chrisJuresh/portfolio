@@ -727,6 +727,20 @@ scrolled twice. Where the reader ENDS UP is the answer, so `land()` asks. And
 because a registration governs the events after it — which is the rule coming
 back up already had.
 
+**And the listeners were only half of it.** With both passive, the Catalogue
+still scrolled late, because `hold.ts` was writing `--landing-past` on the root on
+every scroll event for the whole of that Section — long after the word it moves
+had been let go, with no rule left reading it. A custom property on the root is
+inherited by every element, so each write restyled the whole document: **1348
+elements a notch, and 588ms of style recalculation over thirty notches inside the
+Catalogue at 1440x900, against 52ms once the write stopped with the hold.** The
+travel is written only while the word is held now, taken off once on release, and
+nothing is written again until the word is held. The rule it leaves: **a number
+the Kernel writes on the root per scroll is a full-page restyle per frame**, so it
+is written only across the stretch something reads it. The `turn` Check counts
+the root's style writes across a screen of the Catalogue and requires none — the
+old code wrote twelve.
+
 The `turn` Check asserts it as the listeners themselves rather than as a time: a
 stopwatch in a Check is a false failure waiting for a busy machine, and what has
 to hold is the stronger claim that NOTHING non-passive stands on the document

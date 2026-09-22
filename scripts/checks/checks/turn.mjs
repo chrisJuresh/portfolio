@@ -1163,6 +1163,52 @@ export const check = {
         }
       }
 
+      // ---- and past the release, scrolling writes nothing on the root ----
+      //
+      // The listeners were half of "the Catalogue scrolls late" and this is the
+      // other half. A custom property written on the ROOT restyles the whole
+      // document, because every element inherits it, and the hold was writing
+      // `--landing-past` on every scroll event for the whole of the Catalogue —
+      // long after the word it moves had been let go and no rule was reading it.
+      // Measured at 1440x900 over thirty notches inside the Catalogue: 1348
+      // elements restyled per notch and 588ms of style recalculation, against 52ms
+      // once the write stopped with the hold. The listeners come out passive
+      // either way, so the assertion above cannot see this one.
+      //
+      // ASSERTED AS THE MUTATIONS AND NEVER AS A TIME, for the reason above: the
+      // stylesheet is what makes a root write expensive, and a Check can count the
+      // writes exactly. Deep enough in that the word has been let go — a screen
+      // past the last port — and then swept a screen further.
+      const sweepFrom = await stand(lastPort + 600);
+      await page.evaluate(() => {
+        const writes = [];
+        const watch = new MutationObserver((records) => {
+          for (const record of records) writes.push(record.oldValue ?? '');
+        });
+        watch.observe(document.documentElement, {
+          attributes: true,
+          attributeFilter: ['style'],
+          attributeOldValue: true,
+        });
+        Object.assign(window, { __rootWrites: { writes, watch } });
+      });
+      for (let step = 1; step <= 12; step += 1) await stand(lastPort + 600 + step * 60);
+      const rootWrites = await page.evaluate(() => {
+        const { writes, watch } = /** @type {any} */ (window).__rootWrites;
+        watch.disconnect();
+        return { count: writes.length, now: document.documentElement.getAttribute('style') ?? '' };
+      });
+      readings.push(`root style writes across ${sweepFrom}..${sweepFrom + 720}px: ${rootWrites.count}`);
+      if (rootWrites.count > 0) {
+        failures.push(
+          `scrolling from ${sweepFrom}px to ${sweepFrom + 720}px, past the last port, wrote the root's ` +
+            `inline style ${rootWrites.count} time(s) — it reads "${rootWrites.now}" now. Every element ` +
+            'inherits a custom property on the root, so each write restyles the whole document, and ' +
+            'past the release nothing is read from one: that was the Catalogue restyling 1348 ' +
+            'elements a notch. src/kernel/hold.ts writes the travel only while the word is held.',
+        );
+      }
+
       // BELOW THE BAND IS THE SAME RULE AND THE COMMONER WINDOW: one port, no
       // turn, and a whole page that was paying for one anyway. The viewport
       // changes here for the reason a Check normally may not name — the regime IS

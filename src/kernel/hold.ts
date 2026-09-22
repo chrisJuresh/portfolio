@@ -51,7 +51,8 @@ import { portOf, ports } from './page-turn';
  * position is a screen and a half above the window by then, so reverting is the
  * word VANISHING at the moment the reader asks for the next Section rather than
  * leaving with the one they are reading. `--landing-past` is that travel, and it
- * is the one number here that has to be written per scroll.
+ * is the one number here that has to be written per scroll — and only for as
+ * long as the word is held, which is the stretch the travel is read across.
  *
  * NOTHING ON THE PAGE DEPENDS ON THIS FILE, in the sense `cut-morph.ts` means
  * it: a browser that never runs it gets the page exactly as it was before this
@@ -136,9 +137,21 @@ export function mountHold(): void {
      */
     root.toggleAttribute('data-landing-crossing', on && y > held.from + SLACK && y < held.to - SLACK);
 
-    if (past !== wrote) {
-      wrote = past;
-      root.style.setProperty('--landing-past', `${past}px`);
+    /**
+     * AND ONLY WHILE IT IS HELD. The travel is read by the held word and by
+     * nothing else, and it is a custom property on the ROOT — so every write
+     * restyles the whole document, because every element inherits it. Past the
+     * release that was the Catalogue's entire scroll paying a full-page style
+     * recalculation per frame for a number no rule was reading: 1348 elements a
+     * scroll event at 1440x900, and most of what "scrolling the Catalogue is
+     * clunky" was. Let go, the travel is taken off once and nothing is written
+     * again until the word is held.
+     */
+    const travel = on ? past : null;
+    if (travel !== wrote) {
+      wrote = travel;
+      if (travel === null) root.style.removeProperty('--landing-past');
+      else root.style.setProperty('--landing-past', `${travel}px`);
     }
   };
 
