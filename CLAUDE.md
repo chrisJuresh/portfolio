@@ -325,7 +325,8 @@ box does not move across the turn, and that the highlight follows it back.
 projects, one Entry each — a Still beside a few words, the two alternating sides
 down one centred column with a spine between them and each Entry's number
 standing on the spine above its row. It is `src/sections/catalogue/`, its words
-are placeholders until the author types over them in the Editor, and four things
+are written from `chrisJuresh/career-record`'s project profiles and honour each
+profile's do-not-say rules (its `NOTES.md` says which), and four things
 about it are cheap to get wrong. **It is TALLER THAN A SCREEN on purpose**: inside
 the band its top is the page turn's last resting place and the rest of it is read
 by scrolling, which `page-turn.ts` hands back to the browser past the last port —

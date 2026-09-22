@@ -9,14 +9,21 @@ standing on that spine above its row. Where a Showcase presents one project in
 depth with a composition built for it alone, the Catalogue presents many briefly
 with one composition for all of them (`CONTEXT.md`, ADR 0008).
 
-**Everything on it is a placeholder except the first Entry's name.** The Rail
-used to promise a Record Engine Showcase as its third entry — "no page yet" — and
-this Section is what took that slot, so the Record Engine is Entry 01, described
-in the glossary's own words, and the other seven are placeholders whose text says
-so. Their titles and notes are different lengths on purpose: a title that wraps,
-a note of one sentence and one of four, an Entry with no link. That is what a
-placeholder is for — exercising the layout — and every word is Content, changed
-in the Editor rather than here.
+**The Entries are real now, and their source is `chrisJuresh/career-record`.**
+Each one is written from that repository's `projects/<name>.md` or
+`university/<name>.md` profile — the figures, and the do-not-say rules each
+profile carries, which is why the RCR Entry says nothing about adoption and the
+CNN one says *implemented* rather than *designed*. Photo Vault and the Eater Map
+are not here because they are the two Showcases; `which` is not here because its
+profile gates public use on the author's decision. An Entry whose project has no
+public screen to capture — a3watch sits behind Cloudflare Access, paperWiz is a
+desktop app, the worktree guard is a hook — keeps the placeholder until the
+author supplies a picture. The Record Engine's Still is its own interface
+previewing a made-up example page, because its one configured Project is the
+photo vault and that Project's clips are of real photographs; the RCR Still is
+cropped to the review form because every other screen of the demo names a seed
+reviewer who could be a real person. Every word is Content, changed in the Editor rather
+than here, and a figure changed in the profile is a figure to change here too.
 
 Read this before changing anything behavioural. A word, a size, a gap or a colour
 is a Content or a Token edit and needs none of it.

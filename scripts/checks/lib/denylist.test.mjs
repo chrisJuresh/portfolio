@@ -20,6 +20,7 @@ test('the abbreviations a portfolio legitimately writes are not ticket keys', ()
     'meets WCAG-2100 nothing',
     'built against ES-2022',
     'served over HTTP-2',
+    'tuned to 95% on CIFAR-10',
   ]) {
     assert.deepEqual(scan(innocent, PATTERNS), [], innocent);
   }
