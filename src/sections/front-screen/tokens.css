@@ -201,14 +201,25 @@
      would want more, and it is a drag rather than an edit. */
   --front-screen-cut-roof-fade: 0.35;
 
-  /* HOW FAR THE ROOF'S RIGHT SIDE DISSOLVES BACK INTO THE WORD, as a share of
-     the landing's cap. Without it the roof ends on a straight vertical at the
-     S, and that edge is what the reader sees cut through the photographs and the
-     marble going past. TASTE, bounded by a measurement: every block that crosses
-     under the word stops at least 0.64 of the cap short of its right edge at all
-     of #172's windows, so up to about 0.6 the feather never uncovers anything it
-     is there to hide. */
-  --front-screen-cut-roof-feather: 0.5;
+  /* HOW FAR PAST THE S THE ROOF'S RIGHT SIDE DISSOLVES, as a share of the
+     landing's cap. The roof is opaque to the S's outer edge and gone this far
+     beyond it. Without it the roof ends on a straight vertical at the S, and
+     that edge is what the reader sees cut through the photographs and the marble
+     going past. TASTE, bounded twice, and chosen by looking at all four of
+     #172's windows mid-turn.
+
+     NOT INTO THE WORD. It used to dissolve half a cap back into the word, which
+     put the fade's middle in the S's right bowl: the letter stood half on ground
+     and half on the marble or the Gallery's frame, which were passing behind it.
+     Opaque to the edge, the whole S stands on ground and the roof's edge reads as
+     the word's own.
+
+     NOT FAR PAST IT. At 1920 and 2560 the Gallery's frame passes UNDER the S, and
+     a long feather over its white chrome reads as a smudge; at 1536x760 the
+     frame stands beside the word, starting 0.127 of the cap past the S, so 0.12
+     dissolves into exactly that gap and leaves the frame's border alone. The
+     Gallery's copy starts 0.536 past it at every window and is never reached. */
+  --front-screen-cut-roof-feather: 0.12;
 
   /* How much of its own transition each letter of the morph waits out before
      starting, as a fraction of the crossing. At 0 the eight change together and

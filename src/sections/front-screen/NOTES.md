@@ -571,7 +571,7 @@ one line that makes a resting place a relationship rather than a list of names.
 **The roof is the other half of the device**, and it is furniture rather than
 composition: the word's own column, painting `--ground`, from the window's top
 edge to the word's baseline, dissolving over `--front-screen-cut-roof-fade` of
-the cap and back into the S over `--front-screen-cut-roof-feather`. Three things
+the cap and out past the S over `--front-screen-cut-roof-feather`. Three things
 about it are in `src/kernel/NOTES.md` because they are measurements rather than
 rules — why it cannot be up at rest, why its width is the word's, and why it
 arrives by growing rather than by switching. Three are here because they are this

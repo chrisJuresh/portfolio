@@ -1569,11 +1569,14 @@ const EAGER = 2;
        ramp here is a smoothstep in five steps and not a straight one: a linear
        fade has a visible start and end, and those were the "bands" read off it.
 
-       THE SIDES ARE FEATHERED, AND BY MEASURED AMOUNTS. On the right it
-       dissolves --front-screen-cut-roof-feather back into the word, and hangs
-       0.08 of the cap past the S so the letter's own anti-aliasing is not the
-       mask's edge: the Gallery's frame begins 0.127 of the cap past the word at
-       1536x760 and its copy 0.536 at every window, so neither is reached. On the
+       THE SIDES ARE FEATHERED, AND BY MEASURED AMOUNTS. On the right it is
+       opaque to the S's outer edge and dissolves over
+       --front-screen-cut-roof-feather past it, so the whole S stands on ground
+       and the letter's own anti-aliasing is never the mask's edge. It does not
+       dissolve back INTO the word: that put the fade's middle in the S's bowl,
+       with the letter half on the ground and half on whatever was passing. The
+       Gallery's frame begins 0.127 of the cap past the word at 1536x760 and its
+       copy 0.536 at every window; the Token's own note says why 0.12. On the
        left it hangs 0.12 of the cap into the Rail's column: the Rail paints under
        this box (its z is 1, this is the type's), and its words stop at least 0.18
        of the cap short of the word's left edge, so the feather lands on the Rail's
@@ -1591,11 +1594,8 @@ const EAGER = 2;
           var(--front-screen-roof-since)
       );
       --front-screen-roof-left: calc(0.12 * var(--landing-cap));
-      --front-screen-roof-right: calc(0.08 * var(--landing-cap));
-      --front-screen-roof-feather: calc(
-        var(--front-screen-cut-roof-feather) * var(--landing-cap) +
-          var(--front-screen-roof-right)
-      );
+      --front-screen-roof-right: calc(var(--front-screen-cut-roof-feather) * var(--landing-cap));
+      --front-screen-roof-feather: var(--front-screen-roof-right);
       display: block;
       position: absolute;
       z-index: -1;

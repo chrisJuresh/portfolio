@@ -85,7 +85,7 @@ import { open, settle } from '../lib/page.mjs';
  *     column, feathered a little past both of its edges, because that is wide
  *     enough to hide everything that crosses and narrow enough to miss the one
  *     block up there that stands BESIDE the word rather than under it. The
- *     margin is 33 to 69px across the band and the feather spends 0.08 of the cap
+ *     margin is 33 to 69px across the band and the feather spends 0.12 of the cap
  *     of it, so this is the assertion that fails when a Content edit makes the
  *     word narrower or the composition's gutter closes.
  *   * AND THE WORD LEAVES WITH THE SECTION IT HEADS. Past the last marked

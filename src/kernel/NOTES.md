@@ -605,11 +605,18 @@ BOXES, which made every crosser look 90 to 190px WIDER than the word and would
 have sized the roof off the column instead of off the letters.
 
 **Its sides are feathered, because the straight edges were reported.** The right
-side dissolves back into the word over half the cap and hangs 0.08 of the cap
-past the S: every crosser's ink stops at least **0.64 of the cap** short of the
-word's right edge, the Gallery's copy starts **0.536** past it at all four windows
-(33 to 69px — the ratio is the same everywhere), and at 1536x760 the Gallery's
-frame starts **0.127** past it, so none of them is reached. The left side cannot
+side is opaque to the S's outer edge and dissolves over **0.12 of the cap** past
+it (`--front-screen-cut-roof-feather`): the Gallery's copy starts **0.536** past
+the word at all four windows (33 to 69px — the ratio is the same everywhere), and
+at 1536x760 the Gallery's frame starts **0.127** past it, so the fade finishes in
+that gap and reaches neither. It used to dissolve half a cap back INTO the word,
+which is safe for the crossers — their ink stops at least **0.64 of the cap**
+short of the word's right edge — but it put the fade's middle in the S's bowl, so
+the letter stood half on the ground and half on the marble or the frame, and that
+was reported as the roof "ending down the middle of the S". **The frame is not
+beside the word at every window**: at 1100x700 it starts under the E, and at 1920
+and 2560 under the S, so there the roof hides its left edge and a longer feather
+reads as a smudge on its white chrome — which is the other bound. The left side cannot
 feather inward — every crosser starts on the word's own left edge — so it hangs
 0.12 of the cap into the Rail's column, whose words stop at least 0.18 short of
 it. What that bought is the marble and the Eater Map's hairlines going soft into
