@@ -23,7 +23,14 @@ import './landing.css';
     layers each — the picture, and the Moonlight's light ON the picture, screened
     over it and breathing with the sky — and the lit layer is its own element
     rather than a pseudo-element because a blend inside a translucent box reaches
-    only that box. corners.css. */}
+    only that box. corners.css.
+
+    THE LIFT IS A BOX OF ITS OWN because the band already runs one animation,
+    the Moonlight's breath, and a second on the same element would be one list
+    that every theme and motion rule has to restate whole. It carries the band
+    off the top a little faster than the page, so none of it is left on screen
+    at the Gallery's resting place. corners.css, THE LIFT. */}
+<div class="kernel-lift">
 <div class="kernel-corners" aria-hidden="true">
   {/* The night sky, before the light: the Moonlight veils it, the car is cut
       out of it and the plate and the eye stand in front of it. The canvas
@@ -40,6 +47,7 @@ import './landing.css';
   <div class="car"></div>
   <div class="eye"></div>
   <div class="eye-lit"></div>
+</div>
 </div>
 
 {/* The shade: one Token's worth of dark over everything below the type, the

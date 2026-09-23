@@ -32,7 +32,8 @@
 }
 
 /* One band, the height of the first screen, at the top of the document. The
-   nearest positioned ancestor is the BODY, and what this needs from it is that
+   nearest positioned ancestor is the LIFT, below, whose box is this one's; past
+   it is the BODY, and what this needs from that is that
    its origin is the document's — which it is, at `margin: 0`, and which the
    initial containing block it used to be measured against was too. Every offset
    here is 0 or a length, so the two answer identically; ground.css is where the
@@ -67,6 +68,53 @@
   --eye-measure: 27rem;
   --eye-side: 1.35rem;
   --eye-column: max(var(--eye-side), calc((var(--page-across) - var(--eye-measure)) / 2));
+}
+
+/* THE LIFT. The band is one fold tall and the Gallery rests a little short of
+   one fold down — the Front Screen gives the landing some of its height — so at
+   the Gallery's resting place the foot of the first screen's sky, and the plate
+   and the eye standing in it, were still showing across the top of the window:
+   93px of it at 1440x900. The band is therefore carried off a little faster than
+   the page, over exactly the first turn, so its foot reaches the window's top
+   edge at the landing and not after it.
+
+   ON A BOX OF ITS OWN, and in the band's place: it takes the band's z so the
+   band's stacking context, and the car's blend inside it, are the same as they
+   were. It adds no positioned origin — its box is the band's box.
+
+   Off `--landing-from`, the scroll position the Gallery comes to rest on, which
+   hold.ts writes once per layout — never per scroll — so this is the one box that
+   reads it. Unset, the range ends at a fold and the lift is zero, which is the
+   page as it was: a browser without scroll timelines gets that, and so does
+   every window below the band, where the Gallery starts below the fold anyway.
+   Longhands, for the minifier's reason (src/kernel/NOTES.md). The Cut Title is
+   not in here and does not move. */
+.kernel-lift {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: var(--fold);
+  z-index: -1;
+  pointer-events: none;
+}
+
+@media (min-width: 1100px) and (min-height: 700px) {
+  @supports (animation-timeline: scroll()) {
+    .kernel-lift {
+      animation-name: kernel-lift;
+      animation-timing-function: linear;
+      animation-fill-mode: both;
+      animation-timeline: scroll(root);
+      animation-range: 0px var(--landing-from, var(--fold));
+    }
+  }
+}
+
+@keyframes kernel-lift {
+  to {
+    translate: 0 calc(var(--landing-from, var(--fold)) - var(--fold));
+  }
 }
 
 .kernel-corners > * {
