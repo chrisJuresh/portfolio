@@ -2,8 +2,8 @@
   "generator": "design/eater-cards/vendor.mjs",
   "eater": {
     "repo": "chrisJuresh/eater-map-site",
-    "commit": "980d553038a0fa558d82f11bfc754604a699a79d",
-    "subject": "Merge pull request #28 from chrisJuresh/export-pseudo"
+    "commit": "87eab9a4d07345c07210a272cf65d3f5bb7d6d26",
+    "subject": "Draw restaurant dots at 80% and trainlines at 70%"
   },
   "restaurant": {
     "id": "ZXQyOm1hcDo1NzgyMTI:025",
