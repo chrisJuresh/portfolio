@@ -124,8 +124,13 @@
    It is derived HERE and not in tokens/effects.css because it is not a number
    the author sets — it is a function of --turn, and a Tokens file the Editor
    offers as a slider has no business holding one. The two ends of it are
-   Tokens, and they are what there is to drag. */
-:root {
+   Tokens, and they are what there is to drag.
+
+   ON .fx AND NOT THE ROOT, because it changes on every frame of the crossing:
+   an inherited custom property changed on the root restyles the whole document
+   (ground.css, on --turn). .fx is a top-level box the Turn is written on, and
+   its layers are all that read the veil. */
+.fx {
   --fx-veil: clamp(
     0,
     (var(--fx-veil-to) - var(--turn)) / (var(--fx-veil-to) - var(--fx-veil-from)),

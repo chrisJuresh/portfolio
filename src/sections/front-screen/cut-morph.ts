@@ -160,9 +160,9 @@ export default function mountCutMorph(root: HTMLElement): void {
   };
   /**
    * READ ONCE, NOT ONCE A SCROLL EVENT. `draw` runs inside the Turn's scroll
-   * handler, straight after `--turn` was written on the root, so a live read here
-   * recalculated the whole document's style in the middle of every frame of the
-   * crossing. Under the Editor it stays live, because a Token dragged there is
+   * handler, straight after `--turn` was written, so a live read here forced a
+   * style recalculation in the middle of every frame of the crossing — of the
+   * whole document, while `--turn` was inherited from the root. Under the Editor it stays live, because a Token dragged there is
    * previewed through a stylesheet of the Editor's own and nothing else tells
    * this module it moved — the same gate `eater-map/redraw.ts` keeps.
    */

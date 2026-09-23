@@ -63,10 +63,11 @@ import { edgeGlint, edgeShade, lightingIn, type Shade } from './stage';
  * ALREADY SUBSTITUTED — and the split between those two halves is the one thing on
  * this page that a reader can feel. A declaration holding a `var()` anywhere in it
  * is a pending-substitution value, so the browser re-substitutes and re-parses the
- * whole thing on every style recalc of the document — and the Kernel writes
- * `--turn` on the root on every frame of a page turn, which recalculates all of
- * it. Six of these declarations a slice, times a hundred and forty-four slices,
- * was two thirds of the crossing's style recalc. `resolved` below is what takes
+ * whole thing on every style recalc of the document — and a page turn onto or off
+ * this Section restyles all of it on every frame. (The Kernel's `--turn` used to
+ * as well, on the first turn; it no longer reaches this Section mid-crossing —
+ * src/kernel/NOTES.md.) Six of these declarations a slice, times a hundred and
+ * forty-four slices, was two thirds of the crossing's style recalc. `resolved` below is what takes
  * the `var()`s out; `100cqw` and `100%` STAY, because a relative unit costs
  * nothing to recalculate and is what keeps the drawing following the window.
  * NOTES.md carries the measurement and the price.
@@ -440,8 +441,8 @@ function perimeter(w: number, h: number, radii: Corners, arcs = ARC): Facet[] {
  * pending-substitution value: the browser keeps it as unresolved tokens and
  * re-substitutes and re-parses the WHOLE declaration on every style recalc of the
  * element. This gradient is about three kilobytes and there are 144 of these
- * elements, and the Kernel writes `--turn` on the root on every frame of a page
- * turn — which recalculates every element in the document. With the Token written
+ * elements, and a page turn restyles every one of them on every frame — the
+ * Kernel's `--turn` did, on the root, when this was measured. With the Token written
  * into each of the twenty-nine stops, that was 4,000 `color-mix()`es re-parsed per
  * frame, and it measured as the largest single cost of the crossing: the worst
  * style recalc of a turn went from 36ms to 29ms when it came out, and the Eater
@@ -891,7 +892,7 @@ export function extrude(host: HTMLElement, before: Node | null, solid: Solid): v
       // WHAT THE EDGE IS MADE OF, in one place rather than in twenty-nine. The
       // gradient below mixes towards black from `currentColor`, so this is the one
       // declaration on the slice carrying the Token — and therefore the only one
-      // the browser has to substitute again when the page turn writes `--turn`.
+      // the browser has to substitute again when a page turn restyles the slice.
       // `conicEdge` carries the measurement.
       `color:${colour}`,
       // Mixed towards black rather than filtered: a `filter` would put the element

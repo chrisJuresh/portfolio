@@ -1016,17 +1016,48 @@ Catalogue → Eater Map 840 → 575ms and 11 dropped frames → 0–1, Eater Map
 Gallery 765 → 260ms. Dark at DPR 2 moves the same way. The Catalogue's share is
 mostly `--landing-past`; the Eater Map's is mostly the Lift.
 
-**What is left is `--turn`, and it is structural.** The first page turn, and
-below the band the whole first screen, writes `--turn` on the root every frame,
-and `--ground`, `--ink` and `--ink-soft` are declared there as mixes of it and
-read by inheritance in thirty-odd declarations across every Section — so it is a
-whole-page recalculation per frame by construction, ~15ms at 1440x900 on a fast
-desktop and six to eight dropped frames on the first screen of a phone-sized
-window under 4x CPU throttling. Scoping it means the crossing reaching its
-readers some way other than an inherited custom property (`color` and
-`currentColor` take the fast path; a background-colour animation is not
-inherited at all), which is a change to how every Section spends the Turn and is
-the author's call, not a fix.
+**`--turn` was the last of them, and it is written on boxes now, not the root.**
+The first page turn wrote it on the root every frame, with `--ground`, `--ink`,
+`--ink-soft` and the Effect Stack's `--fx-veil` derived there — a whole-document
+restyle per frame, forced inside the scroll handler: ~25ms of every ~30ms frame,
+so that turn ran at 38–42fps while every other ran at 60. It is `inherits: false`
+now (`ground.css`), and `turn.ts` writes it on the root — whose own background
+and colour read it directly — and on each of the body's top-level boxes, which
+derive the ground and the ink for themselves (`body > *`) and hand `--turn` down
+with `body * { --turn: inherit }`. The Sections' own rules read exactly what they
+read before. At refresh, `turn.ts` sorts the boxes: the ones the reader can see
+while the Turn is between its ends are written every frame, and the rest — the
+Eater Map and the Catalogue, 1132 of 1486 elements — only when the Turn reaches
+an end, when anything but the scroll moves it, or 150ms after the scroll stops.
+A write and a flush went from 14ms to 2.5ms, and the first turn runs at 57–60fps
+in both directions. Every element's computed paint was compared against the
+build before, scrolled and seeked through the crossing at five windows (both
+themes at 1440x900 and 390x844): no difference on screen anywhere.
+
+Four things about it are easy to break, and the first is silent. **Anything
+declared on `:root` from `--turn`, `--ground` or `--ink` puts the whole-document
+restyle straight back** — it is then the root's inherited custom property, and
+`--fx-veil` was exactly that until it moved to `.fx`. **Pinning a subtree does not
+stop the restyle**: redeclaring every changing property on the Eater Map with a
+constant, so its computed style never moved, measured 15ms against 14 —
+Chromium restyles the whole subtree of the element whose inherited custom
+property changed, and does not stop where a descendant turns out unchanged. So
+the only lever is WHICH element is written. **A probe that reads the ground, the
+ink or the veil has to stand inside a box**, not on the root or the body; the
+`effect-stack` Check appends its probe to `.fx` for that reason. And **the sort is
+geometry**, taken at refresh with a pixel of grace — the Eater Map's top IS the
+Panel's foot in the band — so a Section that later grows into the crossing is
+wrong until the scroll stops, which costs one late frame and not a wrong colour.
+
+**The very first turn of a fresh browser still stalls ~430ms, and that is not the
+page.** It is the GPU process compiling programs for tiles it has never drawn
+(`D3DCompile` under `cache_miss`, inside one 350ms raster flush) as the Gallery
+comes into view; every thread is otherwise idle. A second tab in the same browser
+turns without it, because the program cache is the GPU process's — so a reader
+meets it once per browser session at most, and Chrome's on-disk shader cache
+normally carries it across sessions (a persistent headless profile here did not,
+so that half is unmeasured). A harness that launches a new browser meets it every
+run and reports the first turn at ~18fps: measure a second tab, or a second turn.
 
 **`content-visibility: auto` does not help here, and one reading said it did.**
 Chromium keeps an `auto` box rendered while it is within about a screen and a

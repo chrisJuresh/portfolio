@@ -80,6 +80,74 @@ function span(): number {
 }
 
 /**
+ * WHERE THE TURN IS WRITTEN, and why that is a list of boxes and not the root.
+ *
+ * Chromium restyles every element under a box whose inherited custom property
+ * changed, whether or not anything reads it, so the Turn written on the root was
+ * a whole-document restyle on every frame of the first page turn — ~15ms at
+ * 1440x900, and that turn ran at 40fps against 60 (src/kernel/NOTES.md). `--turn` does not inherit now
+ * (ground.css): it is written on the root, whose own paint reads it, and on each
+ * of the body's top-level boxes, which pass it down inside themselves.
+ *
+ * A box goes in CROSSING if the reader can see any of it while the Turn is
+ * between its ends — fixed, or overlapping the window anywhere from the
+ * crossing's first scroll to its last — and those are written every frame. The
+ * rest are SETTLED: the Eater Map and the Catalogue, which are most of the
+ * document and are only ever on the screen once the page has arrived. They are
+ * written when the Turn reaches either end, when it is moved by anything but the
+ * scroll (a Check's seek, the Editor's scrub, a Variant's render), and once the
+ * scroll has been still for a moment, so a sort that a later layout has made
+ * stale costs one late frame rather than a wrong colour.
+ *
+ * SETTLED IS READ LIVE rather than listed, so a box appended to
+ * the body after the sort — the Panel's lens filters are — is still written.
+ * Rewriting a value a box already holds costs nothing (measured: 0.00ms against
+ * 6.3ms for a change on the Eater Map), so nothing has to remember what was
+ * written. Before the first sort nothing is CROSSING, which writes every box:
+ * correct at the cost of the old restyle, for however few frames that is.
+ */
+const STILL_MS = 150;
+type Box = HTMLElement | SVGElement;
+let crossing: Box[] = [];
+let scrolling = false;
+let pending = 0;
+
+function isBox(element: Element): element is Box {
+  if (['SCRIPT', 'STYLE', 'TEMPLATE', 'LINK', 'META'].includes(element.tagName)) return false;
+  return element instanceof HTMLElement || element instanceof SVGElement;
+}
+
+function sort(start: number, end: number): void {
+  const reach = end + window.innerHeight;
+  crossing = [];
+  for (const box of [...document.body.children].filter(isBox)) {
+    const { position } = getComputedStyle(box);
+    const rect = box.getBoundingClientRect();
+    const top = rect.top + window.scrollY;
+    // A pixel of grace at each end: a box that only TOUCHES the crossing's
+    // last screen — the Eater Map, whose top is the Panel's foot — is not seen.
+    const seen =
+      position === 'fixed' || position === 'sticky' || (rect.bottom + window.scrollY > start + 1 && top < reach - 1);
+    if (seen) crossing.push(box);
+  }
+}
+
+function write(turn: number): void {
+  const value = String(turn);
+  document.documentElement.style.setProperty('--turn', value);
+  for (const box of crossing) box.style.setProperty('--turn', value);
+  window.clearTimeout(pending);
+  if (!scrolling || turn === 0 || turn === 1) settled(value);
+  else pending = window.setTimeout(() => settled(value), STILL_MS);
+}
+
+function settled(value: string): void {
+  for (const box of document.body.children) {
+    if (isBox(box) && !crossing.includes(box)) box.style.setProperty('--turn', value);
+  }
+}
+
+/**
  * The Turn: the Portfolio crossing from paper into dark as the reader scrolls.
  *
  * Built PAUSED and driven from a separate ScrollTrigger rather than handed to
@@ -103,7 +171,7 @@ export function createTurn(): gsap.core.Timeline {
     duration: 1,
     ease: 'none',
     onUpdate: () => {
-      root.style.setProperty('--turn', String(state.turn));
+      write(state.turn);
       for (const watcher of watchers) watcher(state.turn);
     },
   });
@@ -136,15 +204,24 @@ export function createTurn(): gsap.core.Timeline {
   //
   // `onRefresh` is where the published length is kept honest, and it is the same
   // moment `end` is asked for: every re-measure that moves the crossing moves
-  // the stack's foot with it.
+  // the stack's foot with it — and re-sorts which boxes the crossing is seen in,
+  // since a resize moves those too.
   const trigger = document.querySelector<HTMLElement>('[data-turn]') ?? root;
   ScrollTrigger.create({
     trigger,
     start: 'top top',
     end: () => `+=${span()}`,
     invalidateOnRefresh: true,
-    onRefresh: publish,
-    onUpdate: (self) => timeline.progress(self.progress),
+    onRefresh: (self) => {
+      publish();
+      sort(self.start, self.end);
+      write(state.turn);
+    },
+    onUpdate: (self) => {
+      scrolling = true;
+      timeline.progress(self.progress);
+      scrolling = false;
+    },
   });
 
   publish();

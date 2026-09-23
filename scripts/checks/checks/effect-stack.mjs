@@ -72,9 +72,11 @@ export const check = {
           kernel?.snapping?.(false);
 
           // A real property, so CSSOM resolves the veil's clamp to a number.
+          // INSIDE .fx, because that is where the veil is derived: the root does
+          // not carry it, or anything else the Turn changes (ground.css).
           const probe = document.createElement('div');
           probe.style.cssText = 'position:absolute;visibility:hidden;opacity:var(--fx-veil)';
-          root.append(probe);
+          fx.append(probe);
           const veil = () => Number(getComputedStyle(probe).opacity);
 
           const frame = () => new Promise((go) => requestAnimationFrame(() => go(undefined)));

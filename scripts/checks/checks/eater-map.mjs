@@ -4762,7 +4762,7 @@ async function theEdgeFollowsTheWindow(browser, origin) {
       failures.push(
         `${WIDE.width}x${WIDE.height}: ${wide.pending} of the ${wide.count * 6} geometry declarations on ` +
           "the page's slices still name a Token, so each is a pending-substitution value the browser " +
-          're-parses on every style recalc — and the page turn writes --turn on the root every frame. ' +
+          're-parses on every style recalc — and a page turn onto this Section restyles it every frame. ' +
           'edge.ts resolves these at mount, so something is composing an expression after it does',
       );
     }
