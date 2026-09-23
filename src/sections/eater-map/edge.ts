@@ -276,6 +276,8 @@ const WALL = 8;
  *  all three together. */
 const GLINT_POWER = 5;
 const GLINT_ARC = 18;
+const GLINT_TURN = 40;
+const GLINT_ROUND = 0.9;
 const GLINT = 0.7;
 const GLINT_FAR = 0.45;
 
@@ -770,7 +772,17 @@ export function extrude(host: HTMLElement, before: Node | null, solid: Solid): v
   };
   const attitude = { tilt: angle('--eater-map-tilt'), swing: angle('--eater-map-swing') };
   const shade: Shade = edgeShade(attitude, lightingIn(style));
-  const mirror: Shade = edgeGlint(attitude, lightingIn(style), GLINT_POWER);
+  // THE HIGHLIGHT'S LIGHT IS TURNED FROM THE PAGE'S by `GLINT_TURN`, so the glint
+  // sits round the bottom-right corner of each piece rather than square on its
+  // bottom edge — as though the light caught it from the bottom right.
+  const page = lightingIn(style);
+  const square: Shade = edgeGlint(attitude, page, GLINT_POWER);
+  const turned: Shade = edgeGlint(
+    attitude,
+    { ...page, azimuth: page.azimuth + GLINT_TURN },
+    GLINT_POWER,
+  );
+  const mirror: Shade = (x, y, z) => Math.max(square(x, y, z), GLINT_ROUND * turned(x, y, z));
 
   /** One slice: how far in from the face's own outline it stands, and how far
    *  back. Its corners follow from the inset — a section taken `i` in from the
