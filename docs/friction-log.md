@@ -508,3 +508,28 @@ in the denial above are the giveaway, since they name `EnterWorktree` and a pull
 request, which a guard carrying this repository's `delivery` block does not. So
 expect the old behaviour for the rest of any session that resyncs, and read a
 denial's vocabulary before believing it is current.
+
+## 2026-09-23 — retaking the Record Engine's Still
+
+**Attempted**: `git init` and `git add` of a throwaway example page in the
+session's scratchpad (outside this repository), so the `record` app's example
+Project had a commit to read for staleness. First through `cd "$S/example"; git add …`,
+then with a literal `cd` to the scratch directory in a call of its own.
+
+**Refused by**: the vendored worktree guard (`PreToolUse`), both times.
+
+```
+Denied: `git add` does not run in the main checkout.
+```
+
+**Why, and why the second one was correct**: the first was the documented rule —
+a `cd` through a variable is unreadable, so the guard falls back to the tool's
+cwd. The second is the Bash tool's own behaviour: a `cd` to a directory OUTSIDE
+the project does not persist — the next call prints "Shell cwd was reset to
+C:\Users\Chris\Desktop\portfolio" — so the literal-`cd`-in-its-own-call recipe
+that works for a worktree does not work for a scratch directory, and the `git add`
+really would have run in the main checkout. The guard stopped a real mistake.
+
+**Fix**: none needed in the guard. Git in a scratch directory has to be `git -C
+<literal path>` on every command, never a separate `cd`. Here it was avoided: the
+Project's `source_repository` was pointed at an existing scratch clone instead.
