@@ -812,6 +812,43 @@ down there, including something a Section adds later. The DOM does not report it
 own listeners, so that one group asks Chromium through `DOMDebugger`, and it is
 the only place in the suite that speaks CDP.
 
+### And the snap stands aside with them, or every notch is two
+
+**Past the last port the mandatory snap is off too, and that is the fix for "one
+notch scrolls the Catalogue twice".** Measured with genuine Windows wheel ticks
+(`SendInput` into a headed Chromium) at 1440x900: one tick delivered ONE `wheel`
+event of 100px, and the page eased 100px, all but stopped, and eased a second
+100px — every tick, down and back up. A bare page carrying nothing but
+`scroll-snap-type: y mandatory` and one Section taller than the window did the
+same; the same page without the snap moved 100px. So it is the browser's, and
+none of the Kernel's scripts: **at the end of a wheel scroll Chromium snaps in the
+notch's direction from where the notch LANDED**, and inside a snap area taller
+than the window every position is a snap position, so that snap is the notch
+again. "The snap relaxes inside a tall Section" is true of where the page may
+rest and says nothing about how Chromium gets it there.
+
+**No headless wheel shows it.** `page.mouse.wheel` and a raw CDP
+`Input.dispatchMouseEvent` both deliver precise pixel deltas, which Chromium
+applies in one frame and never animates, so every headless run moved exactly
+once and looked fine. Reproduce it with an OS-level tick into a headed browser.
+
+Two ways of putting the snap back were wrong, and each re-broke it the other way:
+
+- **On the scroll that crosses the port, coming back up.** The notch was still in
+  the air, landed on the port with the snap on, and Chromium's directional snap
+  carried it on to the Eater Map's — 905px for a notch of 100.
+- **After a short silence in the scroll.** Chromium's `scrollend` for a wheel notch
+  arrives about 380ms after the last frame that moved, and its end-of-scroll snap
+  is taken then — so a snap put back 120ms after the page stopped was on in time
+  for it, and did the same.
+
+So `page-turn.ts` puts it back on `scrollend` after the reader crosses back over
+the port, and if the notch overshot, eases onto the nearest port first rather than
+switching the snap on under a page that is not on one, which Chromium does as a
+jump. The root is written only when the snap actually changes, so the Catalogue
+still writes nothing on the root while it is read. The `turn` Check reads the
+root's computed snap at the same four places it reads the listeners.
+
 ## The page's own type size
 
 `faces.css` sets the root `font-size` — a zoom the author owns times a ceiling,

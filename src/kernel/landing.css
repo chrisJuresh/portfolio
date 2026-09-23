@@ -157,7 +157,9 @@
      word's landing rather than on the Section's edge. And when a composition is
      taller than the window its snap area is larger than the scrollport, which
      RELAXES snapping inside it rather than switching it off: the reader can read
-     to the foot of a tall Section without being pulled back up. */
+     to the foot of a tall Section without being pulled back up. That is where
+     the page may REST, and not how Chromium takes a wheel notch there: past the
+     last port page-turn.ts lifts this snap altogether, or every notch is two. */
   [data-section] ~ [data-section] {
     scroll-snap-align: start;
   }

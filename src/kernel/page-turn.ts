@@ -219,13 +219,107 @@ function readRegion(): number[] {
   return list;
 }
 
+/**
+ * AND THE SNAPPING STANDS ASIDE WITH THEM, past the last port — or one notch of
+ * the wheel scrolls the Catalogue twice.
+ *
+ * A mandatory snap relaxes inside a snap area taller than the scrollport rather
+ * than switching off (src/kernel/landing.css), and that is true of where the page
+ * may REST and not of how Chromium gets it there. MEASURED with genuine Windows
+ * wheel ticks into a headed Chromium at 1440x900: one tick, one `wheel` event of
+ * 100px, and the page eased 100px, all but stopped, and eased a second 100px —
+ * every tick, from the Catalogue's port down and back up, 200px a notch. A bare
+ * page with nothing on it but `scroll-snap-type: y mandatory` and one Section
+ * taller than the window does the same, and the same page without the snap moves
+ * 100px, so it is the browser's snap and none of this file. A synthesised wheel
+ * cannot show it: CDP delivers precise pixel deltas, which Chromium applies in one
+ * frame and never animates, so every headless run moved exactly once.
+ *
+ * THE SAME MEASUREMENT SAYS WHY: at the end of a wheel scroll Chromium snaps IN
+ * THE NOTCH'S DIRECTION FROM WHERE THE NOTCH LANDED, not from where it began.
+ * Inside a snap area taller than the window every position is a snap position, so
+ * that second snap is simply the notch again. And it is not only inside one: a
+ * snap put back on while a notch up out of the Catalogue was still in the air let
+ * it land on the port and then carried it on to the Eater Map's, 905px for a
+ * notch of 100.
+ *
+ * So past the last port, where there is no port left to hold, the snap comes off
+ * where the listeners go passive — and it goes back on only once the reader has
+ * come back up across the port AND the browser's scroll has come to rest, which is
+ * `settling` below. Written on the root only when it CHANGES, because this is
+ * asked on every scroll event and a root write restyles the document. Below the
+ * band there is no snap to take off, and nothing is written.
+ */
+function applySnapping(): void {
+  const off = frozen || raf !== null || settling || (aside && known.turnable);
+  const want = off ? 'none' : '';
+  if (root.style.scrollSnapType !== want) root.style.scrollSnapType = want;
+}
+
+/**
+ * The reader has scrolled back up across the last port under the browser's own
+ * scroll, and the snap waits for that scroll to stop.
+ *
+ * AND WHERE IT STOPS NEED NOT BE A PORT: a notch is whatever the device says, so
+ * one taken 50px below the port rests 50px above it. That is put right the way
+ * everything else here is, by easing onto the nearest port — which is the one just
+ * crossed — rather than by switching the snap on under a page that is not on one,
+ * which Chromium does as a jump.
+ *
+ * AT REST MEANS `scrollend`, AND NOT A SILENCE IN THE SCROLL — tried, and it put
+ * the second bug straight back. Chromium's `scrollend` for a wheel notch arrives
+ * about 380ms after the last frame that moved, and its end-of-scroll snap is taken
+ * THEN, not when the page stopped: a snap put back on after 120ms without a scroll
+ * event was on in time for it, and the notch that had come to rest on the port was
+ * carried on to the Eater Map's. So an overshot notch waits that long before it is
+ * eased back. A browser without `scrollend` gets the silence, and is not Chromium.
+ */
+let settling = false;
+let quiet: number | undefined;
+const SETTLE = 150;
+const endsItsScroll = 'onscrollend' in window;
+
+/** Wait for the reader's scroll to stop. Called again on every scroll event while
+ *  settling, where only the silence needs re-arming. */
+function settle(): void {
+  if (endsItsScroll) {
+    if (!settling) window.addEventListener('scrollend', rested, { once: true });
+  } else {
+    window.clearTimeout(quiet);
+    quiet = window.setTimeout(rested, SETTLE);
+  }
+  settling = true;
+}
+
+function rested(): void {
+  if (!settling) return;
+  settling = false;
+  window.removeEventListener('scrollend', rested);
+  // A notch taken while the page was still moving has already turned it, and a
+  // turn lands on a port and puts the snap back itself.
+  if (raf !== null) return;
+  if (!aside && known.turnable) {
+    const y = window.scrollY;
+    const nearest = readRegion().reduce((a, b) => (Math.abs(b - y) < Math.abs(a - y) ? b : a));
+    if (Math.abs(nearest - y) >= SLACK) {
+      turnPage(nearest);
+      return;
+    }
+  }
+  applySnapping();
+}
+
 /** Re-register both listeners for whichever side of that line the reader is on. */
 function handOver(toBrowser: boolean): void {
-  if (toBrowser === aside) return;
-  aside = toBrowser;
-  document.removeEventListener('wheel', onWheel);
-  document.addEventListener('wheel', onWheel, { passive: toBrowser });
-  standAside(toBrowser);
+  if (toBrowser !== aside) {
+    aside = toBrowser;
+    document.removeEventListener('wheel', onWheel);
+    document.addEventListener('wheel', onWheel, { passive: toBrowser });
+    standAside(toBrowser);
+  }
+  // Outside the test, because a resize can cross the band's edge without moving
+  // the reader across the line: aside either way, and a snap to put back or not.
+  applySnapping();
 }
 
 /**
@@ -237,11 +331,17 @@ function handOver(toBrowser: boolean): void {
  * unable to prevent the default it is already preventing — a passive listener
  * calling `preventDefault` is a console warning and a page scrolled twice. Where
  * the reader ENDS UP is the answer, so `land()` asks.
+ *
+ * `scrolled` says the READER'S scroll brought the page here, which is the one case
+ * where coming back across the port has to wait for the browser to stop before the
+ * snap goes back on. A turn landing needs no wait: it has stopped, on a port.
  */
-function place(): void {
+function place(scrolled = false): void {
+  if (settling) settle();
   if (raf !== null) return;
   if (browsersHere() === aside) return;
   readRegion();
+  if (scrolled && aside && !browsersHere()) settle();
   handOver(browsersHere());
 }
 
@@ -255,7 +355,7 @@ function place(): void {
  */
 export function snapping(on: boolean): void {
   frozen = !on;
-  root.style.scrollSnapType = on && raf === null ? '' : 'none';
+  applySnapping();
 }
 
 function land(): void {
@@ -263,11 +363,11 @@ function land(): void {
   target = null;
   speed = 0;
   force = 0;
-  if (!frozen) root.style.scrollSnapType = '';
   // The one scroll position `place()` refuses to judge is a moving one, and this
   // is where it stops moving — a link clicked from inside the Catalogue eases the
   // reader back into the turn's own region, and nothing else would notice.
   place();
+  applySnapping();
 }
 
 /** Ease the window onto `to`, carrying whatever speed and force are already on it. */
@@ -564,7 +664,7 @@ export function mountPageTurn(): void {
   // so this is where the way back is noticed — and it is cheap enough to sit on
   // every scroll event because it compares against the last reading and only reads
   // the layout when that disagrees with where the two listeners are standing.
-  window.addEventListener('scroll', place, { passive: true });
+  window.addEventListener('scroll', () => place(true), { passive: true });
   // A resize is the one thing that moves the line itself — a window crossing the
   // band's own edge gains a turn or loses one without the page scrolling a pixel
   // — so this reads the ports rather than asking `place()`, which would compare
