@@ -412,6 +412,99 @@ const numbered = (at: number): string => String(at + 1).padStart(2, '0');
     margin-top: var(--catalogue-act);
   }
 
+  /* ---- the arrival -----------------------------------------------------------
+     Spent from custom properties timeline.ts writes, and IN THE CASCADE ONLY
+     WHILE A PART IS ARRIVING: the head and each Entry carry
+     data-catalogue-arriving until their last tween has finished, so at rest none
+     of this applies — no clip, no settled translate, no stacking context. NOTES.md. */
+  .catalogue__head[data-catalogue-arriving] .catalogue__masthead,
+  .catalogue__head[data-catalogue-arriving] .catalogue__standfirst,
+  .catalogue__entry[data-catalogue-arriving] .catalogue__note > * {
+    opacity: calc(
+      var(--catalogue-arrive-dim) + (1 - var(--catalogue-arrive-dim)) * var(--catalogue-in, 1)
+    );
+    translate: 0 calc((1 - var(--catalogue-in, 1)) * var(--catalogue-arrive-rise));
+  }
+
+  /* Tracked wide and closed up, so the head is set as the Section arrives. */
+  .catalogue__head[data-catalogue-arriving] .catalogue__masthead {
+    letter-spacing: calc(
+      var(--catalogue-masthead-tracking) + var(--catalogue-track, 0) * var(--catalogue-arrive-track)
+    );
+  }
+
+  /* Uncovered from the spine outward — a left Still from its right edge, a right
+     one from its left — while its picture settles out of a zoom. */
+  .catalogue__entry[data-catalogue-arriving] .catalogue__still {
+    clip-path: inset(
+      0 0 0 calc((1 - var(--catalogue-reveal, 1)) * 100%) round var(--catalogue-still-corner)
+    );
+  }
+
+  .catalogue__entry[data-catalogue-arriving][data-catalogue-side='right'] .catalogue__still {
+    clip-path: inset(
+      0 calc((1 - var(--catalogue-reveal, 1)) * 100%) 0 0 round var(--catalogue-still-corner)
+    );
+  }
+
+  .catalogue__entry[data-catalogue-arriving] .catalogue__still > * {
+    scale: calc(1 + (1 - var(--catalogue-reveal, 1)) * var(--catalogue-arrive-zoom));
+  }
+
+  /* The number lights as the spine reaches it, overshooting and spending the
+     overshoot as a glow in its own accent. */
+  .catalogue__entry[data-catalogue-arriving] .catalogue__station {
+    opacity: calc(0.2 + 0.8 * var(--catalogue-lit, 1));
+    scale: calc(0.55 + 0.45 * var(--catalogue-lit, 1));
+    text-shadow: 0 0 calc(max(0, var(--catalogue-lit, 1) - 1) * 6em) var(--catalogue-accent);
+  }
+
+  /* THE SPINE DRAWS ITSELF, off a view timeline rather than the Timeline: its tip
+     stands `--catalogue-reach` of the window up from its foot — the view's own
+     bottom edge moved up by that much — so it runs from the list's top meeting
+     that line to the list's foot meeting it, and reaches each number as that
+     Entry settles. The dot at its foot comes on as the line arrives there.
+     LONGHANDS, for the reason the Front Screen gives: the minifier folds a
+     shorthand and `animation-timeline` into one Chromium drops. NOTES.md. */
+  @media (prefers-reduced-motion: no-preference) {
+    @supports (animation-timeline: view()) {
+      .catalogue__entries::before {
+        transform-origin: top;
+        animation-name: catalogue-spine-draw;
+        animation-timing-function: linear;
+        animation-fill-mode: both;
+        animation-timeline: view(block 0% calc(var(--catalogue-reach) * 100%));
+        animation-range: entry-crossing 0% entry-crossing 100%;
+      }
+
+      .catalogue__entries::after {
+        animation-name: catalogue-spine-end;
+        animation-timing-function: linear;
+        animation-fill-mode: both;
+        animation-timeline: view(block 0% calc(var(--catalogue-reach) * 100%));
+        animation-range: entry-crossing 97% entry-crossing 100%;
+      }
+    }
+  }
+
+  @keyframes catalogue-spine-draw {
+    from {
+      scale: 1 0;
+    }
+    to {
+      scale: 1 1;
+    }
+  }
+
+  @keyframes catalogue-spine-end {
+    from {
+      scale: 0;
+    }
+    to {
+      scale: 1;
+    }
+  }
+
   /* ---- one column, below the band's width ------------------------------------
      No spine and no alternation: the number, then the Still the width of the
      column, then the words, in the order the document already reads. Everything
