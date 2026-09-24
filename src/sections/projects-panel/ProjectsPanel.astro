@@ -55,7 +55,7 @@ const here = 'projects';
     </div>
     <ol class="projects-panel__points">
       {content.points.map((point) => (
-        <li>
+        <li data-projects-panel-point>
           <h3>{point.title}</h3>
           <p>{point.figure}</p>
         </li>
@@ -1221,6 +1221,119 @@ const here = 'projects';
       #000 calc(100% - var(--projects-panel-contact-ends)),
       transparent 100%
     );
+  }
+
+  /* ---- the wake ----------------------------------------------------------
+     THE WINDOW SWITCHING ON, and only while timeline.ts is short of its end: the
+     attribute goes with the last frame, so none of this stands on the resting
+     page. PAINT ONLY — opacity, a clip, a filter, a rotation inside a box and two
+     pseudo-elements — so no box the Check measures is a pixel off at any moment
+     of it. The points are the one thing that travels, and their column is read
+     as one box. Everything on the stage is read off custom properties the
+     Timeline writes on the STAGE, so the window in the stone wakes with the one
+     standing on it for nothing. NOTES.md. */
+
+  /* The lights overshoot 1 on their way on; the overshoot is spent as a flare.
+     A fifth over is about what the ease reaches, so the Token is the peak. */
+  .projects-panel[data-projects-panel-waking] .projects-panel__lights i {
+    opacity: var(--projects-panel-light, 1);
+    filter: brightness(
+      calc(1 + max(0, var(--projects-panel-light, 1) - 1) * 5 * (var(--projects-panel-wake-flare) - 1))
+    );
+  }
+
+  .projects-panel[data-projects-panel-waking] .projects-panel__icon,
+  .projects-panel[data-projects-panel-waking] .projects-panel__address {
+    opacity: var(--projects-panel-chrome, 1);
+  }
+
+  /* Typed rather than faded: the Timeline steps this once per character. */
+  .projects-panel[data-projects-panel-waking] .projects-panel__address-text {
+    clip-path: inset(0 calc((1 - var(--projects-panel-type, 1)) * 100%) 0 0);
+  }
+
+  /* The load line, along the field's foot between its two corners, gone as it
+     arrives at the far end. */
+  .projects-panel[data-projects-panel-waking] .projects-panel__address::after {
+    content: '';
+    position: absolute;
+    left: calc(var(--projects-panel-frame-address-corner) * 100cqw);
+    right: calc(var(--projects-panel-frame-address-corner) * 100cqw);
+    bottom: 0;
+    height: max(1px, 7%);
+    background: var(--projects-panel-frame-address-ink);
+    transform-origin: left;
+    transform: scaleX(var(--projects-panel-load, 1));
+    opacity: min(1, (1 - var(--projects-panel-load, 1)) * 6);
+    pointer-events: none;
+  }
+
+  /* The svg and not its box, so the glyph's measured place never moves. */
+  .projects-panel[data-projects-panel-waking] .projects-panel__reload svg {
+    rotate: calc(var(--projects-panel-load, 1) * 360deg);
+  }
+
+  /* The veil, drawn down off the recording with a lit edge leading it. Taller
+     than the box by its own soft edge, so the edge starts above the window and
+     leaves below it. */
+  .projects-panel[data-projects-panel-waking] .projects-panel__content::after {
+    content: '';
+    position: absolute;
+    inset: -12% 0 0;
+    background: linear-gradient(
+      to bottom,
+      transparent 0,
+      color-mix(in oklab, var(--projects-panel-frame-address-ink), transparent 55%) 1.2%,
+      var(--projects-panel-frame-fill) 10%
+    );
+    translate: 0 calc(var(--projects-panel-reveal, 1) * 112%);
+    pointer-events: none;
+  }
+
+  .projects-panel[data-projects-panel-waking] .projects-panel__clip {
+    filter: brightness(
+      calc(
+        var(--projects-panel-wake-dim) +
+          (1 - var(--projects-panel-wake-dim)) * var(--projects-panel-reveal, 1)
+      )
+    );
+  }
+
+  /* The glint: one band of light across the stone, masked by the plate's own
+     alpha so it lies on the marble and nowhere else. Over the reflection and the
+     contact shadow, and still under the Frame, which stands outside this box. */
+  .projects-panel[data-projects-panel-waking] .projects-panel__plinth::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    pointer-events: none;
+    /* NARROW, a hot core with two soft shoulders: a band much wider than this
+       reads as a veil drawn over the stone rather than as light catching it —
+       docs/agents/plinth-marble.md has the angular rule. */
+    background: linear-gradient(
+        105deg,
+        transparent 47.6%,
+        rgb(255 255 255 / calc(var(--projects-panel-wake-glint) * 0.3)) 49.3%,
+        rgb(255 255 255 / var(--projects-panel-wake-glint)) 50%,
+        rgb(255 255 255 / calc(var(--projects-panel-wake-glint) * 0.3)) 50.7%,
+        transparent 52.4%
+      )
+      no-repeat;
+    background-size: 300% 100%;
+    background-position: calc(100% - var(--projects-panel-glint, 1) * 100%) 0;
+    mix-blend-mode: plus-lighter;
+    -webkit-mask-image: var(--projects-panel-plinth-src);
+    mask-image: var(--projects-panel-plinth-src);
+    -webkit-mask-size: 100% 100%;
+    mask-size: 100% 100%;
+    -webkit-mask-repeat: no-repeat;
+    mask-repeat: no-repeat;
+  }
+
+  .projects-panel[data-projects-panel-waking] [data-projects-panel-point] {
+    opacity: var(--projects-panel-point-in, 1);
+    translate: 0 calc((1 - var(--projects-panel-point-in, 1)) * var(--projects-panel-wake-rise));
   }
 
   /* ---- one column, outside the band the composition is fitted to ---------

@@ -38,9 +38,10 @@ grep for `EaterMap` finds the Section and a stack trace names it. Exactly one
 ceremony: `src/kernel/loader.ts` globs `sections/*/timeline.ts` to discover the
 Sections, so the module is what makes the Section a chunk fetched on approach.
 The loader's own type says the default export is optional — the Section mounts
-and registers no Timeline. `src/sections/projects-panel/timeline.ts` is that case
-written out, and it says why that Section's motion is a later ticket's rather than
-an omission.
+and registers no Timeline. No Section on the page is that case any more — the
+Projects Panel was, until its wake landed — but the export stays optional, and a
+Section with nothing to lift, like the Eater Map without its Cards, returns
+nothing rather than a Timeline wired to nothing.
 
 ## Where the boundary actually is
 
