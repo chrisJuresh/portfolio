@@ -138,9 +138,48 @@ function mountRest(queue: HTMLElement[]): void {
   void mount(next).finally(again);
 }
 
+/**
+ * How long the page's opening is allowed to put the rest off. Longer than the
+ * Front Screen's reveal at its Token's current tempo, so this is only what
+ * happens if an opening animation is lengthened past all reason.
+ */
+const OPENING_BY = 4000;
+
+/**
+ * Once whatever the page opened with has finished moving — or by OPENING_BY.
+ *
+ * IDLE IS NOT STILL. The Front Screen composes itself for its first seconds,
+ * and most of that reveal is masks, clips, filters and tracking, which Chromium
+ * animates on the main thread. `requestIdleCallback` fires in the gaps between
+ * those frames, well inside the reveal, so the queue below used to land its
+ * first mount — the Eater Map's, one task of 150-250ms, and over a second on a
+ * slower machine — half a second into the opening, and every track stood still
+ * for the length of it. The finite animations running when the Kernel boots are
+ * that opening; an infinite one (the Moonlight's breath) never finishes and is
+ * not one, and a scroll-driven one is not on the document's clock at all.
+ */
+function whenOpened(run: () => void): void {
+  const opening = document
+    .getAnimations()
+    .filter(
+      (animation) =>
+        animation.timeline === document.timeline &&
+        Number.isFinite(Number(animation.effect?.getComputedTiming().endTime)),
+    )
+    .map((animation) => animation.finished.catch(() => {}));
+  let ran = false;
+  const once = () => {
+    if (ran) return;
+    ran = true;
+    run();
+  };
+  void Promise.all(opening).then(once);
+  window.setTimeout(once, OPENING_BY);
+}
+
 /** Every Section mount point the Shell laid down. */
 export function mountSections(): void {
   const roots = [...document.querySelectorAll<HTMLElement>('[data-section]')];
   for (const root of roots) observeSection(root);
-  whenIdle(() => mountRest(roots));
+  whenOpened(() => whenIdle(() => mountRest(roots)));
 }

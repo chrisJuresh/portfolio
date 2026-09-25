@@ -1477,6 +1477,24 @@ late; what changed is that they are fetched with a still page rather than a movi
 one. **The timeout is a deadline and not a delay** — a page that never goes idle
 must still mount.
 
+**And the queue does not start until the page's opening has finished moving,
+because IDLE IS NOT STILL.** The Front Screen composes itself for its first 2.6s,
+and most of that reveal is masks, clips, filters and tracking — Chromium animates
+those on the main thread, not the compositor. `requestIdleCallback` fires in the
+gaps between those frames, so the queue's first mount (the Eater Map's) landed
+about half a second into the opening, and every track froze for as long as that
+mount took. Measured cold at 1600x900 with the GPU: a 190–250ms task and a
+250ms frame gap at full speed; at 4x CPU throttling a 1.1–1.2s task and a 1.5s
+gap — the "stuck for a second, then carries on" the author saw. `whenOpened`
+waits for every finite animation on the document's clock that is running when
+the Kernel boots. The Moonlight's breath is infinite and never counts, and a
+scroll-driven animation runs on a different clock. The wait is capped by
+`OPENING_BY`, which is also what lets the in-app pane mount anything at all,
+since an animation that never ticks never finishes. With the wait in place, no
+long task lands inside the reveal at full speed, and the mount runs just after
+it ends. The price is that a reader who turns the page during the first 2.6s
+brings back the mid-turn mount the observer used to cause.
+
 Two consequences worth knowing. A Check's `settle()` no longer needs the page
 scrolled through every Section before it will report them mounted. And the in-app
 browser pane, which never delivers an `IntersectionObserver` entry at all
