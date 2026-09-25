@@ -80,8 +80,22 @@
 
   /* ---- the arrival, which timeline.ts reads --------------------------------
      How far a Still slides in from its own side, as a share of its width, and
-     how far its words are let go before they arrive, as an opacity. Both are
-     read once at mount, so a drag shows on the next reload. */
+     how far its words are let go before they arrive, as an opacity. The first is
+     read once at mount, so a drag shows on the next reload; the second is spent
+     by the stylesheet. */
   --catalogue-arrive: 0.06;
   --catalogue-arrive-dim: 0.35;
+
+  /* How much of a screen an Entry rises before it has arrived — which is also
+     where the spine's drawn tip stands, as a share of the window up from its
+     foot, so the line reaches each number as that Entry settles. The zoom a
+     Still's picture settles out of as it is uncovered, how far each line of the
+     words rises into place, and how wide the masthead is tracked before it
+     closes up. The reach is read once at mount, like the two above; the zoom,
+     the rise and the tracking are spent by the stylesheet, so a drag of any of
+     those three shows at once. */
+  --catalogue-reach: 0.25;
+  --catalogue-arrive-zoom: 0.14;
+  --catalogue-arrive-rise: 1.1em;
+  --catalogue-arrive-track: 0.32em;
 }

@@ -10,11 +10,29 @@
 
 /* --turn is registered so it is a number rather than a token, which is what
    lets GSAP interpolate it and what makes the calc() below legal. Without this
-   the custom property is an untyped string and the page just does not turn. */
+   the custom property is an untyped string and the page just does not turn.
+
+   IT DOES NOT INHERIT, AND THAT IS WHAT A FRAME OF THE FIRST PAGE TURN COSTS.
+   Chromium recalculates every element under a box whose inherited custom
+   property changed, read or not — so a --turn written on the root, or a
+   --ground derived there, restyles the whole document on every frame of the
+   crossing: ~15ms at 1440x900, and the first turn ran at 40fps against 60 for
+   every other. Not inheriting, it is written on the root and on each of the
+   body's top-level boxes by turn.ts, and passed down inside a box by the
+   `inherit` below — so a frame restyles the boxes the reader can see crossing
+   and nothing else. The Eater Map and the Catalogue, most of the document, are
+   written when the Turn reaches an end or stops moving: nothing of them is on
+   the screen in between. src/kernel/NOTES.md has the measurement. */
 @property --turn {
   syntax: '<number>';
-  inherits: true;
+  inherits: false;
   initial-value: 0;
+}
+
+body *,
+body *::before,
+body *::after {
+  --turn: inherit;
 }
 
 /* THE PAGE ACROSS, WITHOUT THE SCROLLBAR — the horizontal counterpart of
@@ -71,13 +89,21 @@
   /* 0 is paper, 1 is dark. The Turn's Timeline owns this and nothing else does. */
   --turn: 0;
 
-  --ground: color-mix(in oklab, var(--paper), var(--dark) calc(var(--turn) * 100%));
-  --ink: color-mix(in oklab, var(--paper-ink), var(--dark-ink) calc(var(--turn) * 100%));
-  --ink-soft: color-mix(in oklab, var(--paper-ink-soft), var(--dark-ink-soft) calc(var(--turn) * 100%));
-
   /* The datum every Kernel picture is measured against: the bottom of the page
      before any scrolling. svh and not vh — the difference is a phone. */
   --fold: 100svh;
+}
+
+/* THE GROUND AND THE INK, DERIVED ON EACH TOP-LEVEL BOX AND NOT ON THE ROOT.
+   Declared on the root they would be the root's inherited custom properties,
+   and changing one of those is the whole-document restyle --turn stopped being
+   (above). One level down, each box mixes them from its own --turn and passes
+   them down to its own subtree only. Nothing outside the body reads them: the
+   root's own paint is stated directly below. */
+body > * {
+  --ground: color-mix(in oklab, var(--paper), var(--dark) calc(var(--turn) * 100%));
+  --ink: color-mix(in oklab, var(--paper-ink), var(--dark-ink) calc(var(--turn) * 100%));
+  --ink-soft: color-mix(in oklab, var(--paper-ink-soft), var(--dark-ink-soft) calc(var(--turn) * 100%));
 }
 
 :root[data-theme='dark'] {
@@ -103,8 +129,11 @@
    scroll it. `clip` cannot be scrolled at all, by a script or by anything else,
    which is the whole of what is wanted. */
 html {
-  background: var(--ground);
-  color: var(--ink);
+  /* --ground and --ink, spelled out: the root does not derive them (above).
+     A change to `color` is inherited too, but by Chromium's fast path — a
+     descendant that sets its own just re-inherits, ~1.5ms for the document. */
+  background: color-mix(in oklab, var(--paper), var(--dark) calc(var(--turn) * 100%));
+  color: color-mix(in oklab, var(--paper-ink), var(--dark-ink) calc(var(--turn) * 100%));
   color-scheme: light dark;
   overflow-x: clip;
 }

@@ -191,38 +191,63 @@ would learn its name; `src/kernel/hold.ts` is the authority.
 
 ## The Timeline
 
-`timeline.ts` is the arrival: as each Entry comes up the screen, its Still slides
-in from its own side — a left Still from the left — by `--catalogue-arrive` of its
-own width, and its words come up from `--catalogue-arrive-dim` to full ink. One
-paused Timeline, scrubbed by one ScrollTrigger spanning the Section from its top
-meeting the window's foot to its foot meeting the same edge, so `hold()` freezes it
-and a moment can be asked for (ADR 0003). The stylesheet rests every Entry in
-place, so a reader with no script, or one who asked for less motion, gets the
-finished Catalogue; under `prefers-reduced-motion` nothing is mounted and no
-Timeline is registered, because one that scrubbed nothing is the failure the
-`moments` Check exists to catch.
+`timeline.ts` is the arrival, scrubbed by the scroll. As the Section comes up the
+window the masthead closes up out of `--catalogue-arrive-track` of extra tracking
+and the standfirst rises in behind it; and as each Entry comes up, its Still slides
+in from its own side by `--catalogue-arrive` of its width while it is **uncovered
+from the spine outward** — a left Still from its right edge — and its picture
+settles out of `--catalogue-arrive-zoom`; its words come up **a line at a time**,
+each from `--catalogue-arrive-dim` of its ink and `--catalogue-arrive-rise` below
+its place; and its **number lights** on the spine, overshooting and spending the
+overshoot as a glow in the accent. One paused Timeline, scrubbed by one
+ScrollTrigger spanning the Section from its top meeting the window's foot to its
+foot meeting the same edge, so `hold()` freezes it and a moment can be asked for
+(ADR 0003). Under `prefers-reduced-motion` nothing is mounted and no Timeline is
+registered, because one that scrubbed nothing is the failure the `moments` Check
+exists to catch.
 
-**Where each Entry arrives along the playhead is laid out, not chosen.** Progress
+**Where each part arrives along the playhead is laid out, not chosen.** Progress
 is the share of the Section's height that has come up past the foot of the window,
-so an Entry whose top stands `t` into a Section `h` tall begins arriving at `t / h`
-and has arrived at `(t + 0.25 × screen) / h` — a quarter of a screen of rise. That
-constant is what puts every Entry standing above the bottom quarter of the window
-at rest by the time the page turn lands on this Section's port, and leaves only
-what is still below the fold mid-arrival, which a scrubbed arrival cannot avoid
-and a reader cannot see. A ruler tween the whole length of the Timeline keeps its
-duration at exactly 1, so progress stays the share of the scroll whatever the last
-Entry's arrival ends at. The `immediateRender: false` on each tween is what stops
-every Still jumping to its displaced state the moment the Timeline is built; the
-trigger's own progress is written to the playhead right after, so the frame the
-reader is on is the one drawn.
+so a part whose top stands `t` into a Section `h` tall begins arriving at `t / h`
+and has arrived at `(t + reach × screen) / h`, where the reach is
+`--catalogue-reach` — a quarter of a screen. That constant is what puts every Entry
+standing above the bottom quarter of the window at rest by the time the page turn
+lands on this Section's port. Inside an Entry the Still takes the whole rise, the
+lines share it with a tenth's lead, and the number lights across its last quarter
+and a quarter beyond. A ruler tween the whole length of the Timeline keeps its
+duration at exactly 1, and every tween is clamped inside it.
+
+**The spine draws itself, and it is the stylesheet's rather than the Timeline's.**
+Its tip stands at the same line the Entries finish arriving at — `--catalogue-reach`
+of the window up from its foot — which is a view timeline on the list with its
+bottom edge inset by that much, run over `entry-crossing`: from the list's top
+meeting the line to the list's foot meeting it. So the line reaches each number
+exactly as that Entry settles and the number lights, from two mechanisms that
+agree because they are the same arithmetic. `entry` is the obvious range and the
+wrong one: for a subject taller than the view it ends when the subject's top
+reaches the view's top, and the spine was drawn to its foot a screen into the
+Section. It is off the Timeline because it is ambient and nothing needs to seek it
+— ADR 0003 allows exactly that — and because a scale on a pseudo-element off a
+view timeline is the compositor's, where a custom property the Timeline wrote on
+the list would restyle every Entry under it on every frame of the scroll. The dot
+at its foot comes on over the last three per cent. Reduced motion and an engine
+without view timelines both get the spine whole.
+
+**Every rule the arrival spends is gated.** The head and each Entry carry
+`data-catalogue-arriving` until their last tween has finished, and the stylesheet's
+arrival rules are all descendants of it — so at rest there is no `inset(0)` clip
+keeping a Still on a layer, and no settled `translate` making every line of text a
+stacking context. The custom properties fall back to their resting values too, so
+a reader with no script gets the finished Catalogue either way.
 
 **Read once at mount, and that is the trade.** The Entries' positions and the two
-Tokens the motion spends are read when the Section mounts, so a resize that moves
-an Entry, or a drag of either Token in the Editor, shows on the next reload. The
-Stills are boxes of a stated shape rather than pictures that arrive late, so the
-layout does not move after mount and the positions stay right; re-laying them out
-on `refresh` is a small ticket if a window that resizes across the band ever
-matters.
+Tokens the Timeline spends (`--catalogue-arrive`, `--catalogue-reach`) are read
+when the Section mounts, so a resize that moves an Entry, or a drag of either, shows
+on the next reload. The zoom, the rise, the dim and the tracking are spent by the
+stylesheet and move under a drag. The Stills are boxes of a stated shape rather
+than pictures that arrive late, so the layout does not move after mount and the
+positions stay right; re-laying them out on `refresh` is a small ticket if a
+window that resizes across the band ever matters.
 
 ## What the Checks hold, and what is deliberately not asserted
 

@@ -336,7 +336,13 @@ Check, which assumed otherwise in three places, finds its own Section's port now
 document-level wheel listeners are re-registered passive past the last port and
 below the band, because a non-passive one stops Chromium scrolling until the main
 thread has run and that cost this Section 17ms a notch — half the reader's frames
-— for a decision already made (#218). **And nothing is written on the root while
+— for a decision already made (#218). **And the mandatory SNAP comes off with
+them**, because Chromium snaps at the end of a wheel scroll in the notch's
+direction from where the notch landed, and inside a Section taller than the window
+that is the notch again: every real wheel tick moved the Catalogue twice. It goes
+back on at `scrollend` once the reader is back over the port, never sooner — no
+headless wheel can show any of this, since CDP deltas are never animated.
+**And nothing is written on the root while
 the Catalogue is read, nor on the screen PROJECTS leaves on**: a custom property
 on the root is inherited by every element, so writing one per scroll restyles the
 whole document a notch. The word's travel is animated on the word itself off a

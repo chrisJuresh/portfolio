@@ -321,7 +321,10 @@ import './tokens.css';
     <svg class="eater-map__leaders" data-eater-map-leaders aria-hidden="true" focusable="false">
       {content.points.map((point) => (
         <Fragment>
-          <polyline data-eater-map-leader={point.part} />
+          {/* `pathLength` is 1 so the assembly can draw the rule out of its row
+              as a share of itself, whatever length the Lift has made it this
+              frame. It changes nothing a rule at rest paints. */}
+          <polyline data-eater-map-leader={point.part} pathLength="1" />
           {/* THE SHOULDER'S DOT AND THE PART'S. Two marks per rule, drawn by the
               same module that draws the rule and for the same reason: where a
               projected corner landed is a fact only the compositor has. Both
@@ -331,6 +334,10 @@ import './tokens.css';
               it, which is the state the markup already reads as. */}
           <circle data-eater-map-knee={point.part} />
           <circle data-eater-map-tip={point.part} />
+          {/* THE RING THE LIT DOT SENDS OUT AS ITS RULE LANDS, and nothing else:
+              the assembly's, drawn only while it runs, and centred by leaders.ts
+              on the same vertex as the dot. */}
+          <circle data-eater-map-ping={point.part} />
         </Fragment>
       ))}
     </svg>
@@ -1729,6 +1736,125 @@ import './tokens.css';
     --eater-map-card-depth: var(--eater-map-card-details-depth);
     --eater-map-card-slide-x: var(--eater-map-card-details-slide-x);
     --eater-map-card-slide-y: var(--eater-map-card-details-slide-y);
+  }
+
+  /* ---- the assembly -------------------------------------------------------
+     EVERYTHING ON THE SCREEN THAT IS NOT A CARD, COMING ON AS THE CARDS LEAVE
+     THE MAP, and only while assemble.ts is short of its end in the band: the
+     attribute goes with the Lift's last frame and never comes on below the band,
+     where the playhead rests at 0 (#179). So none of this stands on the resting
+     page, and a reader with no script gets the finished composition.
+
+     PAINT ONLY, AND NOTHING A RULE IS DRAWN FROM MOVES. A clip, a dash, an
+     opacity, a scale about a dot's own centre, and a translate on boxes no leader
+     leaves from — the number, the title, the figure, never the row or its hook —
+     so every rule stays attached at every moment of it and the `eater-map` Check
+     reads the same geometry it always did. The row's accent rule is not touched
+     at all: the leader is that line continued and has to be its colour. NOTES.md,
+     "The assembly". */
+
+  /* The three verticals, drawn down the frame. */
+  .eater-map[data-eater-map-assembling] .eater-map__grid i {
+    clip-path: inset(0 0 calc((1 - var(--eater-map-draw, 1)) * 100%) 0);
+  }
+
+  /* Each Point's hairline, shot out of its row across the frame and on to the
+     window's edge. The box reaches a whole window past the row on both sides, so
+     each inset is a window's width. */
+  .eater-map[data-eater-map-assembling] .eater-map__points li::before {
+    clip-path: inset(
+      0 calc((1 - var(--eater-map-row, 1)) * 100vw) 0 calc((1 - var(--eater-map-row, 1)) * 100vw)
+    );
+  }
+
+  /* The rule over the copy, drawn across from the column's left edge. The clip
+     reaches past the text on three sides, so it cuts only what is still to come. */
+  .eater-map[data-eater-map-assembling] .eater-map__copy {
+    clip-path: inset(-1em calc((1 - var(--eater-map-rule-in, 1)) * 100%) -1em -1em);
+  }
+
+  /* The title rises out of its own four line boxes: the clip stands still while
+     the line travels up through its foot. The same share in both, since each is
+     a share of the line's own height. */
+  .eater-map[data-eater-map-assembling] .eater-map__title span {
+    translate: 0 calc((1 - var(--eater-map-in, 1)) * 110%);
+    clip-path: inset(-0.5em -0.5em calc((1 - var(--eater-map-in, 1)) * 110%) -0.5em);
+  }
+
+  .eater-map[data-eater-map-assembling] .eater-map__copy p {
+    opacity: var(--eater-map-in, 1);
+    translate: 0 calc((1 - var(--eater-map-in, 1)) * var(--eater-map-assemble-rise));
+  }
+
+  /* One number per row from the Timeline, spent three ways a beat apart: the
+     mark, then the title, then the figure. */
+  .eater-map[data-eater-map-assembling] .eater-map__points li {
+    --eater-map-mark-in: clamp(0, calc(var(--eater-map-row-in, 1) / 0.7), 1);
+    --eater-map-title-in: clamp(0, calc((var(--eater-map-row-in, 1) - 0.15) / 0.7), 1);
+    --eater-map-figure-in: clamp(0, calc((var(--eater-map-row-in, 1) - 0.3) / 0.7), 1);
+  }
+
+  .eater-map[data-eater-map-assembling] .eater-map__mark {
+    opacity: var(--eater-map-mark-in);
+  }
+
+  /* The number typed on from its left edge. */
+  .eater-map[data-eater-map-assembling] .eater-map__number {
+    clip-path: inset(-0.3em calc((1 - var(--eater-map-mark-in)) * 100%) -0.3em -0.3em);
+  }
+
+  .eater-map[data-eater-map-assembling] .eater-map__points h3 {
+    opacity: var(--eater-map-title-in);
+    translate: 0 calc((1 - var(--eater-map-title-in)) * var(--eater-map-assemble-rise));
+  }
+
+  .eater-map[data-eater-map-assembling] .eater-map__points p {
+    opacity: var(--eater-map-figure-in);
+    translate: 0 calc((1 - var(--eater-map-figure-in)) * var(--eater-map-assemble-rise));
+  }
+
+  /* Each icon drawn along its own strokes. Every shape is `pathLength="1"`
+     (icons.ts), and the gap is twice the dash so no dash of zero length is ever
+     left standing to be drawn as a round cap. */
+  .eater-map[data-eater-map-assembling] .eater-map__icon > * {
+    stroke-dasharray: 1 2;
+    stroke-dashoffset: calc(1 - var(--eater-map-ink, 1));
+  }
+
+  /* Each rule drawn out of its row, round its shoulder and onto its part, as a
+     share of itself (`pathLength="1"` on the polyline) — so it is the same draw
+     whatever length the Card's climb has made the rule this frame. */
+  .eater-map[data-eater-map-assembling] .eater-map__leaders [data-eater-map-leader] {
+    stroke-dasharray: 1 2;
+    stroke-dashoffset: calc(1 - var(--eater-map-draw, 1));
+  }
+
+  /* The two dots pop on as the line reaches them, about their own centres, so
+     the box the Check reads a dot's place off is centred where it always was. */
+  .eater-map[data-eater-map-assembling] .eater-map__leaders [data-eater-map-tip],
+  .eater-map[data-eater-map-assembling] .eater-map__leaders [data-eater-map-knee] {
+    transform-box: fill-box;
+    transform-origin: center;
+    scale: var(--eater-map-pop, 1);
+  }
+
+  /* And the ring the lit dot sends out as the rule lands on it: a stroke of the
+     accent going out to `--eater-map-ping-reach` of the dot's radius and thinning
+     as it fades. Not there at all outside the assembly. */
+  .eater-map__leaders [data-eater-map-ping] {
+    display: none;
+  }
+
+  .eater-map[data-eater-map-assembling] .eater-map__leaders [data-eater-map-ping][cx] {
+    display: inline;
+    r: calc(
+      var(--eater-map-leader-tip) *
+        (1 + var(--eater-map-ping, 0) * (var(--eater-map-ping-reach) - 1))
+    );
+    fill: none;
+    stroke: var(--eater-map-accent);
+    stroke-width: calc(var(--eater-map-accent-weight) * (1.6 - var(--eater-map-ping, 0)));
+    opacity: calc(min(1, var(--eater-map-ping, 0) * 12) * (1 - var(--eater-map-ping, 0)));
   }
 
   /* ---- one column, outside the band the composition is fitted to ---------

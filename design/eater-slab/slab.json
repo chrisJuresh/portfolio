@@ -70,18 +70,18 @@
 
     "flavor": "dark",
     "drop": ["pois", "address_label"],
-    "markerOpacity": 0.82,
+    "markerOpacity": null,
 
     "rewrites": [
       {
         "id": "flavor",
         "parameter": "flavor",
-        "is": "protomaps' flavour, stated at both of Eater's style call sites",
-        "default": "light",
+        "is": "the basemap's colour table: buildFlavor() returns protomaps' own named flavour instead of Eater's light Refined table, and the rail, stations and markers drawn over it are left as Eater draws them",
+        "default": null,
         "module": "/src/lib/map/style\\.js(?:$|\\?)",
-        "find": "namedFlavor\\(\\s*'light'\\s*\\)",
-        "replace": "namedFlavor('{value}')",
-        "expect": 2
+        "find": "function buildFlavor\\(\\) \\{",
+        "replace": "function buildFlavor() { return namedFlavor('{value}');",
+        "expect": 1
       },
       {
         "id": "drop",
@@ -96,10 +96,10 @@
       {
         "id": "markerOpacity",
         "parameter": "markerOpacity",
-        "is": "the flat opacity the restaurant markers composite at; 0.42 reads maroon on dark",
+        "is": "the flat opacity the restaurant markers composite at; Eater's own is 0.8",
         "default": null,
         "module": "/src/lib/constants\\.js(?:$|\\?)",
-        "find": "MARKER_LAYER_OPACITY\\s*=\\s*0\\.42",
+        "find": "MARKER_LAYER_OPACITY\\s*=\\s*0\\.8\\b",
         "replace": "MARKER_LAYER_OPACITY = {value}",
         "expect": 1
       }

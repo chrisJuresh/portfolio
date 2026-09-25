@@ -85,7 +85,7 @@ import { open, settle } from '../lib/page.mjs';
  *     column, feathered a little past both of its edges, because that is wide
  *     enough to hide everything that crosses and narrow enough to miss the one
  *     block up there that stands BESIDE the word rather than under it. The
- *     margin is 33 to 69px across the band and the feather spends 0.08 of the cap
+ *     margin is 33 to 69px across the band and the feather spends 0.12 of the cap
  *     of it, so this is the assertion that fails when a Content edit makes the
  *     word narrower or the composition's gutter closes.
  *   * AND THE WORD LEAVES WITH THE SECTION IT HEADS. Past the last marked
@@ -1136,6 +1136,23 @@ export const check = {
         held(found)
           .map((listener) => listener.owner + (listener.capture ? ' (capture)' : ''))
           .join(', ');
+      // AND THE SNAP GOES WITH THEM. Inside a snap area taller than the window,
+      // Chromium takes its end-of-scroll snap in the notch's direction from where
+      // the notch LANDED, so with the mandatory snap left on down here every notch
+      // of a real wheel moved the Catalogue twice. No headless wheel can show that
+      // — CDP's deltas are precise pixels, applied in one frame and never animated
+      // — so what is asserted is the state under it: off past the last port, and
+      // back on at the port once the scroll that crossed it has ended, which is
+      // why that reading waits. src/kernel/page-turn.ts has the measurement.
+      /** The root's computed snap, waited on for up to a second to become `want`. */
+      const snapReads = (want) =>
+        page.evaluate(async (expected) => {
+          const read = () => getComputedStyle(document.documentElement).scrollSnapType;
+          for (let tries = 0; tries < 60 && read() !== expected; tries += 1) {
+            await new Promise((ok) => requestAnimationFrame(ok));
+          }
+          return read();
+        }, want);
       for (const [where, y, blocking] of [
         ['the top of the document', 0, true],
         ['the last port', lastPort, true],
@@ -1144,7 +1161,24 @@ export const check = {
       ]) {
         const at = await stand(y);
         const found = await standingOn();
-        readings.push(`${where} (${at}px): ${held(found).length}/${found.length} non-passive`);
+        const snap = await snapReads(blocking ? 'y mandatory' : 'none');
+        readings.push(
+          `${where} (${at}px): ${held(found).length}/${found.length} non-passive, snap ${snap}`,
+        );
+        if (blocking && snap === 'none') {
+          failures.push(
+            `at ${where} (${at}px) the root's scroll-snap-type is none, so the page turn's resting ` +
+              'places no longer hold for the keyboard or for touch. The snap comes off past the last ' +
+              'port and must come back where the turn can act — src/kernel/page-turn.ts.',
+          );
+        } else if (!blocking && snap !== 'none') {
+          failures.push(
+            `at ${where} (${at}px) the root's scroll-snap-type is still "${snap}". Past the last port ` +
+              'a mandatory snap makes Chromium take every notch of a real wheel twice — it snaps in ' +
+              'the notch’s direction from where the notch landed, and inside a Section taller than ' +
+              'the window that is the notch again. src/kernel/page-turn.ts.',
+          );
+        }
         if (blocking && held(found).length === 0) {
           failures.push(
             `at ${where} (${at}px) every wheel listener on the document is PASSIVE, so nothing can ` +

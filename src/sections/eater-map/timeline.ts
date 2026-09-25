@@ -8,6 +8,7 @@ import mountGlass from './glass';
 import { mountLeaders } from './leaders';
 import { mountTitle } from './title';
 import mountRedraw from './redraw';
+import { assemble } from './assemble';
 
 /**
  * The **Lift**: the Exploded View going from the flat screenshot to the Slab
@@ -22,14 +23,17 @@ import mountRedraw from './redraw';
  * with every Card opaque and every word selectable, and the Timeline's whole job
  * is to travel from there back to where the markup already reads.
  *
- * WHAT THE PROGRESS MEANS. 0 is flat, 1 is raised, and p is p of the way between
- * — the plane finding its angle first and the three Cards climbing after it, in
- * the order the app stacks them. That mapping is fixed and holds at every window,
- * so `seek(0.4)` is a deterministic frame for a Check to read and for the Editor
- * to scrub. Every ease inside it is `none` on purpose: the GEOMETRY is linear in
- * the progress and the FEEL is in the transport below, which is the same split
- * the Front Screen makes — the Timeline is the authority on where the drawing is,
- * and nothing else writes a transform.
+ * WHAT THE PROGRESS MEANS. 0 is flat and bare, 1 is raised and whole: the first
+ * quarter is the ASSEMBLY — the grid, the words and the Points coming on
+ * (assemble.ts) — and the back three quarters are the three Cards
+ * climbing in the order the app stacks them, each rule drawing out to its part
+ * as it goes. That mapping is fixed and holds at every window, so `seek(0.4)` is
+ * a deterministic frame for a Check to read and for the Editor to scrub. The
+ * FEEL is inside the Timeline since the assembly — each track carries its own
+ * ease, the Cards' overshooting — and the transport below is linear, so a seek
+ * is the frame the choreography designed and a turn back plays it backwards.
+ * The Timeline is still the authority on where the drawing is, and nothing else
+ * writes a transform.
  *
  * IT IS PAUSED, ALWAYS. Nothing here plays it; a transport tween moves its
  * playhead, exactly as the Turn's ScrollTrigger scrubs the Kernel's. A Timeline
@@ -55,24 +59,38 @@ import mountRedraw from './redraw';
  * rather than by a second copy of the breakpoint.
  */
 
-/** The plane's own share of the Timeline: it starts turning before anything rises. */
-const TILT = 0.55;
-
-/** Where the Cards begin, and how long each one's climb takes. */
-const LAG = 0.18;
-const RISE = 0.6;
+/**
+ * Where the Cards begin, and how long each one's climb takes. Later and shorter
+ * than they were, because the first quarter of the playhead is the ASSEMBLY now —
+ * the grid, the words and the map coming on — and the Cards leave a Slab that has
+ * just been lit rather than one that was always there. NOTES.md, "The assembly".
+ */
+const LAG = 0.24;
+const RISE = 0.52;
 
 /** Between one Card and the next. Three Cards, so two steps: LAG + RISE + 2 x STAGGER = 1. */
-const STAGGER = 0.11;
+const STAGGER = 0.12;
 
 /**
- * How the playhead travels, which is the feel and not the drawing.
- *
- * `out` rather than `inOut`: the page has just come to rest from a turn, so the
- * pieces should leave the Slab at once and settle rather than gather themselves
- * first.
+ * The climb's own ease, and it overshoots: each Card comes off the map a little
+ * past its height and settles back onto it, which is what makes three sheets of
+ * glass read as having weight. Inside the Timeline rather than on the transport
+ * since the assembly, because a transport ease is one curve for every track on
+ * the playhead and the grid drawing itself does not want the Cards' curve. Past 1
+ * is a larger rise on the same arithmetic — every length on a Card is a term of
+ * its lift — so the overshoot is the drawing continued and not a second state.
  */
-const EASE = 'power2.out';
+const CLIMB = 'back.out(1.35)';
+
+/**
+ * How the playhead travels, and it is LINEAR now. Every track on the Timeline
+ * carries its own ease, so the transport's only job is time: a turn in plays the
+ * choreography as it was laid out, and a turn back plays it backwards.
+ */
+const EASE = 'none';
+
+/** Going back down is quicker than coming up: a Section being left is being left. */
+const LEAVING = 0.5;
 
 /** A thousandth of the Lift is "already there", for either end and for a retarget. */
 const SLACK = 0.001;
@@ -164,23 +182,32 @@ export default function mountLift(root: HTMLElement): gsap.core.Timeline | void 
 
   gsap.registerPlugin(ScrollTrigger);
 
+  // THE CARDS, and the Section's own `--eater-map-lift` is not written here any
+  // more. Its one reader is each Card's fallback, and the tween below writes every
+  // Card's own the moment it is built, so the fallback is never consulted while
+  // this module runs — and a custom property changed on the ROOT is inherited by
+  // all thousand elements under it, so tweening it had the browser recalculate the
+  // whole Section's style on every frame of the Lift, about nine milliseconds of
+  // each, to move nothing. It stays the stylesheet's: the regime's answer for a
+  // reader this module never reaches. NOTES.md has the measurement.
+  //
+  // AND THE ASSEMBLY'S PROPERTIES ARE WRITTEN ON THE LEAVES FOR THE SAME REASON —
+  // a grid line, a title line, a row, a rule, a dot — never on the root. The one
+  // thing the root carries is the gate below, which is an attribute and is
+  // toggled twice a Lift rather than written every frame.
   const lift = gsap.timeline({ paused: true });
+
+  // THE RULER: one inert tween the whole length, so the duration is exactly 1 and
+  // every position below is a share of the Lift whatever ends last.
+  lift.to({ p: 0 }, { p: 1, duration: 1, ease: 'none' }, 0);
+
   lift
-    // The Section's own playhead, which the plane's two rotations are written
-    // against. On the ROOT and not on the plane, because the Cards read it too:
-    // it is the value each Card's own falls back to when nothing has written one.
-    .fromTo(
-      root,
-      { '--eater-map-lift': 0 },
-      { '--eater-map-lift': 1, duration: TILT, ease: 'none' },
-      0,
-    )
     // In document order, which is the order the app stacks them: the detail panel
     // leaves the map first and the search bar last.
     .fromTo(
       cards,
       { '--eater-map-card-lift': 0 },
-      { '--eater-map-card-lift': 1, duration: RISE, ease: 'none', stagger: STAGGER },
+      { '--eater-map-card-lift': 1, duration: RISE, ease: CLIMB, stagger: STAGGER },
       LAG,
     );
 
@@ -195,7 +222,18 @@ export default function mountLift(root: HTMLElement): gsap.core.Timeline | void 
   // drawing is at the flat frame by the time mountLeaders takes its first
   // reading, which is the frame the rules are first drawn on.
   const redraw = mountLeaders(root);
-  if (redraw) lift.eventCallback('onUpdate', redraw);
+
+  // THE ASSEMBLY, AFTER THE RULES ARE FIRST DRAWN, because it times each rule's
+  // shoulder off the rule's own two legs — and before anything reads the gate.
+  // assemble.ts has the choreography; none of it moves a box a rule is drawn from.
+  const gated = assemble(root, lift, cards, { lag: LAG, rise: RISE, stagger: STAGGER });
+  gated.regime(collapsed(root));
+
+  lift.eventCallback('onUpdate', () => {
+    gated.gate(lift.progress());
+    redraw?.();
+  });
+  gated.gate(lift.progress());
 
   // AND ALL THREE OF THEM AGAIN WHENEVER THE EDITOR MOVES A TOKEN (#196, #214),
   // which costs a reader nothing: `redraw.ts` looks for the Editor's own footprint
@@ -251,7 +289,10 @@ export default function mountLift(root: HTMLElement): gsap.core.Timeline | void 
   // without it a window carried over the boundary would leave a raised playhead
   // standing on a collapsed drawing, filling glass that never left the map.
   if (lessMotion?.matches === true) {
-    const place = () => lift.progress(collapsed(root) ? 0 : 1);
+    const place = () => {
+      gated.regime(collapsed(root));
+      lift.progress(collapsed(root) ? 0 : 1);
+    };
     place();
     window.addEventListener('resize', place, { passive: true });
     return lift;
@@ -274,7 +315,7 @@ export default function mountLift(root: HTMLElement): gsap.core.Timeline | void 
     const distance = Math.abs(to - from);
     const time = seconds(
       getComputedStyle(root).getPropertyValue('--eater-map-lift-time'),
-      1.15,
+      2.2,
     );
     if (distance < SLACK || !(time > 0)) {
       lift.progress(to);
@@ -293,7 +334,7 @@ export default function mountLift(root: HTMLElement): gsap.core.Timeline | void 
     // as long as the whole one would have taken.
     transport = gsap.to(head, {
       at: to,
-      duration: time * distance,
+      duration: time * distance * (to < from ? LEAVING : 1),
       ease: EASE,
       onUpdate: () => {
         // SOMETHING ELSE HAS THE PLAYHEAD: a Check seeking a moment, or the
@@ -351,7 +392,10 @@ export default function mountLift(root: HTMLElement): gsap.core.Timeline | void 
     // under a Lift that has already run, and `release()`, which is how a Check or
     // the Editor hands the page back after holding it. Both want the same answer
     // — put the drawing where the scroll says it should be.
-    onRefresh: (self) => drive(arrived(self) ? 1 : 0),
+    onRefresh: (self) => {
+      gated.regime(collapsed(root));
+      drive(arrived(self) ? 1 : 0);
+    },
   });
 
   // The reader may already be standing here: a deep link to /portfolio/eater-map

@@ -154,10 +154,21 @@ export default function mountCutMorph(root: HTMLElement): void {
    * at 0 the eight letters change together and the word switches, and eight of
    * them at 0.05 leaves each 0.65 of the crossing to travel in.
    */
-  const stagger = () => {
+  const read = () => {
     const value = Number.parseFloat(getComputedStyle(root).getPropertyValue('--front-screen-cut-stagger'));
     return Number.isFinite(value) && value >= 0 && value * (letters.length - 1) < 1 ? value : 0.05;
   };
+  /**
+   * READ ONCE, NOT ONCE A SCROLL EVENT. `draw` runs inside the Turn's scroll
+   * handler, straight after `--turn` was written, so a live read here forced a
+   * style recalculation in the middle of every frame of the crossing — of the
+   * whole document, while `--turn` was inherited from the root. Under the Editor it stays live, because a Token dragged there is
+   * previewed through a stylesheet of the Editor's own and nothing else tells
+   * this module it moved — the same gate `eater-map/redraw.ts` keeps.
+   */
+  const held = read();
+  const live = document.querySelector('[data-editor]') !== null;
+  const stagger = () => (live ? read() : held);
 
   /**
    * Each letter's own share of the crossing, eased with SMOOTHSTEP, and the

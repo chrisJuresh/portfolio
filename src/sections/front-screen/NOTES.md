@@ -543,9 +543,9 @@ cap top comes to rest on `--landing-top` and the drawing's cap top is
 where the box has to be for the word not to move. Confirmed against the live page
 at #172's four windows and exact to within a hundredth of a pixel. The obvious
 build measures the box instead and the demo that proved the device did exactly
-that — with `offsetTop` rather than a client rect, because this Section spends
-its first 0.9s translated 8px down by its own reveal and a rect carries that
-transform where an offset does not. Not asking is a better answer than asking
+that — with `offsetTop` rather than a client rect, because this Section then
+spent its first 0.9s translated 8px down by its own reveal and a rect carries
+that transform where an offset does not. Not asking is a better answer than asking
 carefully.
 
 **`--landing-cap` and never `--front-screen-cut-slab`, and the two are the same
@@ -571,7 +571,7 @@ one line that makes a resting place a relationship rather than a list of names.
 **The roof is the other half of the device**, and it is furniture rather than
 composition: the word's own column, painting `--ground`, from the window's top
 edge to the word's baseline, dissolving over `--front-screen-cut-roof-fade` of
-the cap and back into the S over `--front-screen-cut-roof-feather`. Three things
+the cap and out past the S over `--front-screen-cut-roof-feather`. Three things
 about it are in `src/kernel/NOTES.md` because they are measurements rather than
 rules — why it cannot be up at rest, why its width is the word's, and why it
 arrives by growing rather than by switching. Three are here because they are this
@@ -706,53 +706,101 @@ the stack's, and a stacking context anywhere between the two ends the comparison
 
 ## The reveal
 
-A CSS animation on the Section, with `backwards` fill, and both halves matter.
+The first screen composing itself as the page opens: the name rising out of a
+blur under a rule drawn across the column, the bio uncovered a paragraph at a
+time, the photographs dealt in left to right, each listing's heading and then its
+entries, each entry with a rule drawn under its line and its years sliding in off
+the right edge a beat behind its words, the switch drawn round and its thumb
+popped, and last and slowest the Cut Title coming up out of the fold through the
+line it is cut on. It is a set of CSS animations and not this Section's Timeline,
+which is the strip's travel and has no room for a second meaning of its progress.
 
-An animation rather than a class a script toggles, so the worst case is not a
-blank page: a parse error, a dead network or scripting off all end with the
-keyframes finished and the composition up. Nothing in a Section may be the only
-thing standing between the reader and the words.
+**The order, as shares of one reveal** (`--front-screen-reveal` long, 2.6s):
 
-`backwards` and not `both`, because a forward fill holds the last keyframe for
-ever and the last keyframe says `transform: none` — which computes not to the
-keyword but to the identity matrix, and any transform makes an element a stacking
-context. Permanently a stacking context, this Section would seal the Cut Title's
-tail inside itself instead of letting it stand over the Section below.
+| from | for | what |
+| ---- | --- | ---- |
+| 0.00 | 0.30 | the name rises `-reveal-rise` out of `-reveal-blur`, a soft edge sweeping it on left to right |
+| 0.02 | 0.42 | a rule is drawn across the column under the masthead and taken away the way it came |
+| 0.08 | 0.32 | the location closes up out of `-reveal-tracking` of extra tracking as it is swept on |
+| 0.14 | 0.34 | the lead, and each later paragraph 0.06 after the one before, uncovered downwards |
+| 0.22 | 0.26 | each photograph's box uncovered from its foot, 0.04 apart, the eighth onward together; the picture settles out of `-reveal-zoom` and out of grey over twice that |
+| 0.46 | 0.22 | the strip's bar drawn from its left end |
+| 0.44 | 0.26 | each listing's heading comes in off the margin it hangs into, 0.08 apart |
+| +0.04 | 0.28 | each entry and each contact line under it, 0.035 apart, with a rule drawn under its line |
+| +0.06 | 0.26 | the entry's years slide `-reveal-reach` in off the right edge; its grade 0.04 after |
+| 0.66 | 0.24 | the switch's word, then its pill drawn round at 0.70, then its thumb popped at 0.80 |
+| 0.52 | 0.48 | the line the Cut Title is cut on drawn, held, and faded |
+| 0.56 | 0.44 | the Cut Title uncovered upwards out of the fold |
 
-### It is a stacking context for 0.9s, and the lift has to survive that
+**It runs without a script and ends on the markup, and both halves matter.** An
+animation rather than a class a script toggles, so the worst case is not a blank
+page: a parse error, a dead network or scripting off all end with the keyframes
+finished and the composition up. Nothing in a Section may be the only thing
+standing between the reader and the words. And every track fills `backwards` and
+none forwards, so once it has run nothing it drew is in the cascade — no mask, no
+clip, no filter, no translate, no layer. `transform: none` held by a forward fill
+computes not to the keyword but to the identity matrix, and a stacking context
+held for ever on the wrong box would seal the Cut Title's tail inside it.
 
-The paragraph above is about the fill and stops one step short. The context is not
-permanent, but while the animation runs it is **real**: an `opacity` below 1 makes
-one and so does a `transform`, and the reveal animates both.
+**The soft edge is a mask's POSITION, because a gradient does not interpolate.**
+Each sweep is a fixed `linear-gradient` 230% of its box with a ramp 13% of it wide
+at its middle — 0.3 of the box — and the three numbers are one derivation: the
+ramp starts just past the box's far edge at one end of the travel and finishes
+just short of its near edge at the other, so no share of a track is spent with the
+edge outside its box. The image and its size are the same in both keyframes, so
+they hold for the span and go with it, which is also why there is no registered
+property and no gate attribute: the mask exists exactly as long as the track does.
 
-Everything this Section lifts out of the Effect Stack is therefore sealed inside
-it for the reveal's whole span — the four type blocks, the strip, the bar and the
-Cut Title, every one of them still at `--front-screen-type-z`, and every one of
-them now compared against its **siblings** rather than against the stack. What the
-stack compares against in their place is the Section's own z, which was `auto`.
-`auto` is under `paper` (2) and `halftone` (4).
+**Nothing a script measures moves.** The strip's Timeline finds its resting
+places from the slides' rects and the landing is derived from the Cut Title's box,
+so a slide is uncovered by a `clip-path` and never moved — the picture inside it
+is what zooms, and `overflow: clip` on the slide is what keeps that inside its own
+box — and the word is uncovered by a mask and never moved. The lines of type do
+travel, which only the `front-screen` Check reads and only once `revealed()` has
+waited for every animation under the Section on the document timeline.
+`settle()` waits for the same, so every other Check reads the page after it too.
 
-So for as long as the composition was arriving, the two lit layers painted over it
-instead of under it: the halftone's dots printed through every photograph, every
-word and the Cut Title, and the page then corrected itself the instant the
+**The rules at rest are nothing.** The masthead's and each line's are
+pseudo-elements standing at `scaleX(0)` with no pointer events; the Cut Title's is
+the one line on its foot that is also its hover underline, so the page's opening
+and its one underline are one gesture — drawn from the first letter on the way in,
+taken off towards the last on the way out. The contact links draw theirs the same
+way, over their rule.
+
+### It seals nothing, and that is what the Section-wide fade had to be taught
+
+The reveal this replaced was one `opacity` and one `transform` on the Section,
+and while it ran it made the Section a stacking context. Everything this Section
+lifts out of the Effect Stack was therefore sealed inside it for the reveal's
+whole span — the four type blocks, the strip, the bar and the Cut Title, every one
+of them still at `--front-screen-type-z`, and every one of them compared against
+its **siblings** rather than against the stack, while the stack compared against
+the Section's own z, which was `auto` and under `paper` (2) and `halftone` (4). So
+for as long as the composition was arriving, the halftone's dots printed through
+every photograph and every word, and the page corrected itself the instant the
 animation ended. Reported as *the filters being on top of everything before the
-text and the photos come back on top of them*, and it had shipped — a fault that is
-invisible from a settled page and easy to miss on a warm cache, because the fade
-starts at nothing and the layers are strongest exactly where the composition is
-faintest.
+text and the photos come back on top of them*, and it had shipped.
 
-The fix is one declaration in each keyframe: the animation carries
-`--front-screen-type-z` at both ends, so the Section stands where its contents
-stand for precisely as long as it is a group and reverts to `auto` when the
-animation is over. The Token is the one the contents read, so the two cannot come
-apart, and the paragraph above stays true — nothing here makes the context
-permanent. The base rule's `position: relative` is what a z has to stand on and is
-the whole of what moved out of the band block to get it.
+**The tracks avoid it by where they are, not by a z of their own.** Every element
+the reveal animates is one of the lifted blocks or is inside one, so whatever
+stacking context a mask, a filter or a translate makes is made at the type's z or
+within a box that already stands there. A track added on a box that is neither —
+the column, the Section, anything between the Section and a lifted block — would
+be the old fault again, and `front-screen` is what says so: it restarts the whole
+reveal, holds every track in its own middle, and asks each box that groups which
+z it is painted at. **Each track at its own middle and not all at one clock
+time**, because the tracks are staggered and at any one moment most are at an end,
+where a grouping property is least in flight.
 
-`front-screen`'s last assertion is this one, restarting the reveal and holding it
-half way rather than reading a settled page: the older assertion above passed
-throughout, because the type's z is still 5 and being sealed is what stops that
-meaning anything.
+**A reader who asked for less motion gets the Section-wide fade**, at a third of
+the tempo and with no rise, because a fade is what covers the faces resolving and
+none of the tracks is a fade alone. That fade still groups the Section, so it
+still carries `--front-screen-type-z` in both keyframes, and the base rule's
+`position: relative` is what that z stands on. The same Check holds it half way in
+a second context with the preference set.
+
+**The `plate-wait` hold is still parked** (see below): the reveal starts at first
+style resolution, not when the corner pictures have arrived.
 
 ## The switch
 

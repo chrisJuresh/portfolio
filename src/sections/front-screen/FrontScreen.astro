@@ -110,7 +110,7 @@ const EAGER = 2;
       >
         {
           content.photos.items.map((photo, index) => (
-            <figure class="front-screen__slide" data-front-screen-slide>
+            <figure class="front-screen__slide" data-front-screen-slide style={`--front-screen-at: ${index}`}>
               <img
                 src={`${PHOTO_BASE}${photo.file}`}
                 alt={photo.alt}
@@ -133,15 +133,19 @@ const EAGER = 2;
     </div>
 
     {
-      listings.map(({ key, listing }) => (
-        <section class="front-screen__listing">
+      listings.map(({ key, listing }, place) => (
+        <section class="front-screen__listing" style={`--front-screen-listing-at: ${place}`}>
           <h2 class="front-screen__heading">{listing.heading}</h2>
           {/* One line each, and it used to be two: an italic role or subject
               stood under the organisation. An entry is still the content's own
               unit — an organisation and the years beside it — so the box stays,
               and what its margin separates is now one line from the next. */}
           {listing.entries.map((entry, index) => (
-            <div class="front-screen__entry" data-front-screen-entry={`${key}.${index}`}>
+            <div
+              class="front-screen__entry"
+              data-front-screen-entry={`${key}.${index}`}
+              style={`--front-screen-at: ${index}`}
+            >
               <p class="front-screen__line">
                 {/* Every form of the organisation is in the markup and the
                     stylesheet shows the longest one the column can hold — the
@@ -161,13 +165,16 @@ const EAGER = 2;
       ))
     }
 
-    <section class="front-screen__listing">
+    <section class="front-screen__listing" style={`--front-screen-listing-at: ${listings.length}`}>
       <h2 class="front-screen__heading">{content.contact.heading}</h2>
       <div class="front-screen__corner">
         <ul class="front-screen__contact">
           {
             content.contact.entries.map((entry, index) => (
-              <li class={index === 0 ? 'front-screen__contact-first' : undefined}>
+              <li
+                class={index === 0 ? 'front-screen__contact-first' : undefined}
+                style={`--front-screen-at: ${index}`}
+              >
                 <a href={entry.href}>{entry.text}</a>
               </li>
             ))
@@ -304,10 +311,11 @@ const EAGER = 2;
   /* ---- the page ---------------------------------------------------------- */
   /* `position: relative` AND NO z-index, so this is not a stacking context: it is
      here for the keyframes below, which have a z to put somewhere and nowhere to
-     put it on an unpositioned block. The band's own rule used to carry this line
-     and no longer does — the reveal runs at every window, so what it stands on
-     has to be at every window too. It moves nothing else: every absolutely
-     positioned box in this Section already has a nearer positioned ancestor. */
+     put it on an unpositioned block. The Section is only animated for a reader
+     who asked for less motion now (the reveal, below), but what that stands on
+     has to be there at every window regardless. It moves nothing else: every
+     absolutely positioned box in this Section already has a nearer positioned
+     ancestor. */
   .front-screen {
     position: relative;
     display: flex;
@@ -317,16 +325,440 @@ const EAGER = 2;
     font-family: var(--face-body);
     font-size: var(--front-screen-body-size);
     line-height: var(--front-screen-body-leading);
-    animation: front-screen-in var(--front-screen-reveal) cubic-bezier(0.22, 1, 0.36, 1) backwards;
   }
 
-  /* `backwards` and not `both`: a forward fill holds `transform: none` for ever,
-     which computes to the identity matrix rather than to the keyword and makes
-     this a permanent stacking context — which would seal the Cut Title's tail
-     inside the Section instead of letting it stand over the one below.
+  /* ---- the reveal ----------------------------------------------------------
+     The first screen composing itself as the page opens, one track per part of
+     it and every track a CSS animation. NOTES.md, under the reveal, has the
+     order and the three rules it is built round; the short form:
+
+     IT RUNS WITHOUT A SCRIPT, AND ENDS ON THE MARKUP. Every track fills
+     `backwards` and none fills forwards, so a dead network or scripting off still
+     ends with the composition up, and once it has run nothing it drew is left in
+     the cascade — no mask, no clip, no filter, no translate, no layer.
+
+     IT MOVES NO BOX A SCRIPT MEASURES. The strip's Timeline reads the slides'
+     rects to find its resting places and the landing reads the Cut Title's, so
+     a slide is uncovered by a clip and never moved, and the word is uncovered by
+     a mask and never moved.
+
+     IT SEALS NOTHING. Every element it animates is one of the blocks this
+     Section lifts out of the Effect Stack or is inside one, so any stacking
+     context an animation makes is made at the type's z or within it — which is
+     what the Section-wide fade this replaced had to carry a z-index in its
+     keyframes to survive. `front-screen` holds it half way and asserts it.
+
+     Every delay and duration is a share of `--front-screen-reveal`, so one
+     Token is the whole tempo. */
+  .front-screen {
+    --front-screen-in-ease: cubic-bezier(0.16, 1, 0.3, 1);
+    --front-screen-in-snap: cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  /* A soft edge carried across a box by its mask's POSITION, which interpolates
+     where a gradient does not. The picture is 230% of the box with a ramp 13% of
+     it wide at its middle — 0.3 of the box — and the three numbers are one
+     derivation: the ramp starts just past the box's far edge at one end of the
+     travel and finishes just short of its near edge at the other, so no share of
+     the track is spent with the edge outside the box. The image and its size are
+     the same at both ends, so they hold for the span and go with it. */
+  @keyframes front-screen-type-in {
+    from {
+      translate: 0 var(--front-screen-reveal-rise);
+      filter: blur(var(--front-screen-reveal-blur));
+      mask-image: linear-gradient(to right, #000 43.48%, transparent 56.52%);
+      mask-size: 230% 100%;
+      mask-repeat: no-repeat;
+      mask-position: 100% 0;
+    }
+    to {
+      translate: 0 0;
+      filter: blur(0);
+      mask-image: linear-gradient(to right, #000 43.48%, transparent 56.52%);
+      mask-size: 230% 100%;
+      mask-repeat: no-repeat;
+      mask-position: 0 0;
+    }
+  }
+
+  /* A heading hangs out into the margin, so it comes in from that side. */
+  @keyframes front-screen-heading-in {
+    from {
+      translate: calc(-1 * var(--front-screen-reveal-rise)) 0;
+      filter: blur(var(--front-screen-reveal-blur));
+      mask-image: linear-gradient(to right, #000 43.48%, transparent 56.52%);
+      mask-size: 230% 100%;
+      mask-repeat: no-repeat;
+      mask-position: 100% 0;
+    }
+    to {
+      translate: 0 0;
+      filter: blur(0);
+      mask-image: linear-gradient(to right, #000 43.48%, transparent 56.52%);
+      mask-size: 230% 100%;
+      mask-repeat: no-repeat;
+      mask-position: 0 0;
+    }
+  }
+
+  /* The location closes up out of wide tracking as it is uncovered. It is one
+     short line in a block of its own, so the tracking reflows nothing but it. */
+  @keyframes front-screen-label-in {
+    from {
+      letter-spacing: calc(
+        var(--front-screen-label-tracking) + var(--front-screen-reveal-tracking)
+      );
+      mask-image: linear-gradient(to right, #000 43.48%, transparent 56.52%);
+      mask-size: 230% 100%;
+      mask-repeat: no-repeat;
+      mask-position: 100% 0;
+    }
+    to {
+      letter-spacing: var(--front-screen-label-tracking);
+      mask-image: linear-gradient(to right, #000 43.48%, transparent 56.52%);
+      mask-size: 230% 100%;
+      mask-repeat: no-repeat;
+      mask-position: 0 0;
+    }
+  }
+
+  /* A paragraph is uncovered downwards, which reads as its lines coming up one
+     after another — the page cannot know where a line breaks, and this is the
+     same edge travelling the other axis rather than a guess at them. */
+  @keyframes front-screen-prose-in {
+    from {
+      translate: 0 calc(0.5 * var(--front-screen-reveal-rise));
+      mask-image: linear-gradient(to bottom, #000 43.48%, transparent 56.52%);
+      mask-size: 100% 230%;
+      mask-repeat: no-repeat;
+      mask-position: 0 100%;
+    }
+    to {
+      translate: 0 0;
+      mask-image: linear-gradient(to bottom, #000 43.48%, transparent 56.52%);
+      mask-size: 100% 230%;
+      mask-repeat: no-repeat;
+      mask-position: 0 0;
+    }
+  }
+
+  /* The years slide in off the right edge they are set against. */
+  @keyframes front-screen-years-in {
+    from {
+      opacity: 0;
+      translate: var(--front-screen-reveal-reach) 0;
+      filter: blur(var(--front-screen-reveal-blur));
+    }
+    to {
+      opacity: 1;
+      translate: 0 0;
+      filter: blur(0);
+    }
+  }
+
+  /* A photograph's box is uncovered from its foot, and the picture in it
+     settles out of a zoom and develops out of grey. The slide is clipped and
+     the picture moves, never the other way round: the slide's rect is what the
+     strip's Timeline measures. */
+  @keyframes front-screen-slide-in {
+    from {
+      clip-path: inset(100% 0 0 0);
+    }
+    to {
+      clip-path: inset(0 0 0 0);
+    }
+  }
+
+  @keyframes front-screen-picture-in {
+    from {
+      scale: var(--front-screen-reveal-zoom);
+      filter: grayscale(1) brightness(1.18) contrast(0.86);
+    }
+    to {
+      scale: 1;
+      filter: grayscale(0) brightness(1) contrast(1);
+    }
+  }
+
+  /* A pill drawn from its left end — the strip's own bar and the switch's. */
+  @keyframes front-screen-wipe-in {
+    from {
+      clip-path: inset(-2px calc(100% + 2px) -2px -2px round 1rem);
+    }
+    to {
+      clip-path: inset(-2px -2px -2px -2px round 1rem);
+    }
+  }
+
+  @keyframes front-screen-pop-in {
+    from {
+      scale: 0;
+    }
+    to {
+      scale: 1;
+    }
+  }
+
+  /* A rule drawn across and taken away again the way it came — the layout's
+     own guides, put down and erased. Nothing at rest: the pseudo-elements that
+     wear it stand at `scaleX(0)`. */
+  @keyframes front-screen-rule {
+    0% {
+      transform: scaleX(0);
+      transform-origin: 0 50%;
+    }
+    45% {
+      transform: scaleX(1);
+      transform-origin: 0 50%;
+    }
+    45.01% {
+      transform: scaleX(1);
+      transform-origin: 100% 50%;
+    }
+    100% {
+      transform: scaleX(0);
+      transform-origin: 100% 50%;
+    }
+  }
+
+  /* The Cut Title rises out of the fold: the same soft edge, travelling up. */
+  @keyframes front-screen-cut-in {
+    from {
+      mask-image: linear-gradient(to top, #000 43.48%, transparent 56.52%);
+      mask-size: 100% 230%;
+      mask-repeat: no-repeat;
+      mask-position: 0 0;
+    }
+    to {
+      mask-image: linear-gradient(to top, #000 43.48%, transparent 56.52%);
+      mask-size: 100% 230%;
+      mask-repeat: no-repeat;
+      mask-position: 0 100%;
+    }
+  }
+
+  /* The line the word is cut on is drawn first and the word comes up through
+     it; the line is held while it does and is gone once the word has arrived. */
+  @keyframes front-screen-cut-rule {
+    0% {
+      transform: scaleX(0);
+      transform-origin: 0 50%;
+      opacity: 1;
+    }
+    30% {
+      transform: scaleX(1);
+      transform-origin: 0 50%;
+      opacity: 1;
+    }
+    75% {
+      transform: scaleX(1);
+      transform-origin: 0 50%;
+      opacity: 1;
+    }
+    100% {
+      transform: scaleX(1);
+      transform-origin: 0 50%;
+      opacity: 0;
+    }
+  }
+
+  /* Every track, gated on the reader not having asked for stillness — the block
+     below gives that reader the Section-wide fade instead. Longhands, so each
+     delay and duration can be a share of the one Token; a track names where it
+     starts and how long it takes, as shares, and nothing else. */
+  @media (prefers-reduced-motion: no-preference) {
+    .front-screen__name,
+    .front-screen__location,
+    .front-screen__intro > p,
+    .front-screen__slide,
+    .front-screen__slide img,
+    .front-screen__bar,
+    .front-screen__heading,
+    .front-screen__entry,
+    .front-screen__years,
+    .front-screen__grade,
+    .front-screen__contact li,
+    .front-screen__toggle > :is(.front-screen__word-paper, .front-screen__word-dark),
+    .front-screen__track,
+    .front-screen__thumb,
+    .front-screen__masthead::after,
+    .front-screen__line::after,
+    .front-screen__cut-word,
+    .front-screen__cut > a::before {
+      animation-delay: calc(var(--front-screen-reveal) * var(--front-screen-in-at, 0));
+      animation-duration: calc(var(--front-screen-reveal) * var(--front-screen-in-for, 0.3));
+      animation-timing-function: var(--front-screen-in-ease);
+      animation-fill-mode: backwards;
+    }
+
+    /* the masthead: the name, the rule under it, the place */
+    .front-screen__name {
+      animation-name: front-screen-type-in;
+      --front-screen-in-for: 0.3;
+    }
+
+    .front-screen__masthead::after {
+      animation-name: front-screen-rule;
+      animation-timing-function: cubic-bezier(0.65, 0, 0.35, 1);
+      --front-screen-in-at: 0.02;
+      --front-screen-in-for: 0.42;
+    }
+
+    .front-screen__location {
+      animation-name: front-screen-label-in;
+      --front-screen-in-at: 0.08;
+      --front-screen-in-for: 0.32;
+    }
+
+    /* the bio, a paragraph at a time */
+    .front-screen__intro > p {
+      animation-name: front-screen-prose-in;
+      animation-timing-function: cubic-bezier(0.33, 1, 0.68, 1);
+      --front-screen-in-at: 0.14;
+      --front-screen-in-for: 0.34;
+    }
+
+    .front-screen__intro > p:nth-child(2) {
+      --front-screen-in-at: 0.2;
+    }
+
+    .front-screen__intro > p:nth-child(n + 3) {
+      --front-screen-in-at: 0.26;
+    }
+
+    /* the photographs, dealt left to right; past the eighth they are off the
+       screen, and arrive together */
+    .front-screen__slide {
+      --front-screen-slide-in: calc(0.22 + 0.04 * min(var(--front-screen-at, 0), 8));
+      --front-screen-in-at: var(--front-screen-slide-in);
+      --front-screen-in-for: 0.26;
+      animation-name: front-screen-slide-in;
+      animation-timing-function: cubic-bezier(0.76, 0, 0.24, 1);
+    }
+
+    .front-screen__slide img {
+      --front-screen-in-at: var(--front-screen-slide-in);
+      --front-screen-in-for: 0.52;
+      animation-name: front-screen-picture-in;
+    }
+
+    .front-screen__bar {
+      animation-name: front-screen-wipe-in;
+      animation-timing-function: cubic-bezier(0.65, 0, 0.35, 1);
+      --front-screen-in-at: 0.46;
+      --front-screen-in-for: 0.22;
+    }
+
+    /* work, education, contact: each listing's heading, then its entries down
+       it, each entry's years a beat behind its words and a rule drawn under the
+       line between them */
+    .front-screen__listing {
+      --front-screen-listing-in: calc(0.44 + 0.08 * var(--front-screen-listing-at, 0));
+    }
+
+    .front-screen__heading {
+      animation-name: front-screen-heading-in;
+      --front-screen-in-at: var(--front-screen-listing-in);
+      --front-screen-in-for: 0.26;
+    }
+
+    .front-screen__entry,
+    .front-screen__contact li {
+      --front-screen-entry-in: calc(
+        var(--front-screen-listing-in) + 0.04 + 0.035 * var(--front-screen-at, 0)
+      );
+      --front-screen-in-at: var(--front-screen-entry-in);
+      --front-screen-in-for: 0.28;
+      animation-name: front-screen-type-in;
+    }
+
+    .front-screen__line::after {
+      animation-name: front-screen-rule;
+      animation-timing-function: cubic-bezier(0.65, 0, 0.35, 1);
+      --front-screen-in-at: var(--front-screen-entry-in);
+      --front-screen-in-for: 0.34;
+    }
+
+    .front-screen__years {
+      animation-name: front-screen-years-in;
+      --front-screen-in-at: calc(var(--front-screen-entry-in) + 0.06);
+      --front-screen-in-for: 0.26;
+    }
+
+    .front-screen__grade {
+      animation-name: front-screen-years-in;
+      --front-screen-in-at: calc(var(--front-screen-entry-in) + 0.1);
+      --front-screen-in-for: 0.26;
+    }
+
+    /* the switch: its word, then its pill drawn round, then its thumb */
+    .front-screen__toggle > :is(.front-screen__word-paper, .front-screen__word-dark) {
+      animation-name: front-screen-type-in;
+      --front-screen-in-at: 0.66;
+      --front-screen-in-for: 0.24;
+    }
+
+    .front-screen__track {
+      animation-name: front-screen-wipe-in;
+      animation-timing-function: cubic-bezier(0.65, 0, 0.35, 1);
+      --front-screen-in-at: 0.7;
+      --front-screen-in-for: 0.14;
+    }
+
+    .front-screen__thumb {
+      animation-name: front-screen-pop-in;
+      animation-timing-function: var(--front-screen-in-snap);
+      --front-screen-in-at: 0.8;
+      --front-screen-in-for: 0.14;
+    }
+
+    /* the Cut Title, last and slowest: the line it is cut on, and the word
+       coming up through it */
+    .front-screen__cut > a::before {
+      animation-name: front-screen-cut-rule;
+      animation-timing-function: linear;
+      --front-screen-in-at: 0.52;
+      --front-screen-in-for: 0.48;
+    }
+
+    .front-screen__cut-word {
+      animation-name: front-screen-cut-in;
+      animation-timing-function: cubic-bezier(0.45, 0.05, 0.25, 1);
+      --front-screen-in-at: 0.56;
+      --front-screen-in-for: 0.44;
+    }
+  }
+
+  /* The two rules the reveal draws, and at rest they are nothing: no length
+     across and no paint. Out of the pointer's way, so hit-testing answers the
+     words under them. */
+  .front-screen__masthead::after,
+  .front-screen__line::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: var(--front-screen-hairline);
+    background: var(--front-screen-rule);
+    transform: scaleX(0);
+    pointer-events: none;
+  }
+
+  .front-screen__masthead::after {
+    bottom: calc(-0.5 * var(--front-screen-space-m));
+    background: currentcolor;
+  }
+
+  .front-screen__line::after {
+    bottom: 0.1em;
+  }
+
+  /* `backwards` and not `both`: a forward fill holds its last keyframe for ever,
+     and a Section left a stacking context would seal the Cut Title's tail inside
+     itself instead of letting it stand over the one below.
 
      AND THE Z IS IN THE KEYFRAMES, WHICH IS THE OTHER HALF OF THAT SENTENCE.
-     The stacking context is not permanent, but for the reveal's 0.9s it is real
+     The stacking context is not permanent, but while the fade runs it is real
      — and it SEALS every block this Section lifts out of the Effect Stack,
      standing the Section's own z against the layers in their place. At `auto`
      that is under `paper` and `halftone`, so the page opened with both printed
@@ -337,23 +769,22 @@ const EAGER = 2;
   @keyframes front-screen-in {
     from {
       opacity: 0;
-      transform: translateY(var(--front-screen-reveal-rise));
       z-index: var(--front-screen-type-z);
     }
     to {
       opacity: 1;
-      transform: none;
       z-index: var(--front-screen-type-z);
     }
   }
 
   /* A reader who asked for less motion gets the composition arriving without
-     travelling: the fade stays, because it is what covers the faces resolving,
-     and the rise goes. The Token is what the keyframe reads, so this is one
-     declaration rather than a second pair of keyframes. */
+     travelling: one fade of the whole Section, because a fade is what covers the
+     faces resolving, and none of the tracks above. A third of the tempo, since
+     there is nothing to wait for but the fade. */
   @media (prefers-reduced-motion: reduce) {
     .front-screen {
-      --front-screen-reveal-rise: 0px;
+      animation: front-screen-in calc(var(--front-screen-reveal) * 0.3)
+        cubic-bezier(0.22, 1, 0.36, 1) backwards;
     }
 
     /* The dissolve still happens, it just stops travelling: it is a state of the
@@ -607,12 +1038,15 @@ const EAGER = 2;
 
   /* `aspect-ratio` and not a width: the photograph's height is the slot's, so its
      width follows from it, and the box has its shape before the picture lands. */
+  /* `overflow: clip`, so the picture can be scaled inside its own box — by the
+     reveal, and under the pointer — without the box or its neighbours moving. */
   .front-screen__slide {
     flex: 0 0 auto;
     margin: 0;
     height: 100%;
     aspect-ratio: var(--front-screen-slide-ratio);
     background: var(--front-screen-soft);
+    overflow: clip;
   }
 
   .front-screen__slide img {
@@ -622,6 +1056,18 @@ const EAGER = 2;
     object-fit: cover;
     user-select: none;
     -webkit-user-drag: none;
+    transition: scale var(--front-screen-slide-lean) cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  /* The photograph under the pointer leans in, slowly; and not while it is
+     being dragged, when the picture moving under the hand would be a second
+     motion arguing with the first. A pointer that hovers — a touch has no
+     "under", and a tap would leave the picture stuck in — and a reader who has
+     not asked for stillness. */
+  @media (hover: hover) and (prefers-reduced-motion: no-preference) {
+    .front-screen__photos:not(.is-dragging) .front-screen__slide:hover img {
+      scale: var(--front-screen-slide-lean-by);
+    }
   }
 
   /* ---- the strip's own scrollbar ---------------------------------------- */
@@ -1076,9 +1522,35 @@ const EAGER = 2;
     transition: border-color var(--front-screen-hover-fade) ease;
   }
 
-  .front-screen__contact a:hover,
   .front-screen__contact a:focus-visible {
     border-color: var(--ink);
+  }
+
+  /* Under the pointer the ink is DRAWN along the rule rather than faded into it,
+     from the link's first letter, and taken back off the way the Cut Title's
+     line is — one gesture for every link on this screen. It lies exactly on the
+     border, so it costs the line box nothing and the rule is what it covers. */
+  .front-screen__contact a {
+    position: relative;
+  }
+
+  .front-screen__contact a::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: calc(-1 * var(--front-screen-hairline));
+    height: var(--front-screen-hairline);
+    background: var(--ink);
+    transform: scaleX(0);
+    transform-origin: 100% 50%;
+    transition: transform var(--front-screen-cut-draw) cubic-bezier(0.65, 0, 0.35, 1);
+    pointer-events: none;
+  }
+
+  .front-screen__contact a:hover::after {
+    transform: scaleX(1);
+    transform-origin: 0 50%;
   }
 
   /* ---- the theme toggle, in the corner of the contact block --------------
@@ -1181,15 +1653,34 @@ const EAGER = 2;
     overflow: clip;
     height: calc(var(--front-screen-cut-show) * var(--front-screen-cut-slab));
     color: var(--ink);
-    transition: box-shadow var(--front-screen-hover-fade) ease;
+    /* For the line below to stand on, and nothing else: no z, so no group. */
+    position: relative;
   }
 
   /* A display word gives nothing to underline — its baseline is below the cut —
-     so the site's hairline goes on the cut itself, as an inset shadow rather than
-     a border so it costs the clip box no height. */
-  .front-screen__cut > a:hover,
-  .front-screen__cut > a:focus-visible {
-    box-shadow: inset 0 -1px 0 currentcolor;
+     so the site's hairline goes on the cut itself: a line on the box's foot,
+     absolutely placed so it costs the clip box no height. It is DRAWN rather
+     than faded in, from the word's first letter, and it is the same line the
+     reveal draws before the word comes up through it — so the page's one
+     underline and the page's opening are one gesture. */
+  .front-screen__cut > a::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 1px;
+    background: currentcolor;
+    transform: scaleX(0);
+    transform-origin: 100% 50%;
+    transition: transform var(--front-screen-cut-draw) cubic-bezier(0.65, 0, 0.35, 1);
+    pointer-events: none;
+  }
+
+  .front-screen__cut > a:hover::before,
+  .front-screen__cut > a:focus-visible::before {
+    transform: scaleX(1);
+    transform-origin: 0 50%;
   }
 
   /* `top` and not a negative margin: in the one-screen band the link runs
@@ -1277,9 +1768,9 @@ const EAGER = 2;
          reading twice. The obvious build reads the box's own position at the
          landing and writes it back as an offset, and the demo that proved this
          device did exactly that — measured with `offsetTop` rather than a client
-         rect, because this Section spends its first 0.9s translated 8px down by
-         its own reveal and a rect carries that transform where an offset does
-         not. It is a better answer not to ask. The word's cap top comes to rest
+         rect, because this Section then spent its first 0.9s translated 8px
+         down by its own reveal and a rect carries that transform where an offset
+         does not. It is a better answer not to ask. The word's cap top comes to rest
          on --landing-top, the drawing's cap top is --front-screen-cut-show of
          its own cap slab below this box's top edge (the rule at the foot of this
          block is where that lift is spent), and the sum is therefore where this
@@ -1444,10 +1935,11 @@ const EAGER = 2;
 
        NOTHING BETWEEN THIS BOX AND THE VIEWPORT TRANSFORMS, FILTERS OR
        CONTAINS, so `fixed` really is the viewport here rather than some
-       ancestor's box. Worth stating because this Section HAS a transform for
-       its first 0.9s -- the reveal -- and it is on the column and the bar, never
-       on an ancestor of this box. It is also why the offset above is derived
-       rather than read off the page.
+       ancestor's box. Worth stating because this Section's reveal translates,
+       filters and masks a good deal for its first seconds, and every one of
+       those is on a block inside the column or on the word itself, never on an
+       ancestor of this box. It is also why the offset above is derived rather
+       than read off the page.
 
        `left` AND `width` ARE THE BAND RULE'S, UNTOUCHED. The Front Screen's
        padding box starts on the page's own left edge, so --landing-side is the
@@ -1569,11 +2061,14 @@ const EAGER = 2;
        ramp here is a smoothstep in five steps and not a straight one: a linear
        fade has a visible start and end, and those were the "bands" read off it.
 
-       THE SIDES ARE FEATHERED, AND BY MEASURED AMOUNTS. On the right it
-       dissolves --front-screen-cut-roof-feather back into the word, and hangs
-       0.08 of the cap past the S so the letter's own anti-aliasing is not the
-       mask's edge: the Gallery's frame begins 0.127 of the cap past the word at
-       1536x760 and its copy 0.536 at every window, so neither is reached. On the
+       THE SIDES ARE FEATHERED, AND BY MEASURED AMOUNTS. On the right it is
+       opaque to the S's outer edge and dissolves over
+       --front-screen-cut-roof-feather past it, so the whole S stands on ground
+       and the letter's own anti-aliasing is never the mask's edge. It does not
+       dissolve back INTO the word: that put the fade's middle in the S's bowl,
+       with the letter half on the ground and half on whatever was passing. The
+       Gallery's frame begins 0.127 of the cap past the word at 1536x760 and its
+       copy 0.536 at every window; the Token's own note says why 0.12. On the
        left it hangs 0.12 of the cap into the Rail's column: the Rail paints under
        this box (its z is 1, this is the type's), and its words stop at least 0.18
        of the cap short of the word's left edge, so the feather lands on the Rail's
@@ -1591,11 +2086,8 @@ const EAGER = 2;
           var(--front-screen-roof-since)
       );
       --front-screen-roof-left: calc(0.12 * var(--landing-cap));
-      --front-screen-roof-right: calc(0.08 * var(--landing-cap));
-      --front-screen-roof-feather: calc(
-        var(--front-screen-cut-roof-feather) * var(--landing-cap) +
-          var(--front-screen-roof-right)
-      );
+      --front-screen-roof-right: calc(var(--front-screen-cut-roof-feather) * var(--landing-cap));
+      --front-screen-roof-feather: var(--front-screen-roof-right);
       display: block;
       position: absolute;
       z-index: -1;

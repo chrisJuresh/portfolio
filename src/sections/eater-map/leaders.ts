@@ -185,6 +185,8 @@ interface Leader {
   readonly tip: SVGCircleElement | null;
   /** the smaller dot at the shoulder, where the rule turns */
   readonly knee: SVGCircleElement | null;
+  /** the ring the assembly sends out from the lit dot, on the same vertex */
+  readonly ping: SVGCircleElement | null;
 }
 
 /**
@@ -213,7 +215,8 @@ export function mountLeaders(root: HTMLElement): (() => void) | void {
     // drawn between, which is the hole above.
     const tip = overlay.querySelector<SVGCircleElement>(`[data-eater-map-tip="${part}"]`);
     const knee = overlay.querySelector<SVGCircleElement>(`[data-eater-map-knee="${part}"]`);
-    leaders.push({ part, rule, hook, anchor, tip, knee });
+    const ping = overlay.querySelector<SVGCircleElement>(`[data-eater-map-ping="${part}"]`);
+    leaders.push({ part, rule, hook, anchor, tip, knee, ping });
   }
   if (leaders.length === 0) return;
 
@@ -225,9 +228,18 @@ export function mountLeaders(root: HTMLElement): (() => void) | void {
     // to it and NOTHING here depends on the scroll — which is what stops a
     // reader turning the page from dragging four rules across it.
     const frame = overlay.getBoundingClientRect();
-    for (const { rule, hook, anchor, tip, knee } of leaders) {
-      const from = hook.getBoundingClientRect();
-      const to = anchor.getBoundingClientRect();
+    // EVERY RECT IS READ BEFORE ANYTHING IS WRITTEN. An attribute written on the
+    // overlay dirties the layout, so reading the next rule's two rects after it
+    // forced a second layout, and a third — one per rule, every tick of a Lift
+    // that runs while the page turns and the root's custom properties have
+    // already dirtied the whole document's style. NOTES.md has the trace.
+    const read = leaders.map((leader) => ({
+      leader,
+      from: leader.hook.getBoundingClientRect(),
+      to: leader.anchor.getBoundingClientRect(),
+    }));
+    for (const { leader, from, to } of read) {
+      const { rule, tip, knee, ping } = leader;
       // THE HOOK'S CENTRELINE AND NOT ITS TOP EDGE, because the hook IS the row
       // rule's box — the stylesheet lifts it by the rule's weight and gives it
       // that weight as a height, precisely so this line can be a midpoint. A
@@ -243,11 +255,13 @@ export function mountLeaders(root: HTMLElement): (() => void) | void {
       const towards = x >= (from.left + from.right) / 2 - frame.left;
       const start = (towards ? from.left : from.right) - frame.left;
       const turn = (towards ? from.right : from.left) - frame.left;
-      rule.setAttribute(
-        'points',
+      const points =
         `${start.toFixed(2)},${y.toFixed(2)} ${turn.toFixed(2)},${y.toFixed(2)} ` +
-          `${x.toFixed(2)},${at.toFixed(2)}`,
-      );
+        `${x.toFixed(2)},${at.toFixed(2)}`;
+      // Unchanged is untouched: an attribute set to what it already says still
+      // invalidates, and at either end of the Lift nothing here moves.
+      if (rule.getAttribute('points') === points) continue;
+      rule.setAttribute('points', points);
       // THE TWO DOTS SIT ON TWO OF THE THREE POINTS THE RULE IS ALREADY MADE OF,
       // which is what stops them being a second opinion about where the rule goes:
       // the lit one is the polyline's own last vertex, so "the rule ends in a dot
@@ -259,6 +273,9 @@ export function mountLeaders(root: HTMLElement): (() => void) | void {
       tip?.setAttribute('cy', at.toFixed(2));
       knee?.setAttribute('cx', turn.toFixed(2));
       knee?.setAttribute('cy', y.toFixed(2));
+      // The assembly's ring goes out from the lit dot, so it is centred on it.
+      ping?.setAttribute('cx', x.toFixed(2));
+      ping?.setAttribute('cy', at.toFixed(2));
     }
   };
 

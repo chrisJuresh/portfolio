@@ -1,6 +1,6 @@
 /* GENERATED — do not edit.
-   chrisJuresh/eater-map-site @ 980d553038a0fa558d82f11bfc754604a699a79d
-   Merge pull request #28 from chrisJuresh/export-pseudo
+   chrisJuresh/eater-map-site @ 87eab9a4d07345c07210a272cf65d3f5bb7d6d26
+   Draw restaurant dots at 80% and trainlines at 70%
    node design/eater-cards/vendor.mjs --write */
 
 .eater-cards {

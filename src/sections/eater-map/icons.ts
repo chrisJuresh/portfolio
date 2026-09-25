@@ -50,5 +50,9 @@ const MARKS: Record<Part, string> = {
  * the wrong icon, which is not.
  */
 export function markFor(part: string): string {
-  return (PARTS as readonly string[]).includes(part) ? MARKS[part as Part] : '';
+  // Every shape measured as 1, so the assembly can draw a mark in as a share of
+  // itself; nothing at rest reads it.
+  return (PARTS as readonly string[]).includes(part)
+    ? MARKS[part as Part].replaceAll(' />', ' pathLength="1" />')
+    : '';
 }

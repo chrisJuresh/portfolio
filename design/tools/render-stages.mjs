@@ -284,7 +284,16 @@ async function moment(page, progress) {
         slab: `${Math.round(box.width)}×${Math.round(box.height)}`,
         thickness: value('--eater-map-slab-thickness'),
         radius: value('--eater-map-slab-edge-radius'),
-        lift: Math.round(Number(value('--eater-map-lift')) * 1000) / 1000,
+        // The first Card's, which is where the Lift writes its playhead; the
+        // Section's own `--eater-map-lift` is only the Cards' fallback now.
+        lift:
+          Math.round(
+            Number(
+              getComputedStyle(root.querySelector('.eater-map__card') ?? slab)
+                .getPropertyValue('--eater-map-card-lift')
+                .trim(),
+            ) * 1000,
+          ) / 1000,
       };
     },
     [SECTION, progress],

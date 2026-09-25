@@ -347,8 +347,9 @@ at both resting places and at a deep link, and a reader who asked for less motio
 gets it as a state rather than as a movement, because their turn is a jump rather
 than a travel. It is also still seekable through the seam ADR 0003 asks for —
 `timelines.get('turn').seek(…)` moves it, which is what the Check reads and what
-the Editor scrubs. **It does not give this Section a Timeline**; how the rest of
-the composition arrives is still the later ticket `timeline.ts` describes.
+the Editor scrubs. **It is not this Section's Timeline**, which is the wake below
+and begins where this ends: the copy is inked by the time the page lands, and the
+window switches on once it has.
 
 **It is the ink that arrives and not the box, and that is measured rather than
 preferred.** The obvious two ways to write it both cost the page something at the
@@ -688,13 +689,77 @@ instead**, which is the seam between the index and the thing it indexes. It was
 this box's row gap while the two were inside it, so nothing about that seam
 moved either.
 
+## The wake
+
+The Section's Timeline: the Frame switching on as the page lands here, and going
+dark again when the reader turns away. `timeline.ts` is the choreography and the
+component's wake block is the paint.
+
+**The order, as shares of one wake** (`--projects-panel-wake-time` long, 1.9s):
+
+| from | to | what |
+| ---- | -- | ---- |
+| 0.00 | 0.14 | the chrome's glyphs come up to their own ink |
+| 0.02 | 0.36 | close, minimise, zoom come on one after another, each overshooting and spending the overshoot as a flare (`-wake-flare` is the peak brightness) |
+| 0.05 | 0.31 | the address types itself, one step per character of the Content |
+| 0.10 | 0.56 | the load line runs along the field's foot, and the reload glyph turns once |
+| 0.30 | 0.80 | the veil is drawn down off the recording, a lit edge leading it; the recording comes up from `-wake-dim` as it is uncovered |
+| 0.42 | 1.00 | the points ink in and rise `-wake-rise` into place, in their ranking order, the last finishing with the wake |
+| 0.56 | 1.00 | one glint crosses the marble left to right |
+
+**Nothing a Check measures changes its box, and that is the rule the whole thing
+is built round rather than a constraint it happened to meet.** The `projects-panel`
+Check reads the Frame's chrome one frame after scrolling to this Section — exactly
+where the wake starts — so a light scaled up from nothing, a reload glyph rotated
+in its own box or a recording zoomed and settled would each fail it at a different
+moment of the wake, and a pass would depend on how fast the machine was. So the
+Frame is touched only in paint: opacity, a `clip-path`, a `filter`, a rotation of
+the reload's `svg` inside the box the Check measures, and two pseudo-elements that
+own no box anyone reads — the veil on the content box and the glint on the Plinth.
+Both carry `pointer-events: none`, which is what keeps the Check's two
+`elementFromPoint` probes answering the Frame.
+
+**The points are the one thing that travels**, and they can because the Check
+reads their column as one box, and a `translate` moves nothing's layout. They are
+also what the `moments` Check reads the Timeline through: `data-projects-panel-point`
+is the mark, and the points are 13px apart between progress 0 and 1 at DESK. That
+reverses the reason given above for the copy not travelling, on purpose: the copy
+arrives *during* the turn, where a sliding paragraph would argue with the page
+moving under it; the points arrive *after* it, on a page that is standing still.
+
+**Gated on `data-projects-panel-waking`, which is there only short of 1.** Every
+wake rule is a descendant of the attribute, so at rest none of them is in the
+cascade — no filter, no layer, no pseudo-element — and the resting page is the page
+as it was before the wake existed. The same is what makes a reader who never runs
+the script, or asked for stillness, get the window lit: nothing is hidden in the
+stylesheet and uncovered later.
+
+**Everything on the stage reads custom properties the Timeline writes on the STAGE**,
+and the lights are tweened as pairs — the real one and the reflection's — so the
+window in the stone wakes with the window standing on it for nothing. The veil
+inside the copy is flipped with the copy, so in the stone it lifts bottom-up, which
+is what a mirror shows. Nothing is written on the Section's root per frame: only the
+gate, twice a wake.
+
+**Where it fires.** Inside the band, on this Section's resting place to the pixel —
+`portOf()` less two, for the ScrollTrigger reason the Lift gives — and not past it,
+so a turn away starts the window going dark the moment it starts. Going dark takes
+half the time waking does. Outside the band there is no resting place, so it wakes
+once the stage is 70% of the way up the window and goes dark when the Section has
+gone. A deep link opens the document here with the window already on screen, so a
+reader already standing on it at mount is given the resting composition rather than
+having it taken away to be given back.
+
+**The glint is narrow on purpose.** The first cut was a band a third of the
+slab wide at a third of an alpha and read as a haze drawn over the stone — the
+angular rule in `docs/agents/plinth-marble.md`, met again. It is a hot core with
+two soft shoulders now, about a twentieth of the slab across.
+
 ## What is still nobody's
 
-- **The Panel's own motion.** The live page's exit treatments — the text lifting,
-  the Frame receding, the Plinth sinking, mixable, five numbers each — are what
-  the rework session chooses between, and Variants are the shape that choice now
-  has. `timeline.ts` exports nothing, which is how the loader is told there is
-  nothing to register.
+- **The Panel's exit treatments** from the live page this was ported from — the
+  text lifting, the Frame receding, the Plinth sinking — are still unbuilt. The wake
+  is an arrival and its reverse, not those.
 - ~~**Which stone is drawn is settled in two places now.**~~ **Settled here, and
   only here.** It was declared in this Section's `tokens.css` AND in the
   hand-written page's stylesheet, and `design/legacy/plinth-studio.py` rewrote

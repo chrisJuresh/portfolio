@@ -605,11 +605,18 @@ BOXES, which made every crosser look 90 to 190px WIDER than the word and would
 have sized the roof off the column instead of off the letters.
 
 **Its sides are feathered, because the straight edges were reported.** The right
-side dissolves back into the word over half the cap and hangs 0.08 of the cap
-past the S: every crosser's ink stops at least **0.64 of the cap** short of the
-word's right edge, the Gallery's copy starts **0.536** past it at all four windows
-(33 to 69px — the ratio is the same everywhere), and at 1536x760 the Gallery's
-frame starts **0.127** past it, so none of them is reached. The left side cannot
+side is opaque to the S's outer edge and dissolves over **0.12 of the cap** past
+it (`--front-screen-cut-roof-feather`): the Gallery's copy starts **0.536** past
+the word at all four windows (33 to 69px — the ratio is the same everywhere), and
+at 1536x760 the Gallery's frame starts **0.127** past it, so the fade finishes in
+that gap and reaches neither. It used to dissolve half a cap back INTO the word,
+which is safe for the crossers — their ink stops at least **0.64 of the cap**
+short of the word's right edge — but it put the fade's middle in the S's bowl, so
+the letter stood half on the ground and half on the marble or the frame, and that
+was reported as the roof "ending down the middle of the S". **The frame is not
+beside the word at every window**: at 1100x700 it starts under the E, and at 1920
+and 2560 under the S, so there the roof hides its left edge and a longer feather
+reads as a smudge on its white chrome — which is the other bound. The left side cannot
 feather inward — every crosser starts on the word's own left edge — so it hangs
 0.12 of the cap into the Rail's column, whose words stop at least 0.18 short of
 it. What that bought is the marble and the Eater Map's hairlines going soft into
@@ -805,6 +812,43 @@ down there, including something a Section adds later. The DOM does not report it
 own listeners, so that one group asks Chromium through `DOMDebugger`, and it is
 the only place in the suite that speaks CDP.
 
+### And the snap stands aside with them, or every notch is two
+
+**Past the last port the mandatory snap is off too, and that is the fix for "one
+notch scrolls the Catalogue twice".** Measured with genuine Windows wheel ticks
+(`SendInput` into a headed Chromium) at 1440x900: one tick delivered ONE `wheel`
+event of 100px, and the page eased 100px, all but stopped, and eased a second
+100px — every tick, down and back up. A bare page carrying nothing but
+`scroll-snap-type: y mandatory` and one Section taller than the window did the
+same; the same page without the snap moved 100px. So it is the browser's, and
+none of the Kernel's scripts: **at the end of a wheel scroll Chromium snaps in the
+notch's direction from where the notch LANDED**, and inside a snap area taller
+than the window every position is a snap position, so that snap is the notch
+again. "The snap relaxes inside a tall Section" is true of where the page may
+rest and says nothing about how Chromium gets it there.
+
+**No headless wheel shows it.** `page.mouse.wheel` and a raw CDP
+`Input.dispatchMouseEvent` both deliver precise pixel deltas, which Chromium
+applies in one frame and never animates, so every headless run moved exactly
+once and looked fine. Reproduce it with an OS-level tick into a headed browser.
+
+Two ways of putting the snap back were wrong, and each re-broke it the other way:
+
+- **On the scroll that crosses the port, coming back up.** The notch was still in
+  the air, landed on the port with the snap on, and Chromium's directional snap
+  carried it on to the Eater Map's — 905px for a notch of 100.
+- **After a short silence in the scroll.** Chromium's `scrollend` for a wheel notch
+  arrives about 380ms after the last frame that moved, and its end-of-scroll snap
+  is taken then — so a snap put back 120ms after the page stopped was on in time
+  for it, and did the same.
+
+So `page-turn.ts` puts it back on `scrollend` after the reader crosses back over
+the port, and if the notch overshot, eases onto the nearest port first rather than
+switching the snap on under a page that is not on one, which Chromium does as a
+jump. The root is written only when the snap actually changes, so the Catalogue
+still writes nothing on the root while it is read. The `turn` Check reads the
+root's computed snap at the same four places it reads the listeners.
+
 ## The page's own type size
 
 `faces.css` sets the root `font-size` — a zoom the author owns times a ceiling,
@@ -935,6 +979,97 @@ photograph from 288px wide to 250px, because at 100% the strip was already stand
 on its own `--front-screen-strip-max` ceiling and the fold had nothing left to give. Making the
 photographs BIGGER is therefore not a zoom at all: it is the type giving up some of
 the budget, which is a change to the Section's ladder rather than to this number.
+
+## What a frame costs: a custom property on the root is the whole page
+
+**Changing an inherited custom property on an element recalculates the style of
+every element under it, whether or not anything reads it.** Chromium has a fast
+path for an inherited change — a descendant whose own rules did not change just
+re-inherits — and a custom property defeats it: each descendant re-runs its whole
+cascade and re-substitutes every `var()` it carries, and this page carries a lot
+of them. Measured in-page at 1440x900, one write and one forced flush, 1441
+elements:
+
+| written on `:root` | ms |
+| --- | --- |
+| any custom property, even one nothing reads | 11–16 |
+| a registered one, `inherits: true` | 17 |
+| a registered one, `inherits: false` | 0.1 |
+| `color` | 1.5 |
+| the same custom property on `.front-screen` (170 elements) | 0.9 |
+| …on `.eater-map` (1009 elements, the vendored Cards) | 9.4 |
+
+So a number written per frame belongs on the smallest box that reads it. Two were
+not: `--landing-past`, which now runs on the word itself off a scroll timeline
+(the hold above), and the Lift's tween of the Eater Map's root, which is gone
+(`src/sections/eater-map/NOTES.md`). The other half was reads: the hold and the
+Rail asked `getComputedStyle` and `getBoundingClientRect` in the scroll event,
+straight after the Turn had dirtied the root, so each forced that recalculation
+mid-frame and the frame's own style pass ran it again. They read `measured()` in
+`page-turn.ts` now — the ports as the last box-resize left them. `cut-morph.ts`
+reads its stagger once; `leaders.ts` reads every rect before it writes.
+
+Traced across every turn at 1440x900 against `a7e5fc2`, before either the
+scroll-timeline change or this one, main-thread time in each 1.4s window:
+Eater Map → Catalogue 1000 → 360ms, scrolling the Catalogue 1270 → 360ms,
+Catalogue → Eater Map 840 → 575ms and 11 dropped frames → 0–1, Eater Map →
+Gallery 765 → 260ms. Dark at DPR 2 moves the same way. The Catalogue's share is
+mostly `--landing-past`; the Eater Map's is mostly the Lift.
+
+**`--turn` was the last of them, and it is written on boxes now, not the root.**
+The first page turn wrote it on the root every frame, with `--ground`, `--ink`,
+`--ink-soft` and the Effect Stack's `--fx-veil` derived there — a whole-document
+restyle per frame, forced inside the scroll handler: ~25ms of every ~30ms frame,
+so that turn ran at 38–42fps while every other ran at 60. It is `inherits: false`
+now (`ground.css`), and `turn.ts` writes it on the root — whose own background
+and colour read it directly — and on each of the body's top-level boxes, which
+derive the ground and the ink for themselves (`body > *`) and hand `--turn` down
+with `body * { --turn: inherit }`. The Sections' own rules read exactly what they
+read before. At refresh, `turn.ts` sorts the boxes: the ones the reader can see
+while the Turn is between its ends are written every frame, and the rest — the
+Eater Map and the Catalogue, 1132 of 1486 elements — only when the Turn reaches
+an end, when anything but the scroll moves it, or 150ms after the scroll stops.
+A write and a flush went from 14ms to 2.5ms, and the first turn runs at 57–60fps
+in both directions. Every element's computed paint was compared against the
+build before, scrolled and seeked through the crossing at five windows (both
+themes at 1440x900 and 390x844): no difference on screen anywhere.
+
+Four things about it are easy to break, and the first is silent. **Anything
+declared on `:root` from `--turn`, `--ground` or `--ink` puts the whole-document
+restyle straight back** — it is then the root's inherited custom property, and
+`--fx-veil` was exactly that until it moved to `.fx`. **Pinning a subtree does not
+stop the restyle**: redeclaring every changing property on the Eater Map with a
+constant, so its computed style never moved, measured 15ms against 14 —
+Chromium restyles the whole subtree of the element whose inherited custom
+property changed, and does not stop where a descendant turns out unchanged. So
+the only lever is WHICH element is written. **A probe that reads the ground, the
+ink or the veil has to stand inside a box**, not on the root or the body; the
+`effect-stack` Check appends its probe to `.fx` for that reason. And **the sort is
+geometry**, taken at refresh with a pixel of grace — the Eater Map's top IS the
+Panel's foot in the band — so a Section that later grows into the crossing is
+wrong until the scroll stops, which costs one late frame and not a wrong colour.
+
+**The very first turn of a fresh browser still stalls ~430ms, and that is not the
+page.** It is the GPU process compiling programs for tiles it has never drawn
+(`D3DCompile` under `cache_miss`, inside one 350ms raster flush) as the Gallery
+comes into view; every thread is otherwise idle. A second tab in the same browser
+turns without it, because the program cache is the GPU process's — so a reader
+meets it once per browser session at most, and Chrome's on-disk shader cache
+normally carries it across sessions (a persistent headless profile here did not,
+so that half is unmeasured). A harness that launches a new browser meets it every
+run and reports the first turn at ~18fps: measure a second tab, or a second turn.
+
+**`content-visibility: auto` does not help here, and one reading said it did.**
+Chromium keeps an `auto` box rendered while it is within about a screen and a
+half of the viewport, and every Section is one screen from the next, so nothing
+is ever skipped while it matters. Set from script, a box starts locked until the
+first intersection pass — a flush timed in the same task sees it skipped and
+reads 3ms where the real frame pays 15.
+
+**Profiling a turn: keep the pointer off the photograph strip.** A notch over a
+photograph is the strip's (`wheel.ts`), so a harness wheeling at the window's
+centre times the strip's step and not the page's turn — and on a fresh load does
+not turn the page at all.
 
 ## Two things a Check has to know
 
@@ -1341,6 +1476,24 @@ there before the browser goes idle. The chunks are still split and still fetched
 late; what changed is that they are fetched with a still page rather than a moving
 one. **The timeout is a deadline and not a delay** — a page that never goes idle
 must still mount.
+
+**And the queue does not start until the page's opening has finished moving,
+because IDLE IS NOT STILL.** The Front Screen composes itself for its first 2.6s,
+and most of that reveal is masks, clips, filters and tracking — Chromium animates
+those on the main thread, not the compositor. `requestIdleCallback` fires in the
+gaps between those frames, so the queue's first mount (the Eater Map's) landed
+about half a second into the opening, and every track froze for as long as that
+mount took. Measured cold at 1600x900 with the GPU: a 190–250ms task and a
+250ms frame gap at full speed; at 4x CPU throttling a 1.1–1.2s task and a 1.5s
+gap — the "stuck for a second, then carries on" the author saw. `whenOpened`
+waits for every finite animation on the document's clock that is running when
+the Kernel boots. The Moonlight's breath is infinite and never counts, and a
+scroll-driven animation runs on a different clock. The wait is capped by
+`OPENING_BY`, which is also what lets the in-app pane mount anything at all,
+since an animation that never ticks never finishes. With the wait in place, no
+long task lands inside the reveal at full speed, and the mount runs just after
+it ends. The price is that a reader who turns the page during the first 2.6s
+brings back the mid-turn mount the observer used to cause.
 
 Two consequences worth knowing. A Check's `settle()` no longer needs the page
 scrolled through every Section before it will report them mounted. And the in-app

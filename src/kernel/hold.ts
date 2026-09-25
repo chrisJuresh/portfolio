@@ -1,4 +1,4 @@
-import { portOf, ports } from './page-turn';
+import { measured } from './page-turn';
 
 /**
  * PROJECTS, HELD AT THE LANDING for as long as the Sections that stand it in
@@ -80,12 +80,15 @@ const SLACK = 1;
  * Gallery's own box.
  */
 function run(): { from: number; to: number } | null {
-  if (ports().length < 2) return null;
+  // The cached reading and not a live one: this runs on every scroll event, and
+  // page-turn.ts's `measured()` says what asking live cost there.
+  const { ports, of } = measured();
+  if (ports.length < 2) return null;
   const words = [...document.querySelectorAll<HTMLElement>('[data-section][data-landing-word]')];
   const first = words[0];
   const last = words[words.length - 1];
   if (!first || !last || first === last) return null;
-  return { from: portOf(first), to: portOf(last) };
+  return { from: of(first), to: of(last) };
 }
 
 export function mountHold(): void {

@@ -24,7 +24,7 @@
  * server at the top of the document and writes nothing until the reader moves.
  */
 
-import { portOf } from '../page-turn';
+import { measured } from '../page-turn';
 import { onTurn } from '../turn';
 
 /** A pixel of travel is "already there" — the same slack page-turn.ts uses. */
@@ -66,10 +66,13 @@ export function mountRail(): void {
   const first = named[0];
   if (!first) return;
 
+  // Off the cached reading, because this runs on every scroll event: see
+  // `measured()` in page-turn.ts for what asking the layout live cost.
   const at = (): HTMLElement => {
+    const { of } = measured();
     let found = first;
     for (const section of document.querySelectorAll<HTMLElement>('[data-section]')) {
-      if (portOf(section) > window.scrollY + SLACK) break;
+      if (of(section) > window.scrollY + SLACK) break;
       const entry = named.find((one) => one.dataset.railFor === section.id);
       if (entry) found = entry;
     }

@@ -270,6 +270,28 @@ export async function settle(page) {
   await page.evaluate(() => document.fonts.ready);
   await page.waitForLoadState('networkidle').catch(() => {});
 
+  // And no Section still arriving. The Front Screen's reveal is a set of CSS
+  // animations from first style resolution, and on a warm cache everything above
+  // can be over while it is still rising lines of type into place — a box read
+  // then is read mid-flight, and a box held through a scroll is seen to move by
+  // something that is not the Timeline being asked. FINITE animations on the
+  // DOCUMENT timeline only: the Effect Stack and the Moonlight breathe for ever,
+  // and a scroll timeline's `finished` never settles. Bounded, so a stuck one is
+  // a reading taken early rather than a hang.
+  await page.evaluate(async () => {
+    const arriving = [...document.querySelectorAll('[data-section]')]
+      .flatMap((root) => root.getAnimations({ subtree: true }))
+      .filter(
+        (one) =>
+          one.timeline === document.timeline &&
+          Number.isFinite(Number(one.effect?.getComputedTiming().endTime)),
+      );
+    await Promise.race([
+      Promise.all(arriving.map((one) => one.finished.catch(() => {}))),
+      new Promise((give) => setTimeout(give, 6000)),
+    ]);
+  });
+
   // A Section stuck at `pending` is a failure for whichever Check is asking, not
   // for this helper — so it is reported rather than thrown, and the Check names
   // which mount point never arrived.

@@ -502,3 +502,20 @@
   --projects-panel-contact-far-at: 72%;
   --projects-panel-contact-ends: 3%;
 }
+
+/* ---------------------------------------------------------------------------
+   THE WAKE: the window switching on as the page lands on this Section.
+
+   How long the whole of it takes from dark to the resting composition, how far
+   each engineering point rises as it inks in, how bright the lights flare as
+   they come on, how dim the recording is before the veil has passed it, and how
+   strong the glint is that crosses the marble last. Every one is read where the
+   motion is computed, so a drag shows on the next wake rather than on a reload.
+   timeline.ts is the choreography and NOTES.md says why nothing measured moves. */
+.projects-panel {
+  --projects-panel-wake-time: 1.9s;
+  --projects-panel-wake-rise: 0.9em;
+  --projects-panel-wake-flare: 2.6;
+  --projects-panel-wake-dim: 0.35;
+  --projects-panel-wake-glint: 0.55;
+}

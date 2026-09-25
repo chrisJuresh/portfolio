@@ -90,15 +90,27 @@ takes it off with the rest.
 ## The re-theme
 
 The Slab is a **dark** map. Eater's own is light, and it is not going dark to suit
-a portfolio, so the three things that make it dark are done to the modules Eater's
-dev server serves, **on their way to the browser**, from a declaration in
-`slab.json`:
+a portfolio, so what makes it dark is done to the modules Eater's dev server
+serves, **on their way to the browser**, from a declaration in `slab.json`:
 
 | parameter | what it is | shipped at | matches |
 | --- | --- | --- | --- |
-| `retheme.flavor` | protomaps' flavour, stated at both of Eater's style call sites | `"dark"` | 2 |
+| `retheme.flavor` | the basemap's colour table. `buildFlavor()` returns protomaps' own named flavour instead of Eater's hand-tuned light one | `"dark"` | 1 |
 | `retheme.drop` | basemap layer ids filtered out at the seam every layer passes through — the shops, the theatres, the door numbers | `["pois", "address_label"]` | 1 |
-| `retheme.markerOpacity` | the flat opacity the restaurant markers composite at. Eater's own `0.42` reads maroon on a dark ground | `0.82` | 1 |
+| `retheme.markerOpacity` | the flat opacity the restaurant markers composite at | `null` — Eater's own `0.8` | 1 |
+
+**Only the basemap goes dark.** Eater's Refined style (eater-map-site `62bb6ea`)
+writes its land, roads and labels as one table in `buildFlavor()` over protomaps'
+`light`, and draws its rail, its white casings, its station dots and its ringed
+markers on top in their own colours. The rewrite swaps the table and nothing else,
+so the Slab carries the app's current rail and markers on a dark ground. Before
+Refined the flavour was named at two call sites and the markers composited at
+`0.42`, which read maroon here and was lifted to `0.82`; Refined's own `0.8` needs
+no lifting, so that rewrite is declared and not planned.
+
+The Slab has to stay dark because the Cards are glass **computed off it**: over a
+light map the details Card turns white and its words wash out. That was measured
+on the page when Refined arrived, not assumed.
 
 ### Why it lives here and not in the Eater checkout
 
@@ -118,8 +130,8 @@ restaurant already was.
 
 ### Reversing it
 
-Set `flavor` back to `"light"`, `drop` to `[]` and `markerOpacity` to `null`, and
-the run reproduces the Slab that shipped before #188. That is stronger than the
+Set `flavor` to `null`, `drop` to `[]` and `markerOpacity` to `null`, and the run
+reproduces Eater's own light map. That is stronger than the
 rewrites happening to be no-ops: a parameter still holding Eater's own value —
 each rewrite's `default` — is **not planned at all**, so no route is registered
 and Playwright never stands between vite and the page. Turning one off is writing
@@ -175,9 +187,8 @@ the canvas its restaurant markers are drawn on.
 
 **The markers stay.** They are Eater's data drawn into the map rather than
 interface laid over it, and a transit map with no restaurants on it is not the
-Eater map. They composite a good deal more opaquely than Eater draws them, because
-Eater's `0.42` is tuned against a light ground and reads maroon on this one —
-`retheme.markerOpacity` above. The Section's three Cards are the interface, and
+Eater map. They composite at Eater's own `0.8`, which holds on a dark ground as
+well as a light one — `retheme.markerOpacity` above. The Section's three Cards are the interface, and
 they are drawn by the page rather than captured (#171).
 
 **The shops, the theatres and the door numbers go**, and they go through the

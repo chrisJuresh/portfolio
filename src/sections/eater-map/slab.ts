@@ -30,7 +30,7 @@ const SLAB_BASE = '/portfolio/img/eater/';
  * re-captured Slab that kept this URL is a Slab nobody is served. `capture-slab.mjs`
  * prints the value to put here as the last line of a run.
  */
-const VERSION = '?v=057d4b98';
+const VERSION = '?v=8e9f296c';
 
 /**
  * The picture, and the phone it is a picture of.
