@@ -7,7 +7,7 @@
  * In order: the grid's three verticals draw down the frame and each Point's
  * hairline shoots out of its row across it; the serif title rises out of its four
  * lines and the copy comes up under it; the four Points arrive a row at a time
- * with their icons drawing themselves; a scan passes down the map, lighting it;
+ * with their icons drawing themselves; a scan line passes down the map;
  * and as each Card leaves the map its rule draws out of the row that names it,
  * turns its shoulder, and lands on the part with the lit dot popping and a ring
  * going out from it. NOTES.md, "The assembly", has the layout and the rule it is
@@ -114,7 +114,8 @@ export function assemble(
   track(all('.eater-map__icon'), '--eater-map-ink', 0.12, 0.3, 'power2.inOut', 0.05);
 
   // ---- the map ------------------------------------------------------------------
-  // One scan down the Slab from its head to its foot, lighting the map behind it.
+  // One scan line down the Slab from its head to its foot, over a map that is
+  // never dimmed.
   // Timed to cross while the Cards are coming off the map, because the map is
   // mostly Cards until they have: a scan that has finished before the first one
   // leaves is a scan nobody sees.

@@ -815,7 +815,7 @@ Check is for.
 The showreel pass (after the Projects Panel's wake and the Catalogue's arrival)
 put the rest of the screen on the Lift's playhead: `assemble.ts` lays it out and
 the stylesheet's "the assembly" block spends it. **Progress 0 is flat and DARK
-now** — the grid undrawn, the words and the Points gone, the map veiled — and the
+now** — the grid undrawn, the words and the Points gone — and the
 reader turns onto that and watches it come on:
 
 | progress | what |
@@ -823,7 +823,7 @@ reader turns onto that and watches it come on:
 | 0 – 0.34 | the three verticals draw down the frame; each Point's hairline shoots out of its row both ways |
 | 0.02 – 0.48 | the title rises out of its four line boxes; the copy's rule is drawn across and the copy comes up under it |
 | 0.08 – 0.56 | the Points a row at a time — number typed on, title, figure — with each icon drawn along its strokes |
-| 0.12 – 0.62 | one scan down the map, head to foot: an accent line lighting the map behind it |
+| 0.12 – 0.62 | one scan down the map, head to foot: an accent line with a glow trailing it |
 | 0.24 – 1 | the three Cards climb with an overshoot; each rule draws out of its row to its part, the shoulder's dot pops as the line turns, the lit dot pops as it lands and sends out a ring |
 
 **THE ONE RULE IT IS BUILT ROUND: nothing a rule is drawn from moves.** A clip, a
@@ -833,8 +833,10 @@ plane. So every rule is attached at every moment, which the `eater-map` Check re
 at the flat end and half way up exactly as it did, and the row's accent rule is
 not touched at all because the leader is that line continued and has to be its
 colour. Nothing in the stage goes to opacity 0 either: the Check refuses a hidden
-box there at both ends, so the map is veiled rather than hidden and the scan is
-`display: none` at rest rather than transparent.
+box there at both ends, so the scan is `display: none` at rest rather than
+transparent. **The map is not dimmed at any moment.** It was, ahead of the scan,
+so the line read as switching the map on; the author took the veil out, and the
+scan is the line alone.
 
 **GATED, AND NEVER BELOW THE BAND.** Every rule is under
 `data-eater-map-assembling` on the Section, which is there only while the playhead
@@ -867,7 +869,7 @@ Four things that are not obvious from the code:
 
 What the author tunes is `--eater-map-lift-time` (2.2s — the Cards take the back
 three quarters, about as long as the whole Lift used to), the rise a word comes up
-by, how dark the map is ahead of the scan and how bright its line is, and how far
+by, how bright the scan's line is, and how far
 the ring goes. Where each track sits on the playhead is `assemble.ts`'s, and is a
 choreography rather than a Token.
 

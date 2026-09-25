@@ -1826,8 +1826,10 @@ import './tokens.css';
     stroke-dashoffset: calc(1 - var(--eater-map-ink, 1));
   }
 
-  /* The scan down the map, head to foot: lit behind it, dimmed ahead of it, with
-     a thin line of the accent at its front and a glow trailing it. The image is
+  /* The scan down the map, head to foot: a thin line of the accent with a glow
+     trailing it, and nothing else — the map is NOT dimmed ahead of it, which it
+     was once and the author took out: the map is the map at every moment. The
+     image is
      two and a half Slabs tall with the line half way down, so at either end the
      line and its glow are wholly off the picture. Its clip is the Still's own,
      copied by assemble.ts. */
@@ -1850,8 +1852,7 @@ import './tokens.css';
             transparent calc((1 - var(--eater-map-scan-glow)) * 100%)
           )
           50%,
-        rgb(0 0 0 / var(--eater-map-scan-dim)) 50.6%,
-        rgb(0 0 0 / var(--eater-map-scan-dim)) 100%
+        transparent 50.6%
       )
       0 calc((1 - var(--eater-map-sweep, 1)) * 100%) / 100% 250% no-repeat;
   }
