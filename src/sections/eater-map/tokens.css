@@ -635,8 +635,10 @@
      the distance still to travel. Read per gesture rather than at mount, so
      dragging it in the Editor changes the next Lift without a reload — the one
      thing a Token a Timeline reads has to do to be draggable at all
-     (src/sections/NOTES.md). */
-  --eater-map-lift-time: 1.15s;
+     (src/sections/NOTES.md). The whole of the assembly as well as the Cards'
+     climb since the showreel pass, which is why it is twice what it was: the
+     Cards take the back half of it, as long as they ever did. */
+  --eater-map-lift-time: 2.2s;
 
   /* And how long one piece takes to go back down when the reader hovers it or the
      Point that names it, and to come back up when they leave (#213). Spent in
@@ -812,4 +814,18 @@
      to within a point — but stated as a veil on --ink rather than as white, so
      the light theme takes it as ink on paper instead of vanishing. */
   --eater-map-grid-veil: 92%;
+}
+
+/* ---------------------------------------------------------------------------
+   THE ASSEMBLY: the frame, the words and the map coming on as the Cards leave
+   the Slab, on the Lift's own playhead (assemble.ts). How far a word rises as it
+   comes up, how dark the map is ahead of the scan and how bright the scan's line
+   is, and how far the ring a lit dot sends out goes, in the dot's own radii.
+   Every one is spent by the stylesheet, so a drag shows on the next Lift.
+   NOTES.md, "The assembly". */
+.eater-map {
+  --eater-map-assemble-rise: 0.55em;
+  --eater-map-scan-dim: 0.62;
+  --eater-map-scan-glow: 1;
+  --eater-map-ping-reach: 7;
 }

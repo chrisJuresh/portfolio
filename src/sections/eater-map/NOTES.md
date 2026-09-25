@@ -35,7 +35,8 @@ Here: the masthead PROJECTS, the four authored lines of the serif
 project title under it, the copy at the foot of that column, the four numbered
 points down the right edge with a number and an icon each, the Exploded View, the
 four leader lines that join the one to the other and the two dots on each, the
-**Lift** that assembles it, the **Drop** that puts one piece back on the map under
+**Lift** that assembles it and the **assembly** that brings the rest of the screen
+on with it, the **Drop** that puts one piece back on the map under
 a reader's pointer (#213), the **glass** every Card's surfaces are made of
 (#190), the **grid** the whole composition sits across — four horizontals that
 are the Points' own rules and three verticals that are the standing blocks' own
@@ -809,14 +810,79 @@ than hidden — a re-vendoring that ships a legitimately square-cornered surface
 the build, and the answer to that is a decision about the drawing, which is what a
 Check is for.
 
+## The assembly
+
+The showreel pass (after the Projects Panel's wake and the Catalogue's arrival)
+put the rest of the screen on the Lift's playhead: `assemble.ts` lays it out and
+the stylesheet's "the assembly" block spends it. **Progress 0 is flat and DARK
+now** — the grid undrawn, the words and the Points gone, the map veiled — and the
+reader turns onto that and watches it come on:
+
+| progress | what |
+| --- | --- |
+| 0 – 0.34 | the three verticals draw down the frame; each Point's hairline shoots out of its row both ways |
+| 0.02 – 0.48 | the title rises out of its four line boxes; the copy's rule is drawn across and the copy comes up under it |
+| 0.08 – 0.56 | the Points a row at a time — number typed on, title, figure — with each icon drawn along its strokes |
+| 0.12 – 0.62 | one scan down the map, head to foot: an accent line lighting the map behind it |
+| 0.24 – 1 | the three Cards climb with an overshoot; each rule draws out of its row to its part, the shoulder's dot pops as the line turns, the lit dot pops as it lands and sends out a ring |
+
+**THE ONE RULE IT IS BUILT ROUND: nothing a rule is drawn from moves.** A clip, a
+dash, an opacity, a scale about a dot's own centre, and a translate on the number,
+the title and the figure — never on the row, its hook, an anchor, a Card or the
+plane. So every rule is attached at every moment, which the `eater-map` Check reads
+at the flat end and half way up exactly as it did, and the row's accent rule is
+not touched at all because the leader is that line continued and has to be its
+colour. Nothing in the stage goes to opacity 0 either: the Check refuses a hidden
+box there at both ends, so the map is veiled rather than hidden and the scan is
+`display: none` at rest rather than transparent.
+
+**GATED, AND NEVER BELOW THE BAND.** Every rule is under
+`data-eater-map-assembling` on the Section, which is there only while the playhead
+is short of 1 AND the composition has not collapsed — because collapsed, the
+playhead RESTS at 0 (#179), and an ungated flat end would be a phone with no grid,
+no words and no rules for as long as the reader stays. `regime()` is told the
+collapse on every refresh, off the same `--eater-map-collapsed` the Lift asks.
+The attribute is toggled twice a Lift; the properties it spends are written on the
+leaves — a grid line, a title line, a row, a rule, a dot — and never on the root,
+for the reason "What the Lift costs a frame" gives.
+
+Four things that are not obvious from the code:
+
+- **A rule is drawn as a share of itself** — `pathLength="1"` on the polyline and on
+  every icon shape — because the Lift rewrites a rule's points every frame, so its
+  length in pixels is a different number each frame and a dash in pixels would
+  crawl. The gap is TWICE the dash, so no zero-length dash is left at the path's
+  end to be drawn as a round cap.
+- **The shoulder's dot is timed off the rule's own legs.** Its pop is at the moment
+  the draw's `power2.inOut` has covered the first leg's share of the rule, read off
+  the points as the flat frame drew them — which is why `assemble()` runs AFTER
+  `mountLeaders()`.
+- **The scan is cut to the Still's own outline**, which the stage writes inline and
+  may write again when a Token moves, so it is copied each time the gate comes on.
+  It covers the face and not the rolled edge, which is a fillet's width and reads
+  as the glass catching it. It crosses WHILE the Cards leave, because before they
+  have the map is mostly Cards.
+- **The ring is a third circle per rule**, `data-eater-map-ping`, centred by
+  `leaders.ts` on the lit dot's vertex and `display: none` outside the assembly.
+
+What the author tunes is `--eater-map-lift-time` (2.2s — the Cards take the back
+three quarters, about as long as the whole Lift used to), the rise a word comes up
+by, how dark the map is ahead of the scan and how bright its line is, and how far
+the ring goes. Where each track sits on the playhead is `assemble.ts`'s, and is a
+choreography rather than a Token.
+
 ## What drives the Lift, and the two pixels that decide whether it ever fires
 
 The Timeline is **paused, always**. Nothing plays it: a transport tween moves its
 playhead, which is the Front Screen's arrangement and the Turn's — the Timeline is
-the authority on where the drawing is, and the feel lives in what moves the
-playhead. Every ease inside the Timeline is `none` and the ease is on the transport,
-so the geometry is linear in the progress and a seek gives the frame the composition
-designed rather than a point on a curve.
+the authority on where the drawing is. **The feel moved INTO the Timeline with the
+assembly** (below). It used to be the transport's — every ease inside `none`, one
+`power2.out` on the playhead — and that split cannot survive a playhead with a
+dozen tracks on it: one transport curve is one curve for all of them, and the grid
+drawing itself in the first tenth was squashed into a blink by the ease meant for
+the Cards. So each track carries its own ease, the Cards' is `back.out(1.35)`, and
+the transport is linear; a seek is still the frame the choreography designed, and a
+turn back plays the same choreography backwards, at `LEAVING` of the time.
 
 **A Timeline that plays itself cannot be held.** `hold()` disables every
 ScrollTrigger, which stops a scrub dead — and does not touch a `play()` already in

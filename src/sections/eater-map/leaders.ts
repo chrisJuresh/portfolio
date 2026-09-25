@@ -185,6 +185,8 @@ interface Leader {
   readonly tip: SVGCircleElement | null;
   /** the smaller dot at the shoulder, where the rule turns */
   readonly knee: SVGCircleElement | null;
+  /** the ring the assembly sends out from the lit dot, on the same vertex */
+  readonly ping: SVGCircleElement | null;
 }
 
 /**
@@ -213,7 +215,8 @@ export function mountLeaders(root: HTMLElement): (() => void) | void {
     // drawn between, which is the hole above.
     const tip = overlay.querySelector<SVGCircleElement>(`[data-eater-map-tip="${part}"]`);
     const knee = overlay.querySelector<SVGCircleElement>(`[data-eater-map-knee="${part}"]`);
-    leaders.push({ part, rule, hook, anchor, tip, knee });
+    const ping = overlay.querySelector<SVGCircleElement>(`[data-eater-map-ping="${part}"]`);
+    leaders.push({ part, rule, hook, anchor, tip, knee, ping });
   }
   if (leaders.length === 0) return;
 
@@ -236,7 +239,7 @@ export function mountLeaders(root: HTMLElement): (() => void) | void {
       to: leader.anchor.getBoundingClientRect(),
     }));
     for (const { leader, from, to } of read) {
-      const { rule, tip, knee } = leader;
+      const { rule, tip, knee, ping } = leader;
       // THE HOOK'S CENTRELINE AND NOT ITS TOP EDGE, because the hook IS the row
       // rule's box — the stylesheet lifts it by the rule's weight and gives it
       // that weight as a height, precisely so this line can be a midpoint. A
@@ -270,6 +273,9 @@ export function mountLeaders(root: HTMLElement): (() => void) | void {
       tip?.setAttribute('cy', at.toFixed(2));
       knee?.setAttribute('cx', turn.toFixed(2));
       knee?.setAttribute('cy', y.toFixed(2));
+      // The assembly's ring goes out from the lit dot, so it is centred on it.
+      ping?.setAttribute('cx', x.toFixed(2));
+      ping?.setAttribute('cy', at.toFixed(2));
     }
   };
 
