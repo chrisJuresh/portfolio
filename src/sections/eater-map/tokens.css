@@ -817,13 +817,12 @@
 }
 
 /* ---------------------------------------------------------------------------
-   THE ASSEMBLY: the frame, the words and the map coming on as the Cards leave
-   the Slab, on the Lift's own playhead (assemble.ts). How far a word rises as it
-   comes up, how bright the scan's line is, and how far the ring a lit dot sends out goes, in the dot's own radii.
+   THE ASSEMBLY: the frame and the words coming on as the Cards leave the Slab,
+   on the Lift's own playhead (assemble.ts). How far a word rises as it comes
+   up, and how far the ring a lit dot sends out goes, in the dot's own radii.
    Every one is spent by the stylesheet, so a drag shows on the next Lift.
    NOTES.md, "The assembly". */
 .eater-map {
   --eater-map-assemble-rise: 0.55em;
-  --eater-map-scan-glow: 1;
   --eater-map-ping-reach: 7;
 }

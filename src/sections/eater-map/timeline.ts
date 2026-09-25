@@ -23,9 +23,9 @@ import { assemble } from './assemble';
  * with every Card opaque and every word selectable, and the Timeline's whole job
  * is to travel from there back to where the markup already reads.
  *
- * WHAT THE PROGRESS MEANS. 0 is flat and dark, 1 is raised and lit: the first
- * quarter is the ASSEMBLY — the grid, the words, the Points and a scan down the
- * map coming on (assemble.ts) — and the back three quarters are the three Cards
+ * WHAT THE PROGRESS MEANS. 0 is flat and bare, 1 is raised and whole: the first
+ * quarter is the ASSEMBLY — the grid, the words and the Points coming on
+ * (assemble.ts) — and the back three quarters are the three Cards
  * climbing in the order the app stacks them, each rule drawing out to its part
  * as it goes. That mapping is fixed and holds at every window, so `seek(0.4)` is
  * a deterministic frame for a Check to read and for the Editor to scrub. The

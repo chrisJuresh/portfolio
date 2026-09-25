@@ -823,7 +823,6 @@ reader turns onto that and watches it come on:
 | 0 – 0.34 | the three verticals draw down the frame; each Point's hairline shoots out of its row both ways |
 | 0.02 – 0.48 | the title rises out of its four line boxes; the copy's rule is drawn across and the copy comes up under it |
 | 0.08 – 0.56 | the Points a row at a time — number typed on, title, figure — with each icon drawn along its strokes |
-| 0.12 – 0.62 | one scan down the map, head to foot: an accent line with a glow trailing it |
 | 0.24 – 1 | the three Cards climb with an overshoot; each rule draws out of its row to its part, the shoulder's dot pops as the line turns, the lit dot pops as it lands and sends out a ring |
 
 **THE ONE RULE IT IS BUILT ROUND: nothing a rule is drawn from moves.** A clip, a
@@ -833,10 +832,9 @@ plane. So every rule is attached at every moment, which the `eater-map` Check re
 at the flat end and half way up exactly as it did, and the row's accent rule is
 not touched at all because the leader is that line continued and has to be its
 colour. Nothing in the stage goes to opacity 0 either: the Check refuses a hidden
-box there at both ends, so the scan is `display: none` at rest rather than
-transparent. **The map is not dimmed at any moment.** It was, ahead of the scan,
-so the line read as switching the map on; the author took the veil out, and the
-scan is the line alone.
+box there at both ends. **The map itself is not touched at any moment.** It had
+a veil ahead of a scan line and then the line alone, and the author took both
+out: the map is the map throughout, and what arrives is everything around it.
 
 **GATED, AND NEVER BELOW THE BAND.** Every rule is under
 `data-eater-map-assembling` on the Section, which is there only while the playhead
@@ -848,7 +846,7 @@ The attribute is toggled twice a Lift; the properties it spends are written on t
 leaves — a grid line, a title line, a row, a rule, a dot — and never on the root,
 for the reason "What the Lift costs a frame" gives.
 
-Four things that are not obvious from the code:
+Three things that are not obvious from the code:
 
 - **A rule is drawn as a share of itself** — `pathLength="1"` on the polyline and on
   every icon shape — because the Lift rewrites a rule's points every frame, so its
@@ -859,18 +857,12 @@ Four things that are not obvious from the code:
   the draw's `power2.inOut` has covered the first leg's share of the rule, read off
   the points as the flat frame drew them — which is why `assemble()` runs AFTER
   `mountLeaders()`.
-- **The scan is cut to the Still's own outline**, which the stage writes inline and
-  may write again when a Token moves, so it is copied each time the gate comes on.
-  It covers the face and not the rolled edge, which is a fillet's width and reads
-  as the glass catching it. It crosses WHILE the Cards leave, because before they
-  have the map is mostly Cards.
 - **The ring is a third circle per rule**, `data-eater-map-ping`, centred by
   `leaders.ts` on the lit dot's vertex and `display: none` outside the assembly.
 
 What the author tunes is `--eater-map-lift-time` (2.2s — the Cards take the back
 three quarters, about as long as the whole Lift used to), the rise a word comes up
-by, how bright the scan's line is, and how far
-the ring goes. Where each track sits on the playhead is `assemble.ts`'s, and is a
+by, and how far the ring goes. Where each track sits on the playhead is `assemble.ts`'s, and is a
 choreography rather than a Token.
 
 ## What drives the Lift, and the two pixels that decide whether it ever fires

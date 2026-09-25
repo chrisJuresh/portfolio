@@ -174,11 +174,6 @@ import './tokens.css';
             loading="lazy"
             decoding="async"
           />
-          {/* THE SCAN THE ASSEMBLY PASSES DOWN THE MAP, over the picture and under
-              the Cards, which is where it stands in the paint order. It paints
-              nothing at rest: the assembly's rules are the only ones that give it
-              a box. timeline.ts, assemble.ts. */}
-          <span class="eater-map__sheen" aria-hidden="true" />
           {/* `.eater-cards` is the vendored stylesheet's host and therefore its
               containment: every rule in that file begins with this class, so it
               reaches nothing above this element and nothing above it reaches in. */}
@@ -1824,37 +1819,6 @@ import './tokens.css';
   .eater-map[data-eater-map-assembling] .eater-map__icon > * {
     stroke-dasharray: 1 2;
     stroke-dashoffset: calc(1 - var(--eater-map-ink, 1));
-  }
-
-  /* The scan down the map, head to foot: a thin line of the accent with a glow
-     trailing it, and nothing else — the map is NOT dimmed ahead of it, which it
-     was once and the author took out: the map is the map at every moment. The
-     image is
-     two and a half Slabs tall with the line half way down, so at either end the
-     line and its glow are wholly off the picture. Its clip is the Still's own,
-     copied by assemble.ts. */
-  .eater-map__sheen {
-    display: none;
-  }
-
-  .eater-map[data-eater-map-assembling] .eater-map__sheen {
-    display: block;
-    position: absolute;
-    inset: 0;
-    pointer-events: none;
-    background: linear-gradient(
-        to bottom,
-        transparent 0 44%,
-        color-mix(in oklab, var(--eater-map-accent), transparent 84%) 49.3%,
-        color-mix(
-            in oklab,
-            var(--eater-map-accent),
-            transparent calc((1 - var(--eater-map-scan-glow)) * 100%)
-          )
-          50%,
-        transparent 50.6%
-      )
-      0 calc((1 - var(--eater-map-sweep, 1)) * 100%) / 100% 250% no-repeat;
   }
 
   /* Each rule drawn out of its row, round its shoulder and onto its part, as a

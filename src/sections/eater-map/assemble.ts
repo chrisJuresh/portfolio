@@ -7,10 +7,9 @@
  * In order: the grid's three verticals draw down the frame and each Point's
  * hairline shoots out of its row across it; the serif title rises out of its four
  * lines and the copy comes up under it; the four Points arrive a row at a time
- * with their icons drawing themselves; a scan line passes down the map;
- * and as each Card leaves the map its rule draws out of the row that names it,
- * turns its shoulder, and lands on the part with the lit dot popping and a ring
- * going out from it. NOTES.md, "The assembly", has the layout and the rule it is
+ * with their icons drawing themselves; and as each Card leaves the map its rule
+ * draws out of the row that names it, turns its shoulder, and lands on the part
+ * with the lit dot popping and a ring going out from it. NOTES.md, "The assembly", has the layout and the rule it is
  * built round.
  *
  * PAINT ONLY, AND GATED. Every rule this drives is a descendant of
@@ -113,16 +112,6 @@ export function assemble(
   track(rows, '--eater-map-row-in', 0.08, 0.28, 'power3.out', 0.05);
   track(all('.eater-map__icon'), '--eater-map-ink', 0.12, 0.3, 'power2.inOut', 0.05);
 
-  // ---- the map ------------------------------------------------------------------
-  // One scan line down the Slab from its head to its foot, over a map that is
-  // never dimmed.
-  // Timed to cross while the Cards are coming off the map, because the map is
-  // mostly Cards until they have: a scan that has finished before the first one
-  // leaves is a scan nobody sees.
-  const sheen = root.querySelector<HTMLElement>('.eater-map__sheen');
-  const still = root.querySelector<HTMLElement>('[data-eater-map-still]');
-  if (sheen) track(sheen, '--eater-map-sweep', 0.12, 0.5, 'power2.inOut');
-
   // ---- the rules ----------------------------------------------------------------
   // Each part's rule is timed off the Card it is drawn on, so the line leaves its
   // row as that Card leaves the map and reaches the part while it is still
@@ -162,11 +151,6 @@ export function assemble(
     const now = !collapsed && progress < 1 - REST;
     if (now === on) return;
     on = now;
-    // THE SCAN IS CUT TO THE PICTURE'S OWN OUTLINE, which the stage writes on the
-    // Still and may write again whenever a Token moves — so it is copied at the
-    // moment it is needed rather than once. The two share a containing block and a
-    // container, so the one expression resolves to the same shape on both.
-    if (now && sheen && still) sheen.style.clipPath = still.style.clipPath;
     root.toggleAttribute('data-eater-map-assembling', now);
   }
 
