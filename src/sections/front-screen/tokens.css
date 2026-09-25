@@ -229,8 +229,25 @@
      says why that is still a Token. */
   --front-screen-cut-stagger: 0.05;
 
-  --front-screen-reveal: 0.9s;
-  --front-screen-reveal-rise: 8px;
+  /* ---- the reveal ---------------------------------------------------------
+     The first screen composing itself as the page opens. How long the whole of
+     it takes — every track's start and length is a share of this one number, so
+     it is the tempo — then how far a line of type rises into place and how
+     blurred it starts, how far the years travel in off the right edge, how wide
+     the location's tracking is before it closes up, and how far into its own
+     box each photograph is zoomed before it settles. NOTES.md has the order. */
+  --front-screen-reveal: 2.6s;
+  --front-screen-reveal-rise: 0.6em;
+  --front-screen-reveal-blur: 6px;
+  --front-screen-reveal-reach: 1.4em;
+  --front-screen-reveal-tracking: 0.45em;
+  --front-screen-reveal-zoom: 1.2;
+
+  /* Under the pointer: how long a line takes to be drawn under a link or the
+     Cut Title, and how far a photograph leans in, over how long. */
+  --front-screen-cut-draw: 0.45s;
+  --front-screen-slide-lean-by: 1.04;
+  --front-screen-slide-lean: 0.9s;
 }
 
 /* The switch, on the dark paper: where the thumb stands, and which of its two

@@ -58,69 +58,99 @@ const RATIO_TOLERANCE = 0.01;
 /**
  * The reveal has to be over before anything is measured.
  *
- * It translates the whole Section 8px down for its first 0.9 seconds, and three
- * of the assertions below are in viewport coordinates — a reading taken mid-fade
- * puts the Cut Title 8px LOWER than it belongs, which makes "is it cut by the
- * fold" easier to satisfy rather than harder. `settle()` usually outlasts the
- * animation, and "usually" is how a Check comes to assert less than it says.
+ * It rises every line of type into place and slides the years in off the right
+ * edge over its first couple of seconds, and three of the assertions below are
+ * in viewport coordinates. `settle()` usually outlasts it, and "usually" is how a
+ * Check comes to assert less than it says.
  *
- * The Section's own animations only, and bounded: `document.getAnimations()`
- * would wait on anything infinite the Effect Stack is running, and an await that
- * never resolves is a hang rather than a failure.
+ * EVERY animation under the Section and not only its own — the reveal is a track
+ * per block now, on the blocks and on their pseudo-elements, and the Section
+ * itself animates only for a reader who asked for less motion. On the DOCUMENT
+ * timeline only, and bounded: the roof and the word's release run on scroll
+ * timelines whose `finished` never settles, and an await that never resolves is a
+ * hang rather than a failure.
  */
 async function revealed(page) {
   await page.evaluate(async () => {
     const section = document.querySelector('.front-screen');
     if (!section) return;
-    const done = Promise.all(section.getAnimations().map((one) => one.finished.catch(() => {})));
-    await Promise.race([done, new Promise((give) => setTimeout(give, 2000))]);
+    const done = Promise.all(
+      section
+        .getAnimations({ subtree: true })
+        .filter((one) => one.timeline === document.timeline)
+        .map((one) => one.finished.catch(() => {})),
+    );
+    await Promise.race([done, new Promise((give) => setTimeout(give, 6000))]);
   });
 }
 
 /**
- * The Front Screen held half way through its reveal, and everything needed to
- * say whether the Effect Stack is over it or under it there.
+ * The Front Screen held in the middle of its reveal, and everything needed to say
+ * whether the Effect Stack is over it or under it there.
  *
  * RESTARTED RATHER THAN CAUGHT, and that is the difference between an assertion
- * and a race. The reveal is 0.9s from the page's first style resolution and
- * `open()` waits for `load` — which on a Section carrying five photographs is
- * comfortably longer, on a warm cache especially. A Check that tried to catch the
- * animation live would find nothing to hold on the machine the author runs it on
- * and read as though it had asserted something, which is the shape NOTES.md warns
- * about three times. Clearing `animation-name` for a frame and putting it back is
- * what a browser treats as a NEW animation, so the state can be produced on
- * demand and paused anywhere in its span. Half way, because that is where every
- * property the keyframes touch is unambiguously mid-flight.
+ * and a race. The reveal runs from the page's first style resolution and `open()`
+ * waits for `load` and `settle()` for the network to go quiet, so a Check that
+ * tried to catch it live would find nothing to hold on the machine the author runs
+ * it on and read as though it had asserted something, which is the shape NOTES.md
+ * warns about three times. Clearing `animation-name` across the Section for a
+ * frame and putting it back is what a browser treats as a set of NEW animations,
+ * so the state can be produced on demand and paused anywhere in its span. EACH
+ * track is held at its own middle rather than all of them at one clock time,
+ * because the tracks are staggered — at any one moment most are at an end, and
+ * an end is where a grouping property is least in flight.
  *
  * WHAT THE KEYFRAMES TOUCH IS READ OFF THE STYLESHEET AND NOT OFF THE HELD
- * ELEMENT. The precondition is "this reveal makes the Section a stacking
- * context", and asking the held element whether it is one would be asking the
- * state under test to certify its own precondition — a hold that silently failed
- * would then report that there was nothing to assert. So the rule is read from
- * the CSSOM, and the held element only ever answers the question.
+ * ELEMENTS. The precondition is "this reveal makes something a stacking context",
+ * and asking a held element whether it is one would be asking the state under
+ * test to certify its own precondition — a hold that silently failed would then
+ * report that there was nothing to assert. So which keyframes group is read from
+ * the CSSOM, and the held elements only ever answer the question.
+ *
+ * WHAT IS ASKED OF EACH HELD ELEMENT is the thing the old Section-wide fade got
+ * wrong: a box that groups has to be grouped AT the type's z — itself, or the
+ * nearest positioned ancestor with a z of its own, above both lit layers. One
+ * that reaches the root without meeting such a box is painted at `auto`, under
+ * `paper` and `halftone`, and that is the halftone printed through it for as long
+ * as it is arriving.
  *
  * THIS LEAVES THE SECTION MID-REVEAL, so whatever calls it goes last: anything
- * measured afterwards is measured through a fade and 4px of rise.
+ * measured afterwards is measured through masks and rises.
  */
 async function heldReveal(page) {
   await page.evaluate(() => {
-    const section = document.querySelector('.front-screen');
-    if (section instanceof HTMLElement) section.style.animationName = 'none';
+    const stop = document.createElement('style');
+    stop.id = 'front-screen-check-restart';
+    stop.textContent =
+      '.front-screen, .front-screen *, .front-screen *::before, .front-screen *::after ' +
+      '{ animation-name: none !important }';
+    document.head.append(stop);
   });
   await page.evaluate(
     () => new Promise((next) => requestAnimationFrame(() => requestAnimationFrame(next))),
   );
-  await page.evaluate(() => {
-    const section = document.querySelector('.front-screen');
-    if (section instanceof HTMLElement) section.style.animationName = '';
-  });
+  await page.evaluate(() => document.getElementById('front-screen-check-restart')?.remove());
   return page.evaluate(() => {
     const section = document.querySelector('.front-screen');
     if (!(section instanceof HTMLElement)) return null;
 
-    const declared = getComputedStyle(section).animationName;
-    /** Every property the named keyframes set, at any frame. */
-    const touches = new Set();
+    /** The properties that make a box a stacking context while they are in flight. */
+    const GROUPING = /^(opacity|transform|translate|scale|rotate|filter|clip-path|mask|isolation)/;
+
+    // What the stylesheet says the reveal is: every keyframes rule the Section's
+    // boxes and pseudo-elements name on the document timeline, and whether any of
+    // its frames sets a property that groups.
+    const named = new Set();
+    for (const element of [section, ...section.querySelectorAll('*')]) {
+      for (const pseudo of [null, '::before', '::after']) {
+        const style = getComputedStyle(element, pseudo);
+        if (style.animationTimeline && style.animationTimeline !== 'auto') continue;
+        for (const name of style.animationName.split(',')) {
+          if (name.trim() !== 'none') named.add(name.trim());
+        }
+      }
+    }
+    const grouping = new Set();
     for (const sheet of document.styleSheets) {
       let rules;
       try {
@@ -128,42 +158,140 @@ async function heldReveal(page) {
       } catch {
         continue;
       }
-      for (const rule of rules) {
-        if (!('name' in rule) || rule.name !== declared || !('cssRules' in rule)) continue;
-        for (const frame of rule.cssRules) {
-          for (const property of frame.style) touches.add(property);
+      const walk = (list) => {
+        for (const rule of list) {
+          if ('name' in rule && named.has(rule.name) && 'cssRules' in rule) {
+            for (const frame of rule.cssRules) {
+              for (const property of frame.style) {
+                if (GROUPING.test(property)) grouping.add(rule.name);
+              }
+            }
+          } else if ('cssRules' in rule) {
+            walk(rule.cssRules);
+          }
         }
-      }
+      };
+      walk(rules);
     }
 
-    const running = section.getAnimations();
+    const running = section
+      .getAnimations({ subtree: true })
+      .filter((one) => one.timeline === document.timeline);
     for (const one of running) {
+      const timing = one.effect?.getComputedTiming();
       one.pause();
-      one.currentTime = (Number(one.effect?.getComputedTiming().duration) || 0) / 2;
+      one.currentTime = (Number(timing?.delay) || 0) + (Number(timing?.activeDuration) || 0) / 2;
     }
 
-    const held = getComputedStyle(section);
     const layerZ = (selector) => {
       const layer = document.querySelector(selector);
       return layer ? Number(getComputedStyle(layer).zIndex) : null;
     };
+    const paperZ = layerZ('.fx-paper');
+    const halftoneZ = layerZ('.fx-halftone');
+
+    /** Whether a held box is a group right now. Every value read as COMPUTED:
+        `transform: none` in a keyframe computes to the identity matrix and groups
+        exactly as any other matrix would. */
+    const groups = (style) =>
+      Number(style.opacity) < 1 ||
+      style.transform !== 'none' ||
+      style.translate !== 'none' ||
+      style.scale !== 'none' ||
+      style.filter !== 'none' ||
+      style.clipPath !== 'none' ||
+      (style.maskImage ?? style.webkitMaskImage ?? 'none') !== 'none' ||
+      style.isolation === 'isolate';
+
+    const describe = (element, pseudo) => {
+      const classes = [...element.classList].filter((name) => !name.startsWith('astro-'));
+      const label = classes.length ? `.${classes.join('.')}` : element.tagName.toLowerCase();
+      return pseudo ? `${label}${pseudo}` : label;
+    };
+
+    let grouped = 0;
+    const sealed = [];
+    const seen = new Set();
+    for (const one of running) {
+      const effect = one.effect;
+      const owner = effect?.target;
+      if (!(owner instanceof Element)) continue;
+      const pseudo = effect.pseudoElement ?? null;
+      const key = describe(owner, pseudo);
+      if (seen.has(key)) continue;
+      seen.add(key);
+      if (!groups(getComputedStyle(owner, pseudo))) continue;
+      grouped += 1;
+      // The group this box is painted in: itself if it carries a z, and otherwise
+      // the nearest positioned ancestor that does. A pseudo-element is painted
+      // inside its owner, so the walk starts there.
+      let at = null;
+      for (let box = owner; box; box = box.parentElement) {
+        const style = getComputedStyle(box);
+        if (style.position !== 'static' && style.zIndex !== 'auto') {
+          at = { box: describe(box, null), z: Number(style.zIndex) };
+          break;
+        }
+      }
+      const under = [paperZ, halftoneZ].filter((z) => z !== null && !(at && at.z > z));
+      if (under.length > 0) sealed.push({ what: key, in: at?.box ?? '(the root)', z: at?.z ?? 'auto' });
+    }
+
     return {
-      declared,
-      touches: [...touches],
+      named: [...named],
+      grouping: [...grouping],
       running: running.length,
-      // Either of the two the reveal animates makes a stacking context, and
-      // `transform` has to be read as a COMPUTED value: `transform: none` in a
-      // keyframe computes to the identity matrix and groups the box exactly as
-      // any other matrix would, which is the whole reason the reveal fills
-      // `backwards` and not `both`.
-      grouped: Number(held.opacity) < 1 || held.transform !== 'none',
-      opacity: held.opacity,
-      transform: held.transform,
-      z: held.zIndex,
-      paperZ: layerZ('.fx-paper'),
-      halftoneZ: layerZ('.fx-halftone'),
+      grouped,
+      sealed,
+      paperZ,
+      halftoneZ,
     };
   });
+}
+
+/**
+ * What the held reveal says, as failures and a note. The same reading in both
+ * reader states, because they are two different reveals: the tracks, and for a
+ * reader who asked for less motion the one Section-wide fade.
+ */
+function judgeHeld(held, who) {
+  /** @type {string[]} */
+  const failures = [];
+  /** @type {string[]} */
+  const notes = [];
+  if (held === null) {
+    failures.push(`${who}: the Front Screen is not on the page to hold in the middle of its reveal`);
+  } else if (held.named.length === 0) {
+    notes.push(`${who}: the Front Screen declares no reveal, so there is no group to stand over the stack`);
+  } else if (held.grouping.length === 0) {
+    notes.push(
+      `${who}: the reveal (${held.named.join(', ')}) animates nothing that groups a box`,
+    );
+  } else if (held.running === 0) {
+    failures.push(
+      `${who}: the Front Screen declares the reveal (${held.named.join(', ')}) and restarting it produced ` +
+        'no animation — this assertion cannot reach the state it is about',
+    );
+  } else if (held.grouped === 0) {
+    failures.push(
+      `${who}: the reveal's keyframes group (${held.grouping.join(', ')}) yet nothing held in the middle ` +
+        'of it reads as a group — the hold did not take, so nothing below was asserted',
+    );
+  } else {
+    for (const one of held.sealed) {
+      failures.push(
+        `${who}: in the middle of its reveal ${one.what} is a stacking context painted in ${one.in} at ` +
+          `z-index ${one.z}, against the paper at ${held.paperZ} and the halftone at ${held.halftoneZ} — ` +
+          'both layers print through it until it has arrived',
+      );
+    }
+    notes.push(
+      `${who}: held in the middle of the reveal, ${held.grouped} box${held.grouped === 1 ? ' is a' : 'es are'} ` +
+        `group${held.grouped === 1 ? '' : 's'}, every one at or inside the type's z — against the paper at ` +
+        `${held.paperZ} and the halftone at ${held.halftoneZ}`,
+    );
+  }
+  return { failures, notes };
 }
 
 /**
@@ -641,57 +769,34 @@ export const check = {
       // LAST IN THIS BLOCK, because it puts the Section back into its reveal.
       //
       // The lift asserted above is on the four type blocks, the strip, the bar
-      // and the Cut Title — never on the Section — and for the reveal's 0.9s the
-      // Section IS a stacking context, which seals every one of them inside it
-      // and stands the Section's own z against the stack in their place. At
-      // `auto` that is below both lit layers, so the page opened with the
-      // halftone printed through every photograph and every word and then
-      // corrected itself when the animation ended. The assertion above passes
-      // throughout: it reads the type's z, which is still 5, and the seal is what
-      // stops that meaning anything. This is the half that was missing.
-      const held = await heldReveal(page);
-      if (held === null) {
-        failures.push('the Front Screen is not on the page to hold half way through its reveal');
-      } else if (held.declared === 'none') {
-        notes.push('the Front Screen declares no reveal, so there is no group to stand over the stack');
-      } else if (!held.touches.includes('opacity') && !held.touches.includes('transform')) {
-        notes.push(
-          `the reveal "${held.declared}" animates ${held.touches.join(', ') || 'nothing'}, none of which ` +
-            'groups the Section',
-        );
-      } else if (held.running === 0) {
-        failures.push(
-          `the Front Screen declares the reveal "${held.declared}" and restarting it produced no animation — ` +
-            'this assertion cannot reach the state it is about',
-        );
-      } else if (!held.grouped) {
-        failures.push(
-          `the reveal "${held.declared}" animates ${held.touches.join(', ')} yet the Section held half way ` +
-            `through it reads opacity ${held.opacity} and transform ${held.transform} — the hold did not take, ` +
-            'so nothing below was asserted',
-        );
-      } else {
-        for (const [layer, z] of [
-          ['the paper', held.paperZ],
-          ['the halftone', held.halftoneZ],
-        ]) {
-          if (z !== null && !(Number(held.z) > z)) {
-            failures.push(
-              `half way through its reveal the Front Screen is a stacking context at z-index ${held.z} and ` +
-                `${layer} stands at ${z} — every block this Section lifts out of the Effect Stack is sealed ` +
-                'inside that group, so both layers print through the whole composition until the reveal ends',
-            );
-          }
-        }
-        notes.push(
-          `held half way through the reveal the Front Screen is a group at z-index ${held.z}, against the ` +
-            `paper at ${held.paperZ} and the halftone at ${held.halftoneZ}`,
-        );
-      }
-
-      return { failures, notes };
+      // and the Cut Title, read off a settled page. While the reveal runs, a box
+      // it animates is a stacking context, and one that is not painted at the
+      // type's z is painted under both lit layers: the page opened like that once,
+      // with the halftone printed through every photograph and every word until
+      // the animation ended, and the assertion above passed throughout. So the
+      // reveal is restarted and held, each track in its own middle, and every box
+      // that groups is asked which z it is painted at.
+      const tracks = judgeHeld(await heldReveal(page), 'the tracks');
+      failures.push(...tracks.failures);
+      notes.push(...tracks.notes);
     } finally {
       await context.close();
     }
+
+    // The reader who asked for less motion gets one fade of the whole Section
+    // instead of the tracks, and a fade groups the Section itself — the case the
+    // z in its keyframes exists for.
+    const still = await open(browser, origin, { viewport: GROWING, reducedMotion: 'reduce' });
+    try {
+      failures.push(...(await settle(still.page)));
+      await revealed(still.page);
+      const fade = judgeHeld(await heldReveal(still.page), 'less motion');
+      failures.push(...fade.failures);
+      notes.push(...fade.notes);
+    } finally {
+      await still.context.close();
+    }
+
+    return { failures, notes };
   },
 };
